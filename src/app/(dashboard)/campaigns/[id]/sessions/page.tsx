@@ -34,7 +34,7 @@ export default function SessionsPage() {
   const [editingSession, setEditingSession] = useState<Session | null>(null)
   const [formData, setFormData] = useState({
     title: '',
-    session_date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().split('T')[0],
     summary: '',
   })
   const [saving, setSaving] = useState(false)
@@ -66,7 +66,7 @@ export default function SessionsPage() {
       .from('sessions')
       .select('*')
       .eq('campaign_id', campaignId)
-      .order('session_date', { ascending: false })
+      .order('date', { ascending: false })
 
     setSessions(sessionsData || [])
     setLoading(false)
@@ -91,7 +91,7 @@ export default function SessionsPage() {
       .insert({
         campaign_id: campaignId,
         title: formData.title,
-        session_date: formData.session_date,
+        date: formData.date,
         summary: formData.summary || null,
         session_number: sessions.length + 1,
       })
@@ -103,7 +103,7 @@ export default function SessionsPage() {
       setIsCreateModalOpen(false)
       setFormData({
         title: '',
-        session_date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split('T')[0],
         summary: '',
       })
       // Navigate to the session editor
@@ -120,7 +120,7 @@ export default function SessionsPage() {
       .from('sessions')
       .update({
         title: formData.title,
-        session_date: formData.session_date,
+        date: formData.date,
         summary: formData.summary || null,
       })
       .eq('id', editingSession.id)
@@ -132,7 +132,7 @@ export default function SessionsPage() {
       setEditingSession(null)
       setFormData({
         title: '',
-        session_date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split('T')[0],
         summary: '',
       })
     }
@@ -149,7 +149,7 @@ export default function SessionsPage() {
   const openEditModal = (session: Session) => {
     setFormData({
       title: session.title,
-      session_date: session.session_date,
+      date: session.date,
       summary: session.summary || '',
     })
     setEditingSession(session)
@@ -234,7 +234,7 @@ export default function SessionsPage() {
                         </span>
                         <span className="text-xs text-[--text-tertiary] flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {formatDate(session.session_date)}
+                          {formatDate(session.date)}
                         </span>
                       </div>
                       <h3 className="font-semibold text-[--text-primary] truncate">
@@ -278,7 +278,7 @@ export default function SessionsPage() {
             setIsCreateModalOpen(false)
             setFormData({
               title: '',
-              session_date: new Date().toISOString().split('T')[0],
+              date: new Date().toISOString().split('T')[0],
               summary: '',
             })
           }}
@@ -298,8 +298,8 @@ export default function SessionsPage() {
               <label className="text-sm font-medium text-[--text-primary]">Date</label>
               <Input
                 type="date"
-                value={formData.session_date}
-                onChange={(e) => setFormData({ ...formData, session_date: e.target.value })}
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               />
             </div>
             <div className="space-y-2">
@@ -329,7 +329,7 @@ export default function SessionsPage() {
             setEditingSession(null)
             setFormData({
               title: '',
-              session_date: new Date().toISOString().split('T')[0],
+              date: new Date().toISOString().split('T')[0],
               summary: '',
             })
           }}
@@ -348,8 +348,8 @@ export default function SessionsPage() {
               <label className="text-sm font-medium text-[--text-primary]">Date</label>
               <Input
                 type="date"
-                value={formData.session_date}
-                onChange={(e) => setFormData({ ...formData, session_date: e.target.value })}
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               />
             </div>
             <div className="space-y-2">
