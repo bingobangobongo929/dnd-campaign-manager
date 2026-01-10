@@ -148,7 +148,7 @@ export default function SessionsPage() {
 
   const openEditModal = (session: Session) => {
     setFormData({
-      title: session.title,
+      title: session.title || '',
       date: session.date,
       summary: session.summary || '',
     })
