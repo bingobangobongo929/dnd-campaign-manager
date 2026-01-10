@@ -232,9 +232,11 @@ export interface Database {
           id: string
           campaign_id: string
           session_id: string | null
-          event_type: 'plot' | 'character_intro' | 'character_death' | 'location' | 'combat' | 'revelation' | 'quest_start' | 'quest_end' | 'other'
+          event_type: 'plot' | 'character_intro' | 'character_death' | 'location' | 'combat' | 'revelation' | 'quest_start' | 'quest_end' | 'session' | 'discovery' | 'quest_complete' | 'death' | 'romance' | 'alliance' | 'other'
           title: string
           description: string | null
+          event_date: string
+          character_id: string | null
           character_ids: string[] | null
           event_order: number
           created_at: string
@@ -243,9 +245,11 @@ export interface Database {
           id?: string
           campaign_id: string
           session_id?: string | null
-          event_type?: 'plot' | 'character_intro' | 'character_death' | 'location' | 'combat' | 'revelation' | 'quest_start' | 'quest_end' | 'other'
+          event_type?: 'plot' | 'character_intro' | 'character_death' | 'location' | 'combat' | 'revelation' | 'quest_start' | 'quest_end' | 'session' | 'discovery' | 'quest_complete' | 'death' | 'romance' | 'alliance' | 'other'
           title: string
           description?: string | null
+          event_date?: string
+          character_id?: string | null
           character_ids?: string[] | null
           event_order?: number
           created_at?: string
@@ -254,9 +258,11 @@ export interface Database {
           id?: string
           campaign_id?: string
           session_id?: string | null
-          event_type?: 'plot' | 'character_intro' | 'character_death' | 'location' | 'combat' | 'revelation' | 'quest_start' | 'quest_end' | 'other'
+          event_type?: 'plot' | 'character_intro' | 'character_death' | 'location' | 'combat' | 'revelation' | 'quest_start' | 'quest_end' | 'session' | 'discovery' | 'quest_complete' | 'death' | 'romance' | 'alliance' | 'other'
           title?: string
           description?: string | null
+          event_date?: string
+          character_id?: string | null
           character_ids?: string[] | null
           event_order?: number
           created_at?: string
