@@ -62,6 +62,12 @@ export const EVENT_TYPE_COLORS = {
   revelation: '#EC4899',
   quest_start: '#06B6D4',
   quest_end: '#14B8A6',
+  session: '#6366F1',
+  discovery: '#0EA5E9',
+  quest_complete: '#22C55E',
+  death: '#DC2626',
+  romance: '#F472B6',
+  alliance: '#A855F7',
   other: '#6B7280',
 } as const
 
@@ -74,5 +80,11 @@ export const EVENT_TYPE_LABELS = {
   revelation: 'Revelation',
   quest_start: 'Quest Started',
   quest_end: 'Quest Completed',
+  session: 'Session',
+  discovery: 'Discovery',
+  quest_complete: 'Quest Completed',
+  death: 'Death',
+  romance: 'Romance',
+  alliance: 'Alliance',
   other: 'Other',
 } as const
