@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect } from 'react'
-import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react'
+import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Link from '@tiptap/extension-link'
@@ -248,37 +248,6 @@ export function RichTextEditor({
           <LinkIcon className="h-4 w-4" />
         </ToolbarButton>
       </div>
-
-      {/* Bubble Menu for quick formatting */}
-      {editor && (
-        <BubbleMenu
-          editor={editor}
-          tippyOptions={{ duration: 100 }}
-          className="bg-[--bg-surface] border border-[--border] rounded-lg shadow-lg p-1 flex items-center gap-0.5"
-        >
-          <ToolbarButton
-            onClick={() => editor.chain().focus().toggleBold().run()}
-            active={editor.isActive('bold')}
-          >
-            <Bold className="h-4 w-4" />
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-            active={editor.isActive('italic')}
-          >
-            <Italic className="h-4 w-4" />
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={() => editor.chain().focus().toggleHighlight().run()}
-            active={editor.isActive('highlight')}
-          >
-            <Highlighter className="h-4 w-4" />
-          </ToolbarButton>
-          <ToolbarButton onClick={setLink} active={editor.isActive('link')}>
-            <LinkIcon className="h-4 w-4" />
-          </ToolbarButton>
-        </BubbleMenu>
-      )}
 
       {/* Editor Content */}
       <EditorContent editor={editor} />
