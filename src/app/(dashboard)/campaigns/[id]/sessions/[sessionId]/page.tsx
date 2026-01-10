@@ -85,7 +85,7 @@ export default function SessionDetailPage() {
       .eq('id', session.id)
   }, [formData, session, supabase])
 
-  const { saveStatus } = useAutoSave({
+  const { status } = useAutoSave({
     data: formData,
     onSave: saveSession,
     delay: 2000, // Longer delay for rich text
@@ -135,9 +135,9 @@ export default function SessionDetailPage() {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sm text-[--text-tertiary]">
-                {saveStatus === 'saving' && 'Saving...'}
-                {saveStatus === 'saved' && 'Saved'}
-                {saveStatus === 'idle' && 'All changes saved'}
+                {status === 'saving' && 'Saving...'}
+                {status === 'saved' && 'Saved'}
+                {status === 'idle' && 'All changes saved'}
               </span>
               <Button
                 variant="secondary"

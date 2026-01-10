@@ -92,7 +92,7 @@ export function CharacterPanel({
     }
   }, [formData, character.id, supabase, onUpdate])
 
-  const { saveStatus } = useAutoSave({
+  const { status } = useAutoSave({
     data: formData,
     onSave: saveCharacter,
     delay: 1000,
@@ -179,8 +179,8 @@ export function CharacterPanel({
         <h2 className="font-semibold text-[--text-primary]">Character Details</h2>
         <div className="flex items-center gap-1">
           <span className="text-xs text-[--text-tertiary] mr-2">
-            {saveStatus === 'saving' && 'Saving...'}
-            {saveStatus === 'saved' && 'Saved'}
+            {status === 'saving' && 'Saving...'}
+            {status === 'saved' && 'Saved'}
           </span>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-4 w-4" />
