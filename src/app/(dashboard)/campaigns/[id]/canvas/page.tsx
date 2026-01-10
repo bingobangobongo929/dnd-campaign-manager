@@ -71,17 +71,21 @@ export default function CampaignCanvasPage() {
       .eq('campaign_id', campaignId)
       .order('name')
 
-    setCharacters(charactersData || [])
+    const loadedCharacters: Character[] = charactersData || []
+    setCharacters(loadedCharacters)
 
     // Load character tags with related data
-    const { data: tagsData } = await supabase
-      .from('character_tags')
-      .select(`
-        *,
-        tag:tags(*),
-        related_character:characters!character_tags_related_character_id_fkey(*)
-      `)
-      .in('character_id', (charactersData || []).map(c => c.id))
+    const characterIds = loadedCharacters.map(c => c.id)
+    const { data: tagsData } = characterIds.length > 0
+      ? await supabase
+          .from('character_tags')
+          .select(`
+            *,
+            tag:tags(*),
+            related_character:characters!character_tags_related_character_id_fkey(*)
+          `)
+          .in('character_id', characterIds)
+      : { data: null }
 
     // Group tags by character
     const tagMap = new Map<string, (CharacterTag & { tag: Tag; related_character?: Character | null })[]>()
