@@ -76,7 +76,7 @@ export default function SessionsPage() {
     if (!searchQuery) return true
     const query = searchQuery.toLowerCase()
     return (
-      session.title.toLowerCase().includes(query) ||
+      session.title?.toLowerCase().includes(query) ||
       session.summary?.toLowerCase().includes(query) ||
       session.notes?.toLowerCase().includes(query)
     )
