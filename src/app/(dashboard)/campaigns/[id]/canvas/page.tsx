@@ -88,8 +88,10 @@ export default function CampaignCanvasPage() {
       : { data: null }
 
     // Group tags by character
-    const tagMap = new Map<string, (CharacterTag & { tag: Tag; related_character?: Character | null })[]>()
-    for (const tag of tagsData || []) {
+    type TagWithRelations = CharacterTag & { tag: Tag; related_character?: Character | null }
+    const tagMap = new Map<string, TagWithRelations[]>()
+    const loadedTags = (tagsData || []) as TagWithRelations[]
+    for (const tag of loadedTags) {
       const existing = tagMap.get(tag.character_id) || []
       existing.push(tag)
       tagMap.set(tag.character_id, existing)
