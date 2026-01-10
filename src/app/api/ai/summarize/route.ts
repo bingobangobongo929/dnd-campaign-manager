@@ -24,7 +24,7 @@ ${text}
 Summary:`,
     })
 
-    return result.toDataStreamResponse()
+    return result.toTextStreamResponse()
   } catch (error) {
     console.error('AI summarize error:', error)
     return new Response('AI service error', { status: 500 })

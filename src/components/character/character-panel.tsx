@@ -42,7 +42,7 @@ export function CharacterPanel({
   const [availableTags, setAvailableTags] = useState<Tag[]>([])
   const [newTagForm, setNewTagForm] = useState({
     name: '',
-    color: TAG_COLORS[0],
+    color: TAG_COLORS[0].value as string,
     related_character_id: null as string | null,
   })
   const [savingTag, setSavingTag] = useState(false)
@@ -118,7 +118,7 @@ export function CharacterPanel({
         related_character_id: newTagForm.related_character_id,
       })
 
-    setNewTagForm({ name: '', color: TAG_COLORS[0], related_character_id: null })
+    setNewTagForm({ name: '', color: TAG_COLORS[0].value, related_character_id: null })
     setIsAddTagOpen(false)
     setSavingTag(false)
     onTagsChange()
@@ -153,7 +153,7 @@ export function CharacterPanel({
       setAvailableTags([...availableTags, tag])
     }
 
-    setNewTagForm({ name: '', color: TAG_COLORS[0], related_character_id: null })
+    setNewTagForm({ name: '', color: TAG_COLORS[0].value, related_character_id: null })
     setIsAddTagOpen(false)
     setIsCreatingNewTag(false)
     setSavingTag(false)
@@ -334,7 +334,7 @@ export function CharacterPanel({
         onClose={() => {
           setIsAddTagOpen(false)
           setIsCreatingNewTag(false)
-          setNewTagForm({ name: '', color: TAG_COLORS[0], related_character_id: null })
+          setNewTagForm({ name: '', color: TAG_COLORS[0].value, related_character_id: null })
         }}
         title="Add Tag"
       >
@@ -391,13 +391,13 @@ export function CharacterPanel({
                 <div className="flex flex-wrap gap-2">
                   {TAG_COLORS.map((color) => (
                     <button
-                      key={color}
-                      onClick={() => setNewTagForm({ ...newTagForm, color })}
+                      key={color.value}
+                      onClick={() => setNewTagForm({ ...newTagForm, color: color.value })}
                       className={cn(
                         'w-8 h-8 rounded-full transition-all',
-                        newTagForm.color === color && 'ring-2 ring-offset-2 ring-offset-[--bg-surface]'
+                        newTagForm.color === color.value && 'ring-2 ring-offset-2 ring-offset-[--bg-surface]'
                       )}
-                      style={{ backgroundColor: color, ringColor: color }}
+                      style={{ backgroundColor: color.value, '--tw-ring-color': color.value } as React.CSSProperties}
                     />
                   ))}
                 </div>

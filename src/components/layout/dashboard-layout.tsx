@@ -78,11 +78,8 @@ export function DashboardLayout({ children, campaignId }: DashboardLayoutProps) 
       </div>
 
       {/* AI Assistant Panel */}
-      {isAIAssistantOpen && campaignId && (
-        <AIAssistant
-          campaignId={campaignId}
-          onClose={() => setIsAIAssistantOpen(false)}
-        />
+      {isAIAssistantOpen && (
+        <AIAssistant />
       )}
     </div>
   )

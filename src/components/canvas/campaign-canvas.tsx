@@ -40,7 +40,8 @@ interface CampaignCanvasProps {
   onGroupPositionChange: (id: string, x: number, y: number) => void
 }
 
-const nodeTypes = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const nodeTypes: any = {
   character: CharacterNode,
   group: GroupNode,
 }
@@ -63,9 +64,9 @@ function CampaignCanvasInner({
 
   // Convert characters and groups to nodes
   const initialNodes = useMemo(() => {
-    const characterNodes: Node[] = characters.map((char) => ({
+    const characterNodes = characters.map((char) => ({
       id: char.id,
-      type: 'character',
+      type: 'character' as const,
       position: { x: char.position_x, y: char.position_y },
       data: {
         character: char,
@@ -76,9 +77,9 @@ function CampaignCanvasInner({
       } as CharacterNodeData,
     }))
 
-    const groupNodes: Node[] = groups.map((group) => ({
+    const groupNodes = groups.map((group) => ({
       id: `group-${group.id}`,
-      type: 'group',
+      type: 'group' as const,
       position: { x: group.position_x, y: group.position_y },
       style: { width: group.width, height: group.height },
       zIndex: -1,
@@ -90,7 +91,7 @@ function CampaignCanvasInner({
     }))
 
     // Groups should render behind characters
-    return [...groupNodes, ...characterNodes]
+    return [...groupNodes, ...characterNodes] as unknown as Node[]
   }, [characters, characterTags, groups, selectedCharacterId, onCharacterSelect, onCharacterDoubleClick, onGroupUpdate, onGroupDelete])
 
   const [nodes, setNodes] = useNodesState(initialNodes)

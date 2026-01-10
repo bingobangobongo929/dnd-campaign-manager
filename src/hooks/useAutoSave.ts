@@ -15,7 +15,7 @@ interface UseAutoSaveOptions<T> {
 export function useAutoSave<T>({ data, onSave, delay = 2000, enabled = true }: UseAutoSaveOptions<T>) {
   const [status, setStatus] = useState<SaveStatus>('idle')
   const previousDataRef = useRef<T>(data)
-  const savedTimeoutRef = useRef<NodeJS.Timeout>()
+  const savedTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   const save = useCallback(async (dataToSave: T) => {
     if (!enabled) return

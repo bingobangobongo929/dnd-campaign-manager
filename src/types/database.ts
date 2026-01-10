@@ -49,6 +49,7 @@ export interface Database {
           type: 'pc' | 'npc'
           description: string | null
           summary: string | null
+          notes: string | null
           image_url: string | null
           position_x: number
           position_y: number
@@ -62,6 +63,7 @@ export interface Database {
           type?: 'pc' | 'npc'
           description?: string | null
           summary?: string | null
+          notes?: string | null
           image_url?: string | null
           position_x?: number
           position_y?: number
@@ -75,6 +77,7 @@ export interface Database {
           type?: 'pc' | 'npc'
           description?: string | null
           summary?: string | null
+          notes?: string | null
           image_url?: string | null
           position_x?: number
           position_y?: number

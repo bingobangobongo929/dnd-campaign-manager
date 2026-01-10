@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { Avatar, TagBadge } from '@/components/ui'
 import type { Character, Tag, CharacterTag } from '@/types/database'
 
-export interface CharacterNodeData {
+export interface CharacterNodeData extends Record<string, unknown> {
   character: Character
   tags: (CharacterTag & { tag: Tag; related_character?: Character | null })[]
   isSelected: boolean
@@ -14,7 +14,7 @@ export interface CharacterNodeData {
   onDoubleClick: (id: string) => void
 }
 
-function CharacterNodeComponent({ data, selected }: NodeProps<CharacterNodeData>) {
+function CharacterNodeComponent({ data, selected }: { data: CharacterNodeData; selected?: boolean }) {
   const { character, tags, onSelect, onDoubleClick } = data
 
   return (

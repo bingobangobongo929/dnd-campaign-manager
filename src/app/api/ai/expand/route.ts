@@ -24,7 +24,7 @@ ${text}
 Provide an expanded, detailed description:`,
     })
 
-    return result.toDataStreamResponse()
+    return result.toTextStreamResponse()
   } catch (error) {
     console.error('AI expand error:', error)
     return new Response('AI service error', { status: 500 })

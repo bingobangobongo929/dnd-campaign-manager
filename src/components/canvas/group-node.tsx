@@ -7,13 +7,13 @@ import { GripVertical, Trash2, Edit2, Check, X } from 'lucide-react'
 import { Button, Input } from '@/components/ui'
 import type { CanvasGroup } from '@/types/database'
 
-export interface GroupNodeData {
+export interface GroupNodeData extends Record<string, unknown> {
   group: CanvasGroup
   onUpdate: (id: string, updates: Partial<CanvasGroup>) => void
   onDelete: (id: string) => void
 }
 
-function GroupNodeComponent({ data, selected }: NodeProps<GroupNodeData>) {
+function GroupNodeComponent({ data, selected }: { data: GroupNodeData; selected?: boolean }) {
   const { group, onUpdate, onDelete } = data
   const [isEditing, setIsEditing] = useState(false)
   const [name, setName] = useState(group.name)
