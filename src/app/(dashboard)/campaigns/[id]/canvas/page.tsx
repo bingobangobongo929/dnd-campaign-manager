@@ -121,7 +121,7 @@ export default function CampaignCanvasPage() {
   const handleCharacterPositionChange = useCallback(async (id: string, x: number, y: number) => {
     await supabase
       .from('characters')
-      .update({ position_x: x, position_y: y })
+      .update({ position_x: x, position_y: y } as any)
       .eq('id', id)
 
     setCharacters(prev => prev.map(c =>
@@ -132,7 +132,7 @@ export default function CampaignCanvasPage() {
   const handleGroupUpdate = useCallback(async (id: string, updates: Partial<CanvasGroup>) => {
     await supabase
       .from('canvas_groups')
-      .update(updates)
+      .update(updates as any)
       .eq('id', id)
 
     setGroups(prev => prev.map(g =>
@@ -152,7 +152,7 @@ export default function CampaignCanvasPage() {
   const handleGroupPositionChange = useCallback(async (id: string, x: number, y: number) => {
     await supabase
       .from('canvas_groups')
-      .update({ position_x: x, position_y: y })
+      .update({ position_x: x, position_y: y } as any)
       .eq('id', id)
 
     setGroups(prev => prev.map(g =>
