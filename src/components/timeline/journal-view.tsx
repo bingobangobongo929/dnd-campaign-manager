@@ -5,80 +5,82 @@ import Image from 'next/image'
 import type { TimelineViewProps } from './types'
 
 /**
- * Journal View - Campaign diary/logbook style
- * Narrative-focused, reads like a story journal. Warm, parchment-like aesthetic.
+ * Journal View - Campaign diary aesthetic
+ * Reads like a personal logbook. Elegant, narrative-focused.
  */
 export function JournalView({ events, onEventClick, onCharacterClick }: TimelineViewProps) {
   if (events.length === 0) return null
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Journal Cover */}
-      <div className="text-center mb-8 pb-6 border-b border-[--arcane-gold]/20">
-        <h2 className="font-display text-2xl text-[--arcane-gold] mb-1">Campaign Journal</h2>
-        <p className="text-sm text-[--text-tertiary]">
-          {events.length} entries recorded
-        </p>
-      </div>
+      {/* Journal Header */}
+      <header className="text-center mb-10 pb-8 border-b border-[--arcane-gold]/20">
+        <div className="inline-flex items-center gap-3 mb-3">
+          <div className="w-12 h-px bg-gradient-to-r from-transparent to-[--arcane-gold]/40" />
+          <span className="text-xs text-[--arcane-gold] uppercase tracking-[0.3em]">Chronicle</span>
+          <div className="w-12 h-px bg-gradient-to-l from-transparent to-[--arcane-gold]/40" />
+        </div>
+        <h2 className="text-2xl font-display text-[--text-primary]">Campaign Journal</h2>
+        <p className="text-sm text-[--text-tertiary] mt-2">{events.length} recorded entries</p>
+      </header>
 
       {/* Journal Entries */}
       <div className="space-y-8">
         {events.map((event, index) => (
           <article
             key={event.id}
-            className="relative cursor-pointer group animate-slide-in-up"
-            style={{ animationDelay: `${index * 40}ms` }}
             onClick={() => onEventClick(event)}
+            className="group cursor-pointer"
           >
-            {/* Entry Container - Parchment style */}
-            <div className="p-6 rounded-lg bg-gradient-to-br from-[#1a1814] to-[#141210] border border-[--arcane-gold]/10 hover:border-[--arcane-gold]/30 transition-all shadow-lg">
-              {/* Date Header - Like a journal date */}
-              <div className="flex items-center justify-between mb-4">
-                <time className="font-display text-[--arcane-gold]/80 text-sm tracking-wide">
+            <div className="relative pl-6 border-l-2 border-[--arcane-gold]/20 hover:border-[--arcane-gold]/40 transition-colors">
+              {/* Entry marker */}
+              <div className="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-[--arcane-gold]/40 group-hover:bg-[--arcane-gold] transition-colors" />
+
+              {/* Date line */}
+              <div className="flex items-center gap-4 mb-3">
+                <time className="text-sm font-medium text-[--arcane-gold]/80">
                   {new Date(event.event_date).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
                     month: 'long',
-                    day: 'numeric'
+                    day: 'numeric',
+                    year: 'numeric'
                   })}
                 </time>
-                <span className="text-xs text-[--text-tertiary] italic capitalize">
+                <span className="text-xs text-[--text-tertiary] capitalize">
                   {event.event_type.replace(/_/g, ' ')}
                 </span>
               </div>
 
-              {/* Title - Handwritten feel */}
-              <h3 className="font-display text-xl text-[--text-primary] mb-3 leading-tight">
+              {/* Title */}
+              <h3 className="text-xl font-semibold text-[--text-primary] mb-3 group-hover:text-[--arcane-gold] transition-colors">
                 {event.title}
               </h3>
 
-              {/* Description - Journal entry text */}
+              {/* Description */}
               {event.description ? (
-                <div className="text-[--text-secondary] leading-relaxed mb-4 italic">
-                  <span className="text-2xl text-[--arcane-gold]/60 font-serif leading-none mr-1">"</span>
-                  <span className="line-clamp-4">{event.description}</span>
-                  <span className="text-2xl text-[--arcane-gold]/60 font-serif leading-none ml-1">"</span>
-                </div>
+                <p className="text-[--text-secondary] leading-relaxed mb-4">
+                  {event.description}
+                </p>
               ) : (
-                <p className="text-[--text-tertiary] text-sm italic mb-4">
-                  No notes recorded for this entry...
+                <p className="text-[--text-tertiary] italic mb-4">
+                  No notes recorded...
                 </p>
               )}
 
-              {/* Characters - Like signatures or mentions */}
+              {/* Characters present */}
               {event.characters.length > 0 && (
-                <div className="pt-4 border-t border-[--arcane-gold]/10">
-                  <p className="text-xs text-[--text-tertiary] mb-2 uppercase tracking-wider">
-                    Those Present
-                  </p>
+                <div className="pt-4 border-t border-[--border]/50">
+                  <p className="text-xs text-[--text-tertiary] mb-3">Present:</p>
                   <div className="flex flex-wrap gap-3">
                     {event.characters.map((char) => (
                       <button
                         key={char.id}
-                        onClick={(e) => onCharacterClick(char, e)}
-                        className="flex items-center gap-2 hover:text-[--arcane-gold] transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onCharacterClick(char, e)
+                        }}
+                        className="flex items-center gap-2 group/char"
                       >
-                        <div className="relative w-8 h-8 rounded-full overflow-hidden border border-[--arcane-gold]/20 bg-[--bg-surface]">
+                        <div className="relative w-8 h-8 rounded-full overflow-hidden border border-[--arcane-gold]/30 group-hover/char:border-[--arcane-gold] transition-colors">
                           {char.image_url ? (
                             <Image
                               src={char.image_url}
@@ -88,12 +90,12 @@ export function JournalView({ events, onEventClick, onCharacterClick }: Timeline
                               sizes="32px"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-xs font-medium text-[--text-secondary]">
+                            <div className="w-full h-full bg-[--bg-elevated] flex items-center justify-center text-xs font-medium text-[--text-tertiary]">
                               {getInitials(char.name)}
                             </div>
                           )}
                         </div>
-                        <span className="text-sm font-medium text-[--text-secondary] group-hover:text-[--text-primary]">
+                        <span className="text-sm text-[--text-secondary] group-hover/char:text-[--arcane-gold] transition-colors">
                           {char.name}
                         </span>
                       </button>
@@ -103,20 +105,18 @@ export function JournalView({ events, onEventClick, onCharacterClick }: Timeline
               )}
             </div>
 
-            {/* Decorative connector */}
+            {/* Spacer between entries */}
             {index < events.length - 1 && (
-              <div className="absolute left-1/2 -translate-x-1/2 -bottom-4 w-px h-8 bg-gradient-to-b from-[--arcane-gold]/20 to-transparent" />
+              <div className="h-px bg-gradient-to-r from-[--arcane-gold]/10 via-[--arcane-gold]/20 to-[--arcane-gold]/10 mt-8" />
             )}
           </article>
         ))}
       </div>
 
-      {/* Journal End */}
-      <div className="text-center mt-8 pt-6 border-t border-[--arcane-gold]/20">
-        <p className="text-sm text-[--text-tertiary] italic">
-          ~ End of recorded entries ~
-        </p>
-      </div>
+      {/* Journal Footer */}
+      <footer className="text-center mt-12 pt-8 border-t border-[--arcane-gold]/20">
+        <p className="text-sm text-[--text-tertiary] italic">End of entries</p>
+      </footer>
     </div>
   )
 }
