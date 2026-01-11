@@ -1163,8 +1163,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .character-view-portrait {
-  width: 160px;
-  height: 160px;
+  width: 140px;
+  height: 210px; /* 2:3 aspect ratio */
   flex-shrink: 0;
   border-radius: 12px;
   overflow: hidden;

@@ -46,7 +46,7 @@ export function CharacterViewModal({
                 alt={character.name}
                 fill
                 className="object-cover"
-                sizes="160px"
+                sizes="140px"
               />
             ) : (
               <div className="character-view-portrait-placeholder">
@@ -69,25 +69,24 @@ export function CharacterViewModal({
             {character.summary && (
               <p className="character-view-summary">{character.summary}</p>
             )}
+            {/* Tags - moved here from body */}
+            {tags.length > 0 && (
+              <div className="character-view-tags mt-4">
+                {tags.map((ct) => (
+                  <TagBadge
+                    key={ct.id}
+                    name={ct.tag.name}
+                    color={ct.tag.color}
+                    relatedCharacter={ct.related_character?.name}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Body: Tags + Notes */}
+        {/* Body: Notes */}
         <div className="character-view-body">
-          {/* Tags */}
-          {tags.length > 0 && (
-            <div className="character-view-tags">
-              {tags.map((ct) => (
-                <TagBadge
-                  key={ct.id}
-                  name={ct.tag.name}
-                  color={ct.tag.color}
-                  relatedCharacter={ct.related_character?.name}
-                />
-              ))}
-            </div>
-          )}
-
           {/* Notes */}
           {character.notes && (
             <div className="character-view-section">
@@ -100,10 +99,10 @@ export function CharacterViewModal({
           )}
 
           {/* Empty state if no notes */}
-          {!character.notes && !tags.length && (
+          {!character.notes && (
             <div className="text-center py-12">
               <p className="text-[--text-tertiary]">
-                No additional information yet.
+                No notes yet.
               </p>
               <button
                 className="btn btn-secondary mt-4"
