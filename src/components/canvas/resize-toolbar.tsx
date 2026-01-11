@@ -84,20 +84,20 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
   const npcCount = characters.filter((c) => c.type === 'npc').length
 
   return (
-    <div className="fixed top-16 right-4 z-50 w-80 bg-[--bg-surface] border border-[--border] rounded-xl shadow-2xl animate-slide-in-right">
+    <div className="fixed top-20 right-6 z-50 w-[340px] bg-[--bg-surface] border border-[--border] rounded-2xl shadow-2xl animate-slide-in-right">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[--border]">
-        <h3 className="text-sm font-semibold text-[--text-primary]">Resize Cards</h3>
+      <div className="flex items-center justify-between px-5 py-4 border-b border-[--border]">
+        <h3 className="text-base font-semibold text-[--text-primary]">Resize Cards</h3>
         <button
           onClick={onClose}
-          className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[--bg-hover] transition-colors"
+          className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[--bg-hover] transition-colors"
         >
-          <X className="w-4 h-4 text-[--text-secondary]" />
+          <X className="w-5 h-5 text-[--text-secondary]" />
         </button>
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-1 px-3 py-2 border-b border-[--border]">
+      <div className="flex gap-2 px-5 py-4 border-b border-[--border]">
         {[
           { id: 'all' as const, label: 'All', count: characters.length, icon: Users },
           { id: 'pc' as const, label: 'PCs', count: pcCount, icon: User },
@@ -107,17 +107,17 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
             key={tab.id}
             onClick={() => setFilter(tab.id)}
             className={cn(
-              'flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors',
+              'flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
               filter === tab.id
-                ? 'bg-[--arcane-purple] text-white'
-                : 'text-[--text-secondary] hover:text-[--text-primary] hover:bg-[--bg-hover]'
+                ? 'bg-[--arcane-purple] text-white shadow-md shadow-[--arcane-purple]/30'
+                : 'text-[--text-secondary] bg-[--bg-elevated] hover:text-[--text-primary] hover:bg-[--bg-hover]'
             )}
           >
-            <tab.icon className="w-3 h-3" />
+            <tab.icon className="w-4 h-4" />
             <span>{tab.label}</span>
             <span className={cn(
-              'px-1.5 py-0.5 rounded text-[10px]',
-              filter === tab.id ? 'bg-white/20' : 'bg-[--bg-elevated]'
+              'px-2 py-0.5 rounded-md text-xs font-semibold',
+              filter === tab.id ? 'bg-white/20' : 'bg-[--bg-hover]'
             )}>
               {tab.count}
             </span>
@@ -126,36 +126,36 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
       </div>
 
       {/* Character selection */}
-      <div className="px-3 py-2 border-b border-[--border]">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-[--text-secondary]">
-            <span className="text-[--arcane-purple] font-medium">{selectedIds.size}</span> / {filteredCharacters.length}
+      <div className="px-5 py-4 border-b border-[--border]">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm text-[--text-secondary]">
+            <span className="text-[--arcane-purple] font-semibold">{selectedIds.size}</span> of {filteredCharacters.length} selected
           </span>
-          <div className="flex gap-2 text-xs">
-            <button onClick={selectAll} className="text-[--arcane-purple] hover:underline">All</button>
-            <button onClick={deselectAll} className="text-[--text-tertiary] hover:text-[--text-secondary]">None</button>
+          <div className="flex gap-3 text-sm">
+            <button onClick={selectAll} className="font-medium text-[--arcane-purple] hover:underline">Select All</button>
+            <button onClick={deselectAll} className="font-medium text-[--text-tertiary] hover:text-[--text-secondary]">Clear</button>
           </div>
         </div>
-        <div className="max-h-28 overflow-y-auto space-y-0.5 scrollbar-thin">
+        <div className="max-h-36 overflow-y-auto space-y-1 scrollbar-thin">
           {filteredCharacters.map((char) => (
             <label
               key={char.id}
               className={cn(
-                'flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors text-xs',
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors',
                 selectedIds.has(char.id)
-                  ? 'bg-[--arcane-purple]/10'
-                  : 'hover:bg-[--bg-hover]'
+                  ? 'bg-[--arcane-purple]/10 border border-[--arcane-purple]/20'
+                  : 'hover:bg-[--bg-hover] border border-transparent'
               )}
             >
               <input
                 type="checkbox"
                 checked={selectedIds.has(char.id)}
                 onChange={() => toggleCharacter(char.id)}
-                className="w-3.5 h-3.5 rounded border-[--border] text-[--arcane-purple] focus:ring-[--arcane-purple] focus:ring-offset-0"
+                className="w-4 h-4 rounded border-[--border] text-[--arcane-purple] focus:ring-[--arcane-purple] focus:ring-offset-0"
               />
-              <span className="text-[--text-primary] truncate flex-1">{char.name}</span>
+              <span className="text-sm text-[--text-primary] truncate flex-1 font-medium">{char.name}</span>
               <span className={cn(
-                'text-[10px] font-medium px-1.5 py-0.5 rounded',
+                'text-xs font-semibold px-2 py-1 rounded-md',
                 char.type === 'pc' ? 'bg-[--arcane-purple]/20 text-[--arcane-purple]' : 'bg-[--treasure-gold]/20 text-[--treasure-gold]'
               )}>
                 {char.type.toUpperCase()}
@@ -166,12 +166,12 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
       </div>
 
       {/* Size sliders */}
-      <div className="px-3 py-3 space-y-3">
+      <div className="px-5 py-5 space-y-5">
         {/* Width slider */}
         <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-xs font-medium text-[--text-secondary]">Width</label>
-            <span className="text-xs font-semibold text-[--text-primary] tabular-nums">{width}px</span>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-semibold text-[--text-primary]">Width</label>
+            <span className="text-sm font-bold text-[--arcane-purple] tabular-nums">{width}px</span>
           </div>
           <input
             type="range"
@@ -179,26 +179,31 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
             max={MAX_CARD_WIDTH}
             value={width}
             onChange={(e) => setWidth(Number(e.target.value))}
-            className="w-full h-1.5 bg-[--bg-elevated] rounded-full appearance-none cursor-pointer
+            className="w-full h-2 bg-[--bg-elevated] rounded-full appearance-none cursor-pointer
               [&::-webkit-slider-thumb]:appearance-none
-              [&::-webkit-slider-thumb]:w-3.5
-              [&::-webkit-slider-thumb]:h-3.5
+              [&::-webkit-slider-thumb]:w-5
+              [&::-webkit-slider-thumb]:h-5
               [&::-webkit-slider-thumb]:rounded-full
               [&::-webkit-slider-thumb]:bg-[--arcane-purple]
+              [&::-webkit-slider-thumb]:border-2
+              [&::-webkit-slider-thumb]:border-white
+              [&::-webkit-slider-thumb]:shadow-lg
               [&::-webkit-slider-thumb]:cursor-grab
-              [&::-webkit-slider-thumb]:active:cursor-grabbing"
+              [&::-webkit-slider-thumb]:active:cursor-grabbing
+              [&::-webkit-slider-thumb]:transition-transform
+              [&::-webkit-slider-thumb]:hover:scale-110"
           />
-          <div className="flex justify-between text-[10px] text-[--text-muted] mt-0.5">
-            <span>{MIN_CARD_WIDTH}</span>
-            <span>{MAX_CARD_WIDTH}</span>
+          <div className="flex justify-between text-xs text-[--text-muted] mt-1.5">
+            <span>{MIN_CARD_WIDTH}px</span>
+            <span>{MAX_CARD_WIDTH}px</span>
           </div>
         </div>
 
         {/* Height slider */}
         <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-xs font-medium text-[--text-secondary]">Height</label>
-            <span className="text-xs font-semibold text-[--text-primary] tabular-nums">{height}px</span>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-semibold text-[--text-primary]">Height</label>
+            <span className="text-sm font-bold text-[--arcane-purple] tabular-nums">{height}px</span>
           </div>
           <input
             type="range"
@@ -206,37 +211,42 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
             max={MAX_CARD_HEIGHT}
             value={height}
             onChange={(e) => setHeight(Number(e.target.value))}
-            className="w-full h-1.5 bg-[--bg-elevated] rounded-full appearance-none cursor-pointer
+            className="w-full h-2 bg-[--bg-elevated] rounded-full appearance-none cursor-pointer
               [&::-webkit-slider-thumb]:appearance-none
-              [&::-webkit-slider-thumb]:w-3.5
-              [&::-webkit-slider-thumb]:h-3.5
+              [&::-webkit-slider-thumb]:w-5
+              [&::-webkit-slider-thumb]:h-5
               [&::-webkit-slider-thumb]:rounded-full
               [&::-webkit-slider-thumb]:bg-[--arcane-purple]
+              [&::-webkit-slider-thumb]:border-2
+              [&::-webkit-slider-thumb]:border-white
+              [&::-webkit-slider-thumb]:shadow-lg
               [&::-webkit-slider-thumb]:cursor-grab
-              [&::-webkit-slider-thumb]:active:cursor-grabbing"
+              [&::-webkit-slider-thumb]:active:cursor-grabbing
+              [&::-webkit-slider-thumb]:transition-transform
+              [&::-webkit-slider-thumb]:hover:scale-110"
           />
-          <div className="flex justify-between text-[10px] text-[--text-muted] mt-0.5">
-            <span>{MIN_CARD_HEIGHT}</span>
-            <span>{MAX_CARD_HEIGHT}</span>
+          <div className="flex justify-between text-xs text-[--text-muted] mt-1.5">
+            <span>{MIN_CARD_HEIGHT}px</span>
+            <span>{MAX_CARD_HEIGHT}px</span>
           </div>
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-between px-3 py-2 border-t border-[--border]">
+      <div className="flex items-center justify-between px-5 py-4 border-t border-[--border]">
         <button
           onClick={handleReset}
-          className="flex items-center gap-1 px-2 py-1 text-xs text-[--text-secondary] hover:text-[--text-primary] rounded hover:bg-[--bg-hover] transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-[--text-secondary] bg-[--bg-elevated] border border-[--border] rounded-lg hover:bg-[--bg-hover] hover:text-[--text-primary] transition-colors"
         >
-          <RotateCcw className="w-3 h-3" />
-          Reset
+          <RotateCcw className="w-4 h-4" />
+          <span>Reset</span>
         </button>
         <button
           onClick={onClose}
-          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-[--arcane-purple] rounded-lg hover:bg-[--arcane-purple-dim] transition-colors"
+          className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[--arcane-purple] rounded-lg hover:bg-[--arcane-purple-dim] shadow-md shadow-[--arcane-purple]/30 transition-all hover:scale-[1.02]"
         >
-          <Check className="w-3 h-3" />
-          Done
+          <Check className="w-4 h-4" />
+          <span>Done</span>
         </button>
       </div>
     </div>
