@@ -180,6 +180,7 @@ interface TagBadgeProps {
   onClick?: () => void
   onRemove?: () => void
   size?: 'sm' | 'md'
+  uppercase?: boolean
 }
 
 export function TagBadge({
@@ -190,10 +191,14 @@ export function TagBadge({
   onClick,
   onRemove,
   size = 'md',
+  uppercase = false,
 }: TagBadgeProps) {
   // Get icon component
   const IconComponent = getTagIcon(name, icon)
   const iconSize = size === 'sm' ? 12 : 14
+
+  // Format the display name
+  const displayName = uppercase ? name.toUpperCase() : name
 
   return (
     <Badge
@@ -203,7 +208,7 @@ export function TagBadge({
       onRemove={onRemove}
       size={size}
     >
-      {relatedCharacter ? `${name}: ${relatedCharacter}` : name}
+      {relatedCharacter ? `${displayName}: ${relatedCharacter}` : displayName}
     </Badge>
   )
 }

@@ -64,32 +64,47 @@ function CampaignCanvasInner({
   const { getNodes, getViewport } = useReactFlow()
   const [snapLines, setSnapLines] = useState<{ x?: number; y?: number }>({})
 
-  // Handle character resize
+  // Track if this is the first mount
+  const isFirstMount = useRef(true)
+
+  // Store node sizes separately to preserve them across data updates
+  const nodeSizesRef = useRef<Map<string, { width: number; height: number }>>(new Map())
+
+  // Handle character resize - save to ref and call callback
   const handleCharacterResize = useCallback((id: string, width: number, height: number) => {
+    // Store the new size in our ref
+    nodeSizesRef.current.set(id, { width, height })
+    console.log(`Saving size for ${id}: ${width}x${height}`)
+
+    // Call the parent callback
     if (onCharacterSizeChange) {
       onCharacterSizeChange(id, width, height)
     }
   }, [onCharacterSizeChange])
 
-  // Convert characters and groups to nodes
-  const initialNodes = useMemo(() => {
-    const characterNodes = characters.map((char) => ({
-      id: char.id,
-      type: 'character' as const,
-      position: { x: char.position_x, y: char.position_y },
-      style: {
-        width: DEFAULT_CARD_WIDTH,
-        height: DEFAULT_CARD_HEIGHT,
-      },
-      data: {
-        character: char,
-        tags: characterTags.get(char.id) || [],
-        isSelected: char.id === selectedCharacterId,
-        onSelect: onCharacterSelect,
-        onDoubleClick: onCharacterDoubleClick,
-        onResize: handleCharacterResize,
-      } as CharacterNodeData,
-    }))
+  // Create nodes from data
+  const createNodes = useCallback(() => {
+    const characterNodes = characters.map((char) => {
+      // Use saved size if available, otherwise default
+      const savedSize = nodeSizesRef.current.get(char.id)
+      const width = savedSize?.width || DEFAULT_CARD_WIDTH
+      const height = savedSize?.height || DEFAULT_CARD_HEIGHT
+
+      return {
+        id: char.id,
+        type: 'character' as const,
+        position: { x: char.position_x, y: char.position_y },
+        style: { width, height },
+        data: {
+          character: char,
+          tags: characterTags.get(char.id) || [],
+          isSelected: char.id === selectedCharacterId,
+          onSelect: onCharacterSelect,
+          onDoubleClick: onCharacterDoubleClick,
+          onResize: handleCharacterResize,
+        } as CharacterNodeData,
+      }
+    })
 
     const groupNodes = groups.map((group) => ({
       id: `group-${group.id}`,
@@ -108,13 +123,54 @@ function CampaignCanvasInner({
     return [...groupNodes, ...characterNodes] as unknown as Node[]
   }, [characters, characterTags, groups, selectedCharacterId, onCharacterSelect, onCharacterDoubleClick, handleCharacterResize, onGroupUpdate, onGroupDelete])
 
-  const [nodes, setNodes] = useNodesState(initialNodes)
+  // Initialize nodes
+  const [nodes, setNodes] = useNodesState(createNodes())
   const [edges, setEdges] = useEdgesState([])
 
-  // Update nodes when data changes
+  // Update nodes when data changes - PRESERVE SIZES
   useEffect(() => {
-    setNodes(initialNodes)
-  }, [initialNodes, setNodes])
+    if (isFirstMount.current) {
+      isFirstMount.current = false
+      return
+    }
+
+    // Update nodes while preserving current sizes
+    setNodes((currentNodes) => {
+      // Build a map of current node sizes
+      const currentSizes = new Map<string, { width: number; height: number }>()
+      currentNodes.forEach((node) => {
+        if (node.style?.width && node.style?.height) {
+          currentSizes.set(node.id, {
+            width: node.style.width as number,
+            height: node.style.height as number,
+          })
+        }
+      })
+
+      // Also merge in any sizes from our ref
+      nodeSizesRef.current.forEach((size, id) => {
+        currentSizes.set(id, size)
+      })
+
+      // Create new nodes with updated data but preserved sizes
+      const newNodes = createNodes().map((node) => {
+        const savedSize = currentSizes.get(node.id)
+        if (savedSize) {
+          return {
+            ...node,
+            style: {
+              ...node.style,
+              width: savedSize.width,
+              height: savedSize.height,
+            },
+          }
+        }
+        return node
+      })
+
+      return newNodes
+    })
+  }, [characters, characterTags, groups, selectedCharacterId, createNodes, setNodes])
 
   // Smart snap - find alignment guides
   const findSnapPositions = useCallback((movingNodeId: string, position: { x: number; y: number }, width: number, height: number) => {
@@ -132,8 +188,8 @@ function CampaignCanvasInner({
     const movingCenterY = position.y + height / 2
 
     for (const node of otherNodes) {
-      const nodeWidth = DEFAULT_CARD_WIDTH
-      const nodeHeight = DEFAULT_CARD_HEIGHT
+      const nodeWidth = (node.style?.width as number) || DEFAULT_CARD_WIDTH
+      const nodeHeight = (node.style?.height as number) || DEFAULT_CARD_HEIGHT
       const nodeLeft = node.position.x
       const nodeRight = node.position.x + nodeWidth
       const nodeTop = node.position.y
@@ -184,13 +240,14 @@ function CampaignCanvasInner({
   // Debounced position save
   const debouncedSavePosition = useDebouncedCallback(
     (id: string, x: number, y: number, isGroup: boolean) => {
+      console.log(`Saving position for ${id}: ${x}, ${y}`)
       if (isGroup) {
         onGroupPositionChange(id.replace('group-', ''), x, y)
       } else {
         onCharacterPositionChange(id, x, y)
       }
     },
-    300
+    500 // 500ms debounce
   )
 
   const onNodesChange: OnNodesChange = useCallback(
@@ -200,11 +257,13 @@ function CampaignCanvasInner({
         if (change.type === 'position' && change.position && change.dragging) {
           const node = nodes.find((n) => n.id === change.id)
           if (node && node.type === 'character') {
+            const nodeWidth = (node.style?.width as number) || DEFAULT_CARD_WIDTH
+            const nodeHeight = (node.style?.height as number) || DEFAULT_CARD_HEIGHT
             const { newX, newY, snapX, snapY } = findSnapPositions(
               change.id,
               change.position,
-              DEFAULT_CARD_WIDTH,
-              DEFAULT_CARD_HEIGHT
+              nodeWidth,
+              nodeHeight
             )
             setSnapLines({ x: snapX, y: snapY })
             return {
@@ -218,7 +277,7 @@ function CampaignCanvasInner({
 
       setNodes((nds) => applyNodeChanges(processedChanges, nds))
 
-      // Save position changes
+      // Save position changes when drag ends
       for (const change of changes) {
         if (change.type === 'position' && !change.dragging && change.position) {
           const isGroup = change.id.startsWith('group-')

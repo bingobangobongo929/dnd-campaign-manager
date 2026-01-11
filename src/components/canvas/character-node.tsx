@@ -1,7 +1,7 @@
 'use client'
 
-import { memo, useState, useCallback } from 'react'
-import { Handle, Position, NodeResizer } from '@xyflow/react'
+import { memo, useState, useCallback, useEffect } from 'react'
+import { Handle, Position, NodeResizer, useReactFlow } from '@xyflow/react'
 import { cn, getInitials } from '@/lib/utils'
 import { TagBadge } from '@/components/ui'
 import { Maximize2, RotateCcw, X, Check } from 'lucide-react'
@@ -25,60 +25,106 @@ export interface CharacterNodeData extends Record<string, unknown> {
   onResize?: (id: string, width: number, height: number) => void
 }
 
-function CharacterNodeComponent({ data, selected }: { data: CharacterNodeData; selected?: boolean }) {
+function CharacterNodeComponent({
+  id,
+  data,
+  selected
+}: {
+  id: string
+  data: CharacterNodeData
+  selected?: boolean
+}) {
   const { character, tags, onSelect, onDoubleClick, onResize } = data
   const isPC = character.type === 'pc'
   const isActive = selected || data.isSelected
+  const { setNodes } = useReactFlow()
 
   // Resize mode state
   const [isResizeMode, setIsResizeMode] = useState(false)
-  const [tempSize, setTempSize] = useState<{ width: number; height: number } | null>(null)
   const [originalSize, setOriginalSize] = useState<{ width: number; height: number } | null>(null)
 
   // Get DiceBear fallback image
   const imageUrl = character.image_url ||
     `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(character.name)}&backgroundColor=1a1a24`
 
-  // Enter resize mode
+  // Enter resize mode - store current size
   const handleEnterResizeMode = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
+    // Get current node size from React Flow
+    setNodes((nodes) => {
+      const node = nodes.find(n => n.id === id)
+      if (node) {
+        const width = (node.style?.width as number) || DEFAULT_CARD_WIDTH
+        const height = (node.style?.height as number) || DEFAULT_CARD_HEIGHT
+        setOriginalSize({ width, height })
+      }
+      return nodes
+    })
     setIsResizeMode(true)
-    setOriginalSize({ width: DEFAULT_CARD_WIDTH, height: DEFAULT_CARD_HEIGHT })
-    setTempSize(null)
-  }, [])
+  }, [id, setNodes])
 
-  // Exit resize mode - save
+  // Exit resize mode - save new size
   const handleConfirmResize = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
-    if (tempSize && onResize) {
-      onResize(character.id, tempSize.width, tempSize.height)
-    }
+    // Get current size from the node and save it
+    setNodes((nodes) => {
+      const node = nodes.find(n => n.id === id)
+      if (node && onResize) {
+        const width = (node.style?.width as number) || DEFAULT_CARD_WIDTH
+        const height = (node.style?.height as number) || DEFAULT_CARD_HEIGHT
+        // Call the save function
+        onResize(character.id, Math.round(width), Math.round(height))
+      }
+      return nodes
+    })
     setIsResizeMode(false)
-    setTempSize(null)
     setOriginalSize(null)
-  }, [character.id, tempSize, onResize])
+  }, [id, character.id, onResize, setNodes])
 
-  // Exit resize mode - cancel
+  // Exit resize mode - revert to original size
   const handleCancelResize = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
+    if (originalSize) {
+      // Revert to original size
+      setNodes((nodes) =>
+        nodes.map((node) => {
+          if (node.id === id) {
+            return {
+              ...node,
+              style: {
+                ...node.style,
+                width: originalSize.width,
+                height: originalSize.height,
+              },
+            }
+          }
+          return node
+        })
+      )
+    }
     setIsResizeMode(false)
-    setTempSize(null)
     setOriginalSize(null)
-  }, [])
+  }, [id, originalSize, setNodes])
 
   // Reset to default size
   const handleResetSize = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
-    setTempSize({ width: DEFAULT_CARD_WIDTH, height: DEFAULT_CARD_HEIGHT })
-    if (onResize) {
-      onResize(character.id, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT)
-    }
-  }, [character.id, onResize])
-
-  // Handle resize during drag
-  const handleResize = useCallback((_: unknown, params: { width: number; height: number }) => {
-    setTempSize({ width: params.width, height: params.height })
-  }, [])
+    setNodes((nodes) =>
+      nodes.map((node) => {
+        if (node.id === id) {
+          return {
+            ...node,
+            style: {
+              ...node.style,
+              width: DEFAULT_CARD_WIDTH,
+              height: DEFAULT_CARD_HEIGHT,
+            },
+          }
+        }
+        return node
+      })
+    )
+  }, [id, setNodes])
 
   return (
     <>
@@ -91,7 +137,6 @@ function CharacterNodeComponent({ data, selected }: { data: CharacterNodeData; s
         isVisible={isResizeMode}
         lineClassName="!border-[--arcane-purple] !border-2"
         handleClassName="!w-3 !h-3 !bg-[--arcane-purple] !border-2 !border-white !rounded-sm"
-        onResize={handleResize}
       />
 
       {/* Resize mode toolbar */}
@@ -131,9 +176,9 @@ function CharacterNodeComponent({ data, selected }: { data: CharacterNodeData; s
         onClick={() => !isResizeMode && onSelect(character.id)}
         onDoubleClick={() => !isResizeMode && onDoubleClick(character.id)}
       >
-        {/* Two-column layout */}
-        <div className="character-card-layout">
-          {/* LEFT COLUMN: Image + Tags */}
+        {/* Main content area */}
+        <div className="character-card-main">
+          {/* LEFT COLUMN: Image + Badge */}
           <div className="character-card-left">
             {/* Portrait */}
             <div className="character-card-portrait">
@@ -146,35 +191,19 @@ function CharacterNodeComponent({ data, selected }: { data: CharacterNodeData; s
               />
             </div>
 
-            {/* Tags stacked vertically */}
-            {tags.length > 0 && (
-              <div className="character-card-tags-vertical">
-                {tags.map((ct) => (
-                  <TagBadge
-                    key={ct.id}
-                    name={ct.tag.name}
-                    color={ct.tag.color}
-                    icon={ct.tag.icon || undefined}
-                    relatedCharacter={ct.related_character?.name}
-                    size="sm"
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* RIGHT COLUMN: Name + Badge + Description */}
-          <div className="character-card-right">
-            {/* Name */}
-            <h3 className="character-card-name">{character.name}</h3>
-
-            {/* Type badge */}
+            {/* Type badge below image */}
             <span className={cn(
               'character-card-type',
               isPC ? 'character-card-type-pc' : 'character-card-type-npc'
             )}>
               {character.type.toUpperCase()}
             </span>
+          </div>
+
+          {/* RIGHT COLUMN: Name + Description */}
+          <div className="character-card-right">
+            {/* Name */}
+            <h3 className="character-card-name">{character.name}</h3>
 
             {/* Description - fills remaining space */}
             <div className="character-card-description">
@@ -183,6 +212,23 @@ function CharacterNodeComponent({ data, selected }: { data: CharacterNodeData; s
             </div>
           </div>
         </div>
+
+        {/* BOTTOM: Tags spanning full width */}
+        {tags.length > 0 && (
+          <div className="character-card-tags-bottom">
+            {tags.map((ct) => (
+              <TagBadge
+                key={ct.id}
+                name={ct.tag.name}
+                color={ct.tag.color}
+                icon={ct.tag.icon || undefined}
+                relatedCharacter={ct.related_character?.name}
+                size="sm"
+                uppercase
+              />
+            ))}
+          </div>
+        )}
 
         {/* Resize trigger icon (only when not in resize mode) */}
         {!isResizeMode && (

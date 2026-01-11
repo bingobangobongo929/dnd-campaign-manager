@@ -896,22 +896,24 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CHARACTER CARDS (Canvas Nodes)
-   Two-column layout: Image+Tags LEFT, Name+Description RIGHT
+   Layout: Image+Badge LEFT | Name+Description RIGHT | Tags BOTTOM (full width)
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .character-card {
   width: 100%;
   height: 100%;
-  padding: 16px;
+  padding: 14px;
   background: var(--bg-surface);
   border-radius: 12px;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
   box-shadow:
     0 4px 16px rgba(0, 0, 0, 0.35),
     0 0 0 1px var(--border-subtle);
   overflow: hidden;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .character-card:hover {
@@ -951,20 +953,23 @@ h1, h2, h3, h4, h5, h6 {
     0 0 30px var(--arcane-purple-glow);
 }
 
-/* ─── Two-Column Layout ─── */
-.character-card-layout {
+/* ─── Main Content Area (Image+Badge LEFT, Name+Desc RIGHT) ─── */
+.character-card-main {
   display: flex;
   gap: 12px;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
-/* LEFT COLUMN: Image + Tags (96px wide, fixed) */
+/* LEFT COLUMN: Image (96x96) + Badge below */
 .character-card-left {
   width: 96px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  align-items: center;
 }
 
 /* Portrait: 96x96, fixed size */
@@ -978,23 +983,36 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--bg-elevated);
 }
 
-/* Tags stacked vertically under image */
-.character-card-tags-vertical {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  overflow: hidden;
-  flex: 1;
-  min-height: 0;
+/* Type badge (PC/NPC) - below image */
+.character-card-type {
+  display: inline-block;
+  width: fit-content;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 10px;
+  flex-shrink: 0;
 }
 
-/* RIGHT COLUMN: Name + Badge + Description (fills remaining width) */
+.character-card-type-pc {
+  background: var(--arcane-purple-glow);
+  color: var(--arcane-purple);
+}
+
+.character-card-type-npc {
+  background: rgba(160, 160, 176, 0.15);
+  color: var(--text-secondary);
+}
+
+/* RIGHT COLUMN: Name + Description (fills remaining width) */
 .character-card-right {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   overflow: hidden;
 }
 
@@ -1013,36 +1031,12 @@ h1, h2, h3, h4, h5, h6 {
   flex-shrink: 0;
 }
 
-/* Type badge (PC/NPC) - small pill */
-.character-card-type {
-  display: inline-block;
-  width: fit-content;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-radius: 10px;
-  flex-shrink: 0;
-}
-
-.character-card-type-pc {
-  background: var(--arcane-purple-glow);
-  color: var(--arcane-purple);
-}
-
-.character-card-type-npc {
-  background: rgba(160, 160, 176, 0.15);
-  color: var(--text-secondary);
-}
-
 /* Description - FILLS ALL REMAINING VERTICAL SPACE */
 .character-card-description {
   position: relative;
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  margin-top: 4px;
 }
 
 /* Description text - 14px, line-height 1.5, fills space naturally */
@@ -1051,9 +1045,7 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.5;
   color: var(--text-secondary);
   margin: 0;
-  /* Allow text to fill available height naturally */
   overflow: hidden;
-  /* Show as much text as fits */
   display: block;
   height: 100%;
 }
@@ -1067,6 +1059,17 @@ h1, h2, h3, h4, h5, h6 {
   height: 28px;
   background: linear-gradient(to bottom, transparent, var(--bg-surface));
   pointer-events: none;
+}
+
+/* ─── BOTTOM: Tags spanning full card width ─── */
+.character-card-tags-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 10px;
+  margin-top: auto;
+  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
 }
 
 /* ─── Resize Trigger Icon ─── */
@@ -1086,6 +1089,7 @@ h1, h2, h3, h4, h5, h6 {
   cursor: pointer;
   opacity: 0;
   transition: all var(--transition-fast);
+  z-index: 5;
 }
 
 .character-card:hover .character-card-resize-trigger {
@@ -1098,7 +1102,22 @@ h1, h2, h3, h4, h5, h6 {
   border-color: var(--arcane-purple);
 }
 
-/* Legacy tags section (horizontal) - keeping for compatibility */
+/* Legacy classes - keeping for compatibility */
+.character-card-layout {
+  display: flex;
+  gap: 12px;
+  height: 100%;
+}
+
+.character-card-tags-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+}
+
 .character-card-tags {
   display: flex;
   flex-wrap: wrap;
