@@ -98,10 +98,11 @@ function CampaignCanvasInner({
   // Create nodes from data
   const createNodes = useCallback(() => {
     const characterNodes = characters.map((char) => {
-      // Priority: database value > ref cache > default
+      // Priority: ref cache (most recent) > database value > default
+      // This prevents async DB saves from being overwritten by stale state
       const savedSize = nodeSizesRef.current.get(char.id)
-      const width = char.canvas_width || savedSize?.width || DEFAULT_CARD_WIDTH
-      const height = char.canvas_height || savedSize?.height || DEFAULT_CARD_HEIGHT
+      const width = savedSize?.width || char.canvas_width || DEFAULT_CARD_WIDTH
+      const height = savedSize?.height || char.canvas_height || DEFAULT_CARD_HEIGHT
 
       return {
         id: char.id,
