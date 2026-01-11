@@ -896,6 +896,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CHARACTER CARDS (Canvas Nodes)
+   Two-column layout: Image+Tags LEFT, Name+Description RIGHT
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .character-card {
@@ -904,25 +905,22 @@ h1, h2, h3, h4, h5, h6 {
   padding: 16px;
   background: var(--bg-surface);
   border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
   cursor: pointer;
   transition: all var(--transition-fast);
   box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.3),
+    0 4px 16px rgba(0, 0, 0, 0.35),
     0 0 0 1px var(--border-subtle);
   overflow: hidden;
+  position: relative;
 }
 
 .character-card:hover {
   box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.4),
+    0 8px 28px rgba(0, 0, 0, 0.45),
     0 0 0 1px var(--border);
-  transform: translateY(-2px);
 }
 
-/* PC cards have accent border */
+/* PC cards have accent left border */
 .character-card-pc {
   border-left: 4px solid var(--arcane-purple);
 }
@@ -935,19 +933,38 @@ h1, h2, h3, h4, h5, h6 {
 /* Selected state */
 .character-card-selected {
   box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.4),
+    0 8px 28px rgba(0, 0, 0, 0.45),
     0 0 0 2px var(--arcane-purple),
-    0 0 20px var(--arcane-purple-glow);
+    0 0 24px var(--arcane-purple-glow);
 }
 
 .character-card-selected.character-card-npc {
   border-color: var(--arcane-purple);
 }
 
-/* Top section: Image + Content side by side */
-.character-card-top {
+/* Resize mode state */
+.character-card-resize-mode {
+  cursor: default;
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.45),
+    0 0 0 3px var(--arcane-purple),
+    0 0 30px var(--arcane-purple-glow);
+}
+
+/* ─── Two-Column Layout ─── */
+.character-card-layout {
   display: flex;
   gap: 12px;
+  height: 100%;
+}
+
+/* LEFT COLUMN: Image + Tags (96px wide, fixed) */
+.character-card-left {
+  width: 96px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* Portrait: 96x96, fixed size */
@@ -961,32 +978,30 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--bg-elevated);
 }
 
-.character-card-portrait-placeholder {
-  width: 100%;
-  height: 100%;
+/* Tags stacked vertically under image */
+.character-card-tags-vertical {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, var(--arcane-purple-dim), var(--arcane-gold-dim));
-  color: white;
-  font-family: var(--font-display);
-  font-size: 24px;
-  font-weight: 600;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
 }
 
-/* Right content column */
-.character-card-content {
+/* RIGHT COLUMN: Name + Badge + Description (fills remaining width) */
+.character-card-right {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  overflow: hidden;
 }
 
-/* Character name */
+/* Character name - 18px bold, can wrap to 2 lines */
 .character-card-name {
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   line-height: 1.3;
   color: var(--text-primary);
@@ -995,9 +1010,10 @@ h1, h2, h3, h4, h5, h6 {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
-/* Type badge (PC/NPC) */
+/* Type badge (PC/NPC) - small pill */
 .character-card-type {
   display: inline-block;
   width: fit-content;
@@ -1007,6 +1023,7 @@ h1, h2, h3, h4, h5, h6 {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-radius: 10px;
+  flex-shrink: 0;
 }
 
 .character-card-type-pc {
@@ -1019,36 +1036,69 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-secondary);
 }
 
-/* Description with line clamp and fade */
+/* Description - FILLS ALL REMAINING VERTICAL SPACE */
 .character-card-description {
   position: relative;
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  margin-top: 4px;
 }
 
+/* Description text - 14px, line-height 1.5, fills space naturally */
 .character-card-description p {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
   color: var(--text-secondary);
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
   margin: 0;
+  /* Allow text to fill available height naturally */
+  overflow: hidden;
+  /* Show as much text as fits */
+  display: block;
+  height: 100%;
 }
 
+/* Fade effect at bottom when text overflows */
 .character-card-description-fade {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 24px;
+  height: 28px;
   background: linear-gradient(to bottom, transparent, var(--bg-surface));
   pointer-events: none;
 }
 
-/* Tags section */
+/* ─── Resize Trigger Icon ─── */
+.character-card-resize-trigger {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  opacity: 0;
+  transition: all var(--transition-fast);
+}
+
+.character-card:hover .character-card-resize-trigger {
+  opacity: 1;
+}
+
+.character-card-resize-trigger:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--arcane-purple);
+}
+
+/* Legacy tags section (horizontal) - keeping for compatibility */
 .character-card-tags {
   display: flex;
   flex-wrap: wrap;

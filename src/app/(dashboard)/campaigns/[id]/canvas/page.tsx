@@ -208,6 +208,18 @@ export default function CampaignCanvasPage() {
     }
   }, [supabase, isDemo])
 
+  // Handle character resize (for future persistence when canvas_width/height columns exist)
+  const handleCharacterSizeChange = useCallback(async (id: string, width: number, height: number) => {
+    console.log(`Character ${id} resized to ${width}x${height}`)
+    // TODO: Persist to database when canvas_width/canvas_height columns are added
+    // if (!isDemo) {
+    //   await supabase
+    //     .from('characters')
+    //     .update({ canvas_width: width, canvas_height: height })
+    //     .eq('id', id)
+    // }
+  }, [])
+
   const handleGroupUpdate = useCallback(async (id: string, updates: Partial<CanvasGroup>) => {
     setGroups(prev => prev.map(g =>
       g.id === id ? { ...g, ...updates } : g
@@ -402,6 +414,7 @@ export default function CampaignCanvasPage() {
           onCharacterSelect={handleCharacterSelect}
           onCharacterDoubleClick={handleCharacterDoubleClick}
           onCharacterPositionChange={handleCharacterPositionChange}
+          onCharacterSizeChange={handleCharacterSizeChange}
           onGroupUpdate={handleGroupUpdate}
           onGroupDelete={handleGroupDelete}
           onGroupPositionChange={handleGroupPositionChange}
