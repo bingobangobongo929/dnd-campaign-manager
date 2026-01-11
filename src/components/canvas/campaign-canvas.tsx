@@ -98,10 +98,10 @@ function CampaignCanvasInner({
   // Create nodes from data
   const createNodes = useCallback(() => {
     const characterNodes = characters.map((char) => {
-      // Use saved size if available, otherwise default
+      // Priority: database value > ref cache > default
       const savedSize = nodeSizesRef.current.get(char.id)
-      const width = savedSize?.width || DEFAULT_CARD_WIDTH
-      const height = savedSize?.height || DEFAULT_CARD_HEIGHT
+      const width = char.canvas_width || savedSize?.width || DEFAULT_CARD_WIDTH
+      const height = char.canvas_height || savedSize?.height || DEFAULT_CARD_HEIGHT
 
       return {
         id: char.id,

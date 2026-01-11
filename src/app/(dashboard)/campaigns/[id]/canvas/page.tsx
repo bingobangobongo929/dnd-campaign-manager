@@ -140,9 +140,17 @@ export default function CampaignCanvasPage() {
 
   // Handle character resize
   const handleCharacterSizeChange = useCallback(async (id: string, width: number, height: number) => {
-    console.log(`Character ${id} resized to ${width}x${height}`)
-    // TODO: Persist to database when canvas_width/canvas_height columns are added
-  }, [])
+    // Update local state
+    setCharacters(prev => prev.map(c =>
+      c.id === id ? { ...c, canvas_width: width, canvas_height: height } : c
+    ))
+
+    // Persist to database
+    await supabase
+      .from('characters')
+      .update({ canvas_width: width, canvas_height: height })
+      .eq('id', id)
+  }, [supabase])
 
   const handleGroupUpdate = useCallback(async (id: string, updates: Partial<CanvasGroup>) => {
     setGroups(prev => prev.map(g =>

@@ -53,6 +53,8 @@ export interface Database {
           image_url: string | null
           position_x: number
           position_y: number
+          canvas_width: number | null
+          canvas_height: number | null
           created_at: string
           updated_at: string
         }
@@ -67,6 +69,8 @@ export interface Database {
           image_url?: string | null
           position_x?: number
           position_y?: number
+          canvas_width?: number | null
+          canvas_height?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -81,6 +85,8 @@ export interface Database {
           image_url?: string | null
           position_x?: number
           position_y?: number
+          canvas_width?: number | null
+          canvas_height?: number | null
           created_at?: string
           updated_at?: string
         }
