@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Plus, FolderPlus, Scaling } from 'lucide-react'
 import { Modal, Input, Dropdown } from '@/components/ui'
-import { CampaignCanvas, ResizeToolbar } from '@/components/canvas'
+import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
@@ -154,15 +154,21 @@ export default function CampaignCanvasPage() {
   }, [supabase])
 
   // Handle batch resize from toolbar - updates state for live preview
-  const handleBatchResize = useCallback((characterIds: string[], width: number, height: number) => {
+  // width/height can be null to indicate "don't change this dimension"
+  const handleBatchResize = useCallback((characterIds: string[], width: number | null, height: number | null) => {
     setCharacterSizeOverrides(prev => {
       const newOverrides = new Map(prev)
       for (const id of characterIds) {
-        newOverrides.set(id, { width, height })
+        const existing = prev.get(id)
+        const char = characters.find(c => c.id === id)
+        // Use new value if provided, otherwise keep existing override or fall back to character's current value
+        const newWidth = width ?? existing?.width ?? char?.canvas_width ?? DEFAULT_CARD_WIDTH
+        const newHeight = height ?? existing?.height ?? char?.canvas_height ?? DEFAULT_CARD_HEIGHT
+        newOverrides.set(id, { width: newWidth, height: newHeight })
       }
       return newOverrides
     })
-  }, [])
+  }, [characters])
 
   // Save sizes to database when toolbar closes
   const handleResizeToolbarClose = useCallback(async () => {

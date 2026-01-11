@@ -17,7 +17,7 @@ type FilterType = 'all' | 'pc' | 'npc'
 
 interface ResizeToolbarProps {
   characters: Character[]
-  onResize: (characterIds: string[], width: number, height: number) => void
+  onResize: (characterIds: string[], width: number | null, height: number | null) => void
   onClose: () => void
 }
 
@@ -27,7 +27,8 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
   const [width, setWidth] = useState(DEFAULT_CARD_WIDTH)
   const [height, setHeight] = useState(DEFAULT_CARD_HEIGHT)
   const isFirstRender = useRef(true)
-  const prevSize = useRef({ width, height })
+  const prevWidth = useRef(width)
+  const prevHeight = useRef(height)
 
   // Get filtered characters based on type filter
   const filteredCharacters = characters.filter((char) => {
@@ -70,19 +71,27 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
     setHeight(DEFAULT_CARD_HEIGHT)
   }, [])
 
-  // Live preview - apply as sliders change (only when width/height changes, not selection)
+  // Live preview - apply as sliders change (only the dimension that changed)
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false
       return
     }
-    // Only trigger resize if width or height actually changed
-    if (prevSize.current.width !== width || prevSize.current.height !== height) {
-      prevSize.current = { width, height }
-      if (selectedIds.size > 0) {
-        onResize(Array.from(selectedIds), width, height)
-      }
+
+    const widthChanged = prevWidth.current !== width
+    const heightChanged = prevHeight.current !== height
+
+    if ((widthChanged || heightChanged) && selectedIds.size > 0) {
+      // Only pass the dimension that actually changed
+      onResize(
+        Array.from(selectedIds),
+        widthChanged ? width : null,
+        heightChanged ? height : null
+      )
     }
+
+    prevWidth.current = width
+    prevHeight.current = height
   }, [width, height, selectedIds, onResize])
 
   const pcCount = characters.filter((c) => c.type === 'pc').length
