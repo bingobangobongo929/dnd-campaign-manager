@@ -68,6 +68,7 @@ interface TagBadgeProps {
   relatedCharacter?: string
   onClick?: () => void
   onRemove?: () => void
+  size?: 'sm' | 'md'
 }
 
 export function TagBadge({
@@ -77,9 +78,10 @@ export function TagBadge({
   relatedCharacter,
   onClick,
   onRemove,
+  size = 'md',
 }: TagBadgeProps) {
   return (
-    <Badge color={color} icon={icon} onClick={onClick} onRemove={onRemove}>
+    <Badge color={color} icon={icon} onClick={onClick} onRemove={onRemove} size={size}>
       {relatedCharacter ? `${name}: ${relatedCharacter}` : name}
     </Badge>
   )

@@ -1,9 +1,10 @@
 'use client'
 
 import { memo } from 'react'
-import { Handle, Position, NodeProps } from '@xyflow/react'
-import { cn } from '@/lib/utils'
-import { Avatar, TagBadge } from '@/components/ui'
+import { Handle, Position } from '@xyflow/react'
+import { cn, getInitials } from '@/lib/utils'
+import { TagBadge } from '@/components/ui'
+import Image from 'next/image'
 import type { Character, Tag, CharacterTag } from '@/types/database'
 
 export interface CharacterNodeData extends Record<string, unknown> {
@@ -16,65 +17,70 @@ export interface CharacterNodeData extends Record<string, unknown> {
 
 function CharacterNodeComponent({ data, selected }: { data: CharacterNodeData; selected?: boolean }) {
   const { character, tags, onSelect, onDoubleClick } = data
+  const isPC = character.type === 'pc'
+  const isActive = selected || data.isSelected
 
   return (
     <div
       className={cn(
-        'bg-[--bg-surface] rounded-xl border-2 shadow-lg transition-all duration-150 cursor-grab active:cursor-grabbing',
-        'hover:shadow-xl hover:border-[--accent-primary]/30',
-        selected || data.isSelected
-          ? 'border-[--accent-primary] shadow-glow'
-          : 'border-[--border]'
+        'character-card',
+        isPC ? 'character-card-pc' : 'character-card-npc',
+        isActive && 'character-card-selected'
       )}
-      style={{ minWidth: 200, maxWidth: 350, width: 'auto' }}
       onClick={() => onSelect(character.id)}
       onDoubleClick={() => onDoubleClick(character.id)}
     >
-      {/* Character portrait and name */}
-      <div className="p-3">
-        <div className="flex items-center gap-3">
-          <Avatar
-            src={character.image_url}
-            name={character.name}
-            size="lg"
-            className="flex-shrink-0"
-          />
-          <div className="min-w-0">
-            <h3 className="font-semibold text-[--text-primary]">
-              {character.name}
-            </h3>
-            <span className={cn(
-              'text-xs font-medium px-1.5 py-0.5 rounded',
-              character.type === 'pc'
-                ? 'bg-[--accent-primary]/10 text-[--accent-primary]'
-                : 'bg-[--text-tertiary]/20 text-[--text-secondary]'
-            )}>
-              {character.type.toUpperCase()}
-            </span>
-          </div>
+      {/* Top Section: Image + Content */}
+      <div className="character-card-top">
+        {/* Portrait */}
+        <div className="character-card-portrait">
+          {character.image_url ? (
+            <Image
+              src={character.image_url}
+              alt={character.name}
+              fill
+              className="object-cover"
+              sizes="96px"
+            />
+          ) : (
+            <div className="character-card-portrait-placeholder">
+              {getInitials(character.name)}
+            </div>
+          )}
         </div>
 
-        {/* Summary */}
-        {character.summary && (
-          <p className="mt-2 text-xs text-[--text-secondary]">
-            {character.summary}
-          </p>
-        )}
-
-        {/* Tags */}
-        {tags.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {tags.map((ct) => (
-              <TagBadge
-                key={ct.id}
-                name={ct.tag.name}
-                color={ct.tag.color}
-                relatedCharacter={ct.related_character?.name}
-              />
-            ))}
-          </div>
-        )}
+        {/* Content */}
+        <div className="character-card-content">
+          <h3 className="character-card-name">{character.name}</h3>
+          <span className={cn(
+            'character-card-type',
+            isPC ? 'character-card-type-pc' : 'character-card-type-npc'
+          )}>
+            {character.type.toUpperCase()}
+          </span>
+          {character.summary && (
+            <div className="character-card-description">
+              <p>{character.summary}</p>
+              <div className="character-card-description-fade" />
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Tags Section */}
+      {tags.length > 0 && (
+        <div className="character-card-tags">
+          {tags.map((ct) => (
+            <TagBadge
+              key={ct.id}
+              name={ct.tag.name}
+              color={ct.tag.color}
+              relatedCharacter={ct.related_character?.name}
+              size="sm"
+            />
+          ))}
+        </div>
+      )}
 
       {/* Invisible handles for potential future connections */}
       <Handle

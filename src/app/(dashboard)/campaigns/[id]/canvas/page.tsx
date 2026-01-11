@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Plus, FolderPlus, Sparkles } from 'lucide-react'
 import { Modal, Input, Dropdown } from '@/components/ui'
 import { CampaignCanvas } from '@/components/canvas'
-import { CharacterModal } from '@/components/character'
+import { CharacterModal, CharacterViewModal } from '@/components/character'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
@@ -43,6 +43,8 @@ export default function CampaignCanvasPage() {
   // Modals
   const [isCreateCharacterOpen, setIsCreateCharacterOpen] = useState(false)
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false)
+  const [viewingCharacterId, setViewingCharacterId] = useState<string | null>(null)
+  const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null)
   const [characterForm, setCharacterForm] = useState({
     name: '',
     type: 'npc' as 'pc' | 'npc',
@@ -179,11 +181,17 @@ export default function CampaignCanvasPage() {
 
   const handleCharacterSelect = useCallback((id: string | null) => {
     setSelectedCharacterId(id)
+    // Single click opens view modal
+    if (id) {
+      setViewingCharacterId(id)
+    }
   }, [setSelectedCharacterId])
 
   const handleCharacterDoubleClick = useCallback((id: string) => {
-    setSelectedCharacterId(id)
-  }, [setSelectedCharacterId])
+    // Double click opens edit modal directly
+    setViewingCharacterId(null)
+    setEditingCharacterId(id)
+  }, [])
 
   const handleCharacterPositionChange = useCallback(async (id: string, x: number, y: number) => {
     // Update local state
@@ -323,7 +331,25 @@ export default function CampaignCanvasPage() {
     setSelectedCharacterId(null)
   }, [setSelectedCharacterId])
 
-  const selectedCharacter = characters.find(c => c.id === selectedCharacterId)
+  const viewingCharacter = characters.find(c => c.id === viewingCharacterId)
+  const editingCharacter = characters.find(c => c.id === editingCharacterId)
+
+  const handleViewToEdit = useCallback(() => {
+    if (viewingCharacterId) {
+      setEditingCharacterId(viewingCharacterId)
+      setViewingCharacterId(null)
+    }
+  }, [viewingCharacterId])
+
+  const handleCloseViewModal = useCallback(() => {
+    setViewingCharacterId(null)
+    setSelectedCharacterId(null)
+  }, [setSelectedCharacterId])
+
+  const handleCloseEditModal = useCallback(() => {
+    setEditingCharacterId(null)
+    setSelectedCharacterId(null)
+  }, [setSelectedCharacterId])
 
   if (loading) {
     return (
@@ -382,17 +408,27 @@ export default function CampaignCanvasPage() {
         />
       </div>
 
+      {/* Character View Modal (Read-only) */}
+      {viewingCharacter && (
+        <CharacterViewModal
+          character={viewingCharacter}
+          tags={characterTags.get(viewingCharacter.id) || []}
+          onEdit={handleViewToEdit}
+          onClose={handleCloseViewModal}
+        />
+      )}
+
       {/* Character Edit Modal */}
-      {selectedCharacter && (
+      {editingCharacter && (
         <CharacterModal
-          character={selectedCharacter}
-          tags={characterTags.get(selectedCharacter.id) || []}
+          character={editingCharacter}
+          tags={characterTags.get(editingCharacter.id) || []}
           allCharacters={characters}
           campaignId={campaignId}
           isDemo={isDemo}
           onUpdate={handleCharacterUpdate}
           onDelete={handleCharacterDelete}
-          onClose={() => setSelectedCharacterId(null)}
+          onClose={handleCloseEditModal}
           onTagsChange={isDemo ? () => {} : loadCampaignData}
         />
       )}
