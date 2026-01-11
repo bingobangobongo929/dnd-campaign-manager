@@ -1,3 +1,15 @@
+/**
+ * AI Image Generation Endpoint
+ *
+ * STATUS: INACTIVE - Requires REPLICATE_API_TOKEN in .env.local
+ *
+ * To enable:
+ * 1. Sign up at https://replicate.com
+ * 2. Get your API token from account settings
+ * 3. Add REPLICATE_API_TOKEN=r8_xxxxx to .env.local
+ * 4. Set AI_IMAGE_GENERATION_ENABLED = true in character-image-upload.tsx
+ */
+
 import Replicate from 'replicate'
 import { NextResponse } from 'next/server'
 

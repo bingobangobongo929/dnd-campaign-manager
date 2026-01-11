@@ -21,6 +21,9 @@ interface CharacterImageUploadProps {
   className?: string
 }
 
+// TODO: Set to true once REPLICATE_API_TOKEN is configured in .env.local
+const AI_IMAGE_GENERATION_ENABLED = false
+
 export function CharacterImageUpload({
   characterId,
   characterName,
@@ -281,29 +284,31 @@ export function CharacterImageUpload({
           <Upload className="w-3.5 h-3.5" />
           Upload
         </button>
-        <button
-          type="button"
-          onClick={handleGenerate}
-          disabled={isLoading}
-          className={cn(
-            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-            'bg-[--arcane-gold]/10 border border-[--arcane-gold]/30 text-[--arcane-gold]',
-            'hover:bg-[--arcane-gold]/20 hover:border-[--arcane-gold]/50',
-            isLoading && 'opacity-50 cursor-not-allowed'
-          )}
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-3.5 h-3.5" />
-              Generate
-            </>
-          )}
-        </button>
+        {AI_IMAGE_GENERATION_ENABLED && (
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={isLoading}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+              'bg-[--arcane-gold]/10 border border-[--arcane-gold]/30 text-[--arcane-gold]',
+              'hover:bg-[--arcane-gold]/20 hover:border-[--arcane-gold]/50',
+              isLoading && 'opacity-50 cursor-not-allowed'
+            )}
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5" />
+                Generate
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Error message */}
