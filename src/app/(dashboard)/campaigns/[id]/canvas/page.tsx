@@ -339,7 +339,7 @@ export default function CampaignCanvasPage() {
     <AppLayout campaignId={campaignId} fullBleed transparentTopBar>
       {/* Demo Mode Banner */}
       {isDemo && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-40">
           <div className="demo-banner px-4 py-2 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-[--arcane-gold]" />
             <span className="text-sm font-medium">Demo Mode</span>
@@ -349,7 +349,7 @@ export default function CampaignCanvasPage() {
       )}
 
       {/* Canvas Toolbar */}
-      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+      <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
         <button
           className="btn btn-secondary"
           onClick={() => setIsCreateGroupOpen(true)}

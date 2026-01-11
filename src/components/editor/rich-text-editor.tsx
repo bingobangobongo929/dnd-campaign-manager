@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -25,6 +25,8 @@ import {
   CheckSquare,
   Undo,
   Redo,
+  Sparkles,
+  Loader2,
 } from 'lucide-react'
 
 interface RichTextEditorProps {
@@ -33,6 +35,8 @@ interface RichTextEditorProps {
   placeholder?: string
   className?: string
   editable?: boolean
+  enableAI?: boolean
+  aiContext?: string
 }
 
 export function RichTextEditor({
@@ -41,7 +45,55 @@ export function RichTextEditor({
   placeholder = 'Start writing...',
   className,
   editable = true,
+  enableAI = false,
+  aiContext = '',
 }: RichTextEditorProps) {
+  const [isAiLoading, setIsAiLoading] = useState(false)
+
+  const handleAiExpand = useCallback(async () => {
+    if (!content.trim() || isAiLoading) return
+
+    const confirmed = window.confirm('Expand this content into a more detailed narrative using AI?')
+    if (!confirmed) return
+
+    setIsAiLoading(true)
+
+    try {
+      const response = await fetch('/api/ai/expand', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: content,
+          context: aiContext,
+          provider: 'anthropic',
+        }),
+      })
+
+      if (!response.ok) throw new Error('AI expansion failed')
+
+      const reader = response.body?.getReader()
+      if (!reader) throw new Error('No response stream')
+
+      let expandedContent = ''
+      const decoder = new TextDecoder()
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        expandedContent += decoder.decode(value, { stream: true })
+      }
+
+      // Append the expanded content after the original
+      const newContent = `${content}\n\n---\n\n**AI Expanded:**\n\n${expandedContent}`
+      onChange(newContent)
+    } catch (error) {
+      console.error('AI expand error:', error)
+      alert('Failed to expand content. Please try again.')
+    } finally {
+      setIsAiLoading(false)
+    }
+  }, [content, aiContext, isAiLoading, onChange])
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -135,7 +187,7 @@ export function RichTextEditor({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'p-1.5 rounded hover:bg-[--bg-hover] transition-colors',
+        'h-9 w-9 flex items-center justify-center rounded hover:bg-[--bg-hover] transition-colors',
         active && 'bg-[--accent-primary]/20 text-[--accent-primary]',
         disabled && 'opacity-50 cursor-not-allowed'
       )}
@@ -147,106 +199,122 @@ export function RichTextEditor({
   return (
     <div className="border border-[--border] rounded-lg bg-[--bg-surface] overflow-hidden">
       {/* Toolbar */}
-      <div className="border-b border-[--border] px-2 py-1.5 flex items-center gap-0.5 flex-wrap bg-[--bg-hover]/50">
+      <div className="border-b border-[--border] px-2 h-11 flex items-center gap-1.5 flex-wrap bg-[--bg-hover]/50">
         <ToolbarButton
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().undo()}
         >
-          <Undo className="h-4 w-4" />
+          <Undo className="h-5 w-5" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().redo().run()}
           disabled={!editor.can().redo()}
         >
-          <Redo className="h-4 w-4" />
+          <Redo className="h-5 w-5" />
         </ToolbarButton>
 
-        <div className="w-px h-5 bg-[--border] mx-1" />
+        <div className="w-px h-6 bg-[--border] mx-1.5" />
 
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
           active={editor.isActive('heading', { level: 1 })}
         >
-          <Heading1 className="h-4 w-4" />
+          <Heading1 className="h-5 w-5" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           active={editor.isActive('heading', { level: 2 })}
         >
-          <Heading2 className="h-4 w-4" />
+          <Heading2 className="h-5 w-5" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
           active={editor.isActive('heading', { level: 3 })}
         >
-          <Heading3 className="h-4 w-4" />
+          <Heading3 className="h-5 w-5" />
         </ToolbarButton>
 
-        <div className="w-px h-5 bg-[--border] mx-1" />
+        <div className="w-px h-6 bg-[--border] mx-1.5" />
 
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
           active={editor.isActive('bold')}
         >
-          <Bold className="h-4 w-4" />
+          <Bold className="h-5 w-5" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleItalic().run()}
           active={editor.isActive('italic')}
         >
-          <Italic className="h-4 w-4" />
+          <Italic className="h-5 w-5" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleStrike().run()}
           active={editor.isActive('strike')}
         >
-          <Strikethrough className="h-4 w-4" />
+          <Strikethrough className="h-5 w-5" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleCode().run()}
           active={editor.isActive('code')}
         >
-          <Code className="h-4 w-4" />
+          <Code className="h-5 w-5" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleHighlight().run()}
           active={editor.isActive('highlight')}
         >
-          <Highlighter className="h-4 w-4" />
+          <Highlighter className="h-5 w-5" />
         </ToolbarButton>
 
-        <div className="w-px h-5 bg-[--border] mx-1" />
+        <div className="w-px h-6 bg-[--border] mx-1.5" />
 
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           active={editor.isActive('bulletList')}
         >
-          <List className="h-4 w-4" />
+          <List className="h-5 w-5" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           active={editor.isActive('orderedList')}
         >
-          <ListOrdered className="h-4 w-4" />
+          <ListOrdered className="h-5 w-5" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleTaskList().run()}
           active={editor.isActive('taskList')}
         >
-          <CheckSquare className="h-4 w-4" />
+          <CheckSquare className="h-5 w-5" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
           active={editor.isActive('blockquote')}
         >
-          <Quote className="h-4 w-4" />
+          <Quote className="h-5 w-5" />
         </ToolbarButton>
 
-        <div className="w-px h-5 bg-[--border] mx-1" />
+        <div className="w-px h-6 bg-[--border] mx-1.5" />
 
         <ToolbarButton onClick={setLink} active={editor.isActive('link')}>
-          <LinkIcon className="h-4 w-4" />
+          <LinkIcon className="h-5 w-5" />
         </ToolbarButton>
+
+        {enableAI && (
+          <>
+            <div className="w-px h-6 bg-[--border] mx-1.5" />
+            <ToolbarButton
+              onClick={handleAiExpand}
+              disabled={isAiLoading || !content.trim()}
+            >
+              {isAiLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin text-[--arcane-gold]" />
+              ) : (
+                <Sparkles className="h-5 w-5 text-[--arcane-gold]" />
+              )}
+            </ToolbarButton>
+          </>
+        )}
       </div>
 
       {/* Editor Content */}

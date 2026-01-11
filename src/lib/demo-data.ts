@@ -40,7 +40,7 @@ export const DEMO_CHARACTERS = [
     type: 'pc',
     summary: 'A noble paladin seeking to free Barovia from its dark curse. Sworn to the Oath of Devotion.',
     notes: '**Background:** Noble from Waterdeep\n**Class:** Paladin 8\n**Goals:** Destroy Strahd, protect the innocent\n**Secrets:** His family has a dark history with vampires',
-    image_url: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=200&h=200&fit=crop',
+    image_url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Theron%20Brightheart&backgroundColor=b6e3f4',
     position_x: 100,
     position_y: 100,
   },
@@ -51,7 +51,7 @@ export const DEMO_CHARACTERS = [
     type: 'pc',
     summary: 'A half-elf warlock who made a pact with an archfey to escape her tragic past.',
     notes: '**Background:** Charlatan\n**Class:** Warlock 8 (Archfey)\n**Patron:** The Prince of Frost\n**Goals:** Find her missing sister, gain more power',
-    image_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop',
+    image_url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Lyra%20Shadowmend&backgroundColor=c0aede',
     position_x: 350,
     position_y: 100,
   },
@@ -62,7 +62,7 @@ export const DEMO_CHARACTERS = [
     type: 'pc',
     summary: 'A grumpy dwarven cleric of Moradin who follows the party despite constant complaints.',
     notes: '**Background:** Acolyte\n**Class:** Cleric 8 (Forge Domain)\n**Quirks:** Complains about everything, secretly cares deeply\n**Goals:** Find a legendary forge, prove his worth to his clan',
-    image_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop',
+    image_url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Grimjaw%20Ironfoot&backgroundColor=d1d4f9',
     position_x: 600,
     position_y: 100,
   },
@@ -73,7 +73,7 @@ export const DEMO_CHARACTERS = [
     type: 'pc',
     summary: 'A tiefling rogue with a mysterious past and connections to the criminal underworld.',
     notes: '**Background:** Criminal\n**Class:** Rogue 8 (Arcane Trickster)\n**Specialties:** Lock picking, investigation, deception\n**Goals:** Steal something that cannot be stolen',
-    image_url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop',
+    image_url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Zara%20Nightwhisper&backgroundColor=ffd5dc',
     position_x: 225,
     position_y: 300,
   },
@@ -85,7 +85,7 @@ export const DEMO_CHARACTERS = [
     type: 'npc',
     summary: 'The immortal vampire lord of Barovia. Elegant, tragic, and utterly ruthless.',
     notes: '**Role:** Main Antagonist\n**Motivations:** Possess Ireena, maintain control of Barovia\n**Weaknesses:** Sunlight, holy symbols, his own tragic past\n**Personality:** Charming, manipulative, melancholic',
-    image_url: 'https://images.unsplash.com/photo-1566753323558-f4e0952af115?w=200&h=200&fit=crop',
+    image_url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Strahd%20von%20Zarovich&backgroundColor=1a1a2e',
     position_x: 475,
     position_y: 300,
   },
@@ -96,7 +96,7 @@ export const DEMO_CHARACTERS = [
     type: 'npc',
     summary: 'The adopted daughter of the late Burgomaster. She is the reincarnation of Strahd\'s lost love, Tatyana.',
     notes: '**Role:** Key NPC / Quest Giver\n**Personality:** Brave, compassionate, determined\n**Goals:** Escape Barovia, protect her brother\n**Secret:** Bears bite marks from Strahd',
-    image_url: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=200&h=200&fit=crop',
+    image_url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Ireena%20Kolyana&backgroundColor=ffdfbf',
     position_x: 100,
     position_y: 500,
   },
@@ -107,7 +107,7 @@ export const DEMO_CHARACTERS = [
     type: 'npc',
     summary: 'An ancient Vistani seer who can read the fortunes of those who enter Barovia.',
     notes: '**Role:** Oracle / Guide\n**Location:** Tser Pool Encampment\n**Abilities:** Tarokka reading, foresight\n**Secret:** Knows more about Strahd than she reveals',
-    image_url: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=200&h=200&fit=crop',
+    image_url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Madam%20Eva&backgroundColor=a3c4bc',
     position_x: 350,
     position_y: 500,
   },
@@ -118,7 +118,7 @@ export const DEMO_CHARACTERS = [
     type: 'npc',
     summary: 'A Vistani monster hunter and former protégé of the legendary Rudolph van Richten.',
     notes: '**Role:** Ally / Potential Party Member\n**Class:** Fighter/Wizard\n**Equipment:** Magic wagon, silver weapons\n**Goals:** Destroy Strahd, prove herself',
-    image_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop',
+    image_url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Ezmerelda%20dAvenir&backgroundColor=f9c74f',
     position_x: 600,
     position_y: 500,
   },
@@ -242,7 +242,7 @@ export const DEMO_VAULT_CHARACTERS = [
     type: 'npc',
     summary: 'A mysterious merchant who appears in various campaigns, always with rare and unusual goods.',
     notes: '**Appearance:** Tall, thin man with silver hair and knowing eyes\n**Personality:** Cryptic, helpful, seems to know more than he should\n**Uses:** Can appear in any setting as a source of magic items or plot hooks',
-    image_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop',
+    image_url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Marcus%20Blackwood&backgroundColor=8b5cf6',
     created_at: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
@@ -251,7 +251,7 @@ export const DEMO_VAULT_CHARACTERS = [
     type: 'npc',
     summary: 'An ancient elven sage with knowledge of forgotten lore and prophecies.',
     notes: '**Appearance:** Elderly elf with silver hair, often seen with a crow familiar\n**Specialty:** History, arcane lore, prophecy interpretation\n**Uses:** Exposition, quest hooks, mentor figure',
-    image_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&fit=crop',
+    image_url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Seraphina%20the%20Wise&backgroundColor=d4a843',
     created_at: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
@@ -265,13 +265,19 @@ export const DEMO_VAULT_CHARACTERS = [
   },
 ]
 
-// Character images for canvas nodes (using reliable placeholder images)
+// Generate a DiceBear avatar URL for a character name
+export function generateAvatarUrl(name: string): string {
+  const seed = encodeURIComponent(name)
+  return `https://api.dicebear.com/7.x/adventurer/svg?seed=${seed}`
+}
+
+// Character images for canvas nodes (using DiceBear for fantasy feel)
 export const CHARACTER_PLACEHOLDER_IMAGES = {
-  warrior: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=200&h=200&fit=crop',
-  mage: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop',
-  rogue: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop',
-  cleric: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop',
-  default: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop',
+  warrior: 'https://api.dicebear.com/7.x/adventurer/svg?seed=warrior&backgroundColor=b6e3f4',
+  mage: 'https://api.dicebear.com/7.x/adventurer/svg?seed=mage&backgroundColor=c0aede',
+  rogue: 'https://api.dicebear.com/7.x/adventurer/svg?seed=rogue&backgroundColor=1a1a2e',
+  cleric: 'https://api.dicebear.com/7.x/adventurer/svg?seed=cleric&backgroundColor=d1d4f9',
+  default: 'https://api.dicebear.com/7.x/adventurer/svg?seed=adventurer&backgroundColor=ffd5dc',
 }
 
 // Helper function to check if we should show demo data

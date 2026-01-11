@@ -26,7 +26,7 @@ function CharacterNodeComponent({ data, selected }: { data: CharacterNodeData; s
           ? 'border-[--accent-primary] shadow-glow'
           : 'border-[--border]'
       )}
-      style={{ width: 200 }}
+      style={{ minWidth: 200, maxWidth: 350, width: 'auto' }}
       onClick={() => onSelect(character.id)}
       onDoubleClick={() => onDoubleClick(character.id)}
     >
@@ -40,7 +40,7 @@ function CharacterNodeComponent({ data, selected }: { data: CharacterNodeData; s
             className="flex-shrink-0"
           />
           <div className="min-w-0">
-            <h3 className="font-semibold text-[--text-primary] truncate">
+            <h3 className="font-semibold text-[--text-primary]">
               {character.name}
             </h3>
             <span className={cn(
@@ -56,7 +56,7 @@ function CharacterNodeComponent({ data, selected }: { data: CharacterNodeData; s
 
         {/* Summary */}
         {character.summary && (
-          <p className="mt-2 text-xs text-[--text-secondary] line-clamp-2">
+          <p className="mt-2 text-xs text-[--text-secondary]">
             {character.summary}
           </p>
         )}
@@ -64,7 +64,7 @@ function CharacterNodeComponent({ data, selected }: { data: CharacterNodeData; s
         {/* Tags */}
         {tags.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
-            {tags.slice(0, 3).map((ct) => (
+            {tags.map((ct) => (
               <TagBadge
                 key={ct.id}
                 name={ct.tag.name}
@@ -72,11 +72,6 @@ function CharacterNodeComponent({ data, selected }: { data: CharacterNodeData; s
                 relatedCharacter={ct.related_character?.name}
               />
             ))}
-            {tags.length > 3 && (
-              <span className="text-xs text-[--text-tertiary] px-1">
-                +{tags.length - 3} more
-              </span>
-            )}
           </div>
         )}
       </div>

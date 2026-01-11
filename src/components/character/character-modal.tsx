@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { X, Trash2, ImagePlus, Plus, User, Users } from 'lucide-react'
-import { Input, Dropdown, Modal } from '@/components/ui'
-import { Avatar, TagBadge } from '@/components/ui'
+import { X, Trash2, Plus, User, Users, Maximize2, Minimize2, Sparkles } from 'lucide-react'
+import { Input, Dropdown, Modal, ImageUpload } from '@/components/ui'
+import { TagBadge } from '@/components/ui'
 import { RichTextEditor } from '@/components/editor/rich-text-editor'
 import { useSupabase } from '@/hooks'
 import { useAutoSave } from '@/hooks'
@@ -39,6 +39,7 @@ export function CharacterModal({
     summary: character.summary || '',
     notes: character.notes || '',
     type: character.type,
+    image_url: character.image_url || null,
   })
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
   const [isAddTagOpen, setIsAddTagOpen] = useState(false)
@@ -50,6 +51,7 @@ export function CharacterModal({
   })
   const [savingTag, setSavingTag] = useState(false)
   const [isCreatingNewTag, setIsCreatingNewTag] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   // Update form when character changes
   useEffect(() => {
@@ -58,6 +60,7 @@ export function CharacterModal({
       summary: character.summary || '',
       notes: character.notes || '',
       type: character.type,
+      image_url: character.image_url || null,
     })
   }, [character.id])
 
@@ -67,6 +70,28 @@ export function CharacterModal({
       loadAvailableTags()
     }
   }, [campaignId, isDemo])
+
+  // Keyboard shortcuts for fullscreen toggle and close
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + Shift + F to toggle fullscreen
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'f') {
+        e.preventDefault()
+        setIsFullscreen(prev => !prev)
+      }
+      // ESC: exit fullscreen first, then close modal
+      if (e.key === 'Escape') {
+        if (isFullscreen) {
+          e.preventDefault()
+          setIsFullscreen(false)
+        }
+        // If not fullscreen, the backdrop click handler or default behavior will close
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isFullscreen])
 
   const loadAvailableTags = async () => {
     const { data } = await supabase
@@ -89,6 +114,7 @@ export function CharacterModal({
         summary: formData.summary || null,
         notes: formData.notes || null,
         type: formData.type,
+        image_url: formData.image_url || null,
       })
       .eq('id', character.id)
       .select()
@@ -196,12 +222,24 @@ export function CharacterModal({
   const otherCharacters = allCharacters.filter(c => c.id !== character.id)
   const unusedTags = availableTags.filter(t => !tags.some(ct => ct.tag_id === t.id))
 
+  // Handle backdrop click - don't close if in fullscreen
+  const handleBackdropClick = useCallback(() => {
+    if (isFullscreen) {
+      setIsFullscreen(false)
+    } else {
+      onClose()
+    }
+  }, [isFullscreen, onClose])
+
   return (
     <>
       {/* Main Character Modal */}
-      <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-backdrop" onClick={handleBackdropClick}>
         <div
-          className="character-modal"
+          className={cn(
+            'character-modal',
+            isFullscreen && 'character-modal-fullscreen'
+          )}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -216,7 +254,7 @@ export function CharacterModal({
                 {character.type === 'pc' ? <User className="w-5 h-5" /> : <Users className="w-5 h-5" />}
               </div>
               <div>
-                <h2 className="modal-title">Edit Character</h2>
+                <h2 className="modal-title">{formData.name || 'Edit Character'}</h2>
                 <p className="text-xs text-[--text-tertiary]">
                   {isDemo ? 'Demo mode - changes not saved' : (
                     status === 'saving' ? 'Saving...' : status === 'saved' ? 'All changes saved' : ''
@@ -224,43 +262,48 @@ export function CharacterModal({
                 </p>
               </div>
             </div>
-            <button className="btn-ghost btn-icon w-9 h-9" onClick={onClose}>
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                className="btn-ghost btn-icon w-9 h-9"
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                title={isFullscreen ? 'Exit fullscreen (Esc)' : 'Fullscreen (Ctrl+Shift+F)'}
+              >
+                {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+              </button>
+              <button className="btn-ghost btn-icon w-9 h-9" onClick={onClose}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Content */}
-          <div className="character-modal-body">
-            {/* Top Section: Avatar + Basic Info */}
-            <div className="character-modal-top">
-              {/* Avatar */}
-              <div className="relative group flex-shrink-0">
-                <Avatar
-                  src={character.image_url}
-                  name={formData.name}
-                  size="xl"
-                  className="w-24 h-24"
-                />
-                <button
-                  className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => {/* TODO: Image upload */}}
-                >
-                  <ImagePlus className="w-6 h-6 text-white" />
-                </button>
-              </div>
-
-              {/* Name & Type */}
-              <div className="flex-1 space-y-4">
-                <div className="form-group">
-                  <label className="form-label">Character Name</label>
-                  <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Enter character name"
-                    className="form-input text-lg font-semibold"
+          <div className={cn(
+            'character-modal-body',
+            isFullscreen && 'character-modal-body-fullscreen'
+          )}>
+            {isFullscreen ? (
+              /* Fullscreen 3-column layout */
+              <>
+                {/* Left Column: Character Info */}
+                <div className="character-modal-left">
+                  <ImageUpload
+                    value={formData.image_url}
+                    onChange={(url) => setFormData({ ...formData, image_url: url })}
+                    name={formData.name}
+                    size="xl"
+                    disabled={isDemo}
                   />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+
+                  <div className="form-group">
+                    <label className="form-label">Character Name</label>
+                    <Input
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Enter character name"
+                      className="form-input"
+                    />
+                  </div>
+
                   <div className="form-group">
                     <label className="form-label">Type</label>
                     <Dropdown
@@ -272,8 +315,20 @@ export function CharacterModal({
                       onChange={(value) => setFormData({ ...formData, type: value as 'pc' | 'npc' })}
                     />
                   </div>
+
                   <div className="form-group">
                     <label className="form-label">Tags</label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {tags.map((ct) => (
+                        <TagBadge
+                          key={ct.id}
+                          name={ct.tag.name}
+                          color={ct.tag.color}
+                          relatedCharacter={ct.related_character?.name}
+                          onRemove={() => handleRemoveTag(ct.id)}
+                        />
+                      ))}
+                    </div>
                     <button
                       className="btn btn-secondary w-full justify-start"
                       onClick={() => setIsAddTagOpen(true)}
@@ -283,48 +338,179 @@ export function CharacterModal({
                     </button>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Tags Display */}
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 pb-4 border-b border-[--border]">
-                {tags.map((ct) => (
-                  <TagBadge
-                    key={ct.id}
-                    name={ct.tag.name}
-                    color={ct.tag.color}
-                    relatedCharacter={ct.related_character?.name}
-                    onRemove={() => handleRemoveTag(ct.id)}
+                {/* Center Column: Main Content */}
+                <div className="character-modal-center">
+                  <div className="form-group">
+                    <label className="form-label">Summary</label>
+                    <textarea
+                      value={formData.summary}
+                      onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+                      placeholder="Brief description of this character..."
+                      rows={3}
+                      className="form-textarea"
+                    />
+                  </div>
+
+                  <div className="form-group flex-1 flex flex-col min-h-0">
+                    <label className="form-label">Notes</label>
+                    <div className="flex-1">
+                      <RichTextEditor
+                        content={formData.notes}
+                        onChange={(content) => setFormData({ ...formData, notes: content })}
+                        placeholder="Add detailed notes about this character..."
+                        className="h-full"
+                        enableAI={!isDemo}
+                        aiContext={`Character: ${formData.name}, Type: ${formData.type}, Summary: ${formData.summary}`}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: AI & Relationships */}
+                <div className="character-modal-right">
+                  <div className="form-group">
+                    <label className="form-label flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-[--arcane-gold]" />
+                      AI Assistant
+                    </label>
+                    <div className="space-y-2">
+                      <button className="btn btn-secondary w-full justify-start text-sm" disabled={isDemo}>
+                        <Sparkles className="w-4 h-4" />
+                        Generate Portrait
+                      </button>
+                      <button className="btn btn-secondary w-full justify-start text-sm" disabled={isDemo}>
+                        <Sparkles className="w-4 h-4" />
+                        Expand Backstory
+                      </button>
+                      <button className="btn btn-secondary w-full justify-start text-sm" disabled={isDemo}>
+                        <Sparkles className="w-4 h-4" />
+                        Suggest Plot Hooks
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Relationships</label>
+                    <div className="space-y-2">
+                      {tags.filter(t => t.related_character).map((ct) => (
+                        <div
+                          key={ct.id}
+                          className="flex items-center gap-2 p-2 rounded-lg bg-[--bg-hover]"
+                        >
+                          <div
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: ct.tag.color }}
+                          />
+                          <span className="text-sm text-[--text-secondary]">
+                            {ct.tag.name} of
+                          </span>
+                          <span className="text-sm font-medium text-[--text-primary]">
+                            {ct.related_character?.name}
+                          </span>
+                        </div>
+                      ))}
+                      {tags.filter(t => t.related_character).length === 0 && (
+                        <p className="text-sm text-[--text-tertiary]">
+                          No relationships yet. Add tags with related characters.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Standard layout */
+              <>
+                {/* Top Section: Avatar + Basic Info */}
+                <div className="character-modal-top">
+                  <ImageUpload
+                    value={formData.image_url}
+                    onChange={(url) => setFormData({ ...formData, image_url: url })}
+                    name={formData.name}
+                    size="xl"
+                    disabled={isDemo}
                   />
-                ))}
-              </div>
+
+                  <div className="flex-1 space-y-4">
+                    <div className="form-group">
+                      <label className="form-label">Character Name</label>
+                      <Input
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="Enter character name"
+                        className="form-input text-lg font-semibold"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="form-group">
+                        <label className="form-label">Type</label>
+                        <Dropdown
+                          options={[
+                            { value: 'pc', label: 'Player Character (PC)' },
+                            { value: 'npc', label: 'Non-Player Character' },
+                          ]}
+                          value={formData.type}
+                          onChange={(value) => setFormData({ ...formData, type: value as 'pc' | 'npc' })}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Tags</label>
+                        <button
+                          className="btn btn-secondary w-full justify-start"
+                          onClick={() => setIsAddTagOpen(true)}
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Tag
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tags Display */}
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 pb-4 border-b border-[--border]">
+                    {tags.map((ct) => (
+                      <TagBadge
+                        key={ct.id}
+                        name={ct.tag.name}
+                        color={ct.tag.color}
+                        relatedCharacter={ct.related_character?.name}
+                        onRemove={() => handleRemoveTag(ct.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Summary */}
+                <div className="form-group">
+                  <label className="form-label">Summary</label>
+                  <textarea
+                    value={formData.summary}
+                    onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+                    placeholder="Brief description of this character - their role, personality, or key traits..."
+                    rows={2}
+                    className="form-textarea"
+                  />
+                </div>
+
+                {/* Notes - Rich Text Editor */}
+                <div className="form-group flex-1 flex flex-col min-h-0">
+                  <label className="form-label">Notes</label>
+                  <div className="flex-1 min-h-[300px]">
+                    <RichTextEditor
+                      content={formData.notes}
+                      onChange={(content) => setFormData({ ...formData, notes: content })}
+                      placeholder="Add detailed notes about this character - backstory, secrets, motivations, relationships..."
+                      className="h-full"
+                      enableAI={!isDemo}
+                      aiContext={`Character: ${formData.name}, Type: ${formData.type}, Summary: ${formData.summary}`}
+                    />
+                  </div>
+                </div>
+              </>
             )}
-
-            {/* Summary */}
-            <div className="form-group">
-              <label className="form-label">Summary</label>
-              <textarea
-                value={formData.summary}
-                onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                placeholder="Brief description of this character - their role, personality, or key traits..."
-                rows={2}
-                className="form-textarea"
-              />
-            </div>
-
-            {/* Notes - Rich Text Editor */}
-            <div className="form-group flex-1 flex flex-col min-h-0">
-              <label className="form-label">Notes</label>
-              <div className="flex-1 min-h-[300px]">
-                <RichTextEditor
-                  content={formData.notes}
-                  onChange={(content) => setFormData({ ...formData, notes: content })}
-                  placeholder="Add detailed notes about this character - backstory, secrets, motivations, relationships..."
-                  className="h-full"
-                />
-              </div>
-            </div>
           </div>
 
           {/* Footer */}

@@ -729,6 +729,69 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 0 0 24px 24px;
 }
 
+/* ─── Fullscreen Modal ─── */
+.character-modal-fullscreen {
+  max-width: 100vw;
+  max-height: 100vh;
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+}
+
+.character-modal-fullscreen .character-modal-header {
+  border-radius: 0;
+}
+
+.character-modal-fullscreen .character-modal-footer {
+  border-radius: 0;
+}
+
+.character-modal-body-fullscreen {
+  display: flex;
+  flex-direction: row;
+  gap: 24px;
+  padding: 24px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.character-modal-left {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  padding-right: 16px;
+  border-right: 1px solid var(--border);
+}
+
+.character-modal-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.character-modal-center .form-group:last-child {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.character-modal-right {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow-y: auto;
+  padding-left: 16px;
+  border-left: 1px solid var(--border);
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    CANVAS SNAP LINES
    ═══════════════════════════════════════════════════════════════════════════ */
