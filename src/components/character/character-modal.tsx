@@ -15,7 +15,6 @@ interface CharacterModalProps {
   tags: (CharacterTag & { tag: Tag; related_character?: Character | null })[]
   allCharacters: Character[]
   campaignId: string
-  isDemo?: boolean
   onUpdate: (character: Character) => void
   onDelete: (id: string) => void
   onClose: () => void
@@ -27,7 +26,6 @@ export function CharacterModal({
   tags,
   allCharacters,
   campaignId,
-  isDemo = false,
   onUpdate,
   onDelete,
   onClose,
@@ -66,10 +64,8 @@ export function CharacterModal({
 
   // Load available tags for campaign
   useEffect(() => {
-    if (!isDemo) {
-      loadAvailableTags()
-    }
-  }, [campaignId, isDemo])
+    loadAvailableTags()
+  }, [campaignId])
 
   // Keyboard shortcuts for fullscreen toggle and close
   useEffect(() => {
@@ -105,8 +101,6 @@ export function CharacterModal({
 
   // Auto-save functionality
   const saveCharacter = useCallback(async () => {
-    if (isDemo) return
-
     const { data } = await supabase
       .from('characters')
       .update({
@@ -123,7 +117,7 @@ export function CharacterModal({
     if (data) {
       onUpdate(data)
     }
-  }, [formData, character.id, supabase, onUpdate, isDemo])
+  }, [formData, character.id, supabase, onUpdate])
 
   const { status } = useAutoSave({
     data: formData,
@@ -132,11 +126,6 @@ export function CharacterModal({
   })
 
   const handleDelete = async () => {
-    if (isDemo) {
-      alert('Create your own campaign to delete characters!')
-      return
-    }
-
     await supabase
       .from('characters')
       .delete()
@@ -147,11 +136,6 @@ export function CharacterModal({
   }
 
   const handleAddExistingTag = async (tagId: string) => {
-    if (isDemo) {
-      alert('Create your own campaign to manage tags!')
-      return
-    }
-
     setSavingTag(true)
     await supabase
       .from('character_tags')
@@ -169,10 +153,6 @@ export function CharacterModal({
 
   const handleCreateAndAddTag = async () => {
     if (!newTagForm.name.trim()) return
-    if (isDemo) {
-      alert('Create your own campaign to manage tags!')
-      return
-    }
 
     setSavingTag(true)
 
@@ -206,11 +186,6 @@ export function CharacterModal({
   }
 
   const handleRemoveTag = async (characterTagId: string) => {
-    if (isDemo) {
-      alert('Create your own campaign to manage tags!')
-      return
-    }
-
     await supabase
       .from('character_tags')
       .delete()
@@ -256,9 +231,7 @@ export function CharacterModal({
               <div>
                 <h2 className="modal-title">{formData.name || 'Edit Character'}</h2>
                 <p className="text-xs text-[--text-tertiary]">
-                  {isDemo ? 'Demo mode - changes not saved' : (
-                    status === 'saving' ? 'Saving...' : status === 'saved' ? 'All changes saved' : ''
-                  )}
+                  {status === 'saving' ? 'Saving...' : status === 'saved' ? 'All changes saved' : ''}
                 </p>
               </div>
             </div>
@@ -291,7 +264,6 @@ export function CharacterModal({
                     onChange={(url) => setFormData({ ...formData, image_url: url })}
                     name={formData.name}
                     size="xl"
-                    disabled={isDemo}
                   />
 
                   <div className="form-group">
@@ -360,7 +332,7 @@ export function CharacterModal({
                         onChange={(content) => setFormData({ ...formData, notes: content })}
                         placeholder="Add detailed notes about this character..."
                         className="h-full"
-                        enableAI={!isDemo}
+                        enableAI
                         aiContext={`Character: ${formData.name}, Type: ${formData.type}, Summary: ${formData.summary}`}
                       />
                     </div>
@@ -375,15 +347,15 @@ export function CharacterModal({
                       AI Assistant
                     </label>
                     <div className="space-y-2">
-                      <button className="btn btn-secondary w-full justify-start text-sm" disabled={isDemo}>
+                      <button className="btn btn-secondary w-full justify-start text-sm">
                         <Sparkles className="w-4 h-4" />
                         Generate Portrait
                       </button>
-                      <button className="btn btn-secondary w-full justify-start text-sm" disabled={isDemo}>
+                      <button className="btn btn-secondary w-full justify-start text-sm">
                         <Sparkles className="w-4 h-4" />
                         Expand Backstory
                       </button>
-                      <button className="btn btn-secondary w-full justify-start text-sm" disabled={isDemo}>
+                      <button className="btn btn-secondary w-full justify-start text-sm">
                         <Sparkles className="w-4 h-4" />
                         Suggest Plot Hooks
                       </button>
@@ -429,7 +401,6 @@ export function CharacterModal({
                     onChange={(url) => setFormData({ ...formData, image_url: url })}
                     name={formData.name}
                     size="xl"
-                    disabled={isDemo}
                   />
 
                   <div className="flex-1 space-y-4">
@@ -504,7 +475,7 @@ export function CharacterModal({
                       onChange={(content) => setFormData({ ...formData, notes: content })}
                       placeholder="Add detailed notes about this character - backstory, secrets, motivations, relationships..."
                       className="h-full"
-                      enableAI={!isDemo}
+                      enableAI
                       aiContext={`Character: ${formData.name}, Type: ${formData.type}, Summary: ${formData.summary}`}
                     />
                   </div>

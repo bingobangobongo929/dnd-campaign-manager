@@ -21,24 +21,56 @@ config({ path: resolve(process.cwd(), '.env.local') })
 import { createClient } from '@supabase/supabase-js'
 
 // ============ CONFIGURATION ============
-// Set your user ID here after signing up
-const USER_ID = 'YOUR_USER_ID_HERE'
+// Your email address (used to find your user ID)
+const USER_EMAIL = 'chelina@barlow.com'
 
 // Your Supabase credentials (loaded from .env.local)
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+// Use service role key if available (can query auth.users)
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 // =======================================
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+// Use service role if available, otherwise anon
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY)
 
 async function seed() {
-  if (USER_ID === 'YOUR_USER_ID_HERE') {
-    console.error('❌ Please set your USER_ID in the script first!')
-    console.log('\nTo find your user ID:')
-    console.log('1. Sign up/login on your site')
-    console.log('2. Open browser dev tools (F12)')
-    console.log('3. Go to Console and run:')
-    console.log('   JSON.parse(localStorage.getItem(Object.keys(localStorage).find(k => k.includes("auth-token")))).user.id')
+  console.log('🔍 Looking up user by email:', USER_EMAIL)
+
+  // Try to get user ID - first check if there's an existing campaign by this user
+  // (workaround since anon key can't query auth.users)
+  let userId: string | null = null
+
+  // Method 1: Check if service key available and query auth.users
+  if (SUPABASE_SERVICE_KEY) {
+    const { data: authData } = await supabase.auth.admin.listUsers()
+    const user = authData?.users?.find(u => u.email === USER_EMAIL)
+    if (user) {
+      userId = user.id
+      console.log('   ✓ Found user via auth.users:', userId)
+    }
+  }
+
+  // Method 2: Look for existing campaigns by this user (if they've created any)
+  if (!userId) {
+    const { data: existingCampaigns } = await supabase
+      .from('campaigns')
+      .select('user_id')
+      .limit(1)
+
+    if (existingCampaigns && existingCampaigns.length > 0) {
+      userId = existingCampaigns[0].user_id
+      console.log('   ✓ Found user via existing campaign:', userId)
+    }
+  }
+
+  if (!userId) {
+    console.error('❌ Could not find user ID automatically.')
+    console.log('\nPlease get your user ID manually:')
+    console.log('1. Login at your site')
+    console.log('2. Open browser dev tools (F12) > Console')
+    console.log('3. Run: JSON.parse(localStorage.getItem(Object.keys(localStorage).find(k => k.includes("auth-token")))).user.id')
+    console.log('4. Replace USER_EMAIL in this script with: const USER_ID = "your-uuid-here"')
     process.exit(1)
   }
 
@@ -49,7 +81,7 @@ async function seed() {
   const { data: campaign, error: campaignError } = await supabase
     .from('campaigns')
     .insert({
-      user_id: USER_ID,
+      user_id: userId,
       name: 'Curse of Strahd',
       game_system: 'D&D 5e',
       description: 'A gothic horror adventure in the mist-shrouded realm of Barovia, where the vampire lord Strahd von Zarovich holds dominion over the land.',

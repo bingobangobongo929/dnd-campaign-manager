@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Gamepad2, Sparkles, X } from 'lucide-react'
+import { Plus, Gamepad2 } from 'lucide-react'
 import { Modal, Input, Textarea, Dropdown } from '@/components/ui'
 import { CampaignCard } from '@/components/ui/campaign-card'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
-import { DEMO_CAMPAIGNS } from '@/lib/demo-data'
 import type { Campaign } from '@/types/database'
 
 const GAME_SYSTEMS = [
@@ -26,7 +25,6 @@ export default function CampaignsPage() {
   const { user, loading: userLoading } = useUser()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
-  const [showDemo, setShowDemo] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null)
   const [formData, setFormData] = useState({
@@ -51,10 +49,6 @@ export default function CampaignsPage() {
 
     if (data) {
       setCampaigns(data)
-      // Show demo if no campaigns
-      if (data.length === 0) {
-        setShowDemo(true)
-      }
     }
     setLoading(false)
   }
@@ -76,7 +70,6 @@ export default function CampaignsPage() {
 
     if (data) {
       setCampaigns([data, ...campaigns])
-      setShowDemo(false)
       setIsCreateModalOpen(false)
       setFormData({ name: '', game_system: 'D&D 5e', description: '' })
       router.push(`/campaigns/${data.id}/canvas`)
@@ -126,10 +119,6 @@ export default function CampaignsPage() {
     setEditingCampaign(campaign)
   }
 
-  // Display campaigns - real or demo
-  const displayCampaigns = campaigns.length > 0 ? campaigns : (showDemo ? DEMO_CAMPAIGNS as unknown as Campaign[] : [])
-  const isShowingDemo = campaigns.length === 0 && showDemo
-
   if (userLoading || loading) {
     return (
       <AppLayout>
@@ -142,43 +131,13 @@ export default function CampaignsPage() {
 
   return (
     <AppLayout>
-      {/* Demo Mode Banner */}
-      {isShowingDemo && (
-        <div className="demo-banner mb-6 animate-slide-in-up">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[--arcane-purple] to-[--arcane-gold] flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-[--text-primary]">Preview Mode</h3>
-              <p className="text-sm text-[--text-secondary]">
-                Exploring with demo data. Create a campaign to get started!
-              </p>
-            </div>
-            <button
-              className="btn btn-primary"
-              onClick={() => setIsCreateModalOpen(true)}
-            >
-              <Plus className="w-4 h-4" />
-              Create Campaign
-            </button>
-            <button
-              className="btn-ghost btn-icon w-9 h-9"
-              onClick={() => setShowDemo(false)}
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Page Header */}
       <div className="page-header">
         <h1 className="page-title">Your Campaigns</h1>
         <p className="page-subtitle">Manage your tabletop adventures</p>
       </div>
 
-      {displayCampaigns.length === 0 ? (
+      {campaigns.length === 0 ? (
         /* Empty State */
         <div className="empty-state">
           <Gamepad2 className="empty-state-icon" />
@@ -186,48 +145,24 @@ export default function CampaignsPage() {
           <p className="empty-state-description">
             Create your first campaign to start organizing your world, characters, and stories.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              className="btn btn-primary"
-              onClick={() => setIsCreateModalOpen(true)}
-            >
-              <Plus className="w-5 h-5" />
-              Create Your First Campaign
-            </button>
-            <button
-              className="btn btn-secondary"
-              onClick={() => setShowDemo(true)}
-            >
-              <Sparkles className="w-5 h-5" />
-              Explore Demo
-            </button>
-          </div>
+          <button
+            className="btn btn-primary"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            <Plus className="w-5 h-5" />
+            Create Your First Campaign
+          </button>
         </div>
       ) : (
         /* Campaign Grid */
         <div className="campaign-grid">
-          {displayCampaigns.map((campaign, index) => (
+          {campaigns.map((campaign, index) => (
             <CampaignCard
               key={campaign.id}
               campaign={campaign}
-              onClick={() => {
-                if (isShowingDemo) {
-                  // Navigate to demo campaign view
-                  router.push(`/campaigns/${campaign.id}/canvas?demo=true`)
-                } else {
-                  router.push(`/campaigns/${campaign.id}/canvas`)
-                }
-              }}
-              onEdit={() => {
-                if (!isShowingDemo) {
-                  openEditModal(campaign)
-                }
-              }}
-              onDelete={() => {
-                if (!isShowingDemo) {
-                  handleDelete(campaign.id)
-                }
-              }}
+              onClick={() => router.push(`/campaigns/${campaign.id}/canvas`)}
+              onEdit={() => openEditModal(campaign)}
+              onDelete={() => handleDelete(campaign.id)}
               animationDelay={index * 50}
             />
           ))}
@@ -235,7 +170,7 @@ export default function CampaignsPage() {
       )}
 
       {/* Floating Action Button */}
-      {(campaigns.length > 0 || isShowingDemo) && !isShowingDemo && (
+      {campaigns.length > 0 && (
         <button
           className="fab"
           onClick={() => setIsCreateModalOpen(true)}

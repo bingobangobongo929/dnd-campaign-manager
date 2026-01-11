@@ -1,21 +1,14 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
-import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { Plus, FolderPlus, Sparkles } from 'lucide-react'
+import { useEffect, useState, useCallback } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { Plus, FolderPlus } from 'lucide-react'
 import { Modal, Input, Dropdown } from '@/components/ui'
 import { CampaignCanvas } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
-import {
-  DEMO_CAMPAIGNS,
-  DEMO_CHARACTERS,
-  DEMO_TAGS,
-  DEMO_CHARACTER_TAGS,
-  getDemoTagsForCharacter,
-} from '@/lib/demo-data'
 import type { Campaign, Character, Tag, CharacterTag, CanvasGroup } from '@/types/database'
 
 const CHARACTER_TYPES = [
@@ -23,49 +16,14 @@ const CHARACTER_TYPES = [
   { value: 'npc', label: 'Non-Player Character (NPC)' },
 ]
 
-// localStorage key for demo mode persistence
-const DEMO_CANVAS_STORAGE_KEY = 'dnd-demo-canvas-state'
-
-interface DemoCanvasState {
-  characters: Record<string, { x: number; y: number; width?: number; height?: number }>
-  groups: Record<string, { x: number; y: number; width?: number; height?: number }>
-}
-
-function loadDemoCanvasState(campaignId: string): DemoCanvasState | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const stored = localStorage.getItem(`${DEMO_CANVAS_STORAGE_KEY}-${campaignId}`)
-    if (stored) {
-      const parsed = JSON.parse(stored)
-      console.log('[Demo] Loaded canvas state from localStorage:', parsed)
-      return parsed
-    }
-  } catch (e) {
-    console.warn('Failed to load demo canvas state:', e)
-  }
-  return null
-}
-
-function saveDemoCanvasState(campaignId: string, state: DemoCanvasState) {
-  if (typeof window === 'undefined') return
-  try {
-    localStorage.setItem(`${DEMO_CANVAS_STORAGE_KEY}-${campaignId}`, JSON.stringify(state))
-    console.log('[Demo] Saved canvas state to localStorage:', state)
-  } catch (e) {
-    console.warn('Failed to save demo canvas state:', e)
-  }
-}
-
 export default function CampaignCanvasPage() {
   const params = useParams()
   const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = useSupabase()
   const { user } = useUser()
   const { selectedCharacterId, setSelectedCharacterId } = useAppStore()
 
   const campaignId = params.id as string
-  const isDemo = searchParams.get('demo') === 'true' || campaignId.startsWith('demo-')
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [characters, setCharacters] = useState<Character[]>([])
@@ -85,104 +43,12 @@ export default function CampaignCanvasPage() {
   const [groupForm, setGroupForm] = useState({ name: '' })
   const [saving, setSaving] = useState(false)
 
-  // Track demo canvas state for persistence - use state for initial sizes so React re-renders properly
-  const demoStateRef = useRef<DemoCanvasState>({ characters: {}, groups: {} })
-  const [initialCharacterSizes, setInitialCharacterSizes] = useState<Record<string, { width?: number; height?: number }> | undefined>(undefined)
-
   // Load campaign data
   useEffect(() => {
-    if (isDemo) {
-      loadDemoData()
-    } else if (user && campaignId) {
+    if (user && campaignId) {
       loadCampaignData()
     }
-  }, [user, campaignId, isDemo])
-
-  const loadDemoData = () => {
-    setLoading(true)
-
-    // Find demo campaign
-    const demoCampaign = DEMO_CAMPAIGNS.find(c => c.id === campaignId)
-    if (!demoCampaign) {
-      router.push('/campaigns')
-      return
-    }
-    setCampaign(demoCampaign as unknown as Campaign)
-
-    // Load saved state from localStorage
-    const savedState = loadDemoCanvasState(campaignId)
-    if (savedState) {
-      demoStateRef.current = savedState
-      // Set initial sizes as state so CampaignCanvas gets them on render
-      setInitialCharacterSizes(savedState.characters)
-    }
-
-    // Load demo characters for this campaign, applying saved positions
-    const demoChars = DEMO_CHARACTERS.filter(c => c.campaign_id === campaignId).map(char => {
-      const saved = savedState?.characters[char.id]
-      return {
-        ...char,
-        position_x: saved?.x ?? char.position_x,
-        position_y: saved?.y ?? char.position_y,
-        // Note: width/height stored in demoStateRef for canvas use
-      }
-    }) as unknown as Character[]
-    setCharacters(demoChars)
-
-    // Build character tags map from demo data
-    type TagWithRelations = CharacterTag & { tag: Tag; related_character?: Character | null }
-    const tagMap = new Map<string, TagWithRelations[]>()
-    for (const char of demoChars) {
-      const tags = getDemoTagsForCharacter(char.id) as unknown as TagWithRelations[]
-      if (tags.length > 0) {
-        tagMap.set(char.id, tags)
-      }
-    }
-    setCharacterTags(tagMap)
-
-    // Demo groups with saved positions
-    const defaultGroups = [
-      {
-        id: 'group-1',
-        campaign_id: campaignId,
-        name: 'The Party',
-        position_x: 50,
-        position_y: 50,
-        width: 700,
-        height: 250,
-        color: '#8B5CF6',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      {
-        id: 'group-2',
-        campaign_id: campaignId,
-        name: 'Key NPCs',
-        position_x: 50,
-        position_y: 400,
-        width: 700,
-        height: 250,
-        color: '#D4A843',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-    ]
-
-    // Apply saved group positions
-    const groupsWithSavedPositions = defaultGroups.map(group => {
-      const saved = savedState?.groups[group.id]
-      return {
-        ...group,
-        position_x: saved?.x ?? group.position_x,
-        position_y: saved?.y ?? group.position_y,
-        width: saved?.width ?? group.width,
-        height: saved?.height ?? group.height,
-      }
-    })
-
-    setGroups(groupsWithSavedPositions)
-    setLoading(false)
-  }
+  }, [user, campaignId])
 
   const loadCampaignData = async () => {
     setLoading(true)
@@ -265,85 +131,52 @@ export default function CampaignCanvasPage() {
       c.id === id ? { ...c, position_x: x, position_y: y } : c
     ))
 
-    // Persist to localStorage for demo mode, database for real mode
-    if (isDemo) {
-      const current = demoStateRef.current.characters[id] || {}
-      demoStateRef.current.characters[id] = { ...current, x, y }
-      saveDemoCanvasState(campaignId, demoStateRef.current)
-    } else {
-      await supabase
-        .from('characters')
-        .update({ position_x: x, position_y: y })
-        .eq('id', id)
-    }
-  }, [supabase, isDemo, campaignId])
+    // Persist to database
+    await supabase
+      .from('characters')
+      .update({ position_x: x, position_y: y })
+      .eq('id', id)
+  }, [supabase])
 
-  // Handle character resize - save to localStorage for demo mode
+  // Handle character resize
   const handleCharacterSizeChange = useCallback(async (id: string, width: number, height: number) => {
     console.log(`Character ${id} resized to ${width}x${height}`)
-
-    if (isDemo) {
-      const current = demoStateRef.current.characters[id] || {}
-      demoStateRef.current.characters[id] = { ...current, width, height }
-      saveDemoCanvasState(campaignId, demoStateRef.current)
-    }
-    // TODO: Persist to database when canvas_width/canvas_height columns are added for real mode
-  }, [isDemo, campaignId])
+    // TODO: Persist to database when canvas_width/canvas_height columns are added
+  }, [])
 
   const handleGroupUpdate = useCallback(async (id: string, updates: Partial<CanvasGroup>) => {
     setGroups(prev => prev.map(g =>
       g.id === id ? { ...g, ...updates } : g
     ))
 
-    if (isDemo) {
-      const current = demoStateRef.current.groups[id] || {}
-      if (updates.width !== undefined) current.width = updates.width
-      if (updates.height !== undefined) current.height = updates.height
-      demoStateRef.current.groups[id] = current
-      saveDemoCanvasState(campaignId, demoStateRef.current)
-    } else {
-      await supabase
-        .from('canvas_groups')
-        .update(updates)
-        .eq('id', id)
-    }
-  }, [supabase, isDemo, campaignId])
+    await supabase
+      .from('canvas_groups')
+      .update(updates)
+      .eq('id', id)
+  }, [supabase])
 
   const handleGroupDelete = useCallback(async (id: string) => {
     setGroups(prev => prev.filter(g => g.id !== id))
 
-    if (!isDemo) {
-      await supabase
-        .from('canvas_groups')
-        .delete()
-        .eq('id', id)
-    }
-  }, [supabase, isDemo])
+    await supabase
+      .from('canvas_groups')
+      .delete()
+      .eq('id', id)
+  }, [supabase])
 
   const handleGroupPositionChange = useCallback(async (id: string, x: number, y: number) => {
     setGroups(prev => prev.map(g =>
       g.id === id ? { ...g, position_x: x, position_y: y } : g
     ))
 
-    if (isDemo) {
-      const current = demoStateRef.current.groups[id] || {}
-      demoStateRef.current.groups[id] = { ...current, x, y }
-      saveDemoCanvasState(campaignId, demoStateRef.current)
-    } else {
-      await supabase
-        .from('canvas_groups')
-        .update({ position_x: x, position_y: y })
-        .eq('id', id)
-    }
-  }, [supabase, isDemo, campaignId])
+    await supabase
+      .from('canvas_groups')
+      .update({ position_x: x, position_y: y })
+      .eq('id', id)
+  }, [supabase])
 
   const handleCreateCharacter = async () => {
     if (!characterForm.name.trim()) return
-    if (isDemo) {
-      alert('Create your own campaign to add characters!')
-      setIsCreateCharacterOpen(false)
-      return
-    }
 
     setSaving(true)
 
@@ -354,7 +187,7 @@ export default function CampaignCanvasPage() {
 
     if (existingPositions.length > 0) {
       const maxX = Math.max(...existingPositions.map(p => p.x))
-      newX = maxX + 250
+      newX = maxX + 350
       newY = existingPositions[existingPositions.length - 1].y
     }
 
@@ -382,11 +215,6 @@ export default function CampaignCanvasPage() {
 
   const handleCreateGroup = async () => {
     if (!groupForm.name.trim()) return
-    if (isDemo) {
-      alert('Create your own campaign to add groups!')
-      setIsCreateGroupOpen(false)
-      return
-    }
 
     setSaving(true)
 
@@ -455,17 +283,6 @@ export default function CampaignCanvasPage() {
 
   return (
     <AppLayout campaignId={campaignId} fullBleed transparentTopBar>
-      {/* Demo Mode Banner */}
-      {isDemo && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-40">
-          <div className="demo-banner px-4 py-2 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[--arcane-gold]" />
-            <span className="text-sm font-medium">Demo Mode</span>
-            <span className="text-xs text-[--text-secondary]">- Changes won't be saved</span>
-          </div>
-        </div>
-      )}
-
       {/* Canvas Toolbar */}
       <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
         <button
@@ -491,7 +308,6 @@ export default function CampaignCanvasPage() {
           characters={characters}
           characterTags={characterTags}
           groups={groups}
-          initialCharacterSizes={initialCharacterSizes}
           onCharacterSelect={handleCharacterSelect}
           onCharacterDoubleClick={handleCharacterDoubleClick}
           onCharacterPositionChange={handleCharacterPositionChange}
@@ -519,11 +335,10 @@ export default function CampaignCanvasPage() {
           tags={characterTags.get(editingCharacter.id) || []}
           allCharacters={characters}
           campaignId={campaignId}
-          isDemo={isDemo}
           onUpdate={handleCharacterUpdate}
           onDelete={handleCharacterDelete}
           onClose={handleCloseEditModal}
-          onTagsChange={isDemo ? () => {} : loadCampaignData}
+          onTagsChange={loadCampaignData}
         />
       )}
 

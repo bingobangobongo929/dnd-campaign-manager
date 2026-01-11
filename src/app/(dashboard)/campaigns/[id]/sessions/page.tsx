@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import {
   Plus,
   Search,
@@ -9,24 +9,20 @@ import {
   FileText,
   Trash2,
   Edit,
-  Sparkles,
 } from 'lucide-react'
 import { Input, Modal, Textarea } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
 import { formatDate } from '@/lib/utils'
-import { DEMO_CAMPAIGNS, DEMO_SESSIONS } from '@/lib/demo-data'
 import type { Campaign, Session } from '@/types/database'
 
 export default function SessionsPage() {
   const params = useParams()
   const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = useSupabase()
   const { user } = useUser()
 
   const campaignId = params.id as string
-  const isDemo = searchParams.get('demo') === 'true' || campaignId.startsWith('demo-')
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [sessions, setSessions] = useState<Session[]>([])
@@ -42,27 +38,10 @@ export default function SessionsPage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (isDemo) {
-      loadDemoData()
-    } else if (user && campaignId) {
+    if (user && campaignId) {
       loadData()
     }
-  }, [user, campaignId, isDemo])
-
-  const loadDemoData = () => {
-    setLoading(true)
-
-    const demoCampaign = DEMO_CAMPAIGNS.find(c => c.id === campaignId)
-    if (!demoCampaign) {
-      router.push('/campaigns')
-      return
-    }
-    setCampaign(demoCampaign as unknown as Campaign)
-
-    const demoSessions = DEMO_SESSIONS.filter(s => s.campaign_id === campaignId) as unknown as Session[]
-    setSessions(demoSessions)
-    setLoading(false)
-  }
+  }, [user, campaignId])
 
   const loadData = async () => {
     setLoading(true)
@@ -101,11 +80,6 @@ export default function SessionsPage() {
 
   const handleCreate = async () => {
     if (!formData.title.trim()) return
-    if (isDemo) {
-      alert('Create your own campaign to add sessions!')
-      setIsCreateModalOpen(false)
-      return
-    }
 
     setSaving(true)
     const { data } = await supabase
@@ -135,11 +109,6 @@ export default function SessionsPage() {
 
   const handleUpdate = async () => {
     if (!formData.title.trim() || !editingSession) return
-    if (isDemo) {
-      alert('Create your own campaign to edit sessions!')
-      setEditingSession(null)
-      return
-    }
 
     setSaving(true)
     const { data } = await supabase
@@ -166,10 +135,6 @@ export default function SessionsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (isDemo) {
-      alert('Create your own campaign to delete sessions!')
-      return
-    }
     if (!confirm('Are you sure you want to delete this session? This cannot be undone.')) return
 
     await supabase.from('sessions').delete().eq('id', id)
@@ -198,23 +163,6 @@ export default function SessionsPage() {
   return (
     <AppLayout campaignId={campaignId}>
       <div className="max-w-4xl mx-auto">
-        {/* Demo Banner */}
-        {isDemo && (
-          <div className="demo-banner mb-6 animate-slide-in-up">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[--arcane-purple] to-[--arcane-gold] flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-[--text-primary]">Demo Mode</h3>
-                <p className="text-sm text-[--text-secondary]">
-                  Exploring session notes. Create a campaign to add your own!
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Page Header */}
         <div className="page-header flex items-center justify-between">
           <div>
