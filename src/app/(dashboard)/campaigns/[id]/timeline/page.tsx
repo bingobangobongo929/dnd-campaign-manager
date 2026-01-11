@@ -20,7 +20,8 @@ import {
 import { Input, Textarea, Modal, Dropdown } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
-import { formatDate, EVENT_TYPE_COLORS } from '@/lib/utils'
+import { formatDate, EVENT_TYPE_COLORS, getInitials } from '@/lib/utils'
+import Image from 'next/image'
 import type { Campaign, TimelineEvent, Character } from '@/types/database'
 
 const EVENT_TYPES = [
@@ -322,8 +323,20 @@ export default function TimelinePage() {
                                 )}
                                 {event.character && (
                                   <div className="flex items-center gap-2 mt-2">
-                                    <div className="avatar avatar-sm">
-                                      {event.character.name.charAt(0)}
+                                    <div className="relative w-6 h-6 rounded-full overflow-hidden bg-[--bg-elevated] flex-shrink-0">
+                                      {event.character.image_url ? (
+                                        <Image
+                                          src={event.character.image_url}
+                                          alt={event.character.name}
+                                          fill
+                                          className="object-cover"
+                                          sizes="24px"
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-xs font-medium text-[--text-secondary]">
+                                          {getInitials(event.character.name)}
+                                        </div>
+                                      )}
                                     </div>
                                     <span className="text-sm text-[--text-secondary]">
                                       {event.character.name}
