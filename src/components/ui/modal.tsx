@@ -4,7 +4,6 @@ import { useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Button } from './button'
 
 interface ModalProps {
   isOpen: boolean
@@ -54,52 +53,35 @@ export function Modal({
   }
 
   const modalContent = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
+    <div className="modal-backdrop" onClick={onClose}>
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div
-        className={cn(
-          'relative w-full bg-[--bg-surface] rounded-xl shadow-xl border border-[--border] animate-scale-in',
-          sizes[size]
-        )}
+        className={cn('modal', sizes[size])}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-start justify-between p-4 border-b border-[--border]">
-            <div>
-              {title && (
-                <h2 className="text-lg font-semibold text-[--text-primary]">
-                  {title}
-                </h2>
-              )}
-              {description && (
-                <p className="mt-1 text-sm text-[--text-secondary]">
-                  {description}
-                </p>
+          <div className="modal-header">
+            <div className="flex items-start justify-between">
+              <div>
+                {title && <h2 className="modal-title">{title}</h2>}
+                {description && (
+                  <p className="modal-description">{description}</p>
+                )}
+              </div>
+              {showCloseButton && (
+                <button
+                  className="btn-ghost btn-icon w-9 h-9 -mr-2 -mt-1"
+                  onClick={onClose}
+                >
+                  <X className="w-5 h-5" />
+                </button>
               )}
             </div>
-            {showCloseButton && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 -mr-2 -mt-1"
-                onClick={onClose}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
           </div>
         )}
 
         {/* Content */}
-        <div className="p-4 max-h-[calc(100vh-200px)] overflow-y-auto">
-          {children}
-        </div>
+        <div className="modal-body">{children}</div>
       </div>
     </div>
   )

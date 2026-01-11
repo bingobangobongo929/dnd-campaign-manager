@@ -1,14 +1,21 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { Plus, FolderPlus } from 'lucide-react'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { Plus, FolderPlus, Sparkles } from 'lucide-react'
 import { Modal, Input, Dropdown } from '@/components/ui'
 import { CampaignCanvas } from '@/components/canvas'
 import { CharacterPanel } from '@/components/character'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
+import {
+  DEMO_CAMPAIGNS,
+  DEMO_CHARACTERS,
+  DEMO_TAGS,
+  DEMO_CHARACTER_TAGS,
+  getDemoTagsForCharacter,
+} from '@/lib/demo-data'
 import type { Campaign, Character, Tag, CharacterTag, CanvasGroup } from '@/types/database'
 
 const CHARACTER_TYPES = [
@@ -19,11 +26,13 @@ const CHARACTER_TYPES = [
 export default function CampaignCanvasPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = useSupabase()
   const { user } = useUser()
   const { selectedCharacterId, setSelectedCharacterId } = useAppStore()
 
   const campaignId = params.id as string
+  const isDemo = searchParams.get('demo') === 'true' || campaignId.startsWith('demo-')
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [characters, setCharacters] = useState<Character[]>([])
@@ -43,10 +52,69 @@ export default function CampaignCanvasPage() {
 
   // Load campaign data
   useEffect(() => {
-    if (user && campaignId) {
+    if (isDemo) {
+      loadDemoData()
+    } else if (user && campaignId) {
       loadCampaignData()
     }
-  }, [user, campaignId])
+  }, [user, campaignId, isDemo])
+
+  const loadDemoData = () => {
+    setLoading(true)
+
+    // Find demo campaign
+    const demoCampaign = DEMO_CAMPAIGNS.find(c => c.id === campaignId)
+    if (!demoCampaign) {
+      router.push('/campaigns')
+      return
+    }
+    setCampaign(demoCampaign as unknown as Campaign)
+
+    // Load demo characters for this campaign
+    const demoChars = DEMO_CHARACTERS.filter(c => c.campaign_id === campaignId) as unknown as Character[]
+    setCharacters(demoChars)
+
+    // Build character tags map from demo data
+    type TagWithRelations = CharacterTag & { tag: Tag; related_character?: Character | null }
+    const tagMap = new Map<string, TagWithRelations[]>()
+    for (const char of demoChars) {
+      const tags = getDemoTagsForCharacter(char.id) as unknown as TagWithRelations[]
+      if (tags.length > 0) {
+        tagMap.set(char.id, tags)
+      }
+    }
+    setCharacterTags(tagMap)
+
+    // Demo groups
+    setGroups([
+      {
+        id: 'group-1',
+        campaign_id: campaignId,
+        name: 'The Party',
+        position_x: 50,
+        position_y: 50,
+        width: 700,
+        height: 250,
+        color: '#8B5CF6',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: 'group-2',
+        campaign_id: campaignId,
+        name: 'Key NPCs',
+        position_x: 50,
+        position_y: 400,
+        width: 700,
+        height: 250,
+        color: '#D4A843',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ])
+
+    setLoading(false)
+  }
 
   const loadCampaignData = async () => {
     setLoading(true)
@@ -118,49 +186,64 @@ export default function CampaignCanvasPage() {
   }, [setSelectedCharacterId])
 
   const handleCharacterPositionChange = useCallback(async (id: string, x: number, y: number) => {
-    await supabase
-      .from('characters')
-      .update({ position_x: x, position_y: y })
-      .eq('id', id)
-
+    // Update local state
     setCharacters(prev => prev.map(c =>
       c.id === id ? { ...c, position_x: x, position_y: y } : c
     ))
-  }, [supabase])
+
+    // Only persist to database if not in demo mode
+    if (!isDemo) {
+      await supabase
+        .from('characters')
+        .update({ position_x: x, position_y: y })
+        .eq('id', id)
+    }
+  }, [supabase, isDemo])
 
   const handleGroupUpdate = useCallback(async (id: string, updates: Partial<CanvasGroup>) => {
-    await supabase
-      .from('canvas_groups')
-      .update(updates)
-      .eq('id', id)
-
     setGroups(prev => prev.map(g =>
       g.id === id ? { ...g, ...updates } : g
     ))
-  }, [supabase])
+
+    if (!isDemo) {
+      await supabase
+        .from('canvas_groups')
+        .update(updates)
+        .eq('id', id)
+    }
+  }, [supabase, isDemo])
 
   const handleGroupDelete = useCallback(async (id: string) => {
-    await supabase
-      .from('canvas_groups')
-      .delete()
-      .eq('id', id)
-
     setGroups(prev => prev.filter(g => g.id !== id))
-  }, [supabase])
+
+    if (!isDemo) {
+      await supabase
+        .from('canvas_groups')
+        .delete()
+        .eq('id', id)
+    }
+  }, [supabase, isDemo])
 
   const handleGroupPositionChange = useCallback(async (id: string, x: number, y: number) => {
-    await supabase
-      .from('canvas_groups')
-      .update({ position_x: x, position_y: y })
-      .eq('id', id)
-
     setGroups(prev => prev.map(g =>
       g.id === id ? { ...g, position_x: x, position_y: y } : g
     ))
-  }, [supabase])
+
+    if (!isDemo) {
+      await supabase
+        .from('canvas_groups')
+        .update({ position_x: x, position_y: y })
+        .eq('id', id)
+    }
+  }, [supabase, isDemo])
 
   const handleCreateCharacter = async () => {
     if (!characterForm.name.trim()) return
+    if (isDemo) {
+      alert('Create your own campaign to add characters!')
+      setIsCreateCharacterOpen(false)
+      return
+    }
 
     setSaving(true)
 
@@ -199,6 +282,11 @@ export default function CampaignCanvasPage() {
 
   const handleCreateGroup = async () => {
     if (!groupForm.name.trim()) return
+    if (isDemo) {
+      alert('Create your own campaign to add groups!')
+      setIsCreateGroupOpen(false)
+      return
+    }
 
     setSaving(true)
 
@@ -249,6 +337,17 @@ export default function CampaignCanvasPage() {
 
   return (
     <AppLayout campaignId={campaignId} fullBleed transparentTopBar>
+      {/* Demo Mode Banner */}
+      {isDemo && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50">
+          <div className="demo-banner px-4 py-2 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-[--arcane-gold]" />
+            <span className="text-sm font-medium">Demo Mode</span>
+            <span className="text-xs text-[--text-secondary]">- Changes won't be saved</span>
+          </div>
+        </div>
+      )}
+
       {/* Canvas Toolbar */}
       <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
         <button

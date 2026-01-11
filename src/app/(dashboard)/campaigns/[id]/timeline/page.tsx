@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import {
   Plus,
   Calendar,
@@ -16,11 +16,13 @@ import {
   Shield,
   Edit,
   Trash2,
+  Sparkles,
 } from 'lucide-react'
 import { Input, Textarea, Modal, Dropdown } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
 import { formatDate, EVENT_TYPE_COLORS } from '@/lib/utils'
+import { DEMO_CAMPAIGNS, DEMO_CHARACTERS, DEMO_TIMELINE_EVENTS } from '@/lib/demo-data'
 import type { Campaign, TimelineEvent, Character } from '@/types/database'
 
 const EVENT_TYPES = [
@@ -44,10 +46,12 @@ const getEventIcon = (type: string) => {
 export default function TimelinePage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = useSupabase()
   const { user } = useUser()
 
   const campaignId = params.id as string
+  const isDemo = searchParams.get('demo') === 'true' || campaignId.startsWith('demo-')
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [events, setEvents] = useState<(TimelineEvent & { character?: Character })[]>([])
@@ -65,10 +69,34 @@ export default function TimelinePage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (user && campaignId) {
+    if (isDemo) {
+      loadDemoData()
+    } else if (user && campaignId) {
       loadData()
     }
-  }, [user, campaignId])
+  }, [user, campaignId, isDemo])
+
+  const loadDemoData = () => {
+    setLoading(true)
+
+    const demoCampaign = DEMO_CAMPAIGNS.find(c => c.id === campaignId)
+    if (!demoCampaign) {
+      router.push('/campaigns')
+      return
+    }
+    setCampaign(demoCampaign as unknown as Campaign)
+
+    const demoChars = DEMO_CHARACTERS.filter(c => c.campaign_id === campaignId) as unknown as Character[]
+    setCharacters(demoChars)
+
+    // Build timeline events with character data
+    const demoEvents = DEMO_TIMELINE_EVENTS.filter(e => e.campaign_id === campaignId).map(event => ({
+      ...event,
+      character: event.character_id ? demoChars.find(c => c.id === event.character_id) : undefined,
+    })) as unknown as (TimelineEvent & { character?: Character })[]
+    setEvents(demoEvents)
+    setLoading(false)
+  }
 
   const loadData = async () => {
     setLoading(true)
@@ -109,6 +137,11 @@ export default function TimelinePage() {
 
   const handleCreate = async () => {
     if (!formData.title.trim()) return
+    if (isDemo) {
+      alert('Create your own campaign to add events!')
+      setIsCreateModalOpen(false)
+      return
+    }
 
     setSaving(true)
     const { data } = await supabase
@@ -142,6 +175,11 @@ export default function TimelinePage() {
 
   const handleUpdate = async () => {
     if (!formData.title.trim() || !editingEvent) return
+    if (isDemo) {
+      alert('Create your own campaign to edit events!')
+      setEditingEvent(null)
+      return
+    }
 
     setSaving(true)
     const { data } = await supabase
@@ -174,6 +212,10 @@ export default function TimelinePage() {
   }
 
   const handleDelete = async (id: string) => {
+    if (isDemo) {
+      alert('Create your own campaign to delete events!')
+      return
+    }
     if (!confirm('Are you sure you want to delete this event?')) return
 
     await supabase.from('timeline_events').delete().eq('id', id)
@@ -225,6 +267,23 @@ export default function TimelinePage() {
   return (
     <AppLayout campaignId={campaignId}>
       <div className="max-w-4xl mx-auto">
+        {/* Demo Banner */}
+        {isDemo && (
+          <div className="demo-banner mb-6 animate-slide-in-up">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[--arcane-purple] to-[--arcane-gold] flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-[--text-primary]">Demo Mode</h3>
+                <p className="text-sm text-[--text-secondary]">
+                  Exploring timeline events. Create a campaign to add your own!
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Page Header */}
         <div className="page-header flex items-center justify-between">
           <div>
