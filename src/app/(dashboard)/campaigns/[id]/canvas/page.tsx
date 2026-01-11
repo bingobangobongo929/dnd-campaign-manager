@@ -138,14 +138,9 @@ export default function CampaignCanvasPage() {
       .eq('id', id)
   }, [supabase])
 
-  // Handle character resize
+  // Handle character resize - only save to DB, don't update state (causes re-render loop)
   const handleCharacterSizeChange = useCallback(async (id: string, width: number, height: number) => {
-    // Update local state
-    setCharacters(prev => prev.map(c =>
-      c.id === id ? { ...c, canvas_width: width, canvas_height: height } : c
-    ))
-
-    // Persist to database
+    // Persist to database (the canvas component handles local state via nodeSizesRef)
     await supabase
       .from('characters')
       .update({ canvas_width: width, canvas_height: height })
