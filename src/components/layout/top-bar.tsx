@@ -12,9 +12,10 @@ interface TopBarProps {
   campaigns?: Campaign[]
   currentCampaignId?: string
   transparent?: boolean
+  actions?: React.ReactNode
 }
 
-export function TopBar({ campaigns = [], currentCampaignId, transparent = false }: TopBarProps) {
+export function TopBar({ campaigns = [], currentCampaignId, transparent = false, actions }: TopBarProps) {
   const router = useRouter()
   const pathname = usePathname()
   const supabase = useSupabase()
@@ -140,8 +141,15 @@ export function TopBar({ campaigns = [], currentCampaignId, transparent = false 
         </div>
       )}
 
-      {/* Right: AI Assistant + User */}
+      {/* Right: Page Actions + AI Assistant + User */}
       <div className="topbar-right">
+        {/* Page-specific actions */}
+        {actions && (
+          <div className="flex items-center gap-2 mr-2">
+            {actions}
+          </div>
+        )}
+
         {currentCampaignId && (
           <button
             className="ai-trigger"

@@ -13,6 +13,7 @@ interface AppLayoutProps {
   campaignId?: string
   fullBleed?: boolean
   transparentTopBar?: boolean
+  topBarActions?: React.ReactNode
 }
 
 export function AppLayout({
@@ -20,6 +21,7 @@ export function AppLayout({
   campaignId,
   fullBleed = false,
   transparentTopBar = false,
+  topBarActions,
 }: AppLayoutProps) {
   const supabase = useSupabase()
   const { user } = useUser()
@@ -75,6 +77,7 @@ export function AppLayout({
         campaigns={campaigns}
         currentCampaignId={campaignId}
         transparent={transparentTopBar}
+        actions={topBarActions}
       />
 
       <main className={`main-content ${fullBleed ? 'full-bleed' : ''}`}>

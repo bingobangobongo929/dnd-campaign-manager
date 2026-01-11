@@ -314,6 +314,33 @@ export default function CampaignCanvasPage() {
     setSelectedCharacterId(null)
   }, [setSelectedCharacterId])
 
+  // Canvas toolbar actions for the top bar
+  const canvasActions = (
+    <>
+      <button
+        className="btn btn-secondary btn-sm"
+        onClick={() => setIsResizeToolbarOpen(true)}
+      >
+        <Scaling className="w-4 h-4" />
+        <span className="hidden sm:inline ml-1.5">Resize</span>
+      </button>
+      <button
+        className="btn btn-secondary btn-sm"
+        onClick={() => setIsCreateGroupOpen(true)}
+      >
+        <FolderPlus className="w-4 h-4" />
+        <span className="hidden sm:inline ml-1.5">Add Group</span>
+      </button>
+      <button
+        className="btn btn-primary btn-sm"
+        onClick={() => setIsCreateCharacterOpen(true)}
+      >
+        <Plus className="w-4 h-4" />
+        <span className="hidden sm:inline ml-1.5">Add Character</span>
+      </button>
+    </>
+  )
+
   if (loading) {
     return (
       <AppLayout campaignId={campaignId} fullBleed transparentTopBar>
@@ -325,32 +352,7 @@ export default function CampaignCanvasPage() {
   }
 
   return (
-    <AppLayout campaignId={campaignId} fullBleed transparentTopBar>
-      {/* Canvas Toolbar */}
-      <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
-        <button
-          className="btn btn-secondary"
-          onClick={() => setIsResizeToolbarOpen(true)}
-        >
-          <Scaling className="w-4 h-4" />
-          <span className="hidden sm:inline ml-2">Resize</span>
-        </button>
-        <button
-          className="btn btn-secondary"
-          onClick={() => setIsCreateGroupOpen(true)}
-        >
-          <FolderPlus className="w-4 h-4" />
-          <span className="hidden sm:inline ml-2">Add Group</span>
-        </button>
-        <button
-          className="btn btn-primary"
-          onClick={() => setIsCreateCharacterOpen(true)}
-        >
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline ml-2">Add Character</span>
-        </button>
-      </div>
-
+    <AppLayout campaignId={campaignId} fullBleed transparentTopBar topBarActions={canvasActions}>
       {/* Canvas Area */}
       <div className="h-screen">
         <CampaignCanvas

@@ -132,49 +132,27 @@ function CampaignCanvasInner({
   const [nodes, setNodes] = useNodesState(createNodes())
   const [edges, setEdges] = useEdgesState([])
 
-  // Update nodes when data changes - PRESERVE SIZES
+  // Update nodes when data changes
   useEffect(() => {
     if (isFirstMount.current) {
       isFirstMount.current = false
       return
     }
 
-    // Update nodes while preserving current sizes
-    setNodes((currentNodes) => {
-      // Build a map of current node sizes
-      const currentSizes = new Map<string, { width: number; height: number }>()
-      currentNodes.forEach((node) => {
-        if (node.style?.width && node.style?.height) {
-          currentSizes.set(node.id, {
-            width: node.style.width as number,
-            height: node.style.height as number,
-          })
-        }
-      })
-
-      // Also merge in any sizes from our ref
-      nodeSizesRef.current.forEach((size, id) => {
-        currentSizes.set(id, size)
-      })
-
-      // Create new nodes with updated data but preserved sizes
-      const newNodes = createNodes().map((node) => {
-        const savedSize = currentSizes.get(node.id)
-        if (savedSize) {
-          return {
-            ...node,
-            style: {
-              ...node.style,
-              width: savedSize.width,
-              height: savedSize.height,
-            },
-          }
-        }
-        return node
-      })
-
-      return newNodes
+    // Simply recreate nodes from data - createNodes() handles all priority logic
+    // The key is that createNodes uses: overrideSize > savedSize > char.canvas_width > default
+    // When size is saved to DB and state updates, char.canvas_width will have the new value
+    // We need to update nodeSizesRef to match the data so it stays in sync
+    characters.forEach((char) => {
+      if (char.canvas_width && char.canvas_height) {
+        nodeSizesRef.current.set(char.id, {
+          width: char.canvas_width,
+          height: char.canvas_height,
+        })
+      }
     })
+
+    setNodes(createNodes())
   }, [characters, characterTags, groups, selectedCharacterId, characterSizeOverrides, createNodes, setNodes])
 
   // Smart snap - find alignment guides
