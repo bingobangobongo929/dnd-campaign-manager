@@ -1,1 +1,1 @@
-export { CharacterPanel } from './character-panel'
+export { CharacterModal } from './character-modal'

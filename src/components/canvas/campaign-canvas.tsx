@@ -245,9 +245,10 @@ function CampaignCanvasInner({
         maxZoom={2}
         snapToGrid
         snapGrid={[SNAP_GRID, SNAP_GRID]}
-        panOnScroll
-        selectionOnDrag
-        panOnDrag={[1, 2]} // Middle mouse or right mouse to pan
+        zoomOnScroll
+        zoomOnPinch
+        panOnDrag={[0, 1, 2]} // Left, middle, or right mouse to pan
+        selectionOnDrag={false}
         selectNodesOnDrag={false}
         className="bg-[--bg-base]"
       >

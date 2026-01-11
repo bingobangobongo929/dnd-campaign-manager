@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Plus, FolderPlus, Sparkles } from 'lucide-react'
 import { Modal, Input, Dropdown } from '@/components/ui'
 import { CampaignCanvas } from '@/components/canvas'
-import { CharacterPanel } from '@/components/character'
+import { CharacterModal } from '@/components/character'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
@@ -367,36 +367,35 @@ export default function CampaignCanvasPage() {
       </div>
 
       {/* Canvas Area */}
-      <div className="h-screen flex">
-        <div className="flex-1 relative">
-          <CampaignCanvas
-            campaignId={campaignId}
-            characters={characters}
-            characterTags={characterTags}
-            groups={groups}
-            onCharacterSelect={handleCharacterSelect}
-            onCharacterDoubleClick={handleCharacterDoubleClick}
-            onCharacterPositionChange={handleCharacterPositionChange}
-            onGroupUpdate={handleGroupUpdate}
-            onGroupDelete={handleGroupDelete}
-            onGroupPositionChange={handleGroupPositionChange}
-          />
-        </div>
-
-        {/* Character Panel */}
-        {selectedCharacter && (
-          <CharacterPanel
-            character={selectedCharacter}
-            tags={characterTags.get(selectedCharacter.id) || []}
-            allCharacters={characters}
-            campaignId={campaignId}
-            onUpdate={handleCharacterUpdate}
-            onDelete={handleCharacterDelete}
-            onClose={() => setSelectedCharacterId(null)}
-            onTagsChange={loadCampaignData}
-          />
-        )}
+      <div className="h-screen">
+        <CampaignCanvas
+          campaignId={campaignId}
+          characters={characters}
+          characterTags={characterTags}
+          groups={groups}
+          onCharacterSelect={handleCharacterSelect}
+          onCharacterDoubleClick={handleCharacterDoubleClick}
+          onCharacterPositionChange={handleCharacterPositionChange}
+          onGroupUpdate={handleGroupUpdate}
+          onGroupDelete={handleGroupDelete}
+          onGroupPositionChange={handleGroupPositionChange}
+        />
       </div>
+
+      {/* Character Edit Modal */}
+      {selectedCharacter && (
+        <CharacterModal
+          character={selectedCharacter}
+          tags={characterTags.get(selectedCharacter.id) || []}
+          allCharacters={characters}
+          campaignId={campaignId}
+          isDemo={isDemo}
+          onUpdate={handleCharacterUpdate}
+          onDelete={handleCharacterDelete}
+          onClose={() => setSelectedCharacterId(null)}
+          onTagsChange={isDemo ? () => {} : loadCampaignData}
+        />
+      )}
 
       {/* Create Character Modal */}
       <Modal
