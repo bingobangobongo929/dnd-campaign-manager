@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { X, Check, RotateCcw, Scaling } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui'
@@ -24,9 +24,10 @@ interface ResizeToolbarProps {
 
 export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarProps) {
   const [filter, setFilter] = useState<FilterType>('all')
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set(characters.map(c => c.id)))
   const [width, setWidth] = useState(DEFAULT_CARD_WIDTH)
   const [height, setHeight] = useState(DEFAULT_CARD_HEIGHT)
+  const isFirstRender = useRef(true)
 
   // Get filtered characters based on type filter
   const filteredCharacters = characters.filter((char) => {
@@ -34,8 +35,10 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
     return char.type === filter
   })
 
-  // Select all filtered characters by default when filter changes
+  // Select all filtered characters when filter changes
   useEffect(() => {
+    // Skip initial render - we already set initial state
+    if (isFirstRender.current) return
     setSelectedIds(new Set(filteredCharacters.map((c) => c.id)))
   }, [filter])
 
@@ -78,8 +81,12 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
     setHeight(DEFAULT_CARD_HEIGHT)
   }, [])
 
-  // Live preview - apply as sliders change
+  // Live preview - apply as sliders change (skip first render)
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
     if (selectedIds.size > 0) {
       onResize(Array.from(selectedIds), width, height)
     }

@@ -155,12 +155,14 @@ export default function CampaignCanvasPage() {
 
   // Handle batch resize from toolbar - updates state for live preview
   const handleBatchResize = useCallback((characterIds: string[], width: number, height: number) => {
-    const newOverrides = new Map(characterSizeOverrides)
-    for (const id of characterIds) {
-      newOverrides.set(id, { width, height })
-    }
-    setCharacterSizeOverrides(newOverrides)
-  }, [characterSizeOverrides])
+    setCharacterSizeOverrides(prev => {
+      const newOverrides = new Map(prev)
+      for (const id of characterIds) {
+        newOverrides.set(id, { width, height })
+      }
+      return newOverrides
+    })
+  }, [])
 
   // Save sizes to database when toolbar closes
   const handleResizeToolbarClose = useCallback(async () => {
