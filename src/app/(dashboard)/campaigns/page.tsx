@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, MoreHorizontal, Trash2, Edit, Gamepad2 } from 'lucide-react'
-import { Button, Card, CardContent, Modal, Input, Textarea, Dropdown, EmptyState, Avatar } from '@/components/ui'
-import { DashboardLayout } from '@/components/layout'
+import { Plus, Gamepad2 } from 'lucide-react'
+import { Modal, Input, Textarea, Dropdown } from '@/components/ui'
+import { CampaignCard } from '@/components/ui/campaign-card'
+import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
-import { formatDate } from '@/lib/utils'
 import type { Campaign } from '@/types/database'
 
 const GAME_SYSTEMS = [
@@ -41,7 +41,7 @@ export default function CampaignsPage() {
   }, [user])
 
   const loadCampaigns = async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('campaigns')
       .select('*')
       .eq('user_id', user!.id)
@@ -57,7 +57,7 @@ export default function CampaignsPage() {
     if (!formData.name.trim() || !user) return
 
     setSaving(true)
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('campaigns')
       .insert({
         user_id: user.id,
@@ -81,7 +81,7 @@ export default function CampaignsPage() {
     if (!formData.name.trim() || !editingCampaign) return
 
     setSaving(true)
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('campaigns')
       .update({
         name: formData.name,
@@ -121,181 +121,173 @@ export default function CampaignsPage() {
 
   if (userLoading || loading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-full">
-          <div className="w-8 h-8 border-2 border-[--accent-primary] border-t-transparent rounded-full spinner" />
+      <AppLayout>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
         </div>
-      </DashboardLayout>
+      </AppLayout>
     )
   }
 
   return (
-    <DashboardLayout>
-      <div className="p-6 max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-[--text-primary]">Campaigns</h1>
-            <p className="text-[--text-secondary]">Manage your TTRPG campaigns</p>
-          </div>
-          <Button onClick={() => setIsCreateModalOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Campaign
-          </Button>
-        </div>
-
-        {campaigns.length === 0 ? (
-          <EmptyState
-            icon={<Gamepad2 className="h-12 w-12" />}
-            title="No campaigns yet"
-            description="Create your first campaign to start organizing your world"
-            action={
-              <Button onClick={() => setIsCreateModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Campaign
-              </Button>
-            }
-          />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {campaigns.map((campaign) => (
-              <Card
-                key={campaign.id}
-                hover
-                onClick={() => router.push(`/campaigns/${campaign.id}/canvas`)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar name={campaign.name} src={campaign.image_url} size="lg" />
-                      <div>
-                        <h3 className="font-semibold text-[--text-primary]">{campaign.name}</h3>
-                        <p className="text-sm text-[--text-secondary]">{campaign.game_system}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => openEditModal(campaign)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-[--accent-danger]"
-                        onClick={() => handleDelete(campaign.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  {campaign.description && (
-                    <p className="mt-3 text-sm text-[--text-secondary] line-clamp-2">
-                      {campaign.description}
-                    </p>
-                  )}
-                  <p className="mt-3 text-xs text-[--text-tertiary]">
-                    Updated {formatDate(campaign.updated_at)}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Create Modal */}
-        <Modal
-          isOpen={isCreateModalOpen}
-          onClose={() => {
-            setIsCreateModalOpen(false)
-            setFormData({ name: '', game_system: 'D&D 5e', description: '' })
-          }}
-          title="Create Campaign"
-          description="Start a new campaign for your players"
-        >
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-[--text-primary]">Campaign Name</label>
-              <Input
-                placeholder="e.g., Curse of Strahd"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-[--text-primary]">Game System</label>
-              <Dropdown
-                options={GAME_SYSTEMS}
-                value={formData.game_system}
-                onChange={(value) => setFormData({ ...formData, game_system: value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-[--text-primary]">Description (optional)</label>
-              <Textarea
-                placeholder="Brief description of your campaign..."
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="ghost" onClick={() => setIsCreateModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreate} loading={saving} disabled={!formData.name.trim()}>
-                Create Campaign
-              </Button>
-            </div>
-          </div>
-        </Modal>
-
-        {/* Edit Modal */}
-        <Modal
-          isOpen={!!editingCampaign}
-          onClose={() => {
-            setEditingCampaign(null)
-            setFormData({ name: '', game_system: 'D&D 5e', description: '' })
-          }}
-          title="Edit Campaign"
-        >
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-[--text-primary]">Campaign Name</label>
-              <Input
-                placeholder="e.g., Curse of Strahd"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-[--text-primary]">Game System</label>
-              <Dropdown
-                options={GAME_SYSTEMS}
-                value={formData.game_system}
-                onChange={(value) => setFormData({ ...formData, game_system: value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-[--text-primary]">Description (optional)</label>
-              <Textarea
-                placeholder="Brief description of your campaign..."
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="ghost" onClick={() => setEditingCampaign(null)}>
-                Cancel
-              </Button>
-              <Button onClick={handleUpdate} loading={saving} disabled={!formData.name.trim()}>
-                Save Changes
-              </Button>
-            </div>
-          </div>
-        </Modal>
+    <AppLayout>
+      {/* Page Header */}
+      <div className="page-header">
+        <h1 className="page-title">Your Campaigns</h1>
+        <p className="page-subtitle">Manage your tabletop adventures</p>
       </div>
-    </DashboardLayout>
+
+      {campaigns.length === 0 ? (
+        /* Empty State */
+        <div className="empty-state">
+          <Gamepad2 className="empty-state-icon" />
+          <h2 className="empty-state-title">No campaigns yet</h2>
+          <p className="empty-state-description">
+            Create your first campaign to start organizing your world, characters, and stories.
+          </p>
+          <button
+            className="btn btn-primary"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            <Plus className="w-5 h-5" />
+            Create Your First Campaign
+          </button>
+        </div>
+      ) : (
+        /* Campaign Grid */
+        <div className="campaign-grid">
+          {campaigns.map((campaign, index) => (
+            <CampaignCard
+              key={campaign.id}
+              campaign={campaign}
+              onClick={() => router.push(`/campaigns/${campaign.id}/canvas`)}
+              onEdit={() => openEditModal(campaign)}
+              onDelete={() => handleDelete(campaign.id)}
+              animationDelay={index * 50}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Floating Action Button */}
+      {campaigns.length > 0 && (
+        <button
+          className="fab"
+          onClick={() => setIsCreateModalOpen(true)}
+          aria-label="Create new campaign"
+        >
+          <Plus className="fab-icon" />
+        </button>
+      )}
+
+      {/* Create Modal */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => {
+          setIsCreateModalOpen(false)
+          setFormData({ name: '', game_system: 'D&D 5e', description: '' })
+        }}
+        title="Create Campaign"
+        description="Start a new campaign for your players"
+      >
+        <div className="space-y-4">
+          <div className="form-group">
+            <label className="form-label">Campaign Name</label>
+            <Input
+              className="form-input"
+              placeholder="e.g., Curse of Strahd"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Game System</label>
+            <Dropdown
+              options={GAME_SYSTEMS}
+              value={formData.game_system}
+              onChange={(value) => setFormData({ ...formData, game_system: value })}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Description (optional)</label>
+            <Textarea
+              className="form-textarea"
+              placeholder="Brief description of your campaign..."
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setIsCreateModalOpen(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleCreate}
+              disabled={!formData.name.trim() || saving}
+            >
+              {saving ? 'Creating...' : 'Create Campaign'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal
+        isOpen={!!editingCampaign}
+        onClose={() => {
+          setEditingCampaign(null)
+          setFormData({ name: '', game_system: 'D&D 5e', description: '' })
+        }}
+        title="Edit Campaign"
+      >
+        <div className="space-y-4">
+          <div className="form-group">
+            <label className="form-label">Campaign Name</label>
+            <Input
+              className="form-input"
+              placeholder="e.g., Curse of Strahd"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Game System</label>
+            <Dropdown
+              options={GAME_SYSTEMS}
+              value={formData.game_system}
+              onChange={(value) => setFormData({ ...formData, game_system: value })}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Description (optional)</label>
+            <Textarea
+              className="form-textarea"
+              placeholder="Brief description of your campaign..."
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setEditingCampaign(null)}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleUpdate}
+              disabled={!formData.name.trim() || saving}
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+    </AppLayout>
   )
 }

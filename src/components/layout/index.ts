@@ -1,3 +1,6 @@
 export { Sidebar } from './sidebar'
 export { Header } from './header'
 export { DashboardLayout } from './dashboard-layout'
+export { FloatingDock } from './floating-dock'
+export { TopBar } from './top-bar'
+export { AppLayout } from './app-layout'

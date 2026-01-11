@@ -2,11 +2,11 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Plus, Users, FolderPlus, ArrowLeft, Settings } from 'lucide-react'
-import { Button, Modal, Input, Dropdown } from '@/components/ui'
+import { Plus, FolderPlus } from 'lucide-react'
+import { Modal, Input, Dropdown } from '@/components/ui'
 import { CampaignCanvas } from '@/components/canvas'
 import { CharacterPanel } from '@/components/character'
-import { AIAssistant } from '@/components/ai'
+import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
 import type { Campaign, Character, Tag, CharacterTag, CanvasGroup } from '@/types/database'
@@ -115,7 +115,6 @@ export default function CampaignCanvasPage() {
 
   const handleCharacterDoubleClick = useCallback((id: string) => {
     setSelectedCharacterId(id)
-    // Could open full editor here
   }, [setSelectedCharacterId])
 
   const handleCharacterPositionChange = useCallback(async (id: string, x: number, y: number) => {
@@ -171,13 +170,12 @@ export default function CampaignCanvasPage() {
     let newY = 100
 
     if (existingPositions.length > 0) {
-      // Place to the right of the rightmost character
       const maxX = Math.max(...existingPositions.map(p => p.x))
       newX = maxX + 250
       newY = existingPositions[existingPositions.length - 1].y
     }
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('characters')
       .insert({
         campaign_id: campaignId,
@@ -204,7 +202,7 @@ export default function CampaignCanvasPage() {
 
     setSaving(true)
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('canvas_groups')
       .insert({
         campaign_id: campaignId,
@@ -241,51 +239,36 @@ export default function CampaignCanvasPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[--bg-base]">
-        <div className="w-8 h-8 border-2 border-[--accent-primary] border-t-transparent rounded-full spinner" />
-      </div>
+      <AppLayout campaignId={campaignId} fullBleed transparentTopBar>
+        <div className="flex items-center justify-center h-screen">
+          <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
+        </div>
+      </AppLayout>
     )
   }
 
   return (
-    <div className="h-screen flex flex-col bg-[--bg-base]">
-      {/* Canvas Header */}
-      <header className="h-14 border-b border-[--border] bg-[--bg-surface] flex items-center justify-between px-4 flex-shrink-0">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push('/campaigns')}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="font-semibold text-[--text-primary]">{campaign?.name}</h1>
-            <p className="text-xs text-[--text-secondary]">{campaign?.game_system}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsCreateGroupOpen(true)}
-          >
-            <FolderPlus className="h-4 w-4 mr-2" />
-            Add Group
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => setIsCreateCharacterOpen(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Character
-          </Button>
-        </div>
-      </header>
+    <AppLayout campaignId={campaignId} fullBleed transparentTopBar>
+      {/* Canvas Toolbar */}
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+        <button
+          className="btn btn-secondary"
+          onClick={() => setIsCreateGroupOpen(true)}
+        >
+          <FolderPlus className="w-4 h-4" />
+          <span className="hidden sm:inline ml-2">Add Group</span>
+        </button>
+        <button
+          className="btn btn-primary"
+          onClick={() => setIsCreateCharacterOpen(true)}
+        >
+          <Plus className="w-4 h-4" />
+          <span className="hidden sm:inline ml-2">Add Character</span>
+        </button>
+      </div>
 
       {/* Canvas Area */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="h-screen flex">
         <div className="flex-1 relative">
           <CampaignCanvas
             campaignId={campaignId}
@@ -327,34 +310,35 @@ export default function CampaignCanvasPage() {
         description="Create a new character for your campaign"
       >
         <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[--text-primary]">Name</label>
+          <div className="form-group">
+            <label className="form-label">Name</label>
             <Input
+              className="form-input"
               placeholder="Character name"
               value={characterForm.name}
               onChange={(e) => setCharacterForm({ ...characterForm, name: e.target.value })}
               autoFocus
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[--text-primary]">Type</label>
+          <div className="form-group">
+            <label className="form-label">Type</label>
             <Dropdown
               options={CHARACTER_TYPES}
               value={characterForm.type}
               onChange={(value) => setCharacterForm({ ...characterForm, type: value as 'pc' | 'npc' })}
             />
           </div>
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="ghost" onClick={() => setIsCreateCharacterOpen(false)}>
+          <div className="flex justify-end gap-3 pt-4">
+            <button className="btn btn-secondary" onClick={() => setIsCreateCharacterOpen(false)}>
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
+              className="btn btn-primary"
               onClick={handleCreateCharacter}
-              loading={saving}
-              disabled={!characterForm.name.trim()}
+              disabled={!characterForm.name.trim() || saving}
             >
-              Create Character
-            </Button>
+              {saving ? 'Creating...' : 'Create Character'}
+            </button>
           </div>
         </div>
       </Modal>
@@ -370,43 +354,30 @@ export default function CampaignCanvasPage() {
         description="Create a group to organize characters on the canvas"
       >
         <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[--text-primary]">Group Name</label>
+          <div className="form-group">
+            <label className="form-label">Group Name</label>
             <Input
+              className="form-input"
               placeholder="e.g., The Party, Villains, NPCs..."
               value={groupForm.name}
               onChange={(e) => setGroupForm({ name: e.target.value })}
               autoFocus
             />
           </div>
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="ghost" onClick={() => setIsCreateGroupOpen(false)}>
+          <div className="flex justify-end gap-3 pt-4">
+            <button className="btn btn-secondary" onClick={() => setIsCreateGroupOpen(false)}>
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
+              className="btn btn-primary"
               onClick={handleCreateGroup}
-              loading={saving}
-              disabled={!groupForm.name.trim()}
+              disabled={!groupForm.name.trim() || saving}
             >
-              Create Group
-            </Button>
+              {saving ? 'Creating...' : 'Create Group'}
+            </button>
           </div>
         </div>
       </Modal>
-
-      {/* AI Assistant */}
-      <AIAssistant
-        campaignContext={{
-          campaignName: campaign?.name || '',
-          gameSystem: campaign?.game_system || '',
-          characters: characters.map((c) => ({
-            name: c.name,
-            type: c.type,
-            summary: c.summary || undefined,
-          })),
-          recentSessions: [], // TODO: Load recent sessions
-        }}
-      />
-    </div>
+    </AppLayout>
   )
 }

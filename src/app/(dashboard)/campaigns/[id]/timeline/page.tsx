@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
   Plus,
-  ArrowLeft,
   Calendar,
   User,
   Scroll,
@@ -18,11 +17,10 @@ import {
   Edit,
   Trash2,
 } from 'lucide-react'
-import { Button, Input, Textarea, Modal, Dropdown, Avatar } from '@/components/ui'
-import { DashboardLayout } from '@/components/layout'
+import { Input, Textarea, Modal, Dropdown } from '@/components/ui'
+import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
 import { formatDate, EVENT_TYPE_COLORS } from '@/lib/utils'
-import { cn } from '@/lib/utils'
 import type { Campaign, TimelineEvent, Character } from '@/types/database'
 
 const EVENT_TYPES = [
@@ -75,7 +73,6 @@ export default function TimelinePage() {
   const loadData = async () => {
     setLoading(true)
 
-    // Load campaign
     const { data: campaignData } = await supabase
       .from('campaigns')
       .select('*')
@@ -88,7 +85,6 @@ export default function TimelinePage() {
     }
     setCampaign(campaignData)
 
-    // Load characters for linking
     const { data: charactersData } = await supabase
       .from('characters')
       .select('*')
@@ -97,7 +93,6 @@ export default function TimelinePage() {
 
     setCharacters(charactersData || [])
 
-    // Load timeline events with character data
     const { data: eventsData } = await supabase
       .from('timeline_events')
       .select(`
@@ -116,7 +111,7 @@ export default function TimelinePage() {
     if (!formData.title.trim()) return
 
     setSaving(true)
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('timeline_events')
       .insert({
         campaign_id: campaignId,
@@ -133,7 +128,6 @@ export default function TimelinePage() {
       .single()
 
     if (data) {
-      // Insert in sorted position
       const newEvents = [...events, data].sort((a, b) => {
         const dateCompare = new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
         if (dateCompare !== 0) return dateCompare
@@ -150,7 +144,7 @@ export default function TimelinePage() {
     if (!formData.title.trim() || !editingEvent) return
 
     setSaving(true)
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('timeline_events')
       .update({
         title: formData.title,
@@ -207,7 +201,7 @@ export default function TimelinePage() {
     })
   }
 
-  // Group events by year/month for better visualization
+  // Group events by year/month
   const groupedEvents = events.reduce((acc, event) => {
     const date = new Date(event.event_date)
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
@@ -220,55 +214,46 @@ export default function TimelinePage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-full">
-          <div className="w-8 h-8 border-2 border-[--accent-primary] border-t-transparent rounded-full spinner" />
+      <AppLayout campaignId={campaignId}>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
         </div>
-      </DashboardLayout>
+      </AppLayout>
     )
   }
 
   return (
-    <DashboardLayout>
-      <div className="p-6 max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push(`/campaigns/${campaignId}/canvas`)}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-[--text-primary]">Campaign Timeline</h1>
-            <p className="text-[--text-secondary]">{campaign?.name}</p>
+    <AppLayout campaignId={campaignId}>
+      <div className="max-w-4xl mx-auto">
+        {/* Page Header */}
+        <div className="page-header flex items-center justify-between">
+          <div>
+            <h1 className="page-title">Campaign Timeline</h1>
+            <p className="page-subtitle">Chronicle your adventure's key moments</p>
           </div>
-          <Button onClick={() => setIsCreateModalOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+          <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
+            <Plus className="w-4 h-4" />
             Add Event
-          </Button>
+          </button>
         </div>
 
         {/* Timeline */}
         {events.length === 0 ? (
-          <div className="text-center py-16">
-            <Calendar className="h-16 w-16 mx-auto text-[--text-tertiary] mb-4" />
-            <h3 className="text-lg font-semibold text-[--text-primary] mb-2">
-              No events yet
-            </h3>
-            <p className="text-[--text-secondary] mb-6">
-              Start building your campaign timeline by adding events
+          <div className="empty-state">
+            <Calendar className="empty-state-icon" />
+            <h2 className="empty-state-title">No events yet</h2>
+            <p className="empty-state-description">
+              Start building your campaign timeline by adding key moments and events
             </p>
-            <Button onClick={() => setIsCreateModalOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
+            <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
+              <Plus className="w-5 h-5" />
               Add First Event
-            </Button>
+            </button>
           </div>
         ) : (
           <div className="relative">
             {/* Central timeline line */}
-            <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[--accent-primary] via-[--accent-secondary] to-[--accent-primary]" />
+            <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[--arcane-purple] via-[--arcane-gold] to-[--arcane-purple]" />
 
             {Object.entries(groupedEvents).map(([monthKey, monthEvents]) => {
               const [year, month] = monthKey.split('-')
@@ -281,10 +266,10 @@ export default function TimelinePage() {
                 <div key={monthKey} className="mb-8">
                   {/* Month header */}
                   <div className="flex items-center gap-4 mb-6 relative">
-                    <div className="w-16 h-16 rounded-full bg-[--bg-surface] border-2 border-[--accent-primary] flex items-center justify-center z-10">
-                      <Calendar className="h-6 w-6 text-[--accent-primary]" />
+                    <div className="w-16 h-16 rounded-full bg-[--bg-surface] border-2 border-[--arcane-purple] flex items-center justify-center z-10">
+                      <Calendar className="w-6 h-6 text-[--arcane-purple]" />
                     </div>
-                    <h2 className="text-lg font-semibold text-[--text-primary]">{monthName}</h2>
+                    <h2 className="text-lg font-semibold text-[--text-primary] font-display">{monthName}</h2>
                   </div>
 
                   {/* Events */}
@@ -296,31 +281,25 @@ export default function TimelinePage() {
                       return (
                         <div
                           key={event.id}
-                          className="relative group"
+                          className="relative group animate-slide-in-up"
+                          style={{ animationDelay: `${index * 50}ms` }}
                         >
-                          {/* Event dot on timeline */}
+                          {/* Event dot */}
                           <div
                             className="absolute -left-[53px] w-4 h-4 rounded-full border-2 border-[--bg-base]"
                             style={{ backgroundColor: color }}
                           />
 
                           {/* Event card */}
-                          <div
-                            className={cn(
-                              'bg-[--bg-surface] border border-[--border] rounded-xl p-4 transition-all',
-                              'hover:border-[--accent-primary]/50 hover:shadow-lg'
-                            )}
-                          >
+                          <div className="card p-4 hover:border-[--arcane-purple]/50">
                             <div className="flex items-start gap-4">
-                              {/* Icon */}
                               <div
                                 className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
                                 style={{ backgroundColor: `${color}20`, color }}
                               >
-                                <EventIcon className="h-5 w-5" />
+                                <EventIcon className="w-5 h-5" />
                               </div>
 
-                              {/* Content */}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
                                   <span
@@ -343,11 +322,9 @@ export default function TimelinePage() {
                                 )}
                                 {event.character && (
                                   <div className="flex items-center gap-2 mt-2">
-                                    <Avatar
-                                      src={event.character.image_url}
-                                      name={event.character.name}
-                                      size="sm"
-                                    />
+                                    <div className="avatar avatar-sm">
+                                      {event.character.name.charAt(0)}
+                                    </div>
                                     <span className="text-sm text-[--text-secondary]">
                                       {event.character.name}
                                     </span>
@@ -355,24 +332,19 @@ export default function TimelinePage() {
                                 )}
                               </div>
 
-                              {/* Actions */}
                               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
+                                <button
+                                  className="btn-ghost btn-icon w-8 h-8"
                                   onClick={() => openEditModal(event)}
                                 >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-[--accent-danger]"
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button
+                                  className="btn-ghost btn-icon w-8 h-8 text-[--arcane-ember]"
                                   onClick={() => handleDelete(event.id)}
                                 >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                               </div>
                             </div>
                           </div>
@@ -384,6 +356,17 @@ export default function TimelinePage() {
               )
             })}
           </div>
+        )}
+
+        {/* FAB */}
+        {events.length > 0 && (
+          <button
+            className="fab"
+            onClick={() => setIsCreateModalOpen(true)}
+            aria-label="Add new event"
+          >
+            <Plus className="fab-icon" />
+          </button>
         )}
 
         {/* Create/Edit Modal */}
@@ -398,9 +381,10 @@ export default function TimelinePage() {
           description={editingEvent ? undefined : 'Add a new event to your campaign timeline'}
         >
           <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-[--text-primary]">Event Title</label>
+            <div className="form-group">
+              <label className="form-label">Event Title</label>
               <Input
+                className="form-input"
                 placeholder="e.g., First encounter with the dragon"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -408,16 +392,17 @@ export default function TimelinePage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-[--text-primary]">Date</label>
+              <div className="form-group">
+                <label className="form-label">Date</label>
                 <Input
+                  className="form-input"
                   type="date"
                   value={formData.event_date}
                   onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-[--text-primary]">Event Type</label>
+              <div className="form-group">
+                <label className="form-label">Event Type</label>
                 <Dropdown
                   options={EVENT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
                   value={formData.event_type}
@@ -426,10 +411,8 @@ export default function TimelinePage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-[--text-primary]">
-                Related Character (optional)
-              </label>
+            <div className="form-group">
+              <label className="form-label">Related Character (optional)</label>
               <Dropdown
                 options={[
                   { value: '', label: 'None' },
@@ -440,11 +423,10 @@ export default function TimelinePage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-[--text-primary]">
-                Description (optional)
-              </label>
+            <div className="form-group">
+              <label className="form-label">Description (optional)</label>
               <Textarea
+                className="form-textarea"
                 placeholder="What happened..."
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -452,9 +434,9 @@ export default function TimelinePage() {
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                variant="ghost"
+            <div className="flex justify-end gap-3 pt-4">
+              <button
+                className="btn btn-secondary"
                 onClick={() => {
                   setIsCreateModalOpen(false)
                   setEditingEvent(null)
@@ -462,18 +444,18 @@ export default function TimelinePage() {
                 }}
               >
                 Cancel
-              </Button>
-              <Button
+              </button>
+              <button
+                className="btn btn-primary"
                 onClick={editingEvent ? handleUpdate : handleCreate}
-                loading={saving}
-                disabled={!formData.title.trim()}
+                disabled={!formData.title.trim() || saving}
               >
-                {editingEvent ? 'Save Changes' : 'Add Event'}
-              </Button>
+                {saving ? 'Saving...' : editingEvent ? 'Save Changes' : 'Add Event'}
+              </button>
             </div>
           </div>
         </Modal>
       </div>
-    </DashboardLayout>
+    </AppLayout>
   )
 }
