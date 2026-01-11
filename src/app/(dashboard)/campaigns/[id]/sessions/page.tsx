@@ -8,13 +8,21 @@ import {
   Calendar,
   FileText,
   Trash2,
-  Edit,
+  Pencil,
+  Users,
 } from 'lucide-react'
 import { Input, Modal, Textarea } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
+import { SessionViewModal } from '@/components/session'
+import { CharacterViewModal } from '@/components/character'
 import { useSupabase, useUser } from '@/hooks'
-import { formatDate } from '@/lib/utils'
-import type { Campaign, Session } from '@/types/database'
+import { formatDate, cn, getInitials } from '@/lib/utils'
+import Image from 'next/image'
+import type { Campaign, Session, Character, Tag, CharacterTag } from '@/types/database'
+
+interface SessionWithAttendees extends Session {
+  attendees: Character[]
+}
 
 export default function SessionsPage() {
   const params = useParams()
@@ -25,17 +33,24 @@ export default function SessionsPage() {
   const campaignId = params.id as string
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
-  const [sessions, setSessions] = useState<Session[]>([])
+  const [sessions, setSessions] = useState<SessionWithAttendees[]>([])
+  const [characters, setCharacters] = useState<Character[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [editingSession, setEditingSession] = useState<Session | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     date: new Date().toISOString().split('T')[0],
     summary: '',
   })
   const [saving, setSaving] = useState(false)
+
+  // View modal state
+  const [viewingSession, setViewingSession] = useState<SessionWithAttendees | null>(null)
+
+  // Character preview modal state
+  const [viewingCharacter, setViewingCharacter] = useState<Character | null>(null)
+  const [characterTags, setCharacterTags] = useState<(CharacterTag & { tag: Tag; related_character?: Character | null })[]>([])
 
   useEffect(() => {
     if (user && campaignId) {
@@ -58,13 +73,44 @@ export default function SessionsPage() {
     }
     setCampaign(campaignData)
 
+    // Load all characters for the campaign
+    const { data: charactersData } = await supabase
+      .from('characters')
+      .select('*')
+      .eq('campaign_id', campaignId)
+      .order('name')
+
+    setCharacters(charactersData || [])
+
+    // Load sessions
     const { data: sessionsData } = await supabase
       .from('sessions')
       .select('*')
       .eq('campaign_id', campaignId)
       .order('date', { ascending: false })
 
-    setSessions(sessionsData || [])
+    if (sessionsData && sessionsData.length > 0) {
+      // Load all session_characters for this campaign's sessions
+      const sessionIds = sessionsData.map(s => s.id)
+      const { data: sessionCharacters } = await supabase
+        .from('session_characters')
+        .select('session_id, character_id')
+        .in('session_id', sessionIds)
+
+      // Map attendees to each session
+      const sessionsWithAttendees = sessionsData.map(session => ({
+        ...session,
+        attendees: sessionCharacters
+          ?.filter(sc => sc.session_id === session.id)
+          .map(sc => charactersData?.find(c => c.id === sc.character_id))
+          .filter(Boolean) as Character[] || []
+      }))
+
+      setSessions(sessionsWithAttendees)
+    } else {
+      setSessions([])
+    }
+
     setLoading(false)
   }
 
@@ -95,59 +141,57 @@ export default function SessionsPage() {
       .single()
 
     if (data) {
-      setSessions([data, ...sessions])
       setIsCreateModalOpen(false)
       setFormData({
         title: '',
         date: new Date().toISOString().split('T')[0],
         summary: '',
       })
+      // Navigate to the full-page editor for the new session
       router.push(`/campaigns/${campaignId}/sessions/${data.id}`)
     }
     setSaving(false)
   }
 
-  const handleUpdate = async () => {
-    if (!formData.title.trim() || !editingSession) return
-
-    setSaving(true)
-    const { data } = await supabase
-      .from('sessions')
-      .update({
-        title: formData.title,
-        date: formData.date,
-        summary: formData.summary || null,
-      })
-      .eq('id', editingSession.id)
-      .select()
-      .single()
-
-    if (data) {
-      setSessions(sessions.map((s) => (s.id === data.id ? data : s)))
-      setEditingSession(null)
-      setFormData({
-        title: '',
-        date: new Date().toISOString().split('T')[0],
-        summary: '',
-      })
-    }
-    setSaving(false)
-  }
-
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
     if (!confirm('Are you sure you want to delete this session? This cannot be undone.')) return
 
     await supabase.from('sessions').delete().eq('id', id)
     setSessions(sessions.filter((s) => s.id !== id))
+    if (viewingSession?.id === id) {
+      setViewingSession(null)
+    }
   }
 
-  const openEditModal = (session: Session) => {
-    setFormData({
-      title: session.title || '',
-      date: session.date,
-      summary: session.summary || '',
-    })
-    setEditingSession(session)
+  const handleEditClick = (session: SessionWithAttendees, e: React.MouseEvent) => {
+    e.stopPropagation()
+    router.push(`/campaigns/${campaignId}/sessions/${session.id}`)
+  }
+
+  const handleSessionClick = (session: SessionWithAttendees) => {
+    setViewingSession(session)
+  }
+
+  const handleCharacterClick = async (character: Character) => {
+    // Load character tags for the view modal
+    const { data: tagsData } = await supabase
+      .from('character_tags')
+      .select(`
+        *,
+        tag:tags(*),
+        related_character:characters!character_tags_related_character_id_fkey(*)
+      `)
+      .eq('character_id', character.id)
+
+    setCharacterTags(tagsData || [])
+    setViewingCharacter(character)
+  }
+
+  const handleEditFromView = () => {
+    if (viewingSession) {
+      router.push(`/campaigns/${campaignId}/sessions/${viewingSession.id}`)
+    }
   }
 
   if (loading) {
@@ -211,9 +255,9 @@ export default function SessionsPage() {
             {filteredSessions.map((session, index) => (
               <div
                 key={session.id}
-                className="card p-4 cursor-pointer animate-slide-in-up"
+                className="card p-4 cursor-pointer animate-slide-in-up hover:border-[--arcane-purple]/30 transition-colors"
                 style={{ animationDelay: `${index * 50}ms` }}
-                onClick={() => router.push(`/campaigns/${campaignId}/sessions/${session.id}`)}
+                onClick={() => handleSessionClick(session)}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -227,24 +271,67 @@ export default function SessionsPage() {
                       </span>
                     </div>
                     <h3 className="text-lg font-semibold text-[--text-primary] truncate">
-                      {session.title}
+                      {session.title || 'Untitled Session'}
                     </h3>
                     {session.summary && (
                       <p className="text-sm text-[--text-secondary] line-clamp-2 mt-1">
                         {session.summary}
                       </p>
                     )}
+
+                    {/* Attendees Avatars */}
+                    {session.attendees.length > 0 && (
+                      <div className="flex items-center gap-2 mt-3">
+                        <Users className="w-3.5 h-3.5 text-[--text-tertiary]" />
+                        <div className="flex -space-x-2">
+                          {session.attendees.slice(0, 5).map((char) => (
+                            <div
+                              key={char.id}
+                              className="relative w-7 h-7 rounded-full overflow-hidden border-2 border-[--bg-surface] bg-[--bg-elevated] hover:z-10 hover:scale-110 transition-transform cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleCharacterClick(char)
+                              }}
+                              title={char.name}
+                            >
+                              {char.image_url ? (
+                                <Image
+                                  src={char.image_url}
+                                  alt={char.name}
+                                  fill
+                                  className="object-cover"
+                                  sizes="28px"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[9px] font-medium text-[--text-secondary]">
+                                  {getInitials(char.name)}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                          {session.attendees.length > 5 && (
+                            <div className="relative w-7 h-7 rounded-full border-2 border-[--bg-surface] bg-[--bg-elevated] flex items-center justify-center">
+                              <span className="text-[9px] font-medium text-[--text-tertiary]">
+                                +{session.attendees.length - 5}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center gap-1">
                     <button
                       className="btn-ghost btn-icon w-8 h-8"
-                      onClick={() => openEditModal(session)}
+                      onClick={(e) => handleEditClick(session, e)}
+                      title="Edit session"
                     >
-                      <Edit className="w-4 h-4" />
+                      <Pencil className="w-4 h-4" />
                     </button>
                     <button
                       className="btn-ghost btn-icon w-8 h-8 text-[--arcane-ember]"
-                      onClick={() => handleDelete(session.id)}
+                      onClick={(e) => handleDelete(session.id, e)}
+                      title="Delete session"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -324,62 +411,29 @@ export default function SessionsPage() {
           </div>
         </Modal>
 
-        {/* Edit Modal */}
-        <Modal
-          isOpen={!!editingSession}
-          onClose={() => {
-            setEditingSession(null)
-            setFormData({
-              title: '',
-              date: new Date().toISOString().split('T')[0],
-              summary: '',
-            })
-          }}
-          title="Edit Session"
-        >
-          <div className="space-y-4">
-            <div className="form-group">
-              <label className="form-label">Session Title</label>
-              <Input
-                className="form-input"
-                placeholder="e.g., The Journey Begins"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Date</label>
-              <Input
-                className="form-input"
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Summary (optional)</label>
-              <Textarea
-                className="form-textarea"
-                placeholder="Brief summary of what happened..."
-                value={formData.summary}
-                onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                rows={3}
-              />
-            </div>
-            <div className="flex justify-end gap-3 pt-4">
-              <button className="btn btn-secondary" onClick={() => setEditingSession(null)}>
-                Cancel
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleUpdate}
-                disabled={!formData.title.trim() || saving}
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        </Modal>
+        {/* Session View Modal */}
+        {viewingSession && (
+          <SessionViewModal
+            session={viewingSession}
+            attendees={viewingSession.attendees}
+            onEdit={handleEditFromView}
+            onClose={() => setViewingSession(null)}
+            onCharacterClick={handleCharacterClick}
+          />
+        )}
+
+        {/* Character View Modal */}
+        {viewingCharacter && (
+          <CharacterViewModal
+            character={viewingCharacter}
+            tags={characterTags}
+            onEdit={() => {
+              // Could navigate to character editor if needed
+              setViewingCharacter(null)
+            }}
+            onClose={() => setViewingCharacter(null)}
+          />
+        )}
       </div>
     </AppLayout>
   )

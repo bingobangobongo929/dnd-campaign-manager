@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Calendar, Sparkles, Loader2, Users, Check } from 'lucide-react'
+import { ArrowLeft, Calendar, Sparkles, Loader2, Users, Check, X, Pencil } from 'lucide-react'
 import { Input } from '@/components/ui'
 import { RichTextEditor } from '@/components/editor'
 import { AppLayout } from '@/components/layout/app-layout'
@@ -28,9 +28,14 @@ export default function SessionDetailPage() {
   const [summarizing, setSummarizing] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
+    date: '',
     notes: '',
     summary: '',
   })
+
+  // AI Summary suggestion state
+  const [aiSummary, setAiSummary] = useState<string | null>(null)
+  const [showAiSuggestion, setShowAiSuggestion] = useState(false)
 
   useEffect(() => {
     if (user && campaignId && sessionId) {
@@ -69,16 +74,17 @@ export default function SessionDetailPage() {
     setSession(sessionData)
     setFormData({
       title: sessionData.title || '',
+      date: sessionData.date || '',
       notes: sessionData.notes || '',
       summary: sessionData.summary || '',
     })
 
-    // Load characters for attendance
+    // Load all characters for attendance (both PCs and NPCs)
     const { data: charactersData } = await supabase
       .from('characters')
       .select('*')
       .eq('campaign_id', campaignId)
-      .eq('type', 'pc')
+      .order('type', { ascending: true }) // PCs first
       .order('name')
 
     setCharacters(charactersData || [])
@@ -120,6 +126,7 @@ export default function SessionDetailPage() {
       .from('sessions')
       .update({
         title: formData.title,
+        date: formData.date,
         notes: formData.notes || null,
         summary: formData.summary || null,
       })
@@ -132,11 +139,14 @@ export default function SessionDetailPage() {
     delay: 1500,
   })
 
-  // AI Summarize
+  // AI Summarize - now with accept/edit/decline flow
   const handleSummarize = async () => {
     if (!formData.notes || summarizing) return
 
     setSummarizing(true)
+    setAiSummary('')
+    setShowAiSuggestion(true)
+
     try {
       const response = await fetch('/api/ai/summarize', {
         method: 'POST',
@@ -159,14 +169,42 @@ export default function SessionDetailPage() {
         const { done, value } = await reader.read()
         if (done) break
         summary += decoder.decode(value)
-        setFormData(prev => ({ ...prev, summary }))
+        setAiSummary(summary)
       }
     } catch (error) {
       console.error('Summarize error:', error)
+      setShowAiSuggestion(false)
+      setAiSummary(null)
     } finally {
       setSummarizing(false)
     }
   }
+
+  const acceptSummary = () => {
+    if (aiSummary) {
+      setFormData(prev => ({ ...prev, summary: aiSummary }))
+    }
+    setShowAiSuggestion(false)
+    setAiSummary(null)
+  }
+
+  const editSummary = () => {
+    // Accept but keep in edit mode
+    if (aiSummary) {
+      setFormData(prev => ({ ...prev, summary: aiSummary }))
+    }
+    setShowAiSuggestion(false)
+    setAiSummary(null)
+  }
+
+  const declineSummary = () => {
+    setShowAiSuggestion(false)
+    setAiSummary(null)
+  }
+
+  // Group characters by type
+  const pcCharacters = characters.filter(c => c.type === 'pc')
+  const npcCharacters = characters.filter(c => c.type === 'npc')
 
   if (loading || !session) {
     return (
@@ -180,7 +218,7 @@ export default function SessionDetailPage() {
 
   return (
     <AppLayout campaignId={campaignId}>
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <button
@@ -197,10 +235,16 @@ export default function SessionDetailPage() {
                 <span className="px-3 py-1 text-sm font-semibold rounded-lg bg-[--arcane-purple]/10 text-[--arcane-purple]">
                   Session {session.session_number}
                 </span>
-                <span className="text-sm text-[--text-tertiary] flex items-center gap-1.5">
+                {/* Editable Date */}
+                <div className="flex items-center gap-1.5 text-sm text-[--text-tertiary]">
                   <Calendar className="w-4 h-4" />
-                  {formatDate(session.date)}
-                </span>
+                  <Input
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    className="h-7 px-2 py-0 text-sm border-none bg-transparent hover:bg-[--bg-elevated] focus:bg-[--bg-elevated] rounded cursor-pointer"
+                  />
+                </div>
               </div>
               <Input
                 value={formData.title}
@@ -222,140 +266,224 @@ export default function SessionDetailPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr,280px] gap-6">
-          {/* Main Content */}
-          <div className="space-y-6">
-            {/* Summary Section */}
-            <div className="card p-5">
-              <div className="flex items-center justify-between mb-3">
-                <label className="form-label mb-0">
-                  Summary
-                  <span className="ml-2 text-[--text-tertiary] font-normal text-xs">
-                    Brief overview for the timeline
-                  </span>
-                </label>
-                <button
-                  onClick={handleSummarize}
-                  disabled={!formData.notes || summarizing}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
-                    "bg-[--arcane-gold]/10 border border-[--arcane-gold]/30 text-[--arcane-gold]",
-                    "hover:bg-[--arcane-gold]/20 hover:border-[--arcane-gold]/50",
-                    "disabled:opacity-50 disabled:cursor-not-allowed"
-                  )}
-                >
-                  {summarizing ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Summarizing...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3.5 h-3.5" />
-                      AI Summarize
-                    </>
-                  )}
-                </button>
-              </div>
-              <textarea
-                value={formData.summary}
-                onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                placeholder="What happened in this session..."
-                rows={3}
-                className="form-textarea"
-              />
-            </div>
-
-            {/* Notes Section */}
-            <div className="card p-5">
-              <label className="form-label">Detailed Notes</label>
-              <RichTextEditor
-                content={formData.notes}
-                onChange={(content) => setFormData({ ...formData, notes: content })}
-                placeholder="Write your detailed session notes here..."
-                className="min-h-[400px]"
-                enableAI
-                aiContext={`Session ${session.session_number}: ${formData.title}`}
-              />
+        {/* Attendance Section - Prominent placement */}
+        <div className="card p-5 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-[--arcane-purple]" />
+              <label className="form-label mb-0 text-lg">
+                Attendance
+              </label>
+              <span className="text-sm text-[--text-tertiary]">
+                ({attendees.length} selected)
+              </span>
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Attendance */}
-            {characters.length > 0 && (
-              <div className="card p-5">
-                <label className="form-label flex items-center gap-2">
-                  <Users className="w-4 h-4 text-[--text-tertiary]" />
-                  Attendance
-                </label>
-                <p className="text-xs text-[--text-tertiary] mb-3">
-                  Who was at this session?
-                </p>
-                <div className="space-y-2">
-                  {characters.map((char) => {
-                    const isAttending = attendees.includes(char.id)
-                    return (
-                      <button
-                        key={char.id}
-                        onClick={() => toggleAttendee(char.id)}
-                        className={cn(
-                          'w-full flex items-center gap-3 p-2 rounded-lg transition-all text-left',
-                          isAttending
-                            ? 'bg-[--arcane-purple]/10 border border-[--arcane-purple]/30'
-                            : 'bg-[--bg-elevated] border border-transparent hover:border-[--border]'
+          {/* PC Characters */}
+          {pcCharacters.length > 0 && (
+            <div className="mb-4">
+              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-2">
+                Player Characters
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {pcCharacters.map((char) => {
+                  const isAttending = attendees.includes(char.id)
+                  return (
+                    <button
+                      key={char.id}
+                      onClick={() => toggleAttendee(char.id)}
+                      className={cn(
+                        'flex items-center gap-2 px-3 py-2 rounded-xl transition-all',
+                        isAttending
+                          ? 'bg-[--arcane-purple] text-white shadow-lg shadow-[--arcane-purple]/25'
+                          : 'bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 text-[--text-secondary] hover:text-[--text-primary]'
+                      )}
+                    >
+                      <div className={cn(
+                        "relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0",
+                        isAttending ? 'ring-2 ring-white/30' : 'bg-[--bg-surface]'
+                      )}>
+                        {char.image_url ? (
+                          <Image
+                            src={char.image_url}
+                            alt={char.name}
+                            fill
+                            className="object-cover"
+                            sizes="28px"
+                          />
+                        ) : (
+                          <div className={cn(
+                            "w-full h-full flex items-center justify-center text-xs font-medium",
+                            isAttending ? 'bg-white/20 text-white' : 'text-[--text-secondary]'
+                          )}>
+                            {getInitials(char.name)}
+                          </div>
                         )}
-                      >
-                        <div className="relative w-8 h-8 rounded-full overflow-hidden bg-[--bg-surface] flex-shrink-0">
-                          {char.image_url ? (
-                            <Image
-                              src={char.image_url}
-                              alt={char.name}
-                              fill
-                              className="object-cover"
-                              sizes="32px"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-xs font-medium text-[--text-secondary]">
-                              {getInitials(char.name)}
-                            </div>
-                          )}
-                        </div>
-                        <span className={cn(
-                          'flex-1 text-sm font-medium truncate',
-                          isAttending ? 'text-[--text-primary]' : 'text-[--text-secondary]'
-                        )}>
-                          {char.name}
-                        </span>
-                        {isAttending && (
-                          <Check className="w-4 h-4 text-[--arcane-purple]" />
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
+                      </div>
+                      <span className="text-sm font-medium">
+                        {char.name}
+                      </span>
+                      {isAttending && (
+                        <Check className="w-4 h-4 ml-1" />
+                      )}
+                    </button>
+                  )
+                })}
               </div>
+            </div>
+          )}
+
+          {/* NPC Characters */}
+          {npcCharacters.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-2">
+                Non-Player Characters
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {npcCharacters.map((char) => {
+                  const isAttending = attendees.includes(char.id)
+                  return (
+                    <button
+                      key={char.id}
+                      onClick={() => toggleAttendee(char.id)}
+                      className={cn(
+                        'flex items-center gap-2 px-3 py-2 rounded-xl transition-all',
+                        isAttending
+                          ? 'bg-[--arcane-gold] text-[--bg-base] shadow-lg shadow-[--arcane-gold]/25'
+                          : 'bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-gold]/50 text-[--text-secondary] hover:text-[--text-primary]'
+                      )}
+                    >
+                      <div className={cn(
+                        "relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0",
+                        isAttending ? 'ring-2 ring-black/20' : 'bg-[--bg-surface]'
+                      )}>
+                        {char.image_url ? (
+                          <Image
+                            src={char.image_url}
+                            alt={char.name}
+                            fill
+                            className="object-cover"
+                            sizes="28px"
+                          />
+                        ) : (
+                          <div className={cn(
+                            "w-full h-full flex items-center justify-center text-xs font-medium",
+                            isAttending ? 'bg-black/20 text-[--bg-base]' : 'text-[--text-secondary]'
+                          )}>
+                            {getInitials(char.name)}
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-sm font-medium">
+                        {char.name}
+                      </span>
+                      {isAttending && (
+                        <Check className="w-4 h-4 ml-1" />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {characters.length === 0 && (
+            <p className="text-sm text-[--text-tertiary] text-center py-4">
+              No characters in this campaign yet. Add characters on the Canvas to track attendance.
+            </p>
+          )}
+        </div>
+
+        {/* Summary Section */}
+        <div className="card p-5 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <label className="form-label mb-0">
+              Summary
+              <span className="ml-2 text-[--text-tertiary] font-normal text-xs">
+                Brief overview for the timeline
+              </span>
+            </label>
+            {!showAiSuggestion && (
+              <button
+                onClick={handleSummarize}
+                disabled={!formData.notes || summarizing}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                  "bg-[--arcane-gold]/10 border border-[--arcane-gold]/30 text-[--arcane-gold]",
+                  "hover:bg-[--arcane-gold]/20 hover:border-[--arcane-gold]/50",
+                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                )}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                AI Summarize
+              </button>
             )}
-
-            {/* Quick Stats */}
-            <div className="card p-5">
-              <label className="form-label">Session Info</label>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-[--text-tertiary]">Session #</span>
-                  <span className="text-[--text-primary] font-medium">{session.session_number}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[--text-tertiary]">Date</span>
-                  <span className="text-[--text-primary]">{formatDate(session.date)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[--text-tertiary]">Attendees</span>
-                  <span className="text-[--text-primary]">{attendees.length} / {characters.length}</span>
-                </div>
-              </div>
-            </div>
           </div>
+
+          {/* AI Suggestion Panel */}
+          {showAiSuggestion && (
+            <div className="mb-4 p-4 rounded-xl bg-[--arcane-gold]/5 border border-[--arcane-gold]/30">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="w-4 h-4 text-[--arcane-gold]" />
+                <span className="text-sm font-medium text-[--arcane-gold]">
+                  {summarizing ? 'Generating summary...' : 'AI Generated Summary'}
+                </span>
+                {summarizing && (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[--arcane-gold]" />
+                )}
+              </div>
+              <p className="text-sm text-[--text-secondary] mb-4 whitespace-pre-wrap min-h-[3rem]">
+                {aiSummary || 'Analyzing your notes...'}
+              </p>
+              {!summarizing && aiSummary && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={acceptSummary}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    Accept
+                  </button>
+                  <button
+                    onClick={editSummary}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple] hover:bg-[--arcane-purple]/20 transition-colors"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    Accept & Edit
+                  </button>
+                  <button
+                    onClick={declineSummary}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[--arcane-ember]/10 border border-[--arcane-ember]/30 text-[--arcane-ember] hover:bg-[--arcane-ember]/20 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Decline
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <textarea
+            value={formData.summary}
+            onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+            placeholder="What happened in this session..."
+            rows={3}
+            className="form-textarea"
+          />
+        </div>
+
+        {/* Notes Section */}
+        <div className="card p-5">
+          <label className="form-label">Detailed Notes</label>
+          <RichTextEditor
+            content={formData.notes}
+            onChange={(content) => setFormData({ ...formData, notes: content })}
+            placeholder="Write your detailed session notes here..."
+            className="min-h-[400px]"
+            enableAI
+            aiContext={`Session ${session.session_number}: ${formData.title}`}
+          />
         </div>
       </div>
     </AppLayout>

@@ -14,15 +14,27 @@ import {
   Star,
   Heart,
   Shield,
-  Edit,
-  Trash2,
+  Check,
+  Users,
+  LayoutGrid,
+  ChevronDown,
 } from 'lucide-react'
 import { Input, Textarea, Modal, Dropdown } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
+import { CharacterViewModal } from '@/components/character'
+import {
+  FeedView,
+  ChaptersView,
+  JournalView,
+  BrowserView,
+  StoryboardView,
+  VIEW_OPTIONS,
+} from '@/components/timeline'
+import type { TimelineViewType, TimelineEventWithCharacters } from '@/components/timeline'
 import { useSupabase, useUser } from '@/hooks'
-import { formatDate, EVENT_TYPE_COLORS, getInitials } from '@/lib/utils'
+import { getInitials, cn } from '@/lib/utils'
 import Image from 'next/image'
-import type { Campaign, TimelineEvent, Character } from '@/types/database'
+import type { Campaign, TimelineEvent, Character, Tag, CharacterTag } from '@/types/database'
 
 const EVENT_TYPES = [
   { value: 'session', label: 'Session', icon: Scroll },
@@ -37,10 +49,7 @@ const EVENT_TYPES = [
   { value: 'other', label: 'Other', icon: Calendar },
 ]
 
-const getEventIcon = (type: string) => {
-  const eventType = EVENT_TYPES.find((t) => t.value === type)
-  return eventType?.icon || Calendar
-}
+const STORAGE_KEY = 'timeline-view-preference'
 
 export default function TimelinePage() {
   const params = useParams()
@@ -51,19 +60,41 @@ export default function TimelinePage() {
   const campaignId = params.id as string
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
-  const [events, setEvents] = useState<(TimelineEvent & { character?: Character })[]>([])
+  const [events, setEvents] = useState<TimelineEventWithCharacters[]>([])
   const [characters, setCharacters] = useState<Character[]>([])
   const [loading, setLoading] = useState(true)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [editingEvent, setEditingEvent] = useState<TimelineEvent | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     event_date: new Date().toISOString().split('T')[0],
     event_type: 'other',
-    character_id: null as string | null,
+    character_ids: [] as string[],
   })
   const [saving, setSaving] = useState(false)
+
+  // View state
+  const [currentView, setCurrentView] = useState<TimelineViewType>('feed')
+  const [viewMenuOpen, setViewMenuOpen] = useState(false)
+
+  // Character preview modal state
+  const [viewingCharacter, setViewingCharacter] = useState<Character | null>(null)
+  const [characterTags, setCharacterTags] = useState<(CharacterTag & { tag: Tag; related_character?: Character | null })[]>([])
+
+  // Load view preference from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved && VIEW_OPTIONS.some(v => v.value === saved)) {
+      setCurrentView(saved as TimelineViewType)
+    }
+  }, [])
+
+  // Save view preference
+  const handleViewChange = (view: TimelineViewType) => {
+    setCurrentView(view)
+    localStorage.setItem(STORAGE_KEY, view)
+    setViewMenuOpen(false)
+  }
 
   useEffect(() => {
     if (user && campaignId) {
@@ -86,25 +117,35 @@ export default function TimelinePage() {
     }
     setCampaign(campaignData)
 
+    // Load all characters (both PCs and NPCs)
     const { data: charactersData } = await supabase
       .from('characters')
       .select('*')
       .eq('campaign_id', campaignId)
+      .order('type', { ascending: true })
       .order('name')
 
     setCharacters(charactersData || [])
 
     const { data: eventsData } = await supabase
       .from('timeline_events')
-      .select(`
-        *,
-        character:characters(*)
-      `)
+      .select('*')
       .eq('campaign_id', campaignId)
       .order('event_date', { ascending: true })
       .order('created_at', { ascending: true })
 
-    setEvents(eventsData || [])
+    // Map characters to events
+    const eventsWithCharacters = (eventsData || []).map(event => {
+      const charIds = event.character_ids || (event.character_id ? [event.character_id] : [])
+      return {
+        ...event,
+        characters: charIds
+          .map((id: string) => charactersData?.find(c => c.id === id))
+          .filter(Boolean) as Character[]
+      }
+    })
+
+    setEvents(eventsWithCharacters)
     setLoading(false)
   }
 
@@ -120,76 +161,46 @@ export default function TimelinePage() {
         description: formData.description || null,
         event_date: formData.event_date,
         event_type: formData.event_type,
-        character_id: formData.character_id,
+        character_ids: formData.character_ids.length > 0 ? formData.character_ids : null,
+        character_id: formData.character_ids.length > 0 ? formData.character_ids[0] : null,
       })
-      .select(`
-        *,
-        character:characters(*)
-      `)
+      .select()
       .single()
 
     if (data) {
-      const newEvents = [...events, data].sort((a, b) => {
-        const dateCompare = new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
-        if (dateCompare !== 0) return dateCompare
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      })
-      setEvents(newEvents)
       setIsCreateModalOpen(false)
       resetForm()
+      router.push(`/campaigns/${campaignId}/timeline/${data.id}`)
     }
     setSaving(false)
   }
 
-  const handleUpdate = async () => {
-    if (!formData.title.trim() || !editingEvent) return
+  const handleEventClick = (event: TimelineEventWithCharacters) => {
+    router.push(`/campaigns/${campaignId}/timeline/${event.id}`)
+  }
 
-    setSaving(true)
-    const { data } = await supabase
-      .from('timeline_events')
-      .update({
-        title: formData.title,
-        description: formData.description || null,
-        event_date: formData.event_date,
-        event_type: formData.event_type,
-        character_id: formData.character_id,
-      })
-      .eq('id', editingEvent.id)
+  const handleCharacterClick = async (character: Character, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const { data: tagsData } = await supabase
+      .from('character_tags')
       .select(`
         *,
-        character:characters(*)
+        tag:tags(*),
+        related_character:characters!character_tags_related_character_id_fkey(*)
       `)
-      .single()
+      .eq('character_id', character.id)
 
-    if (data) {
-      const newEvents = events.map((e) => (e.id === data.id ? data : e)).sort((a, b) => {
-        const dateCompare = new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
-        if (dateCompare !== 0) return dateCompare
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      })
-      setEvents(newEvents)
-      setEditingEvent(null)
-      resetForm()
-    }
-    setSaving(false)
+    setCharacterTags(tagsData || [])
+    setViewingCharacter(character)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this event?')) return
-
-    await supabase.from('timeline_events').delete().eq('id', id)
-    setEvents(events.filter((e) => e.id !== id))
-  }
-
-  const openEditModal = (event: TimelineEvent) => {
-    setFormData({
-      title: event.title,
-      description: event.description || '',
-      event_date: event.event_date,
-      event_type: event.event_type,
-      character_id: event.character_id,
-    })
-    setEditingEvent(event)
+  const toggleCharacter = (characterId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      character_ids: prev.character_ids.includes(characterId)
+        ? prev.character_ids.filter(id => id !== characterId)
+        : [...prev.character_ids, characterId]
+    }))
   }
 
   const resetForm = () => {
@@ -198,20 +209,36 @@ export default function TimelinePage() {
       description: '',
       event_date: new Date().toISOString().split('T')[0],
       event_type: 'other',
-      character_id: null,
+      character_ids: [],
     })
   }
 
-  // Group events by year/month
-  const groupedEvents = events.reduce((acc, event) => {
-    const date = new Date(event.event_date)
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-    if (!acc[key]) {
-      acc[key] = []
+  const pcCharacters = characters.filter(c => c.type === 'pc')
+  const npcCharacters = characters.filter(c => c.type === 'npc')
+
+  // Render the current view
+  const renderView = () => {
+    const viewProps = {
+      events,
+      onEventClick: handleEventClick,
+      onCharacterClick: handleCharacterClick,
     }
-    acc[key].push(event)
-    return acc
-  }, {} as Record<string, typeof events>)
+
+    switch (currentView) {
+      case 'feed':
+        return <FeedView {...viewProps} />
+      case 'chapters':
+        return <ChaptersView {...viewProps} />
+      case 'journal':
+        return <JournalView {...viewProps} />
+      case 'browser':
+        return <BrowserView {...viewProps} />
+      case 'storyboard':
+        return <StoryboardView {...viewProps} />
+      default:
+        return <FeedView {...viewProps} />
+    }
+  }
 
   if (loading) {
     return (
@@ -225,20 +252,76 @@ export default function TimelinePage() {
 
   return (
     <AppLayout campaignId={campaignId}>
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Page Header */}
         <div className="page-header flex items-center justify-between">
           <div>
             <h1 className="page-title">Campaign Timeline</h1>
             <p className="page-subtitle">Chronicle your adventure's key moments</p>
           </div>
-          <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
-            <Plus className="w-4 h-4" />
-            Add Event
-          </button>
+          <div className="flex items-center gap-3">
+            {/* View Toggle */}
+            <div className="relative">
+              <button
+                onClick={() => setViewMenuOpen(!viewMenuOpen)}
+                className="btn btn-secondary flex items-center gap-2"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                <span className="capitalize">{currentView}</span>
+                <ChevronDown className={cn("w-4 h-4 transition-transform", viewMenuOpen && "rotate-180")} />
+              </button>
+
+              {/* View Menu */}
+              {viewMenuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setViewMenuOpen(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-2 w-64 bg-[--bg-surface] border border-[--border] rounded-xl shadow-xl z-50 py-2 animate-slide-in-up">
+                    <div className="px-3 py-2 border-b border-[--border]">
+                      <p className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide">
+                        View Style
+                      </p>
+                    </div>
+                    {VIEW_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => handleViewChange(option.value)}
+                        className={cn(
+                          "w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-[--bg-elevated] transition-colors",
+                          currentView === option.value && "bg-[--arcane-purple]/10"
+                        )}
+                      >
+                        <div>
+                          <p className={cn(
+                            "font-medium text-sm",
+                            currentView === option.value ? "text-[--arcane-purple]" : "text-[--text-primary]"
+                          )}>
+                            {option.label}
+                          </p>
+                          <p className="text-xs text-[--text-tertiary]">
+                            {option.description}
+                          </p>
+                        </div>
+                        {currentView === option.value && (
+                          <Check className="w-4 h-4 text-[--arcane-purple]" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
+              <Plus className="w-4 h-4" />
+              Add Event
+            </button>
+          </div>
         </div>
 
-        {/* Timeline */}
+        {/* Timeline Content */}
         {events.length === 0 ? (
           <div className="empty-state">
             <Calendar className="empty-state-icon" />
@@ -252,123 +335,7 @@ export default function TimelinePage() {
             </button>
           </div>
         ) : (
-          <div className="relative">
-            {/* Central timeline line */}
-            <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[--arcane-purple] via-[--arcane-gold] to-[--arcane-purple]" />
-
-            {Object.entries(groupedEvents).map(([monthKey, monthEvents]) => {
-              const [year, month] = monthKey.split('-')
-              const monthName = new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('en-US', {
-                month: 'long',
-                year: 'numeric',
-              })
-
-              return (
-                <div key={monthKey} className="mb-8">
-                  {/* Month header */}
-                  <div className="flex items-center gap-4 mb-6 relative">
-                    <div className="w-16 h-16 rounded-full bg-[--bg-surface] border-2 border-[--arcane-purple] flex items-center justify-center z-10">
-                      <Calendar className="w-6 h-6 text-[--arcane-purple]" />
-                    </div>
-                    <h2 className="text-lg font-semibold text-[--text-primary] font-display">{monthName}</h2>
-                  </div>
-
-                  {/* Events */}
-                  <div className="space-y-4 ml-8 pl-12 border-l-2 border-[--border]">
-                    {monthEvents.map((event, index) => {
-                      const EventIcon = getEventIcon(event.event_type)
-                      const color = EVENT_TYPE_COLORS[event.event_type] || EVENT_TYPE_COLORS.other
-
-                      return (
-                        <div
-                          key={event.id}
-                          className="relative group animate-slide-in-up"
-                          style={{ animationDelay: `${index * 50}ms` }}
-                        >
-                          {/* Event dot */}
-                          <div
-                            className="absolute -left-[53px] w-4 h-4 rounded-full border-2 border-[--bg-base]"
-                            style={{ backgroundColor: color }}
-                          />
-
-                          {/* Event card */}
-                          <div className="card p-4 hover:border-[--arcane-purple]/50">
-                            <div className="flex items-start gap-4">
-                              <div
-                                className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                                style={{ backgroundColor: `${color}20`, color }}
-                              >
-                                <EventIcon className="w-5 h-5" />
-                              </div>
-
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span
-                                    className="text-xs font-medium px-2 py-0.5 rounded"
-                                    style={{ backgroundColor: `${color}20`, color }}
-                                  >
-                                    {EVENT_TYPES.find((t) => t.value === event.event_type)?.label}
-                                  </span>
-                                  <span className="text-xs text-[--text-tertiary]">
-                                    {formatDate(event.event_date)}
-                                  </span>
-                                </div>
-                                <h3 className="font-semibold text-[--text-primary]">
-                                  {event.title}
-                                </h3>
-                                {event.description && (
-                                  <p className="text-sm text-[--text-secondary] mt-1 line-clamp-2">
-                                    {event.description}
-                                  </p>
-                                )}
-                                {event.character && (
-                                  <div className="flex items-center gap-2 mt-2">
-                                    <div className="relative w-6 h-6 rounded-full overflow-hidden bg-[--bg-elevated] flex-shrink-0">
-                                      {event.character.image_url ? (
-                                        <Image
-                                          src={event.character.image_url}
-                                          alt={event.character.name}
-                                          fill
-                                          className="object-cover"
-                                          sizes="24px"
-                                        />
-                                      ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-xs font-medium text-[--text-secondary]">
-                                          {getInitials(event.character.name)}
-                                        </div>
-                                      )}
-                                    </div>
-                                    <span className="text-sm text-[--text-secondary]">
-                                      {event.character.name}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                  className="btn-ghost btn-icon w-8 h-8"
-                                  onClick={() => openEditModal(event)}
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </button>
-                                <button
-                                  className="btn-ghost btn-icon w-8 h-8 text-[--arcane-ember]"
-                                  onClick={() => handleDelete(event.id)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+          renderView()
         )}
 
         {/* FAB */}
@@ -382,16 +349,15 @@ export default function TimelinePage() {
           </button>
         )}
 
-        {/* Create/Edit Modal */}
+        {/* Create Modal */}
         <Modal
-          isOpen={isCreateModalOpen || !!editingEvent}
+          isOpen={isCreateModalOpen}
           onClose={() => {
             setIsCreateModalOpen(false)
-            setEditingEvent(null)
             resetForm()
           }}
-          title={editingEvent ? 'Edit Event' : 'Add Event'}
-          description={editingEvent ? undefined : 'Add a new event to your campaign timeline'}
+          title="Add Event"
+          description="Create a new event, then continue editing"
         >
           <div className="space-y-4">
             <div className="form-group">
@@ -424,16 +390,119 @@ export default function TimelinePage() {
               </div>
             </div>
 
+            {/* Character Selection */}
             <div className="form-group">
-              <label className="form-label">Related Character (optional)</label>
-              <Dropdown
-                options={[
-                  { value: '', label: 'None' },
-                  ...characters.map((c) => ({ value: c.id, label: c.name })),
-                ]}
-                value={formData.character_id || ''}
-                onChange={(value) => setFormData({ ...formData, character_id: value || null })}
-              />
+              <label className="form-label flex items-center gap-2">
+                <Users className="w-4 h-4 text-[--text-tertiary]" />
+                Characters Involved
+                <span className="text-[--text-tertiary] font-normal">({formData.character_ids.length} selected)</span>
+              </label>
+
+              {pcCharacters.length > 0 && (
+                <div className="mb-3">
+                  <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-2">
+                    Player Characters
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {pcCharacters.map((char) => {
+                      const isSelected = formData.character_ids.includes(char.id)
+                      return (
+                        <button
+                          key={char.id}
+                          type="button"
+                          onClick={() => toggleCharacter(char.id)}
+                          className={cn(
+                            'flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all text-sm',
+                            isSelected
+                              ? 'bg-[--arcane-purple] text-white'
+                              : 'bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 text-[--text-secondary]'
+                          )}
+                        >
+                          <div className={cn(
+                            "relative w-5 h-5 rounded-full overflow-hidden flex-shrink-0",
+                            isSelected ? 'ring-1 ring-white/30' : 'bg-[--bg-surface]'
+                          )}>
+                            {char.image_url ? (
+                              <Image
+                                src={char.image_url}
+                                alt={char.name}
+                                fill
+                                className="object-cover"
+                                sizes="20px"
+                              />
+                            ) : (
+                              <div className={cn(
+                                "w-full h-full flex items-center justify-center text-[8px] font-medium",
+                                isSelected ? 'bg-white/20 text-white' : 'text-[--text-secondary]'
+                              )}>
+                                {getInitials(char.name)}
+                              </div>
+                            )}
+                          </div>
+                          {char.name}
+                          {isSelected && <Check className="w-3.5 h-3.5" />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {npcCharacters.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-2">
+                    Non-Player Characters
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {npcCharacters.map((char) => {
+                      const isSelected = formData.character_ids.includes(char.id)
+                      return (
+                        <button
+                          key={char.id}
+                          type="button"
+                          onClick={() => toggleCharacter(char.id)}
+                          className={cn(
+                            'flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all text-sm',
+                            isSelected
+                              ? 'bg-[--arcane-gold] text-[--bg-base]'
+                              : 'bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-gold]/50 text-[--text-secondary]'
+                          )}
+                        >
+                          <div className={cn(
+                            "relative w-5 h-5 rounded-full overflow-hidden flex-shrink-0",
+                            isSelected ? 'ring-1 ring-black/20' : 'bg-[--bg-surface]'
+                          )}>
+                            {char.image_url ? (
+                              <Image
+                                src={char.image_url}
+                                alt={char.name}
+                                fill
+                                className="object-cover"
+                                sizes="20px"
+                              />
+                            ) : (
+                              <div className={cn(
+                                "w-full h-full flex items-center justify-center text-[8px] font-medium",
+                                isSelected ? 'bg-black/20 text-[--bg-base]' : 'text-[--text-secondary]'
+                              )}>
+                                {getInitials(char.name)}
+                              </div>
+                            )}
+                          </div>
+                          {char.name}
+                          {isSelected && <Check className="w-3.5 h-3.5" />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {characters.length === 0 && (
+                <p className="text-sm text-[--text-tertiary] text-center py-2">
+                  No characters yet. Add characters on the Canvas first.
+                </p>
+              )}
             </div>
 
             <div className="form-group">
@@ -452,7 +521,6 @@ export default function TimelinePage() {
                 className="btn btn-secondary"
                 onClick={() => {
                   setIsCreateModalOpen(false)
-                  setEditingEvent(null)
                   resetForm()
                 }}
               >
@@ -460,14 +528,24 @@ export default function TimelinePage() {
               </button>
               <button
                 className="btn btn-primary"
-                onClick={editingEvent ? handleUpdate : handleCreate}
+                onClick={handleCreate}
                 disabled={!formData.title.trim() || saving}
               >
-                {saving ? 'Saving...' : editingEvent ? 'Save Changes' : 'Add Event'}
+                {saving ? 'Creating...' : 'Create & Edit'}
               </button>
             </div>
           </div>
         </Modal>
+
+        {/* Character View Modal */}
+        {viewingCharacter && (
+          <CharacterViewModal
+            character={viewingCharacter}
+            tags={characterTags}
+            onEdit={() => setViewingCharacter(null)}
+            onClose={() => setViewingCharacter(null)}
+          />
+        )}
       </div>
     </AppLayout>
   )
