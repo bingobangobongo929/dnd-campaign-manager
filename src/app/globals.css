@@ -1,32 +1,7 @@
 @import "tailwindcss";
 
-/* Design System CSS Variables */
+/* Design System CSS Variables - Dark Theme as default */
 :root {
-  /* Light Theme */
-  --bg-base: #FAFAFA;
-  --bg-surface: #FFFFFF;
-  --bg-elevated: #FFFFFF;
-  --bg-hover: #F3F4F6;
-
-  --text-primary: #111827;
-  --text-secondary: #4B5563;
-  --text-tertiary: #9CA3AF;
-
-  --border: #E5E7EB;
-  --border-focus: #8B5CF6;
-
-  --accent-primary: #8B5CF6;
-  --accent-secondary: #F59E0B;
-  --accent-success: #10B981;
-  --accent-danger: #EF4444;
-  --accent-info: #3B82F6;
-
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-.dark {
-  /* Dark Theme (Primary) */
   --bg-base: #0D0F12;
   --bg-surface: #151821;
   --bg-elevated: #1C1F2A;
@@ -44,6 +19,23 @@
   --accent-success: #10B981;
   --accent-danger: #EF4444;
   --accent-info: #3B82F6;
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* Light Theme Override */
+.light {
+  --bg-base: #FAFAFA;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #FFFFFF;
+  --bg-hover: #F3F4F6;
+
+  --text-primary: #111827;
+  --text-secondary: #4B5563;
+  --text-tertiary: #9CA3AF;
+
+  --border: #E5E7EB;
 }
 
 @theme inline {
