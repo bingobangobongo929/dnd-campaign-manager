@@ -33,10 +33,11 @@ interface CampaignCanvasProps {
   characterTags: Map<string, (CharacterTag & { tag: Tag; related_character?: Character | null })[]>
   groups: CanvasGroup[]
   initialCharacterSizes?: Record<string, { width?: number; height?: number }>
+  // External size overrides from resize toolbar - highest priority
+  characterSizeOverrides?: Map<string, { width: number; height: number }>
   onCharacterSelect: (id: string | null) => void
   onCharacterDoubleClick: (id: string) => void
   onCharacterPositionChange: (id: string, x: number, y: number) => void
-  onCharacterSizeChange?: (id: string, width: number, height: number) => void
   onGroupUpdate: (id: string, updates: Partial<CanvasGroup>) => void
   onGroupDelete: (id: string) => void
   onGroupPositionChange: (id: string, x: number, y: number) => void
@@ -54,16 +55,16 @@ function CampaignCanvasInner({
   characterTags,
   groups,
   initialCharacterSizes,
+  characterSizeOverrides,
   onCharacterSelect,
   onCharacterDoubleClick,
   onCharacterPositionChange,
-  onCharacterSizeChange,
   onGroupUpdate,
   onGroupDelete,
   onGroupPositionChange,
 }: CampaignCanvasProps) {
   const { selectedCharacterId, setCanvasViewport } = useAppStore()
-  const { getNodes, getViewport } = useReactFlow()
+  const { getViewport } = useReactFlow()
   const [snapLines, setSnapLines] = useState<{ x?: number; y?: number }>({})
 
   // Track if this is the first mount
@@ -83,26 +84,14 @@ function CampaignCanvasInner({
     initialSizesApplied.current = true
   }
 
-  // Handle character resize - save to ref and call callback
-  const handleCharacterResize = useCallback((id: string, width: number, height: number) => {
-    // Store the new size in our ref
-    nodeSizesRef.current.set(id, { width, height })
-    console.log(`Saving size for ${id}: ${width}x${height}`)
-
-    // Call the parent callback
-    if (onCharacterSizeChange) {
-      onCharacterSizeChange(id, width, height)
-    }
-  }, [onCharacterSizeChange])
-
   // Create nodes from data
   const createNodes = useCallback(() => {
     const characterNodes = characters.map((char) => {
-      // Priority: ref cache (most recent) > database value > default
-      // This prevents async DB saves from being overwritten by stale state
+      // Priority: toolbar override > ref cache > database value > default
+      const overrideSize = characterSizeOverrides?.get(char.id)
       const savedSize = nodeSizesRef.current.get(char.id)
-      const width = savedSize?.width || char.canvas_width || DEFAULT_CARD_WIDTH
-      const height = savedSize?.height || char.canvas_height || DEFAULT_CARD_HEIGHT
+      const width = overrideSize?.width || savedSize?.width || char.canvas_width || DEFAULT_CARD_WIDTH
+      const height = overrideSize?.height || savedSize?.height || char.canvas_height || DEFAULT_CARD_HEIGHT
 
       return {
         id: char.id,
@@ -115,7 +104,6 @@ function CampaignCanvasInner({
           isSelected: char.id === selectedCharacterId,
           onSelect: onCharacterSelect,
           onDoubleClick: onCharacterDoubleClick,
-          onResize: handleCharacterResize,
         } as CharacterNodeData,
       }
     })
@@ -135,7 +123,7 @@ function CampaignCanvasInner({
 
     // Groups should render behind characters
     return [...groupNodes, ...characterNodes] as unknown as Node[]
-  }, [characters, characterTags, groups, selectedCharacterId, onCharacterSelect, onCharacterDoubleClick, handleCharacterResize, onGroupUpdate, onGroupDelete])
+  }, [characters, characterTags, groups, selectedCharacterId, characterSizeOverrides, onCharacterSelect, onCharacterDoubleClick, onGroupUpdate, onGroupDelete])
 
   // Initialize nodes
   const [nodes, setNodes] = useNodesState(createNodes())
@@ -184,7 +172,7 @@ function CampaignCanvasInner({
 
       return newNodes
     })
-  }, [characters, characterTags, groups, selectedCharacterId, createNodes, setNodes])
+  }, [characters, characterTags, groups, selectedCharacterId, characterSizeOverrides, createNodes, setNodes])
 
   // Smart snap - find alignment guides
   const findSnapPositions = useCallback((movingNodeId: string, position: { x: number; y: number }, width: number, height: number) => {

@@ -1,7 +1,7 @@
 'use client'
 
 import { memo } from 'react'
-import { Handle, Position, NodeResizer } from '@xyflow/react'
+import { Handle, Position } from '@xyflow/react'
 import { cn } from '@/lib/utils'
 import { TagBadge } from '@/components/ui'
 import Image from 'next/image'
@@ -21,7 +21,6 @@ export interface CharacterNodeData extends Record<string, unknown> {
   isSelected: boolean
   onSelect: (id: string) => void
   onDoubleClick: (id: string) => void
-  onResize?: (id: string, width: number, height: number) => void
 }
 
 function CharacterNodeComponent({
@@ -32,7 +31,7 @@ function CharacterNodeComponent({
   data: CharacterNodeData
   selected?: boolean
 }) {
-  const { character, tags, onSelect, onDoubleClick, onResize } = data
+  const { character, tags, onSelect, onDoubleClick } = data
   const isPC = character.type === 'pc'
   const isActive = selected || data.isSelected
 
@@ -42,23 +41,6 @@ function CharacterNodeComponent({
 
   return (
     <>
-      {/* Resize handles - visible when selected (like groups) */}
-      <NodeResizer
-        minWidth={MIN_CARD_WIDTH}
-        minHeight={MIN_CARD_HEIGHT}
-        maxWidth={MAX_CARD_WIDTH}
-        maxHeight={MAX_CARD_HEIGHT}
-        isVisible={selected}
-        lineClassName="!border-[--arcane-purple] !border-2"
-        handleClassName="!w-3 !h-3 !bg-[--arcane-purple] !border-2 !border-white !rounded-sm"
-        onResizeEnd={(_, params) => {
-          // Save size when resize ends (like groups do)
-          if (onResize) {
-            onResize(character.id, Math.round(params.width), Math.round(params.height))
-          }
-        }}
-      />
-
       <div
         className={cn(
           'character-card',

@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Plus, FolderPlus } from 'lucide-react'
+import { Plus, FolderPlus, Scaling } from 'lucide-react'
 import { Modal, Input, Dropdown } from '@/components/ui'
-import { CampaignCanvas } from '@/components/canvas'
+import { CampaignCanvas, ResizeToolbar } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
@@ -34,6 +34,7 @@ export default function CampaignCanvasPage() {
   // Modals
   const [isCreateCharacterOpen, setIsCreateCharacterOpen] = useState(false)
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false)
+  const [isResizeToolbarOpen, setIsResizeToolbarOpen] = useState(false)
   const [viewingCharacterId, setViewingCharacterId] = useState<string | null>(null)
   const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null)
   const [characterForm, setCharacterForm] = useState({
@@ -42,6 +43,9 @@ export default function CampaignCanvasPage() {
   })
   const [groupForm, setGroupForm] = useState({ name: '' })
   const [saving, setSaving] = useState(false)
+
+  // Character size overrides from resize toolbar
+  const [characterSizeOverrides, setCharacterSizeOverrides] = useState<Map<string, { width: number; height: number }>>(new Map())
 
   // Load campaign data
   useEffect(() => {
@@ -138,14 +142,39 @@ export default function CampaignCanvasPage() {
       .eq('id', id)
   }, [supabase])
 
-  // Handle character resize - only save to DB, don't update state (causes re-render loop)
-  const handleCharacterSizeChange = useCallback(async (id: string, width: number, height: number) => {
-    // Persist to database (the canvas component handles local state via nodeSizesRef)
-    await supabase
-      .from('characters')
-      .update({ canvas_width: width, canvas_height: height })
-      .eq('id', id)
-  }, [supabase])
+  // Handle batch resize from toolbar - updates state for live preview
+  const handleBatchResize = useCallback((characterIds: string[], width: number, height: number) => {
+    const newOverrides = new Map(characterSizeOverrides)
+    for (const id of characterIds) {
+      newOverrides.set(id, { width, height })
+    }
+    setCharacterSizeOverrides(newOverrides)
+  }, [characterSizeOverrides])
+
+  // Save sizes to database when toolbar closes
+  const handleResizeToolbarClose = useCallback(async () => {
+    // Save all overrides to database
+    const savePromises = Array.from(characterSizeOverrides.entries()).map(([id, size]) =>
+      supabase
+        .from('characters')
+        .update({ canvas_width: size.width, canvas_height: size.height })
+        .eq('id', id)
+    )
+    await Promise.all(savePromises)
+
+    // Update local characters state with new sizes
+    setCharacters(prev => prev.map(c => {
+      const override = characterSizeOverrides.get(c.id)
+      if (override) {
+        return { ...c, canvas_width: override.width, canvas_height: override.height }
+      }
+      return c
+    }))
+
+    // Clear overrides and close toolbar
+    setCharacterSizeOverrides(new Map())
+    setIsResizeToolbarOpen(false)
+  }, [characterSizeOverrides, supabase])
 
   const handleGroupUpdate = useCallback(async (id: string, updates: Partial<CanvasGroup>) => {
     setGroups(prev => prev.map(g =>
@@ -290,6 +319,13 @@ export default function CampaignCanvasPage() {
       <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
         <button
           className="btn btn-secondary"
+          onClick={() => setIsResizeToolbarOpen(true)}
+        >
+          <Scaling className="w-4 h-4" />
+          <span className="hidden sm:inline ml-2">Resize</span>
+        </button>
+        <button
+          className="btn btn-secondary"
           onClick={() => setIsCreateGroupOpen(true)}
         >
           <FolderPlus className="w-4 h-4" />
@@ -311,15 +347,24 @@ export default function CampaignCanvasPage() {
           characters={characters}
           characterTags={characterTags}
           groups={groups}
+          characterSizeOverrides={characterSizeOverrides}
           onCharacterSelect={handleCharacterSelect}
           onCharacterDoubleClick={handleCharacterDoubleClick}
           onCharacterPositionChange={handleCharacterPositionChange}
-          onCharacterSizeChange={handleCharacterSizeChange}
           onGroupUpdate={handleGroupUpdate}
           onGroupDelete={handleGroupDelete}
           onGroupPositionChange={handleGroupPositionChange}
         />
       </div>
+
+      {/* Resize Toolbar */}
+      {isResizeToolbarOpen && (
+        <ResizeToolbar
+          characters={characters}
+          onResize={handleBatchResize}
+          onClose={handleResizeToolbarClose}
+        />
+      )}
 
       {/* Character View Modal (Read-only) */}
       {viewingCharacter && (
