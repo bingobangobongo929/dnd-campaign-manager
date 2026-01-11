@@ -27,6 +27,7 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
   const [width, setWidth] = useState(DEFAULT_CARD_WIDTH)
   const [height, setHeight] = useState(DEFAULT_CARD_HEIGHT)
   const isFirstRender = useRef(true)
+  const prevSize = useRef({ width, height })
 
   // Get filtered characters based on type filter
   const filteredCharacters = characters.filter((char) => {
@@ -69,14 +70,18 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
     setHeight(DEFAULT_CARD_HEIGHT)
   }, [])
 
-  // Live preview - apply as sliders change (skip first render)
+  // Live preview - apply as sliders change (only when width/height changes, not selection)
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false
       return
     }
-    if (selectedIds.size > 0) {
-      onResize(Array.from(selectedIds), width, height)
+    // Only trigger resize if width or height actually changed
+    if (prevSize.current.width !== width || prevSize.current.height !== height) {
+      prevSize.current = { width, height }
+      if (selectedIds.size > 0) {
+        onResize(Array.from(selectedIds), width, height)
+      }
     }
   }, [width, height, selectedIds, onResize])
 
