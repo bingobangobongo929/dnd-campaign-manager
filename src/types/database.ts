@@ -51,6 +51,8 @@ export interface Database {
           summary: string | null
           notes: string | null
           image_url: string | null
+          detail_image_url: string | null
+          image_generated_with_ai: boolean
           position_x: number
           position_y: number
           canvas_width: number | null
@@ -67,6 +69,8 @@ export interface Database {
           summary?: string | null
           notes?: string | null
           image_url?: string | null
+          detail_image_url?: string | null
+          image_generated_with_ai?: boolean
           position_x?: number
           position_y?: number
           canvas_width?: number | null
@@ -83,6 +87,8 @@ export interface Database {
           summary?: string | null
           notes?: string | null
           image_url?: string | null
+          detail_image_url?: string | null
+          image_generated_with_ai?: boolean
           position_x?: number
           position_y?: number
           canvas_width?: number | null

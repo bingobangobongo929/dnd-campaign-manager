@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { X, Trash2, Plus, User, Users, Maximize2, Minimize2, Sparkles } from 'lucide-react'
-import { Input, Dropdown, Modal, ImageUpload } from '@/components/ui'
+import { Input, Dropdown, Modal } from '@/components/ui'
 import { TagBadge } from '@/components/ui'
+import { CharacterImageUpload } from './character-image-upload'
 import { RichTextEditor } from '@/components/editor/rich-text-editor'
 import { useSupabase } from '@/hooks'
 import { useAutoSave } from '@/hooks'
@@ -38,6 +39,8 @@ export function CharacterModal({
     notes: character.notes || '',
     type: character.type,
     image_url: character.image_url || null,
+    detail_image_url: character.detail_image_url || null,
+    image_generated_with_ai: character.image_generated_with_ai || false,
   })
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
   const [isAddTagOpen, setIsAddTagOpen] = useState(false)
@@ -59,6 +62,8 @@ export function CharacterModal({
       notes: character.notes || '',
       type: character.type,
       image_url: character.image_url || null,
+      detail_image_url: character.detail_image_url || null,
+      image_generated_with_ai: character.image_generated_with_ai || false,
     })
   }, [character.id])
 
@@ -99,6 +104,16 @@ export function CharacterModal({
     setAvailableTags(data || [])
   }
 
+  // Handle image update from CharacterImageUpload
+  const handleImageUpdate = useCallback((avatarUrl: string | null, detailUrl: string | null, aiGenerated: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      image_url: avatarUrl,
+      detail_image_url: detailUrl,
+      image_generated_with_ai: aiGenerated,
+    }))
+  }, [])
+
   // Auto-save functionality
   const saveCharacter = useCallback(async () => {
     const { data } = await supabase
@@ -109,6 +124,8 @@ export function CharacterModal({
         notes: formData.notes || null,
         type: formData.type,
         image_url: formData.image_url || null,
+        detail_image_url: formData.detail_image_url || null,
+        image_generated_with_ai: formData.image_generated_with_ai,
       })
       .eq('id', character.id)
       .select()
@@ -259,10 +276,15 @@ export function CharacterModal({
               <>
                 {/* Left Column: Character Info */}
                 <div className="character-modal-left">
-                  <ImageUpload
-                    value={formData.image_url}
-                    onChange={(url) => setFormData({ ...formData, image_url: url })}
-                    name={formData.name}
+                  <CharacterImageUpload
+                    characterId={character.id}
+                    characterName={formData.name}
+                    characterType={formData.type}
+                    characterDescription={formData.notes}
+                    characterSummary={formData.summary}
+                    avatarUrl={formData.image_url}
+                    detailUrl={formData.detail_image_url}
+                    onUpdate={handleImageUpdate}
                     size="xl"
                   />
 
@@ -344,22 +366,12 @@ export function CharacterModal({
                   <div className="form-group">
                     <label className="form-label flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-[--arcane-gold]" />
-                      AI Assistant
+                      AI Features
                     </label>
-                    <div className="space-y-2">
-                      <button className="btn btn-secondary w-full justify-start text-sm">
-                        <Sparkles className="w-4 h-4" />
-                        Generate Portrait
-                      </button>
-                      <button className="btn btn-secondary w-full justify-start text-sm">
-                        <Sparkles className="w-4 h-4" />
-                        Expand Backstory
-                      </button>
-                      <button className="btn btn-secondary w-full justify-start text-sm">
-                        <Sparkles className="w-4 h-4" />
-                        Suggest Plot Hooks
-                      </button>
-                    </div>
+                    <p className="text-xs text-[--text-tertiary] mb-3">
+                      Use the Generate button below the avatar to create AI portraits.
+                      The notes editor has AI expand tools in its toolbar.
+                    </p>
                   </div>
 
                   <div className="form-group">
@@ -396,10 +408,15 @@ export function CharacterModal({
               <>
                 {/* Top Section: Avatar + Basic Info */}
                 <div className="character-modal-top">
-                  <ImageUpload
-                    value={formData.image_url}
-                    onChange={(url) => setFormData({ ...formData, image_url: url })}
-                    name={formData.name}
+                  <CharacterImageUpload
+                    characterId={character.id}
+                    characterName={formData.name}
+                    characterType={formData.type}
+                    characterDescription={formData.notes}
+                    characterSummary={formData.summary}
+                    avatarUrl={formData.image_url}
+                    detailUrl={formData.detail_image_url}
+                    onUpdate={handleImageUpdate}
                     size="xl"
                   />
 
