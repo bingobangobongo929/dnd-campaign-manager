@@ -115,19 +115,16 @@ export default function CampaignCanvasPage() {
     setLoading(false)
   }
 
-  const handleCharacterSelect = useCallback((id: string | null) => {
+  const handleCharacterPreview = useCallback((id: string) => {
     setSelectedCharacterId(id)
-    // Single click opens view modal
-    if (id) {
-      setViewingCharacterId(id)
-    }
+    setViewingCharacterId(id)
   }, [setSelectedCharacterId])
 
-  const handleCharacterDoubleClick = useCallback((id: string) => {
-    // Double click opens edit modal directly
+  const handleCharacterEdit = useCallback((id: string) => {
+    setSelectedCharacterId(id)
     setViewingCharacterId(null)
     setEditingCharacterId(id)
-  }, [])
+  }, [setSelectedCharacterId])
 
   const handleCharacterPositionChange = useCallback(async (id: string, x: number, y: number) => {
     // Update local state
@@ -139,6 +136,20 @@ export default function CampaignCanvasPage() {
     await supabase
       .from('characters')
       .update({ position_x: x, position_y: y })
+      .eq('id', id)
+  }, [supabase])
+
+  // Handle individual card resize (from hover icon)
+  const handleCharacterSizeChange = useCallback(async (id: string, width: number, height: number) => {
+    // Update local state
+    setCharacters(prev => prev.map(c =>
+      c.id === id ? { ...c, canvas_width: width, canvas_height: height } : c
+    ))
+
+    // Persist to database
+    await supabase
+      .from('characters')
+      .update({ canvas_width: width, canvas_height: height })
       .eq('id', id)
   }, [supabase])
 
@@ -348,9 +359,10 @@ export default function CampaignCanvasPage() {
           characterTags={characterTags}
           groups={groups}
           characterSizeOverrides={characterSizeOverrides}
-          onCharacterSelect={handleCharacterSelect}
-          onCharacterDoubleClick={handleCharacterDoubleClick}
+          onCharacterPreview={handleCharacterPreview}
+          onCharacterEdit={handleCharacterEdit}
           onCharacterPositionChange={handleCharacterPositionChange}
+          onCharacterSizeChange={handleCharacterSizeChange}
           onGroupUpdate={handleGroupUpdate}
           onGroupDelete={handleGroupDelete}
           onGroupPositionChange={handleGroupPositionChange}

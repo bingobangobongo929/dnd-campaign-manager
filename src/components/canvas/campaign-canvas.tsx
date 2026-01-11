@@ -35,9 +35,10 @@ interface CampaignCanvasProps {
   initialCharacterSizes?: Record<string, { width?: number; height?: number }>
   // External size overrides from resize toolbar - highest priority
   characterSizeOverrides?: Map<string, { width: number; height: number }>
-  onCharacterSelect: (id: string | null) => void
-  onCharacterDoubleClick: (id: string) => void
+  onCharacterPreview: (id: string) => void
+  onCharacterEdit: (id: string) => void
   onCharacterPositionChange: (id: string, x: number, y: number) => void
+  onCharacterSizeChange?: (id: string, width: number, height: number) => void
   onGroupUpdate: (id: string, updates: Partial<CanvasGroup>) => void
   onGroupDelete: (id: string) => void
   onGroupPositionChange: (id: string, x: number, y: number) => void
@@ -56,9 +57,10 @@ function CampaignCanvasInner({
   groups,
   initialCharacterSizes,
   characterSizeOverrides,
-  onCharacterSelect,
-  onCharacterDoubleClick,
+  onCharacterPreview,
+  onCharacterEdit,
   onCharacterPositionChange,
+  onCharacterSizeChange,
   onGroupUpdate,
   onGroupDelete,
   onGroupPositionChange,
@@ -102,8 +104,9 @@ function CampaignCanvasInner({
           character: char,
           tags: characterTags.get(char.id) || [],
           isSelected: char.id === selectedCharacterId,
-          onSelect: onCharacterSelect,
-          onDoubleClick: onCharacterDoubleClick,
+          onPreview: onCharacterPreview,
+          onEdit: onCharacterEdit,
+          onResize: onCharacterSizeChange,
         } as CharacterNodeData,
       }
     })
@@ -123,7 +126,7 @@ function CampaignCanvasInner({
 
     // Groups should render behind characters
     return [...groupNodes, ...characterNodes] as unknown as Node[]
-  }, [characters, characterTags, groups, selectedCharacterId, characterSizeOverrides, onCharacterSelect, onCharacterDoubleClick, onGroupUpdate, onGroupDelete])
+  }, [characters, characterTags, groups, selectedCharacterId, characterSizeOverrides, onCharacterPreview, onCharacterEdit, onCharacterSizeChange, onGroupUpdate, onGroupDelete])
 
   // Initialize nodes
   const [nodes, setNodes] = useNodesState(createNodes())
@@ -301,10 +304,6 @@ function CampaignCanvasInner({
     setCanvasViewport(viewport)
   }, [getViewport, setCanvasViewport])
 
-  const onPaneClick = useCallback(() => {
-    onCharacterSelect(null)
-  }, [onCharacterSelect])
-
   return (
     <div className="w-full h-full relative">
       <ReactFlow
@@ -313,7 +312,6 @@ function CampaignCanvasInner({
         onNodesChange={onNodesChange}
         nodeTypes={nodeTypes}
         onMoveEnd={onMoveEnd}
-        onPaneClick={onPaneClick}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.1}
