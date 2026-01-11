@@ -32,6 +32,7 @@ interface CampaignCanvasProps {
   characters: Character[]
   characterTags: Map<string, (CharacterTag & { tag: Tag; related_character?: Character | null })[]>
   groups: CanvasGroup[]
+  initialCharacterSizes?: Record<string, { width?: number; height?: number }>
   onCharacterSelect: (id: string | null) => void
   onCharacterDoubleClick: (id: string) => void
   onCharacterPositionChange: (id: string, x: number, y: number) => void
@@ -52,6 +53,7 @@ function CampaignCanvasInner({
   characters,
   characterTags,
   groups,
+  initialCharacterSizes,
   onCharacterSelect,
   onCharacterDoubleClick,
   onCharacterPositionChange,
@@ -66,9 +68,20 @@ function CampaignCanvasInner({
 
   // Track if this is the first mount
   const isFirstMount = useRef(true)
+  const initialSizesApplied = useRef(false)
 
   // Store node sizes separately to preserve them across data updates
   const nodeSizesRef = useRef<Map<string, { width: number; height: number }>>(new Map())
+
+  // Apply initial sizes from props (from localStorage) on first render
+  if (!initialSizesApplied.current && initialCharacterSizes) {
+    Object.entries(initialCharacterSizes).forEach(([id, size]) => {
+      if (size.width && size.height) {
+        nodeSizesRef.current.set(id, { width: size.width, height: size.height })
+      }
+    })
+    initialSizesApplied.current = true
+  }
 
   // Handle character resize - save to ref and call callback
   const handleCharacterResize = useCallback((id: string, width: number, height: number) => {

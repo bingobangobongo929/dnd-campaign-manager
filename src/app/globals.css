@@ -1039,15 +1039,19 @@ h1, h2, h3, h4, h5, h6 {
   overflow: hidden;
 }
 
-/* Description text - 14px, line-height 1.5, fills space naturally */
+/* Description text - absolutely positioned to fill container, shows more lines as card grows */
 .character-card-description p {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   font-size: 14px;
   line-height: 1.5;
   color: var(--text-secondary);
   margin: 0;
   overflow: hidden;
-  display: block;
-  height: 100%;
+  /* Text will naturally fill the space and clip at bottom */
 }
 
 /* Fade effect at bottom when text overflows */
@@ -1059,6 +1063,7 @@ h1, h2, h3, h4, h5, h6 {
   height: 28px;
   background: linear-gradient(to bottom, transparent, var(--bg-surface));
   pointer-events: none;
+  z-index: 1;
 }
 
 /* ─── BOTTOM: Tags spanning full card width ─── */
