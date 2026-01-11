@@ -32,10 +32,13 @@ interface DemoCanvasState {
 }
 
 function loadDemoCanvasState(campaignId: string): DemoCanvasState | null {
+  if (typeof window === 'undefined') return null
   try {
     const stored = localStorage.getItem(`${DEMO_CANVAS_STORAGE_KEY}-${campaignId}`)
     if (stored) {
-      return JSON.parse(stored)
+      const parsed = JSON.parse(stored)
+      console.log('[Demo] Loaded canvas state from localStorage:', parsed)
+      return parsed
     }
   } catch (e) {
     console.warn('Failed to load demo canvas state:', e)
@@ -44,8 +47,10 @@ function loadDemoCanvasState(campaignId: string): DemoCanvasState | null {
 }
 
 function saveDemoCanvasState(campaignId: string, state: DemoCanvasState) {
+  if (typeof window === 'undefined') return
   try {
     localStorage.setItem(`${DEMO_CANVAS_STORAGE_KEY}-${campaignId}`, JSON.stringify(state))
+    console.log('[Demo] Saved canvas state to localStorage:', state)
   } catch (e) {
     console.warn('Failed to save demo canvas state:', e)
   }
@@ -80,8 +85,9 @@ export default function CampaignCanvasPage() {
   const [groupForm, setGroupForm] = useState({ name: '' })
   const [saving, setSaving] = useState(false)
 
-  // Ref to track demo canvas state for persistence
+  // Track demo canvas state for persistence - use state for initial sizes so React re-renders properly
   const demoStateRef = useRef<DemoCanvasState>({ characters: {}, groups: {} })
+  const [initialCharacterSizes, setInitialCharacterSizes] = useState<Record<string, { width?: number; height?: number }> | undefined>(undefined)
 
   // Load campaign data
   useEffect(() => {
@@ -107,6 +113,8 @@ export default function CampaignCanvasPage() {
     const savedState = loadDemoCanvasState(campaignId)
     if (savedState) {
       demoStateRef.current = savedState
+      // Set initial sizes as state so CampaignCanvas gets them on render
+      setInitialCharacterSizes(savedState.characters)
     }
 
     // Load demo characters for this campaign, applying saved positions
@@ -483,7 +491,7 @@ export default function CampaignCanvasPage() {
           characters={characters}
           characterTags={characterTags}
           groups={groups}
-          initialCharacterSizes={isDemo ? demoStateRef.current.characters : undefined}
+          initialCharacterSizes={initialCharacterSizes}
           onCharacterSelect={handleCharacterSelect}
           onCharacterDoubleClick={handleCharacterDoubleClick}
           onCharacterPositionChange={handleCharacterPositionChange}
