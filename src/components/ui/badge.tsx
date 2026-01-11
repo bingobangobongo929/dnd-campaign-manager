@@ -1,6 +1,112 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import {
+  Sword,
+  Shield,
+  Heart,
+  Skull,
+  Users,
+  Crown,
+  Star,
+  Flame,
+  Zap,
+  Eye,
+  EyeOff,
+  BookOpen,
+  Scroll,
+  Key,
+  Gem,
+  Coins,
+  CircleHelp,
+  Target,
+  Handshake,
+  Swords,
+  HeartCrack,
+  UserCheck,
+  UserX,
+  GraduationCap,
+  Sparkles,
+  type LucideIcon,
+} from 'lucide-react'
+
+// Icon mapping for tags
+const TAG_ICONS: Record<string, LucideIcon> = {
+  // Relationships
+  ally: Handshake,
+  friend: Handshake,
+  enemy: Swords,
+  rival: Target,
+  romantic: Heart,
+  love: Heart,
+  family: Users,
+  mentor: GraduationCap,
+  teacher: GraduationCap,
+  student: BookOpen,
+
+  // Status
+  dead: Skull,
+  deceased: Skull,
+  missing: EyeOff,
+  suspicious: Eye,
+  secret: EyeOff,
+  quest: Scroll,
+  important: Star,
+
+  // Combat/Class
+  warrior: Sword,
+  fighter: Sword,
+  tank: Shield,
+  defender: Shield,
+  healer: Heart,
+  mage: Sparkles,
+  wizard: Sparkles,
+  rogue: Key,
+  thief: Key,
+
+  // Social
+  noble: Crown,
+  royal: Crown,
+  merchant: Coins,
+  wealthy: Gem,
+
+  // Magic
+  magic: Zap,
+  arcane: Zap,
+  fire: Flame,
+  flame: Flame,
+
+  // Misc
+  unknown: CircleHelp,
+  trusted: UserCheck,
+  untrusted: UserX,
+  heartbroken: HeartCrack,
+}
+
+// Get icon component from tag name
+function getTagIcon(tagName: string, iconProp?: string): LucideIcon | null {
+  // If explicit icon prop provided
+  if (iconProp && TAG_ICONS[iconProp.toLowerCase()]) {
+    return TAG_ICONS[iconProp.toLowerCase()]
+  }
+
+  // Try to match tag name
+  const lowerName = tagName.toLowerCase()
+
+  // Direct match
+  if (TAG_ICONS[lowerName]) {
+    return TAG_ICONS[lowerName]
+  }
+
+  // Partial match
+  for (const [key, icon] of Object.entries(TAG_ICONS)) {
+    if (lowerName.includes(key) || key.includes(lowerName)) {
+      return icon
+    }
+  }
+
+  return null
+}
 
 interface BadgeProps {
   children: React.ReactNode
@@ -26,6 +132,11 @@ export function Badge({
     md: 'h-6 text-sm px-2 gap-1.5',
   }
 
+  const iconSizes = {
+    sm: 'w-3 h-3',
+    md: 'w-3.5 h-3.5',
+  }
+
   return (
     <span
       className={cn(
@@ -40,7 +151,7 @@ export function Badge({
       }}
       onClick={onClick}
     >
-      {icon && <span className="flex-shrink-0">{icon}</span>}
+      {icon && <span className={cn('flex-shrink-0', iconSizes[size])}>{icon}</span>}
       <span className="truncate">{children}</span>
       {onRemove && (
         <button
@@ -64,7 +175,7 @@ export function Badge({
 interface TagBadgeProps {
   name: string
   color: string
-  icon?: React.ReactNode
+  icon?: string // Icon name (e.g., "sword", "heart") or explicit React node
   relatedCharacter?: string
   onClick?: () => void
   onRemove?: () => void
@@ -80,8 +191,18 @@ export function TagBadge({
   onRemove,
   size = 'md',
 }: TagBadgeProps) {
+  // Get icon component
+  const IconComponent = getTagIcon(name, icon)
+  const iconSize = size === 'sm' ? 12 : 14
+
   return (
-    <Badge color={color} icon={icon} onClick={onClick} onRemove={onRemove} size={size}>
+    <Badge
+      color={color}
+      icon={IconComponent ? <IconComponent size={iconSize} /> : null}
+      onClick={onClick}
+      onRemove={onRemove}
+      size={size}
+    >
       {relatedCharacter ? `${name}: ${relatedCharacter}` : name}
     </Badge>
   )

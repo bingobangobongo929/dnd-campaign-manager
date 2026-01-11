@@ -17,7 +17,7 @@ import {
   ReactFlowProvider,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { CharacterNode, CharacterNodeData } from './character-node'
+import { CharacterNode, CharacterNodeData, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT } from './character-node'
 import { GroupNode, GroupNodeData } from './group-node'
 import { useAppStore } from '@/store'
 import { useSupabase } from '@/hooks'
@@ -35,6 +35,7 @@ interface CampaignCanvasProps {
   onCharacterSelect: (id: string | null) => void
   onCharacterDoubleClick: (id: string) => void
   onCharacterPositionChange: (id: string, x: number, y: number) => void
+  onCharacterSizeChange?: (id: string, width: number, height: number) => void
   onGroupUpdate: (id: string, updates: Partial<CanvasGroup>) => void
   onGroupDelete: (id: string) => void
   onGroupPositionChange: (id: string, x: number, y: number) => void
@@ -54,6 +55,7 @@ function CampaignCanvasInner({
   onCharacterSelect,
   onCharacterDoubleClick,
   onCharacterPositionChange,
+  onCharacterSizeChange,
   onGroupUpdate,
   onGroupDelete,
   onGroupPositionChange,
@@ -62,18 +64,30 @@ function CampaignCanvasInner({
   const { getNodes, getViewport } = useReactFlow()
   const [snapLines, setSnapLines] = useState<{ x?: number; y?: number }>({})
 
+  // Handle character resize
+  const handleCharacterResize = useCallback((id: string, width: number, height: number) => {
+    if (onCharacterSizeChange) {
+      onCharacterSizeChange(id, width, height)
+    }
+  }, [onCharacterSizeChange])
+
   // Convert characters and groups to nodes
   const initialNodes = useMemo(() => {
     const characterNodes = characters.map((char) => ({
       id: char.id,
       type: 'character' as const,
       position: { x: char.position_x, y: char.position_y },
+      style: {
+        width: DEFAULT_CARD_WIDTH,
+        height: DEFAULT_CARD_HEIGHT,
+      },
       data: {
         character: char,
         tags: characterTags.get(char.id) || [],
         isSelected: char.id === selectedCharacterId,
         onSelect: onCharacterSelect,
         onDoubleClick: onCharacterDoubleClick,
+        onResize: handleCharacterResize,
       } as CharacterNodeData,
     }))
 
@@ -92,7 +106,7 @@ function CampaignCanvasInner({
 
     // Groups should render behind characters
     return [...groupNodes, ...characterNodes] as unknown as Node[]
-  }, [characters, characterTags, groups, selectedCharacterId, onCharacterSelect, onCharacterDoubleClick, onGroupUpdate, onGroupDelete])
+  }, [characters, characterTags, groups, selectedCharacterId, onCharacterSelect, onCharacterDoubleClick, handleCharacterResize, onGroupUpdate, onGroupDelete])
 
   const [nodes, setNodes] = useNodesState(initialNodes)
   const [edges, setEdges] = useEdgesState([])
@@ -118,8 +132,8 @@ function CampaignCanvasInner({
     const movingCenterY = position.y + height / 2
 
     for (const node of otherNodes) {
-      const nodeWidth = 200 // Default character card width
-      const nodeHeight = 120 // Approximate height
+      const nodeWidth = DEFAULT_CARD_WIDTH
+      const nodeHeight = DEFAULT_CARD_HEIGHT
       const nodeLeft = node.position.x
       const nodeRight = node.position.x + nodeWidth
       const nodeTop = node.position.y
@@ -189,8 +203,8 @@ function CampaignCanvasInner({
             const { newX, newY, snapX, snapY } = findSnapPositions(
               change.id,
               change.position,
-              200, // character card width
-              120  // approximate height
+              DEFAULT_CARD_WIDTH,
+              DEFAULT_CARD_HEIGHT
             )
             setSnapLines({ x: snapX, y: snapY })
             return {

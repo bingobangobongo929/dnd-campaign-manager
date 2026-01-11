@@ -899,8 +899,8 @@ h1, h2, h3, h4, h5, h6 {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .character-card {
-  width: 320px;
-  max-height: 400px;
+  width: 100%;
+  height: 100%;
   padding: 16px;
   background: var(--bg-surface);
   border-radius: 12px;
@@ -912,6 +912,7 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.3),
     0 0 0 1px var(--border-subtle);
+  overflow: hidden;
 }
 
 .character-card:hover {
