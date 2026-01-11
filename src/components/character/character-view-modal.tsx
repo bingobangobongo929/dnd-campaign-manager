@@ -38,11 +38,11 @@ export function CharacterViewModal({
 
         {/* Header: Portrait + Basic Info */}
         <div className="character-view-header">
-          {/* Portrait */}
+          {/* Portrait - prefer detail image (2:3) over avatar (1:1) */}
           <div className="character-view-portrait">
-            {character.image_url ? (
+            {(character.detail_image_url || character.image_url) ? (
               <Image
-                src={character.image_url}
+                src={character.detail_image_url || character.image_url!}
                 alt={character.name}
                 fill
                 className="object-cover"

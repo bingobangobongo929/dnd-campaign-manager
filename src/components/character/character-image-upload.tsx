@@ -207,39 +207,74 @@ export function CharacterImageUpload({
         onChange={handleFileChange}
       />
 
-      {/* Main avatar display */}
-      <div className={cn('relative group', sizes[size])}>
-        <button
-          type="button"
-          onClick={handleFileSelect}
-          disabled={isLoading}
-          className={cn(
-            'relative w-full h-full rounded-full overflow-hidden transition-all',
-            'focus:outline-none focus:ring-2 focus:ring-[--accent-primary] focus:ring-offset-2 focus:ring-offset-[--bg-surface]',
-            avatarUrl
-              ? 'border-2 border-[--border]'
-              : 'border-2 border-dashed border-[--text-tertiary] hover:border-[--accent-primary]',
-            isLoading && 'opacity-70 cursor-wait',
-            !isLoading && 'cursor-pointer'
+      {/* Detail image preview (2:3 aspect ratio) - shown when available */}
+      {detailUrl ? (
+        <div className="relative group mb-3">
+          <div className="relative w-32 h-48 rounded-xl overflow-hidden border-2 border-[--border] bg-[--bg-base]">
+            <Image
+              src={detailUrl}
+              alt={characterName}
+              fill
+              className="object-cover"
+              sizes="128px"
+            />
+            {/* Hover overlay */}
+            <button
+              type="button"
+              onClick={handleFileSelect}
+              disabled={isLoading}
+              className={cn(
+                'absolute inset-0 bg-black/60 flex items-center justify-center',
+                'opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer'
+              )}
+            >
+              <Camera className="w-8 h-8 text-white" />
+            </button>
+          </div>
+          {/* Remove button */}
+          {!isLoading && (
+            <button
+              type="button"
+              onClick={handleRemove}
+              className={cn(
+                'absolute -top-2 -right-2 p-1.5 rounded-full',
+                'bg-[--bg-surface] border border-[--border]',
+                'text-[--text-secondary] hover:text-[--arcane-ember] hover:border-[--arcane-ember]',
+                'opacity-0 group-hover:opacity-100 transition-all shadow-lg',
+                'focus:outline-none focus:opacity-100'
+              )}
+            >
+              <X className="h-4 w-4" />
+            </button>
           )}
-        >
-          {avatarUrl ? (
-            <>
+          {/* Small avatar preview in corner */}
+          {avatarUrl && (
+            <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full overflow-hidden border-2 border-[--bg-surface] shadow-lg">
               <Image
                 src={avatarUrl}
-                alt={characterName}
+                alt={`${characterName} avatar`}
                 fill
                 className="object-cover"
+                sizes="40px"
               />
-              {/* Hover overlay */}
-              <div className={cn(
-                'absolute inset-0 bg-black/60 flex items-center justify-center',
-                'opacity-0 group-hover:opacity-100 transition-opacity'
-              )}>
-                <Camera className="w-6 h-6 text-white" />
-              </div>
-            </>
-          ) : (
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Empty state - circular upload button */
+        <div className={cn('relative group mb-3', sizes[size])}>
+          <button
+            type="button"
+            onClick={handleFileSelect}
+            disabled={isLoading}
+            className={cn(
+              'relative w-full h-full rounded-full overflow-hidden transition-all',
+              'focus:outline-none focus:ring-2 focus:ring-[--accent-primary] focus:ring-offset-2 focus:ring-offset-[--bg-surface]',
+              'border-2 border-dashed border-[--text-tertiary] hover:border-[--accent-primary]',
+              isLoading && 'opacity-70 cursor-wait',
+              !isLoading && 'cursor-pointer'
+            )}
+          >
             <div className="absolute inset-0 flex items-center justify-center bg-[--bg-hover]">
               {isLoading ? (
                 <Loader2 className="w-6 h-6 text-[--text-secondary] animate-spin" />
@@ -247,29 +282,12 @@ export function CharacterImageUpload({
                 <Camera className="w-6 h-6 text-[--text-tertiary] group-hover:text-[--accent-primary] transition-colors" />
               )}
             </div>
-          )}
-        </button>
-
-        {/* Remove button */}
-        {avatarUrl && !isLoading && (
-          <button
-            type="button"
-            onClick={handleRemove}
-            className={cn(
-              'absolute -top-1 -right-1 p-1 rounded-full',
-              'bg-[--bg-surface] border border-[--border]',
-              'text-[--text-secondary] hover:text-[--arcane-ember] hover:border-[--arcane-ember]',
-              'opacity-0 group-hover:opacity-100 transition-all',
-              'focus:outline-none focus:opacity-100'
-            )}
-          >
-            <X className="h-3 w-3" />
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Action buttons below avatar */}
-      <div className="mt-3 flex gap-2">
+      {/* Action buttons */}
+      <div className="flex gap-2">
         <button
           type="button"
           onClick={handleFileSelect}
@@ -282,7 +300,7 @@ export function CharacterImageUpload({
           )}
         >
           <Upload className="w-3.5 h-3.5" />
-          Upload
+          {detailUrl ? 'Change' : 'Upload'}
         </button>
         {AI_IMAGE_GENERATION_ENABLED && (
           <button
