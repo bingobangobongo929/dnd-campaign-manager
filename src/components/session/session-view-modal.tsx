@@ -26,7 +26,7 @@ export function SessionViewModal({
         className="relative w-full max-w-2xl max-h-[85vh] overflow-hidden rounded-2xl"
         style={{
           backgroundColor: '#12121a',
-          border: '3px solid red', // DEBUG - outer modal border
+          border: '1px solid rgba(255,255,255,0.1)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -39,47 +39,57 @@ export function SessionViewModal({
           <X className="w-5 h-5" />
         </button>
 
-        {/* Header */}
-        <div className="p-8 pb-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', border: '3px solid blue' }}>
-          <div className="pr-10">
-            {/* Session meta */}
-            <div className="flex items-center gap-3 mb-4">
-              <span
-                className="px-3 py-1.5 text-xs font-bold rounded-lg uppercase tracking-wide"
-                style={{
-                  backgroundColor: 'rgba(139, 92, 246, 0.15)',
-                  color: '#a78bfa'
-                }}
-              >
-                Session {session.session_number}
-              </span>
-              <span className="text-sm text-[--text-tertiary] flex items-center gap-1.5">
-                <Calendar className="w-4 h-4" />
-                {formatDate(session.date)}
-              </span>
+        {/* Scrollable content area */}
+        <div className="max-h-[calc(85vh-80px)] overflow-y-auto">
+          {/* Header section */}
+          <div className="p-6 pb-0">
+            <div className="pr-10">
+              {/* Session meta */}
+              <div className="flex items-center gap-3 mb-4">
+                <span
+                  className="px-3 py-1.5 text-xs font-bold rounded-lg uppercase tracking-wide"
+                  style={{
+                    backgroundColor: 'rgba(139, 92, 246, 0.15)',
+                    color: '#a78bfa'
+                  }}
+                >
+                  Session {session.session_number}
+                </span>
+                <span className="text-sm text-[--text-tertiary] flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4" />
+                  {formatDate(session.date)}
+                </span>
+              </div>
+
+              {/* Title */}
+              <h2 className="text-2xl font-bold text-[--text-primary] mb-4">
+                {session.title || 'Untitled Session'}
+              </h2>
             </div>
+          </div>
 
-            {/* Title */}
-            <h2 className="text-2xl font-bold text-[--text-primary] mb-4">
-              {session.title || 'Untitled Session'}
-            </h2>
-
-            {/* Summary */}
-            {session.summary && (
+          {/* Summary section */}
+          {session.summary && (
+            <div className="px-6 mb-4">
               <div
-                className="p-4 rounded-xl mb-6"
+                className="p-4 rounded-xl"
                 style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}
               >
                 <p className="text-[--text-secondary] leading-relaxed">
                   {session.summary}
                 </p>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Attendees */}
-            {attendees.length > 0 && (
-              <div style={{ border: '3px solid green' }}>
-                <div className="flex items-center gap-2 mb-4">
+          {/* Attendees section */}
+          {attendees.length > 0 && (
+            <div className="px-6 mb-6">
+              <div
+                className="p-4 rounded-xl"
+                style={{ backgroundColor: 'rgba(255,255,255,0.02)' }}
+              >
+                <div className="flex items-center gap-2 mb-3">
                   <Users className="w-4 h-4 text-[--text-tertiary]" />
                   <span className="text-sm font-medium text-[--text-tertiary]">
                     {attendees.length} attendee{attendees.length !== 1 ? 's' : ''}
@@ -130,57 +140,57 @@ export function SessionViewModal({
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Notes section */}
+          <div className="px-6 pb-6">
+            {session.notes ? (
+              <div>
+                <h3
+                  className="text-xs font-bold uppercase tracking-wider mb-4 pb-3"
+                  style={{
+                    color: '#6b7280',
+                    borderBottom: '1px solid rgba(255,255,255,0.06)'
+                  }}
+                >
+                  Session Notes
+                </h3>
+                <div
+                  className="prose prose-invert prose-sm max-w-none
+                    prose-headings:mt-6 prose-headings:mb-3 prose-headings:font-bold prose-headings:text-[--text-primary]
+                    prose-h1:text-xl prose-h2:text-lg prose-h3:text-base
+                    prose-p:mb-4 prose-p:leading-relaxed
+                    prose-strong:text-[--text-primary] prose-strong:font-semibold
+                    prose-ul:my-4 prose-li:my-1
+                    prose-a:text-[--arcane-purple] prose-a:no-underline hover:prose-a:underline"
+                  style={{
+                    color: '#d1d5db',
+                    lineHeight: '1.8',
+                  }}
+                  dangerouslySetInnerHTML={{ __html: session.notes }}
+                />
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-[--text-tertiary] mb-4">
+                  No detailed notes yet.
+                </p>
+                <button
+                  className="btn btn-secondary"
+                  onClick={onEdit}
+                >
+                  <Pencil className="w-4 h-4" />
+                  Add Notes
+                </button>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Body: Notes */}
-        <div className="p-8 max-h-[50vh] overflow-y-auto">
-          {session.notes ? (
-            <div>
-              <h3
-                className="text-xs font-bold uppercase tracking-wider mb-5 pb-4"
-                style={{
-                  color: '#6b7280',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)'
-                }}
-              >
-                Session Notes
-              </h3>
-              <div
-                className="prose prose-invert prose-sm max-w-none
-                  prose-headings:mt-8 prose-headings:mb-3 prose-headings:font-bold prose-headings:text-[--text-primary]
-                  prose-h1:text-xl prose-h2:text-lg prose-h3:text-base
-                  prose-p:mb-4 prose-p:leading-relaxed
-                  prose-strong:text-[--text-primary] prose-strong:font-semibold
-                  prose-ul:my-4 prose-li:my-1
-                  prose-a:text-[--arcane-purple] prose-a:no-underline hover:prose-a:underline"
-                style={{
-                  color: '#d1d5db',
-                  lineHeight: '1.8',
-                }}
-                dangerouslySetInnerHTML={{ __html: session.notes }}
-              />
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-[--text-tertiary] mb-4">
-                No detailed notes yet.
-              </p>
-              <button
-                className="btn btn-secondary"
-                onClick={onEdit}
-              >
-                <Pencil className="w-4 h-4" />
-                Add Notes
-              </button>
-            </div>
-          )}
-        </div>
-
         {/* Footer */}
         <div
-          className="flex items-center justify-end gap-3 px-8 py-5"
+          className="flex items-center justify-end gap-3 px-6 py-4"
           style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}
         >
           <button className="btn btn-secondary" onClick={onClose}>
