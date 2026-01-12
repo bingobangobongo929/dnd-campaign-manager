@@ -220,11 +220,12 @@ export default function SessionsPage() {
         </div>
 
         {/* Search */}
-        <div className="relative mb-6" style={{ border: '3px solid yellow' }}>
+        <div className="relative mb-6" style={{ border: '3px solid yellow', marginBottom: '40px' }}>
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[--text-tertiary]" />
           <input
             type="text"
             className="form-input pl-12"
+            style={{ paddingLeft: '48px' }}
             placeholder="Search sessions..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
