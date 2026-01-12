@@ -627,8 +627,8 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
           {isFullscreen ? (
             // FULLSCREEN LAYOUT
             <div className="flex-1 flex overflow-hidden">
-              {/* Left Sidebar - 350px wide with p-8 padding */}
-              <div className="w-[350px] flex-shrink-0 p-8 border-r border-white/10 overflow-y-auto space-y-6">
+              {/* Left Sidebar - 350px wide */}
+              <div className="w-[350px] flex-shrink-0 py-8 pl-8 pr-6 border-r border-white/20 overflow-y-auto space-y-6">
                 {/* Portrait - clickable for lightbox */}
                 <PortraitDisplay size="large" />
 
@@ -652,7 +652,7 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
               </div>
 
               {/* Right: Summary + Notes */}
-              <div className="flex-1 p-8 flex flex-col min-h-0 gap-6 overflow-y-auto">
+              <div className="flex-1 py-8 pr-8 pl-10 flex flex-col min-h-0 gap-6 overflow-y-auto">
                 {/* Summary with Tiptap */}
                 <div className="flex-shrink-0">
                   <label className="text-xl font-bold text-[--text-primary] mb-4 block">Summary</label>
