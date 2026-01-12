@@ -77,7 +77,7 @@ export function ChaptersView({ events, onEventClick, onCharacterClick }: Timelin
             className="rounded-xl overflow-hidden"
             style={{
               backgroundColor: '#12121a',
-              border: '1px solid rgba(255,255,255,0.08)',
+              border: '3px solid orange', // DEBUG - chapter section
             }}
           >
             {/* Section Header */}
@@ -130,6 +130,7 @@ export function ChaptersView({ events, onEventClick, onCharacterClick }: Timelin
                     onClick={() => onEventClick(event)}
                     className="flex items-start gap-5 p-6 cursor-pointer transition-colors"
                     style={{
+                      border: '3px solid darkorange', // DEBUG - event item
                       borderBottom: index !== typeEvents.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
                     }}
                     onMouseEnter={(e) => {

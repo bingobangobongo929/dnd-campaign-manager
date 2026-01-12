@@ -49,7 +49,7 @@ export function JournalView({ events, onEventClick, onCharacterClick }: Timeline
           >
             <div
               className="relative pl-8"
-              style={{ borderLeft: '2px solid rgba(212, 168, 67, 0.2)' }}
+              style={{ borderLeft: '2px solid rgba(212, 168, 67, 0.2)', border: '3px solid green' }} // DEBUG
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderLeftColor = 'rgba(212, 168, 67, 0.5)'
               }}

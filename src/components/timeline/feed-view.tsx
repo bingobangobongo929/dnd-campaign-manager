@@ -23,7 +23,7 @@ export function FeedView({ events, onEventClick, onCharacterClick }: TimelineVie
             className="p-6 rounded-xl transition-all duration-200"
             style={{
               backgroundColor: '#12121a',
-              border: '1px solid rgba(255,255,255,0.08)',
+              border: '3px solid purple', // DEBUG
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.4)'

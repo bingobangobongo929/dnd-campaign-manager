@@ -24,7 +24,7 @@ export function BrowserView({ events, onEventClick, onCharacterClick }: Timeline
         className="w-[35%] min-w-[320px] flex-shrink-0 rounded-xl overflow-hidden flex flex-col"
         style={{
           backgroundColor: '#12121a',
-          border: '1px solid rgba(255,255,255,0.08)',
+          border: '3px solid blue', // DEBUG - left panel
         }}
       >
         <div className="p-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
@@ -51,6 +51,7 @@ export function BrowserView({ events, onEventClick, onCharacterClick }: Timeline
                 className="w-full text-left p-5 transition-colors"
                 style={{
                   backgroundColor: isSelected ? 'rgba(139, 92, 246, 0.1)' : 'transparent',
+                  border: '3px solid cyan', // DEBUG - list item
                   borderBottom: '1px solid rgba(255,255,255,0.05)',
                   borderLeft: isSelected ? '3px solid #8B5CF6' : '3px solid transparent',
                 }}
@@ -127,7 +128,7 @@ export function BrowserView({ events, onEventClick, onCharacterClick }: Timeline
         className="flex-1 rounded-xl overflow-hidden flex flex-col"
         style={{
           backgroundColor: '#12121a',
-          border: '1px solid rgba(255,255,255,0.08)',
+          border: '3px solid dodgerblue', // DEBUG - right panel
         }}
       >
         {selected ? (

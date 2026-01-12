@@ -85,7 +85,7 @@ export function StoryboardView({ events, onEventClick, onCharacterClick }: Timel
               className="h-full rounded-xl overflow-hidden transition-all duration-200"
               style={{
                 backgroundColor: '#12121a',
-                border: '1px solid rgba(255,255,255,0.08)',
+                border: '3px solid red', // DEBUG
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.4)'
