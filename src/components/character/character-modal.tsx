@@ -12,11 +12,12 @@ import { cn, TAG_COLORS } from '@/lib/utils'
 import type { Character, Tag, CharacterTag } from '@/types/database'
 
 interface CharacterModalProps {
-  character: Character
+  character?: Character | null
   tags: (CharacterTag & { tag: Tag; related_character?: Character | null })[]
   allCharacters: Character[]
   campaignId: string
   onUpdate: (character: Character) => void
+  onCreate?: (character: Character) => void
   onDelete: (id: string) => void
   onClose: () => void
   onTagsChange: () => void
@@ -28,19 +29,22 @@ export function CharacterModal({
   allCharacters,
   campaignId,
   onUpdate,
+  onCreate,
   onDelete,
   onClose,
   onTagsChange,
 }: CharacterModalProps) {
   const supabase = useSupabase()
+  const isCreateMode = !character
+  const [createdCharacterId, setCreatedCharacterId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
-    name: character.name,
-    summary: character.summary || '',
-    notes: character.notes || '',
-    type: character.type,
-    image_url: character.image_url || null,
-    detail_image_url: character.detail_image_url || null,
-    image_generated_with_ai: character.image_generated_with_ai || false,
+    name: character?.name || '',
+    summary: character?.summary || '',
+    notes: character?.notes || '',
+    type: character?.type || 'npc' as 'pc' | 'npc',
+    image_url: character?.image_url || null,
+    detail_image_url: character?.detail_image_url || null,
+    image_generated_with_ai: character?.image_generated_with_ai || false,
   })
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
   const [isAddTagOpen, setIsAddTagOpen] = useState(false)
@@ -56,16 +60,18 @@ export function CharacterModal({
 
   // Update form when character changes
   useEffect(() => {
-    setFormData({
-      name: character.name,
-      summary: character.summary || '',
-      notes: character.notes || '',
-      type: character.type,
-      image_url: character.image_url || null,
-      detail_image_url: character.detail_image_url || null,
-      image_generated_with_ai: character.image_generated_with_ai || false,
-    })
-  }, [character.id])
+    if (character) {
+      setFormData({
+        name: character.name,
+        summary: character.summary || '',
+        notes: character.notes || '',
+        type: character.type,
+        image_url: character.image_url || null,
+        detail_image_url: character.detail_image_url || null,
+        image_generated_with_ai: character.image_generated_with_ai || false,
+      })
+    }
+  }, [character?.id])
 
   // Load available tags for campaign
   useEffect(() => {
@@ -116,6 +122,39 @@ export function CharacterModal({
 
   // Auto-save functionality
   const saveCharacter = useCallback(async () => {
+    // In create mode, we need to create first then update
+    if (isCreateMode && !createdCharacterId) {
+      // First save - create the character
+      if (!formData.name.trim()) return // Don't create without a name
+
+      const { data } = await supabase
+        .from('characters')
+        .insert({
+          campaign_id: campaignId,
+          name: formData.name,
+          summary: formData.summary || null,
+          notes: formData.notes || null,
+          type: formData.type,
+          image_url: formData.image_url || null,
+          detail_image_url: formData.detail_image_url || null,
+          image_generated_with_ai: formData.image_generated_with_ai,
+          position_x: 100,
+          position_y: 100,
+        })
+        .select()
+        .single()
+
+      if (data) {
+        setCreatedCharacterId(data.id)
+        onCreate?.(data)
+      }
+      return
+    }
+
+    // Update existing character (either original or one we created)
+    const characterId = createdCharacterId || character?.id
+    if (!characterId) return
+
     const { data } = await supabase
       .from('characters')
       .update({
@@ -127,14 +166,14 @@ export function CharacterModal({
         detail_image_url: formData.detail_image_url || null,
         image_generated_with_ai: formData.image_generated_with_ai,
       })
-      .eq('id', character.id)
+      .eq('id', characterId)
       .select()
       .single()
 
     if (data) {
       onUpdate(data)
     }
-  }, [formData, character.id, supabase, onUpdate])
+  }, [formData, character?.id, createdCharacterId, isCreateMode, campaignId, supabase, onUpdate, onCreate])
 
   const { status } = useAutoSave({
     data: formData,
@@ -143,21 +182,27 @@ export function CharacterModal({
   })
 
   const handleDelete = async () => {
+    const characterId = createdCharacterId || character?.id
+    if (!characterId) return
+
     await supabase
       .from('characters')
       .delete()
-      .eq('id', character.id)
+      .eq('id', characterId)
 
-    onDelete(character.id)
+    onDelete(characterId)
     setIsDeleteConfirmOpen(false)
   }
 
   const handleAddExistingTag = async (tagId: string) => {
+    const characterId = createdCharacterId || character?.id
+    if (!characterId) return
+
     setSavingTag(true)
     await supabase
       .from('character_tags')
       .insert({
-        character_id: character.id,
+        character_id: characterId,
         tag_id: tagId,
         related_character_id: newTagForm.related_character_id,
       })
@@ -169,7 +214,8 @@ export function CharacterModal({
   }
 
   const handleCreateAndAddTag = async () => {
-    if (!newTagForm.name.trim()) return
+    const characterId = createdCharacterId || character?.id
+    if (!newTagForm.name.trim() || !characterId) return
 
     setSavingTag(true)
 
@@ -187,7 +233,7 @@ export function CharacterModal({
       await supabase
         .from('character_tags')
         .insert({
-          character_id: character.id,
+          character_id: characterId,
           tag_id: tag.id,
           related_character_id: newTagForm.related_character_id,
         })
@@ -211,7 +257,8 @@ export function CharacterModal({
     onTagsChange()
   }
 
-  const otherCharacters = allCharacters.filter(c => c.id !== character.id)
+  const currentCharacterId = createdCharacterId || character?.id
+  const otherCharacters = allCharacters.filter(c => c.id !== currentCharacterId)
   const unusedTags = availableTags.filter(t => !tags.some(ct => ct.tag_id === t.id))
 
   // Handle backdrop click - don't close if in fullscreen
@@ -239,16 +286,16 @@ export function CharacterModal({
             <div className="flex items-center gap-3">
               <div className={cn(
                 "w-10 h-10 rounded-xl flex items-center justify-center",
-                character.type === 'pc'
+                formData.type === 'pc'
                   ? "bg-[--arcane-purple]/20 text-[--arcane-purple]"
                   : "bg-[--arcane-gold]/20 text-[--arcane-gold]"
               )}>
-                {character.type === 'pc' ? <User className="w-5 h-5" /> : <Users className="w-5 h-5" />}
+                {formData.type === 'pc' ? <User className="w-5 h-5" /> : <Users className="w-5 h-5" />}
               </div>
               <div>
-                <h2 className="modal-title">{formData.name || 'Edit Character'}</h2>
+                <h2 className="modal-title">{formData.name || (isCreateMode ? 'New Character' : 'Edit Character')}</h2>
                 <p className="text-xs text-[--text-tertiary]">
-                  {status === 'saving' ? 'Saving...' : status === 'saved' ? 'All changes saved' : ''}
+                  {status === 'saving' ? 'Saving...' : status === 'saved' ? 'All changes saved' : isCreateMode && !createdCharacterId ? 'Enter a name to start' : ''}
                 </p>
               </div>
             </div>
@@ -277,7 +324,7 @@ export function CharacterModal({
                 {/* Left Column: Character Info */}
                 <div className="character-modal-left">
                   <CharacterImageUpload
-                    characterId={character.id}
+                    characterId={currentCharacterId || 'new'}
                     characterName={formData.name}
                     characterType={formData.type}
                     characterDescription={formData.notes}
@@ -409,7 +456,7 @@ export function CharacterModal({
                 {/* Top Section: Avatar + Basic Info */}
                 <div className="character-modal-top">
                   <CharacterImageUpload
-                    characterId={character.id}
+                    characterId={currentCharacterId || 'new'}
                     characterName={formData.name}
                     characterType={formData.type}
                     characterDescription={formData.notes}
@@ -503,13 +550,17 @@ export function CharacterModal({
 
           {/* Footer */}
           <div className="character-modal-footer">
-            <button
-              className="btn btn-ghost text-[--arcane-ember]"
-              onClick={() => setIsDeleteConfirmOpen(true)}
-            >
-              <Trash2 className="w-4 h-4" />
-              Delete Character
-            </button>
+            {currentCharacterId ? (
+              <button
+                className="btn btn-ghost text-[--arcane-ember]"
+                onClick={() => setIsDeleteConfirmOpen(true)}
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Character
+              </button>
+            ) : (
+              <div /> /* Spacer */
+            )}
             <button className="btn btn-primary" onClick={onClose}>
               Done
             </button>

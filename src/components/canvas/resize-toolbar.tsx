@@ -98,10 +98,10 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
   const npcCount = characters.filter((c) => c.type === 'npc').length
 
   return (
-    <div className="fixed top-20 right-6 z-50 w-[340px] rounded-2xl shadow-2xl animate-slide-in-right" style={{ backgroundColor: '#1a1a24', border: '1px solid #2a2a3a' }}>
+    <div className="fixed top-20 right-6 z-50 w-[380px] rounded-2xl shadow-2xl animate-slide-in-right p-6" style={{ backgroundColor: '#1a1a24', border: '1px solid #2a2a3a' }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid #2a2a3a' }}>
-        <h3 className="text-base font-semibold text-[--text-primary]">Resize Cards</h3>
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold text-[--text-primary]">Resize Cards</h3>
         <button
           onClick={onClose}
           className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[--bg-hover] transition-colors"
@@ -111,7 +111,7 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-2 px-5 py-4" style={{ borderBottom: '1px solid #2a2a3a' }}>
+      <div className="flex gap-2 mb-6">
         {[
           { id: 'all' as const, label: 'All', count: characters.length, icon: Users },
           { id: 'pc' as const, label: 'PCs', count: pcCount, icon: User },
@@ -140,7 +140,7 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
       </div>
 
       {/* Character selection */}
-      <div className="px-6 py-5" style={{ borderBottom: '1px solid #2a2a3a' }}>
+      <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <span className="text-sm text-[--text-secondary]">
             <span className="text-[--arcane-purple] font-semibold">{selectedIds.size}</span> of {filteredCharacters.length} selected
@@ -150,12 +150,13 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
             <button onClick={deselectAll} className="font-medium text-[--text-tertiary] hover:text-[--text-secondary]">Clear</button>
           </div>
         </div>
-        <div className="max-h-40 overflow-y-auto space-y-2 scrollbar-thin">
+        {/* Character list - NO scrolling, expands to fit */}
+        <div className="space-y-2">
           {filteredCharacters.map((char) => (
             <label
               key={char.id}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors',
+                'flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-colors',
                 selectedIds.has(char.id)
                   ? 'bg-[--arcane-purple]/10 border border-[--arcane-purple]/20'
                   : 'hover:bg-[--bg-hover] border border-transparent'
@@ -167,7 +168,7 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
                 onChange={() => toggleCharacter(char.id)}
                 className="w-4 h-4 rounded border-[--border] text-[--arcane-purple] focus:ring-[--arcane-purple] focus:ring-offset-0"
               />
-              <span className="text-sm text-[--text-primary] truncate flex-1 font-medium">{char.name}</span>
+              <span className="text-sm text-[--text-primary] flex-1 font-medium">{char.name}</span>
               <span className={cn(
                 'text-xs font-semibold px-2 py-1 rounded-md',
                 char.type === 'pc' ? 'bg-[--arcane-purple]/20 text-[--arcane-purple]' : 'bg-[--treasure-gold]/20 text-[--treasure-gold]'
@@ -180,10 +181,10 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
       </div>
 
       {/* Size sliders */}
-      <div className="px-6 py-6">
+      <div className="mb-6">
         {/* Width slider */}
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-3">
             <label className="text-sm font-semibold text-[--text-primary]">Width</label>
             <span className="text-sm font-bold text-[--arcane-purple] tabular-nums">{width}px</span>
           </div>
@@ -208,15 +209,15 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
               [&::-webkit-slider-thumb]:hover:scale-110"
             style={{ backgroundColor: '#2a2a3a' }}
           />
-          <div className="flex justify-between text-xs text-[--text-muted] mt-1.5">
+          <div className="flex justify-between text-xs text-[--text-muted] mt-2">
             <span>{MIN_CARD_WIDTH}px</span>
             <span>{MAX_CARD_WIDTH}px</span>
           </div>
         </div>
 
         {/* Height slider */}
-        <div className="mb-2">
-          <div className="flex items-center justify-between mb-2">
+        <div>
+          <div className="flex items-center justify-between mb-3">
             <label className="text-sm font-semibold text-[--text-primary]">Height</label>
             <span className="text-sm font-bold text-[--arcane-purple] tabular-nums">{height}px</span>
           </div>
@@ -241,7 +242,7 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
               [&::-webkit-slider-thumb]:hover:scale-110"
             style={{ backgroundColor: '#2a2a3a' }}
           />
-          <div className="flex justify-between text-xs text-[--text-muted] mt-1.5">
+          <div className="flex justify-between text-xs text-[--text-muted] mt-2">
             <span>{MIN_CARD_HEIGHT}px</span>
             <span>{MAX_CARD_HEIGHT}px</span>
           </div>
@@ -249,7 +250,7 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-between px-6 py-5 mt-2" style={{ borderTop: '1px solid #2a2a3a' }}>
+      <div className="flex items-center justify-between pt-6" style={{ borderTop: '1px solid #2a2a3a' }}>
         <button
           onClick={handleReset}
           className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-[--text-secondary] bg-[--bg-elevated] border border-[--border] rounded-lg hover:bg-[--bg-hover] hover:text-[--text-primary] transition-colors"

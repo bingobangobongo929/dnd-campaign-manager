@@ -251,7 +251,7 @@ export default function SessionsPage() {
             )}
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-12">
             {filteredSessions.map((session, index) => (
               <div
                 key={session.id}

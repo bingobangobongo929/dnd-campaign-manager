@@ -3,18 +3,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Plus, FolderPlus, Scaling } from 'lucide-react'
-import { Modal, Input, Dropdown, ColorPicker, IconPicker, getGroupIcon } from '@/components/ui'
+import { Modal, Input, ColorPicker, IconPicker, getGroupIcon } from '@/components/ui'
 import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
 import type { Campaign, Character, Tag, CharacterTag, CanvasGroup } from '@/types/database'
-
-const CHARACTER_TYPES = [
-  { value: 'pc', label: 'Player Character (PC)' },
-  { value: 'npc', label: 'Non-Player Character (NPC)' },
-]
 
 export default function CampaignCanvasPage() {
   const params = useParams()
@@ -32,15 +27,11 @@ export default function CampaignCanvasPage() {
   const [loading, setLoading] = useState(true)
 
   // Modals
-  const [isCreateCharacterOpen, setIsCreateCharacterOpen] = useState(false)
+  const [isCreateCharacterModalOpen, setIsCreateCharacterModalOpen] = useState(false)
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false)
   const [isResizeToolbarOpen, setIsResizeToolbarOpen] = useState(false)
   const [viewingCharacterId, setViewingCharacterId] = useState<string | null>(null)
   const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null)
-  const [characterForm, setCharacterForm] = useState({
-    name: '',
-    type: 'npc' as 'pc' | 'npc',
-  })
   const [groupForm, setGroupForm] = useState({ name: '', color: '#8B5CF6', icon: 'users' })
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
   const [editGroupForm, setEditGroupForm] = useState({ name: '', color: '#8B5CF6', icon: 'users' })
@@ -265,45 +256,16 @@ export default function CampaignCanvasPage() {
       .eq('id', id)
   }, [supabase])
 
-  const handleCreateCharacter = async () => {
-    if (!characterForm.name.trim()) return
+  // Handle character creation from CharacterModal in create mode
+  const handleCharacterCreate = useCallback((newCharacter: Character) => {
+    setCharacters(prev => [...prev, newCharacter])
+    setSelectedCharacterId(newCharacter.id)
+  }, [setSelectedCharacterId])
 
-    setSaving(true)
-
-    // Find a good position for the new character
-    const existingPositions = characters.map(c => ({ x: c.position_x, y: c.position_y }))
-    let newX = 100
-    let newY = 100
-
-    if (existingPositions.length > 0) {
-      const maxX = Math.max(...existingPositions.map(p => p.x))
-      newX = maxX + 350
-      newY = existingPositions[existingPositions.length - 1].y
-    }
-
-    const { data } = await supabase
-      .from('characters')
-      .insert({
-        campaign_id: campaignId,
-        name: characterForm.name,
-        type: characterForm.type,
-        position_x: newX,
-        position_y: newY,
-      })
-      .select()
-      .single()
-
-    if (data) {
-      setCharacters([...characters, data])
-      setCharacterForm({ name: '', type: 'npc' })
-      setIsCreateCharacterOpen(false)
-      setSelectedCharacterId(data.id)
-      // Open full editor immediately after creation
-      setEditingCharacterId(data.id)
-    }
-
-    setSaving(false)
-  }
+  const handleCloseCreateCharacterModal = useCallback(() => {
+    setIsCreateCharacterModalOpen(false)
+    setSelectedCharacterId(null)
+  }, [setSelectedCharacterId])
 
   const handleCreateGroup = async () => {
     if (!groupForm.name.trim()) return
@@ -384,7 +346,7 @@ export default function CampaignCanvasPage() {
       </button>
       <button
         className="btn btn-primary btn-sm"
-        onClick={() => setIsCreateCharacterOpen(true)}
+        onClick={() => setIsCreateCharacterModalOpen(true)}
       >
         <Plus className="w-4 h-4" />
         <span className="hidden sm:inline ml-1.5">Add Character</span>
@@ -456,49 +418,20 @@ export default function CampaignCanvasPage() {
         />
       )}
 
-      {/* Create Character Modal */}
-      <Modal
-        isOpen={isCreateCharacterOpen}
-        onClose={() => {
-          setIsCreateCharacterOpen(false)
-          setCharacterForm({ name: '', type: 'npc' })
-        }}
-        title="Add Character"
-        description="Create a new character and open the full editor"
-      >
-        <div className="space-y-4">
-          <div className="form-group">
-            <label className="form-label">Name</label>
-            <Input
-              className="form-input"
-              placeholder="Character name"
-              value={characterForm.name}
-              onChange={(e) => setCharacterForm({ ...characterForm, name: e.target.value })}
-              autoFocus
-            />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Type</label>
-            <Dropdown
-              options={CHARACTER_TYPES}
-              value={characterForm.type}
-              onChange={(value) => setCharacterForm({ ...characterForm, type: value as 'pc' | 'npc' })}
-            />
-          </div>
-          <div className="flex justify-end gap-3 pt-4">
-            <button className="btn btn-secondary" onClick={() => setIsCreateCharacterOpen(false)}>
-              Cancel
-            </button>
-            <button
-              className="btn btn-primary"
-              onClick={handleCreateCharacter}
-              disabled={!characterForm.name.trim() || saving}
-            >
-              {saving ? 'Creating...' : 'Create & Edit'}
-            </button>
-          </div>
-        </div>
-      </Modal>
+      {/* Create Character Modal (Full Editor) */}
+      {isCreateCharacterModalOpen && (
+        <CharacterModal
+          character={null}
+          tags={[]}
+          allCharacters={characters}
+          campaignId={campaignId}
+          onUpdate={handleCharacterUpdate}
+          onCreate={handleCharacterCreate}
+          onDelete={handleCharacterDelete}
+          onClose={handleCloseCreateCharacterModal}
+          onTagsChange={loadCampaignData}
+        />
+      )}
 
       {/* Create Group Modal */}
       <Modal

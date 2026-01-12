@@ -49,7 +49,7 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
   return (
     <div className={cn('space-y-4', className)}>
       {/* Preset colors grid */}
-      <div className="grid grid-cols-7 gap-3 mb-5">
+      <div className="grid grid-cols-7 gap-3">
         {PRESET_COLORS.map((color) => (
           <button
             key={color.value}
@@ -71,8 +71,8 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
         ))}
       </div>
 
-      {/* Custom color input */}
-      <div className="flex items-center gap-2 pt-4 mt-4 border-t border-[#2a2a3a]">
+      {/* Custom color input - 24px gap from swatches */}
+      <div className="flex items-center gap-2 pt-6 mt-6 border-t border-[#2a2a3a]">
         <label className="text-xs text-[#606070]">Custom:</label>
         <div className="flex items-center gap-2 flex-1">
           <input

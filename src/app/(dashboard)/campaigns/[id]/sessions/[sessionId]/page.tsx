@@ -282,11 +282,12 @@ export default function SessionDetailPage() {
 
           {/* PC Characters */}
           {pcCharacters.length > 0 && (
-            <div className="mb-5">
-              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide">
+            <div className="mb-12">
+              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-4">
                 Player Characters
               </h4>
-              <div className="flex flex-wrap gap-2 mt-4">
+              {/* Extra padding to prevent ring cutoff */}
+              <div className="flex flex-wrap gap-3 -m-1 p-1">
                 {pcCharacters.map((char) => {
                   const isAttending = attendees.includes(char.id)
                   return (
@@ -294,15 +295,15 @@ export default function SessionDetailPage() {
                       key={char.id}
                       onClick={() => toggleAttendee(char.id)}
                       className={cn(
-                        'flex items-center gap-2 px-3 py-2 rounded-xl transition-all',
+                        'flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all',
                         isAttending
-                          ? 'bg-[--arcane-purple] text-white shadow-lg shadow-[--arcane-purple]/25'
+                          ? 'bg-[--arcane-purple] text-white shadow-lg shadow-[--arcane-purple]/25 ring-2 ring-[--arcane-purple] ring-offset-2 ring-offset-[--bg-surface]'
                           : 'bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 text-[--text-secondary] hover:text-[--text-primary]'
                       )}
                     >
                       <div className={cn(
                         "relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0",
-                        isAttending ? 'ring-2 ring-white/30' : 'bg-[--bg-surface]'
+                        !isAttending && 'bg-[--bg-surface]'
                       )}>
                         {char.image_url ? (
                           <Image
@@ -321,7 +322,7 @@ export default function SessionDetailPage() {
                           </div>
                         )}
                       </div>
-                      <span className="text-sm font-medium">
+                      <span className="text-sm font-medium pr-1">
                         {char.name}
                       </span>
                     </button>
@@ -334,10 +335,11 @@ export default function SessionDetailPage() {
           {/* NPC Characters */}
           {npcCharacters.length > 0 && (
             <div>
-              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide">
+              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-4">
                 Non-Player Characters
               </h4>
-              <div className="flex flex-wrap gap-2 mt-4">
+              {/* Extra padding to prevent ring cutoff */}
+              <div className="flex flex-wrap gap-3 -m-1 p-1">
                 {npcCharacters.map((char) => {
                   const isAttending = attendees.includes(char.id)
                   return (
@@ -345,15 +347,15 @@ export default function SessionDetailPage() {
                       key={char.id}
                       onClick={() => toggleAttendee(char.id)}
                       className={cn(
-                        'flex items-center gap-2 px-3 py-2 rounded-xl transition-all',
+                        'flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all',
                         isAttending
-                          ? 'bg-[--arcane-gold] text-[--bg-base] shadow-lg shadow-[--arcane-gold]/25'
+                          ? 'bg-[--arcane-gold] text-[--bg-base] shadow-lg shadow-[--arcane-gold]/25 ring-2 ring-[--arcane-gold] ring-offset-2 ring-offset-[--bg-surface]'
                           : 'bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-gold]/50 text-[--text-secondary] hover:text-[--text-primary]'
                       )}
                     >
                       <div className={cn(
                         "relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0",
-                        isAttending ? 'ring-2 ring-black/20' : 'bg-[--bg-surface]'
+                        !isAttending && 'bg-[--bg-surface]'
                       )}>
                         {char.image_url ? (
                           <Image
@@ -372,7 +374,7 @@ export default function SessionDetailPage() {
                           </div>
                         )}
                       </div>
-                      <span className="text-sm font-medium">
+                      <span className="text-sm font-medium pr-1">
                         {char.name}
                       </span>
                     </button>
