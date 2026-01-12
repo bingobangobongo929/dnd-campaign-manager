@@ -46,10 +46,10 @@ export function CharacterCard({ character, onClick, className }: CharacterCardPr
           </div>
         )}
 
-        {/* Type badge - large prominent pill */}
+        {/* Type badge - extra large prominent pill */}
         <span
           className={cn(
-            'absolute top-3 right-3 px-3 py-1.5 text-sm font-bold uppercase rounded-md shadow-lg',
+            'absolute top-3 right-3 px-4 py-2 text-base font-bold uppercase rounded-lg shadow-xl',
             character.type === 'pc'
               ? 'bg-purple-600 text-white'
               : 'bg-gray-600 text-white'

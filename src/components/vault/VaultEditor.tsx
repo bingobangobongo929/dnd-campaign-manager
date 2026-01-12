@@ -67,13 +67,50 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
   const [characterId, setCharacterId] = useState<string | null>(character?.id || null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
 
   // Crop modal state
   const [cropModalOpen, setCropModalOpen] = useState(false)
   const [pendingImageSrc, setPendingImageSrc] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
 
-  const editor = useEditor({
+  // Summary editor
+  const summaryEditor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: { levels: [1, 2] },
+      }),
+      Placeholder.configure({
+        placeholder: 'Brief description - role, personality, key traits...',
+      }),
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: { class: 'text-[--arcane-purple] underline' },
+      }),
+      Highlight.configure({
+        HTMLAttributes: { class: 'bg-[--arcane-gold]/30 px-1 rounded' },
+      }),
+      Underline,
+    ],
+    content: formData.summary || '',
+    editorProps: {
+      attributes: {
+        class: cn(
+          'prose prose-invert prose-sm max-w-none',
+          'focus:outline-none min-h-[120px] p-4',
+          'prose-headings:text-[--text-primary] prose-headings:font-semibold',
+          'prose-p:text-[--text-primary] prose-p:my-1',
+          'prose-strong:text-[--text-primary]',
+        ),
+      },
+    },
+    onUpdate: ({ editor }) => {
+      setFormData(prev => ({ ...prev, summary: editor.getHTML() }))
+    },
+  })
+
+  // Notes editor
+  const notesEditor = useEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2] },
@@ -99,7 +136,7 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
       attributes: {
         class: cn(
           'prose prose-invert max-w-none',
-          'focus:outline-none min-h-[300px] p-4',
+          'focus:outline-none min-h-[250px] p-4',
           'prose-headings:text-[--text-primary] prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2',
           'prose-p:text-[--text-primary] prose-p:my-2',
           'prose-strong:text-[--text-primary]',
@@ -123,7 +160,10 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
         setIsFullscreen(prev => !prev)
       }
       if (e.key === 'Escape') {
-        if (isFullscreen) {
+        if (lightboxOpen) {
+          e.preventDefault()
+          setLightboxOpen(false)
+        } else if (isFullscreen) {
           e.preventDefault()
           setIsFullscreen(false)
         }
@@ -131,7 +171,7 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isFullscreen])
+  }, [isFullscreen, lightboxOpen])
 
   // Handle portrait file selection
   const handlePortraitSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -169,36 +209,20 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
       const uniqueId = uuidv4().slice(0, 8)
       const basePath = `${userData.user.id}/vault/${characterId || 'new'}-${timestamp}-${uniqueId}`
 
-      // Upload card crop (16:9)
       const cardPath = `${basePath}-card.jpg`
       const { error: cardError } = await supabase.storage
         .from('vault-images')
-        .upload(cardPath, cardBlob, {
-          contentType: 'image/jpeg',
-          upsert: true,
-        })
-
+        .upload(cardPath, cardBlob, { contentType: 'image/jpeg', upsert: true })
       if (cardError) throw cardError
 
-      // Upload detail crop (2:3)
       const detailPath = `${basePath}-detail.jpg`
       const { error: detailError } = await supabase.storage
         .from('vault-images')
-        .upload(detailPath, detailBlob, {
-          contentType: 'image/jpeg',
-          upsert: true,
-        })
-
+        .upload(detailPath, detailBlob, { contentType: 'image/jpeg', upsert: true })
       if (detailError) throw detailError
 
-      // Get public URLs
-      const { data: cardUrlData } = supabase.storage
-        .from('vault-images')
-        .getPublicUrl(cardPath)
-
-      const { data: detailUrlData } = supabase.storage
-        .from('vault-images')
-        .getPublicUrl(detailPath)
+      const { data: cardUrlData } = supabase.storage.from('vault-images').getPublicUrl(cardPath)
+      const { data: detailUrlData } = supabase.storage.from('vault-images').getPublicUrl(detailPath)
 
       setFormData(prev => ({
         ...prev,
@@ -207,9 +231,7 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
       }))
 
       setCropModalOpen(false)
-      if (pendingImageSrc?.startsWith('blob:')) {
-        URL.revokeObjectURL(pendingImageSrc)
-      }
+      if (pendingImageSrc?.startsWith('blob:')) URL.revokeObjectURL(pendingImageSrc)
       setPendingImageSrc(null)
     } catch (err) {
       console.error('Upload error:', err)
@@ -221,9 +243,7 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
 
   const handleCropClose = useCallback(() => {
     setCropModalOpen(false)
-    if (pendingImageSrc?.startsWith('blob:')) {
-      URL.revokeObjectURL(pendingImageSrc)
-    }
+    if (pendingImageSrc?.startsWith('blob:')) URL.revokeObjectURL(pendingImageSrc)
     setPendingImageSrc(null)
   }, [pendingImageSrc])
 
@@ -242,10 +262,7 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
     }
 
     if (characterId) {
-      await supabase
-        .from('vault_characters')
-        .update(characterData)
-        .eq('id', characterId)
+      await supabase.from('vault_characters').update(characterData).eq('id', characterId)
     } else {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) throw new Error('Not authenticated')
@@ -270,10 +287,10 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
     enabled: !!formData.name.trim(),
   })
 
-  // Handle inline image upload for editor
+  // Handle inline image upload for notes editor
   const handleEditorImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file || !editor) return
+    if (!file || !notesEditor) return
 
     if (!file.type.startsWith('image/') || file.size > 5 * 1024 * 1024) {
       alert('Please select an image under 5MB')
@@ -294,18 +311,16 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
       if (error) throw error
 
       if (data) {
-        const { data: urlData } = supabase.storage
-          .from('vault-images')
-          .getPublicUrl(data.path)
-        editor.chain().focus().setImage({ src: urlData.publicUrl }).run()
+        const { data: urlData } = supabase.storage.from('vault-images').getPublicUrl(data.path)
+        notesEditor.chain().focus().setImage({ src: urlData.publicUrl }).run()
       }
     } catch (error) {
       console.error('Image upload error:', error)
       alert('Failed to upload image')
     }
-  }, [editor, supabase])
+  }, [notesEditor, supabase])
 
-  const setLink = useCallback(() => {
+  const setLink = useCallback((editor: any) => {
     if (!editor) return
     const previousUrl = editor.getAttributes('link').href
     const url = window.prompt('Enter URL', previousUrl)
@@ -315,7 +330,7 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
     } else {
       editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
     }
-  }, [editor])
+  }, [])
 
   const handleDelete = async () => {
     if (!characterId) return
@@ -331,6 +346,7 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
     }
   }
 
+  // Toolbar button component
   const ToolbarButton = ({ onClick, active, disabled, children, title }: {
     onClick: () => void
     active?: boolean
@@ -353,115 +369,30 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
     </button>
   )
 
-  // Type selector component
-  const TypeSelector = () => (
-    <div className="flex rounded-lg overflow-hidden border border-white/20">
-      <button
-        type="button"
-        onClick={() => setFormData({ ...formData, type: 'pc' })}
-        className={cn(
-          'flex-1 px-4 py-2 text-sm font-medium transition-colors',
-          formData.type === 'pc'
-            ? 'bg-purple-600 text-white'
-            : 'bg-transparent text-[--text-muted] hover:text-white'
-        )}
-      >
-        Player Character
-      </button>
-      <button
-        type="button"
-        onClick={() => setFormData({ ...formData, type: 'npc' })}
-        className={cn(
-          'flex-1 px-4 py-2 text-sm font-medium transition-colors',
-          formData.type === 'npc'
-            ? 'bg-gray-600 text-white'
-            : 'bg-transparent text-[--text-muted] hover:text-white'
-        )}
-      >
-        NPC
-      </button>
+  // Compact toolbar for Summary editor
+  const CompactToolbar = ({ editor }: { editor: any }) => (
+    <div className="border-b border-[--border] px-2 py-1 flex items-center gap-0.5 bg-[--bg-hover]/30">
+      <ToolbarButton onClick={() => editor?.chain().focus().toggleBold().run()} active={editor?.isActive('bold')} title="Bold">
+        <Bold className="h-4 w-4" />
+      </ToolbarButton>
+      <ToolbarButton onClick={() => editor?.chain().focus().toggleItalic().run()} active={editor?.isActive('italic')} title="Italic">
+        <Italic className="h-4 w-4" />
+      </ToolbarButton>
+      <ToolbarButton onClick={() => editor?.chain().focus().toggleUnderline().run()} active={editor?.isActive('underline')} title="Underline">
+        <UnderlineIcon className="h-4 w-4" />
+      </ToolbarButton>
+      <div className="w-px h-4 bg-[--border] mx-1" />
+      <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} active={editor?.isActive('bulletList')} title="Bullet List">
+        <List className="h-4 w-4" />
+      </ToolbarButton>
+      <ToolbarButton onClick={() => setLink(editor)} active={editor?.isActive('link')} title="Link">
+        <LinkIcon className="h-4 w-4" />
+      </ToolbarButton>
     </div>
   )
 
-  // Portrait display component
-  const PortraitDisplay = ({ size = 'normal' }: { size?: 'normal' | 'large' }) => {
-    const displayUrl = formData.detail_image_url || formData.image_url
-    const isLarge = size === 'large'
-
-    return (
-      <div className="relative">
-        <input
-          ref={portraitInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="hidden"
-          onChange={handlePortraitSelect}
-        />
-
-        {displayUrl ? (
-          <div className="relative group">
-            <div
-              className={cn(
-                'relative overflow-hidden rounded-xl border-2 border-[--border] bg-[--bg-base] cursor-pointer',
-                isLarge ? 'w-full aspect-[2/3]' : 'w-40 aspect-[2/3]'
-              )}
-              onClick={() => !isFullscreen && setIsFullscreen(true)}
-            >
-              <Image
-                src={displayUrl}
-                alt={formData.name || 'Character portrait'}
-                fill
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
-                sizes={isLarge ? '300px' : '160px'}
-              />
-              {/* Hover overlay - click to expand (only in normal mode) */}
-              {!isFullscreen && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Maximize2 className="w-8 h-8 text-white" />
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => portraitInputRef.current?.click()}
-            className={cn(
-              'relative overflow-hidden rounded-xl transition-all',
-              'focus:outline-none focus:ring-2 focus:ring-[--arcane-purple] focus:ring-offset-2 focus:ring-offset-[--bg-surface]',
-              'border-2 border-dashed border-[--text-tertiary] hover:border-[--arcane-purple]',
-              isLarge ? 'w-full aspect-[2/3]' : 'w-40 aspect-[2/3]'
-            )}
-          >
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-[--bg-hover] gap-2">
-              {formData.name ? (
-                <span className={cn('font-bold text-[--text-tertiary]', isLarge ? 'text-5xl' : 'text-3xl')}>
-                  {getInitials(formData.name)}
-                </span>
-              ) : (
-                <Camera className={cn('text-[--text-tertiary]', isLarge ? 'w-10 h-10' : 'w-8 h-8')} />
-              )}
-              <span className="text-xs text-[--text-muted]">Click to upload</span>
-            </div>
-          </button>
-        )}
-
-        {/* Change button */}
-        <button
-          type="button"
-          onClick={() => portraitInputRef.current?.click()}
-          disabled={isUploading}
-          className="mt-3 flex items-center gap-2 text-sm text-[--text-muted] hover:text-white transition-colors"
-        >
-          <Upload className="w-4 h-4" />
-          {displayUrl ? 'Change' : 'Upload'}
-        </button>
-      </div>
-    )
-  }
-
-  // Editor toolbar component
-  const EditorToolbar = () => (
+  // Full toolbar for Notes editor
+  const FullToolbar = ({ editor }: { editor: any }) => (
     <div className="border-b border-[--border] px-2 py-1.5 flex items-center gap-0.5 flex-wrap bg-[--bg-hover]/30">
       <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo()} title="Undo">
         <Undo className="h-4 w-4" />
@@ -503,7 +434,7 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
         <Quote className="h-4 w-4" />
       </ToolbarButton>
       <div className="w-px h-5 bg-[--border] mx-1" />
-      <ToolbarButton onClick={setLink} active={editor?.isActive('link')} title="Link">
+      <ToolbarButton onClick={() => setLink(editor)} active={editor?.isActive('link')} title="Link">
         <LinkIcon className="h-4 w-4" />
       </ToolbarButton>
       <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleEditorImageUpload} />
@@ -513,7 +444,140 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
     </div>
   )
 
-  if (!editor) return null
+  // Type selector component - larger version
+  const TypeSelector = ({ large = false }: { large?: boolean }) => (
+    <div className="flex rounded-lg overflow-hidden border border-white/20">
+      <button
+        type="button"
+        onClick={() => setFormData({ ...formData, type: 'pc' })}
+        className={cn(
+          'flex-1 font-medium transition-colors',
+          large ? 'py-3 px-6 text-base' : 'px-4 py-2 text-sm',
+          formData.type === 'pc'
+            ? 'bg-purple-600 text-white'
+            : 'bg-transparent text-[--text-muted] hover:text-white'
+        )}
+      >
+        Player Character
+      </button>
+      <button
+        type="button"
+        onClick={() => setFormData({ ...formData, type: 'npc' })}
+        className={cn(
+          'flex-1 font-medium transition-colors',
+          large ? 'py-3 px-6 text-base' : 'px-4 py-2 text-sm',
+          formData.type === 'npc'
+            ? 'bg-gray-600 text-white'
+            : 'bg-transparent text-[--text-muted] hover:text-white'
+        )}
+      >
+        NPC
+      </button>
+    </div>
+  )
+
+  // Portrait display component - clicks open LIGHTBOX
+  const PortraitDisplay = ({ size = 'normal' }: { size?: 'normal' | 'large' }) => {
+    const displayUrl = formData.detail_image_url || formData.image_url
+    const isLarge = size === 'large'
+
+    return (
+      <div className="relative">
+        <input
+          ref={portraitInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={handlePortraitSelect}
+        />
+
+        {displayUrl ? (
+          <div className="relative group">
+            <div
+              className={cn(
+                'relative overflow-hidden rounded-xl border-2 border-[--border] bg-[--bg-base] cursor-pointer',
+                isLarge ? 'w-full aspect-[2/3]' : 'w-44 aspect-[2/3]'
+              )}
+              onClick={() => setLightboxOpen(true)}
+            >
+              <Image
+                src={displayUrl}
+                alt={formData.name || 'Character portrait'}
+                fill
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                sizes={isLarge ? '350px' : '176px'}
+              />
+              {/* Hover overlay - click to view full size */}
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-white text-sm font-medium">View Full Size</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => portraitInputRef.current?.click()}
+            className={cn(
+              'relative overflow-hidden rounded-xl transition-all',
+              'focus:outline-none focus:ring-2 focus:ring-[--arcane-purple] focus:ring-offset-2 focus:ring-offset-[--bg-surface]',
+              'border-2 border-dashed border-[--text-tertiary] hover:border-[--arcane-purple]',
+              isLarge ? 'w-full aspect-[2/3]' : 'w-44 aspect-[2/3]'
+            )}
+          >
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-[--bg-hover] gap-2">
+              {formData.name ? (
+                <span className={cn('font-bold text-[--text-tertiary]', isLarge ? 'text-5xl' : 'text-3xl')}>
+                  {getInitials(formData.name)}
+                </span>
+              ) : (
+                <Camera className={cn('text-[--text-tertiary]', isLarge ? 'w-12 h-12' : 'w-8 h-8')} />
+              )}
+              <span className="text-sm text-[--text-muted]">Click to upload</span>
+            </div>
+          </button>
+        )}
+
+        {/* Change button */}
+        <button
+          type="button"
+          onClick={() => portraitInputRef.current?.click()}
+          disabled={isUploading}
+          className="mt-3 flex items-center gap-2 text-sm text-[--text-muted] hover:text-white transition-colors"
+        >
+          <Upload className="w-4 h-4" />
+          {displayUrl ? 'Change' : 'Upload'}
+        </button>
+      </div>
+    )
+  }
+
+  // Lightbox component
+  const Lightbox = () => {
+    const displayUrl = formData.detail_image_url || formData.image_url
+    if (!lightboxOpen || !displayUrl) return null
+
+    return (
+      <div
+        className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-8"
+        onClick={() => setLightboxOpen(false)}
+      >
+        <button
+          className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <X className="w-6 h-6 text-white" />
+        </button>
+        <img
+          src={displayUrl}
+          alt={formData.name || 'Character portrait'}
+          className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+    )
+  }
+
+  if (!notesEditor || !summaryEditor) return null
 
   return (
     <>
@@ -523,7 +587,7 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="character-modal-header">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-white/10" style={{ height: '60px' }}>
             <div className="flex items-center gap-3">
               <div className={cn(
                 "w-10 h-10 rounded-xl flex items-center justify-center",
@@ -534,7 +598,9 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
                 {formData.type === 'pc' ? <User className="w-5 h-5" /> : <Users className="w-5 h-5" />}
               </div>
               <div>
-                <h2 className="modal-title">{formData.name || (isCreateMode ? 'New Character' : 'Edit Character')}</h2>
+                <h2 className="text-lg font-semibold text-[--text-primary]">
+                  {formData.name || (isCreateMode ? 'New Character' : 'Edit Character')}
+                </h2>
                 <p className="text-xs text-[--text-tertiary]">
                   {status === 'saving' ? 'Saving...' : status === 'saved' ? 'All changes saved' : isCreateMode && !characterId ? 'Enter a name to start' : ''}
                 </p>
@@ -542,14 +608,17 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
             </div>
             <div className="flex items-center gap-1">
               <button
-                className="btn-ghost btn-icon w-9 h-9"
+                className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors"
                 onClick={() => setIsFullscreen(!isFullscreen)}
                 title={isFullscreen ? 'Exit fullscreen (Esc)' : 'Fullscreen (Ctrl+Shift+F)'}
               >
-                {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                {isFullscreen ? <Minimize2 className="w-5 h-5 text-[--text-secondary]" /> : <Maximize2 className="w-5 h-5 text-[--text-secondary]" />}
               </button>
-              <button className="btn-ghost btn-icon w-9 h-9" onClick={handleClose}>
-                <X className="w-5 h-5" />
+              <button
+                className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors"
+                onClick={handleClose}
+              >
+                <X className="w-5 h-5 text-[--text-secondary]" />
               </button>
             </div>
           </div>
@@ -558,49 +627,51 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
           {isFullscreen ? (
             // FULLSCREEN LAYOUT
             <div className="flex-1 flex overflow-hidden">
-              {/* Left Sidebar */}
-              <div className="w-[300px] flex-shrink-0 p-6 border-r border-white/10 overflow-y-auto space-y-6">
-                {/* Portrait */}
+              {/* Left Sidebar - 350px wide with p-8 padding */}
+              <div className="w-[350px] flex-shrink-0 p-8 border-r border-white/10 overflow-y-auto space-y-6">
+                {/* Portrait - clickable for lightbox */}
                 <PortraitDisplay size="large" />
 
                 {/* Character Name */}
                 <div>
-                  <label className="text-sm text-[--text-muted] mb-2 block">Character Name</label>
+                  <label className="text-lg font-semibold text-[--text-primary] mb-3 block">Character Name</label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Enter character name"
-                    className="form-input text-lg font-semibold"
-                  />
-                </div>
-
-                {/* Summary */}
-                <div>
-                  <label className="text-sm text-[--text-muted] mb-2 block">Summary</label>
-                  <textarea
-                    value={formData.summary}
-                    onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                    placeholder="Brief description..."
-                    rows={4}
-                    className="form-textarea"
+                    className="w-full bg-[--bg-elevated] border border-[--border] rounded-lg text-lg py-3 px-4 text-[--text-primary] placeholder:text-[--text-muted] focus:outline-none focus:ring-2 focus:ring-[--arcane-purple] focus:border-transparent"
                   />
                 </div>
 
                 {/* Type */}
                 <div>
-                  <label className="text-sm text-[--text-muted] mb-2 block">Type</label>
-                  <TypeSelector />
+                  <label className="text-lg font-semibold text-[--text-primary] mb-3 block">Type</label>
+                  <TypeSelector large />
                 </div>
               </div>
 
-              {/* Right: Notes Editor */}
-              <div className="flex-1 p-6 flex flex-col min-h-0">
-                <label className="text-sm text-[--text-muted] mb-2 block">Notes</label>
-                <div className="flex-1 min-h-[400px] border border-[--border] rounded-lg overflow-hidden bg-[--bg-surface] flex flex-col">
-                  <EditorToolbar />
-                  <div className="flex-1 overflow-y-auto">
-                    <EditorContent editor={editor} />
+              {/* Right: Summary + Notes */}
+              <div className="flex-1 p-8 flex flex-col min-h-0 gap-6 overflow-y-auto">
+                {/* Summary with Tiptap */}
+                <div className="flex-shrink-0">
+                  <label className="text-xl font-bold text-[--text-primary] mb-4 block">Summary</label>
+                  <div className="border border-[--border] rounded-lg overflow-hidden bg-[--bg-surface]" style={{ minHeight: '150px', maxHeight: '220px' }}>
+                    <CompactToolbar editor={summaryEditor} />
+                    <div className="overflow-y-auto" style={{ maxHeight: '170px' }}>
+                      <EditorContent editor={summaryEditor} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notes with Tiptap */}
+                <div className="flex-1 flex flex-col min-h-[300px]">
+                  <label className="text-xl font-bold text-[--text-primary] mb-4 block">Notes</label>
+                  <div className="flex-1 border border-[--border] rounded-lg overflow-hidden bg-[--bg-surface] flex flex-col">
+                    <FullToolbar editor={notesEditor} />
+                    <div className="flex-1 overflow-y-auto">
+                      <EditorContent editor={notesEditor} />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -610,7 +681,7 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
             <div className="character-modal-body">
               {/* Top Section: Portrait + Basic Info */}
               <div className="flex gap-6">
-                {/* Portrait */}
+                {/* Portrait - clickable for lightbox */}
                 <PortraitDisplay size="normal" />
 
                 <div className="flex-1 space-y-4">
@@ -632,33 +703,33 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
                 </div>
               </div>
 
-              {/* Summary */}
+              {/* Summary with Tiptap */}
               <div className="form-group">
                 <label className="form-label">Summary</label>
-                <textarea
-                  value={formData.summary}
-                  onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                  placeholder="Brief description - role, personality, or key traits..."
-                  rows={2}
-                  className="form-textarea"
-                />
+                <div className="border border-[--border] rounded-lg overflow-hidden bg-[--bg-surface]">
+                  <CompactToolbar editor={summaryEditor} />
+                  <EditorContent editor={summaryEditor} />
+                </div>
               </div>
 
               {/* Notes */}
               <div className="form-group flex-1 flex flex-col min-h-0">
                 <label className="form-label">Notes</label>
                 <div className="flex-1 min-h-[200px] border border-[--border] rounded-lg overflow-hidden bg-[--bg-surface]">
-                  <EditorToolbar />
-                  <EditorContent editor={editor} />
+                  <FullToolbar editor={notesEditor} />
+                  <EditorContent editor={notesEditor} />
                 </div>
               </div>
             </div>
           )}
 
           {/* Footer */}
-          <div className="character-modal-footer">
+          <div className="flex items-center justify-between px-8 py-4 border-t border-white/10">
             {characterId ? (
-              <button className="btn btn-ghost text-[--arcane-ember]" onClick={() => setIsDeleteConfirmOpen(true)}>
+              <button
+                className="flex items-center gap-2 px-4 py-2 text-[--arcane-ember] hover:bg-[--arcane-ember]/10 rounded-lg transition-colors"
+                onClick={() => setIsDeleteConfirmOpen(true)}
+              >
                 <Trash2 className="w-4 h-4" />
                 Delete
               </button>
@@ -671,6 +742,9 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
           </div>
         </div>
       </div>
+
+      {/* Lightbox */}
+      <Lightbox />
 
       {/* Crop Modal */}
       {pendingImageSrc && (
