@@ -18,6 +18,7 @@ import {
   Users,
   LayoutGrid,
   ChevronDown,
+  Sparkles,
 } from 'lucide-react'
 import { Input, Textarea, Modal, Dropdown } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
@@ -28,13 +29,14 @@ import {
   JournalView,
   BrowserView,
   StoryboardView,
+  AIGenerateModal,
   VIEW_OPTIONS,
 } from '@/components/timeline'
 import type { TimelineViewType, TimelineEventWithCharacters } from '@/components/timeline'
 import { useSupabase, useUser } from '@/hooks'
 import { getInitials, cn } from '@/lib/utils'
 import Image from 'next/image'
-import type { Campaign, TimelineEvent, Character, Tag, CharacterTag } from '@/types/database'
+import type { Campaign, TimelineEvent, Character, Tag, CharacterTag, Session } from '@/types/database'
 
 const EVENT_TYPES = [
   { value: 'session', label: 'Session', icon: Scroll },
@@ -81,6 +83,10 @@ export default function TimelinePage() {
   const [viewingCharacter, setViewingCharacter] = useState<Character | null>(null)
   const [characterTags, setCharacterTags] = useState<(CharacterTag & { tag: Tag; related_character?: Character | null })[]>([])
 
+  // AI generation state
+  const [sessions, setSessions] = useState<Session[]>([])
+  const [isAIGenerateModalOpen, setIsAIGenerateModalOpen] = useState(false)
+
   // Load view preference from localStorage
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
@@ -126,6 +132,15 @@ export default function TimelinePage() {
       .order('name')
 
     setCharacters(charactersData || [])
+
+    // Load sessions for AI generation
+    const { data: sessionsData } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('campaign_id', campaignId)
+      .order('session_date', { ascending: false })
+
+    setSessions(sessionsData || [])
 
     const { data: eventsData } = await supabase
       .from('timeline_events')
@@ -211,6 +226,33 @@ export default function TimelinePage() {
       event_type: 'other',
       character_ids: [],
     })
+  }
+
+  // Handle AI-generated events
+  const handleAIGeneratedEvents = async (generatedEvents: {
+    title: string
+    description: string
+    event_type: string
+    character_ids: string[]
+    source_session_ids: string[]
+  }[]) => {
+    // Insert all generated events
+    for (const event of generatedEvents) {
+      await supabase
+        .from('timeline_events')
+        .insert({
+          campaign_id: campaignId,
+          title: event.title,
+          description: event.description,
+          event_type: event.event_type,
+          event_date: new Date().toISOString().split('T')[0],
+          character_ids: event.character_ids.length > 0 ? event.character_ids : null,
+          character_id: event.character_ids.length > 0 ? event.character_ids[0] : null,
+        })
+    }
+
+    // Reload events
+    await loadData()
   }
 
   const pcCharacters = characters.filter(c => c.type === 'pc')
@@ -323,6 +365,20 @@ export default function TimelinePage() {
                 </>
               )}
             </div>
+
+            {sessions.length > 0 && (
+              <button
+                className="btn btn-secondary flex items-center gap-2"
+                onClick={() => setIsAIGenerateModalOpen(true)}
+                style={{
+                  background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%)',
+                  border: '1px solid rgba(139, 92, 246, 0.3)',
+                }}
+              >
+                <Sparkles className="w-4 h-4" style={{ color: '#a78bfa' }} />
+                <span style={{ color: '#a78bfa' }}>AI Generate</span>
+              </button>
+            )}
 
             <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
               <Plus className="w-4 h-4" />
@@ -556,6 +612,15 @@ export default function TimelinePage() {
             onClose={() => setViewingCharacter(null)}
           />
         )}
+
+        {/* AI Generate Modal */}
+        <AIGenerateModal
+          isOpen={isAIGenerateModalOpen}
+          onClose={() => setIsAIGenerateModalOpen(false)}
+          sessions={sessions}
+          characters={characters}
+          onEventsGenerated={handleAIGeneratedEvents}
+        />
       </div>
     </AppLayout>
   )

@@ -1,12 +1,12 @@
 'use client'
 
-import { formatDate, getInitials } from '@/lib/utils'
+import { getInitials } from '@/lib/utils'
 import Image from 'next/image'
 import type { TimelineViewProps } from './types'
 
 /**
- * Journal View - Campaign diary aesthetic
- * Clear entry separation, proper hierarchy, readable typography
+ * Journal View - "The Saga"
+ * Campaign diary aesthetic with elegant typography and gold accents
  */
 export function JournalView({ events, onEventClick, onCharacterClick }: TimelineViewProps) {
   if (events.length === 0) return null
@@ -14,25 +14,25 @@ export function JournalView({ events, onEventClick, onCharacterClick }: Timeline
   return (
     <div className="max-w-3xl mx-auto">
       {/* Journal Header */}
-      <header className="text-center mb-12 pb-8" style={{ borderBottom: '1px solid rgba(212, 168, 67, 0.2)' }}>
-        <div className="flex items-center justify-center gap-4 mb-4">
-          <div className="w-16 h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(212, 168, 67, 0.4))' }} />
+      <header className="text-center mb-14 pb-10" style={{ borderBottom: '1px solid rgba(212, 168, 67, 0.15)' }}>
+        <div className="flex items-center justify-center gap-5 mb-5">
+          <div className="w-20 h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(212, 168, 67, 0.3))' }} />
           <span
-            className="text-xs font-bold uppercase tracking-[0.3em]"
+            className="text-[11px] font-semibold uppercase tracking-[0.35em]"
             style={{ color: '#D4A843' }}
           >
             Chronicle
           </span>
-          <div className="w-16 h-px" style={{ background: 'linear-gradient(to left, transparent, rgba(212, 168, 67, 0.4))' }} />
+          <div className="w-20 h-px" style={{ background: 'linear-gradient(to left, transparent, rgba(212, 168, 67, 0.3))' }} />
         </div>
         <h2
-          className="text-3xl font-bold"
+          className="text-3xl font-bold mb-3"
           style={{ color: '#f3f4f6' }}
         >
           Campaign Journal
         </h2>
         <p
-          className="text-base mt-3"
+          className="text-base"
           style={{ color: '#6b7280' }}
         >
           {events.length} recorded {events.length === 1 ? 'entry' : 'entries'}
@@ -40,7 +40,7 @@ export function JournalView({ events, onEventClick, onCharacterClick }: Timeline
       </header>
 
       {/* Journal Entries */}
-      <div className="space-y-10">
+      <div className="space-y-12">
         {events.map((event, index) => (
           <article
             key={event.id}
@@ -48,25 +48,28 @@ export function JournalView({ events, onEventClick, onCharacterClick }: Timeline
             className="group cursor-pointer"
           >
             <div
-              className="relative pl-8"
-              style={{ borderLeft: '2px solid rgba(212, 168, 67, 0.2)', border: '3px solid green' }} // DEBUG
+              className="relative pl-10 transition-all duration-300"
+              style={{ borderLeft: '2px solid rgba(212, 168, 67, 0.15)' }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderLeftColor = 'rgba(212, 168, 67, 0.5)'
+                e.currentTarget.style.borderLeftColor = 'rgba(212, 168, 67, 0.4)'
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderLeftColor = 'rgba(212, 168, 67, 0.2)'
+                e.currentTarget.style.borderLeftColor = 'rgba(212, 168, 67, 0.15)'
               }}
             >
-              {/* Entry marker */}
+              {/* Entry marker dot */}
               <div
-                className="absolute -left-[7px] top-2 w-3 h-3 rounded-full transition-colors"
-                style={{ backgroundColor: 'rgba(212, 168, 67, 0.4)' }}
+                className="absolute -left-[9px] top-1 w-4 h-4 rounded-full transition-all duration-300 group-hover:scale-110"
+                style={{
+                  backgroundColor: '#D4A843',
+                  boxShadow: '0 0 0 4px rgba(212, 168, 67, 0.15)',
+                }}
               />
 
               {/* Date and Type */}
-              <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center flex-wrap gap-3 mb-4">
                 <time
-                  className="text-sm font-semibold"
+                  className="text-[15px] font-semibold"
                   style={{ color: '#D4A843' }}
                 >
                   {new Date(event.event_date).toLocaleDateString('en-US', {
@@ -76,10 +79,11 @@ export function JournalView({ events, onEventClick, onCharacterClick }: Timeline
                   })}
                 </time>
                 <span
-                  className="text-xs font-medium uppercase tracking-wide px-2 py-1 rounded"
+                  className="text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded"
                   style={{
-                    backgroundColor: 'rgba(212, 168, 67, 0.1)',
-                    color: '#9ca3af'
+                    backgroundColor: 'rgba(212, 168, 67, 0.08)',
+                    color: '#9ca3af',
+                    border: '1px solid rgba(212, 168, 67, 0.15)',
                   }}
                 >
                   {event.event_type.replace(/_/g, ' ')}
@@ -88,7 +92,7 @@ export function JournalView({ events, onEventClick, onCharacterClick }: Timeline
 
               {/* Title */}
               <h3
-                className="text-2xl font-bold mb-4 transition-colors"
+                className="text-2xl font-bold mb-4 leading-snug group-hover:text-[#D4A843] transition-colors"
                 style={{ color: '#f3f4f6' }}
               >
                 {event.title}
@@ -97,14 +101,14 @@ export function JournalView({ events, onEventClick, onCharacterClick }: Timeline
               {/* Description */}
               {event.description ? (
                 <p
-                  className="text-base mb-6"
-                  style={{ color: '#9ca3af', lineHeight: '1.8' }}
+                  className="text-[15px] mb-6"
+                  style={{ color: '#9ca3af', lineHeight: '1.85' }}
                 >
                   {event.description}
                 </p>
               ) : (
                 <p
-                  className="text-base italic mb-6"
+                  className="text-[15px] italic mb-6"
                   style={{ color: '#4b5563' }}
                 >
                   No notes recorded...
@@ -114,16 +118,16 @@ export function JournalView({ events, onEventClick, onCharacterClick }: Timeline
               {/* Characters present */}
               {event.characters.length > 0 && (
                 <div
-                  className="pt-5"
-                  style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+                  className="pt-6"
+                  style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}
                 >
                   <p
-                    className="text-xs font-bold uppercase tracking-wider mb-4"
+                    className="text-[10px] font-semibold uppercase tracking-wider mb-4"
                     style={{ color: '#6b7280' }}
                   >
                     Present
                   </p>
-                  <div className="flex flex-wrap gap-4">
+                  <div className="flex flex-wrap gap-5">
                     {event.characters.map((char) => (
                       <button
                         key={char.id}
@@ -131,7 +135,7 @@ export function JournalView({ events, onEventClick, onCharacterClick }: Timeline
                           e.stopPropagation()
                           onCharacterClick(char, e)
                         }}
-                        className="flex items-center gap-3 transition-colors"
+                        className="flex items-center gap-3 transition-all duration-200"
                         onMouseEnter={(e) => {
                           const span = e.currentTarget.querySelector('span')
                           if (span) span.style.color = '#D4A843'
@@ -142,8 +146,11 @@ export function JournalView({ events, onEventClick, onCharacterClick }: Timeline
                         }}
                       >
                         <div
-                          className="relative w-10 h-10 rounded-full overflow-hidden"
-                          style={{ border: '2px solid rgba(212, 168, 67, 0.3)' }}
+                          className="relative w-10 h-10 rounded-full overflow-hidden transition-all duration-200"
+                          style={{
+                            border: '2px solid rgba(212, 168, 67, 0.25)',
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+                          }}
                         >
                           {char.image_url ? (
                             <Image
@@ -178,8 +185,8 @@ export function JournalView({ events, onEventClick, onCharacterClick }: Timeline
             {/* Spacer between entries */}
             {index < events.length - 1 && (
               <div
-                className="h-px mt-10"
-                style={{ background: 'linear-gradient(to right, rgba(212, 168, 67, 0.1), rgba(212, 168, 67, 0.2), rgba(212, 168, 67, 0.1))' }}
+                className="h-px mt-12"
+                style={{ background: 'linear-gradient(to right, transparent, rgba(212, 168, 67, 0.12), transparent)' }}
               />
             )}
           </article>
@@ -187,7 +194,7 @@ export function JournalView({ events, onEventClick, onCharacterClick }: Timeline
       </div>
 
       {/* Journal Footer */}
-      <footer className="text-center mt-16 pt-8" style={{ borderTop: '1px solid rgba(212, 168, 67, 0.2)' }}>
+      <footer className="text-center mt-16 pt-10" style={{ borderTop: '1px solid rgba(212, 168, 67, 0.15)' }}>
         <p
           className="text-sm italic"
           style={{ color: '#4b5563' }}

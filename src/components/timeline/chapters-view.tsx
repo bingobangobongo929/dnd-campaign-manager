@@ -32,8 +32,8 @@ const EVENT_CONFIG: Record<string, { icon: typeof Calendar; label: string; color
 }
 
 /**
- * Chapters View - Collapsible sections by event type
- * Prominent headers, generous spacing, clean accordion
+ * Chapters View - "The Codex"
+ * Collapsible sections by event type with clean accordion styling
  */
 export function ChaptersView({ events, onEventClick, onCharacterClick }: TimelineViewProps) {
   // Group events by type
@@ -65,7 +65,7 @@ export function ChaptersView({ events, onEventClick, onCharacterClick }: Timelin
   if (events.length === 0) return null
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-4">
       {sortedTypes.map(([type, typeEvents]) => {
         const config = EVENT_CONFIG[type] || EVENT_CONFIG.other
         const Icon = config.icon
@@ -76,44 +76,49 @@ export function ChaptersView({ events, onEventClick, onCharacterClick }: Timelin
             key={type}
             className="rounded-xl overflow-hidden"
             style={{
-              backgroundColor: '#12121a',
-              border: '3px solid orange', // DEBUG - chapter section
+              backgroundColor: 'rgba(18, 18, 26, 0.8)',
+              border: '1px solid rgba(255, 255, 255, 0.06)',
             }}
           >
             {/* Section Header */}
             <button
               onClick={() => toggleSection(type)}
-              className="w-full flex items-center gap-5 p-6 text-left transition-colors"
-              style={{ backgroundColor: isExpanded ? 'rgba(255,255,255,0.02)' : 'transparent' }}
+              className="w-full flex items-center gap-4 p-5 text-left transition-all duration-200"
+              style={{
+                backgroundColor: isExpanded ? 'rgba(255, 255, 255, 0.02)' : 'transparent',
+              }}
               onMouseEnter={(e) => {
-                if (!isExpanded) e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)'
+                if (!isExpanded) e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.03)'
               }}
               onMouseLeave={(e) => {
                 if (!isExpanded) e.currentTarget.style.backgroundColor = 'transparent'
               }}
             >
               <div
-                className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: `${config.color}20` }}
+                className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-200"
+                style={{
+                  backgroundColor: `${config.color}15`,
+                  border: `1px solid ${config.color}25`,
+                }}
               >
-                <Icon className="w-7 h-7" style={{ color: config.color }} />
+                <Icon className="w-6 h-6" style={{ color: config.color }} />
               </div>
               <div className="flex-1 min-w-0">
                 <h2
-                  className="text-xl font-bold"
+                  className="text-lg font-bold"
                   style={{ color: '#f3f4f6' }}
                 >
                   {config.label}
                 </h2>
                 <p
-                  className="text-sm mt-1"
+                  className="text-sm"
                   style={{ color: '#6b7280' }}
                 >
                   {typeEvents.length} event{typeEvents.length !== 1 ? 's' : ''}
                 </p>
               </div>
               <ChevronDown
-                className="w-6 h-6 transition-transform duration-200"
+                className="w-5 h-5 transition-transform duration-300"
                 style={{
                   color: '#6b7280',
                   transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)'
@@ -123,25 +128,24 @@ export function ChaptersView({ events, onEventClick, onCharacterClick }: Timelin
 
             {/* Events List */}
             {isExpanded && (
-              <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
                 {typeEvents.map((event, index) => (
                   <div
                     key={event.id}
                     onClick={() => onEventClick(event)}
-                    className="flex items-start gap-5 p-6 cursor-pointer transition-colors"
+                    className="flex items-start gap-5 p-5 cursor-pointer transition-all duration-200"
                     style={{
-                      border: '3px solid darkorange', // DEBUG - event item
-                      borderBottom: index !== typeEvents.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                      borderBottom: index !== typeEvents.length - 1 ? '1px solid rgba(255, 255, 255, 0.04)' : 'none',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)'
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)'
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.backgroundColor = 'transparent'
                     }}
                   >
                     {/* Date column */}
-                    <div className="w-24 flex-shrink-0 pt-1">
+                    <div className="w-24 flex-shrink-0 pt-0.5">
                       <time
                         className="text-sm font-medium tabular-nums"
                         style={{ color: '#6b7280' }}
@@ -153,7 +157,7 @@ export function ChaptersView({ events, onEventClick, onCharacterClick }: Timelin
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <h3
-                        className="text-lg font-semibold mb-2"
+                        className="text-base font-semibold mb-1.5 leading-snug"
                         style={{ color: '#f3f4f6' }}
                       >
                         {event.title}
@@ -163,8 +167,8 @@ export function ChaptersView({ events, onEventClick, onCharacterClick }: Timelin
                           className="text-sm leading-relaxed"
                           style={{ color: '#9ca3af', lineHeight: '1.6' }}
                         >
-                          {event.description.length > 200
-                            ? event.description.slice(0, 200) + '...'
+                          {event.description.length > 180
+                            ? event.description.slice(0, 180) + '...'
                             : event.description}
                         </p>
                       )}
@@ -172,7 +176,7 @@ export function ChaptersView({ events, onEventClick, onCharacterClick }: Timelin
 
                     {/* Characters */}
                     {event.characters.length > 0 && (
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
                         <div className="flex -space-x-2">
                           {event.characters.slice(0, 4).map((char) => (
                             <button
@@ -181,7 +185,7 @@ export function ChaptersView({ events, onEventClick, onCharacterClick }: Timelin
                                 e.stopPropagation()
                                 onCharacterClick(char, e)
                               }}
-                              className="relative w-10 h-10 rounded-full overflow-hidden transition-transform hover:scale-110 hover:z-10"
+                              className="relative w-9 h-9 rounded-full overflow-hidden transition-all duration-200 hover:scale-110 hover:z-10"
                               style={{
                                 backgroundColor: '#1a1a24',
                                 border: '2px solid #12121a',
@@ -194,11 +198,11 @@ export function ChaptersView({ events, onEventClick, onCharacterClick }: Timelin
                                   alt={char.name}
                                   fill
                                   className="object-cover"
-                                  sizes="40px"
+                                  sizes="36px"
                                 />
                               ) : (
                                 <div
-                                  className="w-full h-full flex items-center justify-center text-xs font-bold"
+                                  className="w-full h-full flex items-center justify-center text-[10px] font-bold"
                                   style={{ color: '#6b7280' }}
                                 >
                                   {getInitials(char.name)}
@@ -209,7 +213,7 @@ export function ChaptersView({ events, onEventClick, onCharacterClick }: Timelin
                         </div>
                         {event.characters.length > 4 && (
                           <span
-                            className="text-sm font-medium"
+                            className="text-xs font-medium ml-1"
                             style={{ color: '#6b7280' }}
                           >
                             +{event.characters.length - 4}
