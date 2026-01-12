@@ -11,13 +11,10 @@ import TiptapImage from '@tiptap/extension-image'
 import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
 import { createClient } from '@/lib/supabase/client'
-import { cn, getInitials } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { useAutoSave } from '@/hooks'
-import Image from 'next/image'
 import {
   X,
-  Camera,
-  Loader2,
   User,
   Users,
   Maximize2,
@@ -39,6 +36,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { Modal } from '@/components/ui'
+import { VaultImageUpload } from './VaultImageUpload'
 import type { VaultCharacter } from '@/types/database'
 
 interface VaultEditorProps {
@@ -50,7 +48,6 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
   const router = useRouter()
   const supabase = createClient()
   const imageInputRef = useRef<HTMLInputElement>(null)
-  const portraitInputRef = useRef<HTMLInputElement>(null)
   const isCreateMode = mode === 'create'
 
   const [formData, setFormData] = useState({
@@ -59,10 +56,10 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
     notes: character?.notes || '',
     type: (character?.type || 'npc') as 'pc' | 'npc',
     image_url: character?.image_url || null as string | null,
+    detail_image_url: (character as any)?.detail_image_url || null as string | null,
   })
 
   const [characterId, setCharacterId] = useState<string | null>(character?.id || null)
-  const [isUploading, setIsUploading] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
 
@@ -126,6 +123,15 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isFullscreen])
 
+  // Handle image update from VaultImageUpload
+  const handleImageUpdate = useCallback((cardUrl: string | null, detailUrl: string | null) => {
+    setFormData(prev => ({
+      ...prev,
+      image_url: cardUrl,
+      detail_image_url: detailUrl,
+    }))
+  }, [])
+
   // Auto-save
   const saveCharacter = useCallback(async () => {
     if (!formData.name.trim()) return
@@ -135,6 +141,7 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
       summary: formData.summary.trim() || null,
       type: formData.type,
       image_url: formData.image_url,
+      detail_image_url: formData.detail_image_url,
       notes: formData.notes,
       updated_at: new Date().toISOString(),
     }
@@ -168,45 +175,7 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
     enabled: !!formData.name.trim(),
   })
 
-  // Handle portrait upload
-  const handlePortraitUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    if (!file.type.startsWith('image/') || file.size > 5 * 1024 * 1024) {
-      alert('Please select an image under 5MB')
-      return
-    }
-
-    setIsUploading(true)
-    try {
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData.user) throw new Error('Not authenticated')
-
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${userData.user.id}/portraits/${Date.now()}.${fileExt}`
-
-      const { data, error } = await supabase.storage
-        .from('vault-images')
-        .upload(fileName, file, { upsert: true })
-
-      if (error) throw error
-
-      if (data) {
-        const { data: urlData } = supabase.storage
-          .from('vault-images')
-          .getPublicUrl(data.path)
-        setFormData(prev => ({ ...prev, image_url: urlData.publicUrl }))
-      }
-    } catch (error) {
-      console.error('Portrait upload error:', error)
-      alert('Failed to upload image')
-    } finally {
-      setIsUploading(false)
-    }
-  }, [supabase])
-
-  // Handle inline image upload
+  // Handle inline image upload for editor
   const handleEditorImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !editor) return
@@ -332,40 +301,16 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
 
           {/* Body */}
           <div className={cn('character-modal-body', isFullscreen && 'character-modal-body-fullscreen')}>
-            {/* Top Section: Avatar + Basic Info */}
+            {/* Top Section: Image Upload + Basic Info */}
             <div className="character-modal-top">
-              {/* Portrait Upload */}
-              <input ref={portraitInputRef} type="file" accept="image/*" className="hidden" onChange={handlePortraitUpload} />
-              <button
-                type="button"
-                onClick={() => portraitInputRef.current?.click()}
-                disabled={isUploading}
-                className={cn(
-                  'relative w-28 h-28 rounded-xl overflow-hidden flex-shrink-0 transition-all group',
-                  'border-2',
-                  formData.image_url ? 'border-transparent' : 'border-dashed border-[--text-tertiary] hover:border-[--arcane-purple]',
-                  'focus:outline-none focus:ring-2 focus:ring-[--arcane-purple]'
-                )}
-              >
-                {formData.image_url ? (
-                  <>
-                    <Image src={formData.image_url} alt={formData.name || 'Portrait'} fill className="object-cover" />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Camera className="w-6 h-6 text-white" />
-                    </div>
-                  </>
-                ) : (
-                  <div className="absolute inset-0 bg-[--bg-hover] flex flex-col items-center justify-center">
-                    {isUploading ? (
-                      <Loader2 className="w-6 h-6 text-[--text-tertiary] animate-spin" />
-                    ) : formData.name ? (
-                      <span className="text-3xl font-bold text-[--text-tertiary]">{getInitials(formData.name)}</span>
-                    ) : (
-                      <Camera className="w-6 h-6 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
-                    )}
-                  </div>
-                )}
-              </button>
+              {/* Portrait Upload with Cropping */}
+              <VaultImageUpload
+                characterId={characterId}
+                characterName={formData.name}
+                cardImageUrl={formData.image_url}
+                detailImageUrl={formData.detail_image_url}
+                onUpdate={handleImageUpdate}
+              />
 
               <div className="flex-1 space-y-4">
                 <div className="form-group">
