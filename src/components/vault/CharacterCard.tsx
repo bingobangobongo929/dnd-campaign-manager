@@ -46,17 +46,17 @@ export function CharacterCard({ character, onClick, className }: CharacterCardPr
           </div>
         )}
 
-        {/* Type badge */}
-        <div
+        {/* Type badge - prominent pill style */}
+        <span
           className={cn(
-            'absolute top-3 right-3 px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md',
+            'absolute top-3 right-3 px-2.5 py-1 text-xs font-semibold uppercase rounded-md shadow-lg',
             character.type === 'pc'
-              ? 'bg-[--arcane-purple] text-white'
-              : 'bg-[--arcane-gold] text-[#12121a]'
+              ? 'bg-purple-600 text-white'
+              : 'bg-gray-600 text-white'
           )}
         >
           {character.type}
-        </div>
+        </span>
       </div>
 
       {/* Content - WITH EXPLICIT 24px PADDING */}
@@ -69,13 +69,13 @@ export function CharacterCard({ character, onClick, className }: CharacterCardPr
           {character.name}
         </h3>
 
-        {/* Summary - slightly larger text-base */}
-        <p className="text-base text-[--text-secondary] line-clamp-2 leading-relaxed">
+        {/* Summary - fixed height for consistent cards */}
+        <p className="text-base text-[--text-secondary] line-clamp-3 leading-snug min-h-[66px]">
           {character.summary || 'No summary yet'}
         </p>
 
-        {/* Date - with more top margin for separation */}
-        <p className="text-xs text-[--text-tertiary] mt-4">
+        {/* Date - clear separation from summary */}
+        <p className="text-xs text-[--text-muted] mt-5">
           Updated {formatDistanceToNow(new Date(character.updated_at), { addSuffix: true })}
         </p>
       </div>
