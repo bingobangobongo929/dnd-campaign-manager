@@ -23,56 +23,53 @@ export function CharacterCard({ character, onClick, className }: CharacterCardPr
         className
       )}
     >
-      {/* Card layout: horizontal on larger cards */}
-      <div className="flex">
-        {/* Portrait */}
-        <div className="relative w-24 h-24 flex-shrink-0 bg-[--bg-hover]">
-          {character.image_url ? (
-            <Image
-              src={character.image_url}
-              alt={character.name}
-              fill
-              className="object-cover"
-              sizes="96px"
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-2xl font-bold text-[--text-tertiary]">
-                {getInitials(character.name)}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 p-3 min-w-0">
-          {/* Header: Name + Type badge */}
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <h3 className="text-sm font-semibold text-[--text-primary] truncate group-hover:text-[--arcane-purple] transition-colors">
-              {character.name}
-            </h3>
-            <span
-              className={cn(
-                'flex-shrink-0 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded',
-                character.type === 'pc'
-                  ? 'bg-[--arcane-purple]/20 text-[--arcane-purple]'
-                  : 'bg-[--arcane-gold]/20 text-[--arcane-gold]'
-              )}
-            >
-              {character.type}
+      {/* Portrait */}
+      <div className="relative w-full aspect-[16/9] bg-[--bg-hover]">
+        {character.image_url ? (
+          <Image
+            src={character.image_url}
+            alt={character.name}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, 33vw"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-4xl font-bold text-[--text-tertiary]">
+              {getInitials(character.name)}
             </span>
           </div>
+        )}
 
-          {/* Summary */}
-          <p className="text-xs text-[--text-secondary] line-clamp-2 leading-relaxed mb-2">
-            {character.summary || 'No summary'}
-          </p>
-
-          {/* Date */}
-          <p className="text-[10px] text-[--text-tertiary]">
-            {formatDistanceToNow(new Date(character.updated_at), { addSuffix: true })}
-          </p>
+        {/* Type badge */}
+        <div
+          className={cn(
+            'absolute top-3 right-3 px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md',
+            character.type === 'pc'
+              ? 'bg-[--arcane-purple] text-white'
+              : 'bg-[--arcane-gold] text-[#12121a]'
+          )}
+        >
+          {character.type}
         </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
+        {/* Name */}
+        <h3 className="text-base font-semibold text-[--text-primary] mb-2 group-hover:text-[--arcane-purple] transition-colors">
+          {character.name}
+        </h3>
+
+        {/* Summary */}
+        <p className="text-sm text-[--text-secondary] line-clamp-2 leading-relaxed mb-3">
+          {character.summary || 'No summary yet'}
+        </p>
+
+        {/* Date */}
+        <p className="text-xs text-[--text-tertiary]">
+          Updated {formatDistanceToNow(new Date(character.updated_at), { addSuffix: true })}
+        </p>
       </div>
     </button>
   )
