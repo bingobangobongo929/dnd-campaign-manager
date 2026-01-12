@@ -27,6 +27,7 @@ export function SessionViewModal({
         style={{
           backgroundColor: '#12121a',
           border: '3px solid red', // DEBUG - outer modal border
+          padding: '24px',
         }}
         onClick={(e) => e.stopPropagation()}
       >
