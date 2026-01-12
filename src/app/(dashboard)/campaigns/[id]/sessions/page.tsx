@@ -201,7 +201,7 @@ export default function SessionsPage() {
         </div>
 
         {/* Search */}
-        <div className="relative mb-6" style={{ border: '3px solid yellow', marginBottom: '40px' }}>
+        <div className="relative mb-6" style={{ marginBottom: '40px' }}>
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[--text-tertiary]" />
           <input
             type="text"
@@ -241,9 +241,8 @@ export default function SessionsPage() {
                 style={{
                   animationDelay: `${index * 50}ms`,
                   backgroundColor: 'rgba(255,255,255,0.04)',
-                  border: '3px solid red', // DEBUG BORDER
                   boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                  marginBottom: '32px', // DEBUG - extra spacing
+                  marginBottom: '32px',
                 }}
                 onClick={() => handleSessionClick(session)}
                 onMouseEnter={(e) => {
