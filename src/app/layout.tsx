@@ -17,7 +17,11 @@ export const metadata: Metadata = {
   title: "Campaign Manager",
   description: "AI-powered campaign management for TTRPGs",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: 'any' },
+    ],
+    apple: '/icon.svg',
   },
 }
 
