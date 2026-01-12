@@ -267,7 +267,7 @@ export default function SessionDetailPage() {
         </div>
 
         {/* Attendance Section - Prominent placement */}
-        <div className="card p-6 mb-12" style={{ border: '3px solid red' }}>
+        <div className="card p-6 mb-12" style={{ border: '3px solid red', marginTop: '24px', marginBottom: '32px' }}>
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <Users className="w-6 h-6 text-[--arcane-purple]" />
@@ -282,7 +282,7 @@ export default function SessionDetailPage() {
 
           {/* PC Characters */}
           {pcCharacters.length > 0 && (
-            <div className="mb-12" style={{ border: '3px solid blue' }}>
+            <div className="mb-6" style={{ border: '3px solid blue', marginBottom: '24px' }}>
               <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-4">
                 Player Characters
               </h4>
