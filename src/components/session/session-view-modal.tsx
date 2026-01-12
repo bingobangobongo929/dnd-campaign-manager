@@ -78,7 +78,7 @@ export function SessionViewModal({
 
             {/* Attendees */}
             {attendees.length > 0 && (
-              <div style={{ border: '3px solid green' }}>
+              <div style={{ border: '3px solid green', padding: '16px' }}>
                 <div className="flex items-center gap-2 mb-4">
                   <Users className="w-4 h-4 text-[--text-tertiary]" />
                   <span className="text-sm font-medium text-[--text-tertiary]">
