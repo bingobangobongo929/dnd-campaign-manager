@@ -26,7 +26,7 @@ export function SessionViewModal({
         className="relative w-full max-w-2xl max-h-[85vh] overflow-hidden rounded-2xl"
         style={{
           backgroundColor: '#12121a',
-          border: '1px solid rgba(255,255,255,0.1)',
+          border: '3px solid red', // DEBUG - outer modal border
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -40,7 +40,7 @@ export function SessionViewModal({
         </button>
 
         {/* Header */}
-        <div className="p-8 pb-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="p-8 pb-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', border: '3px solid blue' }}>
           <div className="pr-10">
             {/* Session meta */}
             <div className="flex items-center gap-3 mb-4">
@@ -78,7 +78,7 @@ export function SessionViewModal({
 
             {/* Attendees */}
             {attendees.length > 0 && (
-              <div>
+              <div style={{ border: '3px solid green' }}>
                 <div className="flex items-center gap-2 mb-4">
                   <Users className="w-4 h-4 text-[--text-tertiary]" />
                   <span className="text-sm font-medium text-[--text-tertiary]">

@@ -259,8 +259,9 @@ export default function SessionsPage() {
                 style={{
                   animationDelay: `${index * 50}ms`,
                   backgroundColor: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.12)',
+                  border: '3px solid red', // DEBUG BORDER
                   boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                  marginBottom: '32px', // DEBUG - extra spacing
                 }}
                 onClick={() => handleSessionClick(session)}
                 onMouseEnter={(e) => {
