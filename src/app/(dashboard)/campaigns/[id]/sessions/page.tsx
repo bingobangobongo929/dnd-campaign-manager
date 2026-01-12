@@ -220,7 +220,7 @@ export default function SessionsPage() {
         </div>
 
         {/* Search */}
-        <div className="relative mb-6">
+        <div className="relative mb-6" style={{ border: '3px solid yellow' }}>
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[--text-tertiary]" />
           <input
             type="text"
