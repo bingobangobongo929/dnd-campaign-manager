@@ -392,7 +392,7 @@ export default function SessionDetailPage() {
         </div>
 
         {/* Summary Section */}
-        <div className="card p-6 mb-12" style={{ border: '3px solid orange' }}>
+        <div className="card p-6 mb-12">
           <div className="flex items-center justify-between mb-4">
             <div>
               <label className="text-xl font-semibold text-[--text-primary] block mb-1">
