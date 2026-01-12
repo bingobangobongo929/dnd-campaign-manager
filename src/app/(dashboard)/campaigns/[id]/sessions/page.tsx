@@ -8,12 +8,10 @@ import {
   Calendar,
   FileText,
   Trash2,
-  Pencil,
   Users,
 } from 'lucide-react'
 import { Input, Modal, Textarea, Tooltip } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
-import { SessionViewModal } from '@/components/session'
 import { CharacterViewModal } from '@/components/character'
 import { useSupabase, useUser } from '@/hooks'
 import { formatDate, cn, getInitials } from '@/lib/utils'
@@ -44,9 +42,6 @@ export default function SessionsPage() {
     summary: '',
   })
   const [saving, setSaving] = useState(false)
-
-  // View modal state
-  const [viewingSession, setViewingSession] = useState<SessionWithAttendees | null>(null)
 
   // Character preview modal state
   const [viewingCharacter, setViewingCharacter] = useState<Character | null>(null)
@@ -159,18 +154,10 @@ export default function SessionsPage() {
 
     await supabase.from('sessions').delete().eq('id', id)
     setSessions(sessions.filter((s) => s.id !== id))
-    if (viewingSession?.id === id) {
-      setViewingSession(null)
-    }
-  }
-
-  const handleEditClick = (session: SessionWithAttendees, e: React.MouseEvent) => {
-    e.stopPropagation()
-    router.push(`/campaigns/${campaignId}/sessions/${session.id}`)
   }
 
   const handleSessionClick = (session: SessionWithAttendees) => {
-    setViewingSession(session)
+    router.push(`/campaigns/${campaignId}/sessions/${session.id}`)
   }
 
   const handleCharacterClick = async (character: Character) => {
@@ -186,12 +173,6 @@ export default function SessionsPage() {
 
     setCharacterTags(tagsData || [])
     setViewingCharacter(character)
-  }
-
-  const handleEditFromView = () => {
-    if (viewingSession) {
-      router.push(`/campaigns/${campaignId}/sessions/${viewingSession.id}`)
-    }
   }
 
   if (loading) {
@@ -360,13 +341,6 @@ export default function SessionsPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       <button
-                        className="w-9 h-9 rounded-lg flex items-center justify-center text-[--text-secondary] hover:text-[--text-primary] hover:bg-[--bg-hover] transition-colors"
-                        onClick={(e) => handleEditClick(session, e)}
-                        title="Edit session"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
                         className="w-9 h-9 rounded-lg flex items-center justify-center text-[--arcane-ember] hover:bg-[--arcane-ember]/10 transition-colors"
                         onClick={(e) => handleDelete(session.id, e)}
                         title="Delete session"
@@ -449,17 +423,6 @@ export default function SessionsPage() {
             </div>
           </div>
         </Modal>
-
-        {/* Session View Modal */}
-        {viewingSession && (
-          <SessionViewModal
-            session={viewingSession}
-            attendees={viewingSession.attendees}
-            onEdit={handleEditFromView}
-            onClose={() => setViewingSession(null)}
-            onCharacterClick={handleCharacterClick}
-          />
-        )}
 
         {/* Character View Modal */}
         {viewingCharacter && (
