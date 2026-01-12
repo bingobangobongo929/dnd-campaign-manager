@@ -278,37 +278,47 @@ export default function TimelinePage() {
                     className="fixed inset-0 z-40"
                     onClick={() => setViewMenuOpen(false)}
                   />
-                  <div className="absolute right-0 top-full mt-2 w-64 bg-[--bg-surface] border border-[--border] rounded-xl shadow-xl z-50 py-2 animate-slide-in-up">
-                    <div className="px-3 py-2 border-b border-[--border]">
-                      <p className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide">
+                  <div className="absolute right-0 top-full mt-2 w-72 rounded-xl shadow-2xl z-50 overflow-hidden" style={{ backgroundColor: '#1a1a24', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                      <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#9ca3af' }}>
                         View Style
                       </p>
                     </div>
-                    {VIEW_OPTIONS.map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => handleViewChange(option.value)}
-                        className={cn(
-                          "w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-[--bg-elevated] transition-colors",
-                          currentView === option.value && "bg-[--arcane-purple]/10"
-                        )}
-                      >
-                        <div>
-                          <p className={cn(
-                            "font-medium text-sm",
-                            currentView === option.value ? "text-[--arcane-purple]" : "text-[--text-primary]"
-                          )}>
-                            {option.label}
-                          </p>
-                          <p className="text-xs text-[--text-tertiary]">
-                            {option.description}
-                          </p>
-                        </div>
-                        {currentView === option.value && (
-                          <Check className="w-4 h-4 text-[--arcane-purple]" />
-                        )}
-                      </button>
-                    ))}
+                    <div className="py-2">
+                      {VIEW_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => handleViewChange(option.value)}
+                          className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors"
+                          style={{
+                            backgroundColor: currentView === option.value ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (currentView !== option.value) {
+                              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = currentView === option.value ? 'rgba(139, 92, 246, 0.15)' : 'transparent'
+                          }}
+                        >
+                          <div>
+                            <p
+                              className="font-semibold text-[15px]"
+                              style={{ color: currentView === option.value ? '#a78bfa' : '#f3f4f6' }}
+                            >
+                              {option.label}
+                            </p>
+                            <p className="text-[13px] mt-0.5" style={{ color: '#9ca3af' }}>
+                              {option.description}
+                            </p>
+                          </div>
+                          {currentView === option.value && (
+                            <Check className="w-5 h-5 flex-shrink-0" style={{ color: '#a78bfa' }} />
+                          )}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </>
               )}

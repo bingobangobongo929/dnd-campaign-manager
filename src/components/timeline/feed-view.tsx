@@ -5,51 +5,85 @@ import Image from 'next/image'
 import type { TimelineViewProps } from './types'
 
 /**
- * Feed View - Editorial card stack
- * Clean, spacious cards with clear hierarchy. Reads like a curated news feed.
+ * Feed View - Clean vertical card stack
+ * Generous spacing, clear hierarchy, no cramping
  */
 export function FeedView({ events, onEventClick, onCharacterClick }: TimelineViewProps) {
   if (events.length === 0) return null
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {events.map((event, index) => (
+    <div className="max-w-3xl mx-auto space-y-8">
+      {events.map((event) => (
         <article
           key={event.id}
           onClick={() => onEventClick(event)}
           className="group cursor-pointer"
-          style={{ animationDelay: `${index * 50}ms` }}
         >
-          <div className="relative p-6 rounded-2xl bg-[--bg-surface] border border-[--border] transition-all duration-300 hover:border-[--arcane-purple]/40 hover:shadow-[0_0_30px_-10px_rgba(139,92,246,0.3)]">
-            {/* Top row: Date and Type */}
+          <div
+            className="p-6 rounded-xl transition-all duration-200"
+            style={{
+              backgroundColor: '#12121a',
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.4)'
+              e.currentTarget.style.boxShadow = '0 4px 24px rgba(139, 92, 246, 0.1)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}
+          >
+            {/* Header: Date and Category */}
             <div className="flex items-center justify-between mb-4">
-              <time className="text-sm text-[--text-tertiary] tabular-nums">
+              <time
+                className="text-sm font-medium tabular-nums"
+                style={{ color: '#9ca3af' }}
+              >
                 {formatDate(event.event_date)}
               </time>
-              <span className="text-xs font-medium text-[--arcane-purple] uppercase tracking-widest">
+              <span
+                className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full"
+                style={{
+                  backgroundColor: 'rgba(139, 92, 246, 0.15)',
+                  color: '#a78bfa'
+                }}
+              >
                 {event.event_type.replace(/_/g, ' ')}
               </span>
             </div>
 
             {/* Title */}
-            <h3 className="text-xl font-semibold text-[--text-primary] leading-snug mb-3 group-hover:text-[--arcane-purple] transition-colors">
+            <h3
+              className="text-xl font-semibold mb-4 leading-relaxed transition-colors"
+              style={{ color: '#f3f4f6' }}
+            >
               {event.title}
             </h3>
 
-            {/* Description - full text, soft wrapping */}
+            {/* Description */}
             {event.description && (
-              <p className="text-[--text-secondary] leading-relaxed mb-5">
+              <p
+                className="text-base leading-relaxed mb-6"
+                style={{ color: '#9ca3af', lineHeight: '1.7' }}
+              >
                 {event.description}
               </p>
             )}
 
-            {/* Characters */}
+            {/* Characters Section */}
             {event.characters.length > 0 && (
-              <div className="pt-4 border-t border-[--border]">
-                <p className="text-xs text-[--text-tertiary] uppercase tracking-wider mb-3">
+              <div
+                className="pt-5 mt-5"
+                style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                <p
+                  className="text-xs font-bold uppercase tracking-wider mb-4"
+                  style={{ color: '#6b7280' }}
+                >
                   Characters
                 </p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3">
                   {event.characters.map((char) => (
                     <button
                       key={char.id}
@@ -57,24 +91,45 @@ export function FeedView({ events, onEventClick, onCharacterClick }: TimelineVie
                         e.stopPropagation()
                         onCharacterClick(char, e)
                       }}
-                      className="flex items-center gap-2 px-3 py-2 rounded-full bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-gold]/50 hover:bg-[--arcane-gold]/5 transition-all"
+                      className="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all"
+                      style={{
+                        backgroundColor: '#1a1a24',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = 'rgba(212, 168, 67, 0.5)'
+                        e.currentTarget.style.backgroundColor = 'rgba(212, 168, 67, 0.08)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
+                        e.currentTarget.style.backgroundColor = '#1a1a24'
+                      }}
                     >
-                      <div className="relative w-6 h-6 rounded-full overflow-hidden bg-[--bg-surface] ring-2 ring-[--bg-elevated]">
+                      <div
+                        className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0"
+                        style={{ backgroundColor: '#0a0a0f' }}
+                      >
                         {char.image_url ? (
                           <Image
                             src={char.image_url}
                             alt={char.name}
                             fill
                             className="object-cover"
-                            sizes="24px"
+                            sizes="32px"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-[10px] font-semibold text-[--text-tertiary]">
+                          <div
+                            className="w-full h-full flex items-center justify-center text-xs font-bold"
+                            style={{ color: '#6b7280' }}
+                          >
                             {getInitials(char.name)}
                           </div>
                         )}
                       </div>
-                      <span className="text-sm text-[--text-secondary]">
+                      <span
+                        className="text-sm font-medium"
+                        style={{ color: '#d1d5db' }}
+                      >
                         {char.name}
                       </span>
                     </button>
@@ -82,11 +137,6 @@ export function FeedView({ events, onEventClick, onCharacterClick }: TimelineVie
                 </div>
               </div>
             )}
-
-            {/* Subtle corner accent */}
-            <div className="absolute top-0 right-0 w-16 h-16 opacity-0 group-hover:opacity-100 transition-opacity">
-              <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-[--arcane-purple]" />
-            </div>
           </div>
         </article>
       ))}
