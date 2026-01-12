@@ -16,13 +16,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Campaign Manager",
   description: "AI-powered campaign management for TTRPGs",
-  icons: {
-    icon: [
-      { url: '/icon.svg', type: 'image/svg+xml' },
-      { url: '/favicon.ico', sizes: 'any' },
-    ],
-    apple: '/icon.svg',
-  },
 }
 
 export default function RootLayout({

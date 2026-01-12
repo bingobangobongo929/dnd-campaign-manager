@@ -64,22 +64,18 @@ export function CharacterCard({ character, onClick, className }: CharacterCardPr
         className="px-6 py-5"
         style={{ paddingLeft: '24px', paddingRight: '24px', paddingTop: '20px', paddingBottom: '20px' }}
       >
-        {/* DEBUG TEST - REMOVE AFTER VERIFICATION */}
-        <div style={{ background: '#ff0000', color: '#ffffff', padding: '8px', marginBottom: '12px', fontWeight: 'bold', textAlign: 'center' }}>
-          DEPLOYMENT TEST - If you see this red box, the code is deployed correctly
-        </div>
-        {/* Name */}
-        <h3 className="text-base font-semibold text-[--text-primary] mb-2 group-hover:text-[--arcane-purple] transition-colors">
+        {/* Name - larger text-xl */}
+        <h3 className="text-xl font-semibold text-[--text-primary] mb-1 group-hover:text-[--arcane-purple] transition-colors">
           {character.name}
         </h3>
 
-        {/* Summary */}
-        <p className="text-sm text-[--text-secondary] line-clamp-2 leading-relaxed mb-3">
+        {/* Summary - slightly larger text-base */}
+        <p className="text-base text-[--text-secondary] line-clamp-2 leading-relaxed">
           {character.summary || 'No summary yet'}
         </p>
 
-        {/* Date */}
-        <p className="text-xs text-[--text-tertiary]">
+        {/* Date - with more top margin for separation */}
+        <p className="text-xs text-[--text-tertiary] mt-4">
           Updated {formatDistanceToNow(new Date(character.updated_at), { addSuffix: true })}
         </p>
       </div>
