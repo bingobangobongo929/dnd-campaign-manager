@@ -45,20 +45,20 @@ export function CharacterCard({ character, onClick, className }: CharacterCardPr
             </span>
           </div>
         )}
-
-        {/* Type badge - extra large prominent pill with explicit positioning */}
-        <span
-          className={cn(
-            'absolute px-4 py-2 text-base font-bold uppercase rounded-lg shadow-xl',
-            character.type === 'pc'
-              ? 'bg-purple-600 text-white'
-              : 'bg-gray-600 text-white'
-          )}
-          style={{ top: '12px', right: '12px' }}
-        >
-          {character.type}
-        </span>
       </div>
+
+      {/* Type badge - positioned relative to card (button has relative class) */}
+      <span
+        className={cn(
+          'absolute px-4 py-2 text-base font-bold uppercase rounded-lg shadow-xl z-10',
+          character.type === 'pc'
+            ? 'bg-purple-600 text-white'
+            : 'bg-gray-600 text-white'
+        )}
+        style={{ top: '16px', right: '16px' }}
+      >
+        {character.type}
+      </span>
 
       {/* Content - WITH EXPLICIT 24px PADDING */}
       <div
