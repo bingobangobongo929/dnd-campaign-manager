@@ -42,6 +42,8 @@ export default function CampaignCanvasPage() {
     type: 'npc' as 'pc' | 'npc',
   })
   const [groupForm, setGroupForm] = useState({ name: '', color: '#8B5CF6', icon: 'users' })
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
+  const [editGroupForm, setEditGroupForm] = useState({ name: '', color: '#8B5CF6', icon: 'users' })
   const [saving, setSaving] = useState(false)
 
   // Character size overrides from resize toolbar
@@ -215,6 +217,43 @@ export default function CampaignCanvasPage() {
       .eq('id', id)
   }, [supabase])
 
+  const handleGroupEdit = useCallback((id: string) => {
+    const group = groups.find(g => g.id === id)
+    if (group) {
+      setEditGroupForm({
+        name: group.name,
+        color: group.color || '#8B5CF6',
+        icon: group.icon || 'users',
+      })
+      setEditingGroupId(id)
+    }
+  }, [groups])
+
+  const handleUpdateGroup = async () => {
+    if (!editGroupForm.name.trim() || !editingGroupId) return
+
+    setSaving(true)
+
+    const { data } = await supabase
+      .from('canvas_groups')
+      .update({
+        name: editGroupForm.name,
+        color: editGroupForm.color,
+        icon: editGroupForm.icon,
+      })
+      .eq('id', editingGroupId)
+      .select()
+      .single()
+
+    if (data) {
+      setGroups(prev => prev.map(g => g.id === editingGroupId ? data : g))
+      setEditingGroupId(null)
+      setEditGroupForm({ name: '', color: '#8B5CF6', icon: 'users' })
+    }
+
+    setSaving(false)
+  }
+
   const handleGroupPositionChange = useCallback(async (id: string, x: number, y: number) => {
     setGroups(prev => prev.map(g =>
       g.id === id ? { ...g, position_x: x, position_y: y } : g
@@ -259,6 +298,8 @@ export default function CampaignCanvasPage() {
       setCharacterForm({ name: '', type: 'npc' })
       setIsCreateCharacterOpen(false)
       setSelectedCharacterId(data.id)
+      // Open full editor immediately after creation
+      setEditingCharacterId(data.id)
     }
 
     setSaving(false)
@@ -377,6 +418,7 @@ export default function CampaignCanvasPage() {
           onCharacterSizeChange={handleCharacterSizeChange}
           onGroupUpdate={handleGroupUpdate}
           onGroupDelete={handleGroupDelete}
+          onGroupEdit={handleGroupEdit}
           onGroupPositionChange={handleGroupPositionChange}
         />
       </div>
@@ -422,7 +464,7 @@ export default function CampaignCanvasPage() {
           setCharacterForm({ name: '', type: 'npc' })
         }}
         title="Add Character"
-        description="Create a new character for your campaign"
+        description="Create a new character and open the full editor"
       >
         <div className="space-y-4">
           <div className="form-group">
@@ -452,7 +494,7 @@ export default function CampaignCanvasPage() {
               onClick={handleCreateCharacter}
               disabled={!characterForm.name.trim() || saving}
             >
-              {saving ? 'Creating...' : 'Create Character'}
+              {saving ? 'Creating...' : 'Create & Edit'}
             </button>
           </div>
         </div>
@@ -469,8 +511,8 @@ export default function CampaignCanvasPage() {
         description="Create a group to organize characters on the canvas"
         size="lg"
       >
-        <div className="space-y-5">
-          <div className="form-group">
+        <div className="space-y-6">
+          <div className="form-group mb-6">
             <label className="form-label">Group Name</label>
             <Input
               className="form-input"
@@ -480,15 +522,15 @@ export default function CampaignCanvasPage() {
               autoFocus
             />
           </div>
-          <div className="form-group">
-            <label className="form-label">Group Color</label>
+          <div className="form-group mb-6">
+            <label className="form-label mb-4">Group Color</label>
             <ColorPicker
               value={groupForm.color}
               onChange={(color) => setGroupForm({ ...groupForm, color })}
             />
           </div>
-          <div className="form-group">
-            <label className="form-label">Group Icon</label>
+          <div className="form-group mb-6">
+            <label className="form-label mb-4">Group Icon</label>
             <IconPicker
               value={groupForm.icon}
               onChange={(icon) => setGroupForm({ ...groupForm, icon })}
@@ -496,8 +538,8 @@ export default function CampaignCanvasPage() {
             />
           </div>
           {/* Preview */}
-          <div className="form-group">
-            <label className="form-label">Preview</label>
+          <div className="form-group mt-6">
+            <label className="form-label mb-4">Preview</label>
             {(() => {
               const GroupIcon = getGroupIcon(groupForm.icon)
               return (
@@ -525,6 +567,78 @@ export default function CampaignCanvasPage() {
               disabled={!groupForm.name.trim() || saving}
             >
               {saving ? 'Creating...' : 'Create Group'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Group Modal */}
+      <Modal
+        isOpen={!!editingGroupId}
+        onClose={() => {
+          setEditingGroupId(null)
+          setEditGroupForm({ name: '', color: '#8B5CF6', icon: 'users' })
+        }}
+        title="Edit Group"
+        description="Update the group's name, color, and icon"
+        size="lg"
+      >
+        <div className="space-y-6">
+          <div className="form-group mb-6">
+            <label className="form-label">Group Name</label>
+            <Input
+              className="form-input"
+              placeholder="e.g., The Party, Villains, NPCs..."
+              value={editGroupForm.name}
+              onChange={(e) => setEditGroupForm({ ...editGroupForm, name: e.target.value })}
+              autoFocus
+            />
+          </div>
+          <div className="form-group mb-6">
+            <label className="form-label mb-4">Group Color</label>
+            <ColorPicker
+              value={editGroupForm.color}
+              onChange={(color) => setEditGroupForm({ ...editGroupForm, color })}
+            />
+          </div>
+          <div className="form-group mb-6">
+            <label className="form-label mb-4">Group Icon</label>
+            <IconPicker
+              value={editGroupForm.icon}
+              onChange={(icon) => setEditGroupForm({ ...editGroupForm, icon })}
+              color={editGroupForm.color}
+            />
+          </div>
+          {/* Preview */}
+          <div className="form-group mt-6">
+            <label className="form-label mb-4">Preview</label>
+            {(() => {
+              const GroupIcon = getGroupIcon(editGroupForm.icon)
+              return (
+                <div
+                  className="h-16 rounded-xl flex items-center justify-center gap-2 font-semibold text-lg"
+                  style={{
+                    backgroundColor: `${editGroupForm.color}15`,
+                    border: `2px solid ${editGroupForm.color}50`,
+                    color: editGroupForm.color,
+                  }}
+                >
+                  <GroupIcon className="w-5 h-5" />
+                  {editGroupForm.name || 'Group Name'}
+                </div>
+              )
+            })()}
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <button className="btn btn-secondary" onClick={() => setEditingGroupId(null)}>
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleUpdateGroup}
+              disabled={!editGroupForm.name.trim() || saving}
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </div>

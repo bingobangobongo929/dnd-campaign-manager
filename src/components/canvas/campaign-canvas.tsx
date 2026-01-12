@@ -41,6 +41,7 @@ interface CampaignCanvasProps {
   onCharacterSizeChange?: (id: string, width: number, height: number) => void
   onGroupUpdate: (id: string, updates: Partial<CanvasGroup>) => void
   onGroupDelete: (id: string) => void
+  onGroupEdit: (id: string) => void
   onGroupPositionChange: (id: string, x: number, y: number) => void
 }
 
@@ -63,6 +64,7 @@ function CampaignCanvasInner({
   onCharacterSizeChange,
   onGroupUpdate,
   onGroupDelete,
+  onGroupEdit,
   onGroupPositionChange,
 }: CampaignCanvasProps) {
   const { selectedCharacterId, setCanvasViewport } = useAppStore()
@@ -121,12 +123,13 @@ function CampaignCanvasInner({
         group,
         onUpdate: onGroupUpdate,
         onDelete: onGroupDelete,
+        onEdit: onGroupEdit,
       } as GroupNodeData,
     }))
 
     // Groups should render behind characters
     return [...groupNodes, ...characterNodes] as unknown as Node[]
-  }, [characters, characterTags, groups, selectedCharacterId, characterSizeOverrides, onCharacterPreview, onCharacterEdit, onCharacterSizeChange, onGroupUpdate, onGroupDelete])
+  }, [characters, characterTags, groups, selectedCharacterId, characterSizeOverrides, onCharacterPreview, onCharacterEdit, onCharacterSizeChange, onGroupUpdate, onGroupDelete, onGroupEdit])
 
   // Initialize nodes
   const [nodes, setNodes] = useNodesState(createNodes())

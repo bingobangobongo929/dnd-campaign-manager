@@ -1,31 +1,21 @@
 'use client'
 
-import { memo, useState } from 'react'
+import { memo } from 'react'
 import { NodeResizer } from '@xyflow/react'
 import { cn } from '@/lib/utils'
-import { Trash2, Edit2, Check, X } from 'lucide-react'
-import { Button, Input, getGroupIcon } from '@/components/ui'
+import { Trash2, Edit2 } from 'lucide-react'
+import { Button, getGroupIcon } from '@/components/ui'
 import type { CanvasGroup } from '@/types/database'
 
 export interface GroupNodeData extends Record<string, unknown> {
   group: CanvasGroup
   onUpdate: (id: string, updates: Partial<CanvasGroup>) => void
   onDelete: (id: string) => void
+  onEdit: (id: string) => void
 }
 
 function GroupNodeComponent({ data, selected }: { data: GroupNodeData; selected?: boolean }) {
-  const { group, onUpdate, onDelete } = data
-  const [isEditing, setIsEditing] = useState(false)
-  const [name, setName] = useState(group.name)
-
-  const handleSave = () => {
-    if (name.trim()) {
-      onUpdate(group.id, { name: name.trim() })
-    } else {
-      setName(group.name)
-    }
-    setIsEditing(false)
-  }
+  const { group, onUpdate, onDelete, onEdit } = data
 
   const GroupIcon = getGroupIcon(group.icon)
 
@@ -70,54 +60,22 @@ function GroupNodeComponent({ data, selected }: { data: GroupNodeData; selected?
                 />
               </div>
 
-              {isEditing ? (
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="h-10 w-48 text-xl font-bold"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSave()
-                      if (e.key === 'Escape') {
-                        setName(group.name)
-                        setIsEditing(false)
-                      }
-                    }}
-                  />
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSave}>
-                    <Check className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => {
-                      setName(group.name)
-                      setIsEditing(false)
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <h2
-                  className="text-2xl font-bold tracking-tight cursor-grab"
-                  style={{ color: group.color || 'var(--text-primary)' }}
-                >
-                  {group.name}
-                </h2>
-              )}
+              <h2
+                className="text-2xl font-bold tracking-tight cursor-grab"
+                style={{ color: group.color || 'var(--text-primary)' }}
+              >
+                {group.name}
+              </h2>
             </div>
 
             {/* Edit/Delete buttons - only show when selected */}
-            {selected && !isEditing && (
+            {selected && (
               <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 opacity-60 hover:opacity-100"
-                  onClick={() => setIsEditing(true)}
+                  onClick={() => onEdit(group.id)}
                 >
                   <Edit2 className="h-4 w-4" />
                 </Button>

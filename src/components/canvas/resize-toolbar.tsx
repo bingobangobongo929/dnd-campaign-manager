@@ -140,8 +140,8 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
       </div>
 
       {/* Character selection */}
-      <div className="px-5 py-4" style={{ borderBottom: '1px solid #2a2a3a' }}>
-        <div className="flex items-center justify-between mb-3">
+      <div className="px-6 py-5" style={{ borderBottom: '1px solid #2a2a3a' }}>
+        <div className="flex items-center justify-between mb-4">
           <span className="text-sm text-[--text-secondary]">
             <span className="text-[--arcane-purple] font-semibold">{selectedIds.size}</span> of {filteredCharacters.length} selected
           </span>
@@ -150,7 +150,7 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
             <button onClick={deselectAll} className="font-medium text-[--text-tertiary] hover:text-[--text-secondary]">Clear</button>
           </div>
         </div>
-        <div className="max-h-36 overflow-y-auto space-y-1 scrollbar-thin">
+        <div className="max-h-40 overflow-y-auto space-y-2 scrollbar-thin">
           {filteredCharacters.map((char) => (
             <label
               key={char.id}
@@ -180,9 +180,9 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
       </div>
 
       {/* Size sliders */}
-      <div className="px-5 py-5 space-y-5">
+      <div className="px-6 py-6">
         {/* Width slider */}
-        <div>
+        <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-semibold text-[--text-primary]">Width</label>
             <span className="text-sm font-bold text-[--arcane-purple] tabular-nums">{width}px</span>
@@ -215,7 +215,7 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
         </div>
 
         {/* Height slider */}
-        <div>
+        <div className="mb-2">
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-semibold text-[--text-primary]">Height</label>
             <span className="text-sm font-bold text-[--arcane-purple] tabular-nums">{height}px</span>
@@ -249,7 +249,7 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-between px-5 py-4" style={{ borderTop: '1px solid #2a2a3a' }}>
+      <div className="flex items-center justify-between px-6 py-5 mt-2" style={{ borderTop: '1px solid #2a2a3a' }}>
         <button
           onClick={handleReset}
           className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-[--text-secondary] bg-[--bg-elevated] border border-[--border] rounded-lg hover:bg-[--bg-hover] hover:text-[--text-primary] transition-colors"

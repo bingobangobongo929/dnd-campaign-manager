@@ -220,10 +220,10 @@ export default function SessionDetailPage() {
     <AppLayout campaignId={campaignId}>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-10">
           <button
             onClick={() => router.push(`/campaigns/${campaignId}/sessions`)}
-            className="btn btn-ghost mb-4 -ml-2"
+            className="btn btn-ghost mb-6 -ml-2"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Sessions
@@ -267,7 +267,7 @@ export default function SessionDetailPage() {
         </div>
 
         {/* Attendance Section - Prominent placement */}
-        <div className="card p-5 mb-8">
+        <div className="card p-5 mb-10">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-[--arcane-purple]" />
@@ -283,10 +283,10 @@ export default function SessionDetailPage() {
           {/* PC Characters */}
           {pcCharacters.length > 0 && (
             <div className="mb-5">
-              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-3">
+              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide">
                 Player Characters
               </h4>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 mt-4">
                 {pcCharacters.map((char) => {
                   const isAttending = attendees.includes(char.id)
                   return (
@@ -324,9 +324,6 @@ export default function SessionDetailPage() {
                       <span className="text-sm font-medium">
                         {char.name}
                       </span>
-                      {isAttending && (
-                        <Check className="w-4 h-4 ml-1" />
-                      )}
                     </button>
                   )
                 })}
@@ -337,10 +334,10 @@ export default function SessionDetailPage() {
           {/* NPC Characters */}
           {npcCharacters.length > 0 && (
             <div>
-              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-3">
+              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide">
                 Non-Player Characters
               </h4>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 mt-4">
                 {npcCharacters.map((char) => {
                   const isAttending = attendees.includes(char.id)
                   return (
@@ -378,9 +375,6 @@ export default function SessionDetailPage() {
                       <span className="text-sm font-medium">
                         {char.name}
                       </span>
-                      {isAttending && (
-                        <Check className="w-4 h-4 ml-1" />
-                      )}
                     </button>
                   )
                 })}
@@ -396,7 +390,7 @@ export default function SessionDetailPage() {
         </div>
 
         {/* Summary Section */}
-        <div className="card p-5 mb-8">
+        <div className="card p-5 mb-10">
           <div className="flex items-center justify-between mb-3">
             <label className="form-label mb-0">
               Summary
