@@ -251,7 +251,7 @@ export default function SessionsPage() {
             )}
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {filteredSessions.map((session, index) => (
               <div
                 key={session.id}
@@ -259,19 +259,21 @@ export default function SessionsPage() {
                 style={{
                   animationDelay: `${index * 50}ms`,
                   backgroundColor: '#12121a',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.1)',
                 }}
                 onClick={() => handleSessionClick(session)}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.3)'
+                  e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.4)'
                   e.currentTarget.style.transform = 'translateY(-2px)'
+                  e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3)'
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
                   e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = 'none'
                 }}
               >
-                <div className="p-5">
+                <div className="p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-3">

@@ -159,6 +159,7 @@ export interface Database {
           width: number
           height: number
           color: string | null
+          icon: string | null
           created_at: string
           updated_at: string
         }
@@ -171,6 +172,7 @@ export interface Database {
           width?: number
           height?: number
           color?: string | null
+          icon?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -183,6 +185,7 @@ export interface Database {
           width?: number
           height?: number
           color?: string | null
+          icon?: string | null
           created_at?: string
           updated_at?: string
         }

@@ -47,19 +47,19 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
   const [customColor, setCustomColor] = useState('')
 
   return (
-    <div className={cn('space-y-3', className)}>
+    <div className={cn('space-y-4', className)}>
       {/* Preset colors grid */}
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-3">
         {PRESET_COLORS.map((color) => (
           <button
             key={color.value}
             type="button"
             onClick={() => onChange(color.value)}
             className={cn(
-              'w-8 h-8 rounded-lg transition-all flex items-center justify-center',
+              'w-9 h-9 rounded-lg transition-all flex items-center justify-center',
               value === color.value
-                ? 'ring-2 ring-white ring-offset-2 ring-offset-[#12121a] scale-110'
-                : 'hover:scale-110'
+                ? 'ring-2 ring-white/80 ring-offset-2 ring-offset-[#12121a]'
+                : 'hover:ring-2 hover:ring-white/20'
             )}
             style={{ backgroundColor: color.value }}
             title={color.label}

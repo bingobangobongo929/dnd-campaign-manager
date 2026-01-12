@@ -98,9 +98,9 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
   const npcCount = characters.filter((c) => c.type === 'npc').length
 
   return (
-    <div className="fixed top-20 right-6 z-50 w-[340px] bg-[--bg-surface] border border-[--border] rounded-2xl shadow-2xl animate-slide-in-right">
+    <div className="fixed top-20 right-6 z-50 w-[340px] rounded-2xl shadow-2xl animate-slide-in-right" style={{ backgroundColor: '#1a1a24', border: '1px solid #2a2a3a' }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-[--border]">
+      <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid #2a2a3a' }}>
         <h3 className="text-base font-semibold text-[--text-primary]">Resize Cards</h3>
         <button
           onClick={onClose}
@@ -111,7 +111,7 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-2 px-5 py-4 border-b border-[--border]">
+      <div className="flex gap-2 px-5 py-4" style={{ borderBottom: '1px solid #2a2a3a' }}>
         {[
           { id: 'all' as const, label: 'All', count: characters.length, icon: Users },
           { id: 'pc' as const, label: 'PCs', count: pcCount, icon: User },
@@ -140,7 +140,7 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
       </div>
 
       {/* Character selection */}
-      <div className="px-5 py-4 border-b border-[--border]">
+      <div className="px-5 py-4" style={{ borderBottom: '1px solid #2a2a3a' }}>
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm text-[--text-secondary]">
             <span className="text-[--arcane-purple] font-semibold">{selectedIds.size}</span> of {filteredCharacters.length} selected
@@ -193,12 +193,12 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
             max={MAX_CARD_WIDTH}
             value={width}
             onChange={(e) => setWidth(Number(e.target.value))}
-            className="w-full h-2 bg-[--bg-elevated] rounded-full appearance-none cursor-pointer
+            className="w-full h-2.5 rounded-full appearance-none cursor-pointer
               [&::-webkit-slider-thumb]:appearance-none
               [&::-webkit-slider-thumb]:w-5
               [&::-webkit-slider-thumb]:h-5
               [&::-webkit-slider-thumb]:rounded-full
-              [&::-webkit-slider-thumb]:bg-[--arcane-purple]
+              [&::-webkit-slider-thumb]:bg-[#8B5CF6]
               [&::-webkit-slider-thumb]:border-2
               [&::-webkit-slider-thumb]:border-white
               [&::-webkit-slider-thumb]:shadow-lg
@@ -206,6 +206,7 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
               [&::-webkit-slider-thumb]:active:cursor-grabbing
               [&::-webkit-slider-thumb]:transition-transform
               [&::-webkit-slider-thumb]:hover:scale-110"
+            style={{ backgroundColor: '#2a2a3a' }}
           />
           <div className="flex justify-between text-xs text-[--text-muted] mt-1.5">
             <span>{MIN_CARD_WIDTH}px</span>
@@ -225,12 +226,12 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
             max={MAX_CARD_HEIGHT}
             value={height}
             onChange={(e) => setHeight(Number(e.target.value))}
-            className="w-full h-2 bg-[--bg-elevated] rounded-full appearance-none cursor-pointer
+            className="w-full h-2.5 rounded-full appearance-none cursor-pointer
               [&::-webkit-slider-thumb]:appearance-none
               [&::-webkit-slider-thumb]:w-5
               [&::-webkit-slider-thumb]:h-5
               [&::-webkit-slider-thumb]:rounded-full
-              [&::-webkit-slider-thumb]:bg-[--arcane-purple]
+              [&::-webkit-slider-thumb]:bg-[#8B5CF6]
               [&::-webkit-slider-thumb]:border-2
               [&::-webkit-slider-thumb]:border-white
               [&::-webkit-slider-thumb]:shadow-lg
@@ -238,6 +239,7 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
               [&::-webkit-slider-thumb]:active:cursor-grabbing
               [&::-webkit-slider-thumb]:transition-transform
               [&::-webkit-slider-thumb]:hover:scale-110"
+            style={{ backgroundColor: '#2a2a3a' }}
           />
           <div className="flex justify-between text-xs text-[--text-muted] mt-1.5">
             <span>{MIN_CARD_HEIGHT}px</span>
@@ -247,7 +249,7 @@ export function ResizeToolbar({ characters, onResize, onClose }: ResizeToolbarPr
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-between px-5 py-4 border-t border-[--border]">
+      <div className="flex items-center justify-between px-5 py-4" style={{ borderTop: '1px solid #2a2a3a' }}>
         <button
           onClick={handleReset}
           className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-[--text-secondary] bg-[--bg-elevated] border border-[--border] rounded-lg hover:bg-[--bg-hover] hover:text-[--text-primary] transition-colors"

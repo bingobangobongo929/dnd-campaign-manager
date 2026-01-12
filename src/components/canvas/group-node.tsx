@@ -3,24 +3,14 @@
 import { memo, useState } from 'react'
 import { NodeResizer } from '@xyflow/react'
 import { cn } from '@/lib/utils'
-import { Trash2, Edit2, Check, X, Users, Key, Skull, Crown, Sparkles } from 'lucide-react'
-import { Button, Input } from '@/components/ui'
+import { Trash2, Edit2, Check, X } from 'lucide-react'
+import { Button, Input, getGroupIcon } from '@/components/ui'
 import type { CanvasGroup } from '@/types/database'
 
 export interface GroupNodeData extends Record<string, unknown> {
   group: CanvasGroup
   onUpdate: (id: string, updates: Partial<CanvasGroup>) => void
   onDelete: (id: string) => void
-}
-
-// Icon mapping for group names
-const getGroupIcon = (name: string) => {
-  const lowerName = name.toLowerCase()
-  if (lowerName.includes('party') || lowerName.includes('player')) return Users
-  if (lowerName.includes('npc') || lowerName.includes('key')) return Key
-  if (lowerName.includes('villain') || lowerName.includes('enemy')) return Skull
-  if (lowerName.includes('royal') || lowerName.includes('noble')) return Crown
-  return Sparkles
 }
 
 function GroupNodeComponent({ data, selected }: { data: GroupNodeData; selected?: boolean }) {
@@ -37,7 +27,7 @@ function GroupNodeComponent({ data, selected }: { data: GroupNodeData; selected?
     setIsEditing(false)
   }
 
-  const GroupIcon = getGroupIcon(group.name)
+  const GroupIcon = getGroupIcon(group.icon)
 
   return (
     <>

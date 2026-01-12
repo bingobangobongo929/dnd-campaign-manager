@@ -220,7 +220,7 @@ export default function SessionDetailPage() {
     <AppLayout campaignId={campaignId}>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-8">
           <button
             onClick={() => router.push(`/campaigns/${campaignId}/sessions`)}
             className="btn btn-ghost mb-4 -ml-2"
@@ -267,7 +267,7 @@ export default function SessionDetailPage() {
         </div>
 
         {/* Attendance Section - Prominent placement */}
-        <div className="card p-5 mb-6">
+        <div className="card p-5 mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-[--arcane-purple]" />
@@ -282,8 +282,8 @@ export default function SessionDetailPage() {
 
           {/* PC Characters */}
           {pcCharacters.length > 0 && (
-            <div className="mb-4">
-              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-2">
+            <div className="mb-5">
+              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-3">
                 Player Characters
               </h4>
               <div className="flex flex-wrap gap-2">
@@ -337,7 +337,7 @@ export default function SessionDetailPage() {
           {/* NPC Characters */}
           {npcCharacters.length > 0 && (
             <div>
-              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-2">
+              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-3">
                 Non-Player Characters
               </h4>
               <div className="flex flex-wrap gap-2">
@@ -396,7 +396,7 @@ export default function SessionDetailPage() {
         </div>
 
         {/* Summary Section */}
-        <div className="card p-5 mb-6">
+        <div className="card p-5 mb-8">
           <div className="flex items-center justify-between mb-3">
             <label className="form-label mb-0">
               Summary
@@ -475,7 +475,7 @@ export default function SessionDetailPage() {
 
         {/* Notes Section */}
         <div className="card p-5">
-          <label className="form-label">Detailed Notes</label>
+          <label className="form-label mb-4 block">Detailed Notes</label>
           <RichTextEditor
             content={formData.notes}
             onChange={(content) => setFormData({ ...formData, notes: content })}
