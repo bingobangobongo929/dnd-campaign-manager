@@ -167,11 +167,12 @@ export default function VaultPage() {
         </div>
 
         {/* Search */}
-        <div className="relative mb-8">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[--text-tertiary]" />
+        <div className="relative mb-10">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[--text-tertiary] pointer-events-none" />
           <input
             type="text"
-            className="form-input pl-12"
+            className="form-input"
+            style={{ paddingLeft: '48px' }}
             placeholder="Search vault..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
