@@ -17,8 +17,8 @@ type CropMode = 'card' | 'detail'
 
 // Card: 16:9 for vault grid
 const CARD_ASPECT = 16 / 9
-// Detail: 4:3 for editor/preview
-const DETAIL_ASPECT = 4 / 3
+// Detail: 2:3 portrait for editor/preview
+const DETAIL_ASPECT = 2 / 3
 
 function centerAspectCrop(
   mediaWidth: number,
@@ -139,8 +139,8 @@ export function VaultImageCropModal({
     try {
       // Card: 640x360 (16:9, 2x for retina)
       const cardBlob = await getCroppedImg(completedCardCrop, 640, 360)
-      // Detail: 800x600 (4:3, 2x for retina)
-      const detailBlob = await getCroppedImg(completedDetailCrop, 800, 600)
+      // Detail: 400x600 (2:3 portrait, 2x for retina)
+      const detailBlob = await getCroppedImg(completedDetailCrop, 400, 600)
 
       await onSave(cardBlob, detailBlob)
       onClose()
@@ -289,7 +289,7 @@ export function VaultImageCropModal({
                   : 'border-[--border] bg-[--bg-elevated]'
               )}>
                 <p className="text-xs text-[--text-tertiary] mb-2">Detail (Editor)</p>
-                <div className="w-full aspect-[4/3] rounded-lg overflow-hidden bg-[--bg-base] border border-[--border]">
+                <div className="w-full aspect-[2/3] rounded-lg overflow-hidden bg-[--bg-base] border border-[--border]">
                   {completedDetailCrop && imgRef.current ? (
                     <canvas
                       ref={(canvas) => {
@@ -299,14 +299,14 @@ export function VaultImageCropModal({
                           const scaleX = imgRef.current.naturalWidth / imgRef.current.width
                           const scaleY = imgRef.current.naturalHeight / imgRef.current.height
                           canvas.width = 160
-                          canvas.height = 120
+                          canvas.height = 240
                           ctx.drawImage(
                             imgRef.current,
                             completedDetailCrop.x * scaleX,
                             completedDetailCrop.y * scaleY,
                             completedDetailCrop.width * scaleX,
                             completedDetailCrop.height * scaleY,
-                            0, 0, 160, 120
+                            0, 0, 160, 240
                           )
                         }
                       }}

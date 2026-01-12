@@ -55,7 +55,7 @@ export function CharacterCard({ character, onClick, className }: CharacterCardPr
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-6">
         {/* Name */}
         <h3 className="text-base font-semibold text-[--text-primary] mb-2 group-hover:text-[--arcane-purple] transition-colors">
           {character.name}

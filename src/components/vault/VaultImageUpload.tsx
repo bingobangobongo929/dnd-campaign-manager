@@ -143,7 +143,7 @@ export function VaultImageUpload({
       {/* Detail image preview (4:3) */}
       {detailImageUrl ? (
         <div className="relative group">
-          <div className="relative w-32 aspect-[4/3] rounded-xl overflow-hidden border-2 border-[--border] bg-[--bg-base]">
+          <div className="relative w-32 aspect-[2/3] rounded-xl overflow-hidden border-2 border-[--border] bg-[--bg-base]">
             <Image
               src={detailImageUrl}
               alt={characterName}
