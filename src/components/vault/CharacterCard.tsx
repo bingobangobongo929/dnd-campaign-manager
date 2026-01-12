@@ -64,6 +64,10 @@ export function CharacterCard({ character, onClick, className }: CharacterCardPr
         className="px-6 py-5"
         style={{ paddingLeft: '24px', paddingRight: '24px', paddingTop: '20px', paddingBottom: '20px' }}
       >
+        {/* DEBUG TEST - REMOVE AFTER VERIFICATION */}
+        <div style={{ background: '#ff0000', color: '#ffffff', padding: '8px', marginBottom: '12px', fontWeight: 'bold', textAlign: 'center' }}>
+          DEPLOYMENT TEST - If you see this red box, the code is deployed correctly
+        </div>
         {/* Name */}
         <h3 className="text-base font-semibold text-[--text-primary] mb-2 group-hover:text-[--arcane-purple] transition-colors">
           {character.name}
