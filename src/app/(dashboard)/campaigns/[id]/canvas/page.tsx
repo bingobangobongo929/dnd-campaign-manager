@@ -462,8 +462,8 @@ export default function CampaignCanvasPage() {
               onChange={(color) => setGroupForm({ ...groupForm, color })}
             />
           </div>
-          <div className="form-group mb-6">
-            <label className="form-label mb-4">Group Icon</label>
+          <div className="form-group mb-4">
+            <label className="form-label mb-3">Group Icon</label>
             <IconPicker
               value={groupForm.icon}
               onChange={(icon) => setGroupForm({ ...groupForm, icon })}
@@ -472,19 +472,19 @@ export default function CampaignCanvasPage() {
           </div>
           {/* Preview */}
           <div className="form-group mt-6">
-            <label className="form-label mb-4">Preview</label>
+            <label className="form-label mb-3">Preview</label>
             {(() => {
               const GroupIcon = getGroupIcon(groupForm.icon)
               return (
                 <div
-                  className="h-16 rounded-xl flex items-center justify-center gap-2 font-semibold text-lg"
+                  className="h-16 rounded-xl flex items-center justify-center gap-3 text-2xl font-bold tracking-tight"
                   style={{
                     backgroundColor: `${groupForm.color}15`,
                     border: `2px solid ${groupForm.color}50`,
                     color: groupForm.color,
                   }}
                 >
-                  <GroupIcon className="w-5 h-5" />
+                  <GroupIcon className="w-6 h-6" />
                   {groupForm.name || 'Group Name'}
                 </div>
               )
@@ -534,8 +534,8 @@ export default function CampaignCanvasPage() {
               onChange={(color) => setEditGroupForm({ ...editGroupForm, color })}
             />
           </div>
-          <div className="form-group mb-6">
-            <label className="form-label mb-4">Group Icon</label>
+          <div className="form-group mb-4">
+            <label className="form-label mb-3">Group Icon</label>
             <IconPicker
               value={editGroupForm.icon}
               onChange={(icon) => setEditGroupForm({ ...editGroupForm, icon })}
@@ -544,19 +544,19 @@ export default function CampaignCanvasPage() {
           </div>
           {/* Preview */}
           <div className="form-group mt-6">
-            <label className="form-label mb-4">Preview</label>
+            <label className="form-label mb-3">Preview</label>
             {(() => {
               const GroupIcon = getGroupIcon(editGroupForm.icon)
               return (
                 <div
-                  className="h-16 rounded-xl flex items-center justify-center gap-2 font-semibold text-lg"
+                  className="h-16 rounded-xl flex items-center justify-center gap-3 text-2xl font-bold tracking-tight"
                   style={{
                     backgroundColor: `${editGroupForm.color}15`,
                     border: `2px solid ${editGroupForm.color}50`,
                     color: editGroupForm.color,
                   }}
                 >
-                  <GroupIcon className="w-5 h-5" />
+                  <GroupIcon className="w-6 h-6" />
                   {editGroupForm.name || 'Group Name'}
                 </div>
               )

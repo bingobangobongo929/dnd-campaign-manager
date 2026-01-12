@@ -251,26 +251,29 @@ export default function SessionsPage() {
             )}
           </div>
         ) : (
-          <div className="space-y-12">
+          <div className="space-y-8">
             {filteredSessions.map((session, index) => (
               <div
                 key={session.id}
                 className="rounded-xl cursor-pointer animate-slide-in-up transition-all duration-200"
                 style={{
                   animationDelay: `${index * 50}ms`,
-                  backgroundColor: '#12121a',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  backgroundColor: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
                 }}
                 onClick={() => handleSessionClick(session)}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.4)'
+                  e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.5)'
                   e.currentTarget.style.transform = 'translateY(-2px)'
-                  e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3)'
+                  e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.4)'
+                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)'
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'
                   e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.boxShadow = 'none'
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)'
+                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'
                 }}
               >
                 <div className="p-6">

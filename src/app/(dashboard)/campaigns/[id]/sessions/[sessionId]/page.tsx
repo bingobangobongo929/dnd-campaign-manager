@@ -267,11 +267,11 @@ export default function SessionDetailPage() {
         </div>
 
         {/* Attendance Section - Prominent placement */}
-        <div className="card p-5 mb-10">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-[--arcane-purple]" />
-              <label className="form-label mb-0 text-lg">
+        <div className="card p-6 mb-12">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <Users className="w-6 h-6 text-[--arcane-purple]" />
+              <label className="text-xl font-semibold text-[--text-primary]">
                 Attendance
               </label>
               <span className="text-sm text-[--text-tertiary]">
@@ -392,14 +392,16 @@ export default function SessionDetailPage() {
         </div>
 
         {/* Summary Section */}
-        <div className="card p-5 mb-10">
-          <div className="flex items-center justify-between mb-3">
-            <label className="form-label mb-0">
-              Summary
-              <span className="ml-2 text-[--text-tertiary] font-normal text-xs">
+        <div className="card p-6 mb-12">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <label className="text-xl font-semibold text-[--text-primary] block mb-1">
+                Summary
+              </label>
+              <span className="text-sm text-[--text-tertiary]">
                 Brief overview for the timeline
               </span>
-            </label>
+            </div>
             {!showAiSuggestion && (
               <button
                 onClick={handleSummarize}
@@ -464,14 +466,14 @@ export default function SessionDetailPage() {
             value={formData.summary}
             onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
             placeholder="What happened in this session..."
-            rows={3}
-            className="form-textarea"
+            rows={8}
+            className="form-textarea min-h-[200px]"
           />
         </div>
 
         {/* Notes Section */}
-        <div className="card p-5">
-          <label className="form-label mb-4 block">Detailed Notes</label>
+        <div className="card p-6">
+          <label className="text-xl font-semibold text-[--text-primary] block mb-6">Detailed Notes</label>
           <RichTextEditor
             content={formData.notes}
             onChange={(content) => setFormData({ ...formData, notes: content })}

@@ -80,7 +80,7 @@ export function IconPicker({
   className,
 }: IconPickerProps) {
   return (
-    <div className={cn('grid grid-cols-5 gap-2', className)}>
+    <div className={cn('grid grid-cols-5 gap-1.5', className)}>
       {GROUP_ICONS.map(({ value: iconValue, label, Icon }) => (
         <button
           key={iconValue}

@@ -85,7 +85,7 @@ export function SessionViewModal({
                     {attendees.length} attendee{attendees.length !== 1 ? 's' : ''}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3">
                   {attendees.map((char) => (
                     <button
                       key={char.id}
@@ -93,7 +93,7 @@ export function SessionViewModal({
                         e.stopPropagation()
                         onCharacterClick?.(char)
                       }}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all"
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all min-w-[140px]"
                       style={{
                         backgroundColor: '#1a1a24',
                         border: '1px solid rgba(255,255,255,0.08)',
@@ -123,7 +123,7 @@ export function SessionViewModal({
                           </div>
                         )}
                       </div>
-                      <span className="text-sm font-medium text-[--text-secondary]">
+                      <span className="text-sm font-medium text-[--text-secondary] whitespace-nowrap">
                         {char.name}
                       </span>
                     </button>
@@ -148,7 +148,13 @@ export function SessionViewModal({
                 Session Notes
               </h3>
               <div
-                className="prose prose-invert prose-sm max-w-none"
+                className="prose prose-invert prose-sm max-w-none
+                  prose-headings:mt-8 prose-headings:mb-3 prose-headings:font-bold prose-headings:text-[--text-primary]
+                  prose-h1:text-xl prose-h2:text-lg prose-h3:text-base
+                  prose-p:mb-4 prose-p:leading-relaxed
+                  prose-strong:text-[--text-primary] prose-strong:font-semibold
+                  prose-ul:my-4 prose-li:my-1
+                  prose-a:text-[--arcane-purple] prose-a:no-underline hover:prose-a:underline"
                 style={{
                   color: '#d1d5db',
                   lineHeight: '1.8',
