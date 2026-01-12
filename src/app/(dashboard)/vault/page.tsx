@@ -1,19 +1,16 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Search, BookOpen, Trash2, Edit, Copy } from 'lucide-react'
-import { Input, Modal, Textarea, Dropdown } from '@/components/ui'
+import { useRouter } from 'next/navigation'
+import { Plus, Search, BookOpen, Trash2, Copy } from 'lucide-react'
+import { Modal, Dropdown } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
+import { CharacterCard } from '@/components/vault/CharacterCard'
 import { useSupabase, useUser } from '@/hooks'
-import { formatDate } from '@/lib/utils'
 import type { VaultCharacter, Campaign } from '@/types/database'
 
-const CHARACTER_TYPES = [
-  { value: 'pc', label: 'Player Character (PC)' },
-  { value: 'npc', label: 'Non-Player Character (NPC)' },
-]
-
 export default function VaultPage() {
+  const router = useRouter()
   const supabase = useSupabase()
   const { user } = useUser()
 
@@ -21,24 +18,32 @@ export default function VaultPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [editingCharacter, setEditingCharacter] = useState<VaultCharacter | null>(null)
+
+  // Copy to campaign modal state
   const [isCopyModalOpen, setIsCopyModalOpen] = useState(false)
   const [copyingCharacter, setCopyingCharacter] = useState<VaultCharacter | null>(null)
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>('')
-  const [formData, setFormData] = useState({
-    name: '',
-    type: 'npc' as 'pc' | 'npc',
-    summary: '',
-    notes: '',
-  })
   const [saving, setSaving] = useState(false)
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    x: number
+    y: number
+    character: VaultCharacter
+  } | null>(null)
 
   useEffect(() => {
     if (user) {
       loadData()
     }
   }, [user])
+
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null)
+    window.addEventListener('click', handleClick)
+    return () => window.removeEventListener('click', handleClick)
+  }, [])
 
   const loadData = async () => {
     setLoading(true)
@@ -47,7 +52,7 @@ export default function VaultPage() {
       .from('vault_characters')
       .select('*')
       .eq('user_id', user!.id)
-      .order('name')
+      .order('updated_at', { ascending: false })
 
     setVaultCharacters(charactersData || [])
 
@@ -72,63 +77,12 @@ export default function VaultPage() {
     )
   })
 
-  const handleCreate = async () => {
-    if (!formData.name.trim()) return
-
-    setSaving(true)
-    const { data } = await supabase
-      .from('vault_characters')
-      .insert({
-        user_id: user!.id,
-        name: formData.name,
-        type: formData.type,
-        summary: formData.summary || null,
-        notes: formData.notes || null,
-      })
-      .select()
-      .single()
-
-    if (data) {
-      setVaultCharacters([...vaultCharacters, data].sort((a, b) => a.name.localeCompare(b.name)))
-      setIsCreateModalOpen(false)
-      resetForm()
-    }
-    setSaving(false)
-  }
-
-  const handleUpdate = async () => {
-    if (!formData.name.trim() || !editingCharacter) return
-
-    setSaving(true)
-    const { data } = await supabase
-      .from('vault_characters')
-      .update({
-        name: formData.name,
-        type: formData.type,
-        summary: formData.summary || null,
-        notes: formData.notes || null,
-      })
-      .eq('id', editingCharacter.id)
-      .select()
-      .single()
-
-    if (data) {
-      setVaultCharacters(
-        vaultCharacters
-          .map((c) => (c.id === data.id ? data : c))
-          .sort((a, b) => a.name.localeCompare(b.name))
-      )
-      setEditingCharacter(null)
-      resetForm()
-    }
-    setSaving(false)
-  }
-
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this character from your vault?')) return
 
     await supabase.from('vault_characters').delete().eq('id', id)
     setVaultCharacters(vaultCharacters.filter((c) => c.id !== id))
+    setContextMenu(null)
   }
 
   const handleCopyToCampaign = async () => {
@@ -168,27 +122,19 @@ export default function VaultPage() {
     setSaving(false)
   }
 
-  const openEditModal = (char: VaultCharacter) => {
-    setFormData({
-      name: char.name,
-      type: char.type,
-      summary: char.summary || '',
-      notes: char.notes || '',
-    })
-    setEditingCharacter(char)
-  }
-
   const openCopyModal = (char: VaultCharacter) => {
     setCopyingCharacter(char)
     setIsCopyModalOpen(true)
+    setContextMenu(null)
   }
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      type: 'npc',
-      summary: '',
-      notes: '',
+  const handleContextMenu = (e: React.MouseEvent, char: VaultCharacter) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      character: char,
     })
   }
 
@@ -204,21 +150,24 @@ export default function VaultPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Page Header */}
         <div className="page-header flex items-center justify-between">
           <div>
             <h1 className="page-title">Character Vault</h1>
             <p className="page-subtitle">Store characters to reuse across campaigns</p>
           </div>
-          <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
+          <button
+            className="btn btn-primary"
+            onClick={() => router.push('/vault/new')}
+          >
             <Plus className="w-4 h-4" />
             Add Character
           </button>
         </div>
 
         {/* Search */}
-        <div className="relative mb-6">
+        <div className="relative mb-8">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[--text-tertiary]" />
           <input
             type="text"
@@ -242,72 +191,28 @@ export default function VaultPage() {
                 : 'Add characters to your vault to reuse them across campaigns'}
             </p>
             {!searchQuery && (
-              <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
+              <button
+                className="btn btn-primary"
+                onClick={() => router.push('/vault/new')}
+              >
                 <Plus className="w-5 h-5" />
                 Add Character
               </button>
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCharacters.map((char, index) => (
               <div
                 key={char.id}
-                className="card p-4 animate-slide-in-up"
+                className="animate-slide-in-up"
                 style={{ animationDelay: `${index * 50}ms` }}
+                onContextMenu={(e) => handleContextMenu(e, char)}
               >
-                <div className="flex items-start gap-4">
-                  <div className="avatar avatar-lg">
-                    {char.name.charAt(0)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-[--text-primary] truncate">
-                        {char.name}
-                      </h3>
-                      <span
-                        className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                          char.type === 'pc'
-                            ? 'bg-[--arcane-purple]/20 text-[--arcane-purple]'
-                            : 'bg-[--text-tertiary]/20 text-[--text-secondary]'
-                        }`}
-                      >
-                        {char.type.toUpperCase()}
-                      </span>
-                    </div>
-                    {char.summary && (
-                      <p className="text-sm text-[--text-secondary] line-clamp-2">
-                        {char.summary}
-                      </p>
-                    )}
-                    <p className="text-xs text-[--text-tertiary] mt-2">
-                      Added {formatDate(char.created_at)}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[--border]">
-                  <button
-                    className="btn btn-secondary flex-1 text-sm py-2"
-                    onClick={() => openCopyModal(char)}
-                  >
-                    <Copy className="w-4 h-4" />
-                    Copy to Campaign
-                  </button>
-                  <button
-                    className="btn-ghost btn-icon w-8 h-8"
-                    onClick={() => openEditModal(char)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    className="btn-ghost btn-icon w-8 h-8 text-[--arcane-ember]"
-                    onClick={() => handleDelete(char.id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                <CharacterCard
+                  character={char}
+                  onClick={() => router.push(`/vault/${char.id}`)}
+                />
               </div>
             ))}
           </div>
@@ -317,137 +222,42 @@ export default function VaultPage() {
         {filteredCharacters.length > 0 && (
           <button
             className="fab"
-            onClick={() => setIsCreateModalOpen(true)}
+            onClick={() => router.push('/vault/new')}
             aria-label="Add character"
           >
             <Plus className="fab-icon" />
           </button>
         )}
 
-        {/* Create Modal */}
-        <Modal
-          isOpen={isCreateModalOpen}
-          onClose={() => {
-            setIsCreateModalOpen(false)
-            resetForm()
-          }}
-          title="Add to Vault"
-          description="Create a new character for your vault"
-        >
-          <div className="space-y-4">
-            <div className="form-group">
-              <label className="form-label">Name</label>
-              <Input
-                className="form-input"
-                placeholder="Character name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Type</label>
-              <Dropdown
-                options={CHARACTER_TYPES}
-                value={formData.type}
-                onChange={(value) => setFormData({ ...formData, type: value as 'pc' | 'npc' })}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Summary</label>
-              <Textarea
-                className="form-textarea"
-                placeholder="Brief description..."
-                value={formData.summary}
-                onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                rows={2}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Notes</label>
-              <Textarea
-                className="form-textarea"
-                placeholder="Detailed notes..."
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                rows={4}
-              />
-            </div>
-            <div className="flex justify-end gap-3 pt-4">
-              <button className="btn btn-secondary" onClick={() => setIsCreateModalOpen(false)}>
-                Cancel
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleCreate}
-                disabled={!formData.name.trim() || saving}
-              >
-                {saving ? 'Adding...' : 'Add to Vault'}
-              </button>
-            </div>
+        {/* Context Menu */}
+        {contextMenu && (
+          <div
+            className="fixed z-50 py-2 min-w-[180px] rounded-xl shadow-xl"
+            style={{
+              left: contextMenu.x,
+              top: contextMenu.y,
+              backgroundColor: '#1a1a24',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="w-full px-4 py-2.5 text-left text-sm text-[--text-primary] hover:bg-[--bg-hover] flex items-center gap-3 transition-colors"
+              onClick={() => openCopyModal(contextMenu.character)}
+            >
+              <Copy className="w-4 h-4 text-[--text-secondary]" />
+              Copy to Campaign
+            </button>
+            <div className="my-1 border-t border-[--border]" />
+            <button
+              className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-3 transition-colors"
+              onClick={() => handleDelete(contextMenu.character.id)}
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Character
+            </button>
           </div>
-        </Modal>
-
-        {/* Edit Modal */}
-        <Modal
-          isOpen={!!editingCharacter}
-          onClose={() => {
-            setEditingCharacter(null)
-            resetForm()
-          }}
-          title="Edit Character"
-        >
-          <div className="space-y-4">
-            <div className="form-group">
-              <label className="form-label">Name</label>
-              <Input
-                className="form-input"
-                placeholder="Character name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Type</label>
-              <Dropdown
-                options={CHARACTER_TYPES}
-                value={formData.type}
-                onChange={(value) => setFormData({ ...formData, type: value as 'pc' | 'npc' })}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Summary</label>
-              <Textarea
-                className="form-textarea"
-                placeholder="Brief description..."
-                value={formData.summary}
-                onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                rows={2}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Notes</label>
-              <Textarea
-                className="form-textarea"
-                placeholder="Detailed notes..."
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                rows={4}
-              />
-            </div>
-            <div className="flex justify-end gap-3 pt-4">
-              <button className="btn btn-secondary" onClick={() => setEditingCharacter(null)}>
-                Cancel
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleUpdate}
-                disabled={!formData.name.trim() || saving}
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        </Modal>
+        )}
 
         {/* Copy to Campaign Modal */}
         <Modal
