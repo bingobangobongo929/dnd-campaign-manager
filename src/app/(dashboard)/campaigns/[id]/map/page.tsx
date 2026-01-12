@@ -279,17 +279,25 @@ export default function WorldMapPage() {
           </div>
 
           {/* Map Display */}
-          <div className="flex-1 overflow-auto bg-[--bg-base] p-4">
+          <div className="flex-1 overflow-auto bg-[--bg-base] p-4 flex items-center justify-center">
             {selectedMap && (
               <div
-                className="min-h-full flex items-center justify-center"
-                style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
+                className="flex items-center justify-center"
+                style={{
+                  transform: `scale(${zoom})`,
+                  transformOrigin: 'center center',
+                  transition: 'transform 0.2s ease',
+                }}
               >
                 <img
                   src={selectedMap.image_url}
                   alt={selectedMap.name || 'World map'}
-                  className="max-w-none rounded-lg shadow-2xl"
-                  style={{ maxHeight: 'none' }}
+                  className="rounded-lg shadow-2xl"
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: 'calc(100vh - 200px)',
+                    objectFit: 'contain',
+                  }}
                 />
               </div>
             )}

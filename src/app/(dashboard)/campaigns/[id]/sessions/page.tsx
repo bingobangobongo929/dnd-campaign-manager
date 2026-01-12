@@ -11,7 +11,7 @@ import {
   Pencil,
   Users,
 } from 'lucide-react'
-import { Input, Modal, Textarea } from '@/components/ui'
+import { Input, Modal, Textarea, Tooltip } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { SessionViewModal } from '@/components/session'
 import { CharacterViewModal } from '@/components/character'
@@ -251,90 +251,122 @@ export default function SessionsPage() {
             )}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-6">
             {filteredSessions.map((session, index) => (
               <div
                 key={session.id}
-                className="card p-4 cursor-pointer animate-slide-in-up hover:border-[--arcane-purple]/30 transition-colors"
-                style={{ animationDelay: `${index * 50}ms` }}
+                className="rounded-xl cursor-pointer animate-slide-in-up transition-all duration-200"
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                  backgroundColor: '#12121a',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}
                 onClick={() => handleSessionClick(session)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.3)'
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                }}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="card-campaign-system">
-                        Session {session.session_number}
-                      </span>
-                      <span className="text-xs text-[--text-tertiary] flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {formatDate(session.date)}
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-semibold text-[--text-primary] truncate">
-                      {session.title || 'Untitled Session'}
-                    </h3>
-                    {session.summary && (
-                      <p className="text-sm text-[--text-secondary] line-clamp-2 mt-1">
-                        {session.summary}
-                      </p>
-                    )}
-
-                    {/* Attendees Avatars */}
-                    {session.attendees.length > 0 && (
-                      <div className="flex items-center gap-2 mt-3">
-                        <Users className="w-3.5 h-3.5 text-[--text-tertiary]" />
-                        <div className="flex -space-x-2">
-                          {session.attendees.slice(0, 5).map((char) => (
-                            <div
-                              key={char.id}
-                              className="relative w-7 h-7 rounded-full overflow-hidden border-2 border-[--bg-surface] bg-[--bg-elevated] hover:z-10 hover:scale-110 transition-transform cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleCharacterClick(char)
-                              }}
-                              title={char.name}
-                            >
-                              {char.image_url ? (
-                                <Image
-                                  src={char.image_url}
-                                  alt={char.name}
-                                  fill
-                                  className="object-cover"
-                                  sizes="28px"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-[9px] font-medium text-[--text-secondary]">
-                                  {getInitials(char.name)}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                          {session.attendees.length > 5 && (
-                            <div className="relative w-7 h-7 rounded-full border-2 border-[--bg-surface] bg-[--bg-elevated] flex items-center justify-center">
-                              <span className="text-[9px] font-medium text-[--text-tertiary]">
-                                +{session.attendees.length - 5}
-                              </span>
-                            </div>
-                          )}
-                        </div>
+                <div className="p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-3">
+                        <span
+                          className="px-3 py-1.5 text-xs font-bold rounded-lg uppercase tracking-wide"
+                          style={{
+                            backgroundColor: 'rgba(139, 92, 246, 0.15)',
+                            color: '#a78bfa'
+                          }}
+                        >
+                          Session {session.session_number}
+                        </span>
+                        <span className="text-sm text-[--text-tertiary] flex items-center gap-1.5">
+                          <Calendar className="w-4 h-4" />
+                          {formatDate(session.date)}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      className="btn-ghost btn-icon w-8 h-8"
-                      onClick={(e) => handleEditClick(session, e)}
-                      title="Edit session"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      className="btn-ghost btn-icon w-8 h-8 text-[--arcane-ember]"
-                      onClick={(e) => handleDelete(session.id, e)}
-                      title="Delete session"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                      <h3 className="text-xl font-semibold text-[--text-primary] mb-2">
+                        {session.title || 'Untitled Session'}
+                      </h3>
+                      {session.summary && (
+                        <p className="text-sm text-[--text-secondary] line-clamp-2 leading-relaxed mb-4">
+                          {session.summary}
+                        </p>
+                      )}
+
+                      {/* Attendees Avatars */}
+                      {session.attendees.length > 0 && (
+                        <div className="flex items-center gap-3 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                          <Users className="w-4 h-4 text-[--text-tertiary]" />
+                          <div className="flex -space-x-2">
+                            {session.attendees.slice(0, 5).map((char) => (
+                              <Tooltip key={char.id} content={char.name} side="top" delay={200}>
+                                <div
+                                  className="relative w-8 h-8 rounded-full overflow-hidden hover:z-10 hover:scale-110 transition-transform cursor-pointer"
+                                  style={{
+                                    border: '2px solid #12121a',
+                                    backgroundColor: '#1a1a24',
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleCharacterClick(char)
+                                  }}
+                                >
+                                  {char.image_url ? (
+                                    <Image
+                                      src={char.image_url}
+                                      alt={char.name}
+                                      fill
+                                      className="object-cover"
+                                      sizes="32px"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-[--text-tertiary]">
+                                      {getInitials(char.name)}
+                                    </div>
+                                  )}
+                                </div>
+                              </Tooltip>
+                            ))}
+                            {session.attendees.length > 5 && (
+                              <Tooltip content={`${session.attendees.length - 5} more attendees`} side="top">
+                                <div
+                                  className="relative w-8 h-8 rounded-full flex items-center justify-center"
+                                  style={{
+                                    border: '2px solid #12121a',
+                                    backgroundColor: '#1a1a24',
+                                  }}
+                                >
+                                  <span className="text-[10px] font-bold text-[--text-tertiary]">
+                                    +{session.attendees.length - 5}
+                                  </span>
+                                </div>
+                              </Tooltip>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        className="w-9 h-9 rounded-lg flex items-center justify-center text-[--text-secondary] hover:text-[--text-primary] hover:bg-[--bg-hover] transition-colors"
+                        onClick={(e) => handleEditClick(session, e)}
+                        title="Edit session"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        className="w-9 h-9 rounded-lg flex items-center justify-center text-[--arcane-ember] hover:bg-[--arcane-ember]/10 transition-colors"
+                        onClick={(e) => handleDelete(session.id, e)}
+                        title="Delete session"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

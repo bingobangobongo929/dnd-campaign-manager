@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Plus, FolderPlus, Scaling } from 'lucide-react'
-import { Modal, Input, Dropdown } from '@/components/ui'
+import { Modal, Input, Dropdown, ColorPicker } from '@/components/ui'
 import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
 import { AppLayout } from '@/components/layout/app-layout'
@@ -41,7 +41,7 @@ export default function CampaignCanvasPage() {
     name: '',
     type: 'npc' as 'pc' | 'npc',
   })
-  const [groupForm, setGroupForm] = useState({ name: '' })
+  const [groupForm, setGroupForm] = useState({ name: '', color: '#8B5CF6' })
   const [saving, setSaving] = useState(false)
 
   // Character size overrides from resize toolbar
@@ -274,6 +274,7 @@ export default function CampaignCanvasPage() {
       .insert({
         campaign_id: campaignId,
         name: groupForm.name,
+        color: groupForm.color,
         position_x: 50,
         position_y: 50,
         width: 400,
@@ -284,7 +285,7 @@ export default function CampaignCanvasPage() {
 
     if (data) {
       setGroups([...groups, data])
-      setGroupForm({ name: '' })
+      setGroupForm({ name: '', color: '#8B5CF6' })
       setIsCreateGroupOpen(false)
     }
 
@@ -461,21 +462,43 @@ export default function CampaignCanvasPage() {
         isOpen={isCreateGroupOpen}
         onClose={() => {
           setIsCreateGroupOpen(false)
-          setGroupForm({ name: '' })
+          setGroupForm({ name: '', color: '#8B5CF6' })
         }}
         title="Add Group"
         description="Create a group to organize characters on the canvas"
+        size="lg"
       >
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div className="form-group">
             <label className="form-label">Group Name</label>
             <Input
               className="form-input"
               placeholder="e.g., The Party, Villains, NPCs..."
               value={groupForm.name}
-              onChange={(e) => setGroupForm({ name: e.target.value })}
+              onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
               autoFocus
             />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Group Color</label>
+            <ColorPicker
+              value={groupForm.color}
+              onChange={(color) => setGroupForm({ ...groupForm, color })}
+            />
+          </div>
+          {/* Preview */}
+          <div className="form-group">
+            <label className="form-label">Preview</label>
+            <div
+              className="h-16 rounded-xl flex items-center justify-center font-semibold text-lg"
+              style={{
+                backgroundColor: `${groupForm.color}15`,
+                border: `2px solid ${groupForm.color}50`,
+                color: groupForm.color,
+              }}
+            >
+              {groupForm.name || 'Group Name'}
+            </div>
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <button className="btn btn-secondary" onClick={() => setIsCreateGroupOpen(false)}>

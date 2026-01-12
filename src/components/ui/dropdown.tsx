@@ -57,7 +57,13 @@ export function Dropdown({ options, value, onChange, placeholder = 'Select...', 
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 py-1 bg-[--bg-elevated] border border-[--border] rounded-lg shadow-xl animate-scale-in">
+        <div
+          className="absolute z-50 w-full mt-1 py-1 rounded-lg shadow-2xl animate-scale-in"
+          style={{
+            backgroundColor: '#1a1a24',
+            border: '1px solid rgba(255,255,255,0.1)',
+          }}
+        >
           {options.map((option) => (
             <button
               key={option.value}
@@ -67,9 +73,20 @@ export function Dropdown({ options, value, onChange, placeholder = 'Select...', 
                 setIsOpen(false)
               }}
               className={cn(
-                'flex items-center justify-between w-full px-3 py-2 text-sm text-left hover:bg-[--bg-hover] transition-colors',
-                option.value === value && 'text-[--accent-primary]'
+                'flex items-center justify-between w-full px-3 py-2.5 text-sm text-left transition-colors',
+                option.value === value ? 'text-[--arcane-purple]' : 'text-[--text-primary]'
               )}
+              style={{
+                backgroundColor: option.value === value ? 'rgba(139, 92, 246, 0.1)' : 'transparent',
+              }}
+              onMouseEnter={(e) => {
+                if (option.value !== value) {
+                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = option.value === value ? 'rgba(139, 92, 246, 0.1)' : 'transparent'
+              }}
             >
               <span className="flex items-center gap-2">
                 {option.icon}

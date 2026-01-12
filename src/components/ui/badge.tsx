@@ -114,7 +114,7 @@ interface BadgeProps {
   icon?: React.ReactNode
   onClick?: () => void
   onRemove?: () => void
-  size?: 'sm' | 'md'
+  size?: 'sm' | 'md' | 'lg'
   className?: string
 }
 
@@ -128,13 +128,15 @@ export function Badge({
   className,
 }: BadgeProps) {
   const sizes = {
-    sm: 'h-5 text-xs px-1.5 gap-1',
-    md: 'h-6 text-sm px-2 gap-1.5',
+    sm: 'h-6 text-xs px-2 gap-1',
+    md: 'h-7 text-sm px-2.5 gap-1.5',
+    lg: 'h-8 text-sm px-3 gap-2',
   }
 
   const iconSizes = {
     sm: 'w-3 h-3',
-    md: 'w-3.5 h-3.5',
+    md: 'w-4 h-4',
+    lg: 'w-4 h-4',
   }
 
   return (
@@ -179,7 +181,7 @@ interface TagBadgeProps {
   relatedCharacter?: string
   onClick?: () => void
   onRemove?: () => void
-  size?: 'sm' | 'md'
+  size?: 'sm' | 'md' | 'lg'
   uppercase?: boolean
 }
 
@@ -191,11 +193,11 @@ export function TagBadge({
   onClick,
   onRemove,
   size = 'md',
-  uppercase = false,
+  uppercase = true, // Default to uppercase for tags
 }: TagBadgeProps) {
   // Get icon component
   const IconComponent = getTagIcon(name, icon)
-  const iconSize = size === 'sm' ? 12 : 14
+  const iconSize = size === 'sm' ? 12 : size === 'lg' ? 16 : 14
 
   // Format the display name
   const displayName = uppercase ? name.toUpperCase() : name
