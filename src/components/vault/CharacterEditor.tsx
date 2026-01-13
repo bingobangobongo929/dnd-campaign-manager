@@ -528,79 +528,79 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     </button>
   )
 
-  // Editor toolbar - p-4 padding, w-5 h-5 icons
+  // Editor toolbar - p-5 padding, w-6 h-6 icons
   const EditorToolbar = ({ editor, minimal = false }: { editor: any; minimal?: boolean }) => (
-    <div className="flex items-center gap-2 p-4 border-b border-white/5 bg-white/[0.02]">
+    <div className="flex items-center gap-3 p-5 border-b border-white/10 bg-white/[0.02] flex-wrap">
       {/* Undo/Redo */}
       <div className="flex items-center gap-0.5">
         <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo()} title="Undo">
-          <Undo className="w-5 h-5" />
+          <Undo className="w-6 h-6" />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo()} title="Redo">
-          <Redo className="w-5 h-5" />
+          <Redo className="w-6 h-6" />
         </ToolbarButton>
       </div>
       {!minimal && (
         <>
-          <div className="w-px h-5 bg-white/10 mx-1.5" />
+          <div className="w-px h-8 bg-white/20 mx-2" />
           {/* Headings */}
           <div className="flex items-center gap-0.5">
             <ToolbarButton onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} active={editor?.isActive('heading', { level: 1 })} title="Heading 1">
-              <Heading1 className="w-5 h-5" />
+              <Heading1 className="w-6 h-6" />
             </ToolbarButton>
             <ToolbarButton onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} active={editor?.isActive('heading', { level: 2 })} title="Heading 2">
-              <Heading2 className="w-5 h-5" />
+              <Heading2 className="w-6 h-6" />
             </ToolbarButton>
           </div>
         </>
       )}
-      <div className="w-px h-5 bg-white/10 mx-1.5" />
+      <div className="w-px h-8 bg-white/20 mx-2" />
       {/* Text formatting */}
       <div className="flex items-center gap-0.5">
         <ToolbarButton onClick={() => editor?.chain().focus().toggleBold().run()} active={editor?.isActive('bold')} title="Bold">
-          <Bold className="w-5 h-5" />
+          <Bold className="w-6 h-6" />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor?.chain().focus().toggleItalic().run()} active={editor?.isActive('italic')} title="Italic">
-          <Italic className="w-5 h-5" />
+          <Italic className="w-6 h-6" />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor?.chain().focus().toggleUnderline().run()} active={editor?.isActive('underline')} title="Underline">
-          <UnderlineIcon className="w-5 h-5" />
+          <UnderlineIcon className="w-6 h-6" />
         </ToolbarButton>
         {!minimal && (
           <>
             <ToolbarButton onClick={() => editor?.chain().focus().toggleStrike().run()} active={editor?.isActive('strike')} title="Strikethrough">
-              <Strikethrough className="w-5 h-5" />
+              <Strikethrough className="w-6 h-6" />
             </ToolbarButton>
             <ToolbarButton onClick={() => editor?.chain().focus().toggleHighlight().run()} active={editor?.isActive('highlight')} title="Highlight">
-              <Highlighter className="w-5 h-5" />
+              <Highlighter className="w-6 h-6" />
             </ToolbarButton>
           </>
         )}
       </div>
       {!minimal && (
         <>
-          <div className="w-px h-5 bg-white/10 mx-1.5" />
+          <div className="w-px h-8 bg-white/20 mx-2" />
           {/* Lists */}
           <div className="flex items-center gap-0.5">
             <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} active={editor?.isActive('bulletList')} title="Bullet List">
-              <List className="w-5 h-5" />
+              <List className="w-6 h-6" />
             </ToolbarButton>
             <ToolbarButton onClick={() => editor?.chain().focus().toggleOrderedList().run()} active={editor?.isActive('orderedList')} title="Numbered List">
-              <ListOrdered className="w-5 h-5" />
+              <ListOrdered className="w-6 h-6" />
             </ToolbarButton>
             <ToolbarButton onClick={() => editor?.chain().focus().toggleBlockquote().run()} active={editor?.isActive('blockquote')} title="Quote">
-              <Quote className="w-5 h-5" />
+              <Quote className="w-6 h-6" />
             </ToolbarButton>
           </div>
-          <div className="w-px h-5 bg-white/10 mx-1.5" />
+          <div className="w-px h-8 bg-white/20 mx-2" />
           {/* Insert */}
           <div className="flex items-center gap-0.5">
             <ToolbarButton onClick={() => setLink(editor)} active={editor?.isActive('link')} title="Link">
-              <LinkIcon className="w-5 h-5" />
+              <LinkIcon className="w-6 h-6" />
             </ToolbarButton>
             <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleEditorImageUpload} />
             <ToolbarButton onClick={() => imageInputRef.current?.click()} title="Insert Image">
-              <ImageIcon className="w-5 h-5" />
+              <ImageIcon className="w-6 h-6" />
             </ToolbarButton>
           </div>
         </>
@@ -859,7 +859,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     <>
       <div className="fixed inset-0 z-50 bg-[#0a0a0f] flex flex-col">
         {/* Header */}
-        <header className="flex-shrink-0 flex items-center justify-between px-4 h-14 border-b border-white/10 bg-[#0d0d14]">
+        <header className="flex-shrink-0 flex items-center justify-between px-6 xl:px-8 h-16 border-b border-white/10 bg-[#0d0d14]">
           <div className="flex items-center gap-4">
             <button
               onClick={handleClose}
@@ -910,33 +910,33 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         </header>
 
         {/* Main Content */}
-        <div className="flex-1 flex overflow-hidden min-h-0">
+        <div className="flex-1 flex overflow-hidden min-h-0 p-4 xl:p-6 2xl:p-8 gap-6">
           {/* Left Sidebar */}
-          <aside className="w-80 xl:w-96 flex-shrink-0 flex flex-col border-r border-white/10 overflow-y-auto bg-[#0d0d14]">
-            <div className="p-8 space-y-8 bg-red-500">
+          <aside className="w-96 2xl:w-[420px] flex-shrink-0 flex flex-col border border-white/10 rounded-2xl overflow-hidden bg-[#0d0d14]">
+            <div className="flex-1 overflow-y-auto p-10 space-y-10">
               {/* Portrait */}
               <PortraitDisplay />
 
               {/* Name */}
-              <div>
-                <FormLabel>Character Name</FormLabel>
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-400">Character Name</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="Enter name..."
-                  className={inputStyles}
+                  className="w-full py-5 px-6 text-lg bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:border-purple-500/50 focus:outline-none transition-colors"
                 />
               </div>
 
               {/* Type Toggle */}
-              <div>
-                <FormLabel>Character Type</FormLabel>
-                <div className="flex bg-white/5 rounded-xl p-1.5">
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-400">Character Type</label>
+                <div className="flex bg-white/5 rounded-xl p-2">
                   <button
                     onClick={() => setFormData(prev => ({ ...prev, type: 'pc' }))}
                     className={cn(
-                      'flex-1 py-3.5 px-4 rounded-lg text-sm font-medium transition-all',
+                      'flex-1 py-5 px-6 rounded-lg text-base font-medium transition-all',
                       formData.type === 'pc'
                         ? 'bg-purple-600 text-white shadow-lg'
                         : 'text-gray-400 hover:text-white'
@@ -947,7 +947,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   <button
                     onClick={() => setFormData(prev => ({ ...prev, type: 'npc' }))}
                     className={cn(
-                      'flex-1 py-3.5 px-4 rounded-lg text-sm font-medium transition-all',
+                      'flex-1 py-5 px-6 rounded-lg text-base font-medium transition-all',
                       formData.type === 'npc'
                         ? 'bg-gray-600 text-white shadow-lg'
                         : 'text-gray-400 hover:text-white'
@@ -959,77 +959,77 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               </div>
 
               {/* Status */}
-              <div>
-                <FormLabel>Status</FormLabel>
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-400">Status</label>
                 <StatusDropdown />
               </div>
 
-              <div className="border-t border-white/10 my-8" />
+              <div className="border-t-2 border-white/10" />
 
               {/* NAVIGATION - Quick jump to sections */}
-              <div>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Navigate</h3>
-                <nav className="space-y-2">
+              <div className="space-y-6">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Navigate</h3>
+                <nav className="space-y-3">
                   {SECTIONS.map(section => (
                     <button
                       key={section.id}
                       onClick={() => scrollToSection(section.id)}
                       className={cn(
-                        'w-full flex items-center gap-3 py-3 px-4 rounded-lg text-left transition-colors',
+                        'w-full flex items-center gap-4 py-4 px-5 rounded-xl text-base font-medium text-left transition-colors',
                         activeSection === section.id
                           ? 'bg-purple-500/20 text-purple-400 border-l-2 border-purple-500'
                           : 'text-gray-400 hover:text-white hover:bg-white/5'
                       )}
                     >
-                      <section.icon className="w-5 h-5" />
-                      <span className="font-medium">{section.label}</span>
+                      <section.icon className="w-6 h-6" />
+                      <span>{section.label}</span>
                     </button>
                   ))}
                 </nav>
               </div>
 
-              <div className="border-t border-white/10 my-8" />
+              <div className="border-t-2 border-white/10" />
 
               {/* Quick Details */}
-              <div className="space-y-6">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Quick Details</h3>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1.5">Race</label>
+              <div className="space-y-8">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Quick Details</h3>
+                <div className="space-y-3">
+                  <label className="block text-sm text-gray-500">Race</label>
                   <input
                     type="text"
                     value={formData.race}
                     onChange={(e) => setFormData(prev => ({ ...prev, race: e.target.value }))}
                     placeholder="Human, Elf, Dwarf..."
-                    className="w-full py-3.5 px-4 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
+                    className="w-full py-5 px-5 text-base bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1.5">Class</label>
+                <div className="space-y-3">
+                  <label className="block text-sm text-gray-500">Class</label>
                   <input
                     type="text"
                     value={formData.class}
                     onChange={(e) => setFormData(prev => ({ ...prev, class: e.target.value }))}
                     placeholder="Fighter, Wizard, Rogue..."
-                    className="w-full py-3.5 px-4 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
+                    className="w-full py-5 px-5 text-base bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1.5">Background</label>
+                <div className="space-y-3">
+                  <label className="block text-sm text-gray-500">Background</label>
                   <input
                     type="text"
                     value={formData.background}
                     onChange={(e) => setFormData(prev => ({ ...prev, background: e.target.value }))}
                     placeholder="Noble, Criminal, Sage..."
-                    className="w-full py-3.5 px-4 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
+                    className="w-full py-5 px-5 text-base bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
                   />
                 </div>
               </div>
 
-              <div className="border-t border-white/10 my-8" />
+              <div className="border-t-2 border-white/10" />
 
               {/* Links */}
-              <div className="space-y-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Links</h3>
+              <div className="space-y-6">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Links</h3>
 
                 {formData.theme_music_url && (
                   <a
@@ -1074,9 +1074,9 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
                 <button
                   onClick={() => setAddLinkModalOpen(true)}
-                  className="w-full py-3.5 px-4 border border-dashed border-white/20 rounded-xl text-gray-400 hover:border-purple-500/50 hover:text-purple-400 transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-5 px-6 border-2 border-dashed border-white/20 rounded-xl text-base text-gray-400 hover:border-purple-500/50 hover:text-purple-400 transition-colors flex items-center justify-center gap-3"
                 >
-                  <Plus className="w-5 h-5" />
+                  <Plus className="w-6 h-6" />
                   Add Link
                 </button>
               </div>
@@ -1084,12 +1084,12 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
             {/* Delete at bottom */}
             {characterId && (
-              <div className="mt-auto p-8 border-t border-white/10">
+              <div className="flex-shrink-0 p-8 border-t-2 border-white/10">
                 <button
                   onClick={() => setIsDeleteConfirmOpen(true)}
-                  className="flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors"
+                  className="flex items-center gap-3 text-base text-red-400 hover:text-red-300 transition-colors"
                 >
-                  <Trash2 className="w-5 h-5" />
+                  <Trash2 className="w-6 h-6" />
                   Delete Character
                 </button>
               </div>
@@ -1097,21 +1097,28 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
           </aside>
 
           {/* Main Content Area - Single Scrollable Page */}
-          <main className="flex-1 overflow-y-auto" ref={scrollContainerRef}>
-            <div className="p-10 xl:p-12 2xl:p-16 space-y-20 bg-green-500">
+          <main className="flex-1 overflow-y-auto border border-white/10 rounded-2xl bg-[#0d0d14]" ref={scrollContainerRef}>
+            <div className="p-12 xl:p-16 2xl:p-20">
+              <div className="space-y-32">
 
               {/* ═══════════════ BACKSTORY SECTION ═══════════════ */}
-              <section id="backstory" className="scroll-mt-8 bg-blue-500">
-                <SectionHeader title="Backstory" icon={BookOpen} />
+              <section id="backstory" className="scroll-mt-8">
+                <div className="flex items-center gap-6 mb-12">
+                  <div className="p-4 bg-purple-500/20 rounded-2xl">
+                    <BookOpen className="w-8 h-8 text-purple-400" />
+                  </div>
+                  <h2 className="text-3xl font-bold text-white tracking-wide">BACKSTORY</h2>
+                  <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent" />
+                </div>
 
-                <div className="space-y-10">
+                <div className="space-y-16">
                   {/* Summary */}
-                  <div>
-                    <FieldLabel>Summary</FieldLabel>
-                    <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
+                  <div className="space-y-4">
+                    <label className="block text-base font-medium text-gray-400">Summary</label>
+                    <div className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
                       <EditorToolbar editor={summaryEditor} minimal />
-                      <div className="p-6 min-h-[100px]">
-                        <EditorContent editor={summaryEditor} />
+                      <div className="p-8 min-h-[150px]">
+                        <EditorContent editor={summaryEditor} className="prose prose-invert max-w-none" />
                       </div>
                     </div>
                   </div>
@@ -1125,12 +1132,12 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   />
 
                   {/* Full Backstory */}
-                  <div>
-                    <FieldLabel>Full Backstory</FieldLabel>
-                    <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
+                  <div className="space-y-4">
+                    <label className="block text-base font-medium text-gray-400">Full Backstory</label>
+                    <div className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
                       <EditorToolbar editor={notesEditor} />
-                      <div className="p-8 min-h-[400px]">
-                        <EditorContent editor={notesEditor} className="prose prose-invert max-w-none" />
+                      <div className="p-10 min-h-[500px]">
+                        <EditorContent editor={notesEditor} className="prose prose-invert prose-lg max-w-none" />
                       </div>
                     </div>
                   </div>
@@ -1156,75 +1163,81 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
               {/* ═══════════════ DETAILS SECTION ═══════════════ */}
               <section id="details" className="scroll-mt-8">
-                <SectionHeader title="Details" icon={FileText} />
+                <div className="flex items-center gap-6 mb-12">
+                  <div className="p-4 bg-purple-500/20 rounded-2xl">
+                    <FileText className="w-8 h-8 text-purple-400" />
+                  </div>
+                  <h2 className="text-3xl font-bold text-white tracking-wide">DETAILS</h2>
+                  <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent" />
+                </div>
 
-                <div className="space-y-10">
+                <div className="space-y-16">
                   {/* Appearance */}
-                  <div>
-                    <FieldLabel>Appearance</FieldLabel>
-                    <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
+                  <div className="space-y-4">
+                    <label className="block text-base font-medium text-gray-400">Appearance</label>
+                    <div className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
                       <textarea
                         value={formData.appearance}
                         onChange={(e) => setFormData(prev => ({ ...prev, appearance: e.target.value }))}
                         placeholder="Physical description, distinguishing features, typical attire..."
-                        className="w-full p-6 min-h-[150px] bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
+                        className="w-full p-8 min-h-[200px] text-base bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
                       />
                     </div>
                   </div>
 
                   {/* Personality */}
-                  <div>
-                    <FieldLabel>Personality</FieldLabel>
-                    <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
+                  <div className="space-y-4">
+                    <label className="block text-base font-medium text-gray-400">Personality</label>
+                    <div className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
                       <textarea
                         value={formData.personality}
                         onChange={(e) => setFormData(prev => ({ ...prev, personality: e.target.value }))}
                         placeholder="Temperament, quirks, mannerisms, how they interact with others..."
-                        className="w-full p-6 min-h-[150px] bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
+                        className="w-full p-8 min-h-[200px] text-base bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
                       />
                     </div>
                   </div>
 
                   {/* Goals */}
-                  <div>
-                    <FieldLabel>Goals & Motivations</FieldLabel>
-                    <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
+                  <div className="space-y-4">
+                    <label className="block text-base font-medium text-gray-400">Goals & Motivations</label>
+                    <div className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
                       <textarea
                         value={formData.goals}
                         onChange={(e) => setFormData(prev => ({ ...prev, goals: e.target.value }))}
                         placeholder="What drives this character? What do they want to achieve?"
-                        className="w-full p-6 min-h-[150px] bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
+                        className="w-full p-8 min-h-[200px] text-base bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
                       />
                     </div>
                   </div>
 
                   {/* Secrets */}
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <label className="flex items-center gap-2 text-sm text-gray-400">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-3 text-base font-medium text-gray-400">
                         Secrets
-                        <span className="text-xs bg-gray-800 px-2 py-0.5 rounded">Private</span>
+                        <span className="text-sm bg-purple-500/20 text-purple-400 px-3 py-1.5 rounded-lg">🔒 Private</span>
                       </label>
                       <button
                         onClick={() => setShowSecrets(!showSecrets)}
-                        className="flex items-center gap-2 text-sm text-gray-400 hover:text-purple-400 transition-colors"
+                        className="flex items-center gap-2 text-base text-gray-400 hover:text-purple-400 transition-colors"
                       >
-                        {showSecrets ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showSecrets ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                         {showSecrets ? 'Hide' : 'Reveal'}
                       </button>
                     </div>
                     {showSecrets ? (
-                      <div className="bg-white/[0.03] border border-red-500/30 rounded-xl overflow-hidden focus-within:border-red-500/50 transition-colors">
+                      <div className="bg-white/[0.03] border border-red-500/30 rounded-2xl overflow-hidden focus-within:border-red-500/50 transition-colors">
                         <textarea
                           value={formData.secrets}
                           onChange={(e) => setFormData(prev => ({ ...prev, secrets: e.target.value }))}
                           placeholder="Hidden information, true motivations, dark secrets..."
-                          className="w-full p-6 min-h-[150px] bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
+                          className="w-full p-8 min-h-[200px] text-base bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
                         />
                       </div>
                     ) : (
-                      <div className="py-16 px-8 bg-white/[0.02] border border-dashed border-white/10 rounded-xl text-gray-500 text-center italic">
-                        Click "Reveal" to show secret information
+                      <div className="flex flex-col items-center justify-center py-24 px-12 bg-white/[0.02] border-2 border-dashed border-white/10 rounded-2xl">
+                        <p className="text-lg text-gray-500 italic">Click "Reveal" to show secret information</p>
                       </div>
                     )}
                   </div>
@@ -1246,47 +1259,47 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   />
 
                   {/* Campaign Info */}
-                  <div>
-                    <FieldLabel>Campaign Information</FieldLabel>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-1.5">Game System</label>
+                  <div className="space-y-4">
+                    <label className="block text-base font-medium text-gray-400">Campaign Information</label>
+                    <div className="grid grid-cols-2 gap-8">
+                      <div className="space-y-3">
+                        <label className="block text-sm text-gray-500">Game System</label>
                         <input
                           type="text"
                           value={formData.game_system}
                           onChange={(e) => setFormData(prev => ({ ...prev, game_system: e.target.value }))}
                           placeholder="D&D 5e, Pathfinder 2e..."
-                          className="w-full py-3 px-4 bg-white/[0.03] border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
+                          className="w-full py-5 px-5 text-base bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
                         />
                       </div>
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-1.5">Campaign Name</label>
+                      <div className="space-y-3">
+                        <label className="block text-sm text-gray-500">Campaign Name</label>
                         <input
                           type="text"
                           value={formData.external_campaign}
                           onChange={(e) => setFormData(prev => ({ ...prev, external_campaign: e.target.value }))}
                           placeholder="The Lost Mines..."
-                          className="w-full py-3 px-4 bg-white/[0.03] border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
+                          className="w-full py-5 px-5 text-base bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
                         />
                       </div>
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-1.5">DM Name</label>
+                      <div className="space-y-3">
+                        <label className="block text-sm text-gray-500">DM Name</label>
                         <input
                           type="text"
                           value={formData.dm_name}
                           onChange={(e) => setFormData(prev => ({ ...prev, dm_name: e.target.value }))}
                           placeholder="Who runs this game?"
-                          className="w-full py-3 px-4 bg-white/[0.03] border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
+                          className="w-full py-5 px-5 text-base bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
                         />
                       </div>
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-1.5">Campaign Started</label>
+                      <div className="space-y-3">
+                        <label className="block text-sm text-gray-500">Campaign Started</label>
                         <input
                           type="text"
                           value={formData.campaign_started}
                           onChange={(e) => setFormData(prev => ({ ...prev, campaign_started: e.target.value }))}
                           placeholder="January 2024..."
-                          className="w-full py-3 px-4 bg-white/[0.03] border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
+                          className="w-full py-5 px-5 text-base bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
                         />
                       </div>
                     </div>
@@ -1296,27 +1309,33 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
               {/* ═══════════════ PEOPLE SECTION ═══════════════ */}
               <section id="people" className="scroll-mt-8">
-                <SectionHeader title="People" icon={Users} />
+                <div className="flex items-center gap-6 mb-12">
+                  <div className="p-4 bg-purple-500/20 rounded-2xl">
+                    <Users className="w-8 h-8 text-purple-400" />
+                  </div>
+                  <h2 className="text-3xl font-bold text-white tracking-wide">PEOPLE</h2>
+                  <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent" />
+                </div>
 
-                <div className="space-y-10">
+                <div className="space-y-12">
                   {/* Story Characters */}
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <FieldLabel>Story Characters</FieldLabel>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <label className="text-base font-medium text-gray-400">Story Characters</label>
                       <button
                         onClick={() => setAddStoryCharacterModalOpen(true)}
-                        className="flex items-center gap-2 text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                        className="flex items-center gap-2 py-3 px-6 text-base text-purple-400 bg-purple-500/10 rounded-xl hover:bg-purple-500/20 transition-colors"
                       >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-5 h-5" />
                         Add Character
                       </button>
                     </div>
 
                     {storyCharacters.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-16 px-8 bg-white/[0.02] border border-dashed border-white/10 rounded-xl">
-                        <Users className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-                        <p className="text-gray-400 text-center">No story characters yet</p>
-                        <p className="text-sm text-gray-500 text-center mt-1">Add NPCs connected to this character's story</p>
+                      <div className="flex flex-col items-center justify-center py-24 px-12 bg-white/[0.02] border-2 border-dashed border-white/10 rounded-2xl">
+                        <Users className="w-16 h-16 mx-auto mb-6 text-gray-600" />
+                        <p className="text-lg text-gray-400 text-center">No story characters yet</p>
+                        <p className="text-base text-gray-500 text-center mt-2">Add NPCs connected to this character's story</p>
                       </div>
                     ) : (
                       <div className="grid gap-4">
@@ -1349,12 +1368,12 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   </div>
 
                   {/* What I've Learned */}
-                  <div>
-                    <FieldLabel>What I've Learned About Others</FieldLabel>
+                  <div className="space-y-6">
+                    <label className="block text-base font-medium text-gray-400">What I've Learned About Others</label>
                     {learnedFacts.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-16 px-8 bg-white/[0.02] border border-dashed border-white/10 rounded-xl">
-                        <BookOpen className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-                        <p className="text-gray-400 text-center">No learned facts recorded</p>
+                      <div className="flex flex-col items-center justify-center py-24 px-12 bg-white/[0.02] border-2 border-dashed border-white/10 rounded-2xl">
+                        <BookOpen className="w-16 h-16 mx-auto mb-6 text-gray-600" />
+                        <p className="text-lg text-gray-400 text-center">No learned facts recorded</p>
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -1379,22 +1398,28 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
               {/* ═══════════════ JOURNAL SECTION ═══════════════ */}
               <section id="journal" className="scroll-mt-8">
-                <SectionHeader title="Journal" icon={Scroll} />
+                <div className="flex items-center gap-6 mb-12">
+                  <div className="p-4 bg-purple-500/20 rounded-2xl">
+                    <Scroll className="w-8 h-8 text-purple-400" />
+                  </div>
+                  <h2 className="text-3xl font-bold text-white tracking-wide">JOURNAL</h2>
+                  <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent" />
+                </div>
 
-                <div className="space-y-6">
+                <div className="space-y-8">
                   <button
                     onClick={() => setAddJournalModalOpen(true)}
-                    className="flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-colors"
+                    className="flex items-center gap-3 py-4 px-6 text-base text-purple-400 bg-purple-500/10 rounded-xl hover:bg-purple-500/20 transition-colors"
                   >
-                    <Plus className="w-5 h-5" />
+                    <Plus className="w-6 h-6" />
                     Add Journal Entry
                   </button>
 
                   {journalEntries.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 px-8 bg-white/[0.02] border border-dashed border-white/10 rounded-xl">
-                      <Scroll className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-                      <p className="text-gray-400 text-center">No journal entries yet</p>
-                      <p className="text-sm text-gray-500 text-center mt-1">Record your adventures and experiences</p>
+                    <div className="flex flex-col items-center justify-center py-24 px-12 bg-white/[0.02] border-2 border-dashed border-white/10 rounded-2xl">
+                      <Scroll className="w-16 h-16 mx-auto mb-6 text-gray-600" />
+                      <p className="text-lg text-gray-400 text-center">No journal entries yet</p>
+                      <p className="text-base text-gray-500 text-center mt-2">Record your adventures and experiences</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -1428,45 +1453,56 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
               {/* ═══════════════ STATS SECTION ═══════════════ */}
               <section id="stats" className="scroll-mt-8">
-                <SectionHeader title="Quick Stats" icon={BarChart3} />
+                <div className="flex items-center gap-6 mb-12">
+                  <div className="p-4 bg-purple-500/20 rounded-2xl">
+                    <BarChart3 className="w-8 h-8 text-purple-400" />
+                  </div>
+                  <h2 className="text-3xl font-bold text-white tracking-wide">QUICK STATS</h2>
+                  <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent" />
+                </div>
 
-                <div className="space-y-6">
-                  <p className="text-sm text-gray-500">Configure your stat block for quick reference during play.</p>
+                <div className="space-y-8">
+                  <p className="text-base text-gray-400">Configure your stat block for quick reference during play.</p>
 
-                  <div className="flex items-center gap-4">
-                    <label className="text-sm text-gray-400">Gold</label>
+                  <div className="space-y-3">
+                    <label className="block text-base text-gray-400">Gold</label>
                     <input
                       type="number"
                       value={formData.gold}
                       onChange={(e) => setFormData(prev => ({ ...prev, gold: parseInt(e.target.value) || 0 }))}
-                      className="w-32 px-4 py-2 bg-white/5 border border-yellow-500/30 rounded-lg text-yellow-400 font-medium focus:outline-none focus:border-yellow-500/50"
+                      className="w-40 py-5 px-6 text-lg bg-white/[0.03] border border-white/10 rounded-xl text-yellow-400 font-medium focus:outline-none focus:border-yellow-500/50"
                     />
                   </div>
 
-                  <div className="flex flex-col items-center justify-center py-16 px-8 bg-white/[0.02] border border-dashed border-white/10 rounded-xl">
-                    <Target className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-                    <p className="text-gray-400 text-center">Quick Stats editor coming soon</p>
-                  </div>
-
-                  <div className="flex flex-col items-center justify-center py-16 px-8 bg-white/[0.02] border border-dashed border-white/10 rounded-xl">
-                    <p className="text-gray-400 text-center">Inventory tracking coming soon</p>
+                  <div className="flex flex-col items-center justify-center py-24 px-12 bg-white/[0.02] border-2 border-dashed border-white/10 rounded-2xl">
+                    <BarChart3 className="w-16 h-16 mx-auto mb-6 text-gray-600" />
+                    <p className="text-lg text-gray-400 text-center">Quick Stats editor coming soon</p>
+                    <p className="text-base text-gray-500 text-center mt-2">Inventory tracking coming soon</p>
                   </div>
                 </div>
               </section>
 
               {/* ═══════════════ GALLERY SECTION ═══════════════ */}
               <section id="gallery" className="scroll-mt-8">
-                <SectionHeader title="Gallery" icon={GalleryIcon} />
+                <div className="flex items-center gap-6 mb-12">
+                  <div className="p-4 bg-purple-500/20 rounded-2xl">
+                    <GalleryIcon className="w-8 h-8 text-purple-400" />
+                  </div>
+                  <h2 className="text-3xl font-bold text-white tracking-wide">GALLERY</h2>
+                  <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent" />
+                </div>
 
-                <div className="flex flex-col items-center justify-center py-16 px-8 bg-white/[0.02] border border-dashed border-white/10 rounded-xl">
-                  <GalleryIcon className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-                  <p className="text-gray-400 text-center">Mood Board & Gallery</p>
-                  <p className="text-sm text-gray-500 text-center mt-1">Coming soon - collect inspiration images for this character</p>
+                <div className="flex flex-col items-center justify-center py-24 px-12 bg-white/[0.02] border-2 border-dashed border-white/10 rounded-2xl">
+                  <GalleryIcon className="w-16 h-16 mx-auto mb-6 text-gray-600" />
+                  <p className="text-lg text-gray-400 text-center">Mood Board & Gallery</p>
+                  <p className="text-base text-gray-500 text-center mt-2">Coming soon - collect inspiration images for this character</p>
                 </div>
               </section>
 
-              {/* Bottom padding */}
-              <div className="h-32" />
+              </div>
+
+              {/* HUGE bottom padding */}
+              <div className="h-48" />
 
             </div>
           </main>
