@@ -31,6 +31,7 @@ export function AIAssistant({ campaignContext }: AIAssistantProps) {
     error,
   } = useChat({
     api: '/api/ai/chat',
+    streamProtocol: 'text',
     body: {
       campaignContext,
       provider: aiProvider,
