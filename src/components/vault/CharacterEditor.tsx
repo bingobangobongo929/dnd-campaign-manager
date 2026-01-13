@@ -195,7 +195,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     content: formData.summary || '',
     editorProps: {
       attributes: {
-        class: 'prose prose-invert prose-sm max-w-none focus:outline-none min-h-[100px] p-4 prose-p:text-gray-300 prose-p:my-1',
+        class: 'prose prose-invert prose-sm max-w-none focus:outline-none min-h-[150px] p-5 prose-p:text-gray-300 prose-p:my-2',
       },
     },
     onUpdate: ({ editor }) => {
@@ -217,7 +217,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     content: formData.notes,
     editorProps: {
       attributes: {
-        class: 'prose prose-invert max-w-none focus:outline-none min-h-[300px] p-4 prose-headings:text-white prose-p:text-gray-300 prose-p:my-2 prose-ul:text-gray-300 prose-li:text-gray-300 prose-blockquote:border-l-purple-500 prose-blockquote:text-gray-400',
+        class: 'prose prose-invert max-w-none focus:outline-none min-h-[300px] p-5 prose-headings:text-white prose-p:text-gray-300 prose-p:my-2 prose-ul:text-gray-300 prose-li:text-gray-300 prose-blockquote:border-l-purple-500 prose-blockquote:text-gray-400',
       },
     },
     onUpdate: ({ editor }) => {
@@ -471,7 +471,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       disabled={disabled}
       title={title}
       className={cn(
-        'h-8 w-8 flex items-center justify-center rounded-md transition-all',
+        'h-9 w-9 flex items-center justify-center rounded-md transition-all',
         'hover:bg-white/10',
         active && 'bg-purple-500/20 text-purple-400',
         disabled && 'opacity-40 cursor-not-allowed hover:bg-transparent'
@@ -483,60 +483,60 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
   // Editor toolbar
   const EditorToolbar = ({ editor }: { editor: any }) => (
-    <div className="flex items-center gap-0.5 p-2 border-b border-white/10 bg-white/[0.02]">
+    <div className="flex items-center gap-1 p-3 border-b border-white/10 bg-white/[0.02]">
       <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo()} title="Undo">
-        <Undo className="h-4 w-4" />
+        <Undo className="h-5 w-5" />
       </ToolbarButton>
       <ToolbarButton onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo()} title="Redo">
-        <Redo className="h-4 w-4" />
+        <Redo className="h-5 w-5" />
       </ToolbarButton>
-      <div className="w-px h-5 bg-white/10 mx-1.5" />
+      <div className="w-px h-6 bg-white/10 mx-2" />
       <ToolbarButton onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} active={editor?.isActive('heading', { level: 1 })} title="Heading 1">
-        <Heading1 className="h-4 w-4" />
+        <Heading1 className="h-5 w-5" />
       </ToolbarButton>
       <ToolbarButton onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} active={editor?.isActive('heading', { level: 2 })} title="Heading 2">
-        <Heading2 className="h-4 w-4" />
+        <Heading2 className="h-5 w-5" />
       </ToolbarButton>
-      <div className="w-px h-5 bg-white/10 mx-1.5" />
+      <div className="w-px h-6 bg-white/10 mx-2" />
       <ToolbarButton onClick={() => editor?.chain().focus().toggleBold().run()} active={editor?.isActive('bold')} title="Bold">
-        <Bold className="h-4 w-4" />
+        <Bold className="h-5 w-5" />
       </ToolbarButton>
       <ToolbarButton onClick={() => editor?.chain().focus().toggleItalic().run()} active={editor?.isActive('italic')} title="Italic">
-        <Italic className="h-4 w-4" />
+        <Italic className="h-5 w-5" />
       </ToolbarButton>
       <ToolbarButton onClick={() => editor?.chain().focus().toggleUnderline().run()} active={editor?.isActive('underline')} title="Underline">
-        <UnderlineIcon className="h-4 w-4" />
+        <UnderlineIcon className="h-5 w-5" />
       </ToolbarButton>
       <ToolbarButton onClick={() => editor?.chain().focus().toggleStrike().run()} active={editor?.isActive('strike')} title="Strikethrough">
-        <Strikethrough className="h-4 w-4" />
+        <Strikethrough className="h-5 w-5" />
       </ToolbarButton>
       <ToolbarButton onClick={() => editor?.chain().focus().toggleHighlight().run()} active={editor?.isActive('highlight')} title="Highlight">
-        <Highlighter className="h-4 w-4" />
+        <Highlighter className="h-5 w-5" />
       </ToolbarButton>
-      <div className="w-px h-5 bg-white/10 mx-1.5" />
+      <div className="w-px h-6 bg-white/10 mx-2" />
       <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} active={editor?.isActive('bulletList')} title="Bullet List">
-        <List className="h-4 w-4" />
+        <List className="h-5 w-5" />
       </ToolbarButton>
       <ToolbarButton onClick={() => editor?.chain().focus().toggleOrderedList().run()} active={editor?.isActive('orderedList')} title="Numbered List">
-        <ListOrdered className="h-4 w-4" />
+        <ListOrdered className="h-5 w-5" />
       </ToolbarButton>
       <ToolbarButton onClick={() => editor?.chain().focus().toggleBlockquote().run()} active={editor?.isActive('blockquote')} title="Quote">
-        <Quote className="h-4 w-4" />
+        <Quote className="h-5 w-5" />
       </ToolbarButton>
-      <div className="w-px h-5 bg-white/10 mx-1.5" />
+      <div className="w-px h-6 bg-white/10 mx-2" />
       <ToolbarButton onClick={() => setLink(editor)} active={editor?.isActive('link')} title="Link">
-        <LinkIcon className="h-4 w-4" />
+        <LinkIcon className="h-5 w-5" />
       </ToolbarButton>
       <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleEditorImageUpload} />
       <ToolbarButton onClick={() => imageInputRef.current?.click()} title="Insert Image">
-        <ImageIcon className="h-4 w-4" />
+        <ImageIcon className="h-5 w-5" />
       </ToolbarButton>
     </div>
   )
 
   // Section header component
   const SectionHeader = ({ children }: { children: React.ReactNode }) => (
-    <div className="mb-4">
+    <div className="mb-5">
       <h2 className="text-sm font-semibold tracking-wide text-white uppercase">
         {children}
       </h2>
@@ -551,9 +551,9 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     </label>
   )
 
-  // Form input styles
-  const inputStyles = "w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/25 transition-all"
-  const textareaStyles = cn(inputStyles, "min-h-[120px] resize-none")
+  // Form input styles - larger, more comfortable
+  const inputStyles = "w-full px-4 py-3 min-h-[48px] bg-white/5 border border-white/10 rounded-lg text-base text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/25 transition-all"
+  const textareaStyles = cn(inputStyles, "min-h-[140px] resize-none")
 
   // Status dropdown
   const StatusDropdown = () => {
@@ -563,7 +563,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       <div className="relative">
         <button
           onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-          className="flex items-center gap-3 w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg hover:border-purple-500/30 transition-all"
+          className="flex items-center gap-3 w-full px-4 py-3 min-h-[48px] bg-white/5 border border-white/10 rounded-lg hover:border-purple-500/30 transition-all"
         >
           <div
             className="w-3 h-3 rounded-full ring-2 ring-offset-1 ring-offset-transparent"
@@ -629,25 +629,25 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     }
 
     return (
-      <div className="space-y-3">
-        <FormLabel>{label}</FormLabel>
-        <div className="space-y-2">
+      <div className="space-y-4">
+        <SectionHeader>{label}</SectionHeader>
+        <div className="space-y-3">
           {items.map((item, index) => (
-            <div key={index} className="flex items-start gap-2 group">
-              <span className="text-purple-400 mt-3">•</span>
-              <div className="flex-1 px-4 py-2.5 bg-white/[0.03] border border-white/10 rounded-lg text-sm text-gray-300">
+            <div key={index} className="flex items-start gap-3 group">
+              <span className="text-purple-400 mt-3.5">•</span>
+              <div className="flex-1 px-4 py-3 bg-white/[0.03] border border-white/10 rounded-lg text-base text-gray-300">
                 {item}
               </div>
               <button
                 onClick={() => removeItem(index)}
-                className="p-2 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all mt-1"
+                className="p-2.5 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all mt-1"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
           ))}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <input
             type="text"
             value={newItem}
@@ -659,7 +659,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
           <button
             onClick={addItem}
             disabled={!newItem.trim()}
-            className="px-4 py-3 bg-purple-500/20 text-purple-400 rounded-lg hover:bg-purple-500/30 transition-colors disabled:opacity-50 disabled:hover:bg-purple-500/20"
+            className="px-5 py-3 min-h-[48px] bg-purple-500/20 text-purple-400 rounded-lg hover:bg-purple-500/30 transition-colors disabled:opacity-50 disabled:hover:bg-purple-500/20 flex items-center justify-center"
           >
             <Plus className="w-5 h-5" />
           </button>
@@ -762,13 +762,15 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   // =====================================================
 
   const BackstoryTab = () => (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {/* Summary */}
       <div>
         <SectionHeader>Summary</SectionHeader>
         <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
           <EditorToolbar editor={summaryEditor} />
-          <EditorContent editor={summaryEditor} />
+          <div className="min-h-[180px] lg:min-h-[200px] xl:min-h-[250px]">
+            <EditorContent editor={summaryEditor} />
+          </div>
         </div>
       </div>
 
@@ -785,7 +787,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         <SectionHeader>Full Backstory</SectionHeader>
         <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
           <EditorToolbar editor={notesEditor} />
-          <div className="max-h-[500px] overflow-y-auto">
+          <div className="min-h-[350px] lg:min-h-[450px] xl:min-h-[550px] 2xl:min-h-[650px] overflow-y-auto">
             <EditorContent editor={notesEditor} />
           </div>
         </div>
@@ -810,7 +812,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   )
 
   const DetailsTab = () => (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {/* Appearance */}
       <div>
         <SectionHeader>Appearance</SectionHeader>
@@ -939,7 +941,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   )
 
   const PeopleTab = () => (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {/* Story Characters */}
       <div>
         <div className="flex items-center justify-between mb-4">
@@ -1019,7 +1021,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   )
 
   const JournalTab = () => (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <SectionHeader>Play Journal</SectionHeader>
         <button
@@ -1068,7 +1070,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   )
 
   const MoreTab = () => (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {/* Quick Stats */}
       <div>
         <SectionHeader>Quick Stats</SectionHeader>
@@ -1168,12 +1170,14 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         </div>
 
         {/* Main Content */}
-        <div className="flex h-[calc(100vh-64px)]">
-          {/* Left Sidebar - 320px */}
-          <div className="w-80 flex-shrink-0 border-r border-white/10 p-6 overflow-y-auto bg-[#0d0d14]">
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left Sidebar - responsive width */}
+          <aside className="w-80 xl:w-96 flex-shrink-0 border-r border-white/10 p-6 overflow-y-auto bg-[#0d0d14]">
             <div className="space-y-6">
               {/* Portrait */}
-              <PortraitDisplay />
+              <div className="mb-8">
+                <PortraitDisplay />
+              </div>
 
               {/* Name */}
               <div>
@@ -1190,11 +1194,11 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               {/* Type Toggle */}
               <div>
                 <FormLabel>Character Type</FormLabel>
-                <div className="flex bg-white/5 rounded-lg p-1">
+                <div className="flex bg-white/5 rounded-lg p-1.5">
                   <button
                     onClick={() => setFormData(prev => ({ ...prev, type: 'pc' }))}
                     className={cn(
-                      'flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all',
+                      'flex-1 py-3 px-4 rounded-md text-sm font-medium transition-all',
                       formData.type === 'pc'
                         ? 'bg-purple-600 text-white shadow-lg'
                         : 'text-gray-400 hover:text-white'
@@ -1205,7 +1209,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   <button
                     onClick={() => setFormData(prev => ({ ...prev, type: 'npc' }))}
                     className={cn(
-                      'flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all',
+                      'flex-1 py-3 px-4 rounded-md text-sm font-medium transition-all',
                       formData.type === 'npc'
                         ? 'bg-gray-600 text-white shadow-lg'
                         : 'text-gray-400 hover:text-white'
@@ -1317,7 +1321,13 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 ))}
 
                 {!formData.theme_music_url && !formData.character_sheet_url && links.length === 0 && (
-                  <p className="text-sm text-gray-600 text-center py-4">No links added yet</p>
+                  <button
+                    onClick={() => setAddLinkModalOpen(true)}
+                    className="w-full py-3 px-4 border border-dashed border-white/20 rounded-lg text-gray-400 hover:border-purple-500/50 hover:text-purple-400 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Link
+                  </button>
                 )}
               </div>
 
@@ -1335,34 +1345,34 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 </>
               )}
             </div>
-          </div>
+          </aside>
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <main className="flex-1 flex flex-col overflow-hidden">
             {/* Tabs */}
             <div className="border-b border-white/10 bg-[#0d0d14]">
-              <nav className="flex px-6">
+              <nav className="flex px-4 lg:px-8">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
-                      'flex items-center gap-2 px-5 py-4 text-sm font-medium border-b-2 transition-all -mb-px',
+                      'flex-1 lg:flex-none flex items-center justify-center lg:justify-start gap-2 px-4 lg:px-6 py-4 text-sm font-medium border-b-2 transition-all -mb-px',
                       activeTab === tab.id
                         ? 'border-purple-500 text-white'
                         : 'border-transparent text-gray-500 hover:text-gray-300 hover:border-white/20'
                     )}
                   >
                     {tab.icon}
-                    {tab.label}
+                    <span className="hidden sm:inline">{tab.label}</span>
                   </button>
                 ))}
               </nav>
             </div>
 
             {/* Tab Content */}
-            <div className="flex-1 overflow-y-auto p-8">
-              <div className="max-w-3xl mx-auto">
+            <div className="flex-1 overflow-y-auto p-6 lg:p-8 xl:p-10 2xl:p-12">
+              <div className="max-w-4xl xl:max-w-5xl 2xl:max-w-6xl mx-auto">
                 {activeTab === 'backstory' && <BackstoryTab />}
                 {activeTab === 'details' && <DetailsTab />}
                 {activeTab === 'people' && <PeopleTab />}
@@ -1370,7 +1380,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 {activeTab === 'more' && <MoreTab />}
               </div>
             </div>
-          </div>
+          </main>
         </div>
       </div>
 
