@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, BookOpen, Trash2, Copy } from 'lucide-react'
+import { Plus, Search, BookOpen, Trash2, Copy, Filter, X } from 'lucide-react'
 import { Modal, Dropdown } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { CharacterCard } from '@/components/vault/CharacterCard'
@@ -18,6 +18,8 @@ export default function VaultPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [typeFilter, setTypeFilter] = useState<'all' | 'pc' | 'npc'>('all')
 
   // Copy to campaign modal state
   const [isCopyModalOpen, setIsCopyModalOpen] = useState(false)
@@ -67,15 +69,46 @@ export default function VaultPage() {
     setLoading(false)
   }
 
+  // Get unique statuses from characters
+  const availableStatuses = useMemo(() => {
+    const statuses = new Set<string>()
+    vaultCharacters.forEach(char => {
+      if (char.status) statuses.add(char.status)
+    })
+    return Array.from(statuses)
+  }, [vaultCharacters])
+
   const filteredCharacters = vaultCharacters.filter((char) => {
-    if (!searchQuery) return true
-    const query = searchQuery.toLowerCase()
-    return (
-      char.name.toLowerCase().includes(query) ||
-      char.summary?.toLowerCase().includes(query) ||
-      char.type.toLowerCase().includes(query)
-    )
+    // Text search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      const matchesSearch =
+        char.name.toLowerCase().includes(query) ||
+        char.summary?.toLowerCase().includes(query) ||
+        char.race?.toLowerCase().includes(query) ||
+        char.class?.toLowerCase().includes(query)
+      if (!matchesSearch) return false
+    }
+
+    // Status filter
+    if (statusFilter !== 'all' && char.status !== statusFilter) {
+      return false
+    }
+
+    // Type filter
+    if (typeFilter !== 'all' && char.type !== typeFilter) {
+      return false
+    }
+
+    return true
   })
+
+  const hasActiveFilters = statusFilter !== 'all' || typeFilter !== 'all'
+
+  const clearFilters = () => {
+    setStatusFilter('all')
+    setTypeFilter('all')
+  }
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this character from your vault?')) return
@@ -166,17 +199,76 @@ export default function VaultPage() {
           </button>
         </div>
 
-        {/* Search */}
-        <div className="relative mb-10">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[--text-tertiary] pointer-events-none" />
-          <input
-            type="text"
-            className="form-input"
-            style={{ paddingLeft: '48px' }}
-            placeholder="Search vault..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        {/* Search and Filters */}
+        <div className="flex flex-col gap-4 mb-10">
+          <div className="flex gap-4">
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[--text-tertiary] pointer-events-none" />
+              <input
+                type="text"
+                className="form-input w-full"
+                style={{ paddingLeft: '48px' }}
+                placeholder="Search by name, race, class..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* Type Filter */}
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value as 'all' | 'pc' | 'npc')}
+              className="px-4 py-2.5 bg-[--bg-elevated] border border-[--border] rounded-xl text-[--text-primary] focus:outline-none focus:border-[--arcane-purple]"
+            >
+              <option value="all">All Types</option>
+              <option value="pc">Player Characters</option>
+              <option value="npc">NPCs</option>
+            </select>
+
+            {/* Status Filter */}
+            {availableStatuses.length > 0 && (
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-4 py-2.5 bg-[--bg-elevated] border border-[--border] rounded-xl text-[--text-primary] focus:outline-none focus:border-[--arcane-purple]"
+              >
+                <option value="all">All Statuses</option>
+                {availableStatuses.map(status => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Active Filters */}
+          {hasActiveFilters && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-[--text-tertiary]">Filters:</span>
+              {typeFilter !== 'all' && (
+                <span className="flex items-center gap-1 px-2 py-1 bg-[--arcane-purple]/20 text-[--arcane-purple] rounded-lg text-sm">
+                  {typeFilter === 'pc' ? 'Player Characters' : 'NPCs'}
+                  <button onClick={() => setTypeFilter('all')} className="hover:text-white">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {statusFilter !== 'all' && (
+                <span className="flex items-center gap-1 px-2 py-1 bg-[--arcane-purple]/20 text-[--arcane-purple] rounded-lg text-sm">
+                  {statusFilter}
+                  <button onClick={() => setStatusFilter('all')} className="hover:text-white">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              <button
+                onClick={clearFilters}
+                className="text-sm text-[--text-tertiary] hover:text-[--text-secondary] underline"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Characters Grid */}

@@ -65,10 +65,34 @@ export function CharacterCard({ character, onClick, className }: CharacterCardPr
         className="px-6 py-5"
         style={{ paddingLeft: '24px', paddingRight: '24px', paddingTop: '20px', paddingBottom: '20px' }}
       >
-        {/* Name - larger text-xl */}
-        <h3 className="text-xl font-semibold text-[--text-primary] mb-1 group-hover:text-[--arcane-purple] transition-colors">
-          {character.name}
-        </h3>
+        {/* Name and status row */}
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <h3 className="text-xl font-semibold text-[--text-primary] group-hover:text-[--arcane-purple] transition-colors">
+            {character.name}
+          </h3>
+          {character.status && (
+            <span
+              className="flex-shrink-0 flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium"
+              style={{
+                backgroundColor: `${character.status_color || '#8B5CF6'}20`,
+                color: character.status_color || '#8B5CF6',
+              }}
+            >
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: character.status_color || '#8B5CF6' }}
+              />
+              {character.status}
+            </span>
+          )}
+        </div>
+
+        {/* Race/Class info if available */}
+        {(character.race || character.class) && (
+          <p className="text-sm text-[--text-tertiary] mb-2">
+            {[character.race, character.class].filter(Boolean).join(' • ')}
+          </p>
+        )}
 
         {/* Summary - fixed height for consistent cards */}
         <p className="text-base text-[--text-secondary] line-clamp-3 leading-snug min-h-[66px]">

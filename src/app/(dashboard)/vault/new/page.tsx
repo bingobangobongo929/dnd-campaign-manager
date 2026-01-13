@@ -1,7 +1,7 @@
 'use client'
 
-import { VaultEditor } from '@/components/vault/VaultEditor'
+import { CharacterEditor } from '@/components/vault/CharacterEditor'
 
 export default function NewVaultCharacterPage() {
-  return <VaultEditor mode="create" />
+  return <CharacterEditor mode="create" />
 }

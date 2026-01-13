@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { VaultEditor } from '@/components/vault/VaultEditor'
+import { CharacterEditor } from '@/components/vault/CharacterEditor'
 import { createClient } from '@/lib/supabase/client'
 import type { VaultCharacter } from '@/types/database'
 
@@ -62,5 +62,5 @@ export default function EditVaultCharacterPage() {
     )
   }
 
-  return <VaultEditor character={character} mode="edit" />
+  return <CharacterEditor character={character} mode="edit" />
 }
