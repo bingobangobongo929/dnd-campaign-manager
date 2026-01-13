@@ -53,6 +53,7 @@ import {
 } from 'lucide-react'
 import { Modal } from '@/components/ui'
 import { VaultImageCropModal } from './VaultImageCropModal'
+import { ShareCharacterModal } from './ShareCharacterModal'
 import type {
   VaultCharacter,
   StoryCharacter,
@@ -1611,20 +1612,14 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       </Modal>
 
       {/* Share Modal */}
-      <Modal
-        isOpen={shareModalOpen}
-        onClose={() => setShareModalOpen(false)}
-        title="Share Character"
-        description="Generate a shareable link for this character"
-      >
-        <div className="py-8 text-center">
-          <Share2 className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-          <p className="text-gray-400">Share functionality coming soon</p>
-        </div>
-        <div className="flex justify-end gap-3">
-          <button className="btn btn-secondary" onClick={() => setShareModalOpen(false)}>Close</button>
-        </div>
-      </Modal>
+      {characterId && (
+        <ShareCharacterModal
+          isOpen={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          characterId={characterId}
+          characterName={formData.name || 'Untitled Character'}
+        />
+      )}
 
       {/* Add Link Modal */}
       <Modal
