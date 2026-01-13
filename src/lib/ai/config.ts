@@ -11,7 +11,7 @@ export const AI_PROVIDERS = {
   },
   google: {
     name: 'Gemini (Google)',
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2-flash',
     description: 'Fast responses with good general performance',
   },
 } as const

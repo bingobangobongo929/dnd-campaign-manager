@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useChat } from '@ai-sdk/react'
+import ReactMarkdown from 'react-markdown'
 import { X, Send, Sparkles, User, Loader2, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
@@ -169,7 +170,29 @@ export function AIAssistant({ campaignContext }: AIAssistantProps) {
                   message.role === 'user' ? 'ai-message-user' : 'ai-message-assistant'
                 )}
               >
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                {message.role === 'user' ? (
+                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                ) : (
+                  <div className="prose prose-sm prose-invert max-w-none text-sm">
+                    <ReactMarkdown
+                      components={{
+                        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                        strong: ({ children }) => <strong className="font-semibold text-[--text-primary]">{children}</strong>,
+                        em: ({ children }) => <em className="italic">{children}</em>,
+                        ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                        li: ({ children }) => <li>{children}</li>,
+                        h1: ({ children }) => <h1 className="text-base font-semibold mb-2 text-[--text-primary]">{children}</h1>,
+                        h2: ({ children }) => <h2 className="text-sm font-semibold mb-2 text-[--text-primary]">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-sm font-semibold mb-1 text-[--text-primary]">{children}</h3>,
+                        code: ({ children }) => <code className="bg-[--bg-base] px-1 py-0.5 rounded text-xs font-mono">{children}</code>,
+                        blockquote: ({ children }) => <blockquote className="border-l-2 border-[--arcane-purple] pl-3 italic text-[--text-secondary]">{children}</blockquote>,
+                      }}
+                    >
+                      {message.content}
+                    </ReactMarkdown>
+                  </div>
+                )}
               </div>
               {message.role === 'user' && (
                 <div className="w-8 h-8 rounded-full bg-[--bg-elevated] flex items-center justify-center flex-shrink-0">
