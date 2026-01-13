@@ -857,9 +857,10 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-[#0a0a0f] flex flex-col">
+      <div className="fixed inset-0 z-50 bg-[#0a0a0f] flex flex-col p-3 xl:p-4 2xl:p-6">
+        <div className="flex-1 flex flex-col rounded-2xl border border-white/10 overflow-hidden bg-[#0d0d14]">
         {/* Header */}
-        <header className="flex-shrink-0 flex items-center justify-between px-6 xl:px-8 h-16 border-b border-white/10 bg-[#0d0d14]">
+        <header className="flex-shrink-0 flex items-center justify-between px-6 xl:px-8 h-16 border-b border-white/10">
           <div className="flex items-center gap-4">
             <button
               onClick={handleClose}
@@ -912,14 +913,16 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden min-h-0 p-4 xl:p-6 2xl:p-8 gap-6">
           {/* Left Sidebar */}
-          <aside className="w-96 2xl:w-[420px] flex-shrink-0 flex flex-col border border-white/10 rounded-2xl overflow-hidden bg-[#0d0d14]">
-            <div className="flex-1 overflow-y-auto p-10 space-y-10">
+          <aside className="w-96 2xl:w-[420px] flex-shrink-0 flex flex-col border-r border-white/10 overflow-hidden bg-[#0d0d14]">
+            <div className="flex-1 overflow-y-auto p-10">
               {/* Portrait */}
-              <PortraitDisplay />
+              <div className="mb-10">
+                <PortraitDisplay />
+              </div>
 
               {/* Name */}
-              <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-400">Character Name</label>
+              <div className="mb-10">
+                <label className="block text-sm font-medium text-gray-400 mb-4">Character Name</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -930,8 +933,8 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               </div>
 
               {/* Type Toggle */}
-              <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-400">Character Type</label>
+              <div className="mb-10">
+                <label className="block text-sm font-medium text-gray-400 mb-4">Character Type</label>
                 <div className="flex bg-white/5 rounded-xl p-2">
                   <button
                     onClick={() => setFormData(prev => ({ ...prev, type: 'pc' }))}
@@ -959,16 +962,19 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               </div>
 
               {/* Status */}
-              <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-400">Status</label>
+              <div className="mb-10">
+                <label className="block text-sm font-medium text-gray-400 mb-4">Status</label>
                 <StatusDropdown />
               </div>
 
-              <div className="border-t-2 border-white/10" />
+              {/* Divider */}
+              <div className="py-6 mb-4">
+                <div className="border-t-2 border-white/10" />
+              </div>
 
               {/* NAVIGATION - Quick jump to sections */}
-              <div className="space-y-6">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Navigate</h3>
+              <div className="mb-10">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-6">Navigate</h3>
                 <nav className="space-y-3">
                   {SECTIONS.map(section => (
                     <button
@@ -988,48 +994,56 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 </nav>
               </div>
 
-              <div className="border-t-2 border-white/10" />
+              {/* Divider */}
+              <div className="py-6 mb-4">
+                <div className="border-t-2 border-white/10" />
+              </div>
 
               {/* Quick Details */}
-              <div className="space-y-8">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Quick Details</h3>
-                <div className="space-y-3">
-                  <label className="block text-sm text-gray-500">Race</label>
-                  <input
-                    type="text"
-                    value={formData.race}
-                    onChange={(e) => setFormData(prev => ({ ...prev, race: e.target.value }))}
-                    placeholder="Human, Elf, Dwarf..."
-                    className="w-full py-5 px-5 text-base bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
-                  />
-                </div>
-                <div className="space-y-3">
-                  <label className="block text-sm text-gray-500">Class</label>
-                  <input
-                    type="text"
-                    value={formData.class}
-                    onChange={(e) => setFormData(prev => ({ ...prev, class: e.target.value }))}
-                    placeholder="Fighter, Wizard, Rogue..."
-                    className="w-full py-5 px-5 text-base bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
-                  />
-                </div>
-                <div className="space-y-3">
-                  <label className="block text-sm text-gray-500">Background</label>
-                  <input
-                    type="text"
-                    value={formData.background}
-                    onChange={(e) => setFormData(prev => ({ ...prev, background: e.target.value }))}
-                    placeholder="Noble, Criminal, Sage..."
-                    className="w-full py-5 px-5 text-base bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
-                  />
+              <div className="mb-10">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-6">Quick Details</h3>
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm text-gray-500 mb-3">Race</label>
+                    <input
+                      type="text"
+                      value={formData.race}
+                      onChange={(e) => setFormData(prev => ({ ...prev, race: e.target.value }))}
+                      placeholder="Human, Elf, Dwarf..."
+                      className="w-full py-5 px-5 text-base bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-500 mb-3">Class</label>
+                    <input
+                      type="text"
+                      value={formData.class}
+                      onChange={(e) => setFormData(prev => ({ ...prev, class: e.target.value }))}
+                      placeholder="Fighter, Wizard, Rogue..."
+                      className="w-full py-5 px-5 text-base bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-500 mb-3">Background</label>
+                    <input
+                      type="text"
+                      value={formData.background}
+                      onChange={(e) => setFormData(prev => ({ ...prev, background: e.target.value }))}
+                      placeholder="Noble, Criminal, Sage..."
+                      className="w-full py-5 px-5 text-base bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="border-t-2 border-white/10" />
+              {/* Divider */}
+              <div className="py-6 mb-4">
+                <div className="border-t-2 border-white/10" />
+              </div>
 
               {/* Links */}
-              <div className="space-y-6">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Links</h3>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-6">Links</h3>
 
                 {formData.theme_music_url && (
                   <a
@@ -1099,10 +1113,10 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
           {/* Main Content Area - Single Scrollable Page */}
           <main className="flex-1 overflow-y-auto border border-white/10 rounded-2xl bg-[#0d0d14]" ref={scrollContainerRef}>
             <div className="p-12 xl:p-16 2xl:p-20">
-              <div className="space-y-32">
+              <div>
 
               {/* ═══════════════ BACKSTORY SECTION ═══════════════ */}
-              <section id="backstory" className="scroll-mt-8">
+              <section id="backstory" className="scroll-mt-8 mb-32">
                 <div className="flex items-center gap-6 mb-12">
                   <div className="p-4 bg-purple-500/20 rounded-2xl">
                     <BookOpen className="w-8 h-8 text-purple-400" />
@@ -1111,10 +1125,10 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent" />
                 </div>
 
-                <div className="space-y-16">
+                <div>
                   {/* Summary */}
-                  <div className="space-y-4">
-                    <label className="block text-base font-medium text-gray-400">Summary</label>
+                  <div className="mb-16">
+                    <label className="block text-base font-medium text-gray-400 mb-4">Summary</label>
                     <div className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
                       <EditorToolbar editor={summaryEditor} minimal />
                       <div className="p-8 min-h-[150px]">
@@ -1124,16 +1138,18 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   </div>
 
                   {/* Quick Summary bullets */}
-                  <ArrayFieldEditor
-                    label="Quick Summary"
-                    items={formData.tldr}
-                    placeholder="Add a quick fact about this character..."
-                    onChange={(items) => setFormData(prev => ({ ...prev, tldr: items }))}
-                  />
+                  <div className="mb-16">
+                    <ArrayFieldEditor
+                      label="Quick Summary"
+                      items={formData.tldr}
+                      placeholder="Add a quick fact about this character..."
+                      onChange={(items) => setFormData(prev => ({ ...prev, tldr: items }))}
+                    />
+                  </div>
 
                   {/* Full Backstory */}
-                  <div className="space-y-4">
-                    <label className="block text-base font-medium text-gray-400">Full Backstory</label>
+                  <div className="mb-16">
+                    <label className="block text-base font-medium text-gray-400 mb-4">Full Backstory</label>
                     <div className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
                       <EditorToolbar editor={notesEditor} />
                       <div className="p-10 min-h-[500px]">
@@ -1143,26 +1159,37 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   </div>
 
                   {/* Plot Hooks */}
-                  <ArrayFieldEditor
-                    label="Plot Hooks"
-                    items={formData.plot_hooks}
-                    placeholder="Add a story hook for the DM..."
-                    onChange={(items) => setFormData(prev => ({ ...prev, plot_hooks: items }))}
-                  />
+                  <div className="mb-16">
+                    <ArrayFieldEditor
+                      label="Plot Hooks"
+                      items={formData.plot_hooks}
+                      placeholder="Add a story hook for the DM..."
+                      onChange={(items) => setFormData(prev => ({ ...prev, plot_hooks: items }))}
+                    />
+                  </div>
 
-                  {/* Quotes */}
-                  <ArrayFieldEditor
-                    label="Memorable Quotes"
-                    items={formData.quotes}
-                    placeholder="Add a memorable quote..."
-                    onChange={(items) => setFormData(prev => ({ ...prev, quotes: items }))}
-                    bulletChar='"'
-                  />
+                  {/* Quotes - last item, no mb */}
+                  <div>
+                    <ArrayFieldEditor
+                      label="Memorable Quotes"
+                      items={formData.quotes}
+                      placeholder="Add a memorable quote..."
+                      onChange={(items) => setFormData(prev => ({ ...prev, quotes: items }))}
+                      bulletChar='"'
+                    />
+                  </div>
                 </div>
               </section>
 
+              {/* Section Divider */}
+              <div className="flex items-center gap-8 mb-16">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+                <div className="w-2 h-2 rounded-full bg-purple-500/50" />
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+              </div>
+
               {/* ═══════════════ DETAILS SECTION ═══════════════ */}
-              <section id="details" className="scroll-mt-8">
+              <section id="details" className="scroll-mt-8 mb-32">
                 <div className="flex items-center gap-6 mb-12">
                   <div className="p-4 bg-purple-500/20 rounded-2xl">
                     <FileText className="w-8 h-8 text-purple-400" />
@@ -1171,10 +1198,10 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent" />
                 </div>
 
-                <div className="space-y-16">
+                <div>
                   {/* Appearance */}
-                  <div className="space-y-4">
-                    <label className="block text-base font-medium text-gray-400">Appearance</label>
+                  <div className="mb-16">
+                    <label className="block text-base font-medium text-gray-400 mb-4">Appearance</label>
                     <div className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
                       <textarea
                         value={formData.appearance}
@@ -1186,8 +1213,8 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   </div>
 
                   {/* Personality */}
-                  <div className="space-y-4">
-                    <label className="block text-base font-medium text-gray-400">Personality</label>
+                  <div className="mb-16">
+                    <label className="block text-base font-medium text-gray-400 mb-4">Personality</label>
                     <div className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
                       <textarea
                         value={formData.personality}
@@ -1199,8 +1226,8 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   </div>
 
                   {/* Goals */}
-                  <div className="space-y-4">
-                    <label className="block text-base font-medium text-gray-400">Goals & Motivations</label>
+                  <div className="mb-16">
+                    <label className="block text-base font-medium text-gray-400 mb-4">Goals & Motivations</label>
                     <div className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
                       <textarea
                         value={formData.goals}
@@ -1212,8 +1239,8 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   </div>
 
                   {/* Secrets */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                  <div className="mb-16">
+                    <div className="flex items-center justify-between mb-4">
                       <label className="flex items-center gap-3 text-base font-medium text-gray-400">
                         Secrets
                         <span className="text-sm bg-purple-500/20 text-purple-400 px-3 py-1.5 rounded-lg">🔒 Private</span>
@@ -1243,27 +1270,31 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   </div>
 
                   {/* Common Phrases */}
-                  <ArrayFieldEditor
-                    label="Common Phrases"
-                    items={formData.common_phrases}
-                    placeholder="Add a catchphrase or common saying..."
-                    onChange={(items) => setFormData(prev => ({ ...prev, common_phrases: items }))}
-                  />
+                  <div className="mb-16">
+                    <ArrayFieldEditor
+                      label="Common Phrases"
+                      items={formData.common_phrases}
+                      placeholder="Add a catchphrase or common saying..."
+                      onChange={(items) => setFormData(prev => ({ ...prev, common_phrases: items }))}
+                    />
+                  </div>
 
                   {/* Weaknesses */}
-                  <ArrayFieldEditor
-                    label="Weaknesses & Flaws"
-                    items={formData.weaknesses}
-                    placeholder="Add a weakness or character flaw..."
-                    onChange={(items) => setFormData(prev => ({ ...prev, weaknesses: items }))}
-                  />
+                  <div className="mb-16">
+                    <ArrayFieldEditor
+                      label="Weaknesses & Flaws"
+                      items={formData.weaknesses}
+                      placeholder="Add a weakness or character flaw..."
+                      onChange={(items) => setFormData(prev => ({ ...prev, weaknesses: items }))}
+                    />
+                  </div>
 
-                  {/* Campaign Info */}
-                  <div className="space-y-4">
-                    <label className="block text-base font-medium text-gray-400">Campaign Information</label>
+                  {/* Campaign Info - last item, no mb */}
+                  <div>
+                    <label className="block text-base font-medium text-gray-400 mb-4">Campaign Information</label>
                     <div className="grid grid-cols-2 gap-8">
-                      <div className="space-y-3">
-                        <label className="block text-sm text-gray-500">Game System</label>
+                      <div>
+                        <label className="block text-sm text-gray-500 mb-3">Game System</label>
                         <input
                           type="text"
                           value={formData.game_system}
@@ -1272,8 +1303,8 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                           className="w-full py-5 px-5 text-base bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
                         />
                       </div>
-                      <div className="space-y-3">
-                        <label className="block text-sm text-gray-500">Campaign Name</label>
+                      <div>
+                        <label className="block text-sm text-gray-500 mb-3">Campaign Name</label>
                         <input
                           type="text"
                           value={formData.external_campaign}
@@ -1282,8 +1313,8 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                           className="w-full py-5 px-5 text-base bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
                         />
                       </div>
-                      <div className="space-y-3">
-                        <label className="block text-sm text-gray-500">DM Name</label>
+                      <div>
+                        <label className="block text-sm text-gray-500 mb-3">DM Name</label>
                         <input
                           type="text"
                           value={formData.dm_name}
@@ -1292,8 +1323,8 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                           className="w-full py-5 px-5 text-base bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
                         />
                       </div>
-                      <div className="space-y-3">
-                        <label className="block text-sm text-gray-500">Campaign Started</label>
+                      <div>
+                        <label className="block text-sm text-gray-500 mb-3">Campaign Started</label>
                         <input
                           type="text"
                           value={formData.campaign_started}
@@ -1307,8 +1338,15 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 </div>
               </section>
 
+              {/* Section Divider */}
+              <div className="flex items-center gap-8 mb-16">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+                <div className="w-2 h-2 rounded-full bg-purple-500/50" />
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+              </div>
+
               {/* ═══════════════ PEOPLE SECTION ═══════════════ */}
-              <section id="people" className="scroll-mt-8">
+              <section id="people" className="scroll-mt-8 mb-32">
                 <div className="flex items-center gap-6 mb-12">
                   <div className="p-4 bg-purple-500/20 rounded-2xl">
                     <Users className="w-8 h-8 text-purple-400" />
@@ -1317,10 +1355,10 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent" />
                 </div>
 
-                <div className="space-y-12">
+                <div>
                   {/* Story Characters */}
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between">
+                  <div className="mb-16">
+                    <div className="flex items-center justify-between mb-6">
                       <label className="text-base font-medium text-gray-400">Story Characters</label>
                       <button
                         onClick={() => setAddStoryCharacterModalOpen(true)}
@@ -1367,9 +1405,9 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     )}
                   </div>
 
-                  {/* What I've Learned */}
-                  <div className="space-y-6">
-                    <label className="block text-base font-medium text-gray-400">What I've Learned About Others</label>
+                  {/* What I've Learned - last item, no mb */}
+                  <div>
+                    <label className="block text-base font-medium text-gray-400 mb-6">What I've Learned About Others</label>
                     {learnedFacts.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-24 px-12 bg-white/[0.02] border-2 border-dashed border-white/10 rounded-2xl">
                         <BookOpen className="w-16 h-16 mx-auto mb-6 text-gray-600" />
@@ -1396,8 +1434,15 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 </div>
               </section>
 
+              {/* Section Divider */}
+              <div className="flex items-center gap-8 mb-16">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+                <div className="w-2 h-2 rounded-full bg-purple-500/50" />
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+              </div>
+
               {/* ═══════════════ JOURNAL SECTION ═══════════════ */}
-              <section id="journal" className="scroll-mt-8">
+              <section id="journal" className="scroll-mt-8 mb-32">
                 <div className="flex items-center gap-6 mb-12">
                   <div className="p-4 bg-purple-500/20 rounded-2xl">
                     <Scroll className="w-8 h-8 text-purple-400" />
@@ -1406,14 +1451,16 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent" />
                 </div>
 
-                <div className="space-y-8">
-                  <button
-                    onClick={() => setAddJournalModalOpen(true)}
-                    className="flex items-center gap-3 py-4 px-6 text-base text-purple-400 bg-purple-500/10 rounded-xl hover:bg-purple-500/20 transition-colors"
-                  >
-                    <Plus className="w-6 h-6" />
-                    Add Journal Entry
-                  </button>
+                <div>
+                  <div className="mb-8">
+                    <button
+                      onClick={() => setAddJournalModalOpen(true)}
+                      className="flex items-center gap-3 py-4 px-6 text-base text-purple-400 bg-purple-500/10 rounded-xl hover:bg-purple-500/20 transition-colors"
+                    >
+                      <Plus className="w-6 h-6" />
+                      Add Journal Entry
+                    </button>
+                  </div>
 
                   {journalEntries.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 px-12 bg-white/[0.02] border-2 border-dashed border-white/10 rounded-2xl">
@@ -1451,8 +1498,15 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 </div>
               </section>
 
+              {/* Section Divider */}
+              <div className="flex items-center gap-8 mb-16">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+                <div className="w-2 h-2 rounded-full bg-purple-500/50" />
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+              </div>
+
               {/* ═══════════════ STATS SECTION ═══════════════ */}
-              <section id="stats" className="scroll-mt-8">
+              <section id="stats" className="scroll-mt-8 mb-32">
                 <div className="flex items-center gap-6 mb-12">
                   <div className="p-4 bg-purple-500/20 rounded-2xl">
                     <BarChart3 className="w-8 h-8 text-purple-400" />
@@ -1461,11 +1515,11 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent" />
                 </div>
 
-                <div className="space-y-8">
-                  <p className="text-base text-gray-400">Configure your stat block for quick reference during play.</p>
+                <div>
+                  <p className="text-base text-gray-400 mb-8">Configure your stat block for quick reference during play.</p>
 
-                  <div className="space-y-3">
-                    <label className="block text-base text-gray-400">Gold</label>
+                  <div className="mb-8">
+                    <label className="block text-base text-gray-400 mb-3">Gold</label>
                     <input
                       type="number"
                       value={formData.gold}
@@ -1481,6 +1535,13 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   </div>
                 </div>
               </section>
+
+              {/* Section Divider */}
+              <div className="flex items-center gap-8 mb-16">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+                <div className="w-2 h-2 rounded-full bg-purple-500/50" />
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+              </div>
 
               {/* ═══════════════ GALLERY SECTION ═══════════════ */}
               <section id="gallery" className="scroll-mt-8">
@@ -1507,6 +1568,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
             </div>
           </main>
         </div>
+      </div>
       </div>
 
       {/* Lightbox */}
