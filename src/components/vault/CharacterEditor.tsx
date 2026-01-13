@@ -41,7 +41,6 @@ import {
   ExternalLink,
   Music,
   FileText,
-  MoreHorizontal,
   Scroll,
   BookOpen,
   UserPlus,
@@ -49,6 +48,8 @@ import {
   Eye,
   EyeOff,
   ArrowLeft,
+  BarChart3,
+  Image as GalleryIcon,
 } from 'lucide-react'
 import { Modal } from '@/components/ui'
 import { VaultImageCropModal } from './VaultImageCropModal'
@@ -62,8 +63,8 @@ import type {
 } from '@/types/database'
 import { v4 as uuidv4 } from 'uuid'
 
-// Tab types
-type TabType = 'backstory' | 'details' | 'people' | 'journal' | 'more'
+// Section types for navigation
+type SectionType = 'backstory' | 'details' | 'people' | 'journal' | 'stats' | 'gallery'
 
 interface CharacterEditorProps {
   character?: VaultCharacter | null
@@ -79,15 +80,26 @@ const DEFAULT_STATUSES = [
   { name: 'Deceased', color: '#EF4444' },
 ]
 
+// Navigation sections configuration
+const SECTIONS: { id: SectionType; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: 'backstory', label: 'Backstory', icon: BookOpen },
+  { id: 'details', label: 'Details', icon: FileText },
+  { id: 'people', label: 'People', icon: Users },
+  { id: 'journal', label: 'Journal', icon: Scroll },
+  { id: 'stats', label: 'Stats', icon: BarChart3 },
+  { id: 'gallery', label: 'Gallery', icon: GalleryIcon },
+]
+
 export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   const router = useRouter()
   const supabase = createClient()
   const imageInputRef = useRef<HTMLInputElement>(null)
   const portraitInputRef = useRef<HTMLInputElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const isCreateMode = mode === 'create'
 
-  // Active tab
-  const [activeTab, setActiveTab] = useState<TabType>('backstory')
+  // Active section for navigation highlighting
+  const [activeSection, setActiveSection] = useState<SectionType>('backstory')
 
   // Basic form data
   const [formData, setFormData] = useState({
@@ -148,6 +160,40 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   const [pendingImageSrc, setPendingImageSrc] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
 
+  // Scroll to section when clicking nav
+  const scrollToSection = useCallback((sectionId: SectionType) => {
+    const element = document.getElementById(sectionId)
+    if (element && scrollContainerRef.current) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [])
+
+  // Detect which section is in view
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const handleScroll = () => {
+      const sectionIds: SectionType[] = ['backstory', 'details', 'people', 'journal', 'stats', 'gallery']
+      const containerRect = container.getBoundingClientRect()
+
+      for (const sectionId of sectionIds) {
+        const element = document.getElementById(sectionId)
+        if (element) {
+          const rect = element.getBoundingClientRect()
+          // If section top is near the top of the container
+          if (rect.top <= containerRect.top + 150 && rect.bottom > containerRect.top) {
+            setActiveSection(sectionId)
+            break
+          }
+        }
+      }
+    }
+
+    container.addEventListener('scroll', handleScroll)
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [])
+
   // Load related data
   useEffect(() => {
     if (!characterId) return
@@ -195,7 +241,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     content: formData.summary || '',
     editorProps: {
       attributes: {
-        class: 'prose prose-invert prose-sm max-w-none focus:outline-none min-h-[150px] p-5 prose-p:text-gray-300 prose-p:my-2',
+        class: 'prose prose-invert prose-sm max-w-none focus:outline-none min-h-[60px] prose-p:text-gray-300 prose-p:my-2',
       },
     },
     onUpdate: ({ editor }) => {
@@ -217,7 +263,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     content: formData.notes,
     editorProps: {
       attributes: {
-        class: 'prose prose-invert max-w-none focus:outline-none min-h-[300px] p-5 prose-headings:text-white prose-p:text-gray-300 prose-p:my-2 prose-ul:text-gray-300 prose-li:text-gray-300 prose-blockquote:border-l-purple-500 prose-blockquote:text-gray-400',
+        class: 'prose prose-invert max-w-none focus:outline-none min-h-[350px] prose-headings:text-white prose-p:text-gray-300 prose-p:my-2 prose-ul:text-gray-300 prose-li:text-gray-300 prose-blockquote:border-l-purple-500 prose-blockquote:text-gray-400',
       },
     },
     onUpdate: ({ editor }) => {
@@ -457,7 +503,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   // STYLED COMPONENTS
   // =====================================================
 
-  // Toolbar button component - clear, easy to use
+  // Toolbar button component
   const ToolbarButton = ({ onClick, active, disabled, children, title }: {
     onClick: () => void
     active?: boolean
@@ -471,7 +517,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       disabled={disabled}
       title={title}
       className={cn(
-        'p-2.5 rounded-lg transition-colors',
+        'p-2 rounded-lg transition-colors',
         active
           ? 'bg-purple-500/20 text-purple-400'
           : 'text-gray-400 hover:text-white hover:bg-white/10',
@@ -482,94 +528,116 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     </button>
   )
 
-  // Editor toolbar - clear icons, easy to use
-  const EditorToolbar = ({ editor }: { editor: any }) => (
-    <div className="flex items-center gap-1 p-3 border-b border-white/10 bg-white/[0.02]">
+  // Editor toolbar - minimal version
+  const EditorToolbar = ({ editor, minimal = false }: { editor: any; minimal?: boolean }) => (
+    <div className="flex items-center gap-1 p-2.5 border-b border-white/10 bg-white/[0.02]">
       {/* Undo/Redo */}
       <div className="flex items-center gap-0.5">
         <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo()} title="Undo">
-          <Undo className="h-5 w-5" />
+          <Undo className="h-4 w-4" />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo()} title="Redo">
-          <Redo className="h-5 w-5" />
+          <Redo className="h-4 w-4" />
         </ToolbarButton>
       </div>
-      <div className="w-px h-6 bg-white/10 mx-2" />
-      {/* Headings */}
-      <div className="flex items-center gap-0.5">
-        <ToolbarButton onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} active={editor?.isActive('heading', { level: 1 })} title="Heading 1">
-          <Heading1 className="h-5 w-5" />
-        </ToolbarButton>
-        <ToolbarButton onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} active={editor?.isActive('heading', { level: 2 })} title="Heading 2">
-          <Heading2 className="h-5 w-5" />
-        </ToolbarButton>
-      </div>
-      <div className="w-px h-6 bg-white/10 mx-2" />
+      {!minimal && (
+        <>
+          <div className="w-px h-5 bg-white/10 mx-1.5" />
+          {/* Headings */}
+          <div className="flex items-center gap-0.5">
+            <ToolbarButton onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} active={editor?.isActive('heading', { level: 1 })} title="Heading 1">
+              <Heading1 className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} active={editor?.isActive('heading', { level: 2 })} title="Heading 2">
+              <Heading2 className="h-4 w-4" />
+            </ToolbarButton>
+          </div>
+        </>
+      )}
+      <div className="w-px h-5 bg-white/10 mx-1.5" />
       {/* Text formatting */}
       <div className="flex items-center gap-0.5">
         <ToolbarButton onClick={() => editor?.chain().focus().toggleBold().run()} active={editor?.isActive('bold')} title="Bold">
-          <Bold className="h-5 w-5" />
+          <Bold className="h-4 w-4" />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor?.chain().focus().toggleItalic().run()} active={editor?.isActive('italic')} title="Italic">
-          <Italic className="h-5 w-5" />
+          <Italic className="h-4 w-4" />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor?.chain().focus().toggleUnderline().run()} active={editor?.isActive('underline')} title="Underline">
-          <UnderlineIcon className="h-5 w-5" />
+          <UnderlineIcon className="h-4 w-4" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor?.chain().focus().toggleStrike().run()} active={editor?.isActive('strike')} title="Strikethrough">
-          <Strikethrough className="h-5 w-5" />
-        </ToolbarButton>
-        <ToolbarButton onClick={() => editor?.chain().focus().toggleHighlight().run()} active={editor?.isActive('highlight')} title="Highlight">
-          <Highlighter className="h-5 w-5" />
-        </ToolbarButton>
+        {!minimal && (
+          <>
+            <ToolbarButton onClick={() => editor?.chain().focus().toggleStrike().run()} active={editor?.isActive('strike')} title="Strikethrough">
+              <Strikethrough className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => editor?.chain().focus().toggleHighlight().run()} active={editor?.isActive('highlight')} title="Highlight">
+              <Highlighter className="h-4 w-4" />
+            </ToolbarButton>
+          </>
+        )}
       </div>
-      <div className="w-px h-6 bg-white/10 mx-2" />
-      {/* Lists */}
-      <div className="flex items-center gap-0.5">
-        <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} active={editor?.isActive('bulletList')} title="Bullet List">
-          <List className="h-5 w-5" />
-        </ToolbarButton>
-        <ToolbarButton onClick={() => editor?.chain().focus().toggleOrderedList().run()} active={editor?.isActive('orderedList')} title="Numbered List">
-          <ListOrdered className="h-5 w-5" />
-        </ToolbarButton>
-        <ToolbarButton onClick={() => editor?.chain().focus().toggleBlockquote().run()} active={editor?.isActive('blockquote')} title="Quote">
-          <Quote className="h-5 w-5" />
-        </ToolbarButton>
-      </div>
-      <div className="w-px h-6 bg-white/10 mx-2" />
-      {/* Insert */}
-      <div className="flex items-center gap-0.5">
-        <ToolbarButton onClick={() => setLink(editor)} active={editor?.isActive('link')} title="Link">
-          <LinkIcon className="h-5 w-5" />
-        </ToolbarButton>
-        <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleEditorImageUpload} />
-        <ToolbarButton onClick={() => imageInputRef.current?.click()} title="Insert Image">
-          <ImageIcon className="h-5 w-5" />
-        </ToolbarButton>
-      </div>
+      {!minimal && (
+        <>
+          <div className="w-px h-5 bg-white/10 mx-1.5" />
+          {/* Lists */}
+          <div className="flex items-center gap-0.5">
+            <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} active={editor?.isActive('bulletList')} title="Bullet List">
+              <List className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => editor?.chain().focus().toggleOrderedList().run()} active={editor?.isActive('orderedList')} title="Numbered List">
+              <ListOrdered className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={() => editor?.chain().focus().toggleBlockquote().run()} active={editor?.isActive('blockquote')} title="Quote">
+              <Quote className="h-4 w-4" />
+            </ToolbarButton>
+          </div>
+          <div className="w-px h-5 bg-white/10 mx-1.5" />
+          {/* Insert */}
+          <div className="flex items-center gap-0.5">
+            <ToolbarButton onClick={() => setLink(editor)} active={editor?.isActive('link')} title="Link">
+              <LinkIcon className="h-4 w-4" />
+            </ToolbarButton>
+            <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleEditorImageUpload} />
+            <ToolbarButton onClick={() => imageInputRef.current?.click()} title="Insert Image">
+              <ImageIcon className="h-4 w-4" />
+            </ToolbarButton>
+          </div>
+        </>
+      )}
     </div>
   )
 
-  // Section header component - subtle, Notion-style
-  const SectionHeader = ({ children }: { children: React.ReactNode }) => (
-    <div className="flex items-center gap-3 mb-3">
-      <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-        {children}
-      </span>
-      <div className="flex-1 h-px bg-white/5" />
+  // Section header component - decorative with icon and gradient
+  const SectionHeader = ({ title, icon: Icon }: { title: string; icon: React.ComponentType<{ className?: string }> }) => (
+    <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-purple-500/20 rounded-lg">
+          <Icon className="w-5 h-5 text-purple-400" />
+        </div>
+        <h2 className="text-xl font-semibold text-white tracking-wide">
+          {title.toUpperCase()}
+        </h2>
+      </div>
+      <div className="flex-1 h-px bg-gradient-to-r from-purple-500/30 to-transparent" />
     </div>
   )
 
-  // Form label component
+  // Simple label for fields within sections
+  const FieldLabel = ({ children }: { children: React.ReactNode }) => (
+    <label className="block text-sm text-gray-400 mb-3">{children}</label>
+  )
+
+  // Form label component for sidebar
   const FormLabel = ({ children }: { children: React.ReactNode }) => (
     <label className="text-sm font-medium text-gray-400 mb-2 block">
       {children}
     </label>
   )
 
-  // Form input styles - comfortable, easy to use
-  const inputStyles = "w-full px-4 py-4 bg-white/5 border border-white/10 rounded-xl text-base text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/25 transition-all"
-  const textareaStyles = cn(inputStyles, "min-h-[160px] resize-none")
+  // Form input styles
+  const inputStyles = "w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-base text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/25 transition-all"
+  const textareaStyles = cn(inputStyles, "min-h-[150px] resize-none")
 
   // Status dropdown
   const StatusDropdown = () => {
@@ -619,17 +687,19 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     )
   }
 
-  // Array field editor
+  // Array field editor for lists
   const ArrayFieldEditor = ({
     label,
     items,
     placeholder,
-    onChange
+    onChange,
+    bulletChar = '•'
   }: {
     label: string
     items: string[]
     placeholder: string
     onChange: (items: string[]) => void
+    bulletChar?: string
   }) => {
     const [newItem, setNewItem] = useState('')
 
@@ -645,18 +715,24 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     }
 
     return (
-      <div className="space-y-4">
-        <SectionHeader>{label}</SectionHeader>
-        <div className="space-y-3">
+      <div>
+        <FieldLabel>{label}</FieldLabel>
+        <div className="space-y-2 mb-3">
           {items.map((item, index) => (
-            <div key={index} className="flex items-start gap-3 group">
-              <span className="text-purple-400 mt-3.5">•</span>
-              <div className="flex-1 px-4 py-3 bg-white/[0.03] border border-white/10 rounded-lg text-base text-gray-300">
-                {item}
-              </div>
+            <div key={index} className="flex items-center gap-3 group">
+              <span className="text-purple-400">{bulletChar}</span>
+              <input
+                value={item}
+                onChange={(e) => {
+                  const newItems = [...items]
+                  newItems[index] = e.target.value
+                  onChange(newItems)
+                }}
+                className="flex-1 py-3 px-4 bg-white/[0.03] border border-white/10 rounded-lg text-gray-300 focus:outline-none focus:border-purple-500/30"
+              />
               <button
                 onClick={() => removeItem(index)}
-                className="p-2.5 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all mt-1"
+                className="p-2 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -670,12 +746,12 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
             onChange={(e) => setNewItem(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addItem())}
             placeholder={placeholder}
-            className={inputStyles}
+            className="flex-1 py-3 px-4 bg-white/[0.03] border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
           />
           <button
             onClick={addItem}
             disabled={!newItem.trim()}
-            className="px-5 py-3 min-h-[48px] bg-purple-500/20 text-purple-400 rounded-lg hover:bg-purple-500/30 transition-colors disabled:opacity-50 disabled:hover:bg-purple-500/20 flex items-center justify-center"
+            className="px-4 py-3 bg-purple-500/20 text-purple-400 rounded-lg hover:bg-purple-500/30 transition-colors disabled:opacity-50"
           >
             <Plus className="w-5 h-5" />
           </button>
@@ -773,365 +849,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     )
   }
 
-  // =====================================================
-  // TAB CONTENT
-  // =====================================================
-
-  const BackstoryTab = () => (
-    <div className="space-y-10">
-      {/* Summary - compact, just a brief overview */}
-      <section className="border-2 border-lime-500">
-        <SectionHeader>Summary</SectionHeader>
-        <div className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden focus-within:border-purple-500/20 transition-colors">
-          <EditorToolbar editor={summaryEditor} />
-          <div className="p-6 min-h-[120px]">
-            <EditorContent editor={summaryEditor} />
-          </div>
-        </div>
-      </section>
-
-      {/* Quick Summary */}
-      <section className="border-2 border-teal-500">
-        <ArrayFieldEditor
-          label="Quick Summary"
-          items={formData.tldr}
-          placeholder="Add a quick fact about this character..."
-          onChange={(items) => setFormData(prev => ({ ...prev, tldr: items }))}
-        />
-      </section>
-
-      {/* Full Backstory - THE MAIN CONTENT, should be tall */}
-      <section className="border-2 border-rose-500">
-        <SectionHeader>Full Backstory</SectionHeader>
-        <div className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden focus-within:border-purple-500/20 transition-colors">
-          <EditorToolbar editor={notesEditor} />
-          <div className="p-6 xl:p-8 min-h-[500px] xl:min-h-[600px] 2xl:min-h-[700px]">
-            <EditorContent editor={notesEditor} />
-          </div>
-        </div>
-      </section>
-
-      {/* Plot Hooks */}
-      <section className="border-2 border-amber-500">
-        <ArrayFieldEditor
-          label="Plot Hooks"
-          items={formData.plot_hooks}
-          placeholder="Add a story hook for the DM..."
-          onChange={(items) => setFormData(prev => ({ ...prev, plot_hooks: items }))}
-        />
-      </section>
-
-      {/* Quotes */}
-      <section className="border-2 border-indigo-500">
-        <ArrayFieldEditor
-          label="Memorable Quotes"
-          items={formData.quotes}
-          placeholder="Add a memorable quote..."
-          onChange={(items) => setFormData(prev => ({ ...prev, quotes: items }))}
-        />
-      </section>
-    </div>
-  )
-
-  const DetailsTab = () => (
-    <div className="space-y-8">
-      {/* Appearance */}
-      <div>
-        <SectionHeader>Appearance</SectionHeader>
-        <textarea
-          value={formData.appearance}
-          onChange={(e) => setFormData(prev => ({ ...prev, appearance: e.target.value }))}
-          placeholder="Physical description, distinguishing features, typical attire..."
-          className={textareaStyles}
-        />
-      </div>
-
-      {/* Personality */}
-      <div>
-        <SectionHeader>Personality</SectionHeader>
-        <textarea
-          value={formData.personality}
-          onChange={(e) => setFormData(prev => ({ ...prev, personality: e.target.value }))}
-          placeholder="Temperament, quirks, mannerisms, how they interact with others..."
-          className={textareaStyles}
-        />
-      </div>
-
-      {/* Goals */}
-      <div>
-        <SectionHeader>Goals & Motivations</SectionHeader>
-        <textarea
-          value={formData.goals}
-          onChange={(e) => setFormData(prev => ({ ...prev, goals: e.target.value }))}
-          placeholder="What drives this character? What do they want to achieve?"
-          className={textareaStyles}
-        />
-      </div>
-
-      {/* Secrets */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold tracking-wide text-white uppercase">
-            Secrets (DM Eyes Only)
-          </h2>
-          <button
-            onClick={() => setShowSecrets(!showSecrets)}
-            className="flex items-center gap-2 text-sm text-gray-400 hover:text-purple-400 transition-colors"
-          >
-            {showSecrets ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            {showSecrets ? 'Hide' : 'Reveal'}
-          </button>
-        </div>
-        <div className="h-px bg-gradient-to-r from-red-500/50 to-transparent mb-4" />
-        {showSecrets ? (
-          <textarea
-            value={formData.secrets}
-            onChange={(e) => setFormData(prev => ({ ...prev, secrets: e.target.value }))}
-            placeholder="Hidden information, true motivations, dark secrets..."
-            className={cn(textareaStyles, "border-red-500/30 focus:border-red-500/50 focus:ring-red-500/25")}
-          />
-        ) : (
-          <div className="px-4 py-6 bg-white/[0.02] border border-white/10 rounded-xl text-gray-500 text-center italic">
-            Click "Reveal" to show secret information
-          </div>
-        )}
-      </div>
-
-      {/* Common Phrases */}
-      <ArrayFieldEditor
-        label="Common Phrases"
-        items={formData.common_phrases}
-        placeholder="Add a catchphrase or common saying..."
-        onChange={(items) => setFormData(prev => ({ ...prev, common_phrases: items }))}
-      />
-
-      {/* Weaknesses */}
-      <ArrayFieldEditor
-        label="Weaknesses & Flaws"
-        items={formData.weaknesses}
-        placeholder="Add a weakness or character flaw..."
-        onChange={(items) => setFormData(prev => ({ ...prev, weaknesses: items }))}
-      />
-
-      {/* Campaign Info */}
-      <div>
-        <SectionHeader>Campaign Information</SectionHeader>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <FormLabel>Game System</FormLabel>
-            <input
-              type="text"
-              value={formData.game_system}
-              onChange={(e) => setFormData(prev => ({ ...prev, game_system: e.target.value }))}
-              placeholder="D&D 5e, Pathfinder 2e..."
-              className={inputStyles}
-            />
-          </div>
-          <div>
-            <FormLabel>Campaign Name</FormLabel>
-            <input
-              type="text"
-              value={formData.external_campaign}
-              onChange={(e) => setFormData(prev => ({ ...prev, external_campaign: e.target.value }))}
-              placeholder="The Lost Mines..."
-              className={inputStyles}
-            />
-          </div>
-          <div>
-            <FormLabel>DM Name</FormLabel>
-            <input
-              type="text"
-              value={formData.dm_name}
-              onChange={(e) => setFormData(prev => ({ ...prev, dm_name: e.target.value }))}
-              placeholder="Who runs this game?"
-              className={inputStyles}
-            />
-          </div>
-          <div>
-            <FormLabel>Campaign Started</FormLabel>
-            <input
-              type="text"
-              value={formData.campaign_started}
-              onChange={(e) => setFormData(prev => ({ ...prev, campaign_started: e.target.value }))}
-              placeholder="January 2024..."
-              className={inputStyles}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-
-  const PeopleTab = () => (
-    <div className="space-y-8">
-      {/* Story Characters */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <SectionHeader>Story Characters</SectionHeader>
-          <button
-            onClick={() => setAddStoryCharacterModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-500/20 text-purple-400 rounded-lg hover:bg-purple-500/30 transition-colors text-sm font-medium"
-          >
-            <UserPlus className="w-4 h-4" />
-            Add Character
-          </button>
-        </div>
-
-        {storyCharacters.length === 0 ? (
-          <div className="text-center py-12 bg-white/[0.02] rounded-xl border border-white/5">
-            <Users className="w-12 h-12 mx-auto mb-3 text-gray-600" />
-            <p className="text-gray-400 mb-1">No story characters yet</p>
-            <p className="text-sm text-gray-500">Add NPCs connected to this character's story</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {storyCharacters.map((char) => (
-              <div
-                key={char.id}
-                className="flex items-start gap-4 p-4 bg-white/[0.03] rounded-xl border border-white/5 hover:border-purple-500/20 transition-colors"
-              >
-                {char.image_url ? (
-                  <Image src={char.image_url} alt={char.name} width={56} height={56} className="rounded-lg object-cover" />
-                ) : (
-                  <div className="w-14 h-14 rounded-lg bg-white/5 flex items-center justify-center">
-                    <User className="w-6 h-6 text-gray-500" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-white">{char.name}</span>
-                    <span className="text-xs px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full capitalize">
-                      {char.relationship.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                  {char.tagline && <p className="text-sm text-gray-400">{char.tagline}</p>}
-                  {char.notes && <p className="text-sm text-gray-500 mt-1 line-clamp-2">{char.notes}</p>}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Learned Facts */}
-      <div>
-        <SectionHeader>What I've Learned About Others</SectionHeader>
-        {learnedFacts.length === 0 ? (
-          <div className="text-center py-12 bg-white/[0.02] rounded-xl border border-white/5">
-            <BookOpen className="w-12 h-12 mx-auto mb-3 text-gray-600" />
-            <p className="text-gray-400">No learned facts recorded</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {learnedFacts.map((fact) => (
-              <div key={fact.id} className="p-4 bg-white/[0.03] rounded-xl border border-white/5">
-                <h4 className="font-medium text-white mb-3">{fact.about_name}</h4>
-                <ul className="space-y-2">
-                  {fact.facts?.map((f, i) => (
-                    <li key={i} className="text-sm text-gray-400 flex items-start gap-2">
-                      <span className="text-purple-400 mt-0.5">•</span>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-
-  const JournalTab = () => (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <SectionHeader>Play Journal</SectionHeader>
-        <button
-          onClick={() => setAddJournalModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-500/20 text-purple-400 rounded-lg hover:bg-purple-500/30 transition-colors text-sm font-medium"
-        >
-          <Plus className="w-4 h-4" />
-          Add Entry
-        </button>
-      </div>
-
-      {journalEntries.length === 0 ? (
-        <div className="text-center py-16 bg-white/[0.02] rounded-xl border border-white/5">
-          <Scroll className="w-12 h-12 mx-auto mb-3 text-gray-600" />
-          <p className="text-gray-400 mb-1">No journal entries yet</p>
-          <p className="text-sm text-gray-500">Record your adventures and experiences</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {journalEntries.map((entry) => (
-            <div
-              key={entry.id}
-              className="p-5 bg-white/[0.03] rounded-xl border border-white/5 hover:border-purple-500/20 transition-colors"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  {entry.session_number && (
-                    <span className="text-xs px-2.5 py-1 bg-yellow-500/20 text-yellow-400 rounded-full font-medium">
-                      Session {entry.session_number}
-                    </span>
-                  )}
-                  {entry.title && <span className="font-medium text-white">{entry.title}</span>}
-                </div>
-                {entry.session_date && (
-                  <span className="text-sm text-gray-500">
-                    {new Date(entry.session_date).toLocaleDateString()}
-                  </span>
-                )}
-              </div>
-              <p className="text-gray-400 whitespace-pre-wrap leading-relaxed">{entry.notes}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-
-  const MoreTab = () => (
-    <div className="space-y-8">
-      {/* Quick Stats */}
-      <div>
-        <SectionHeader>Quick Stats</SectionHeader>
-        <p className="text-sm text-gray-500 mb-4">Configure your stat block for quick reference during play.</p>
-        <div className="p-8 bg-white/[0.02] rounded-xl border border-white/5 text-center">
-          <Target className="w-10 h-10 mx-auto mb-3 text-gray-600" />
-          <p className="text-gray-400">Quick Stats coming soon</p>
-        </div>
-      </div>
-
-      {/* Inventory */}
-      <div>
-        <SectionHeader>Inventory</SectionHeader>
-        <div className="flex items-center gap-4 mb-4">
-          <FormLabel>Gold</FormLabel>
-          <input
-            type="number"
-            value={formData.gold}
-            onChange={(e) => setFormData(prev => ({ ...prev, gold: parseInt(e.target.value) || 0 }))}
-            className="w-32 px-4 py-2 bg-white/5 border border-yellow-500/30 rounded-lg text-yellow-400 font-medium focus:outline-none focus:border-yellow-500/50"
-          />
-        </div>
-        <div className="p-8 bg-white/[0.02] rounded-xl border border-white/5 text-center">
-          <p className="text-gray-400">Inventory tracking coming soon</p>
-        </div>
-      </div>
-    </div>
-  )
-
   if (!notesEditor || !summaryEditor) return null
-
-  // Tab configuration - larger icons for visibility
-  const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
-    { id: 'backstory', label: 'Backstory', icon: <Scroll className="w-5 h-5" /> },
-    { id: 'details', label: 'Details', icon: <FileText className="w-5 h-5" /> },
-    { id: 'people', label: 'People', icon: <Users className="w-5 h-5" /> },
-    { id: 'journal', label: 'Journal', icon: <BookOpen className="w-5 h-5" /> },
-    { id: 'more', label: 'More', icon: <MoreHorizontal className="w-5 h-5" /> },
-  ]
 
   // =====================================================
   // MAIN RENDER
@@ -1139,9 +857,9 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-[#0a0a0f] flex flex-col border-4 border-red-500">
+      <div className="fixed inset-0 z-50 bg-[#0a0a0f] flex flex-col">
         {/* Header */}
-        <header className="flex-shrink-0 flex items-center justify-between px-4 h-14 border-b border-white/10 bg-[#0d0d14] border-2 border-blue-500">
+        <header className="flex-shrink-0 flex items-center justify-between px-4 h-14 border-b border-white/10 bg-[#0d0d14]">
           <div className="flex items-center gap-4">
             <button
               onClick={handleClose}
@@ -1191,15 +909,13 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
           </div>
         </header>
 
-        {/* Main Content - Fills ALL remaining space */}
-        <div className="flex-1 flex overflow-hidden min-h-0 border-2 border-green-500">
-          {/* Left Sidebar - responsive width */}
-          <aside className="w-80 xl:w-96 flex-shrink-0 border-r border-white/10 p-6 overflow-y-auto bg-[#0d0d14] border-2 border-yellow-500">
-            <div className="space-y-6">
+        {/* Main Content */}
+        <div className="flex-1 flex overflow-hidden min-h-0">
+          {/* Left Sidebar */}
+          <aside className="w-80 xl:w-96 flex-shrink-0 flex flex-col border-r border-white/10 overflow-y-auto bg-[#0d0d14]">
+            <div className="p-6 space-y-6">
               {/* Portrait */}
-              <div className="mb-8 border-2 border-pink-500">
-                <PortraitDisplay />
-              </div>
+              <PortraitDisplay />
 
               {/* Name */}
               <div>
@@ -1220,7 +936,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   <button
                     onClick={() => setFormData(prev => ({ ...prev, type: 'pc' }))}
                     className={cn(
-                      'flex-1 py-4 px-4 rounded-lg text-sm font-medium transition-all',
+                      'flex-1 py-3.5 px-4 rounded-lg text-sm font-medium transition-all',
                       formData.type === 'pc'
                         ? 'bg-purple-600 text-white shadow-lg'
                         : 'text-gray-400 hover:text-white'
@@ -1231,7 +947,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   <button
                     onClick={() => setFormData(prev => ({ ...prev, type: 'npc' }))}
                     className={cn(
-                      'flex-1 py-4 px-4 rounded-lg text-sm font-medium transition-all',
+                      'flex-1 py-3.5 px-4 rounded-lg text-sm font-medium transition-all',
                       formData.type === 'npc'
                         ? 'bg-gray-600 text-white shadow-lg'
                         : 'text-gray-400 hover:text-white'
@@ -1248,58 +964,72 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 <StatusDropdown />
               </div>
 
-              {/* Divider */}
-              <div className="pt-2 border-t border-white/10" />
+              <div className="border-t border-white/10" />
 
-              {/* Details Section */}
+              {/* NAVIGATION - Quick jump to sections */}
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Navigate</h3>
+                <nav className="space-y-1">
+                  {SECTIONS.map(section => (
+                    <button
+                      key={section.id}
+                      onClick={() => scrollToSection(section.id)}
+                      className={cn(
+                        'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors',
+                        activeSection === section.id
+                          ? 'bg-purple-500/20 text-purple-400 border-l-2 border-purple-500'
+                          : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      )}
+                    >
+                      <section.icon className="w-5 h-5" />
+                      <span className="font-medium">{section.label}</span>
+                    </button>
+                  ))}
+                </nav>
+              </div>
+
+              <div className="border-t border-white/10" />
+
+              {/* Quick Details */}
               <div className="space-y-5">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Details</h3>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Quick Details</h3>
                 <div>
-                  <FormLabel>Race</FormLabel>
+                  <label className="block text-xs text-gray-500 mb-1.5">Race</label>
                   <input
                     type="text"
                     value={formData.race}
                     onChange={(e) => setFormData(prev => ({ ...prev, race: e.target.value }))}
                     placeholder="Human, Elf, Dwarf..."
-                    className={inputStyles}
+                    className="w-full py-3.5 px-4 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
                   />
                 </div>
                 <div>
-                  <FormLabel>Class</FormLabel>
+                  <label className="block text-xs text-gray-500 mb-1.5">Class</label>
                   <input
                     type="text"
                     value={formData.class}
                     onChange={(e) => setFormData(prev => ({ ...prev, class: e.target.value }))}
                     placeholder="Fighter, Wizard, Rogue..."
-                    className={inputStyles}
+                    className="w-full py-3.5 px-4 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
                   />
                 </div>
                 <div>
-                  <FormLabel>Background</FormLabel>
+                  <label className="block text-xs text-gray-500 mb-1.5">Background</label>
                   <input
                     type="text"
                     value={formData.background}
                     onChange={(e) => setFormData(prev => ({ ...prev, background: e.target.value }))}
                     placeholder="Noble, Criminal, Sage..."
-                    className={inputStyles}
+                    className="w-full py-3.5 px-4 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
                   />
                 </div>
               </div>
 
-              {/* Divider */}
-              <div className="pt-2 border-t border-white/10" />
+              <div className="border-t border-white/10" />
 
-              {/* Links Section */}
+              {/* Links */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Links</h3>
-                  <button
-                    onClick={() => setAddLinkModalOpen(true)}
-                    className="p-2 rounded-lg hover:bg-white/5 transition-colors text-gray-500 hover:text-purple-400"
-                  >
-                    <Plus className="w-5 h-5" />
-                  </button>
-                </div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Links</h3>
 
                 {formData.theme_music_url && (
                   <a
@@ -1342,63 +1072,402 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   </a>
                 ))}
 
-                {!formData.theme_music_url && !formData.character_sheet_url && links.length === 0 && (
-                  <button
-                    onClick={() => setAddLinkModalOpen(true)}
-                    className="w-full py-4 px-4 border border-dashed border-white/20 rounded-xl text-gray-400 hover:border-purple-500/50 hover:text-purple-400 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Plus className="w-5 h-5" />
-                    Add Link
-                  </button>
-                )}
+                <button
+                  onClick={() => setAddLinkModalOpen(true)}
+                  className="w-full py-3.5 px-4 border border-dashed border-white/20 rounded-xl text-gray-400 hover:border-purple-500/50 hover:text-purple-400 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  Add Link
+                </button>
               </div>
-
-              {/* Delete Button */}
-              {characterId && (
-                <>
-                  <div className="h-px bg-white/5" />
-                  <button
-                    onClick={() => setIsDeleteConfirmOpen(true)}
-                    className="flex items-center gap-2 w-full px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span className="text-sm font-medium">Delete Character</span>
-                  </button>
-                </>
-              )}
             </div>
+
+            {/* Delete at bottom */}
+            {characterId && (
+              <div className="mt-auto p-6 border-t border-white/10">
+                <button
+                  onClick={() => setIsDeleteConfirmOpen(true)}
+                  className="flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors"
+                >
+                  <Trash2 className="w-5 h-5" />
+                  Delete Character
+                </button>
+              </div>
+            )}
           </aside>
 
-          {/* Main Content Area */}
-          <main className="flex-1 flex flex-col overflow-hidden min-h-0 border-2 border-orange-500">
-            {/* Tabs - Prominent, easy to click */}
-            <div className="flex-shrink-0 border-b border-white/10 bg-[#0d0d14] border-2 border-cyan-500">
-              <nav className="flex items-center gap-2 px-4">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={cn(
-                      'flex items-center gap-3 px-5 py-4 text-sm font-medium border-b-2 -mb-px transition-all',
-                      activeTab === tab.id
-                        ? 'border-purple-500 text-white'
-                        : 'border-transparent text-gray-400 hover:text-white hover:bg-white/5'
-                    )}
-                  >
-                    {tab.icon}
-                    <span>{tab.label}</span>
-                  </button>
-                ))}
-              </nav>
-            </div>
+          {/* Main Content Area - Single Scrollable Page */}
+          <main className="flex-1 overflow-y-auto" ref={scrollContainerRef}>
+            <div className="p-8 xl:p-12 space-y-16">
 
-            {/* Tab Content - Fills ALL remaining space */}
-            <div className="flex-1 overflow-y-auto p-6 lg:p-8 xl:p-10 border-2 border-purple-500">
-              {activeTab === 'backstory' && <BackstoryTab />}
-              {activeTab === 'details' && <DetailsTab />}
-              {activeTab === 'people' && <PeopleTab />}
-              {activeTab === 'journal' && <JournalTab />}
-              {activeTab === 'more' && <MoreTab />}
+              {/* ═══════════════ BACKSTORY SECTION ═══════════════ */}
+              <section id="backstory" className="scroll-mt-8">
+                <SectionHeader title="Backstory" icon={BookOpen} />
+
+                <div className="space-y-8">
+                  {/* Summary */}
+                  <div>
+                    <FieldLabel>Summary</FieldLabel>
+                    <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
+                      <EditorToolbar editor={summaryEditor} minimal />
+                      <div className="p-5 min-h-[80px]">
+                        <EditorContent editor={summaryEditor} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Summary bullets */}
+                  <ArrayFieldEditor
+                    label="Quick Summary"
+                    items={formData.tldr}
+                    placeholder="Add a quick fact about this character..."
+                    onChange={(items) => setFormData(prev => ({ ...prev, tldr: items }))}
+                  />
+
+                  {/* Full Backstory */}
+                  <div>
+                    <FieldLabel>Full Backstory</FieldLabel>
+                    <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
+                      <EditorToolbar editor={notesEditor} />
+                      <div className="p-6 min-h-[400px]">
+                        <EditorContent editor={notesEditor} className="prose prose-invert max-w-none" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Plot Hooks */}
+                  <ArrayFieldEditor
+                    label="Plot Hooks"
+                    items={formData.plot_hooks}
+                    placeholder="Add a story hook for the DM..."
+                    onChange={(items) => setFormData(prev => ({ ...prev, plot_hooks: items }))}
+                  />
+
+                  {/* Quotes */}
+                  <ArrayFieldEditor
+                    label="Memorable Quotes"
+                    items={formData.quotes}
+                    placeholder="Add a memorable quote..."
+                    onChange={(items) => setFormData(prev => ({ ...prev, quotes: items }))}
+                    bulletChar='"'
+                  />
+                </div>
+              </section>
+
+              {/* ═══════════════ DETAILS SECTION ═══════════════ */}
+              <section id="details" className="scroll-mt-8">
+                <SectionHeader title="Details" icon={FileText} />
+
+                <div className="space-y-8">
+                  {/* Appearance */}
+                  <div>
+                    <FieldLabel>Appearance</FieldLabel>
+                    <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
+                      <textarea
+                        value={formData.appearance}
+                        onChange={(e) => setFormData(prev => ({ ...prev, appearance: e.target.value }))}
+                        placeholder="Physical description, distinguishing features, typical attire..."
+                        className="w-full p-5 min-h-[150px] bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Personality */}
+                  <div>
+                    <FieldLabel>Personality</FieldLabel>
+                    <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
+                      <textarea
+                        value={formData.personality}
+                        onChange={(e) => setFormData(prev => ({ ...prev, personality: e.target.value }))}
+                        placeholder="Temperament, quirks, mannerisms, how they interact with others..."
+                        className="w-full p-5 min-h-[150px] bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Goals */}
+                  <div>
+                    <FieldLabel>Goals & Motivations</FieldLabel>
+                    <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
+                      <textarea
+                        value={formData.goals}
+                        onChange={(e) => setFormData(prev => ({ ...prev, goals: e.target.value }))}
+                        placeholder="What drives this character? What do they want to achieve?"
+                        className="w-full p-5 min-h-[150px] bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Secrets */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="flex items-center gap-2 text-sm text-gray-400">
+                        Secrets
+                        <span className="text-xs bg-gray-800 px-2 py-0.5 rounded">Private</span>
+                      </label>
+                      <button
+                        onClick={() => setShowSecrets(!showSecrets)}
+                        className="flex items-center gap-2 text-sm text-gray-400 hover:text-purple-400 transition-colors"
+                      >
+                        {showSecrets ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showSecrets ? 'Hide' : 'Reveal'}
+                      </button>
+                    </div>
+                    {showSecrets ? (
+                      <div className="bg-white/[0.03] border border-red-500/30 rounded-xl overflow-hidden focus-within:border-red-500/50 transition-colors">
+                        <textarea
+                          value={formData.secrets}
+                          onChange={(e) => setFormData(prev => ({ ...prev, secrets: e.target.value }))}
+                          placeholder="Hidden information, true motivations, dark secrets..."
+                          className="w-full p-5 min-h-[150px] bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
+                        />
+                      </div>
+                    ) : (
+                      <div className="px-4 py-6 bg-white/[0.02] border border-white/10 rounded-xl text-gray-500 text-center italic">
+                        Click "Reveal" to show secret information
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Common Phrases */}
+                  <ArrayFieldEditor
+                    label="Common Phrases"
+                    items={formData.common_phrases}
+                    placeholder="Add a catchphrase or common saying..."
+                    onChange={(items) => setFormData(prev => ({ ...prev, common_phrases: items }))}
+                  />
+
+                  {/* Weaknesses */}
+                  <ArrayFieldEditor
+                    label="Weaknesses & Flaws"
+                    items={formData.weaknesses}
+                    placeholder="Add a weakness or character flaw..."
+                    onChange={(items) => setFormData(prev => ({ ...prev, weaknesses: items }))}
+                  />
+
+                  {/* Campaign Info */}
+                  <div>
+                    <FieldLabel>Campaign Information</FieldLabel>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1.5">Game System</label>
+                        <input
+                          type="text"
+                          value={formData.game_system}
+                          onChange={(e) => setFormData(prev => ({ ...prev, game_system: e.target.value }))}
+                          placeholder="D&D 5e, Pathfinder 2e..."
+                          className="w-full py-3 px-4 bg-white/[0.03] border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1.5">Campaign Name</label>
+                        <input
+                          type="text"
+                          value={formData.external_campaign}
+                          onChange={(e) => setFormData(prev => ({ ...prev, external_campaign: e.target.value }))}
+                          placeholder="The Lost Mines..."
+                          className="w-full py-3 px-4 bg-white/[0.03] border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1.5">DM Name</label>
+                        <input
+                          type="text"
+                          value={formData.dm_name}
+                          onChange={(e) => setFormData(prev => ({ ...prev, dm_name: e.target.value }))}
+                          placeholder="Who runs this game?"
+                          className="w-full py-3 px-4 bg-white/[0.03] border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1.5">Campaign Started</label>
+                        <input
+                          type="text"
+                          value={formData.campaign_started}
+                          onChange={(e) => setFormData(prev => ({ ...prev, campaign_started: e.target.value }))}
+                          placeholder="January 2024..."
+                          className="w-full py-3 px-4 bg-white/[0.03] border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* ═══════════════ PEOPLE SECTION ═══════════════ */}
+              <section id="people" className="scroll-mt-8">
+                <SectionHeader title="People" icon={Users} />
+
+                <div className="space-y-8">
+                  {/* Story Characters */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <FieldLabel>Story Characters</FieldLabel>
+                      <button
+                        onClick={() => setAddStoryCharacterModalOpen(true)}
+                        className="flex items-center gap-2 text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Character
+                      </button>
+                    </div>
+
+                    {storyCharacters.length === 0 ? (
+                      <div className="text-center py-12 bg-white/[0.02] rounded-xl border border-white/5">
+                        <Users className="w-12 h-12 mx-auto mb-3 text-gray-600" />
+                        <p className="text-gray-400 mb-1">No story characters yet</p>
+                        <p className="text-sm text-gray-500">Add NPCs connected to this character's story</p>
+                      </div>
+                    ) : (
+                      <div className="grid gap-4">
+                        {storyCharacters.map((char) => (
+                          <div
+                            key={char.id}
+                            className="flex items-start gap-4 p-4 bg-white/[0.03] rounded-xl border border-white/5 hover:border-purple-500/20 transition-colors"
+                          >
+                            {char.image_url ? (
+                              <Image src={char.image_url} alt={char.name} width={56} height={56} className="rounded-lg object-cover" />
+                            ) : (
+                              <div className="w-14 h-14 rounded-lg bg-white/5 flex items-center justify-center">
+                                <User className="w-6 h-6 text-gray-500" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-white">{char.name}</span>
+                                <span className="text-xs px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full capitalize">
+                                  {char.relationship.replace(/_/g, ' ')}
+                                </span>
+                              </div>
+                              {char.tagline && <p className="text-sm text-gray-400">{char.tagline}</p>}
+                              {char.notes && <p className="text-sm text-gray-500 mt-1 line-clamp-2">{char.notes}</p>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* What I've Learned */}
+                  <div>
+                    <FieldLabel>What I've Learned About Others</FieldLabel>
+                    {learnedFacts.length === 0 ? (
+                      <div className="text-center py-12 bg-white/[0.02] rounded-xl border border-white/5">
+                        <BookOpen className="w-12 h-12 mx-auto mb-3 text-gray-600" />
+                        <p className="text-gray-400">No learned facts recorded</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {learnedFacts.map((fact) => (
+                          <div key={fact.id} className="p-4 bg-white/[0.03] rounded-xl border border-white/5">
+                            <h4 className="font-medium text-white mb-3">{fact.about_name}</h4>
+                            <ul className="space-y-2">
+                              {fact.facts?.map((f, i) => (
+                                <li key={i} className="text-sm text-gray-400 flex items-start gap-2">
+                                  <span className="text-purple-400 mt-0.5">•</span>
+                                  {f}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              {/* ═══════════════ JOURNAL SECTION ═══════════════ */}
+              <section id="journal" className="scroll-mt-8">
+                <SectionHeader title="Journal" icon={Scroll} />
+
+                <div className="space-y-6">
+                  <button
+                    onClick={() => setAddJournalModalOpen(true)}
+                    className="flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-colors"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Add Journal Entry
+                  </button>
+
+                  {journalEntries.length === 0 ? (
+                    <div className="text-center py-16 bg-white/[0.02] rounded-xl border border-white/5">
+                      <Scroll className="w-12 h-12 mx-auto mb-3 text-gray-600" />
+                      <p className="text-gray-400 mb-1">No journal entries yet</p>
+                      <p className="text-sm text-gray-500">Record your adventures and experiences</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {journalEntries.map((entry) => (
+                        <div
+                          key={entry.id}
+                          className="p-5 bg-white/[0.03] rounded-xl border border-white/5 hover:border-purple-500/20 transition-colors"
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              {entry.session_number && (
+                                <span className="text-xs px-2.5 py-1 bg-yellow-500/20 text-yellow-400 rounded-full font-medium">
+                                  Session {entry.session_number}
+                                </span>
+                              )}
+                              {entry.title && <span className="font-medium text-white">{entry.title}</span>}
+                            </div>
+                            {entry.session_date && (
+                              <span className="text-sm text-gray-500">
+                                {new Date(entry.session_date).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-gray-400 whitespace-pre-wrap leading-relaxed">{entry.notes}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* ═══════════════ STATS SECTION ═══════════════ */}
+              <section id="stats" className="scroll-mt-8">
+                <SectionHeader title="Quick Stats" icon={BarChart3} />
+
+                <div className="space-y-6">
+                  <p className="text-sm text-gray-500">Configure your stat block for quick reference during play.</p>
+
+                  <div className="flex items-center gap-4">
+                    <label className="text-sm text-gray-400">Gold</label>
+                    <input
+                      type="number"
+                      value={formData.gold}
+                      onChange={(e) => setFormData(prev => ({ ...prev, gold: parseInt(e.target.value) || 0 }))}
+                      className="w-32 px-4 py-2 bg-white/5 border border-yellow-500/30 rounded-lg text-yellow-400 font-medium focus:outline-none focus:border-yellow-500/50"
+                    />
+                  </div>
+
+                  <div className="p-8 bg-white/[0.02] rounded-xl border border-white/5 text-center">
+                    <Target className="w-10 h-10 mx-auto mb-3 text-gray-600" />
+                    <p className="text-gray-400">Quick Stats editor coming soon</p>
+                  </div>
+
+                  <div className="p-8 bg-white/[0.02] rounded-xl border border-white/5 text-center">
+                    <p className="text-gray-400">Inventory tracking coming soon</p>
+                  </div>
+                </div>
+              </section>
+
+              {/* ═══════════════ GALLERY SECTION ═══════════════ */}
+              <section id="gallery" className="scroll-mt-8">
+                <SectionHeader title="Gallery" icon={GalleryIcon} />
+
+                <div className="p-12 bg-white/[0.02] rounded-xl border border-white/5 text-center">
+                  <GalleryIcon className="w-12 h-12 mx-auto mb-3 text-gray-600" />
+                  <p className="text-gray-400 mb-1">Mood Board & Gallery</p>
+                  <p className="text-sm text-gray-500">Coming soon - collect inspiration images for this character</p>
+                </div>
+              </section>
+
+              {/* Bottom padding */}
+              <div className="h-32" />
+
             </div>
           </main>
         </div>
