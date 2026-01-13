@@ -457,7 +457,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   // STYLED COMPONENTS
   // =====================================================
 
-  // Toolbar button component
+  // Toolbar button component - subtle, modern
   const ToolbarButton = ({ onClick, active, disabled, children, title }: {
     onClick: () => void
     active?: boolean
@@ -471,76 +471,87 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       disabled={disabled}
       title={title}
       className={cn(
-        'h-9 w-9 flex items-center justify-center rounded-md transition-all',
-        'hover:bg-white/10',
-        active && 'bg-purple-500/20 text-purple-400',
-        disabled && 'opacity-40 cursor-not-allowed hover:bg-transparent'
+        'p-2 rounded-md transition-colors',
+        active
+          ? 'bg-purple-500/20 text-purple-400'
+          : 'text-gray-500 hover:text-white hover:bg-white/10',
+        disabled && 'opacity-30 cursor-not-allowed hover:bg-transparent hover:text-gray-500'
       )}
     >
       {children}
     </button>
   )
 
-  // Editor toolbar
+  // Editor toolbar - subtle, Google Docs style
   const EditorToolbar = ({ editor }: { editor: any }) => (
-    <div className="flex items-center gap-1 p-3 border-b border-white/10 bg-white/[0.02]">
-      <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo()} title="Undo">
-        <Undo className="h-5 w-5" />
-      </ToolbarButton>
-      <ToolbarButton onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo()} title="Redo">
-        <Redo className="h-5 w-5" />
-      </ToolbarButton>
-      <div className="w-px h-6 bg-white/10 mx-2" />
-      <ToolbarButton onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} active={editor?.isActive('heading', { level: 1 })} title="Heading 1">
-        <Heading1 className="h-5 w-5" />
-      </ToolbarButton>
-      <ToolbarButton onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} active={editor?.isActive('heading', { level: 2 })} title="Heading 2">
-        <Heading2 className="h-5 w-5" />
-      </ToolbarButton>
-      <div className="w-px h-6 bg-white/10 mx-2" />
-      <ToolbarButton onClick={() => editor?.chain().focus().toggleBold().run()} active={editor?.isActive('bold')} title="Bold">
-        <Bold className="h-5 w-5" />
-      </ToolbarButton>
-      <ToolbarButton onClick={() => editor?.chain().focus().toggleItalic().run()} active={editor?.isActive('italic')} title="Italic">
-        <Italic className="h-5 w-5" />
-      </ToolbarButton>
-      <ToolbarButton onClick={() => editor?.chain().focus().toggleUnderline().run()} active={editor?.isActive('underline')} title="Underline">
-        <UnderlineIcon className="h-5 w-5" />
-      </ToolbarButton>
-      <ToolbarButton onClick={() => editor?.chain().focus().toggleStrike().run()} active={editor?.isActive('strike')} title="Strikethrough">
-        <Strikethrough className="h-5 w-5" />
-      </ToolbarButton>
-      <ToolbarButton onClick={() => editor?.chain().focus().toggleHighlight().run()} active={editor?.isActive('highlight')} title="Highlight">
-        <Highlighter className="h-5 w-5" />
-      </ToolbarButton>
-      <div className="w-px h-6 bg-white/10 mx-2" />
-      <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} active={editor?.isActive('bulletList')} title="Bullet List">
-        <List className="h-5 w-5" />
-      </ToolbarButton>
-      <ToolbarButton onClick={() => editor?.chain().focus().toggleOrderedList().run()} active={editor?.isActive('orderedList')} title="Numbered List">
-        <ListOrdered className="h-5 w-5" />
-      </ToolbarButton>
-      <ToolbarButton onClick={() => editor?.chain().focus().toggleBlockquote().run()} active={editor?.isActive('blockquote')} title="Quote">
-        <Quote className="h-5 w-5" />
-      </ToolbarButton>
-      <div className="w-px h-6 bg-white/10 mx-2" />
-      <ToolbarButton onClick={() => setLink(editor)} active={editor?.isActive('link')} title="Link">
-        <LinkIcon className="h-5 w-5" />
-      </ToolbarButton>
-      <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleEditorImageUpload} />
-      <ToolbarButton onClick={() => imageInputRef.current?.click()} title="Insert Image">
-        <ImageIcon className="h-5 w-5" />
-      </ToolbarButton>
+    <div className="flex items-center px-3 py-2 border-b border-white/5 bg-white/[0.02]">
+      <div className="flex items-center">
+        <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo()} title="Undo">
+          <Undo className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo()} title="Redo">
+          <Redo className="h-4 w-4" />
+        </ToolbarButton>
+      </div>
+      <div className="w-px h-5 bg-white/10 mx-2" />
+      <div className="flex items-center">
+        <ToolbarButton onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} active={editor?.isActive('heading', { level: 1 })} title="Heading 1">
+          <Heading1 className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} active={editor?.isActive('heading', { level: 2 })} title="Heading 2">
+          <Heading2 className="h-4 w-4" />
+        </ToolbarButton>
+      </div>
+      <div className="w-px h-5 bg-white/10 mx-2" />
+      <div className="flex items-center">
+        <ToolbarButton onClick={() => editor?.chain().focus().toggleBold().run()} active={editor?.isActive('bold')} title="Bold">
+          <Bold className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton onClick={() => editor?.chain().focus().toggleItalic().run()} active={editor?.isActive('italic')} title="Italic">
+          <Italic className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton onClick={() => editor?.chain().focus().toggleUnderline().run()} active={editor?.isActive('underline')} title="Underline">
+          <UnderlineIcon className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton onClick={() => editor?.chain().focus().toggleStrike().run()} active={editor?.isActive('strike')} title="Strikethrough">
+          <Strikethrough className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton onClick={() => editor?.chain().focus().toggleHighlight().run()} active={editor?.isActive('highlight')} title="Highlight">
+          <Highlighter className="h-4 w-4" />
+        </ToolbarButton>
+      </div>
+      <div className="w-px h-5 bg-white/10 mx-2" />
+      <div className="flex items-center">
+        <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} active={editor?.isActive('bulletList')} title="Bullet List">
+          <List className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton onClick={() => editor?.chain().focus().toggleOrderedList().run()} active={editor?.isActive('orderedList')} title="Numbered List">
+          <ListOrdered className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton onClick={() => editor?.chain().focus().toggleBlockquote().run()} active={editor?.isActive('blockquote')} title="Quote">
+          <Quote className="h-4 w-4" />
+        </ToolbarButton>
+      </div>
+      <div className="w-px h-5 bg-white/10 mx-2" />
+      <div className="flex items-center">
+        <ToolbarButton onClick={() => setLink(editor)} active={editor?.isActive('link')} title="Link">
+          <LinkIcon className="h-4 w-4" />
+        </ToolbarButton>
+        <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleEditorImageUpload} />
+        <ToolbarButton onClick={() => imageInputRef.current?.click()} title="Insert Image">
+          <ImageIcon className="h-4 w-4" />
+        </ToolbarButton>
+      </div>
     </div>
   )
 
-  // Section header component
+  // Section header component - subtle, Notion-style
   const SectionHeader = ({ children }: { children: React.ReactNode }) => (
-    <div className="mb-5">
-      <h2 className="text-sm font-semibold tracking-wide text-white uppercase">
+    <div className="flex items-center gap-3 mb-3">
+      <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
         {children}
-      </h2>
-      <div className="h-px bg-gradient-to-r from-purple-500/50 to-transparent mt-2" />
+      </span>
+      <div className="flex-1 h-px bg-white/5" />
     </div>
   )
 
@@ -762,13 +773,13 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   // =====================================================
 
   const BackstoryTab = () => (
-    <div className="space-y-10">
+    <div className="space-y-8">
       {/* Summary */}
       <div>
         <SectionHeader>Summary</SectionHeader>
-        <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
+        <div className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden focus-within:border-purple-500/20 transition-colors">
           <EditorToolbar editor={summaryEditor} />
-          <div className="min-h-[180px] lg:min-h-[200px] xl:min-h-[250px]">
+          <div className="p-5 min-h-[150px]">
             <EditorContent editor={summaryEditor} />
           </div>
         </div>
@@ -776,18 +787,18 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
       {/* Quick Summary */}
       <ArrayFieldEditor
-        label="QUICK SUMMARY"
+        label="Quick Summary"
         items={formData.tldr}
         placeholder="Add a quick fact about this character..."
         onChange={(items) => setFormData(prev => ({ ...prev, tldr: items }))}
       />
 
-      {/* Full Backstory */}
+      {/* Full Backstory - This is the main content, should be tall */}
       <div>
         <SectionHeader>Full Backstory</SectionHeader>
-        <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
+        <div className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden focus-within:border-purple-500/20 transition-colors">
           <EditorToolbar editor={notesEditor} />
-          <div className="min-h-[350px] lg:min-h-[450px] xl:min-h-[550px] 2xl:min-h-[650px] overflow-y-auto">
+          <div className="p-6 min-h-[400px] lg:min-h-[500px] xl:min-h-[600px]">
             <EditorContent editor={notesEditor} />
           </div>
         </div>
@@ -795,7 +806,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
       {/* Plot Hooks */}
       <ArrayFieldEditor
-        label="PLOT HOOKS"
+        label="Plot Hooks"
         items={formData.plot_hooks}
         placeholder="Add a story hook for the DM..."
         onChange={(items) => setFormData(prev => ({ ...prev, plot_hooks: items }))}
@@ -803,7 +814,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
       {/* Quotes */}
       <ArrayFieldEditor
-        label="MEMORABLE QUOTES"
+        label="Memorable Quotes"
         items={formData.quotes}
         placeholder="Add a memorable quote..."
         onChange={(items) => setFormData(prev => ({ ...prev, quotes: items }))}
@@ -812,7 +823,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   )
 
   const DetailsTab = () => (
-    <div className="space-y-10">
+    <div className="space-y-8">
       {/* Appearance */}
       <div>
         <SectionHeader>Appearance</SectionHeader>
@@ -877,7 +888,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
       {/* Common Phrases */}
       <ArrayFieldEditor
-        label="COMMON PHRASES"
+        label="Common Phrases"
         items={formData.common_phrases}
         placeholder="Add a catchphrase or common saying..."
         onChange={(items) => setFormData(prev => ({ ...prev, common_phrases: items }))}
@@ -885,7 +896,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
       {/* Weaknesses */}
       <ArrayFieldEditor
-        label="WEAKNESSES & FLAWS"
+        label="Weaknesses & Flaws"
         items={formData.weaknesses}
         placeholder="Add a weakness or character flaw..."
         onChange={(items) => setFormData(prev => ({ ...prev, weaknesses: items }))}
@@ -941,7 +952,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   )
 
   const PeopleTab = () => (
-    <div className="space-y-10">
+    <div className="space-y-8">
       {/* Story Characters */}
       <div>
         <div className="flex items-center justify-between mb-4">
@@ -1070,7 +1081,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   )
 
   const MoreTab = () => (
-    <div className="space-y-10">
+    <div className="space-y-8">
       {/* Quick Stats */}
       <div>
         <SectionHeader>Quick Stats</SectionHeader>
@@ -1117,9 +1128,9 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-[#0a0a0f]">
+      <div className="fixed inset-0 z-50 bg-[#0a0a0f] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 h-16 border-b border-white/10 bg-[#0f0f17]">
+        <header className="flex-shrink-0 flex items-center justify-between px-4 h-14 border-b border-white/10 bg-[#0d0d14]">
           <div className="flex items-center gap-4">
             <button
               onClick={handleClose}
@@ -1167,10 +1178,10 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               </>
             )}
           </div>
-        </div>
+        </header>
 
-        {/* Main Content */}
-        <div className="flex flex-1 overflow-hidden">
+        {/* Main Content - Fills ALL remaining space */}
+        <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Left Sidebar - responsive width */}
           <aside className="w-80 xl:w-96 flex-shrink-0 border-r border-white/10 p-6 overflow-y-auto bg-[#0d0d14]">
             <div className="space-y-6">
@@ -1348,19 +1359,19 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
           </aside>
 
           {/* Main Content Area */}
-          <main className="flex-1 flex flex-col overflow-hidden">
-            {/* Tabs */}
-            <div className="border-b border-white/10 bg-[#0d0d14]">
-              <nav className="flex px-4 lg:px-8">
+          <main className="flex-1 flex flex-col overflow-hidden min-h-0">
+            {/* Tabs - Fixed height */}
+            <div className="flex-shrink-0 border-b border-white/10 bg-[#0d0d14]/50">
+              <nav className="flex px-6 gap-1">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
-                      'flex-1 lg:flex-none flex items-center justify-center lg:justify-start gap-2 px-4 lg:px-6 py-4 text-sm font-medium border-b-2 transition-all -mb-px',
+                      'flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-all',
                       activeTab === tab.id
-                        ? 'border-purple-500 text-white'
-                        : 'border-transparent text-gray-500 hover:text-gray-300 hover:border-white/20'
+                        ? 'bg-white/5 text-white border-b-2 border-purple-500 -mb-px'
+                        : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]'
                     )}
                   >
                     {tab.icon}
@@ -1370,15 +1381,13 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               </nav>
             </div>
 
-            {/* Tab Content */}
-            <div className="flex-1 overflow-y-auto p-6 lg:p-8 xl:p-10 2xl:p-12">
-              <div className="max-w-4xl xl:max-w-5xl 2xl:max-w-6xl mx-auto">
-                {activeTab === 'backstory' && <BackstoryTab />}
-                {activeTab === 'details' && <DetailsTab />}
-                {activeTab === 'people' && <PeopleTab />}
-                {activeTab === 'journal' && <JournalTab />}
-                {activeTab === 'more' && <MoreTab />}
-              </div>
+            {/* Tab Content - Fills ALL remaining space, NO max-width */}
+            <div className="flex-1 overflow-y-auto p-6 lg:p-8 xl:p-10">
+              {activeTab === 'backstory' && <BackstoryTab />}
+              {activeTab === 'details' && <DetailsTab />}
+              {activeTab === 'people' && <PeopleTab />}
+              {activeTab === 'journal' && <JournalTab />}
+              {activeTab === 'more' && <MoreTab />}
             </div>
           </main>
         </div>
