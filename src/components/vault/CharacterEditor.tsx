@@ -911,9 +911,9 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden min-h-0">
-          {/* Left Sidebar - DEBUG: Added bright red border to verify CSS changes apply */}
-          <aside className="w-80 xl:w-96 flex-shrink-0 flex flex-col border-r border-white/10 overflow-y-auto bg-[#0d0d14] border-4 border-red-500">
-            <div className="p-8 space-y-8 bg-blue-500/20">
+          {/* Left Sidebar */}
+          <aside className="w-80 xl:w-96 flex-shrink-0 flex flex-col border-r border-white/10 overflow-y-auto bg-[#0d0d14]">
+            <div className="p-8 space-y-8">
               {/* Portrait */}
               <PortraitDisplay />
 
