@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { useChat } from '@ai-sdk/react'
 import ReactMarkdown from 'react-markdown'
 import { X, Send, Sparkles, User, Loader2, Trash2 } from 'lucide-react'
@@ -16,11 +16,106 @@ interface AIAssistantProps {
   }
 }
 
+// Highlight patterns for D&D content
+const DICE_PATTERN = /\b(\d*d\d+(?:\s*[+-]\s*\d+)?)\b/gi
+const STAT_PATTERN = /\b(DC\s*\d+|AC\s*\d+|HP\s*\d+|CR\s*\d+(?:\/\d+)?)\b/gi
+const CURRENCY_PATTERN = /\b(\d+(?:,\d{3})*\s*(?:gp|sp|cp|ep|pp|gold|silver|copper|platinum))\b/gi
+const DAMAGE_TYPES = /\b(fire|cold|lightning|thunder|acid|poison|necrotic|radiant|force|psychic|slashing|piercing|bludgeoning)\s+damage\b/gi
+
 export function AIAssistant({ campaignContext }: AIAssistantProps) {
   const { isAIAssistantOpen, setIsAIAssistantOpen, aiProvider } = useAppStore()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [localError, setLocalError] = useState<string | null>(null)
+
+  // Build character lookup map
+  const characterMap = useMemo(() => {
+    const map = new Map<string, 'pc' | 'npc'>()
+    if (campaignContext?.characters) {
+      campaignContext.characters.forEach(char => {
+        map.set(char.name.toLowerCase(), char.type as 'pc' | 'npc')
+      })
+    }
+    return map
+  }, [campaignContext?.characters])
+
+  // Get sorted character names for regex (longest first to avoid partial matches)
+  const characterNames = useMemo(() => {
+    if (!campaignContext?.characters) return []
+    return [...campaignContext.characters]
+      .map(c => c.name)
+      .sort((a, b) => b.length - a.length)
+  }, [campaignContext?.characters])
+
+  // Process text to add highlights
+  const processText = useCallback((text: string): React.ReactNode[] => {
+    if (!text) return [text]
+
+    // Build character pattern if we have characters
+    const characterPattern = characterNames.length > 0
+      ? new RegExp(`\\b(${characterNames.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`, 'gi')
+      : null
+
+    // Split text and process
+    const parts: React.ReactNode[] = []
+    let lastIndex = 0
+    let key = 0
+
+    // Combine all patterns
+    const patterns: { pattern: RegExp; type: string }[] = [
+      { pattern: DICE_PATTERN, type: 'dice' },
+      { pattern: STAT_PATTERN, type: 'stat' },
+      { pattern: CURRENCY_PATTERN, type: 'currency' },
+      { pattern: DAMAGE_TYPES, type: 'damage' },
+    ]
+    if (characterPattern) {
+      patterns.unshift({ pattern: characterPattern, type: 'character' })
+    }
+
+    // Find all matches
+    const matches: { index: number; length: number; text: string; type: string }[] = []
+
+    patterns.forEach(({ pattern, type }) => {
+      const regex = new RegExp(pattern.source, pattern.flags)
+      let match
+      while ((match = regex.exec(text)) !== null) {
+        matches.push({
+          index: match.index,
+          length: match[0].length,
+          text: match[0],
+          type,
+        })
+      }
+    })
+
+    // Sort by index and remove overlaps
+    matches.sort((a, b) => a.index - b.index)
+    const filteredMatches = matches.filter((match, i) => {
+      if (i === 0) return true
+      const prev = matches[i - 1]
+      return match.index >= prev.index + prev.length
+    })
+
+    // Build result
+    filteredMatches.forEach(match => {
+      // Add text before match
+      if (match.index > lastIndex) {
+        parts.push(text.slice(lastIndex, match.index))
+      }
+
+      // Add highlighted match
+      const highlight = getHighlightElement(match.text, match.type, characterMap, key++)
+      parts.push(highlight)
+      lastIndex = match.index + match.length
+    })
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex))
+    }
+
+    return parts.length > 0 ? parts : [text]
+  }, [characterNames, characterMap])
 
   const {
     messages,
@@ -66,6 +161,19 @@ export function AIAssistant({ campaignContext }: AIAssistantProps) {
   const handleClearChat = () => {
     setMessages([])
   }
+
+  // Custom text renderer that processes highlights
+  const renderTextWithHighlights = useCallback((children: React.ReactNode): React.ReactNode => {
+    if (typeof children === 'string') {
+      return processText(children)
+    }
+    if (Array.isArray(children)) {
+      return children.map((child, i) => (
+        <span key={i}>{renderTextWithHighlights(child)}</span>
+      ))
+    }
+    return children
+  }, [processText])
 
   if (!isAIAssistantOpen) {
     return null
@@ -176,17 +284,51 @@ export function AIAssistant({ campaignContext }: AIAssistantProps) {
                   <div className="prose prose-sm prose-invert max-w-none text-sm">
                     <ReactMarkdown
                       components={{
-                        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                        strong: ({ children }) => <strong className="font-semibold text-[--text-primary]">{children}</strong>,
-                        em: ({ children }) => <em className="italic">{children}</em>,
-                        ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
-                        ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
-                        li: ({ children }) => <li>{children}</li>,
-                        h1: ({ children }) => <h1 className="text-base font-semibold mb-2 text-[--text-primary]">{children}</h1>,
-                        h2: ({ children }) => <h2 className="text-sm font-semibold mb-2 text-[--text-primary]">{children}</h2>,
-                        h3: ({ children }) => <h3 className="text-sm font-semibold mb-1 text-[--text-primary]">{children}</h3>,
-                        code: ({ children }) => <code className="bg-[--bg-base] px-1 py-0.5 rounded text-xs font-mono">{children}</code>,
-                        blockquote: ({ children }) => <blockquote className="border-l-2 border-[--arcane-purple] pl-3 italic text-[--text-secondary]">{children}</blockquote>,
+                        p: ({ children }) => (
+                          <p className="mb-2 last:mb-0">{renderTextWithHighlights(children)}</p>
+                        ),
+                        strong: ({ children }) => (
+                          <strong className="font-semibold text-[--text-primary]">
+                            {renderTextWithHighlights(children)}
+                          </strong>
+                        ),
+                        em: ({ children }) => (
+                          <em className="italic">{renderTextWithHighlights(children)}</em>
+                        ),
+                        ul: ({ children }) => (
+                          <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>
+                        ),
+                        ol: ({ children }) => (
+                          <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>
+                        ),
+                        li: ({ children }) => (
+                          <li>{renderTextWithHighlights(children)}</li>
+                        ),
+                        h1: ({ children }) => (
+                          <h1 className="text-base font-semibold mb-2 text-[--text-primary]">
+                            {renderTextWithHighlights(children)}
+                          </h1>
+                        ),
+                        h2: ({ children }) => (
+                          <h2 className="text-sm font-semibold mb-2 text-[--text-primary]">
+                            {renderTextWithHighlights(children)}
+                          </h2>
+                        ),
+                        h3: ({ children }) => (
+                          <h3 className="text-sm font-semibold mb-1 text-[--text-primary]">
+                            {renderTextWithHighlights(children)}
+                          </h3>
+                        ),
+                        code: ({ children }) => (
+                          <code className="bg-[--bg-base] px-1 py-0.5 rounded text-xs font-mono">
+                            {children}
+                          </code>
+                        ),
+                        blockquote: ({ children }) => (
+                          <blockquote className="border-l-2 border-[--arcane-purple] pl-3 italic text-[--text-secondary]">
+                            {children}
+                          </blockquote>
+                        ),
                       }}
                     >
                       {message.content}
@@ -257,4 +399,79 @@ export function AIAssistant({ campaignContext }: AIAssistantProps) {
       </div>
     </>
   )
+}
+
+// Helper function to create highlight elements
+function getHighlightElement(
+  text: string,
+  type: string,
+  characterMap: Map<string, 'pc' | 'npc'>,
+  key: number
+): React.ReactNode {
+  switch (type) {
+    case 'character': {
+      const charType = characterMap.get(text.toLowerCase())
+      if (charType === 'pc') {
+        return (
+          <span
+            key={key}
+            className="inline-flex items-center px-1.5 py-0.5 rounded bg-[--arcane-teal]/20 text-[--arcane-teal] font-medium border border-[--arcane-teal]/30"
+            title="Player Character"
+          >
+            {text}
+          </span>
+        )
+      } else {
+        return (
+          <span
+            key={key}
+            className="inline-flex items-center px-1.5 py-0.5 rounded bg-[--arcane-purple]/20 text-[--arcane-purple] font-medium border border-[--arcane-purple]/30"
+            title="NPC"
+          >
+            {text}
+          </span>
+        )
+      }
+    }
+    case 'dice':
+      return (
+        <span
+          key={key}
+          className="inline-flex items-center px-1.5 py-0.5 rounded bg-[--arcane-gold]/15 text-[--arcane-gold] font-mono text-xs font-medium"
+          title="Dice Roll"
+        >
+          🎲 {text}
+        </span>
+      )
+    case 'stat':
+      return (
+        <span
+          key={key}
+          className="inline-flex items-center px-1.5 py-0.5 rounded bg-[--bg-elevated] text-[--text-primary] font-mono text-xs font-semibold border border-[--border-subtle]"
+        >
+          {text}
+        </span>
+      )
+    case 'currency':
+      return (
+        <span
+          key={key}
+          className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-medium"
+          title="Currency"
+        >
+          💰 {text}
+        </span>
+      )
+    case 'damage':
+      return (
+        <span
+          key={key}
+          className="inline-flex items-center px-1.5 py-0.5 rounded bg-[--arcane-ember]/15 text-[--arcane-ember] font-medium"
+        >
+          {text}
+        </span>
+      )
+    default:
+      return text
+  }
 }
