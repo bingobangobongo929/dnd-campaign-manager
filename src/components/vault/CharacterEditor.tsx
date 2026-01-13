@@ -915,8 +915,8 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden min-h-0 gap-0">
           {/* Left Sidebar */}
-          <aside className="w-80 2xl:w-[340px] flex-shrink-0 flex flex-col border-r border-white/[0.06] overflow-hidden bg-[#0f0f11]">
-            <div className="flex-1 overflow-y-auto px-6 py-6">
+          <aside className="w-[320px] xl:w-[360px] 2xl:w-[400px] flex-shrink-0 flex flex-col border-r border-white/[0.06] overflow-hidden bg-[#0f0f11]">
+            <div className="flex-1 overflow-y-auto px-6 xl:px-8 py-6 xl:py-8">
               {/* Portrait */}
               <div className="mb-6">
                 <PortraitDisplay />
@@ -1115,27 +1115,27 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
           {/* Main Content Area - Single Scrollable Page */}
           <main className="flex-1 overflow-y-auto bg-[#131316]" ref={scrollContainerRef}>
-            <div className="max-w-4xl mx-auto px-8 xl:px-12 py-10">
+            <div className="w-full max-w-[1400px] mx-auto px-10 xl:px-16 2xl:px-20 py-10 xl:py-12">
               <div>
 
               {/* ═══════════════ BACKSTORY SECTION ═══════════════ */}
-              <section id="backstory" className="scroll-mt-8 mb-16">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
+              <section id="backstory" className="scroll-mt-8 mb-20">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
                     <BookOpen className="w-5 h-5 text-purple-400" />
                   </div>
-                  <h2 className="text-base font-semibold text-white/90 uppercase tracking-wider">Backstory</h2>
+                  <h2 className="text-lg font-semibold text-white/90 uppercase tracking-wider">Backstory</h2>
                   <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
                 </div>
 
-                <div className="space-y-8">
+                <div className="space-y-10">
                   {/* Summary */}
                   <div>
-                    <label className="block text-[13px] font-medium text-gray-400/90 mb-2.5">Summary</label>
+                    <label className="block text-sm font-medium text-gray-400/90 mb-3">Summary</label>
                     <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl overflow-hidden focus-within:border-purple-500/30 focus-within:bg-white/[0.03] transition-all duration-200">
                       <EditorToolbar editor={summaryEditor} minimal />
-                      <div className="px-5 py-4 min-h-[100px]">
-                        <EditorContent editor={summaryEditor} className="prose prose-invert prose-sm max-w-none" />
+                      <div className="px-6 py-5 min-h-[140px]">
+                        <EditorContent editor={summaryEditor} className="prose prose-invert max-w-none" />
                       </div>
                     </div>
                   </div>
@@ -1152,11 +1152,11 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
                   {/* Full Backstory */}
                   <div>
-                    <label className="block text-[13px] font-medium text-gray-400/90 mb-2.5">Full Backstory</label>
+                    <label className="block text-sm font-medium text-gray-400/90 mb-3">Full Backstory</label>
                     <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl overflow-hidden focus-within:border-purple-500/30 focus-within:bg-white/[0.03] transition-all duration-200">
                       <EditorToolbar editor={notesEditor} />
-                      <div className="px-6 py-5 min-h-[350px]">
-                        <EditorContent editor={notesEditor} className="prose prose-invert max-w-none" />
+                      <div className="px-8 py-6 min-h-[400px]">
+                        <EditorContent editor={notesEditor} className="prose prose-invert prose-lg max-w-none" />
                       </div>
                     </div>
                   </div>
@@ -1185,72 +1185,72 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               </section>
 
               {/* Section Divider */}
-              <div className="flex items-center gap-6 my-10">
+              <div className="flex items-center gap-6 my-14">
                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
               </div>
 
               {/* ═══════════════ DETAILS SECTION ═══════════════ */}
-              <section id="details" className="scroll-mt-8 mb-16">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
+              <section id="details" className="scroll-mt-8 mb-20">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
                     <FileText className="w-5 h-5 text-purple-400" />
                   </div>
-                  <h2 className="text-base font-semibold text-white/90 uppercase tracking-wider">Details</h2>
+                  <h2 className="text-lg font-semibold text-white/90 uppercase tracking-wider">Details</h2>
                   <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-8">
                   {/* Appearance */}
                   <div>
-                    <label className="block text-[13px] font-medium text-gray-400/90 mb-2.5">Appearance</label>
+                    <label className="block text-sm font-medium text-gray-400/90 mb-3">Appearance</label>
                     <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl overflow-hidden focus-within:border-purple-500/30 focus-within:bg-white/[0.03] transition-all duration-200">
                       <textarea
                         value={formData.appearance}
                         onChange={(e) => setFormData(prev => ({ ...prev, appearance: e.target.value }))}
                         placeholder="Physical description, distinguishing features, typical attire..."
-                        className="w-full px-5 py-4 min-h-[120px] text-[14px] bg-transparent text-white/80 placeholder:text-gray-600 focus:outline-none resize-none leading-relaxed"
+                        className="w-full px-6 py-5 min-h-[160px] text-[15px] bg-transparent text-white/80 placeholder:text-gray-600 focus:outline-none resize-none leading-relaxed"
                       />
                     </div>
                   </div>
 
                   {/* Personality */}
                   <div>
-                    <label className="block text-[13px] font-medium text-gray-400/90 mb-2.5">Personality</label>
+                    <label className="block text-sm font-medium text-gray-400/90 mb-3">Personality</label>
                     <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl overflow-hidden focus-within:border-purple-500/30 focus-within:bg-white/[0.03] transition-all duration-200">
                       <textarea
                         value={formData.personality}
                         onChange={(e) => setFormData(prev => ({ ...prev, personality: e.target.value }))}
                         placeholder="Temperament, quirks, mannerisms, how they interact with others..."
-                        className="w-full px-5 py-4 min-h-[120px] text-[14px] bg-transparent text-white/80 placeholder:text-gray-600 focus:outline-none resize-none leading-relaxed"
+                        className="w-full px-6 py-5 min-h-[160px] text-[15px] bg-transparent text-white/80 placeholder:text-gray-600 focus:outline-none resize-none leading-relaxed"
                       />
                     </div>
                   </div>
 
                   {/* Goals */}
                   <div>
-                    <label className="block text-[13px] font-medium text-gray-400/90 mb-2.5">Goals & Motivations</label>
+                    <label className="block text-sm font-medium text-gray-400/90 mb-3">Goals & Motivations</label>
                     <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl overflow-hidden focus-within:border-purple-500/30 focus-within:bg-white/[0.03] transition-all duration-200">
                       <textarea
                         value={formData.goals}
                         onChange={(e) => setFormData(prev => ({ ...prev, goals: e.target.value }))}
                         placeholder="What drives this character? What do they want to achieve?"
-                        className="w-full px-5 py-4 min-h-[120px] text-[14px] bg-transparent text-white/80 placeholder:text-gray-600 focus:outline-none resize-none leading-relaxed"
+                        className="w-full px-6 py-5 min-h-[160px] text-[15px] bg-transparent text-white/80 placeholder:text-gray-600 focus:outline-none resize-none leading-relaxed"
                       />
                     </div>
                   </div>
 
                   {/* Secrets */}
                   <div>
-                    <div className="flex items-center justify-between mb-2.5">
-                      <label className="flex items-center gap-2 text-[13px] font-medium text-gray-400/90">
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-400/90">
                         Secrets
-                        <span className="text-[11px] bg-purple-500/15 text-purple-400 px-2 py-0.5 rounded-md border border-purple-500/20">Private</span>
+                        <span className="text-xs bg-purple-500/15 text-purple-400 px-2.5 py-1 rounded-md border border-purple-500/20">Private</span>
                       </label>
                       <button
                         onClick={() => setShowSecrets(!showSecrets)}
-                        className="flex items-center gap-1.5 text-[12px] text-gray-500 hover:text-purple-400 transition-all duration-200"
+                        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-purple-400 transition-all duration-200"
                       >
-                        {showSecrets ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        {showSecrets ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         {showSecrets ? 'Hide' : 'Reveal'}
                       </button>
                     </div>
@@ -1260,12 +1260,12 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                           value={formData.secrets}
                           onChange={(e) => setFormData(prev => ({ ...prev, secrets: e.target.value }))}
                           placeholder="Hidden information, true motivations, dark secrets..."
-                          className="w-full px-5 py-4 min-h-[120px] text-[14px] bg-transparent text-white/80 placeholder:text-gray-600 focus:outline-none resize-none leading-relaxed"
+                          className="w-full px-6 py-5 min-h-[160px] text-[15px] bg-transparent text-white/80 placeholder:text-gray-600 focus:outline-none resize-none leading-relaxed"
                         />
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
-                        <p className="text-[13px] text-gray-500">Click "Reveal" to show secrets</p>
+                      <div className="flex flex-col items-center justify-center py-16 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                        <p className="text-sm text-gray-500">Click "Reveal" to show secrets</p>
                       </div>
                     )}
                   </div>
@@ -1291,47 +1291,47 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   </div>
 
                   {/* Campaign Info */}
-                  <div className="pt-2">
-                    <label className="block text-[13px] font-medium text-gray-400/90 mb-3">Campaign Information</label>
-                    <div className="grid grid-cols-2 gap-4">
+                  <div className="pt-4">
+                    <label className="block text-sm font-medium text-gray-400/90 mb-4">Campaign Information</label>
+                    <div className="grid grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-[12px] text-gray-500 mb-1.5">Game System</label>
+                        <label className="block text-sm text-gray-500 mb-2">Game System</label>
                         <input
                           type="text"
                           value={formData.game_system}
                           onChange={(e) => setFormData(prev => ({ ...prev, game_system: e.target.value }))}
                           placeholder="D&D 5e, Pathfinder 2e..."
-                          className="w-full py-2.5 px-3.5 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
+                          className="w-full py-3 px-4 text-[15px] bg-white/[0.02] border border-white/[0.06] rounded-xl text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
                         />
                       </div>
                       <div>
-                        <label className="block text-[12px] text-gray-500 mb-1.5">Campaign Name</label>
+                        <label className="block text-sm text-gray-500 mb-2">Campaign Name</label>
                         <input
                           type="text"
                           value={formData.external_campaign}
                           onChange={(e) => setFormData(prev => ({ ...prev, external_campaign: e.target.value }))}
                           placeholder="The Lost Mines..."
-                          className="w-full py-2.5 px-3.5 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
+                          className="w-full py-3 px-4 text-[15px] bg-white/[0.02] border border-white/[0.06] rounded-xl text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
                         />
                       </div>
                       <div>
-                        <label className="block text-[12px] text-gray-500 mb-1.5">DM Name</label>
+                        <label className="block text-sm text-gray-500 mb-2">DM Name</label>
                         <input
                           type="text"
                           value={formData.dm_name}
                           onChange={(e) => setFormData(prev => ({ ...prev, dm_name: e.target.value }))}
                           placeholder="Who runs this game?"
-                          className="w-full py-2.5 px-3.5 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
+                          className="w-full py-3 px-4 text-[15px] bg-white/[0.02] border border-white/[0.06] rounded-xl text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
                         />
                       </div>
                       <div>
-                        <label className="block text-[12px] text-gray-500 mb-1.5">Campaign Started</label>
+                        <label className="block text-sm text-gray-500 mb-2">Campaign Started</label>
                         <input
                           type="text"
                           value={formData.campaign_started}
                           onChange={(e) => setFormData(prev => ({ ...prev, campaign_started: e.target.value }))}
                           placeholder="January 2024..."
-                          className="w-full py-2.5 px-3.5 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
+                          className="w-full py-3 px-4 text-[15px] bg-white/[0.02] border border-white/[0.06] rounded-xl text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
                         />
                       </div>
                     </div>
@@ -1340,48 +1340,48 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               </section>
 
               {/* Section Divider */}
-              <div className="flex items-center gap-6 my-10">
+              <div className="flex items-center gap-6 my-14">
                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
               </div>
 
               {/* ═══════════════ PEOPLE SECTION ═══════════════ */}
-              <section id="people" className="scroll-mt-8 mb-16">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
+              <section id="people" className="scroll-mt-8 mb-20">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
                     <Users className="w-5 h-5 text-purple-400" />
                   </div>
-                  <h2 className="text-base font-semibold text-white/90 uppercase tracking-wider">People</h2>
+                  <h2 className="text-lg font-semibold text-white/90 uppercase tracking-wider">People</h2>
                   <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-8">
                   {/* Story Characters */}
                   <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <label className="text-[13px] font-medium text-gray-400/90">Story Characters</label>
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="text-sm font-medium text-gray-400/90">Story Characters</label>
                       <button
                         onClick={() => setAddStoryCharacterModalOpen(true)}
-                        className="flex items-center gap-1.5 py-1.5 px-3 text-[12px] text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
+                        className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
                       >
-                        <Plus className="w-3.5 h-3.5" />
-                        Add
+                        <Plus className="w-4 h-4" />
+                        Add Character
                       </button>
                     </div>
 
                     {storyCharacters.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
-                        <Users className="w-8 h-8 mb-3 text-gray-600" />
-                        <p className="text-[13px] text-gray-500">No story characters yet</p>
+                      <div className="flex flex-col items-center justify-center py-16 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                        <Users className="w-10 h-10 mb-4 text-gray-600" />
+                        <p className="text-sm text-gray-500">No story characters yet</p>
                       </div>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         {storyCharacters.map((char) => (
                           <div
                             key={char.id}
-                            className="flex items-start gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.04] hover:border-purple-500/20 transition-all duration-200"
+                            className="flex items-start gap-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.04] hover:border-purple-500/20 transition-all duration-200"
                           >
                             {char.image_url ? (
-                              <Image src={char.image_url} alt={char.name} width={40} height={40} className="rounded-lg object-cover" />
+                              <Image src={char.image_url} alt={char.name} width={48} height={48} className="rounded-lg object-cover" />
                             ) : (
                               <div className="w-10 h-10 rounded-lg bg-white/[0.04] flex items-center justify-center">
                                 <User className="w-4 h-4 text-gray-500" />
@@ -1404,20 +1404,20 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
                   {/* What I've Learned */}
                   <div>
-                    <label className="block text-[13px] font-medium text-gray-400/90 mb-3">Learned Facts</label>
+                    <label className="block text-sm font-medium text-gray-400/90 mb-4">Learned Facts</label>
                     {learnedFacts.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
-                        <BookOpen className="w-8 h-8 mb-3 text-gray-600" />
-                        <p className="text-[13px] text-gray-500">No learned facts recorded</p>
+                      <div className="flex flex-col items-center justify-center py-16 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                        <BookOpen className="w-10 h-10 mb-4 text-gray-600" />
+                        <p className="text-sm text-gray-500">No learned facts recorded</p>
                       </div>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         {learnedFacts.map((fact) => (
-                          <div key={fact.id} className="p-3 bg-white/[0.02] rounded-lg border border-white/[0.04]">
-                            <h4 className="text-[13px] font-medium text-white/90 mb-2">{fact.about_name}</h4>
-                            <ul className="space-y-1">
+                          <div key={fact.id} className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                            <h4 className="text-sm font-medium text-white/90 mb-3">{fact.about_name}</h4>
+                            <ul className="space-y-2">
                               {fact.facts?.map((f, i) => (
-                                <li key={i} className="text-[12px] text-gray-500 flex items-start gap-2">
+                                <li key={i} className="text-sm text-gray-500 flex items-start gap-2">
                                   <span className="text-purple-400/70 mt-0.5">•</span>
                                   {f}
                                 </li>
@@ -1432,55 +1432,55 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               </section>
 
               {/* Section Divider */}
-              <div className="flex items-center gap-6 my-10">
+              <div className="flex items-center gap-6 my-14">
                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
               </div>
 
               {/* ═══════════════ JOURNAL SECTION ═══════════════ */}
-              <section id="journal" className="scroll-mt-8 mb-16">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
+              <section id="journal" className="scroll-mt-8 mb-20">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
                     <Scroll className="w-5 h-5 text-purple-400" />
                   </div>
-                  <h2 className="text-base font-semibold text-white/90 uppercase tracking-wider">Journal</h2>
+                  <h2 className="text-lg font-semibold text-white/90 uppercase tracking-wider">Journal</h2>
                   <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
                   <button
                     onClick={() => setAddJournalModalOpen(true)}
-                    className="flex items-center gap-1.5 py-1.5 px-3 text-[12px] text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
+                    className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
                   >
-                    <Plus className="w-3.5 h-3.5" />
+                    <Plus className="w-4 h-4" />
                     Add Entry
                   </button>
                 </div>
 
                 {journalEntries.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
-                    <Scroll className="w-8 h-8 mb-3 text-gray-600" />
-                    <p className="text-[13px] text-gray-500">No journal entries yet</p>
+                  <div className="flex flex-col items-center justify-center py-16 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                    <Scroll className="w-10 h-10 mb-4 text-gray-600" />
+                    <p className="text-sm text-gray-500">No journal entries yet</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     {journalEntries.map((entry) => (
                       <div
                         key={entry.id}
-                        className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04] hover:border-purple-500/20 transition-all duration-200"
+                        className="p-5 bg-white/[0.02] rounded-xl border border-white/[0.04] hover:border-purple-500/20 transition-all duration-200"
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
                             {entry.session_number && (
-                              <span className="text-[11px] px-2 py-0.5 bg-yellow-500/15 text-yellow-400 rounded-md font-medium border border-yellow-500/20">
+                              <span className="text-xs px-2.5 py-1 bg-yellow-500/15 text-yellow-400 rounded-md font-medium border border-yellow-500/20">
                                 Session {entry.session_number}
                               </span>
                             )}
-                            {entry.title && <span className="text-[13px] font-medium text-white/90">{entry.title}</span>}
+                            {entry.title && <span className="text-sm font-medium text-white/90">{entry.title}</span>}
                           </div>
                           {entry.session_date && (
-                            <span className="text-[11px] text-gray-500">
+                            <span className="text-xs text-gray-500">
                               {new Date(entry.session_date).toLocaleDateString()}
                             </span>
                           )}
                         </div>
-                        <p className="text-[13px] text-gray-400 whitespace-pre-wrap leading-relaxed">{entry.notes}</p>
+                        <p className="text-sm text-gray-400 whitespace-pre-wrap leading-relaxed">{entry.notes}</p>
                       </div>
                     ))}
                   </div>
@@ -1488,56 +1488,56 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               </section>
 
               {/* Section Divider */}
-              <div className="flex items-center gap-6 my-10">
+              <div className="flex items-center gap-6 my-14">
                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
               </div>
 
               {/* ═══════════════ STATS SECTION ═══════════════ */}
-              <section id="stats" className="scroll-mt-8 mb-16">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
+              <section id="stats" className="scroll-mt-8 mb-20">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
                     <BarChart3 className="w-5 h-5 text-purple-400" />
                   </div>
-                  <h2 className="text-base font-semibold text-white/90 uppercase tracking-wider">Stats</h2>
+                  <h2 className="text-lg font-semibold text-white/90 uppercase tracking-wider">Stats</h2>
                   <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div>
-                    <label className="block text-[12px] text-gray-500 mb-1.5">Gold</label>
+                    <label className="block text-sm text-gray-500 mb-2">Gold</label>
                     <input
                       type="number"
                       value={formData.gold}
                       onChange={(e) => setFormData(prev => ({ ...prev, gold: parseInt(e.target.value) || 0 }))}
-                      className="w-32 py-2.5 px-3.5 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-yellow-400 font-medium focus:outline-none focus:bg-white/[0.04] focus:border-yellow-500/30 transition-all duration-200"
+                      className="w-40 py-3 px-4 text-lg bg-white/[0.02] border border-white/[0.06] rounded-xl text-yellow-400 font-medium focus:outline-none focus:bg-white/[0.04] focus:border-yellow-500/30 transition-all duration-200"
                     />
                   </div>
 
-                  <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
-                    <BarChart3 className="w-8 h-8 mb-3 text-gray-600" />
-                    <p className="text-[13px] text-gray-500">More stats coming soon</p>
+                  <div className="flex flex-col items-center justify-center py-16 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                    <BarChart3 className="w-10 h-10 mb-4 text-gray-600" />
+                    <p className="text-sm text-gray-500">More stats coming soon</p>
                   </div>
                 </div>
               </section>
 
               {/* Section Divider */}
-              <div className="flex items-center gap-6 my-10">
+              <div className="flex items-center gap-6 my-14">
                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
               </div>
 
               {/* ═══════════════ GALLERY SECTION ═══════════════ */}
               <section id="gallery" className="scroll-mt-8">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
                     <GalleryIcon className="w-5 h-5 text-purple-400" />
                   </div>
-                  <h2 className="text-base font-semibold text-white/90 uppercase tracking-wider">Gallery</h2>
+                  <h2 className="text-lg font-semibold text-white/90 uppercase tracking-wider">Gallery</h2>
                   <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
                 </div>
 
-                <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
-                  <GalleryIcon className="w-8 h-8 mb-3 text-gray-600" />
-                  <p className="text-[13px] text-gray-500">Gallery coming soon</p>
+                <div className="flex flex-col items-center justify-center py-16 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                  <GalleryIcon className="w-10 h-10 mb-4 text-gray-600" />
+                  <p className="text-sm text-gray-500">Gallery coming soon</p>
                 </div>
               </section>
 
