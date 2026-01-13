@@ -913,7 +913,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Left Sidebar */}
           <aside className="w-80 xl:w-96 flex-shrink-0 flex flex-col border-r border-white/10 overflow-y-auto bg-[#0d0d14]">
-            <div className="p-8 space-y-8">
+            <div className="p-8 space-y-8 bg-red-500">
               {/* Portrait */}
               <PortraitDisplay />
 
@@ -1098,10 +1098,10 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
           {/* Main Content Area - Single Scrollable Page */}
           <main className="flex-1 overflow-y-auto" ref={scrollContainerRef}>
-            <div className="p-10 xl:p-12 2xl:p-16 space-y-20">
+            <div className="p-10 xl:p-12 2xl:p-16 space-y-20 bg-green-500">
 
               {/* ═══════════════ BACKSTORY SECTION ═══════════════ */}
-              <section id="backstory" className="scroll-mt-8">
+              <section id="backstory" className="scroll-mt-8 bg-blue-500">
                 <SectionHeader title="Backstory" icon={BookOpen} />
 
                 <div className="space-y-10">
