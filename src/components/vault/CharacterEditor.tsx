@@ -457,7 +457,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   // STYLED COMPONENTS
   // =====================================================
 
-  // Toolbar button component - subtle, modern
+  // Toolbar button component - clear, easy to use
   const ToolbarButton = ({ onClick, active, disabled, children, title }: {
     onClick: () => void
     active?: boolean
@@ -471,75 +471,80 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       disabled={disabled}
       title={title}
       className={cn(
-        'p-2 rounded-md transition-colors',
+        'p-2.5 rounded-lg transition-colors',
         active
           ? 'bg-purple-500/20 text-purple-400'
-          : 'text-gray-500 hover:text-white hover:bg-white/10',
-        disabled && 'opacity-30 cursor-not-allowed hover:bg-transparent hover:text-gray-500'
+          : 'text-gray-400 hover:text-white hover:bg-white/10',
+        disabled && 'opacity-30 cursor-not-allowed hover:bg-transparent hover:text-gray-400'
       )}
     >
       {children}
     </button>
   )
 
-  // Editor toolbar - subtle, Google Docs style
+  // Editor toolbar - clear icons, easy to use
   const EditorToolbar = ({ editor }: { editor: any }) => (
-    <div className="flex items-center px-3 py-2 border-b border-white/5 bg-white/[0.02]">
-      <div className="flex items-center">
+    <div className="flex items-center gap-1 p-3 border-b border-white/10 bg-white/[0.02]">
+      {/* Undo/Redo */}
+      <div className="flex items-center gap-0.5">
         <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo()} title="Undo">
-          <Undo className="h-4 w-4" />
+          <Undo className="h-5 w-5" />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo()} title="Redo">
-          <Redo className="h-4 w-4" />
+          <Redo className="h-5 w-5" />
         </ToolbarButton>
       </div>
-      <div className="w-px h-5 bg-white/10 mx-2" />
-      <div className="flex items-center">
+      <div className="w-px h-6 bg-white/10 mx-2" />
+      {/* Headings */}
+      <div className="flex items-center gap-0.5">
         <ToolbarButton onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} active={editor?.isActive('heading', { level: 1 })} title="Heading 1">
-          <Heading1 className="h-4 w-4" />
+          <Heading1 className="h-5 w-5" />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} active={editor?.isActive('heading', { level: 2 })} title="Heading 2">
-          <Heading2 className="h-4 w-4" />
+          <Heading2 className="h-5 w-5" />
         </ToolbarButton>
       </div>
-      <div className="w-px h-5 bg-white/10 mx-2" />
-      <div className="flex items-center">
+      <div className="w-px h-6 bg-white/10 mx-2" />
+      {/* Text formatting */}
+      <div className="flex items-center gap-0.5">
         <ToolbarButton onClick={() => editor?.chain().focus().toggleBold().run()} active={editor?.isActive('bold')} title="Bold">
-          <Bold className="h-4 w-4" />
+          <Bold className="h-5 w-5" />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor?.chain().focus().toggleItalic().run()} active={editor?.isActive('italic')} title="Italic">
-          <Italic className="h-4 w-4" />
+          <Italic className="h-5 w-5" />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor?.chain().focus().toggleUnderline().run()} active={editor?.isActive('underline')} title="Underline">
-          <UnderlineIcon className="h-4 w-4" />
+          <UnderlineIcon className="h-5 w-5" />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor?.chain().focus().toggleStrike().run()} active={editor?.isActive('strike')} title="Strikethrough">
-          <Strikethrough className="h-4 w-4" />
+          <Strikethrough className="h-5 w-5" />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor?.chain().focus().toggleHighlight().run()} active={editor?.isActive('highlight')} title="Highlight">
-          <Highlighter className="h-4 w-4" />
+          <Highlighter className="h-5 w-5" />
         </ToolbarButton>
       </div>
-      <div className="w-px h-5 bg-white/10 mx-2" />
-      <div className="flex items-center">
+      <div className="w-px h-6 bg-white/10 mx-2" />
+      {/* Lists */}
+      <div className="flex items-center gap-0.5">
         <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} active={editor?.isActive('bulletList')} title="Bullet List">
-          <List className="h-4 w-4" />
+          <List className="h-5 w-5" />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor?.chain().focus().toggleOrderedList().run()} active={editor?.isActive('orderedList')} title="Numbered List">
-          <ListOrdered className="h-4 w-4" />
+          <ListOrdered className="h-5 w-5" />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor?.chain().focus().toggleBlockquote().run()} active={editor?.isActive('blockquote')} title="Quote">
-          <Quote className="h-4 w-4" />
+          <Quote className="h-5 w-5" />
         </ToolbarButton>
       </div>
-      <div className="w-px h-5 bg-white/10 mx-2" />
-      <div className="flex items-center">
+      <div className="w-px h-6 bg-white/10 mx-2" />
+      {/* Insert */}
+      <div className="flex items-center gap-0.5">
         <ToolbarButton onClick={() => setLink(editor)} active={editor?.isActive('link')} title="Link">
-          <LinkIcon className="h-4 w-4" />
+          <LinkIcon className="h-5 w-5" />
         </ToolbarButton>
         <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleEditorImageUpload} />
         <ToolbarButton onClick={() => imageInputRef.current?.click()} title="Insert Image">
-          <ImageIcon className="h-4 w-4" />
+          <ImageIcon className="h-5 w-5" />
         </ToolbarButton>
       </div>
     </div>
@@ -562,9 +567,9 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     </label>
   )
 
-  // Form input styles - larger, more comfortable
-  const inputStyles = "w-full px-4 py-3 min-h-[48px] bg-white/5 border border-white/10 rounded-lg text-base text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/25 transition-all"
-  const textareaStyles = cn(inputStyles, "min-h-[140px] resize-none")
+  // Form input styles - comfortable, easy to use
+  const inputStyles = "w-full px-4 py-4 bg-white/5 border border-white/10 rounded-xl text-base text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/25 transition-all"
+  const textareaStyles = cn(inputStyles, "min-h-[160px] resize-none")
 
   // Status dropdown
   const StatusDropdown = () => {
@@ -574,7 +579,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       <div className="relative">
         <button
           onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-          className="flex items-center gap-3 w-full px-4 py-3 min-h-[48px] bg-white/5 border border-white/10 rounded-lg hover:border-purple-500/30 transition-all"
+          className="flex items-center gap-3 w-full px-4 py-4 bg-white/5 border border-white/10 rounded-xl hover:border-purple-500/30 transition-all"
         >
           <div
             className="w-3 h-3 rounded-full ring-2 ring-offset-1 ring-offset-transparent"
@@ -773,52 +778,58 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   // =====================================================
 
   const BackstoryTab = () => (
-    <div className="space-y-8">
-      {/* Summary */}
-      <div>
+    <div className="space-y-10">
+      {/* Summary - compact, just a brief overview */}
+      <section>
         <SectionHeader>Summary</SectionHeader>
         <div className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden focus-within:border-purple-500/20 transition-colors">
           <EditorToolbar editor={summaryEditor} />
-          <div className="p-5 min-h-[150px]">
+          <div className="p-6 min-h-[120px]">
             <EditorContent editor={summaryEditor} />
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Quick Summary */}
-      <ArrayFieldEditor
-        label="Quick Summary"
-        items={formData.tldr}
-        placeholder="Add a quick fact about this character..."
-        onChange={(items) => setFormData(prev => ({ ...prev, tldr: items }))}
-      />
+      <section>
+        <ArrayFieldEditor
+          label="Quick Summary"
+          items={formData.tldr}
+          placeholder="Add a quick fact about this character..."
+          onChange={(items) => setFormData(prev => ({ ...prev, tldr: items }))}
+        />
+      </section>
 
-      {/* Full Backstory - This is the main content, should be tall */}
-      <div>
+      {/* Full Backstory - THE MAIN CONTENT, should be tall */}
+      <section>
         <SectionHeader>Full Backstory</SectionHeader>
         <div className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden focus-within:border-purple-500/20 transition-colors">
           <EditorToolbar editor={notesEditor} />
-          <div className="p-6 min-h-[400px] lg:min-h-[500px] xl:min-h-[600px]">
+          <div className="p-6 xl:p-8 min-h-[500px] xl:min-h-[600px] 2xl:min-h-[700px]">
             <EditorContent editor={notesEditor} />
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Plot Hooks */}
-      <ArrayFieldEditor
-        label="Plot Hooks"
-        items={formData.plot_hooks}
-        placeholder="Add a story hook for the DM..."
-        onChange={(items) => setFormData(prev => ({ ...prev, plot_hooks: items }))}
-      />
+      <section>
+        <ArrayFieldEditor
+          label="Plot Hooks"
+          items={formData.plot_hooks}
+          placeholder="Add a story hook for the DM..."
+          onChange={(items) => setFormData(prev => ({ ...prev, plot_hooks: items }))}
+        />
+      </section>
 
       {/* Quotes */}
-      <ArrayFieldEditor
-        label="Memorable Quotes"
-        items={formData.quotes}
-        placeholder="Add a memorable quote..."
-        onChange={(items) => setFormData(prev => ({ ...prev, quotes: items }))}
-      />
+      <section>
+        <ArrayFieldEditor
+          label="Memorable Quotes"
+          items={formData.quotes}
+          placeholder="Add a memorable quote..."
+          onChange={(items) => setFormData(prev => ({ ...prev, quotes: items }))}
+        />
+      </section>
     </div>
   )
 
@@ -1113,13 +1124,13 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
   if (!notesEditor || !summaryEditor) return null
 
-  // Tab configuration
+  // Tab configuration - larger icons for visibility
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
-    { id: 'backstory', label: 'Backstory', icon: <Scroll className="w-4 h-4" /> },
-    { id: 'details', label: 'Details', icon: <FileText className="w-4 h-4" /> },
-    { id: 'people', label: 'People', icon: <Users className="w-4 h-4" /> },
-    { id: 'journal', label: 'Journal', icon: <BookOpen className="w-4 h-4" /> },
-    { id: 'more', label: 'More', icon: <MoreHorizontal className="w-4 h-4" /> },
+    { id: 'backstory', label: 'Backstory', icon: <Scroll className="w-5 h-5" /> },
+    { id: 'details', label: 'Details', icon: <FileText className="w-5 h-5" /> },
+    { id: 'people', label: 'People', icon: <Users className="w-5 h-5" /> },
+    { id: 'journal', label: 'Journal', icon: <BookOpen className="w-5 h-5" /> },
+    { id: 'more', label: 'More', icon: <MoreHorizontal className="w-5 h-5" /> },
   ]
 
   // =====================================================
@@ -1205,11 +1216,11 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               {/* Type Toggle */}
               <div>
                 <FormLabel>Character Type</FormLabel>
-                <div className="flex bg-white/5 rounded-lg p-1.5">
+                <div className="flex bg-white/5 rounded-xl p-1.5">
                   <button
                     onClick={() => setFormData(prev => ({ ...prev, type: 'pc' }))}
                     className={cn(
-                      'flex-1 py-3 px-4 rounded-md text-sm font-medium transition-all',
+                      'flex-1 py-4 px-4 rounded-lg text-sm font-medium transition-all',
                       formData.type === 'pc'
                         ? 'bg-purple-600 text-white shadow-lg'
                         : 'text-gray-400 hover:text-white'
@@ -1220,7 +1231,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   <button
                     onClick={() => setFormData(prev => ({ ...prev, type: 'npc' }))}
                     className={cn(
-                      'flex-1 py-3 px-4 rounded-md text-sm font-medium transition-all',
+                      'flex-1 py-4 px-4 rounded-lg text-sm font-medium transition-all',
                       formData.type === 'npc'
                         ? 'bg-gray-600 text-white shadow-lg'
                         : 'text-gray-400 hover:text-white'
@@ -1238,11 +1249,11 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               </div>
 
               {/* Divider */}
-              <div className="h-px bg-gradient-to-r from-purple-500/30 via-white/10 to-transparent" />
+              <div className="pt-2 border-t border-white/10" />
 
               {/* Details Section */}
-              <div className="space-y-4">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Details</p>
+              <div className="space-y-5">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Details</h3>
                 <div>
                   <FormLabel>Race</FormLabel>
                   <input
@@ -1276,17 +1287,17 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               </div>
 
               {/* Divider */}
-              <div className="h-px bg-gradient-to-r from-purple-500/30 via-white/10 to-transparent" />
+              <div className="pt-2 border-t border-white/10" />
 
               {/* Links Section */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Links</p>
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Links</h3>
                   <button
                     onClick={() => setAddLinkModalOpen(true)}
-                    className="p-1.5 rounded-lg hover:bg-white/5 transition-colors text-gray-500 hover:text-purple-400"
+                    className="p-2 rounded-lg hover:bg-white/5 transition-colors text-gray-500 hover:text-purple-400"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-5 h-5" />
                   </button>
                 </div>
 
@@ -1295,7 +1306,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     href={formData.theme_music_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.03] border border-white/5 hover:border-purple-500/30 transition-all group"
+                    className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.03] border border-white/5 hover:border-purple-500/30 transition-all group"
                   >
                     <Music className="w-5 h-5 text-purple-400" />
                     <span className="text-sm text-gray-300 flex-1 truncate group-hover:text-white transition-colors">
@@ -1310,7 +1321,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     href={formData.character_sheet_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.03] border border-white/5 hover:border-yellow-500/30 transition-all group"
+                    className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.03] border border-white/5 hover:border-yellow-500/30 transition-all group"
                   >
                     <FileText className="w-5 h-5 text-yellow-400" />
                     <span className="text-sm text-gray-300 flex-1 truncate group-hover:text-white transition-colors">Character Sheet</span>
@@ -1324,7 +1335,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.03] border border-white/5 hover:border-white/20 transition-all group"
+                    className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.03] border border-white/5 hover:border-white/20 transition-all group"
                   >
                     <ExternalLink className="w-5 h-5 text-gray-500" />
                     <span className="text-sm text-gray-300 flex-1 truncate group-hover:text-white transition-colors">{link.title}</span>
@@ -1334,9 +1345,9 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 {!formData.theme_music_url && !formData.character_sheet_url && links.length === 0 && (
                   <button
                     onClick={() => setAddLinkModalOpen(true)}
-                    className="w-full py-3 px-4 border border-dashed border-white/20 rounded-lg text-gray-400 hover:border-purple-500/50 hover:text-purple-400 transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-4 px-4 border border-dashed border-white/20 rounded-xl text-gray-400 hover:border-purple-500/50 hover:text-purple-400 transition-colors flex items-center justify-center gap-2"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-5 h-5" />
                     Add Link
                   </button>
                 )}
@@ -1360,28 +1371,28 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
           {/* Main Content Area */}
           <main className="flex-1 flex flex-col overflow-hidden min-h-0">
-            {/* Tabs - Fixed height */}
-            <div className="flex-shrink-0 border-b border-white/10 bg-[#0d0d14]/50">
-              <nav className="flex px-6 gap-1">
+            {/* Tabs - Prominent, easy to click */}
+            <div className="flex-shrink-0 border-b border-white/10 bg-[#0d0d14]">
+              <nav className="flex items-center gap-2 px-4">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
-                      'flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-all',
+                      'flex items-center gap-3 px-5 py-4 text-sm font-medium border-b-2 -mb-px transition-all',
                       activeTab === tab.id
-                        ? 'bg-white/5 text-white border-b-2 border-purple-500 -mb-px'
-                        : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]'
+                        ? 'border-purple-500 text-white'
+                        : 'border-transparent text-gray-400 hover:text-white hover:bg-white/5'
                     )}
                   >
                     {tab.icon}
-                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span>{tab.label}</span>
                   </button>
                 ))}
               </nav>
             </div>
 
-            {/* Tab Content - Fills ALL remaining space, NO max-width */}
+            {/* Tab Content - Fills ALL remaining space */}
             <div className="flex-1 overflow-y-auto p-6 lg:p-8 xl:p-10">
               {activeTab === 'backstory' && <BackstoryTab />}
               {activeTab === 'details' && <DetailsTab />}
