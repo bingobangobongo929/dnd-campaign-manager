@@ -311,7 +311,7 @@ function CampaignCanvasInner({
         <MiniMap
           nodeColor={(node) => {
             if (node.type === 'group') return 'var(--border)'
-            return 'var(--accent-primary)'
+            return 'var(--arcane-purple)'
           }}
           maskColor="rgba(0, 0, 0, 0.8)"
           className="!bg-[--bg-surface] !border-[--border]"

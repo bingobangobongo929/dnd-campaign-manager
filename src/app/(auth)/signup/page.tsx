@@ -50,8 +50,8 @@ export default function SignupPage() {
       <div className="min-h-screen flex items-center justify-center p-4 bg-[--bg-base]">
         <Card className="w-full max-w-md">
           <CardContent className="py-8 text-center">
-            <div className="w-12 h-12 rounded-full bg-[--accent-success]/10 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-6 h-6 text-[--accent-success]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-12 h-12 rounded-full bg-[--arcane-emerald]/10 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-[--arcane-emerald]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
@@ -78,7 +78,7 @@ export default function SignupPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="p-3 rounded-lg bg-[--accent-danger]/10 text-[--accent-danger] text-sm">
+              <div className="p-3 rounded-lg bg-[--arcane-ember]/10 text-[--arcane-ember] text-sm">
                 {error}
               </div>
             )}
@@ -123,7 +123,7 @@ export default function SignupPage() {
 
           <p className="mt-4 text-center text-sm text-[--text-secondary]">
             Already have an account?{' '}
-            <Link href="/login" className="text-[--accent-primary] hover:underline">
+            <Link href="/login" className="text-[--arcane-purple] hover:underline">
               Sign in
             </Link>
           </p>

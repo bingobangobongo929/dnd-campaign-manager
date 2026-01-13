@@ -269,8 +269,8 @@ export function CharacterImageUpload({
             disabled={isLoading}
             className={cn(
               'relative w-full h-full rounded-full overflow-hidden transition-all',
-              'focus:outline-none focus:ring-2 focus:ring-[--accent-primary] focus:ring-offset-2 focus:ring-offset-[--bg-surface]',
-              'border-2 border-dashed border-[--text-tertiary] hover:border-[--accent-primary]',
+              'focus:outline-none focus:ring-2 focus:ring-[--arcane-purple] focus:ring-offset-2 focus:ring-offset-[--bg-surface]',
+              'border-2 border-dashed border-[--text-tertiary] hover:border-[--arcane-purple]',
               isLoading && 'opacity-70 cursor-wait',
               !isLoading && 'cursor-pointer'
             )}
@@ -279,7 +279,7 @@ export function CharacterImageUpload({
               {isLoading ? (
                 <Loader2 className="w-6 h-6 text-[--text-secondary] animate-spin" />
               ) : (
-                <Camera className="w-6 h-6 text-[--text-tertiary] group-hover:text-[--accent-primary] transition-colors" />
+                <Camera className="w-6 h-6 text-[--text-tertiary] group-hover:text-[--arcane-purple] transition-colors" />
               )}
             </div>
           </button>

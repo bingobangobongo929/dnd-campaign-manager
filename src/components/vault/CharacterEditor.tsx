@@ -360,41 +360,41 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     setPendingImageSrc(null)
   }, [pendingImageSrc])
 
-  // Auto-save
-  const saveCharacter = useCallback(async () => {
-    if (!formData.name.trim()) return
+  // Auto-save - receives data from useAutoSave hook
+  const saveCharacter = useCallback(async (dataToSave: typeof formData) => {
+    if (!dataToSave.name.trim()) return
 
     const characterData = {
-      name: formData.name.trim(),
-      summary: formData.summary.trim() || null,
-      type: formData.type,
-      image_url: formData.image_url,
-      detail_image_url: formData.detail_image_url,
-      notes: formData.notes,
-      status: formData.status,
-      status_color: formData.status_color,
-      race: formData.race || null,
-      class: formData.class || null,
-      background: formData.background || null,
-      appearance: formData.appearance || null,
-      personality: formData.personality || null,
-      goals: formData.goals || null,
-      secrets: formData.secrets || null,
-      quotes: formData.quotes.length > 0 ? formData.quotes : null,
-      common_phrases: formData.common_phrases.length > 0 ? formData.common_phrases : null,
-      weaknesses: formData.weaknesses.length > 0 ? formData.weaknesses : null,
-      plot_hooks: formData.plot_hooks.length > 0 ? formData.plot_hooks : null,
-      tldr: formData.tldr.length > 0 ? formData.tldr : null,
-      theme_music_url: formData.theme_music_url || null,
-      theme_music_title: formData.theme_music_title || null,
-      character_sheet_url: formData.character_sheet_url || null,
-      game_system: formData.game_system || null,
-      external_campaign: formData.external_campaign || null,
-      dm_name: formData.dm_name || null,
-      campaign_started: formData.campaign_started || null,
-      quick_stats: formData.quick_stats,
-      inventory: formData.inventory,
-      gold: formData.gold,
+      name: dataToSave.name.trim(),
+      summary: dataToSave.summary.trim() || null,
+      type: dataToSave.type,
+      image_url: dataToSave.image_url,
+      detail_image_url: dataToSave.detail_image_url,
+      notes: dataToSave.notes,
+      status: dataToSave.status,
+      status_color: dataToSave.status_color,
+      race: dataToSave.race || null,
+      class: dataToSave.class || null,
+      background: dataToSave.background || null,
+      appearance: dataToSave.appearance || null,
+      personality: dataToSave.personality || null,
+      goals: dataToSave.goals || null,
+      secrets: dataToSave.secrets || null,
+      quotes: dataToSave.quotes.length > 0 ? dataToSave.quotes : null,
+      common_phrases: dataToSave.common_phrases.length > 0 ? dataToSave.common_phrases : null,
+      weaknesses: dataToSave.weaknesses.length > 0 ? dataToSave.weaknesses : null,
+      plot_hooks: dataToSave.plot_hooks.length > 0 ? dataToSave.plot_hooks : null,
+      tldr: dataToSave.tldr.length > 0 ? dataToSave.tldr : null,
+      theme_music_url: dataToSave.theme_music_url || null,
+      theme_music_title: dataToSave.theme_music_title || null,
+      character_sheet_url: dataToSave.character_sheet_url || null,
+      game_system: dataToSave.game_system || null,
+      external_campaign: dataToSave.external_campaign || null,
+      dm_name: dataToSave.dm_name || null,
+      campaign_started: dataToSave.campaign_started || null,
+      quick_stats: dataToSave.quick_stats,
+      inventory: dataToSave.inventory,
+      gold: dataToSave.gold,
       updated_at: new Date().toISOString(),
     }
 
@@ -415,7 +415,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         window.history.replaceState(null, '', `/vault/${data.id}`)
       }
     }
-  }, [formData, characterId, supabase])
+  }, [characterId, supabase])
 
   const { status } = useAutoSave({
     data: formData,

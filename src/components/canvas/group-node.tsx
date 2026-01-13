@@ -25,8 +25,8 @@ function GroupNodeComponent({ data, selected }: { data: GroupNodeData; selected?
         minWidth={300}
         minHeight={200}
         isVisible={selected}
-        lineClassName="!border-[--accent-primary]"
-        handleClassName="!w-3 !h-3 !bg-[--accent-primary] !border-none"
+        lineClassName="!border-[--arcane-purple]"
+        handleClassName="!w-3 !h-3 !bg-[--arcane-purple] !border-none"
         onResize={(_, params) => {
           onUpdate(group.id, { width: params.width, height: params.height })
         }}
@@ -35,7 +35,7 @@ function GroupNodeComponent({ data, selected }: { data: GroupNodeData; selected?
         className={cn(
           'w-full h-full rounded-2xl border-2 border-dashed transition-all',
           selected
-            ? 'border-[--accent-primary] bg-[--accent-primary]/5'
+            ? 'border-[--arcane-purple] bg-[--arcane-purple]/5'
             : 'border-[--border] bg-[--bg-hover]/20'
         )}
         style={{

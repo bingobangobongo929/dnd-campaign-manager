@@ -6,7 +6,7 @@ export type AIProvider = 'anthropic' | 'google'
 export const AI_PROVIDERS = {
   anthropic: {
     name: 'Claude (Anthropic)',
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-5-20250929',
     description: 'Excellent at creative writing and nuanced understanding',
   },
   google: {

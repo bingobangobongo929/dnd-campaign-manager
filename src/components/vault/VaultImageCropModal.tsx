@@ -137,10 +137,10 @@ export function VaultImageCropModal({
 
     setSaving(true)
     try {
-      // Card: 640x360 (16:9, 2x for retina)
-      const cardBlob = await getCroppedImg(completedCardCrop, 640, 360)
-      // Detail: 400x600 (2:3 portrait, 2x for retina)
-      const detailBlob = await getCroppedImg(completedDetailCrop, 400, 600)
+      // Card: 1280x720 (16:9 HD, high resolution for crisp grid display)
+      const cardBlob = await getCroppedImg(completedCardCrop, 1280, 720)
+      // Detail: 800x1200 (2:3 portrait, high resolution for editor/modal displays)
+      const detailBlob = await getCroppedImg(completedDetailCrop, 800, 1200)
 
       await onSave(cardBlob, detailBlob)
       onClose()

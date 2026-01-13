@@ -28,14 +28,14 @@ export function SaveIndicator({ status, className }: SaveIndicatorProps) {
       )}
       {status === 'saved' && (
         <>
-          <Check className="h-3 w-3 text-[--accent-success]" />
-          <span className="text-[--accent-success]">Saved</span>
+          <Check className="h-3 w-3 text-[--arcane-emerald]" />
+          <span className="text-[--arcane-emerald]">Saved</span>
         </>
       )}
       {status === 'error' && (
         <>
-          <AlertCircle className="h-3 w-3 text-[--accent-danger]" />
-          <span className="text-[--accent-danger]">Error saving</span>
+          <AlertCircle className="h-3 w-3 text-[--arcane-ember]" />
+          <span className="text-[--arcane-ember]">Error saving</span>
         </>
       )}
     </div>

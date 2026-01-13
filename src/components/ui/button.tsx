@@ -15,10 +15,10 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-150 focus-ring rounded-lg disabled:opacity-50 disabled:cursor-not-allowed'
 
     const variants = {
-      primary: 'bg-[--accent-primary] text-white hover:bg-[--accent-primary]/90 active:bg-[--accent-primary]/80',
+      primary: 'bg-[--arcane-purple] text-white hover:bg-[--arcane-purple]/90 active:bg-[--arcane-purple]/80',
       secondary: 'bg-[--bg-surface] text-[--text-primary] border border-[--border] hover:bg-[--bg-hover] active:bg-[--bg-elevated]',
       ghost: 'text-[--text-secondary] hover:text-[--text-primary] hover:bg-[--bg-hover] active:bg-[--bg-elevated]',
-      danger: 'bg-[--accent-danger] text-white hover:bg-[--accent-danger]/90 active:bg-[--accent-danger]/80',
+      danger: 'bg-[--arcane-ember] text-white hover:bg-[--arcane-ember]/90 active:bg-[--arcane-ember]/80',
       outline: 'border border-[--border] text-[--text-primary] hover:bg-[--bg-hover] active:bg-[--bg-elevated]',
     }
 

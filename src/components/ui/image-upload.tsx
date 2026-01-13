@@ -114,11 +114,11 @@ export function ImageUpload({
         disabled={disabled || isLoading}
         className={cn(
           'relative rounded-full overflow-hidden transition-all',
-          'focus:outline-none focus:ring-2 focus:ring-[--accent-primary] focus:ring-offset-2 focus:ring-offset-[--bg-surface]',
+          'focus:outline-none focus:ring-2 focus:ring-[--arcane-purple] focus:ring-offset-2 focus:ring-offset-[--bg-surface]',
           sizes[size],
           value
             ? 'border-2 border-[--border]'
-            : 'border-2 border-dashed border-[--text-tertiary] hover:border-[--accent-primary]',
+            : 'border-2 border-dashed border-[--text-tertiary] hover:border-[--arcane-purple]',
           disabled && 'opacity-50 cursor-not-allowed',
           !disabled && 'cursor-pointer'
         )}
@@ -145,7 +145,7 @@ export function ImageUpload({
             {isLoading ? (
               <Loader2 className={cn('text-[--text-secondary] animate-spin', iconSizes[size])} />
             ) : (
-              <Camera className={cn('text-[--text-tertiary] group-hover:text-[--accent-primary] transition-colors', iconSizes[size])} />
+              <Camera className={cn('text-[--text-tertiary] group-hover:text-[--arcane-purple] transition-colors', iconSizes[size])} />
             )}
           </div>
         )}

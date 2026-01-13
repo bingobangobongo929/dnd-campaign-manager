@@ -145,10 +145,10 @@ export function ImageCropModal({
 
     setSaving(true)
     try {
-      // Avatar: 192x192 (2x for retina)
-      const avatarBlob = await getCroppedImg(completedAvatarCrop, 192, 192)
-      // Detail: 400x600 (2:3 ratio, 2x for retina)
-      const detailBlob = await getCroppedImg(completedDetailCrop, 400, 600)
+      // Avatar: 512x512 (high resolution for crisp display on any screen)
+      const avatarBlob = await getCroppedImg(completedAvatarCrop, 512, 512)
+      // Detail: 800x1200 (2:3 ratio, high resolution for modal/preview displays)
+      const detailBlob = await getCroppedImg(completedDetailCrop, 800, 1200)
 
       await onSave(avatarBlob, detailBlob)
       onClose()

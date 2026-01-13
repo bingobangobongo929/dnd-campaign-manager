@@ -54,7 +54,7 @@ export function Sidebar({ campaignId }: SidebarProps) {
         className={cn(
           'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
           isActive
-            ? 'bg-[--accent-primary]/10 text-[--accent-primary]'
+            ? 'bg-[--arcane-purple]/10 text-[--arcane-purple]'
             : 'text-[--text-secondary] hover:text-[--text-primary] hover:bg-[--bg-hover]'
         )}
       >
@@ -124,7 +124,7 @@ export function Sidebar({ campaignId }: SidebarProps) {
             className={cn('w-full justify-start gap-3', collapsed && 'justify-center')}
             onClick={() => setIsAIAssistantOpen(true)}
           >
-            <Sparkles className="h-5 w-5 text-[--accent-secondary]" />
+            <Sparkles className="h-5 w-5 text-[--arcane-gold]" />
             {!collapsed && <span>AI Assistant</span>}
           </Button>
         </div>
