@@ -503,7 +503,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   // STYLED COMPONENTS
   // =====================================================
 
-  // Toolbar button component
+  // Toolbar button component - p-3 for better click targets
   const ToolbarButton = ({ onClick, active, disabled, children, title }: {
     onClick: () => void
     active?: boolean
@@ -517,7 +517,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       disabled={disabled}
       title={title}
       className={cn(
-        'p-2 rounded-lg transition-colors',
+        'p-3 rounded-lg transition-colors',
         active
           ? 'bg-purple-500/20 text-purple-400'
           : 'text-gray-400 hover:text-white hover:bg-white/10',
@@ -528,16 +528,16 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     </button>
   )
 
-  // Editor toolbar - minimal version
+  // Editor toolbar - p-4 padding, w-5 h-5 icons
   const EditorToolbar = ({ editor, minimal = false }: { editor: any; minimal?: boolean }) => (
-    <div className="flex items-center gap-1 p-2.5 border-b border-white/10 bg-white/[0.02]">
+    <div className="flex items-center gap-2 p-4 border-b border-white/5 bg-white/[0.02]">
       {/* Undo/Redo */}
       <div className="flex items-center gap-0.5">
         <ToolbarButton onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo()} title="Undo">
-          <Undo className="h-4 w-4" />
+          <Undo className="w-5 h-5" />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo()} title="Redo">
-          <Redo className="h-4 w-4" />
+          <Redo className="w-5 h-5" />
         </ToolbarButton>
       </div>
       {!minimal && (
@@ -546,10 +546,10 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
           {/* Headings */}
           <div className="flex items-center gap-0.5">
             <ToolbarButton onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} active={editor?.isActive('heading', { level: 1 })} title="Heading 1">
-              <Heading1 className="h-4 w-4" />
+              <Heading1 className="w-5 h-5" />
             </ToolbarButton>
             <ToolbarButton onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} active={editor?.isActive('heading', { level: 2 })} title="Heading 2">
-              <Heading2 className="h-4 w-4" />
+              <Heading2 className="w-5 h-5" />
             </ToolbarButton>
           </div>
         </>
@@ -558,21 +558,21 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       {/* Text formatting */}
       <div className="flex items-center gap-0.5">
         <ToolbarButton onClick={() => editor?.chain().focus().toggleBold().run()} active={editor?.isActive('bold')} title="Bold">
-          <Bold className="h-4 w-4" />
+          <Bold className="w-5 h-5" />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor?.chain().focus().toggleItalic().run()} active={editor?.isActive('italic')} title="Italic">
-          <Italic className="h-4 w-4" />
+          <Italic className="w-5 h-5" />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor?.chain().focus().toggleUnderline().run()} active={editor?.isActive('underline')} title="Underline">
-          <UnderlineIcon className="h-4 w-4" />
+          <UnderlineIcon className="w-5 h-5" />
         </ToolbarButton>
         {!minimal && (
           <>
             <ToolbarButton onClick={() => editor?.chain().focus().toggleStrike().run()} active={editor?.isActive('strike')} title="Strikethrough">
-              <Strikethrough className="h-4 w-4" />
+              <Strikethrough className="w-5 h-5" />
             </ToolbarButton>
             <ToolbarButton onClick={() => editor?.chain().focus().toggleHighlight().run()} active={editor?.isActive('highlight')} title="Highlight">
-              <Highlighter className="h-4 w-4" />
+              <Highlighter className="w-5 h-5" />
             </ToolbarButton>
           </>
         )}
@@ -583,24 +583,24 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
           {/* Lists */}
           <div className="flex items-center gap-0.5">
             <ToolbarButton onClick={() => editor?.chain().focus().toggleBulletList().run()} active={editor?.isActive('bulletList')} title="Bullet List">
-              <List className="h-4 w-4" />
+              <List className="w-5 h-5" />
             </ToolbarButton>
             <ToolbarButton onClick={() => editor?.chain().focus().toggleOrderedList().run()} active={editor?.isActive('orderedList')} title="Numbered List">
-              <ListOrdered className="h-4 w-4" />
+              <ListOrdered className="w-5 h-5" />
             </ToolbarButton>
             <ToolbarButton onClick={() => editor?.chain().focus().toggleBlockquote().run()} active={editor?.isActive('blockquote')} title="Quote">
-              <Quote className="h-4 w-4" />
+              <Quote className="w-5 h-5" />
             </ToolbarButton>
           </div>
           <div className="w-px h-5 bg-white/10 mx-1.5" />
           {/* Insert */}
           <div className="flex items-center gap-0.5">
             <ToolbarButton onClick={() => setLink(editor)} active={editor?.isActive('link')} title="Link">
-              <LinkIcon className="h-4 w-4" />
+              <LinkIcon className="w-5 h-5" />
             </ToolbarButton>
             <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleEditorImageUpload} />
             <ToolbarButton onClick={() => imageInputRef.current?.click()} title="Insert Image">
-              <ImageIcon className="h-4 w-4" />
+              <ImageIcon className="w-5 h-5" />
             </ToolbarButton>
           </div>
         </>
@@ -610,12 +610,12 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
   // Section header component - decorative with icon and gradient
   const SectionHeader = ({ title, icon: Icon }: { title: string; icon: React.ComponentType<{ className?: string }> }) => (
-    <div className="flex items-center gap-4 mb-6">
+    <div className="flex items-center gap-4 mb-8">
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-purple-500/20 rounded-lg">
-          <Icon className="w-5 h-5 text-purple-400" />
+        <div className="p-3 bg-purple-500/20 rounded-xl">
+          <Icon className="w-6 h-6 text-purple-400" />
         </div>
-        <h2 className="text-xl font-semibold text-white tracking-wide">
+        <h2 className="text-2xl font-semibold text-white tracking-wide">
           {title.toUpperCase()}
         </h2>
       </div>
@@ -913,7 +913,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Left Sidebar */}
           <aside className="w-80 xl:w-96 flex-shrink-0 flex flex-col border-r border-white/10 overflow-y-auto bg-[#0d0d14]">
-            <div className="p-6 space-y-6">
+            <div className="p-8 space-y-8">
               {/* Portrait */}
               <PortraitDisplay />
 
@@ -964,18 +964,18 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 <StatusDropdown />
               </div>
 
-              <div className="border-t border-white/10" />
+              <div className="border-t border-white/10 my-8" />
 
               {/* NAVIGATION - Quick jump to sections */}
               <div>
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Navigate</h3>
-                <nav className="space-y-1">
+                <nav className="space-y-2">
                   {SECTIONS.map(section => (
                     <button
                       key={section.id}
                       onClick={() => scrollToSection(section.id)}
                       className={cn(
-                        'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors',
+                        'w-full flex items-center gap-3 py-3 px-4 rounded-lg text-left transition-colors',
                         activeSection === section.id
                           ? 'bg-purple-500/20 text-purple-400 border-l-2 border-purple-500'
                           : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -988,10 +988,10 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 </nav>
               </div>
 
-              <div className="border-t border-white/10" />
+              <div className="border-t border-white/10 my-8" />
 
               {/* Quick Details */}
-              <div className="space-y-5">
+              <div className="space-y-6">
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Quick Details</h3>
                 <div>
                   <label className="block text-xs text-gray-500 mb-1.5">Race</label>
@@ -1025,7 +1025,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 </div>
               </div>
 
-              <div className="border-t border-white/10" />
+              <div className="border-t border-white/10 my-8" />
 
               {/* Links */}
               <div className="space-y-4">
@@ -1084,7 +1084,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
             {/* Delete at bottom */}
             {characterId && (
-              <div className="mt-auto p-6 border-t border-white/10">
+              <div className="mt-auto p-8 border-t border-white/10">
                 <button
                   onClick={() => setIsDeleteConfirmOpen(true)}
                   className="flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors"
@@ -1098,19 +1098,19 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
           {/* Main Content Area - Single Scrollable Page */}
           <main className="flex-1 overflow-y-auto" ref={scrollContainerRef}>
-            <div className="p-8 xl:p-12 space-y-16">
+            <div className="p-10 xl:p-12 2xl:p-16 space-y-20">
 
               {/* ═══════════════ BACKSTORY SECTION ═══════════════ */}
               <section id="backstory" className="scroll-mt-8">
                 <SectionHeader title="Backstory" icon={BookOpen} />
 
-                <div className="space-y-8">
+                <div className="space-y-10">
                   {/* Summary */}
                   <div>
                     <FieldLabel>Summary</FieldLabel>
                     <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
                       <EditorToolbar editor={summaryEditor} minimal />
-                      <div className="p-5 min-h-[80px]">
+                      <div className="p-6 min-h-[100px]">
                         <EditorContent editor={summaryEditor} />
                       </div>
                     </div>
@@ -1129,7 +1129,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     <FieldLabel>Full Backstory</FieldLabel>
                     <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500/30 transition-colors">
                       <EditorToolbar editor={notesEditor} />
-                      <div className="p-6 min-h-[400px]">
+                      <div className="p-8 min-h-[400px]">
                         <EditorContent editor={notesEditor} className="prose prose-invert max-w-none" />
                       </div>
                     </div>
@@ -1158,7 +1158,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               <section id="details" className="scroll-mt-8">
                 <SectionHeader title="Details" icon={FileText} />
 
-                <div className="space-y-8">
+                <div className="space-y-10">
                   {/* Appearance */}
                   <div>
                     <FieldLabel>Appearance</FieldLabel>
@@ -1167,7 +1167,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                         value={formData.appearance}
                         onChange={(e) => setFormData(prev => ({ ...prev, appearance: e.target.value }))}
                         placeholder="Physical description, distinguishing features, typical attire..."
-                        className="w-full p-5 min-h-[150px] bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
+                        className="w-full p-6 min-h-[150px] bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
                       />
                     </div>
                   </div>
@@ -1180,7 +1180,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                         value={formData.personality}
                         onChange={(e) => setFormData(prev => ({ ...prev, personality: e.target.value }))}
                         placeholder="Temperament, quirks, mannerisms, how they interact with others..."
-                        className="w-full p-5 min-h-[150px] bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
+                        className="w-full p-6 min-h-[150px] bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
                       />
                     </div>
                   </div>
@@ -1193,7 +1193,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                         value={formData.goals}
                         onChange={(e) => setFormData(prev => ({ ...prev, goals: e.target.value }))}
                         placeholder="What drives this character? What do they want to achieve?"
-                        className="w-full p-5 min-h-[150px] bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
+                        className="w-full p-6 min-h-[150px] bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
                       />
                     </div>
                   </div>
@@ -1219,11 +1219,11 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                           value={formData.secrets}
                           onChange={(e) => setFormData(prev => ({ ...prev, secrets: e.target.value }))}
                           placeholder="Hidden information, true motivations, dark secrets..."
-                          className="w-full p-5 min-h-[150px] bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
+                          className="w-full p-6 min-h-[150px] bg-transparent text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
                         />
                       </div>
                     ) : (
-                      <div className="px-4 py-6 bg-white/[0.02] border border-white/10 rounded-xl text-gray-500 text-center italic">
+                      <div className="py-16 px-8 bg-white/[0.02] border border-dashed border-white/10 rounded-xl text-gray-500 text-center italic">
                         Click "Reveal" to show secret information
                       </div>
                     )}
@@ -1298,7 +1298,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               <section id="people" className="scroll-mt-8">
                 <SectionHeader title="People" icon={Users} />
 
-                <div className="space-y-8">
+                <div className="space-y-10">
                   {/* Story Characters */}
                   <div>
                     <div className="flex items-center justify-between mb-4">
@@ -1313,10 +1313,10 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     </div>
 
                     {storyCharacters.length === 0 ? (
-                      <div className="text-center py-12 bg-white/[0.02] rounded-xl border border-white/5">
-                        <Users className="w-12 h-12 mx-auto mb-3 text-gray-600" />
-                        <p className="text-gray-400 mb-1">No story characters yet</p>
-                        <p className="text-sm text-gray-500">Add NPCs connected to this character's story</p>
+                      <div className="flex flex-col items-center justify-center py-16 px-8 bg-white/[0.02] border border-dashed border-white/10 rounded-xl">
+                        <Users className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+                        <p className="text-gray-400 text-center">No story characters yet</p>
+                        <p className="text-sm text-gray-500 text-center mt-1">Add NPCs connected to this character's story</p>
                       </div>
                     ) : (
                       <div className="grid gap-4">
@@ -1352,9 +1352,9 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   <div>
                     <FieldLabel>What I've Learned About Others</FieldLabel>
                     {learnedFacts.length === 0 ? (
-                      <div className="text-center py-12 bg-white/[0.02] rounded-xl border border-white/5">
-                        <BookOpen className="w-12 h-12 mx-auto mb-3 text-gray-600" />
-                        <p className="text-gray-400">No learned facts recorded</p>
+                      <div className="flex flex-col items-center justify-center py-16 px-8 bg-white/[0.02] border border-dashed border-white/10 rounded-xl">
+                        <BookOpen className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+                        <p className="text-gray-400 text-center">No learned facts recorded</p>
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -1391,10 +1391,10 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   </button>
 
                   {journalEntries.length === 0 ? (
-                    <div className="text-center py-16 bg-white/[0.02] rounded-xl border border-white/5">
-                      <Scroll className="w-12 h-12 mx-auto mb-3 text-gray-600" />
-                      <p className="text-gray-400 mb-1">No journal entries yet</p>
-                      <p className="text-sm text-gray-500">Record your adventures and experiences</p>
+                    <div className="flex flex-col items-center justify-center py-16 px-8 bg-white/[0.02] border border-dashed border-white/10 rounded-xl">
+                      <Scroll className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+                      <p className="text-gray-400 text-center">No journal entries yet</p>
+                      <p className="text-sm text-gray-500 text-center mt-1">Record your adventures and experiences</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -1443,13 +1443,13 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     />
                   </div>
 
-                  <div className="p-8 bg-white/[0.02] rounded-xl border border-white/5 text-center">
-                    <Target className="w-10 h-10 mx-auto mb-3 text-gray-600" />
-                    <p className="text-gray-400">Quick Stats editor coming soon</p>
+                  <div className="flex flex-col items-center justify-center py-16 px-8 bg-white/[0.02] border border-dashed border-white/10 rounded-xl">
+                    <Target className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+                    <p className="text-gray-400 text-center">Quick Stats editor coming soon</p>
                   </div>
 
-                  <div className="p-8 bg-white/[0.02] rounded-xl border border-white/5 text-center">
-                    <p className="text-gray-400">Inventory tracking coming soon</p>
+                  <div className="flex flex-col items-center justify-center py-16 px-8 bg-white/[0.02] border border-dashed border-white/10 rounded-xl">
+                    <p className="text-gray-400 text-center">Inventory tracking coming soon</p>
                   </div>
                 </div>
               </section>
@@ -1458,10 +1458,10 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               <section id="gallery" className="scroll-mt-8">
                 <SectionHeader title="Gallery" icon={GalleryIcon} />
 
-                <div className="p-12 bg-white/[0.02] rounded-xl border border-white/5 text-center">
-                  <GalleryIcon className="w-12 h-12 mx-auto mb-3 text-gray-600" />
-                  <p className="text-gray-400 mb-1">Mood Board & Gallery</p>
-                  <p className="text-sm text-gray-500">Coming soon - collect inspiration images for this character</p>
+                <div className="flex flex-col items-center justify-center py-16 px-8 bg-white/[0.02] border border-dashed border-white/10 rounded-xl">
+                  <GalleryIcon className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+                  <p className="text-gray-400 text-center">Mood Board & Gallery</p>
+                  <p className="text-sm text-gray-500 text-center mt-1">Coming soon - collect inspiration images for this character</p>
                 </div>
               </section>
 
