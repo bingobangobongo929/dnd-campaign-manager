@@ -780,7 +780,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   const BackstoryTab = () => (
     <div className="space-y-10">
       {/* Summary - compact, just a brief overview */}
-      <section>
+      <section className="border-2 border-lime-500">
         <SectionHeader>Summary</SectionHeader>
         <div className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden focus-within:border-purple-500/20 transition-colors">
           <EditorToolbar editor={summaryEditor} />
@@ -791,7 +791,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       </section>
 
       {/* Quick Summary */}
-      <section>
+      <section className="border-2 border-teal-500">
         <ArrayFieldEditor
           label="Quick Summary"
           items={formData.tldr}
@@ -801,7 +801,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       </section>
 
       {/* Full Backstory - THE MAIN CONTENT, should be tall */}
-      <section>
+      <section className="border-2 border-rose-500">
         <SectionHeader>Full Backstory</SectionHeader>
         <div className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden focus-within:border-purple-500/20 transition-colors">
           <EditorToolbar editor={notesEditor} />
@@ -812,7 +812,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       </section>
 
       {/* Plot Hooks */}
-      <section>
+      <section className="border-2 border-amber-500">
         <ArrayFieldEditor
           label="Plot Hooks"
           items={formData.plot_hooks}
@@ -822,7 +822,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       </section>
 
       {/* Quotes */}
-      <section>
+      <section className="border-2 border-indigo-500">
         <ArrayFieldEditor
           label="Memorable Quotes"
           items={formData.quotes}
@@ -1139,9 +1139,9 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-[#0a0a0f] flex flex-col">
+      <div className="fixed inset-0 z-50 bg-[#0a0a0f] flex flex-col border-4 border-red-500">
         {/* Header */}
-        <header className="flex-shrink-0 flex items-center justify-between px-4 h-14 border-b border-white/10 bg-[#0d0d14]">
+        <header className="flex-shrink-0 flex items-center justify-between px-4 h-14 border-b border-white/10 bg-[#0d0d14] border-2 border-blue-500">
           <div className="flex items-center gap-4">
             <button
               onClick={handleClose}
@@ -1192,12 +1192,12 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         </header>
 
         {/* Main Content - Fills ALL remaining space */}
-        <div className="flex-1 flex overflow-hidden min-h-0">
+        <div className="flex-1 flex overflow-hidden min-h-0 border-2 border-green-500">
           {/* Left Sidebar - responsive width */}
-          <aside className="w-80 xl:w-96 flex-shrink-0 border-r border-white/10 p-6 overflow-y-auto bg-[#0d0d14]">
+          <aside className="w-80 xl:w-96 flex-shrink-0 border-r border-white/10 p-6 overflow-y-auto bg-[#0d0d14] border-2 border-yellow-500">
             <div className="space-y-6">
               {/* Portrait */}
-              <div className="mb-8">
+              <div className="mb-8 border-2 border-pink-500">
                 <PortraitDisplay />
               </div>
 
@@ -1370,9 +1370,9 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
           </aside>
 
           {/* Main Content Area */}
-          <main className="flex-1 flex flex-col overflow-hidden min-h-0">
+          <main className="flex-1 flex flex-col overflow-hidden min-h-0 border-2 border-orange-500">
             {/* Tabs - Prominent, easy to click */}
-            <div className="flex-shrink-0 border-b border-white/10 bg-[#0d0d14]">
+            <div className="flex-shrink-0 border-b border-white/10 bg-[#0d0d14] border-2 border-cyan-500">
               <nav className="flex items-center gap-2 px-4">
                 {tabs.map((tab) => (
                   <button
@@ -1393,7 +1393,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
             </div>
 
             {/* Tab Content - Fills ALL remaining space */}
-            <div className="flex-1 overflow-y-auto p-6 lg:p-8 xl:p-10">
+            <div className="flex-1 overflow-y-auto p-6 lg:p-8 xl:p-10 border-2 border-purple-500">
               {activeTab === 'backstory' && <BackstoryTab />}
               {activeTab === 'details' && <DetailsTab />}
               {activeTab === 'people' && <PeopleTab />}
