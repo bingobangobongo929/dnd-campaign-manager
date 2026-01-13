@@ -19,6 +19,7 @@ export function AIAssistant({ campaignContext }: AIAssistantProps) {
   const { isAIAssistantOpen, setIsAIAssistantOpen, aiProvider } = useAppStore()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const [localError, setLocalError] = useState<string | null>(null)
 
   const {
     messages,
@@ -27,13 +28,28 @@ export function AIAssistant({ campaignContext }: AIAssistantProps) {
     handleSubmit,
     isLoading,
     setMessages,
+    error,
   } = useChat({
     api: '/api/ai/chat',
     body: {
       campaignContext,
       provider: aiProvider,
     },
+    onError: (err) => {
+      console.error('AI Chat error:', err)
+      setLocalError(err.message || 'Failed to connect to AI service')
+    },
+    onFinish: () => {
+      setLocalError(null)
+    },
   })
+
+  // Clear error when user starts typing
+  useEffect(() => {
+    if (input && localError) {
+      setLocalError(null)
+    }
+  }, [input, localError])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -169,6 +185,23 @@ export function AIAssistant({ campaignContext }: AIAssistantProps) {
               </div>
               <div className="ai-message ai-message-assistant">
                 <Loader2 className="w-4 h-4 animate-spin text-[--arcane-purple]" />
+              </div>
+            </div>
+          )}
+
+          {/* Error display */}
+          {(localError || error) && (
+            <div className="flex gap-3 animate-fade-in">
+              <div className="w-8 h-8 rounded-full bg-[--arcane-ember]/20 flex items-center justify-center flex-shrink-0">
+                <X className="w-4 h-4 text-[--arcane-ember]" />
+              </div>
+              <div className="ai-message bg-[--arcane-ember]/10 border border-[--arcane-ember]/30">
+                <p className="text-sm text-[--arcane-ember]">
+                  {localError || error?.message || 'Something went wrong. Please try again.'}
+                </p>
+                <p className="text-xs text-[--text-tertiary] mt-1">
+                  Check if API keys are configured in your environment.
+                </p>
               </div>
             </div>
           )}
