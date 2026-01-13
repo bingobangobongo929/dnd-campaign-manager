@@ -3,6 +3,10 @@
 
 @import "tailwindcss";
 
+/* Tailwind v4: Import config and specify sources */
+@config "../../tailwind.config.ts";
+@source "../**/*.{js,ts,jsx,tsx}";
+
 /* ═══════════════════════════════════════════════════════════════════════════
    D&D CAMPAIGN MANAGER - ARCANE TOME DESIGN SYSTEM
    A magical interface inspired by ancient grimoires and arcane energy
