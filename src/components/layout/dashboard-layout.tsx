@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Sidebar } from './sidebar'
 import { Header } from './header'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
-import type { Campaign } from '@/types/database'
+import type { Campaign, Character, Session } from '@/types/database'
 import { AIAssistant } from '@/components/ai/ai-assistant'
 
 interface DashboardLayoutProps {
@@ -16,8 +16,10 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, campaignId }: DashboardLayoutProps) {
   const supabase = useSupabase()
   const { user } = useUser()
-  const { setUserId, setSettings, setCurrentCampaign, isAIAssistantOpen, setIsAIAssistantOpen } = useAppStore()
+  const { setUserId, setSettings, setCurrentCampaign, isAIAssistantOpen } = useAppStore()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [characters, setCharacters] = useState<Character[]>([])
+  const [sessions, setSessions] = useState<Session[]>([])
 
   useEffect(() => {
     if (user) {
@@ -34,6 +36,16 @@ export function DashboardLayout({ children, campaignId }: DashboardLayoutProps) 
       }
     }
   }, [campaignId, campaigns])
+
+  // Load campaign-specific data for AI context when campaign changes
+  useEffect(() => {
+    if (campaignId && user) {
+      loadCampaignContext()
+    } else {
+      setCharacters([])
+      setSessions([])
+    }
+  }, [campaignId, user])
 
   const loadUserData = async () => {
     if (!user) return
@@ -67,6 +79,56 @@ export function DashboardLayout({ children, campaignId }: DashboardLayoutProps) 
     }
   }
 
+  const loadCampaignContext = async () => {
+    if (!campaignId) return
+
+    // Load characters for this campaign
+    const { data: charactersData } = await supabase
+      .from('characters')
+      .select('id, name, type, summary')
+      .eq('campaign_id', campaignId)
+      .order('type')
+      .order('name')
+
+    if (charactersData) {
+      setCharacters(charactersData as Character[])
+    }
+
+    // Load recent sessions (last 10)
+    const { data: sessionsData } = await supabase
+      .from('sessions')
+      .select('id, title, summary, date')
+      .eq('campaign_id', campaignId)
+      .order('date', { ascending: false })
+      .limit(10)
+
+    if (sessionsData) {
+      setSessions(sessionsData as Session[])
+    }
+  }
+
+  // Build campaign context for AI assistant
+  const campaignContext = useMemo(() => {
+    const currentCampaign = campaigns.find(c => c.id === campaignId)
+    if (!currentCampaign) return undefined
+
+    return {
+      campaignName: currentCampaign.name,
+      gameSystem: currentCampaign.game_system || 'D&D 5e',
+      characters: characters.map(c => ({
+        name: c.name,
+        type: c.type as string,
+        summary: c.summary || undefined,
+      })),
+      recentSessions: sessions
+        .filter(s => s.title) // Only include sessions with titles
+        .map(s => ({
+          title: s.title as string,
+          summary: s.summary || undefined,
+        })),
+    }
+  }, [campaignId, campaigns, characters, sessions])
+
   return (
     <div className="flex h-screen overflow-hidden bg-[--bg-base]">
       <Sidebar campaignId={campaignId} />
@@ -77,10 +139,8 @@ export function DashboardLayout({ children, campaignId }: DashboardLayoutProps) 
         </main>
       </div>
 
-      {/* AI Assistant Panel */}
-      {isAIAssistantOpen && (
-        <AIAssistant />
-      )}
+      {/* AI Assistant Panel - with campaign context */}
+      {isAIAssistantOpen && <AIAssistant campaignContext={campaignContext} />}
     </div>
   )
 }
