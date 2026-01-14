@@ -1320,7 +1320,6 @@ export async function POST() {
 The crew of the S.S. Columbus must navigate corporate espionage between IPS-N and Harrison Armory, Karrakin noble politics, and the mystery of rogue NHPs to find the truth behind the legend.
 
 "There was a time when even the calmest night could give way to the unexpected... pirates!"`,
-        status: 'active',
       })
       .select()
       .single()
