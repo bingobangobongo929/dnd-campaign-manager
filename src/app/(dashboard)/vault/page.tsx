@@ -2,13 +2,14 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, BookOpen, Trash2, Copy, Filter, X, CheckSquare, Square, CopyPlus, Check } from 'lucide-react'
+import { Plus, Search, BookOpen, Trash2, Copy, Filter, X, CheckSquare, Square, CopyPlus, Check, LayoutGrid, Grid3X3, User } from 'lucide-react'
 import { toast } from 'sonner'
+import Image from 'next/image'
 import { Modal, Dropdown } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { CharacterCard } from '@/components/vault/CharacterCard'
 import { useSupabase, useUser } from '@/hooks'
-import { cn } from '@/lib/utils'
+import { cn, getInitials } from '@/lib/utils'
 import type { VaultCharacter, Campaign } from '@/types/database'
 
 export default function VaultPage() {
@@ -40,6 +41,12 @@ export default function VaultPage() {
   // Multi-select state
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  // View mode state
+  const [viewMode, setViewMode] = useState<'cards' | 'gallery'>('cards')
+
+  // Gallery lightbox state
+  const [lightboxCharacter, setLightboxCharacter] = useState<VaultCharacter | null>(null)
 
   useEffect(() => {
     if (user) {
@@ -271,6 +278,31 @@ export default function VaultPage() {
             <p className="page-subtitle">Store characters to reuse across campaigns</p>
           </div>
           <div className="flex items-center gap-3">
+            {/* View mode toggle */}
+            {vaultCharacters.length > 0 && (
+              <div className="flex items-center gap-1 p-1 bg-[--bg-elevated] rounded-lg border border-[--border]">
+                <button
+                  onClick={() => setViewMode('cards')}
+                  className={cn(
+                    'p-2 rounded transition-colors',
+                    viewMode === 'cards' ? 'bg-[--arcane-purple] text-white' : 'text-[--text-secondary] hover:text-[--text-primary]'
+                  )}
+                  title="Card view"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('gallery')}
+                  className={cn(
+                    'p-2 rounded transition-colors',
+                    viewMode === 'gallery' ? 'bg-[--arcane-purple] text-white' : 'text-[--text-secondary] hover:text-[--text-primary]'
+                  )}
+                  title="Gallery view"
+                >
+                  <Grid3X3 className="w-4 h-4" />
+                </button>
+              </div>
+            )}
             {vaultCharacters.length > 0 && (
               <button
                 className={cn(
@@ -435,7 +467,8 @@ export default function VaultPage() {
               </button>
             )}
           </div>
-        ) : (
+        ) : viewMode === 'cards' ? (
+          /* Card View */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCharacters.map((char, index) => {
               const isSelected = selectedIds.has(char.id)
@@ -475,6 +508,76 @@ export default function VaultPage() {
                       }
                     }}
                   />
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          /* Gallery View */
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {filteredCharacters.map((char, index) => {
+              const isSelected = selectedIds.has(char.id)
+              const imageUrl = (char as any).detail_image_url || char.image_url
+              return (
+                <div
+                  key={char.id}
+                  className={cn(
+                    "animate-slide-in-up relative group",
+                    selectionMode && isSelected && "ring-2 ring-[--arcane-purple] ring-offset-2 ring-offset-[--bg-base] rounded-xl"
+                  )}
+                  style={{ animationDelay: `${index * 30}ms` }}
+                  onContextMenu={(e) => !selectionMode && handleContextMenu(e, char)}
+                >
+                  {/* Selection checkbox overlay */}
+                  {selectionMode && (
+                    <button
+                      className="absolute top-2 left-2 z-10 w-5 h-5 rounded flex items-center justify-center transition-colors"
+                      style={{
+                        backgroundColor: isSelected ? 'var(--arcane-purple)' : 'rgba(26, 26, 36, 0.9)',
+                        border: isSelected ? 'none' : '2px solid rgba(255, 255, 255, 0.2)',
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleSelection(char.id)
+                      }}
+                    >
+                      {isSelected && <Check className="w-3 h-3 text-white" />}
+                    </button>
+                  )}
+                  <div
+                    className="aspect-[2/3] rounded-xl overflow-hidden bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 transition-all cursor-pointer"
+                    onClick={() => {
+                      if (selectionMode) {
+                        toggleSelection(char.id)
+                      } else {
+                        setLightboxCharacter(char)
+                      }
+                    }}
+                  >
+                    {imageUrl ? (
+                      <Image
+                        src={imageUrl}
+                        alt={char.name}
+                        fill
+                        className="object-cover transition-transform group-hover:scale-105"
+                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-[--bg-hover]">
+                        <User className="w-12 h-12 text-[--text-tertiary] mb-2" />
+                        <span className="text-2xl font-bold text-[--text-tertiary]">
+                          {getInitials(char.name)}
+                        </span>
+                      </div>
+                    )}
+                    {/* Hover overlay with name */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute bottom-0 left-0 right-0 p-3">
+                        <p className="text-white text-sm font-medium truncate">{char.name}</p>
+                        <p className="text-white/70 text-xs">{char.type === 'pc' ? 'PC' : 'NPC'}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )
             })}
@@ -563,6 +666,59 @@ export default function VaultPage() {
             </div>
           </div>
         </Modal>
+
+        {/* Gallery Lightbox */}
+        {lightboxCharacter && (
+          <div
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+            onClick={() => setLightboxCharacter(null)}
+          >
+            <button
+              onClick={() => setLightboxCharacter(null)}
+              className="absolute top-4 right-4 p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <div
+              className="relative max-w-[90vw] max-h-[90vh] flex flex-col items-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative">
+                {((lightboxCharacter as any).detail_image_url || lightboxCharacter.image_url) ? (
+                  <img
+                    src={(lightboxCharacter as any).detail_image_url || lightboxCharacter.image_url}
+                    alt={lightboxCharacter.name}
+                    className="max-w-full max-h-[75vh] object-contain rounded-lg"
+                  />
+                ) : (
+                  <div className="w-64 h-96 bg-[--bg-elevated] rounded-lg flex flex-col items-center justify-center">
+                    <User className="w-24 h-24 text-[--text-tertiary] mb-4" />
+                    <span className="text-4xl font-bold text-[--text-tertiary]">
+                      {getInitials(lightboxCharacter.name)}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="mt-4 text-center">
+                <h3 className="text-xl font-semibold text-white">{lightboxCharacter.name}</h3>
+                <p className="text-white/70 text-sm mt-1">
+                  {lightboxCharacter.type === 'pc' ? 'Player Character' : 'NPC'}
+                  {lightboxCharacter.race && ` • ${lightboxCharacter.race}`}
+                  {lightboxCharacter.class && ` • ${lightboxCharacter.class}`}
+                </p>
+                <button
+                  onClick={() => {
+                    setLightboxCharacter(null)
+                    router.push(`/vault/${lightboxCharacter.id}`)
+                  }}
+                  className="mt-4 btn btn-primary"
+                >
+                  View Details
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AppLayout>
   )
