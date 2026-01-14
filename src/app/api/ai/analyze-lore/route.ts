@@ -10,7 +10,6 @@ interface CharacterInput {
   type: string
   description?: string | null
   summary?: string | null
-  backstory?: string | null
   secrets?: string | null
   tags: string[]
 }
@@ -82,7 +81,7 @@ export async function POST(req: Request) {
     const characterSummary = characters.map(c => {
       const parts = [`- ${c.name} (${c.type})`]
       if (c.summary) parts.push(`  Summary: ${c.summary}`)
-      if (c.backstory) parts.push(`  Backstory: ${c.backstory.slice(0, 500)}...`)
+      if (c.description) parts.push(`  Description: ${c.description.slice(0, 500)}...`)
       if (c.secrets) parts.push(`  [SECRET] ${c.secrets.slice(0, 200)}`)
       if (c.tags.length > 0) parts.push(`  Tags: ${c.tags.join(', ')}`)
       return parts.join('\n')

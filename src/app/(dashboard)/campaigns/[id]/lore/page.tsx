@@ -188,7 +188,6 @@ export default function LorePage() {
             type: c.type,
             description: c.description,
             summary: c.summary,
-            backstory: c.backstory,
             secrets: c.secrets,
             tags: c.tags.map(t => t.tag.name),
           })),
