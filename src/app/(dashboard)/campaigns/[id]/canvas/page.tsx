@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Plus, FolderPlus, Scaling } from 'lucide-react'
+import { Plus, FolderPlus, Scaling, Trash2, Undo2 } from 'lucide-react'
 import { Modal, Input, ColorPicker, IconPicker, getGroupIcon } from '@/components/ui'
 import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
@@ -10,6 +10,14 @@ import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
 import type { Campaign, Character, Tag, CharacterTag, CanvasGroup } from '@/types/database'
+
+// Type for undo history
+interface UndoAction {
+  type: 'delete'
+  characters: Character[]
+  groups: CanvasGroup[]
+  characterTags: Map<string, (CharacterTag & { tag: Tag; related_character?: Character | null })[]>
+}
 
 export default function CampaignCanvasPage() {
   const params = useParams()
@@ -39,6 +47,14 @@ export default function CampaignCanvasPage() {
 
   // Character size overrides from resize toolbar
   const [characterSizeOverrides, setCharacterSizeOverrides] = useState<Map<string, { width: number; height: number }>>(new Map())
+
+  // Multi-select and deletion state
+  const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>([])
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([])
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<{ characterIds: string[]; groupIds: string[] } | null>(null)
+  const [undoStack, setUndoStack] = useState<UndoAction[]>([])
+  const MAX_UNDO_STACK = 10
 
   // Load campaign data
   useEffect(() => {
@@ -307,6 +323,136 @@ export default function CampaignCanvasPage() {
     setSelectedCharacterId(null)
   }, [setSelectedCharacterId])
 
+  // Handle selection changes from canvas
+  const handleSelectionChange = useCallback((charIds: string[], grpIds: string[]) => {
+    setSelectedCharacterIds(charIds)
+    setSelectedGroupIds(grpIds)
+  }, [])
+
+  // Handle delete request from canvas (triggered by DEL key)
+  const handleDeleteSelected = useCallback((characterIds: string[], groupIds: string[]) => {
+    const totalCount = characterIds.length + groupIds.length
+    if (totalCount === 0) return
+
+    // If 5 or more items, show confirmation modal
+    if (totalCount >= 5) {
+      setPendingDelete({ characterIds, groupIds })
+      setDeleteConfirmOpen(true)
+    } else {
+      // Directly delete without confirmation
+      performDelete(characterIds, groupIds)
+    }
+  }, [])
+
+  // Actually perform the deletion
+  const performDelete = useCallback(async (characterIds: string[], groupIds: string[]) => {
+    // Save to undo stack before deleting
+    const deletedCharacters = characters.filter(c => characterIds.includes(c.id))
+    const deletedGroups = groups.filter(g => groupIds.includes(g.id))
+    const deletedCharacterTags = new Map<string, (CharacterTag & { tag: Tag; related_character?: Character | null })[]>()
+    characterIds.forEach(id => {
+      const tags = characterTags.get(id)
+      if (tags) deletedCharacterTags.set(id, tags)
+    })
+
+    setUndoStack(prev => {
+      const newStack = [...prev, {
+        type: 'delete' as const,
+        characters: deletedCharacters,
+        groups: deletedGroups,
+        characterTags: deletedCharacterTags,
+      }]
+      // Keep only last N actions
+      return newStack.slice(-MAX_UNDO_STACK)
+    })
+
+    // Delete characters from state and database
+    for (const id of characterIds) {
+      setCharacters(prev => prev.filter(c => c.id !== id))
+      await supabase.from('characters').delete().eq('id', id)
+    }
+
+    // Delete groups from state and database
+    for (const id of groupIds) {
+      setGroups(prev => prev.filter(g => g.id !== id))
+      await supabase.from('canvas_groups').delete().eq('id', id)
+    }
+
+    // Clear selection
+    setSelectedCharacterIds([])
+    setSelectedGroupIds([])
+    setSelectedCharacterId(null)
+    setDeleteConfirmOpen(false)
+    setPendingDelete(null)
+  }, [characters, groups, characterTags, supabase, setSelectedCharacterId])
+
+  // Confirm delete from modal
+  const confirmDelete = useCallback(() => {
+    if (pendingDelete) {
+      performDelete(pendingDelete.characterIds, pendingDelete.groupIds)
+    }
+  }, [pendingDelete, performDelete])
+
+  // Undo last deletion
+  const handleUndo = useCallback(async () => {
+    if (undoStack.length === 0) return
+
+    const lastAction = undoStack[undoStack.length - 1]
+    setUndoStack(prev => prev.slice(0, -1))
+
+    if (lastAction.type === 'delete') {
+      // Restore characters
+      for (const char of lastAction.characters) {
+        const { data } = await supabase
+          .from('characters')
+          .insert(char)
+          .select()
+          .single()
+        if (data) {
+          setCharacters(prev => [...prev, data])
+        }
+      }
+
+      // Restore groups
+      for (const group of lastAction.groups) {
+        const { data } = await supabase
+          .from('canvas_groups')
+          .insert(group)
+          .select()
+          .single()
+        if (data) {
+          setGroups(prev => [...prev, data])
+        }
+      }
+
+      // Restore character tags
+      lastAction.characterTags.forEach((tags, charId) => {
+        setCharacterTags(prev => {
+          const newMap = new Map(prev)
+          newMap.set(charId, tags)
+          return newMap
+        })
+      })
+    }
+  }, [undoStack, supabase])
+
+  // Keyboard shortcut for CTRL+Z undo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        handleUndo()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleUndo])
+
   const viewingCharacter = characters.find(c => c.id === viewingCharacterId)
   const editingCharacter = characters.find(c => c.id === editingCharacterId)
 
@@ -382,6 +528,8 @@ export default function CampaignCanvasPage() {
           onGroupDelete={handleGroupDelete}
           onGroupEdit={handleGroupEdit}
           onGroupPositionChange={handleGroupPositionChange}
+          onDeleteSelected={handleDeleteSelected}
+          onSelectionChange={handleSelectionChange}
         />
       </div>
 
@@ -574,6 +722,78 @@ export default function CampaignCanvasPage() {
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={deleteConfirmOpen}
+        onClose={() => {
+          setDeleteConfirmOpen(false)
+          setPendingDelete(null)
+        }}
+        title="Delete Selected Items"
+        description={`Are you sure you want to delete ${pendingDelete ? pendingDelete.characterIds.length + pendingDelete.groupIds.length : 0} items? This action can be undone with Ctrl+Z.`}
+      >
+        <div className="space-y-4 py-4">
+          {pendingDelete && pendingDelete.characterIds.length > 0 && (
+            <div>
+              <p className="text-sm text-gray-400 mb-2">Characters ({pendingDelete.characterIds.length}):</p>
+              <div className="flex flex-wrap gap-2">
+                {pendingDelete.characterIds.slice(0, 10).map(id => {
+                  const char = characters.find(c => c.id === id)
+                  return char ? (
+                    <span key={id} className="px-2 py-1 bg-white/[0.05] rounded text-sm text-gray-300">
+                      {char.name}
+                    </span>
+                  ) : null
+                })}
+                {pendingDelete.characterIds.length > 10 && (
+                  <span className="px-2 py-1 text-sm text-gray-500">
+                    +{pendingDelete.characterIds.length - 10} more
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+          {pendingDelete && pendingDelete.groupIds.length > 0 && (
+            <div>
+              <p className="text-sm text-gray-400 mb-2">Groups ({pendingDelete.groupIds.length}):</p>
+              <div className="flex flex-wrap gap-2">
+                {pendingDelete.groupIds.slice(0, 5).map(id => {
+                  const grp = groups.find(g => g.id === id)
+                  return grp ? (
+                    <span key={id} className="px-2 py-1 bg-white/[0.05] rounded text-sm text-gray-300">
+                      {grp.name}
+                    </span>
+                  ) : null
+                })}
+                {pendingDelete.groupIds.length > 5 && (
+                  <span className="px-2 py-1 text-sm text-gray-500">
+                    +{pendingDelete.groupIds.length - 5} more
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="flex justify-end gap-3 pt-4 border-t border-white/[0.06]">
+          <button
+            className="btn btn-secondary"
+            onClick={() => {
+              setDeleteConfirmOpen(false)
+              setPendingDelete(null)
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            className="btn bg-red-600 hover:bg-red-500 text-white"
+            onClick={confirmDelete}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete {pendingDelete ? pendingDelete.characterIds.length + pendingDelete.groupIds.length : 0} Items
+          </button>
         </div>
       </Modal>
     </AppLayout>

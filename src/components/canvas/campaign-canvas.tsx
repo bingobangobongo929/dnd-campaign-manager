@@ -15,6 +15,7 @@ import {
   applyNodeChanges,
   useReactFlow,
   ReactFlowProvider,
+  SelectionMode,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { CharacterNode, CharacterNodeData, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT } from './character-node'
@@ -43,6 +44,9 @@ interface CampaignCanvasProps {
   onGroupDelete: (id: string) => void
   onGroupEdit: (id: string) => void
   onGroupPositionChange: (id: string, x: number, y: number) => void
+  // Multi-select and deletion
+  onDeleteSelected?: (characterIds: string[], groupIds: string[]) => void
+  onSelectionChange?: (characterIds: string[], groupIds: string[]) => void
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -66,10 +70,15 @@ function CampaignCanvasInner({
   onGroupDelete,
   onGroupEdit,
   onGroupPositionChange,
+  onDeleteSelected,
+  onSelectionChange,
 }: CampaignCanvasProps) {
   const { selectedCharacterId, setCanvasViewport } = useAppStore()
   const { getViewport } = useReactFlow()
   const [snapLines, setSnapLines] = useState<{ x?: number; y?: number }>({})
+
+  // Track selected nodes for multi-select
+  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set())
 
   // Track if this is the first mount
   const isFirstMount = useRef(true)
@@ -285,12 +294,71 @@ function CampaignCanvasInner({
     setCanvasViewport(viewport)
   }, [getViewport, setCanvasViewport])
 
+  // Handle selection changes from ReactFlow
+  const onSelectionChangeHandler = useCallback((params: { nodes: Node[] }) => {
+    const selectedIds = new Set(params.nodes.map(n => n.id))
+    setSelectedNodeIds(selectedIds)
+
+    // Notify parent of selection change
+    if (onSelectionChange) {
+      const characterIds = params.nodes
+        .filter(n => n.type === 'character')
+        .map(n => n.id)
+      const groupIds = params.nodes
+        .filter(n => n.type === 'group')
+        .map(n => n.id.replace('group-', ''))
+      onSelectionChange(characterIds, groupIds)
+    }
+  }, [onSelectionChange])
+
+  // Keyboard shortcuts - DEL to delete selected, CTRL+Z for undo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in inputs
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return
+      }
+
+      // DEL or Backspace to delete selected
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedNodeIds.size > 0 && onDeleteSelected) {
+          e.preventDefault()
+          const characterIds = Array.from(selectedNodeIds)
+            .filter(id => !id.startsWith('group-'))
+          const groupIds = Array.from(selectedNodeIds)
+            .filter(id => id.startsWith('group-'))
+            .map(id => id.replace('group-', ''))
+          onDeleteSelected(characterIds, groupIds)
+        }
+      }
+
+      // ESC to deselect all
+      if (e.key === 'Escape') {
+        setSelectedNodeIds(new Set())
+        // Update nodes to clear selection visually
+        setNodes(nds => nds.map(n => ({ ...n, selected: false })))
+      }
+
+      // CTRL/CMD + A to select all
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault()
+        const allIds = new Set(nodes.map(n => n.id))
+        setSelectedNodeIds(allIds)
+        setNodes(nds => nds.map(n => ({ ...n, selected: true })))
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedNodeIds, onDeleteSelected, nodes, setNodes])
+
   return (
     <div className="w-full h-full relative">
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
+        onSelectionChange={onSelectionChangeHandler}
         nodeTypes={nodeTypes}
         onMoveEnd={onMoveEnd}
         fitView
@@ -301,9 +369,12 @@ function CampaignCanvasInner({
         snapGrid={[SNAP_GRID, SNAP_GRID]}
         zoomOnScroll
         zoomOnPinch
-        panOnDrag={[0, 1, 2]} // Left, middle, or right mouse to pan
-        selectionOnDrag={false}
-        selectNodesOnDrag={false}
+        panOnDrag={[2]} // Right mouse button only for panning
+        selectionOnDrag // Enable selection box with left click drag
+        selectionMode={SelectionMode.Partial} // Select when touching the box
+        selectNodesOnDrag
+        multiSelectionKeyCode={['Shift', 'Control', 'Meta']} // Hold shift/ctrl/cmd to add to selection
+        deleteKeyCode={null} // We handle delete ourselves
         className="bg-[--bg-base]"
       >
         <Background gap={SNAP_GRID} size={1} color="var(--border)" />

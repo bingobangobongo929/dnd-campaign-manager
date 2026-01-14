@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { Camera, Sparkles, Loader2, Upload, X } from 'lucide-react'
+import { Camera, Sparkles, Loader2, Upload, Trash2, Expand, Copy, Check, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ImageCropModal } from '@/components/ui/image-crop-modal'
+import { Modal } from '@/components/ui'
 import { useSupabase } from '@/hooks'
+import { useAppStore } from '@/store'
 import Image from 'next/image'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -21,9 +23,6 @@ interface CharacterImageUploadProps {
   className?: string
 }
 
-// TODO: Set to true once REPLICATE_API_TOKEN is configured in .env.local
-const AI_IMAGE_GENERATION_ENABLED = false
-
 export function CharacterImageUpload({
   characterId,
   characterName,
@@ -37,11 +36,19 @@ export function CharacterImageUpload({
   className,
 }: CharacterImageUploadProps) {
   const supabase = useSupabase()
+  const { aiEnabled } = useAppStore()
   const inputRef = useRef<HTMLInputElement>(null)
 
   const [isGenerating, setIsGenerating] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Modal states
+  const [optionsModalOpen, setOptionsModalOpen] = useState(false)
+  const [promptModalOpen, setPromptModalOpen] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [generatedPrompt, setGeneratedPrompt] = useState({ prompt: '', shortPrompt: '' })
+  const [promptCopied, setPromptCopied] = useState(false)
 
   // Crop modal state
   const [cropModalOpen, setCropModalOpen] = useState(false)
@@ -57,6 +64,7 @@ export function CharacterImageUpload({
   // Handle file selection
   const handleFileSelect = useCallback(() => {
     inputRef.current?.click()
+    setOptionsModalOpen(false)
   }, [])
 
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,40 +97,47 @@ export function CharacterImageUpload({
     }
   }, [])
 
-  // Handle AI generation
-  const handleGenerate = useCallback(async () => {
+  // Handle AI prompt generation for character portraits
+  const handleGeneratePrompt = useCallback(async () => {
     setIsGenerating(true)
     setError(null)
+    setOptionsModalOpen(false)
 
     try {
-      const response = await fetch('/api/ai/generate-image', {
+      const response = await fetch('/api/ai/generate-character-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          characterName,
-          characterType,
-          description: characterDescription,
-          summary: characterSummary,
+          name: characterName,
+          type: characterType,
+          race: null, // Could be extracted from description
+          class: null, // Could be extracted from description
+          backstory: characterDescription,
+          personality: characterSummary,
         }),
       })
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || 'Failed to generate image')
+        throw new Error(data.error || 'Failed to generate prompt')
       }
 
-      const { imageUrl } = await response.json()
-
-      // Open crop modal with generated image
-      setPendingImageSrc(imageUrl)
-      setPendingIsAiGenerated(true)
-      setCropModalOpen(true)
+      const data = await response.json()
+      setGeneratedPrompt({ prompt: data.prompt, shortPrompt: data.shortPrompt })
+      setPromptModalOpen(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate image')
+      setError(err instanceof Error ? err.message : 'Failed to generate prompt')
     } finally {
       setIsGenerating(false)
     }
   }, [characterName, characterType, characterDescription, characterSummary])
+
+  // Copy prompt to clipboard
+  const copyPromptToClipboard = useCallback(async (text: string) => {
+    await navigator.clipboard.writeText(text)
+    setPromptCopied(true)
+    setTimeout(() => setPromptCopied(false), 2000)
+  }, [])
 
   // Handle save from crop modal
   const handleCropSave = useCallback(async (avatarBlob: Blob, detailBlob: Blob) => {
@@ -180,9 +195,9 @@ export function CharacterImageUpload({
   }, [characterId, supabase, onUpdate, pendingIsAiGenerated])
 
   // Handle removing image
-  const handleRemove = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
+  const handleRemove = useCallback(() => {
     onUpdate(null, null, false)
+    setOptionsModalOpen(false)
   }, [onUpdate])
 
   // Close crop modal
@@ -207,10 +222,13 @@ export function CharacterImageUpload({
         onChange={handleFileChange}
       />
 
-      {/* Detail image preview (2:3 aspect ratio) - shown when available */}
+      {/* Detail image preview (2:3 aspect ratio) - click to open options modal */}
       {detailUrl ? (
         <div className="relative group mb-3">
-          <div className="relative w-32 h-48 rounded-xl overflow-hidden border-2 border-[--border] bg-[--bg-base]">
+          <div
+            onClick={() => setOptionsModalOpen(true)}
+            className="relative w-32 h-48 rounded-xl overflow-hidden border-2 border-[--border] bg-[--bg-base] cursor-pointer"
+          >
             <Image
               src={detailUrl}
               alt={characterName}
@@ -218,54 +236,31 @@ export function CharacterImageUpload({
               className="object-cover"
               sizes="128px"
             />
-            {/* Hover overlay */}
-            <button
-              type="button"
-              onClick={handleFileSelect}
-              disabled={isLoading}
-              className={cn(
-                'absolute inset-0 bg-black/60 flex items-center justify-center',
-                'opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer'
-              )}
-            >
-              <Camera className="w-8 h-8 text-white" />
-            </button>
-          </div>
-          {/* Remove button */}
-          {!isLoading && (
-            <button
-              type="button"
-              onClick={handleRemove}
-              className={cn(
-                'absolute -top-2 -right-2 p-1.5 rounded-full',
-                'bg-[--bg-surface] border border-[--border]',
-                'text-[--text-secondary] hover:text-[--arcane-ember] hover:border-[--arcane-ember]',
-                'opacity-0 group-hover:opacity-100 transition-all shadow-lg',
-                'focus:outline-none focus:opacity-100'
-              )}
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-          {/* Small avatar preview in corner */}
-          {avatarUrl && (
-            <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full overflow-hidden border-2 border-[--bg-surface] shadow-lg">
-              <Image
-                src={avatarUrl}
-                alt={`${characterName} avatar`}
-                fill
-                className="object-cover"
-                sizes="40px"
-              />
+            {/* Hover overlay with options hint */}
+            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+              <Camera className="w-6 h-6 text-white" />
+              <span className="text-xs text-white/80">Click to edit</span>
             </div>
-          )}
+          </div>
+          {/* Fullscreen indicator */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              setLightboxOpen(true)
+            }}
+            className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 text-white/80 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
+            title="View fullscreen"
+          >
+            <Expand className="w-4 h-4" />
+          </button>
         </div>
       ) : (
-        /* Empty state - circular upload button */
+        /* Empty state - click to open options modal */
         <div className={cn('relative group mb-3', sizes[size])}>
           <button
             type="button"
-            onClick={handleFileSelect}
+            onClick={() => setOptionsModalOpen(true)}
             disabled={isLoading}
             className={cn(
               'relative w-full h-full rounded-full overflow-hidden transition-all',
@@ -286,52 +281,151 @@ export function CharacterImageUpload({
         </div>
       )}
 
-      {/* Action buttons */}
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={handleFileSelect}
-          disabled={isLoading}
-          className={cn(
-            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-            'bg-[--bg-elevated] border border-[--border] text-[--text-secondary]',
-            'hover:bg-[--bg-hover] hover:text-[--text-primary]',
-            isLoading && 'opacity-50 cursor-not-allowed'
-          )}
-        >
-          <Upload className="w-3.5 h-3.5" />
-          {detailUrl ? 'Change' : 'Upload'}
-        </button>
-        {AI_IMAGE_GENERATION_ENABLED && (
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={isLoading}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-              'bg-[--arcane-gold]/10 border border-[--arcane-gold]/30 text-[--arcane-gold]',
-              'hover:bg-[--arcane-gold]/20 hover:border-[--arcane-gold]/50',
-              isLoading && 'opacity-50 cursor-not-allowed'
-            )}
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-3.5 h-3.5" />
-                Generate
-              </>
-            )}
-          </button>
-        )}
-      </div>
-
       {/* Error message */}
       {error && (
         <p className="mt-2 text-xs text-[--arcane-ember]">{error}</p>
+      )}
+
+      {/* Image Options Modal */}
+      <Modal
+        isOpen={optionsModalOpen}
+        onClose={() => setOptionsModalOpen(false)}
+        title="Character Image"
+        description="Upload an image or generate an AI prompt for character art"
+      >
+        <div className="space-y-3 py-4">
+          {/* Upload Option */}
+          <button
+            onClick={handleFileSelect}
+            className="w-full flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] rounded-xl transition-colors text-left"
+          >
+            <div className="p-3 bg-purple-500/20 rounded-lg">
+              <Upload className="w-5 h-5 text-purple-400" />
+            </div>
+            <div>
+              <p className="font-medium text-white">Upload Image</p>
+              <p className="text-sm text-gray-500">Choose an image from your device</p>
+            </div>
+          </button>
+
+          {/* AI Prompt Option - only show if AI is enabled */}
+          {aiEnabled && (
+            <button
+              onClick={handleGeneratePrompt}
+              disabled={isGenerating}
+              className="w-full flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] rounded-xl transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div className="p-3 bg-purple-500/20 rounded-lg">
+                {isGenerating ? (
+                  <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
+                ) : (
+                  <Sparkles className="w-5 h-5 text-purple-400" />
+                )}
+              </div>
+              <div>
+                <p className="font-medium text-white">Generate AI Prompt</p>
+                <p className="text-sm text-gray-500">Get a prompt optimized for character portraits</p>
+              </div>
+            </button>
+          )}
+
+          {/* Delete Option - only show if image exists */}
+          {detailUrl && (
+            <button
+              onClick={handleRemove}
+              className="w-full flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-red-500/10 border border-white/[0.08] hover:border-red-500/30 rounded-xl transition-colors text-left"
+            >
+              <div className="p-3 bg-red-500/20 rounded-lg">
+                <Trash2 className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <p className="font-medium text-red-400">Remove Image</p>
+                <p className="text-sm text-gray-500">Delete the current character image</p>
+              </div>
+            </button>
+          )}
+        </div>
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={() => setOptionsModalOpen(false)}
+            className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </Modal>
+
+      {/* AI Prompt Modal */}
+      <Modal
+        isOpen={promptModalOpen}
+        onClose={() => setPromptModalOpen(false)}
+        title="AI Image Prompt"
+        description="Copy this prompt to use with Midjourney, DALL-E, or other AI image tools"
+      >
+        <div className="space-y-4 py-4">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-300">Full Prompt</span>
+              <button
+                onClick={() => copyPromptToClipboard(generatedPrompt.prompt)}
+                className="flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                {promptCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                {promptCopied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+            <div className="p-3 bg-white/[0.03] border border-white/[0.08] rounded-lg text-sm text-gray-300 max-h-48 overflow-y-auto">
+              {generatedPrompt.prompt}
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-300">Short Version</span>
+              <button
+                onClick={() => copyPromptToClipboard(generatedPrompt.shortPrompt)}
+                className="flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                <Copy className="w-3 h-3" />
+                Copy
+              </button>
+            </div>
+            <div className="p-3 bg-white/[0.03] border border-white/[0.08] rounded-lg text-sm text-gray-300">
+              {generatedPrompt.shortPrompt}
+            </div>
+          </div>
+
+          <p className="text-xs text-gray-500">
+            Optimized for character portraits with centered composition that works for both 1:1 avatars and 2:3 detail crops.
+          </p>
+        </div>
+        <div className="flex justify-end">
+          <button className="btn btn-secondary" onClick={() => setPromptModalOpen(false)}>Close</button>
+        </div>
+      </Modal>
+
+      {/* Lightbox for fullscreen image viewing */}
+      {lightboxOpen && detailUrl && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-8"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            className="absolute top-4 right-4 p-2 text-white/70 hover:text-white transition-colors"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <X className="w-8 h-8" />
+          </button>
+          <div className="relative max-w-4xl max-h-[90vh] w-full h-full">
+            <Image
+              src={detailUrl}
+              alt={characterName}
+              fill
+              className="object-contain"
+              sizes="100vw"
+            />
+          </div>
+        </div>
       )}
 
       {/* Crop Modal */}

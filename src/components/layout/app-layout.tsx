@@ -25,7 +25,7 @@ export function AppLayout({
 }: AppLayoutProps) {
   const supabase = useSupabase()
   const { user } = useUser()
-  const { setUserId, setSettings, setCurrentCampaign, isAIAssistantOpen } = useAppStore()
+  const { setUserId, setSettings, setCurrentCampaign, isAIAssistantOpen, aiEnabled } = useAppStore()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [characters, setCharacters] = useState<Character[]>([])
   const [sessions, setSessions] = useState<Session[]>([])
@@ -146,8 +146,8 @@ export function AppLayout({
         {children}
       </main>
 
-      {/* AI Assistant Panel - with campaign context */}
-      {isAIAssistantOpen && <AIAssistant campaignContext={campaignContext} />}
+      {/* AI Assistant Panel - with campaign context, only when AI is enabled */}
+      {isAIAssistantOpen && aiEnabled && <AIAssistant campaignContext={campaignContext} />}
     </>
   )
 }

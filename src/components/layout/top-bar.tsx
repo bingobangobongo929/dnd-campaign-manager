@@ -20,7 +20,7 @@ export function TopBar({ campaigns = [], currentCampaignId, transparent = false,
   const pathname = usePathname()
   const supabase = useSupabase()
   const { user } = useUser()
-  const { currentCampaign, setIsAIAssistantOpen } = useAppStore()
+  const { currentCampaign, setIsAIAssistantOpen, aiEnabled } = useAppStore()
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -150,7 +150,7 @@ export function TopBar({ campaigns = [], currentCampaignId, transparent = false,
           </div>
         )}
 
-        {currentCampaignId && (
+        {currentCampaignId && aiEnabled && (
           <button
             className="ai-trigger"
             onClick={() => setIsAIAssistantOpen(true)}
