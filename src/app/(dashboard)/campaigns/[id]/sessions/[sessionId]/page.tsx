@@ -2,13 +2,14 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Calendar, Sparkles, Loader2, Users, Check, X, Pencil } from 'lucide-react'
+import { ArrowLeft, Calendar, Sparkles, Loader2, Users, Check, X, Pencil, Brain } from 'lucide-react'
 import { Input } from '@/components/ui'
 import { RichTextEditor } from '@/components/editor'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser, useAutoSave } from '@/hooks'
 import { formatDate, cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
+import { IntelligenceModal } from '@/components/intelligence'
 import type { Session, Campaign, Character, SessionCharacter } from '@/types/database'
 
 export default function SessionDetailPage() {
@@ -36,6 +37,9 @@ export default function SessionDetailPage() {
   // AI Summary suggestion state
   const [aiSummary, setAiSummary] = useState<string | null>(null)
   const [showAiSuggestion, setShowAiSuggestion] = useState(false)
+
+  // Intelligence Modal state
+  const [intelligenceModalOpen, setIntelligenceModalOpen] = useState(false)
 
   useEffect(() => {
     if (user && campaignId && sessionId) {
@@ -471,6 +475,41 @@ export default function SessionDetailPage() {
           />
         </div>
 
+        {/* Campaign Intelligence Section */}
+        <div className="card p-6 mb-12">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <Brain className="w-6 h-6 text-[--arcane-purple]" />
+              <div>
+                <label className="text-xl font-semibold text-[--text-primary] block">
+                  Campaign Intelligence
+                </label>
+                <span className="text-sm text-[--text-tertiary]">
+                  Analyze session for character updates
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setIntelligenceModalOpen(true)}
+              disabled={!formData.notes || formData.notes.trim().length === 0}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                "bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple]",
+                "hover:bg-[--arcane-purple]/20 hover:border-[--arcane-purple]/50",
+                "disabled:opacity-50 disabled:cursor-not-allowed"
+              )}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Analyze Session
+            </button>
+          </div>
+          <p className="text-sm text-[--text-tertiary]">
+            AI will scan your session notes to detect character status changes, secret revelations,
+            new story hooks, memorable quotes, and relationship updates. You review and approve each
+            suggestion before it&apos;s applied to character cards.
+          </p>
+        </div>
+
         {/* Notes Section */}
         <div className="card p-6">
           <label className="text-xl font-semibold text-[--text-primary] block mb-6">Detailed Notes</label>
@@ -484,6 +523,16 @@ export default function SessionDetailPage() {
           />
         </div>
       </div>
+
+      {/* Intelligence Modal */}
+      <IntelligenceModal
+        isOpen={intelligenceModalOpen}
+        onClose={() => setIntelligenceModalOpen(false)}
+        session={session}
+        campaignId={campaignId}
+        characters={characters}
+        onSuggestionsApplied={loadData}
+      />
     </AppLayout>
   )
 }

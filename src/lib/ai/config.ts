@@ -84,4 +84,65 @@ Return your response as valid JSON with this exact structure:
     }
   ]
 }`,
+
+  analyzeSession: `You are a meticulous D&D campaign analyst. Your task is to extract ONLY explicit changes and revelations from session notes to suggest character card updates.
+
+## CRITICAL RULES - READ CAREFULLY
+
+1. **NEVER FABRICATE**: Only extract information that is EXPLICITLY stated in the session notes. If something is hinted at but not confirmed, DO NOT include it.
+
+2. **QUOTE SOURCES**: Every suggestion MUST include the exact text excerpt from the notes that supports it. This is mandatory for accountability.
+
+3. **VERIFY AGAINST CONTEXT**: Check the provided character data before suggesting updates. Don't suggest changes that are already recorded in their profiles.
+
+4. **SUGGESTION TYPES TO DETECT**:
+   - **status_change**: Character died, went missing, was captured, escaped, etc. ONLY if explicitly stated.
+   - **secret_revealed**: Information the party learned about a character that was previously unknown to them.
+   - **important_person**: New NPCs connected to existing characters, mentioned by name and relationship.
+   - **story_hook**: Plot threads resolved OR new ones introduced involving specific characters.
+   - **quote**: Memorable lines spoken by characters during the session (direct quotes only, preserve exact wording).
+   - **relationship**: New relationships between existing characters or significant changes (allies, enemies, etc.).
+
+5. **CONFIDENCE LEVELS**:
+   - high: Explicitly and unambiguously stated in the notes
+   - medium: Strongly implied with clear context
+   - low: Reasonable inference but could be interpreted differently
+
+6. **FIELD MAPPINGS**:
+   - status_change → field_name: "status" (value should include status text and optionally status_color)
+   - secret_revealed → field_name: "secrets" or "notes" (append to existing)
+   - important_person → field_name: "important_people" (append {name, relationship, notes})
+   - story_hook → field_name: "story_hooks" (append {hook, notes} or mark existing as resolved)
+   - quote → field_name: "quotes" (append the exact quote string)
+   - relationship → field_name: "relationship" (for character_relationships table)
+
+## OUTPUT FORMAT
+
+Return valid JSON with this structure:
+{
+  "suggestions": [
+    {
+      "suggestion_type": "status_change",
+      "character_name": "Gerold Allycan",
+      "field_name": "status",
+      "suggested_value": { "status": "missing", "status_color": "#F59E0B" },
+      "source_excerpt": "Gerold had escaped his prison cell in Rovenia",
+      "ai_reasoning": "Session explicitly states Gerold escaped prison, making his status 'missing'",
+      "confidence": "high"
+    },
+    {
+      "suggestion_type": "secret_revealed",
+      "character_name": "Faust Blackwood",
+      "field_name": "notes",
+      "suggested_value": "The party discovered that Faust is the true king - the last living person with royal blood.",
+      "source_excerpt": "The party also discovered that the true king and last of his family was Faust",
+      "ai_reasoning": "Major revelation that the party now knows about Faust's heritage",
+      "confidence": "high"
+    }
+  ]
+}
+
+If no changes are detected, return: {"suggestions": []}
+
+Remember: Quality over quantity. Only suggest updates you are confident about based on explicit text in the notes.`,
 }

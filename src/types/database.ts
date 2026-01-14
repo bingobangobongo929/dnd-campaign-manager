@@ -1022,6 +1022,56 @@ export interface Database {
           updated_at?: string
         }
       }
+      intelligence_suggestions: {
+        Row: {
+          id: string
+          campaign_id: string
+          session_id: string
+          character_id: string | null
+          suggestion_type: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship'
+          field_name: string
+          current_value: Json | null
+          suggested_value: Json
+          source_excerpt: string
+          ai_reasoning: string | null
+          confidence: 'high' | 'medium' | 'low'
+          status: 'applied' | 'rejected'
+          final_value: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          campaign_id: string
+          session_id: string
+          character_id?: string | null
+          suggestion_type: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship'
+          field_name: string
+          current_value?: Json | null
+          suggested_value: Json
+          source_excerpt: string
+          ai_reasoning?: string | null
+          confidence?: 'high' | 'medium' | 'low'
+          status?: 'applied' | 'rejected'
+          final_value?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          campaign_id?: string
+          session_id?: string
+          character_id?: string | null
+          suggestion_type?: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship'
+          field_name?: string
+          current_value?: Json | null
+          suggested_value?: Json
+          source_excerpt?: string
+          ai_reasoning?: string | null
+          confidence?: 'high' | 'medium' | 'low'
+          status?: 'applied' | 'rejected'
+          final_value?: Json | null
+          created_at?: string
+        }
+      }
       campaign_shares: {
         Row: {
           id: string
@@ -1090,6 +1140,11 @@ export type OneshotShare = Database['public']['Tables']['oneshot_shares']['Row']
 export type CharacterRelationship = Database['public']['Tables']['character_relationships']['Row']
 export type CampaignLore = Database['public']['Tables']['campaign_lore']['Row']
 export type CampaignShare = Database['public']['Tables']['campaign_shares']['Row']
+export type IntelligenceSuggestion = Database['public']['Tables']['intelligence_suggestions']['Row']
+
+// Suggestion types for Campaign Intelligence
+export type SuggestionType = 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship'
+export type ConfidenceLevel = 'high' | 'medium' | 'low'
 
 // Extended types with relations
 export type CharacterWithTags = Character & {

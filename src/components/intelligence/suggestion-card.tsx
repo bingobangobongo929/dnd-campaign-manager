@@ -1,0 +1,246 @@
+'use client'
+
+import { useState } from 'react'
+import {
+  Check,
+  X,
+  Edit2,
+  User,
+  Quote,
+  Link,
+  AlertTriangle,
+  Skull,
+  Eye,
+  Bookmark,
+  ChevronDown,
+  ChevronUp
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import type { SuggestionType, ConfidenceLevel, Character } from '@/types/database'
+
+export interface GeneratedSuggestion {
+  suggestion_type: SuggestionType
+  character_name: string
+  character_id: string | null
+  field_name: string
+  current_value: unknown
+  suggested_value: unknown
+  source_excerpt: string
+  ai_reasoning: string
+  confidence: ConfidenceLevel
+}
+
+interface SuggestionCardProps {
+  suggestion: GeneratedSuggestion
+  character?: Character
+  isSelected: boolean
+  onToggle: () => void
+  onEdit?: (edited: GeneratedSuggestion) => void
+}
+
+const SUGGESTION_ICONS: Record<SuggestionType, typeof User> = {
+  status_change: Skull,
+  secret_revealed: Eye,
+  story_hook: Bookmark,
+  quote: Quote,
+  important_person: User,
+  relationship: Link,
+}
+
+const SUGGESTION_COLORS: Record<SuggestionType, { bg: string; text: string; border: string }> = {
+  status_change: { bg: 'rgba(239, 68, 68, 0.12)', text: '#f87171', border: 'rgba(239, 68, 68, 0.3)' },
+  secret_revealed: { bg: 'rgba(139, 92, 246, 0.12)', text: '#a78bfa', border: 'rgba(139, 92, 246, 0.3)' },
+  story_hook: { bg: 'rgba(59, 130, 246, 0.12)', text: '#60a5fa', border: 'rgba(59, 130, 246, 0.3)' },
+  quote: { bg: 'rgba(16, 185, 129, 0.12)', text: '#34d399', border: 'rgba(16, 185, 129, 0.3)' },
+  important_person: { bg: 'rgba(245, 158, 11, 0.12)', text: '#fbbf24', border: 'rgba(245, 158, 11, 0.3)' },
+  relationship: { bg: 'rgba(236, 72, 153, 0.12)', text: '#f472b6', border: 'rgba(236, 72, 153, 0.3)' },
+}
+
+const CONFIDENCE_INDICATORS: Record<ConfidenceLevel, { label: string; color: string }> = {
+  high: { label: 'High confidence', color: '#10B981' },
+  medium: { label: 'Medium confidence', color: '#F59E0B' },
+  low: { label: 'Low confidence', color: '#EF4444' },
+}
+
+export function SuggestionCard({
+  suggestion,
+  character,
+  isSelected,
+  onToggle,
+  onEdit,
+}: SuggestionCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  const Icon = SUGGESTION_ICONS[suggestion.suggestion_type] || AlertTriangle
+  const colors = SUGGESTION_COLORS[suggestion.suggestion_type]
+  const confidence = CONFIDENCE_INDICATORS[suggestion.confidence]
+
+  const formatValue = (value: unknown): string => {
+    if (value === null || value === undefined) return 'None'
+    if (typeof value === 'string') return value
+    if (typeof value === 'object') {
+      // Handle status_change format
+      if ('status' in (value as object)) {
+        return (value as { status: string }).status
+      }
+      // Handle important_person format
+      if ('name' in (value as object)) {
+        const p = value as { name: string; relationship: string; notes?: string }
+        return `${p.name} (${p.relationship})`
+      }
+      // Handle story_hook format
+      if ('hook' in (value as object)) {
+        return (value as { hook: string }).hook
+      }
+      return JSON.stringify(value)
+    }
+    return String(value)
+  }
+
+  const formatFieldName = (field: string): string => {
+    return field
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase())
+  }
+
+  return (
+    <div
+      className={cn(
+        'rounded-xl overflow-hidden transition-all duration-200',
+        isSelected
+          ? 'ring-2 ring-[#8B5CF6] ring-offset-2 ring-offset-[#0a0a0f]'
+          : ''
+      )}
+      style={{
+        backgroundColor: isSelected ? 'rgba(139, 92, 246, 0.08)' : 'rgba(26, 26, 36, 0.6)',
+        border: isSelected ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid rgba(255, 255, 255, 0.06)',
+      }}
+    >
+      {/* Main clickable area */}
+      <button
+        onClick={onToggle}
+        className="w-full flex items-start gap-4 p-4 text-left"
+      >
+        {/* Checkbox */}
+        <div
+          className={cn(
+            'w-5 h-5 rounded flex items-center justify-center flex-shrink-0 transition-all mt-0.5',
+            isSelected ? 'bg-[#8B5CF6]' : 'bg-transparent'
+          )}
+          style={{
+            border: isSelected ? 'none' : '2px solid rgba(255, 255, 255, 0.2)',
+          }}
+        >
+          {isSelected && <Check className="w-3 h-3 text-white" />}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          {/* Header */}
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <span
+              className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded"
+              style={{
+                backgroundColor: colors.bg,
+                color: colors.text,
+              }}
+            >
+              <Icon className="w-3 h-3" />
+              {suggestion.suggestion_type.replace(/_/g, ' ')}
+            </span>
+
+            <span
+              className="text-[10px] font-medium px-2 py-0.5 rounded"
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                color: confidence.color,
+              }}
+            >
+              {confidence.label}
+            </span>
+          </div>
+
+          {/* Character and field */}
+          <p className="font-semibold text-[15px] mb-1" style={{ color: '#f3f4f6' }}>
+            {suggestion.character_name}
+            <span className="font-normal text-sm ml-2" style={{ color: '#6b7280' }}>
+              → {formatFieldName(suggestion.field_name)}
+            </span>
+          </p>
+
+          {/* Suggested value */}
+          <div
+            className="text-sm p-2 rounded-lg mb-2"
+            style={{
+              backgroundColor: 'rgba(139, 92, 246, 0.08)',
+              border: '1px solid rgba(139, 92, 246, 0.15)',
+            }}
+          >
+            <span className="text-[10px] uppercase tracking-wider font-semibold block mb-1" style={{ color: '#8B5CF6' }}>
+              Suggested Update
+            </span>
+            <p style={{ color: '#d1d5db' }}>
+              {formatValue(suggestion.suggested_value)}
+            </p>
+          </div>
+
+          {/* AI Reasoning */}
+          <p className="text-xs" style={{ color: '#9ca3af' }}>
+            {suggestion.ai_reasoning}
+          </p>
+        </div>
+
+        {/* Expand button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            setIsExpanded(!isExpanded)
+          }}
+          className="p-1 rounded hover:bg-white/5 transition-colors"
+        >
+          {isExpanded ? (
+            <ChevronUp className="w-4 h-4" style={{ color: '#6b7280' }} />
+          ) : (
+            <ChevronDown className="w-4 h-4" style={{ color: '#6b7280' }} />
+          )}
+        </button>
+      </button>
+
+      {/* Expanded details */}
+      {isExpanded ? (
+        <div
+          className="px-4 pb-4 pt-0 space-y-3"
+          style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}
+        >
+          {/* Source excerpt */}
+          <div>
+            <span className="text-[10px] uppercase tracking-wider font-semibold block mb-1" style={{ color: '#6b7280' }}>
+              Source from Session Notes
+            </span>
+            <blockquote
+              className="text-sm p-3 rounded-lg italic"
+              style={{
+                backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                borderLeft: '3px solid #10B981',
+                color: '#9ca3af',
+              }}
+            >
+              &quot;{suggestion.source_excerpt}&quot;
+            </blockquote>
+          </div>
+
+          {/* Current value */}
+          {suggestion.current_value !== null && suggestion.current_value !== undefined ? (
+            <div>
+              <span className="text-[10px] uppercase tracking-wider font-semibold block mb-1" style={{ color: '#6b7280' }}>
+                Current Value
+              </span>
+              <p className="text-sm" style={{ color: '#6b7280' }}>
+                {formatValue(suggestion.current_value)}
+              </p>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  )
+}
