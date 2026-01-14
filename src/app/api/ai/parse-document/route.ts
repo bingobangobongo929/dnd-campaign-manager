@@ -115,7 +115,6 @@ export async function POST(req: Request) {
       model,
       system: systemPrompt,
       prompt: `Parse the following ${documentType} document:\n\n${documentText}`,
-      maxTokens: 4000,
     })
 
     // Try to parse the JSON response

@@ -109,7 +109,6 @@ Please analyze this campaign data and provide insights:`
       model,
       system: ANALYZE_LORE_PROMPT,
       prompt: analysisPrompt,
-      maxTokens: 2000,
     })
 
     // Save the lore entry to the database
