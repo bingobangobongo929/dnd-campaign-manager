@@ -148,12 +148,18 @@ export async function PATCH(req: Request) {
         title: string
         description: string
         event_type: string
+        event_date?: string
+        session_id?: string | null
+        location?: string
+        is_major?: boolean
         character_names?: string[]
+        character_ids?: string[]
       }
 
-      // Look up character IDs from names
-      let characterIds: string[] = []
-      if (timelineData.character_names && timelineData.character_names.length > 0) {
+      // Use provided character_ids if available, otherwise look up from names
+      let characterIds: string[] = timelineData.character_ids || []
+
+      if (characterIds.length === 0 && timelineData.character_names && timelineData.character_names.length > 0) {
         const { data: characters } = await supabase
           .from('characters')
           .select('id, name')
@@ -173,7 +179,7 @@ export async function PATCH(req: Request) {
         }
       }
 
-      // Create the timeline event
+      // Create the timeline event with all fields
       const { data: newEvent, error: eventError } = await supabase
         .from('timeline_events')
         .insert({
@@ -181,6 +187,10 @@ export async function PATCH(req: Request) {
           title: timelineData.title,
           description: timelineData.description,
           event_type: timelineData.event_type || 'other',
+          event_date: timelineData.event_date || new Date().toISOString().split('T')[0],
+          session_id: timelineData.session_id || null,
+          location: timelineData.location || null,
+          is_major: timelineData.is_major || false,
           character_ids: characterIds.length > 0 ? characterIds : null,
           character_id: characterIds.length > 0 ? characterIds[0] : null, // backward compat
         })

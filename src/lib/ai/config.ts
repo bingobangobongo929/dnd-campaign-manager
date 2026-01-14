@@ -72,6 +72,8 @@ Guidelines:
 - Create concise but informative descriptions
 - Order events chronologically as they appear in the notes
 - Focus on events that would be meaningful to track in a campaign timeline
+- Include location if mentioned in the notes
+- Mark is_major: true for pivotal campaign moments (major battles, key revelations, character deaths, quest completions)
 
 Return your response as valid JSON with this exact structure:
 {
@@ -80,7 +82,9 @@ Return your response as valid JSON with this exact structure:
       "title": "Brief descriptive title",
       "description": "Detailed description of what happened",
       "event_type": "one of the valid types",
-      "character_names": ["Character Name 1", "Character Name 2"]
+      "character_names": ["Character Name 1", "Character Name 2"],
+      "location": "Location name if mentioned",
+      "is_major": true or false
     }
   ]
 }`,
@@ -102,7 +106,7 @@ Return your response as valid JSON with this exact structure:
    - **story_hook**: Plot threads resolved OR new ones introduced involving specific characters.
    - **quote**: Memorable lines spoken by characters during the session (direct quotes only, preserve exact wording).
    - **relationship**: New relationships between existing characters or significant changes (allies, enemies, etc.).
-   - **timeline_event**: Significant campaign events worth recording in the timeline (battles, discoveries, deaths, alliances, quest milestones, character introductions, major plot points). IMPORTANT: Check the existing timeline events provided and don't suggest duplicates.
+   - **timeline_event**: Significant campaign events worth recording in the timeline (battles, discoveries, deaths, alliances, quest milestones, character introductions, major plot points). IMPORTANT: Check the existing timeline events provided and don't suggest duplicates. Include location if mentioned, and mark is_major: true for pivotal campaign moments.
 
 5. **CONFIDENCE LEVELS**:
    - high: Explicitly and unambiguously stated in the notes
@@ -116,7 +120,7 @@ Return your response as valid JSON with this exact structure:
    - story_hook → field_name: "story_hooks" (append {hook, notes} or mark existing as resolved)
    - quote → field_name: "quotes" (append the exact quote string)
    - relationship → field_name: "relationship" (for character_relationships table)
-   - timeline_event → field_name: "timeline" (value should include title, description, event_type, and character_names array)
+   - timeline_event → field_name: "timeline" (value should include title, description, event_type, character_names array, location if known, and is_major boolean for pivotal events)
 
 ## OUTPUT FORMAT
 
@@ -149,7 +153,9 @@ Return valid JSON with this structure:
         "title": "The True King Revealed",
         "description": "The party discovered that Faust Blackwood is the true heir to the throne, the last living person with royal blood.",
         "event_type": "discovery",
-        "character_names": ["Faust Blackwood"]
+        "character_names": ["Faust Blackwood"],
+        "location": "The Royal Archives",
+        "is_major": true
       },
       "source_excerpt": "The party also discovered that the true king and last of his family was Faust",
       "ai_reasoning": "Major plot revelation that should be recorded in the campaign timeline",

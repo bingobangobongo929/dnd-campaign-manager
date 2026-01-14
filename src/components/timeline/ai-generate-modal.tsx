@@ -12,6 +12,8 @@ interface GeneratedEvent {
   event_type: string
   character_ids: string[]
   source_session_ids: string[]
+  location?: string
+  is_major?: boolean
 }
 
 interface AIGenerateModalProps {

@@ -318,6 +318,8 @@ export interface Database {
           event_date: string
           character_id: string | null
           character_ids: string[] | null
+          location: string | null
+          is_major: boolean
           event_order: number
           created_at: string
         }
@@ -331,6 +333,8 @@ export interface Database {
           event_date?: string
           character_id?: string | null
           character_ids?: string[] | null
+          location?: string | null
+          is_major?: boolean
           event_order?: number
           created_at?: string
         }
@@ -344,6 +348,8 @@ export interface Database {
           event_date?: string
           character_id?: string | null
           character_ids?: string[] | null
+          location?: string | null
+          is_major?: boolean
           event_order?: number
           created_at?: string
         }

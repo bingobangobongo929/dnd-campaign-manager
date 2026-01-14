@@ -9,7 +9,6 @@ import {
   Loader2,
   Check,
   X,
-  Clock,
   Filter,
   RotateCcw,
   AlertCircle,
@@ -25,21 +24,14 @@ import {
   History,
   CalendarDays,
   Edit2,
-  Scroll,
-  Swords,
-  MapPin,
-  Crown,
-  Star,
-  Heart,
-  Shield,
-  Calendar,
 } from 'lucide-react'
-import { Modal, Input, Dropdown } from '@/components/ui'
+import { Modal } from '@/components/ui'
+import { TimelineEventEditor, type TimelineEventFormData } from '@/components/timeline'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
 import { AI_PROVIDERS, AIProvider } from '@/lib/ai/config'
-import type { Campaign, Character, IntelligenceSuggestion, SuggestionType, ConfidenceLevel } from '@/types/database'
+import type { Campaign, Character, Session, IntelligenceSuggestion, SuggestionType, ConfidenceLevel } from '@/types/database'
 
 const SUGGESTION_ICONS: Record<SuggestionType, typeof Skull> = {
   status_change: Skull,
@@ -117,6 +109,7 @@ export default function IntelligencePage() {
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [characters, setCharacters] = useState<Character[]>([])
+  const [sessions, setSessions] = useState<Session[]>([])
   const [suggestions, setSuggestions] = useState<IntelligenceSuggestion[]>([])
   const [counts, setCounts] = useState({ pending: 0, applied: 0, rejected: 0 })
   const [loading, setLoading] = useState(true)
@@ -139,25 +132,16 @@ export default function IntelligencePage() {
 
   // Edit state for timeline suggestions
   const [editingSuggestion, setEditingSuggestion] = useState<IntelligenceSuggestion | null>(null)
-  const [editFormData, setEditFormData] = useState<{
-    title: string
-    description: string
-    event_type: string
-    event_date: string
-  }>({ title: '', description: '', event_type: 'other', event_date: '' })
-
-  const EVENT_TYPES = [
-    { value: 'session', label: 'Session' },
-    { value: 'character_intro', label: 'Character Introduction' },
-    { value: 'combat', label: 'Combat/Battle' },
-    { value: 'discovery', label: 'Discovery' },
-    { value: 'quest_start', label: 'Quest Started' },
-    { value: 'quest_complete', label: 'Quest Completed' },
-    { value: 'death', label: 'Death' },
-    { value: 'romance', label: 'Romance' },
-    { value: 'alliance', label: 'Alliance' },
-    { value: 'other', label: 'Other' },
-  ]
+  const [editFormData, setEditFormData] = useState<TimelineEventFormData>({
+    title: '',
+    description: '',
+    event_type: 'other',
+    event_date: '',
+    session_id: null,
+    location: '',
+    is_major: false,
+    character_ids: [],
+  })
 
   const loadData = useCallback(async () => {
     if (!user || !campaignId) return
@@ -185,8 +169,19 @@ export default function IntelligencePage() {
       .from('characters')
       .select('*')
       .eq('campaign_id', campaignId)
+      .order('type', { ascending: true })
+      .order('name')
 
     setCharacters(charactersData || [])
+
+    // Load sessions for timeline event linking
+    const { data: sessionsData } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('campaign_id', campaignId)
+      .order('session_number', { ascending: false })
+
+    setSessions(sessionsData || [])
 
     // Load suggestions
     const status = showHistory ? null : 'pending'
@@ -306,7 +301,23 @@ export default function IntelligencePage() {
       description: string
       event_type: string
       event_date?: string
+      session_id?: string
+      location?: string
+      is_major?: boolean
       character_names?: string[]
+      character_ids?: string[]
+    }
+
+    // Try to resolve character names to IDs if we have them
+    let resolvedCharacterIds: string[] = value.character_ids || []
+    if (resolvedCharacterIds.length === 0 && value.character_names?.length) {
+      // Try to match character names to IDs
+      resolvedCharacterIds = value.character_names
+        .map(name => {
+          const char = characters.find(c => c.name.toLowerCase() === name.toLowerCase())
+          return char?.id
+        })
+        .filter((id): id is string => !!id)
     }
 
     setEditFormData({
@@ -314,6 +325,10 @@ export default function IntelligencePage() {
       description: value.description || '',
       event_type: value.event_type || 'other',
       event_date: value.event_date || new Date().toISOString().split('T')[0],
+      session_id: value.session_id || null,
+      location: value.location || '',
+      is_major: value.is_major || false,
+      character_ids: resolvedCharacterIds,
     })
     setEditingSuggestion(suggestion)
   }
@@ -322,16 +337,21 @@ export default function IntelligencePage() {
   const handleSaveEdit = async () => {
     if (!editingSuggestion) return
 
-    const originalValue = editingSuggestion.suggested_value as {
-      character_names?: string[]
-    }
+    // Map character IDs back to names for storage
+    const characterNames = editFormData.character_ids
+      .map(id => characters.find(c => c.id === id)?.name)
+      .filter((name): name is string => !!name)
 
     const finalValue = {
       title: editFormData.title,
       description: editFormData.description,
       event_type: editFormData.event_type,
       event_date: editFormData.event_date,
-      character_names: originalValue.character_names || [],
+      session_id: editFormData.session_id,
+      location: editFormData.location,
+      is_major: editFormData.is_major,
+      character_ids: editFormData.character_ids,
+      character_names: characterNames,
     }
 
     await handleAction(editingSuggestion.id, 'approve', finalValue)
@@ -822,50 +842,18 @@ export default function IntelligencePage() {
         onClose={() => setEditingSuggestion(null)}
         title="Edit Timeline Event"
         description="Edit the details before adding to your timeline"
+        size="lg"
       >
         <div className="space-y-4">
-          <div className="form-group">
-            <label className="form-label">Event Title</label>
-            <Input
-              value={editFormData.title}
-              onChange={(e) => setEditFormData(prev => ({ ...prev, title: e.target.value }))}
-              placeholder="What happened..."
-              className="w-full"
-            />
-          </div>
+          <TimelineEventEditor
+            formData={editFormData}
+            onChange={setEditFormData}
+            characters={characters}
+            sessions={sessions}
+            mode="compact"
+          />
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="form-group">
-              <label className="form-label">Event Type</label>
-              <Dropdown
-                options={EVENT_TYPES}
-                value={editFormData.event_type}
-                onChange={(value) => setEditFormData(prev => ({ ...prev, event_type: value }))}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Date</label>
-              <Input
-                type="date"
-                value={editFormData.event_date}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, event_date: e.target.value }))}
-                className="w-full"
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Description</label>
-            <textarea
-              value={editFormData.description}
-              onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Describe what happened..."
-              className="form-input w-full min-h-[120px] resize-none"
-              rows={4}
-            />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex justify-end gap-3 pt-4 border-t border-[--border]">
             <button
               className="btn btn-secondary"
               onClick={() => setEditingSuggestion(null)}

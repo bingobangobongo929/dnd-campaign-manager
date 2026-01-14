@@ -235,6 +235,8 @@ export default function TimelinePage() {
     event_type: string
     character_ids: string[]
     source_session_ids: string[]
+    location?: string | null
+    is_major?: boolean
   }[]) => {
     // Insert all generated events
     for (const event of generatedEvents) {
@@ -246,6 +248,8 @@ export default function TimelinePage() {
           description: event.description,
           event_type: event.event_type,
           event_date: new Date().toISOString().split('T')[0],
+          location: event.location || null,
+          is_major: event.is_major || false,
           character_ids: event.character_ids.length > 0 ? event.character_ids : null,
           character_id: event.character_ids.length > 0 ? event.character_ids[0] : null,
         })

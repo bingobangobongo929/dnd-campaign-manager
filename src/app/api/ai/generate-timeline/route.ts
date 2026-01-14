@@ -15,6 +15,8 @@ interface GeneratedEvent {
   description: string
   event_type: string
   character_names: string[]
+  location?: string
+  is_major?: boolean
 }
 
 export async function POST(req: Request) {
@@ -90,6 +92,8 @@ Extract timeline events from these session notes:`,
         description: event.description,
         event_type: event.event_type,
         character_ids: characterIds,
+        location: event.location || null,
+        is_major: event.is_major || false,
         // Include source session info for tracking
         source_session_ids: sessions.map(s => s.id),
       }
