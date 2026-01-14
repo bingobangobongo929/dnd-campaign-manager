@@ -156,6 +156,11 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [duplicateModalOpen, setDuplicateModalOpen] = useState(false)
 
+  // Modal form state
+  const [linkForm, setLinkForm] = useState({ type: 'other' as string, title: '', url: '' })
+  const [storyCharForm, setStoryCharForm] = useState({ name: '', relationship: 'friend', tagline: '', notes: '' })
+  const [journalForm, setJournalForm] = useState({ session_number: '', session_date: '', title: '', notes: '' })
+
   // Crop modal state
   const [cropModalOpen, setCropModalOpen] = useState(false)
   const [pendingImageSrc, setPendingImageSrc] = useState<string | null>(null)
@@ -499,6 +504,103 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
     setDuplicateModalOpen(false)
   }
+
+  // Handle adding a link
+  const handleAddLink = async () => {
+    if (!characterId || !linkForm.url.trim()) return
+
+    try {
+      // Handle special link types
+      if (linkForm.type === 'theme_music') {
+        setFormData(prev => ({
+          ...prev,
+          theme_music_url: linkForm.url.trim(),
+          theme_music_title: linkForm.title.trim() || 'Theme Music'
+        }))
+      } else if (linkForm.type === 'character_sheet') {
+        setFormData(prev => ({
+          ...prev,
+          character_sheet_url: linkForm.url.trim()
+        }))
+      } else {
+        const { data, error } = await supabase
+          .from('character_links')
+          .insert({
+            character_id: characterId,
+            title: linkForm.title.trim() || 'Link',
+            url: linkForm.url.trim(),
+            link_type: linkForm.type,
+            sort_order: links.length
+          })
+          .select()
+          .single()
+
+        if (error) throw error
+        if (data) setLinks(prev => [...prev, data])
+      }
+
+      setLinkForm({ type: 'other', title: '', url: '' })
+      setAddLinkModalOpen(false)
+    } catch (error) {
+      console.error('Add link error:', error)
+    }
+  }
+
+  // Handle adding a story character
+  const handleAddStoryCharacter = async () => {
+    if (!characterId || !storyCharForm.name.trim()) return
+
+    try {
+      const { data, error } = await supabase
+        .from('story_characters')
+        .insert({
+          character_id: characterId,
+          name: storyCharForm.name.trim(),
+          relationship: storyCharForm.relationship,
+          tagline: storyCharForm.tagline.trim() || null,
+          notes: storyCharForm.notes.trim() || null,
+          sort_order: storyCharacters.length
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      if (data) setStoryCharacters(prev => [...prev, data])
+
+      setStoryCharForm({ name: '', relationship: 'friend', tagline: '', notes: '' })
+      setAddStoryCharacterModalOpen(false)
+    } catch (error) {
+      console.error('Add story character error:', error)
+    }
+  }
+
+  // Handle adding a journal entry
+  const handleAddJournalEntry = async () => {
+    if (!characterId || !journalForm.notes.trim()) return
+
+    try {
+      const { data, error } = await supabase
+        .from('play_journal')
+        .insert({
+          character_id: characterId,
+          session_number: journalForm.session_number ? parseInt(journalForm.session_number) : null,
+          session_date: journalForm.session_date || null,
+          title: journalForm.title.trim() || null,
+          notes: journalForm.notes.trim()
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      if (data) setJournalEntries(prev => [data, ...prev])
+
+      setJournalForm({ session_number: '', session_date: '', title: '', notes: '' })
+      setAddJournalModalOpen(false)
+    } catch (error) {
+      console.error('Add journal entry error:', error)
+    }
+  }
+
 
   // =====================================================
   // STYLED COMPONENTS
@@ -1611,7 +1713,11 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         <div className="space-y-4 py-4">
           <div>
             <FormLabel>Link Type</FormLabel>
-            <select className={inputStyles}>
+            <select
+              value={linkForm.type}
+              onChange={(e) => setLinkForm(prev => ({ ...prev, type: e.target.value }))}
+              className={inputStyles}
+            >
               <option value="theme_music">Theme Music</option>
               <option value="character_sheet">Character Sheet</option>
               <option value="art_reference">Art Reference</option>
@@ -1621,16 +1727,28 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
           </div>
           <div>
             <FormLabel>Title</FormLabel>
-            <input type="text" placeholder="Link title" className={inputStyles} />
+            <input
+              type="text"
+              placeholder="Link title"
+              value={linkForm.title}
+              onChange={(e) => setLinkForm(prev => ({ ...prev, title: e.target.value }))}
+              className={inputStyles}
+            />
           </div>
           <div>
             <FormLabel>URL</FormLabel>
-            <input type="url" placeholder="https://..." className={inputStyles} />
+            <input
+              type="url"
+              placeholder="https://..."
+              value={linkForm.url}
+              onChange={(e) => setLinkForm(prev => ({ ...prev, url: e.target.value }))}
+              className={inputStyles}
+            />
           </div>
         </div>
         <div className="flex justify-end gap-3">
           <button className="btn btn-secondary" onClick={() => setAddLinkModalOpen(false)}>Cancel</button>
-          <button className="btn btn-primary">Add Link</button>
+          <button className="btn btn-primary" onClick={handleAddLink}>Add Link</button>
         </div>
       </Modal>
 
@@ -1644,11 +1762,21 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         <div className="space-y-4 py-4">
           <div>
             <FormLabel>Name</FormLabel>
-            <input type="text" placeholder="Character name" className={inputStyles} />
+            <input
+              type="text"
+              placeholder="Character name"
+              value={storyCharForm.name}
+              onChange={(e) => setStoryCharForm(prev => ({ ...prev, name: e.target.value }))}
+              className={inputStyles}
+            />
           </div>
           <div>
             <FormLabel>Relationship</FormLabel>
-            <select className={inputStyles}>
+            <select
+              value={storyCharForm.relationship}
+              onChange={(e) => setStoryCharForm(prev => ({ ...prev, relationship: e.target.value }))}
+              className={inputStyles}
+            >
               <option value="mentor">Mentor</option>
               <option value="father">Father</option>
               <option value="mother">Mother</option>
@@ -1666,16 +1794,27 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
           </div>
           <div>
             <FormLabel>Tagline</FormLabel>
-            <input type="text" placeholder="Brief description" className={inputStyles} />
+            <input
+              type="text"
+              placeholder="Brief description"
+              value={storyCharForm.tagline}
+              onChange={(e) => setStoryCharForm(prev => ({ ...prev, tagline: e.target.value }))}
+              className={inputStyles}
+            />
           </div>
           <div>
             <FormLabel>Notes</FormLabel>
-            <textarea placeholder="Additional notes..." className={textareaStyles} />
+            <textarea
+              placeholder="Additional notes..."
+              value={storyCharForm.notes}
+              onChange={(e) => setStoryCharForm(prev => ({ ...prev, notes: e.target.value }))}
+              className={textareaStyles}
+            />
           </div>
         </div>
         <div className="flex justify-end gap-3">
           <button className="btn btn-secondary" onClick={() => setAddStoryCharacterModalOpen(false)}>Cancel</button>
-          <button className="btn btn-primary">Add Character</button>
+          <button className="btn btn-primary" onClick={handleAddStoryCharacter}>Add Character</button>
         </div>
       </Modal>
 
@@ -1690,25 +1829,47 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <FormLabel>Session Number</FormLabel>
-              <input type="number" placeholder="1, 2, 3..." className={inputStyles} />
+              <input
+                type="number"
+                placeholder="1, 2, 3..."
+                value={journalForm.session_number}
+                onChange={(e) => setJournalForm(prev => ({ ...prev, session_number: e.target.value }))}
+                className={inputStyles}
+              />
             </div>
             <div>
               <FormLabel>Date</FormLabel>
-              <input type="date" className={inputStyles} />
+              <input
+                type="date"
+                value={journalForm.session_date}
+                onChange={(e) => setJournalForm(prev => ({ ...prev, session_date: e.target.value }))}
+                className={inputStyles}
+              />
             </div>
           </div>
           <div>
             <FormLabel>Title</FormLabel>
-            <input type="text" placeholder="Entry title (optional)" className={inputStyles} />
+            <input
+              type="text"
+              placeholder="Entry title (optional)"
+              value={journalForm.title}
+              onChange={(e) => setJournalForm(prev => ({ ...prev, title: e.target.value }))}
+              className={inputStyles}
+            />
           </div>
           <div>
             <FormLabel>Notes</FormLabel>
-            <textarea placeholder="What happened this session?" className={cn(textareaStyles, "min-h-[180px]")} />
+            <textarea
+              placeholder="What happened this session?"
+              value={journalForm.notes}
+              onChange={(e) => setJournalForm(prev => ({ ...prev, notes: e.target.value }))}
+              className={cn(textareaStyles, "min-h-[180px]")}
+            />
           </div>
         </div>
         <div className="flex justify-end gap-3">
           <button className="btn btn-secondary" onClick={() => setAddJournalModalOpen(false)}>Cancel</button>
-          <button className="btn btn-primary">Add Entry</button>
+          <button className="btn btn-primary" onClick={handleAddJournalEntry}>Add Entry</button>
         </div>
       </Modal>
     </>
