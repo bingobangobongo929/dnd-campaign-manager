@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { SuggestionType, ConfidenceLevel } from '@/types/database'
 
 export const runtime = 'edge'
-export const maxDuration = 60
+export const maxDuration = 300 // 5 minutes for large campaigns
 
 interface GeneratedSuggestion {
   suggestion_type: SuggestionType
@@ -119,45 +119,28 @@ export async function POST(req: Request) {
       })
     }
 
-    // Build comprehensive context for ALL characters
-    const fullCharacterContext = (allCharacters || []).map(c => {
+    // Build concise context for characters (limit to essential info to reduce tokens)
+    const fullCharacterContext = (allCharacters || []).slice(0, 50).map(c => {
       const parts = [
         `### ${c.name} (${c.type.toUpperCase()})`,
-        `- Status: ${c.status || 'alive'}`,
+        `Status: ${c.status || 'alive'}`,
       ]
-      if (c.race) parts.push(`- Race: ${c.race}`)
-      if (c.class) parts.push(`- Class: ${c.class}`)
-      if (c.summary) parts.push(`- Summary: ${c.summary}`)
-      if (c.goals) parts.push(`- Goals: ${c.goals}`)
-      if (c.secrets) parts.push(`- Known Secrets (DM): ${c.secrets}`)
+      if (c.race) parts.push(`Race: ${c.race}`)
+      if (c.class) parts.push(`Class: ${c.class}`)
+      if (c.summary) parts.push(`Summary: ${c.summary.slice(0, 200)}`)
 
       const storyHooks = c.story_hooks as Array<{ hook: string; notes?: string }> | string[] | null
       if (storyHooks && storyHooks.length > 0) {
         const hooks = Array.isArray(storyHooks)
-          ? storyHooks.map(h => typeof h === 'string' ? h : h.hook)
+          ? storyHooks.slice(0, 3).map(h => typeof h === 'string' ? h : h.hook)
           : []
         if (hooks.length > 0) {
-          parts.push(`- Story Hooks: ${hooks.join('; ')}`)
+          parts.push(`Hooks: ${hooks.join('; ')}`)
         }
       }
 
-      const importantPeople = c.important_people as Array<{ name: string; relationship: string; notes?: string }> | string[] | null
-      if (importantPeople && importantPeople.length > 0) {
-        const people = Array.isArray(importantPeople)
-          ? importantPeople.map(p => typeof p === 'string' ? p : `${p.name} (${p.relationship})`)
-          : []
-        if (people.length > 0) {
-          parts.push(`- Important People: ${people.join('; ')}`)
-        }
-      }
-
-      const quotes = c.quotes as string[] | null
-      if (quotes && quotes.length > 0) {
-        parts.push(`- Known Quotes: ${quotes.length} recorded`)
-      }
-
-      return parts.join('\n')
-    }).join('\n\n')
+      return parts.join(' | ')
+    }).join('\n')
 
     // Build relationship context
     const relationshipContext = (relationships || []).map(r => {
@@ -169,53 +152,44 @@ export async function POST(req: Request) {
       return null
     }).filter(Boolean).join('\n')
 
-    // Build NEW content to analyze
-    const newSessionContent = (updatedSessions || []).map(s => {
+    // Build NEW content to analyze (limit session notes to prevent timeout)
+    const sessionsToAnalyze = (updatedSessions || []).slice(0, 10) // Max 10 sessions at a time
+    const newSessionContent = sessionsToAnalyze.map(s => {
+      const notes = s.notes || ''
+      const truncatedNotes = notes.length > 3000 ? notes.slice(0, 3000) + '... [truncated]' : notes
       return `## Session ${s.session_number}: ${s.title || 'Untitled'}
-Date: ${s.date || 'Unknown'}
 ${s.summary ? `Summary: ${s.summary}` : ''}
-
-Notes:
-${s.notes || 'No notes'}`
+Notes: ${truncatedNotes}`
     }).join('\n\n---\n\n')
 
-    const newCharacterContent = (updatedCharacters || []).map(c => {
-      return `## Character Updated: ${c.name} (${c.type.toUpperCase()})
-Updated fields may include new backstory, notes, or other details.
-Current state: ${c.summary || c.description || 'No summary'}`
+    const newCharacterContent = (updatedCharacters || []).slice(0, 20).map(c => {
+      return `## ${c.name} (${c.type.toUpperCase()}) - Updated
+${c.summary || c.description || 'No summary'}`
     }).join('\n\n')
 
-    // Construct the full prompt
+    // Construct the full prompt (optimized for token efficiency)
     const fullContext = `# Campaign: ${campaign.name}
-# Analysis Since: ${new Date(lastRunTime).toLocaleDateString()}
 
-## ALL EXISTING CHARACTERS (for context and cross-referencing)
-${fullCharacterContext || 'No characters recorded yet.'}
+## EXISTING CHARACTERS
+${fullCharacterContext || 'None.'}
 
-## KNOWN RELATIONSHIPS
-${relationshipContext || 'No relationships recorded.'}
+## RELATIONSHIPS
+${relationshipContext || 'None.'}
 
 ---
 
 # NEW CONTENT TO ANALYZE
 
-## NEW/UPDATED SESSIONS (${updatedSessions?.length || 0})
-${newSessionContent || 'No new sessions.'}
+## SESSIONS (${sessionsToAnalyze.length})
+${newSessionContent || 'None.'}
 
-## RECENTLY UPDATED CHARACTERS (${updatedCharacters?.length || 0})
-${newCharacterContent || 'No character updates.'}
+## CHARACTER UPDATES (${updatedCharacters?.length || 0})
+${newCharacterContent || 'None.'}
 
 ---
 
-IMPORTANT INSTRUCTIONS:
-1. Analyze ALL new content above for character updates, status changes, new relationships, quotes, story hooks, etc.
-2. Cross-reference with existing character data - don't suggest duplicates
-3. For EACH suggestion, cite the exact source text
-4. Consider connections between characters mentioned in sessions
-5. Look for status changes (dead, missing, corrupted, etc.)
-6. Extract memorable quotes from session notes
-7. Identify new NPCs that should be added
-8. Note any revealed secrets or plot developments`
+Extract: status changes, secrets revealed, new NPCs, story hooks, quotes, relationships.
+Cite exact source text for each suggestion.`
 
     const model = getAIModel(provider || 'anthropic')
 
