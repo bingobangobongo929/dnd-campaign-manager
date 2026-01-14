@@ -18,6 +18,7 @@ export interface Database {
           description: string | null
           image_url: string | null
           status: 'active' | 'completed' | 'hiatus' | 'archived'
+          last_intelligence_run: string | null
           created_at: string
           updated_at: string
         }
@@ -29,6 +30,7 @@ export interface Database {
           description?: string | null
           image_url?: string | null
           status?: 'active' | 'completed' | 'hiatus' | 'archived'
+          last_intelligence_run?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -40,6 +42,7 @@ export interface Database {
           description?: string | null
           image_url?: string | null
           status?: 'active' | 'completed' | 'hiatus' | 'archived'
+          last_intelligence_run?: string | null
           created_at?: string
           updated_at?: string
         }

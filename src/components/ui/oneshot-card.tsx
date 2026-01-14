@@ -53,8 +53,8 @@ export function OneshotCard({
           </div>
         )}
 
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+        {/* Gradient overlay - darker for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/20" />
 
         {/* Run count badge */}
         {runs.length > 0 && (

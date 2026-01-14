@@ -50,6 +50,7 @@ export default function CampaignsPage() {
   // View mode and one-shots expanded state
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [oneshotsExpanded, setOneshotsExpanded] = useState(true)
+  const [showCreateChoice, setShowCreateChoice] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -273,20 +274,20 @@ export default function CampaignsPage() {
         /* Empty State */
         <div className="empty-state">
           <Gamepad2 className="empty-state-icon" />
-          <h2 className="empty-state-title">No campaigns yet</h2>
+          <h2 className="empty-state-title">No adventures yet</h2>
           <p className="empty-state-description">
-            Create your first campaign to start organizing your world, characters, and stories.
+            Create your first campaign or one-shot to start organizing your world, characters, and stories.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col gap-3 w-full max-w-xs">
             <button
-              className="btn btn-primary"
-              onClick={() => setIsCreateModalOpen(true)}
+              className="btn btn-primary w-full justify-center"
+              onClick={() => router.push('/campaigns/new')}
             >
-              <Plus className="w-5 h-5" />
+              <Gamepad2 className="w-5 h-5" />
               Create Campaign
             </button>
             <button
-              className="btn btn-secondary"
+              className="btn btn-secondary w-full justify-center"
               onClick={() => router.push('/oneshots/new')}
             >
               <Scroll className="w-5 h-5" />
@@ -349,23 +350,11 @@ export default function CampaignsPage() {
                   <p className="text-sm text-gray-500">{oneshots.length} adventure{oneshots.length !== 1 ? 's' : ''} ready to run</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    router.push('/oneshots/new')
-                  }}
-                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-colors border border-purple-500/20"
-                >
-                  <Plus className="w-4 h-4" />
-                  New
-                </button>
-                {oneshotsExpanded ? (
-                  <ChevronUp className="w-5 h-5 text-gray-500 group-hover:text-gray-300 transition-colors" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-gray-500 group-hover:text-gray-300 transition-colors" />
-                )}
-              </div>
+              {oneshotsExpanded ? (
+                <ChevronUp className="w-5 h-5 text-gray-500 group-hover:text-gray-300 transition-colors" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-gray-500 group-hover:text-gray-300 transition-colors" />
+              )}
             </button>
 
             {oneshotsExpanded && (
@@ -373,14 +362,7 @@ export default function CampaignsPage() {
                 {oneshots.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
                     <Scroll className="w-10 h-10 mb-4 text-gray-600" />
-                    <p className="text-sm text-gray-500 mb-4">No one-shots yet</p>
-                    <button
-                      onClick={() => router.push('/oneshots/new')}
-                      className="btn btn-secondary text-sm"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Create Your First One-Shot
-                    </button>
+                    <p className="text-sm text-gray-500">No one-shots yet. Use the + button to create one.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -404,16 +386,47 @@ export default function CampaignsPage() {
         </>
       )}
 
-      {/* Floating Action Button */}
-      {!isEmpty && (
+      {/* Floating Action Button with Choice Menu */}
+      <div className="fixed bottom-8 right-8 z-50">
+        {showCreateChoice && (
+          <div className="absolute bottom-16 right-0 mb-2 flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <button
+              onClick={() => {
+                setShowCreateChoice(false)
+                router.push('/campaigns/new')
+              }}
+              className="flex items-center gap-3 px-5 py-3 bg-[--bg-surface] border border-[--border] rounded-xl shadow-xl hover:border-purple-500/50 hover:bg-[--bg-elevated] transition-all whitespace-nowrap"
+            >
+              <Gamepad2 className="w-5 h-5 text-purple-400" />
+              <span className="font-medium text-white">New Campaign</span>
+            </button>
+            <button
+              onClick={() => {
+                setShowCreateChoice(false)
+                router.push('/oneshots/new')
+              }}
+              className="flex items-center gap-3 px-5 py-3 bg-[--bg-surface] border border-[--border] rounded-xl shadow-xl hover:border-purple-500/50 hover:bg-[--bg-elevated] transition-all whitespace-nowrap"
+            >
+              <Scroll className="w-5 h-5 text-purple-400" />
+              <span className="font-medium text-white">New One-Shot</span>
+            </button>
+          </div>
+        )}
         <button
-          className="fab"
-          onClick={() => setIsCreateModalOpen(true)}
-          aria-label="Create new campaign"
+          className={cn("fab", showCreateChoice && "rotate-45")}
+          onClick={() => setShowCreateChoice(!showCreateChoice)}
+          aria-label="Create new"
         >
           <Plus className="fab-icon" />
         </button>
-      )}
+        {/* Backdrop to close menu */}
+        {showCreateChoice && (
+          <div
+            className="fixed inset-0 -z-10"
+            onClick={() => setShowCreateChoice(false)}
+          />
+        )}
+      </div>
 
       {/* Create Modal */}
       <Modal

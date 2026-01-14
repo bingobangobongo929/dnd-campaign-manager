@@ -141,30 +141,32 @@ function CharacterNodeComponent({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Hover action icons */}
+        {/* Hover action icons - centered overlay */}
         {isHovered && !isResizeMode && (
-          <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
-            <button
-              onClick={handlePreview}
-              className="w-7 h-7 flex items-center justify-center rounded-md bg-[--bg-elevated]/90 border border-[--border] hover:bg-[--bg-hover] hover:border-[--arcane-purple] transition-all shadow-sm"
-              title="Preview"
-            >
-              <Eye className="w-3.5 h-3.5 text-[--text-secondary]" />
-            </button>
-            <button
-              onClick={handleEdit}
-              className="w-7 h-7 flex items-center justify-center rounded-md bg-[--bg-elevated]/90 border border-[--border] hover:bg-[--bg-hover] hover:border-[--arcane-purple] transition-all shadow-sm"
-              title="Edit"
-            >
-              <Pencil className="w-3.5 h-3.5 text-[--text-secondary]" />
-            </button>
-            <button
-              onClick={handleEnterResize}
-              className="w-7 h-7 flex items-center justify-center rounded-md bg-[--bg-elevated]/90 border border-[--border] hover:bg-[--bg-hover] hover:border-[--arcane-purple] transition-all shadow-sm"
-              title="Resize"
-            >
-              <Move className="w-3.5 h-3.5 text-[--text-secondary]" />
-            </button>
+          <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/40 backdrop-blur-[2px] transition-all">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handlePreview}
+                className="w-12 h-12 flex items-center justify-center rounded-xl bg-[--bg-surface] border border-[--border] hover:bg-[--arcane-purple] hover:border-[--arcane-purple] transition-all shadow-lg group/btn"
+                title="Preview"
+              >
+                <Eye className="w-5 h-5 text-[--text-secondary] group-hover/btn:text-white transition-colors" />
+              </button>
+              <button
+                onClick={handleEdit}
+                className="w-12 h-12 flex items-center justify-center rounded-xl bg-[--bg-surface] border border-[--border] hover:bg-[--arcane-purple] hover:border-[--arcane-purple] transition-all shadow-lg group/btn"
+                title="Edit"
+              >
+                <Pencil className="w-5 h-5 text-[--text-secondary] group-hover/btn:text-white transition-colors" />
+              </button>
+              <button
+                onClick={handleEnterResize}
+                className="w-12 h-12 flex items-center justify-center rounded-xl bg-[--bg-surface] border border-[--border] hover:bg-[--arcane-purple] hover:border-[--arcane-purple] transition-all shadow-lg group/btn"
+                title="Resize"
+              >
+                <Move className="w-5 h-5 text-[--text-secondary] group-hover/btn:text-white transition-colors" />
+              </button>
+            </div>
           </div>
         )}
 

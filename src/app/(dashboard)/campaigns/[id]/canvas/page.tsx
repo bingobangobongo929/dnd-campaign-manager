@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Plus, FolderPlus, Scaling, Trash2, Undo2 } from 'lucide-react'
+import { Plus, FolderPlus, Scaling, Trash2, Undo2, Brain } from 'lucide-react'
 import { Modal, Input, ColorPicker, IconPicker, getGroupIcon } from '@/components/ui'
 import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
+import { CampaignIntelligenceModal } from '@/components/intelligence'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
@@ -38,6 +39,7 @@ export default function CampaignCanvasPage() {
   const [isCreateCharacterModalOpen, setIsCreateCharacterModalOpen] = useState(false)
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false)
   const [isResizeToolbarOpen, setIsResizeToolbarOpen] = useState(false)
+  const [isIntelligenceModalOpen, setIsIntelligenceModalOpen] = useState(false)
   const [viewingCharacterId, setViewingCharacterId] = useState<string | null>(null)
   const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null)
   const [groupForm, setGroupForm] = useState({ name: '', color: '#8B5CF6', icon: 'users' })
@@ -478,6 +480,14 @@ export default function CampaignCanvasPage() {
     <>
       <button
         className="btn btn-secondary btn-sm"
+        onClick={() => setIsIntelligenceModalOpen(true)}
+        title="Analyze campaign for character updates"
+      >
+        <Brain className="w-4 h-4" />
+        <span className="hidden sm:inline ml-1.5">Analyze</span>
+      </button>
+      <button
+        className="btn btn-secondary btn-sm"
         onClick={() => setIsResizeToolbarOpen(true)}
       >
         <Scaling className="w-4 h-4" />
@@ -796,6 +806,17 @@ export default function CampaignCanvasPage() {
           </button>
         </div>
       </Modal>
+
+      {/* Campaign Intelligence Modal */}
+      {campaign && (
+        <CampaignIntelligenceModal
+          isOpen={isIntelligenceModalOpen}
+          onClose={() => setIsIntelligenceModalOpen(false)}
+          campaign={campaign}
+          characters={characters}
+          onSuggestionsApplied={loadCampaignData}
+        />
+      )}
     </AppLayout>
   )
 }

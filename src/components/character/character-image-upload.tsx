@@ -21,6 +21,15 @@ interface CharacterImageUploadProps {
   onUpdate: (avatarUrl: string | null, detailUrl: string | null, aiGenerated: boolean) => void
   size?: 'md' | 'lg' | 'xl'
   className?: string
+  // Extended data for richer AI prompts
+  characterRace?: string | null
+  characterClass?: string | null
+  characterStatus?: string | null
+  characterSecrets?: string | null
+  characterImportantPeople?: string[] | null
+  characterStoryHooks?: string[] | null
+  characterQuotes?: string[] | null
+  gameSystem?: string | null
 }
 
 export function CharacterImageUpload({
@@ -34,6 +43,14 @@ export function CharacterImageUpload({
   onUpdate,
   size = 'xl',
   className,
+  characterRace,
+  characterClass,
+  characterStatus,
+  characterSecrets,
+  characterImportantPeople,
+  characterStoryHooks,
+  characterQuotes,
+  gameSystem,
 }: CharacterImageUploadProps) {
   const supabase = useSupabase()
   const { aiEnabled } = useAppStore()
@@ -110,10 +127,17 @@ export function CharacterImageUpload({
         body: JSON.stringify({
           name: characterName,
           type: characterType,
-          race: null, // Could be extracted from description
-          class: null, // Could be extracted from description
+          race: characterRace,
+          class: characterClass,
           backstory: characterDescription,
           personality: characterSummary,
+          summary: characterSummary,
+          status: characterStatus,
+          secrets: characterSecrets,
+          important_people: characterImportantPeople,
+          story_hooks: characterStoryHooks,
+          quotes: characterQuotes,
+          game_system: gameSystem,
         }),
       })
 
@@ -130,7 +154,7 @@ export function CharacterImageUpload({
     } finally {
       setIsGenerating(false)
     }
-  }, [characterName, characterType, characterDescription, characterSummary])
+  }, [characterName, characterType, characterDescription, characterSummary, characterRace, characterClass, characterStatus, characterSecrets, characterImportantPeople, characterStoryHooks, characterQuotes, gameSystem])
 
   // Copy prompt to clipboard
   const copyPromptToClipboard = useCallback(async (text: string) => {
