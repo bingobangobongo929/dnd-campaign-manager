@@ -59,6 +59,7 @@ const GAME_SYSTEMS = [
 ]
 
 const CAMPAIGN_STATUSES = [
+  { value: 'draft', label: 'Draft', color: 'bg-blue-500' },
   { value: 'active', label: 'Active', color: 'bg-emerald-500' },
   { value: 'hiatus', label: 'On Hiatus', color: 'bg-amber-500' },
   { value: 'completed', label: 'Completed', color: 'bg-purple-500' },
@@ -370,6 +371,7 @@ export default function NewCampaignPage() {
                     value={formData.game_system}
                     onChange={e => setFormData(prev => ({ ...prev, game_system: e.target.value }))}
                     className={cn(inputStyles, "py-2")}
+                    style={{ colorScheme: 'dark' }}
                   >
                     {GAME_SYSTEMS.map(sys => (
                       <option key={sys.value} value={sys.value}>{sys.label}</option>
@@ -383,6 +385,7 @@ export default function NewCampaignPage() {
                     value={formData.status}
                     onChange={e => setFormData(prev => ({ ...prev, status: e.target.value }))}
                     className={cn(inputStyles, "py-2")}
+                    style={{ colorScheme: 'dark' }}
                   >
                     {CAMPAIGN_STATUSES.map(status => (
                       <option key={status.value} value={status.value}>{status.label}</option>

@@ -457,7 +457,7 @@ export default function IntelligencePage() {
                 value={selectedProvider}
                 onChange={(e) => setSelectedProvider(e.target.value as AIProvider)}
                 className="appearance-none bg-[--bg-surface] border border-[--border] rounded-lg px-4 py-2 pr-10 text-sm font-medium cursor-pointer hover:border-[--arcane-purple]/50 transition-colors"
-                style={{ color: '#f3f4f6' }}
+                style={{ color: '#f3f4f6', colorScheme: 'dark' }}
               >
                 {(Object.keys(AI_PROVIDERS) as AIProvider[]).map(provider => (
                   <option key={provider} value={provider}>
@@ -691,7 +691,7 @@ export default function IntelligencePage() {
                               color: CONFIDENCE_COLORS[suggestion.confidence],
                             }}
                           >
-                            {suggestion.confidence} confidence
+                            {suggestion.confidence.charAt(0).toUpperCase() + suggestion.confidence.slice(1)} confidence
                           </span>
                           <span className="text-[10px]" style={{ color: '#6b7280' }}>
                             Detected {formatTimeAgo(suggestion.created_at)}

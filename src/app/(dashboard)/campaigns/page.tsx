@@ -616,6 +616,7 @@ export default function CampaignsPage() {
         promptData={{
           title: formData.name,
           summary: formData.description,
+          game_system: formData.game_system,
         }}
         title="Campaign"
       />

@@ -759,20 +759,45 @@ export function CharacterModal({
                     </div>
                   </div>
 
-                  {/* Tags */}
+                  {/* Factions & Tags */}
                   <div className="form-group">
-                    <label className="form-label">Tags</label>
+                    {/* Factions */}
+                    {tags.filter(ct => (ct.tag as any).category === 'faction').length > 0 && (
+                      <div className="mb-3">
+                        <label className="form-label text-xs flex items-center gap-1.5">
+                          <Shield className="w-3 h-3 text-[--arcane-gold]" />
+                          Factions
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {tags.filter(ct => (ct.tag as any).category === 'faction').map((ct) => (
+                            <TagBadge
+                              key={ct.id}
+                              name={ct.tag.name}
+                              color={ct.tag.color}
+                              relatedCharacter={ct.related_character?.name}
+                              onRemove={() => handleRemoveTag(ct.id)}
+                              isFaction
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Relationship Tags */}
+                    <label className="form-label text-xs">Relationship Tags</label>
                     <div className="flex flex-wrap gap-2 mb-2">
-                      {tags.map((ct) => (
+                      {tags.filter(ct => (ct.tag as any).category !== 'faction').map((ct) => (
                         <TagBadge
                           key={ct.id}
                           name={ct.tag.name}
                           color={ct.tag.color}
                           relatedCharacter={ct.related_character?.name}
                           onRemove={() => handleRemoveTag(ct.id)}
-                          isFaction={(ct.tag as any).category === 'faction'}
                         />
                       ))}
+                      {tags.filter(ct => (ct.tag as any).category !== 'faction').length === 0 && (
+                        <span className="text-xs text-[--text-tertiary]">No relationship tags</span>
+                      )}
                     </div>
                     <button className="btn btn-secondary w-full justify-start" onClick={() => setIsAddTagOpen(true)}>
                       <Plus className="w-4 h-4" />
@@ -895,19 +920,48 @@ export function CharacterModal({
                   </div>
                 </div>
 
-                {/* Tags Display */}
+                {/* Tags Display - Separated into Factions and Relationships */}
                 {tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 pb-4 border-b border-[--border]">
-                    {tags.map((ct) => (
-                      <TagBadge
-                        key={ct.id}
-                        name={ct.tag.name}
-                        color={ct.tag.color}
-                        relatedCharacter={ct.related_character?.name}
-                        onRemove={() => handleRemoveTag(ct.id)}
-                        isFaction={(ct.tag as any).category === 'faction'}
-                      />
-                    ))}
+                  <div className="pb-4 border-b border-[--border] space-y-3">
+                    {/* Factions */}
+                    {tags.filter(ct => (ct.tag as any).category === 'faction').length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <Shield className="w-3 h-3 text-[--arcane-gold]" />
+                          <span className="text-xs font-medium text-[--text-tertiary] uppercase tracking-wide">Factions</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {tags.filter(ct => (ct.tag as any).category === 'faction').map((ct) => (
+                            <TagBadge
+                              key={ct.id}
+                              name={ct.tag.name}
+                              color={ct.tag.color}
+                              relatedCharacter={ct.related_character?.name}
+                              onRemove={() => handleRemoveTag(ct.id)}
+                              isFaction
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Relationship Tags */}
+                    {tags.filter(ct => (ct.tag as any).category !== 'faction').length > 0 && (
+                      <div>
+                        <span className="text-xs font-medium text-[--text-tertiary] uppercase tracking-wide mb-2 block">Relationships</span>
+                        <div className="flex flex-wrap gap-2">
+                          {tags.filter(ct => (ct.tag as any).category !== 'faction').map((ct) => (
+                            <TagBadge
+                              key={ct.id}
+                              name={ct.tag.name}
+                              color={ct.tag.color}
+                              relatedCharacter={ct.related_character?.name}
+                              onRemove={() => handleRemoveTag(ct.id)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

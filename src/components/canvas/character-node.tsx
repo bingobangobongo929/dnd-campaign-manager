@@ -207,22 +207,53 @@ function CharacterNodeComponent({
           </div>
         </div>
 
-        {/* BOTTOM: Tags spanning full width */}
-        {tags.length > 0 && (
-          <div className="character-card-tags-bottom">
-            {tags.map((ct) => (
-              <TagBadge
-                key={ct.id}
-                name={ct.tag.name}
-                color={ct.tag.color}
-                icon={ct.tag.icon || undefined}
-                relatedCharacter={ct.related_character?.name}
-                size="sm"
-                uppercase
-              />
-            ))}
-          </div>
-        )}
+        {/* BOTTOM: Tags spanning full width - Factions first, then Relationship tags */}
+        {tags.length > 0 && (() => {
+          const factionTags = tags.filter(ct => ct.tag.category === 'faction')
+          const relationshipTags = tags.filter(ct => ct.tag.category !== 'faction')
+
+          return (
+            <div className="character-card-tags-bottom">
+              {/* Factions Section */}
+              {factionTags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 w-full">
+                  {factionTags.map((ct) => (
+                    <TagBadge
+                      key={ct.id}
+                      name={ct.tag.name}
+                      color={ct.tag.color}
+                      icon={ct.tag.icon || undefined}
+                      relatedCharacter={ct.related_character?.name}
+                      size="sm"
+                      uppercase
+                      isFaction
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Relationship Tags Section */}
+              {relationshipTags.length > 0 && (
+                <div className={cn(
+                  "flex flex-wrap gap-1.5 w-full",
+                  factionTags.length > 0 && "pt-1.5 mt-1.5 border-t border-white/10"
+                )}>
+                  {relationshipTags.map((ct) => (
+                    <TagBadge
+                      key={ct.id}
+                      name={ct.tag.name}
+                      color={ct.tag.color}
+                      icon={ct.tag.icon || undefined}
+                      relatedCharacter={ct.related_character?.name}
+                      size="sm"
+                      uppercase
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {/* Invisible handles for connections */}
         <Handle
