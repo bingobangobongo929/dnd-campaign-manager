@@ -11,6 +11,7 @@ import {
   Settings,
   BookOpen,
   Swords,
+  Network,
 } from 'lucide-react'
 
 interface FloatingDockProps {
@@ -25,6 +26,7 @@ export function FloatingDock({ campaignId }: FloatingDockProps) {
         { href: `/campaigns/${campaignId}/canvas`, label: 'Canvas', icon: LayoutGrid },
         { href: `/campaigns/${campaignId}/sessions`, label: 'Sessions', icon: ScrollText },
         { href: `/campaigns/${campaignId}/timeline`, label: 'Timeline', icon: Clock },
+        { href: `/campaigns/${campaignId}/lore`, label: 'Lore', icon: Network },
         { href: `/campaigns/${campaignId}/map`, label: 'World Map', icon: Map },
         { href: `/campaigns/${campaignId}/gallery`, label: 'Gallery', icon: Image },
       ]

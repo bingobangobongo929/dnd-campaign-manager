@@ -183,6 +183,7 @@ interface TagBadgeProps {
   onRemove?: () => void
   size?: 'sm' | 'md' | 'lg'
   uppercase?: boolean
+  isFaction?: boolean // Show shield icon for faction tags
 }
 
 export function TagBadge({
@@ -194,9 +195,10 @@ export function TagBadge({
   onRemove,
   size = 'md',
   uppercase = true, // Default to uppercase for tags
+  isFaction = false,
 }: TagBadgeProps) {
-  // Get icon component
-  const IconComponent = getTagIcon(name, icon)
+  // Get icon component - use Shield for faction tags
+  const IconComponent = isFaction ? Shield : getTagIcon(name, icon)
   const iconSize = size === 'sm' ? 12 : size === 'lg' ? 16 : 14
 
   // Format the display name

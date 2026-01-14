@@ -57,6 +57,27 @@ export interface Database {
           position_y: number
           canvas_width: number | null
           canvas_height: number | null
+          // Status fields
+          status: string | null
+          status_color: string | null
+          // PC fields
+          race: string | null
+          class: string | null
+          age: number | null
+          background: string | null
+          appearance: string | null
+          personality: string | null
+          goals: string | null
+          secrets: string | null
+          // NPC fields
+          role: string | null
+          // List fields (JSONB)
+          important_people: Json | null
+          story_hooks: Json | null
+          quotes: Json | null
+          // Import tracking
+          source_document: string | null
+          imported_at: string | null
           created_at: string
           updated_at: string
         }
@@ -75,6 +96,22 @@ export interface Database {
           position_y?: number
           canvas_width?: number | null
           canvas_height?: number | null
+          status?: string | null
+          status_color?: string | null
+          race?: string | null
+          class?: string | null
+          age?: number | null
+          background?: string | null
+          appearance?: string | null
+          personality?: string | null
+          goals?: string | null
+          secrets?: string | null
+          role?: string | null
+          important_people?: Json | null
+          story_hooks?: Json | null
+          quotes?: Json | null
+          source_document?: string | null
+          imported_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -93,6 +130,22 @@ export interface Database {
           position_y?: number
           canvas_width?: number | null
           canvas_height?: number | null
+          status?: string | null
+          status_color?: string | null
+          race?: string | null
+          class?: string | null
+          age?: number | null
+          background?: string | null
+          appearance?: string | null
+          personality?: string | null
+          goals?: string | null
+          secrets?: string | null
+          role?: string | null
+          important_people?: Json | null
+          story_hooks?: Json | null
+          quotes?: Json | null
+          source_document?: string | null
+          imported_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -105,6 +158,7 @@ export interface Database {
           color: string
           icon: string | null
           tag_type: 'categorical' | 'relational'
+          category: 'general' | 'faction' | 'relationship'
           created_at: string
         }
         Insert: {
@@ -114,6 +168,7 @@ export interface Database {
           color?: string
           icon?: string | null
           tag_type?: 'categorical' | 'relational'
+          category?: 'general' | 'faction' | 'relationship'
           created_at?: string
         }
         Update: {
@@ -123,6 +178,7 @@ export interface Database {
           color?: string
           icon?: string | null
           tag_type?: 'categorical' | 'relational'
+          category?: 'general' | 'faction' | 'relationship'
           created_at?: string
         }
       }
@@ -893,6 +949,114 @@ export interface Database {
           updated_at?: string
         }
       }
+      character_relationships: {
+        Row: {
+          id: string
+          campaign_id: string
+          character_id: string
+          related_character_id: string
+          relationship_type: string
+          relationship_label: string | null
+          is_known_to_party: boolean
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          campaign_id: string
+          character_id: string
+          related_character_id: string
+          relationship_type: string
+          relationship_label?: string | null
+          is_known_to_party?: boolean
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          campaign_id?: string
+          character_id?: string
+          related_character_id?: string
+          relationship_type?: string
+          relationship_label?: string | null
+          is_known_to_party?: boolean
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      campaign_lore: {
+        Row: {
+          id: string
+          campaign_id: string
+          lore_type: 'family_tree' | 'faction' | 'timeline' | 'location' | 'artifact' | 'prophecy'
+          title: string
+          content: Json
+          ai_generated: boolean
+          last_analyzed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          campaign_id: string
+          lore_type: 'family_tree' | 'faction' | 'timeline' | 'location' | 'artifact' | 'prophecy'
+          title: string
+          content: Json
+          ai_generated?: boolean
+          last_analyzed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          campaign_id?: string
+          lore_type?: 'family_tree' | 'faction' | 'timeline' | 'location' | 'artifact' | 'prophecy'
+          title?: string
+          content?: Json
+          ai_generated?: boolean
+          last_analyzed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      campaign_shares: {
+        Row: {
+          id: string
+          share_code: string
+          campaign_id: string
+          share_type: string
+          included_sections: Json
+          expires_at: string | null
+          view_count: number
+          last_viewed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          share_code: string
+          campaign_id: string
+          share_type?: string
+          included_sections?: Json
+          expires_at?: string | null
+          view_count?: number
+          last_viewed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          share_code?: string
+          campaign_id?: string
+          share_type?: string
+          included_sections?: Json
+          expires_at?: string | null
+          view_count?: number
+          last_viewed_at?: string | null
+          created_at?: string
+        }
+      }
     }
   }
 }
@@ -923,6 +1087,9 @@ export type OneshotGenreTag = Database['public']['Tables']['oneshot_genre_tags']
 export type Oneshot = Database['public']['Tables']['oneshots']['Row']
 export type OneshotRun = Database['public']['Tables']['oneshot_runs']['Row']
 export type OneshotShare = Database['public']['Tables']['oneshot_shares']['Row']
+export type CharacterRelationship = Database['public']['Tables']['character_relationships']['Row']
+export type CampaignLore = Database['public']['Tables']['campaign_lore']['Row']
+export type CampaignShare = Database['public']['Tables']['campaign_shares']['Row']
 
 // Extended types with relations
 export type CharacterWithTags = Character & {

@@ -216,19 +216,31 @@ export function ShareCharacterModal({
               <label className="block text-sm font-medium text-gray-400 mb-2">
                 Link expires:
               </label>
-              <select
-                value={expiresInDays === null ? '' : expiresInDays}
-                onChange={(e) =>
-                  setExpiresInDays(e.target.value === '' ? null : parseInt(e.target.value))
-                }
-                className="w-full py-3 px-4 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50"
-              >
-                {EXPIRATION_OPTIONS.map((opt) => (
-                  <option key={opt.label} value={opt.value === null ? '' : opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={expiresInDays === null ? '' : expiresInDays}
+                  onChange={(e) =>
+                    setExpiresInDays(e.target.value === '' ? null : parseInt(e.target.value))
+                  }
+                  className="w-full py-3 px-4 bg-[#1a1a24] border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50 appearance-none cursor-pointer"
+                  style={{ colorScheme: 'dark' }}
+                >
+                  {EXPIRATION_OPTIONS.map((opt) => (
+                    <option
+                      key={opt.label}
+                      value={opt.value === null ? '' : opt.value}
+                      className="bg-[#1a1a24] text-white"
+                    >
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
             </div>
           )}
 
