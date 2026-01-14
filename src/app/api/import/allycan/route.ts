@@ -103,10 +103,16 @@ She was assigned to track down an enemy spy who told her "The Cappera family isn
     goals: 'To discover what the Cappera family is hiding and why her father was involved. To understand what happened to her and why she came back.',
     important_people: [
       { name: 'Valeric Gloam', relationship: 'Brother', notes: 'Now sells the family drugs after losing his hand as a blacksmith apprentice' },
-      { name: 'Frederick', relationship: 'Former colleague/Betrayer', notes: 'Another spy, connected to Scooter\'s family' },
+      { name: 'Mortissa Gloam', relationship: 'Aunt (father\'s sister)', notes: 'Drug smuggler, develops drugs from corpses. Also Faust\'s nemesis.' },
+      { name: 'Frederick', relationship: 'Former colleague/Betrayer', notes: 'Another spy, connected to Scooter\'s family (Burlington)' },
       { name: 'Ki-Ev Cappera', relationship: 'Former employer', notes: 'Head of the Cappera family' }
     ],
-    secrets: 'Her family is connected to the drug trade - the Gloam family develops drugs from corpses. She was killed by the Cappera family when she got too close to the truth.'
+    secrets: 'Her family is connected to the drug trade - the Gloam family develops drugs from corpses (Breeze and Brute). She was killed by the Cappera family when she got too close to the truth.',
+    story_hooks: [
+      'Got stuck in the in-between during a ritual - spirits fought for her body',
+      'Her aunt Mortissa is Faust\'s nemesis - potential conflict or alliance',
+      'Frederick (the spy who betrayed her) is connected to the Burlington family'
+    ]
   },
   {
     name: 'Torik Allycan',
@@ -137,7 +143,9 @@ Torik participated in hunts and battles, earning a reputation for ferocity and p
     story_hooks: [
       'Giant ruins beneath his village - what secrets do they hold?',
       'Connection to Giant ancestry through his father',
-      'The Ivory Reavers targeted his family specifically - why?'
+      'Wolfgang is searching for Giants - Torik can help with his Giant language knowledge',
+      'The Ivory Reavers targeted his family specifically - why?',
+      'Village destroyed, mother and youngest brother killed - seek vengeance or answers'
     ]
   },
   {
@@ -165,8 +173,9 @@ Though he remains cautious, the academy represents a potential source of the ans
     secrets: 'The devil Disarray gestured that his parents were dead, but they are actually enslaved by the Crown of Command. The Allycan family may have Giant blood - this could be key to his search.',
     story_hooks: [
       'The Allycans may have Giant blood - connection to his search',
+      'Torik can read and speak the ancient Giant runic language - potential ally in research',
       'Lost dwarven settlements may be documented in the academy library',
-      'His parents are enslaved by the Crown of Command',
+      'His parents are enslaved by the Crown of Command - brought to the academy, need eyedrops to stay conscious',
       'Ancient Giant runes and magic'
     ]
   },
@@ -190,7 +199,13 @@ The paladin Landon, leader of the insurrection group, insisted on sparing the ch
       { name: 'Lord Caphar', relationship: 'Biological father', notes: 'Patriarch of Ha\'an-Vodusas, executed' },
       { name: 'Lady Imga', relationship: 'Biological mother', notes: 'Cold and cunning, executed' }
     ],
-    secrets: 'Her brother Drago is alive and rules Eggmond using the Crown of Command. The Paladins from Solaria support destroying the Crown and will aid in this quest.'
+    secrets: 'Her brother Drago is alive and rules Eggmond using the Crown of Command. The Paladins from Solaria support destroying the Crown and will aid in this quest.',
+    story_hooks: [
+      'There\'s a ritual to close hellgates - needs 3 souls, a hellish item, and a strong caster',
+      'Her brother Drago rules Eggmond with the Crown of Command',
+      'The Paladins from Solaria support destroying the Crown and will aid in the quest',
+      'Darketh saved her brother Drago - essentially responsible for him becoming a tyrant'
+    ]
   },
   {
     name: 'Lynndis "Lynn" Grace',
@@ -212,31 +227,215 @@ The paladin Landon, leader of the insurrection group, insisted on sparing the ch
       { name: 'Alexander and Lara', relationship: 'Surrogate parents', notes: 'Elderly human couple who lost their son in a pirate raid' },
       { name: 'Umberlee', relationship: 'Connected deity', notes: 'Took Lynn\'s heart so she could walk the earth' }
     ],
-    secrets: 'Her grandmother Liriel O\'Malley sits as head of the council of the Elven city Chico. Umberlee demands 10,000 gold to return her heart, and is hunting someone who has become more famous than her on the seas.'
+    secrets: 'Her grandmother Liriel O\'Malley sits as head of the council of the Elven city Chico. Umberlee demands 10,000 gold to return her heart, and is hunting someone who has become more famous than her on the seas (her mother Miranda).',
+    story_hooks: [
+      'Her sister Sapphira is being married to Scooter Burlington - political alliance between families',
+      'Umberlee demands 10,000 gold to return her heart',
+      'Umberlee is hunting someone more famous on the seas - her mother Miranda',
+      'Her grandmother heads the council of Chico - family political connections'
+    ]
   },
   // Teachers
-  { name: 'Alistair "Cupcake" Killigan', type: 'npc', race: 'Goliath', role: 'Teacher - Physical/Fighting', status: 'alive', summary: 'Teaches physical fighting, absolutely loves cupcakes. Hard on the outside but a big softy. Jayce\'s father.', faction: 'Teachers' },
-  { name: 'Hannibal James', type: 'npc', race: 'Wendigo (disguised)', role: 'Teacher - Magic', status: 'dead', summary: 'Taught magic. Was really a wendigo who kidnapped and ate students. Killed by the party.', faction: 'Teachers', secrets: 'Was actually a wendigo. Responsible for Alice and Kale going missing.' },
-  { name: 'Brea "Dean" Aman', type: 'npc', race: 'Unknown', role: 'Dean - Politics', status: 'alive', summary: 'The dean of the academy. Teaches politics. Is goodhearted. Was a Dark Warden before becoming the dean.', faction: 'Teachers' },
-  { name: 'Leila Pence', type: 'npc', race: 'Unknown', role: 'Teacher - Necromancy', status: 'alive', summary: 'Teaches necromancy and anything beyond the living.', faction: 'Teachers' },
+  {
+    name: 'Alistair "Cupcake" Killigan',
+    type: 'npc',
+    race: 'Goliath',
+    role: 'Teacher - Physical/Fighting',
+    status: 'alive',
+    summary: 'Teaches physical fighting, absolutely loves cupcakes. Hard on the outside but a big softy. Jayce\'s father.',
+    faction: 'Teachers',
+    personality: 'Tough but wise. Understands the difference between fighting monsters and fighting people.',
+    secrets: '"Listen closely you two. There\'s a big difference between fighting people and fighting monsters. Monsters are predictable. They hunt, they kill, but they\'re driven by instinct, hunger, or territory. People, though... they\'re driven by fear, ambition, desperation. They think, they plot, and they\'ll stab you in the back when you least expect it. Monsters may tear at your flesh, but people can tear at your soul. Never forget: the most dangerous creatures you\'ll face are those who wear a smile."'
+  },
+  {
+    name: 'Hannibal James',
+    type: 'npc',
+    race: 'Wendigo (disguised)',
+    role: 'Teacher - Magic',
+    status: 'dead',
+    summary: 'Taught magic. Was really a wendigo who kidnapped and ate students. Killed by the party.',
+    faction: 'Teachers',
+    secrets: 'Was actually a wendigo. Responsible for Alice and Kale going missing.'
+  },
+  {
+    name: 'Brea "Dean" Aman',
+    type: 'npc',
+    race: 'Human',
+    role: 'Dean - Politics',
+    status: 'alive',
+    summary: 'The dean of the academy. Teaches politics. Is goodhearted. Was a Dark Warden before becoming the dean.',
+    faction: 'Teachers',
+    description: 'Grew up in poverty and was caught stealing food for her younger siblings, which landed her in the Dark Warden program also established by Mr. Allycan. She spent years serving as protector and rising in ranks. She got into the politics of the place, later sitting in council meetings with Mr. Allycan himself and established a good relationship with him.',
+    personality: 'Good intentions, understands poverty. Dreams of a better world for the family she was taken from when sent to the Dark Wardens program. She wants a better world for the kid she once was. In a male dominated environment, she learned that sometimes when the odds are against you, you might need to create better odds for yourself.'
+  },
+  {
+    name: 'Leila Pence',
+    type: 'npc',
+    race: 'Human',
+    role: 'Teacher - Necromancy',
+    status: 'alive',
+    summary: 'Teaches necromancy and anything beyond the living. Born with the gift to step into the in-between.',
+    faction: 'Teachers',
+    description: 'Born with the gift to step into the in-between - a gift that went down through the women in her family, though she\'d done it subconsciously as a child. From a prominent family in Chico, she was drafted into Allycans academy in the same city. In her third year, her team visited an orphanage outside Automvale plagued by "The Boogeyman" - a very powerful and vengeful spirit killing kids one by one. She stepped into the in-between to get a better look, bringing two other students. She was the only one who got back out.',
+    secrets: 'The Boogeyman still follows her - she hears him at night. Created an item that allows her to be invisible to lost souls of the in-between, as long as she stays out of it. Moved north to Terron to make sure he wouldn\'t find her by accident.',
+    important_people: [
+      { name: 'Arthur', relationship: 'Partner', notes: 'Father of her children Annika and Atlas' },
+      { name: 'Annika', relationship: 'Daughter', notes: 'Regressed to a baby after a cursed wishing well' },
+      { name: 'Atlas', relationship: 'Son', notes: 'Can read celestial' }
+    ]
+  },
   { name: 'Nilas Finnick', type: 'npc', race: 'Unknown', role: 'Teacher - Potions', status: 'alive', summary: 'Teaches potions.', faction: 'Teachers' },
   // Students
   { name: 'Jayce Killigan', type: 'npc', race: 'Drow', class: 'Unknown', status: 'alive', summary: 'Son of Alistair. From the Ivory Reavers clan - knows Esther though she might not recognize him. During the clan\'s bleeding ritual, he was tasked with killing Faust but couldn\'t do it. He dipped his sickle in blood on the floor and ran, letting Faust live.', faction: 'Students', secrets: 'He was supposed to kill Faust during the bleeding ritual but faked his death instead.' },
-  { name: 'Valerie Novak', type: 'npc', race: 'Vampire (Lord/Free)', class: 'Unknown', status: 'alive', summary: '2nd year vampire student. Kind of a bitch. Was turned by Castiel the vampire lord of Rovenia. Made a deal with Mr. Allycan - they killed her enslaver Castiel to give her freedom, and she pledged her allegiance to the school.', faction: 'Students' },
+  {
+    name: 'Valerie Novak',
+    type: 'npc',
+    race: 'Vampire (Lord/Free)',
+    class: 'Unknown',
+    status: 'alive',
+    summary: '2nd year vampire student. Kind of a bitch. Was turned by Castiel the vampire lord of Rovenia. Made a deal with Mr. Allycan - they killed her enslaver Castiel to give her freedom, and she pledged her allegiance to the school.',
+    faction: 'Students',
+    description: 'As a young adult, she made a deal with Castiel the Vampire lord of Rovenia and he turned her. Years later, still merely a vampire-spawn, she grew tired of the leash that came with her powers/condition. She got in contact with Mr. Allycan, the most influential and powerful man in Rovenia - in exchange for his help in killing Castiel, allowing her to deal the final blow, she\'d serve him and do his bidding. He agreed to the deal. Val was enrolled at the Academy where she stays whenever Allycan doesn\'t need her.',
+    personality: 'Kind of a bitch. Fiercely independent after years of being controlled. Loyal to those who helped free her.',
+    important_people: [
+      { name: 'Castiel', relationship: 'Former master (dead)', notes: 'Vampire lord of Rovenia who turned her. She dealt the final blow when Mr. Allycan helped kill him.' },
+      { name: 'Roderick Allycan', relationship: 'Master/Employer', notes: 'Freed her in exchange for her service.' }
+    ]
+  },
   { name: 'Aelin Huxly', type: 'npc', race: 'Half Elf', class: 'Moon Druid', status: 'alive', summary: '3rd year Moon Druid. Her and her dad found refuge with Shadow Druids but stepped away when they found out they had formed an alliance with dark forces.', faction: 'Students' },
   { name: 'L.R. Scooter Burlington II "NightMoose"', type: 'npc', race: 'Human', class: 'Ranger', status: 'alive', summary: '2nd year ranger. Comes from a very rich family. Believes himself to be the next big hero but is goofy, nerdy and not much talent. Calls himself Night Moose. He means well. Family sigil: Head of a boar, one whole fang and one half.', faction: 'Students' },
   { name: 'Kale Sthorm', type: 'npc', race: 'Unknown', class: 'Warlock', status: 'missing', summary: 'The quiet type, always seemed nervous. Would stare at blank space like he saw something others couldn\'t. First student to go missing - used Magic Jar to preserve his soul. Now possesses Scooter to help him through his arranged marriage.', faction: 'Students' },
   { name: 'Alice Acorn', type: 'npc', race: 'Elf', class: 'Sorcerer', status: 'dead', summary: 'Kind and very intelligent elf sorcerer. Always took your side. Killed by the wendigo (Hannibal James).', faction: 'Students' },
   { name: 'Peter Burlington', type: 'npc', race: 'Half-Goliath', class: 'Barbarian', status: 'alive', summary: '2nd year barbarian. His father, a gentle goliath, fell in love with a human woman - their love was seen as a disgrace. At age 4, his family was killed and he was sold to the circus where he was used and abused. His anger issues often led him into trouble. When older, the circus couldn\'t control him and sold him to the academy. Knows Esther - was part of the same group of Raiders her adoptive parents lead.', faction: 'Students' },
   // Key NPCs
-  { name: 'Roderick Allycan', type: 'npc', race: 'Human', role: 'Academy Patron', status: 'alive', summary: 'Father figure. Richest and most influential man in the world. Owns most of Rovenia where he resides.', faction: 'Allycan Academy' },
-  { name: 'Gerold Allycan', type: 'npc', race: 'Human', role: 'Noble (estranged)', status: 'alive', summary: 'Roderick\'s brother. Torik\'s father. Lives with a northern tribe.', faction: 'Allycan Academy' },
-  { name: 'Darketh Rothwell', type: 'npc', race: 'Unknown', role: 'Doctor/Mentor', status: 'alive', summary: 'Uncle figure. Raised Faust as his own. Saved Ravyn\'s brother Drago when her house fell and delivered him to distant family in Egmont. Moved to Rovenia to stay under the radar. Never agreed with what the Ha\'an-Vodusas family were doing in Solaria.' },
-  { name: 'Mortissa Gloam', type: 'npc', race: 'Unknown', role: 'Drug Smuggler', status: 'alive', summary: 'Ilviana\'s father\'s sister. Develops a selection of drugs from corpses with her brother (Ilviana\'s father). Faust\'s nemesis. Connected to Dream Pastries.' },
+  {
+    name: 'Roderick Allycan',
+    type: 'npc',
+    race: 'Human',
+    role: 'Academy Patron',
+    status: 'alive',
+    summary: 'Father figure. Richest and most influential man in the world. Owns most of Rovenia where he resides.',
+    faction: 'Allycan Academy',
+    personality: 'Ruthless businessman. Values money over lives. Has no interest in losing his power to restore the kingdom.',
+    secrets: 'Opposes the True King restoration. Sees it as cheaper to let Val die than pay 150k gold to the Ivory Reavers. Having built his own "kingdom" in Rovenia, he has no interest in losing his power and status to a king. Was even willing to try strike a deal with Drago who rules Egmont.'
+  },
+  {
+    name: 'Gerold Allycan',
+    type: 'npc',
+    race: 'Human',
+    role: 'Noble (estranged)',
+    status: 'missing',
+    summary: 'Roderick\'s brother. Torik\'s father. Lives with a northern tribe. Currently missing after escaping prison.',
+    faction: 'Allycan Academy',
+    description: 'The "black sheep" of the Allycan family. Adventurer who settled with a half-orc woman named Kura in a northern tribe. May have giant ancestry - his great-great-grandfather was likely a half-giant. Escaped his prison cell in Rovenia, where he landed due to irrational actions, outbursts, and drinking as a result of his declining mental health following the death of his wife and youngest son.',
+    important_people: [
+      { name: 'Kura', relationship: 'Wife (deceased)', notes: 'Half-orc woman killed in the attack on their village' },
+      { name: 'Torik', relationship: 'Son', notes: 'First-born, now at the academy' },
+      { name: 'Betar', relationship: 'Son', notes: 'Found and rescued from slavers' },
+      { name: 'Arthur', relationship: 'Old friend', notes: 'Traveled together for a year. Arthur taught him to fight.' }
+    ]
+  },
+  {
+    name: 'Darketh Rothwell',
+    type: 'npc',
+    race: 'Human',
+    role: 'Doctor/Mentor',
+    status: 'alive',
+    summary: 'Uncle figure. Raised Faust as his own. Moved to Rovenia to stay under the radar. Never agreed with what the Ha\'an-Vodusas family were doing in Solaria.',
+    secrets: 'He is the one who saved baby Drago when the Ha\'an-Vodusas house fell and delivered him to distant family in Egmont - essentially responsible for Drago becoming a tyrant with the Crown of Command.'
+  },
+  {
+    name: 'Mortissa Gloam',
+    type: 'npc',
+    race: 'Unknown',
+    role: 'Drug Smuggler',
+    status: 'alive',
+    summary: 'Ilviana\'s aunt (father\'s sister). Develops drugs from corpses with her brother (Ilviana\'s father). Faust\'s nemesis.',
+    description: 'Develops a selection of drugs from corpses. Known drugs: Breeze (blue glowing fluid) and Brute (green glowing fluid). Connected to Dream Pastries.',
+    important_people: [
+      { name: 'Ilviana Gloam', relationship: 'Niece', notes: 'Unaware of her undead status' },
+      { name: 'Valeric Gloam', relationship: 'Nephew', notes: 'Now sells the family drugs' }
+    ]
+  },
   { name: 'Ki-Ev Cappera', type: 'npc', race: 'Unknown', role: 'Crime Boss', status: 'alive', summary: 'Head of Cappera family. Known for owning a smaller fishing empire and shipping low value goods. The transport and fishing business is a cover for weapon smuggling.', faction: 'Cappera Family' },
   { name: 'Crystal', type: 'npc', race: 'Unknown', role: 'Ivory Reavers Leader', status: 'alive', summary: 'Co-leader of Ivory Reavers with Urza. Esther\'s adoptive mother. Couldn\'t have kids of her own, so she loved Esther like her own child. Would go through fire for her. When Esther left, she searched far and wide, worrying she wouldn\'t survive on her own.', faction: 'Ivory Reavers' },
   { name: 'Urza', type: 'npc', race: 'Unknown', role: 'Ivory Reavers Leader', status: 'alive', summary: 'Co-leader of Ivory Reavers with Crystal. Esther\'s adoptive father. Couldn\'t have kids of his own, so he loved Esther like his own child. Would go through fire for her.', faction: 'Ivory Reavers' },
   { name: 'Umberlee', type: 'npc', race: 'Deity', role: 'Goddess of the Sea', status: 'alive', summary: 'Goddess of the sea. Took Lynn\'s heart so she could walk the earth. Is viciously jealous of Lynn\'s mother Miranda\'s reputation on the sea and wants to destroy her reputation and take her down.' },
+  // New NPCs from session notes
+  {
+    name: 'Arthur',
+    type: 'npc',
+    race: 'Human',
+    role: 'Adventurer/Protector',
+    status: 'alive',
+    summary: 'Old adventuring companion of Gerold Allycan. Taught Gerold to fight. Now sent to watch over Torik. Father of Leila\'s children.',
+    description: 'Met Gerold Allycan decades ago when dealing with a haunted house (hell-moss infestation). Traveled together for a year - Arthur taught Gerold sword and bow fighting, while Gerold shared nature/folklore knowledge. Together they studied an ancient giant city near Goset and fought wendigos. Partnership ended when Gerold settled down with Kura.',
+    important_people: [
+      { name: 'Gerold Allycan', relationship: 'Old friend', notes: 'Traveled together, taught him to fight' },
+      { name: 'Leila Pence', relationship: 'Partner', notes: 'Mother of his children' },
+      { name: 'Annika', relationship: 'Daughter', notes: 'Was regressed to a baby by a cursed wishing well' },
+      { name: 'Atlas', relationship: 'Son', notes: 'Working with Emily to close hellgates' },
+      { name: 'Torik Allycan', relationship: 'Ward', notes: 'Sent by Gerold to protect him' }
+    ]
+  },
+  {
+    name: 'Betar',
+    type: 'npc',
+    race: 'Half-Orc',
+    role: 'Oath-bound Warrior',
+    status: 'alive',
+    summary: 'Torik\'s younger brother. Found being sold at the black market. Now travels with the party. Took an oath to Chauntea.',
+    description: 'Was captured after the attack on his village and sold at the black market. Rescued by Torik and the party. Woke from a dream where he met the god Chauntea and took an oath to help close the gates to hell, allow the world to heal, and aid the true king retake his rightful place on the throne.',
+    important_people: [
+      { name: 'Torik Allycan', relationship: 'Brother', notes: 'Rescued him from slavers' },
+      { name: 'Gerold Allycan', relationship: 'Father', notes: 'Currently missing' },
+      { name: 'Kura', relationship: 'Mother (deceased)', notes: 'Killed in the attack on their village' },
+      { name: 'Chauntea', relationship: 'Deity', notes: 'Granted him powers in exchange for his oath' }
+    ]
+  },
+  {
+    name: 'Emily',
+    type: 'npc',
+    race: 'Human',
+    role: 'Refugee Camp Leader',
+    status: 'alive',
+    summary: 'Runs a secret refugee camp hidden in caves near Chico. Takes beatings for money to fund the camp. Working to close hellgates.',
+    description: 'Started the refugee camp when Chico began turning away refugees from nearby towns and villages. The camp is at capacity but they do their best to integrate people into the city - faking citizen cards, finding jobs and places to live. Now works with Faust, Arthur, Leila and her children to locate and close hellgates around Obeon.',
+    important_people: [
+      { name: 'Faust Blackwood', relationship: 'Ally', notes: 'Recruited him to help as a doctor at the camp' },
+      { name: 'Arthur', relationship: 'Ally', notes: 'Working together on hellgate mission' },
+      { name: 'Leila Pence', relationship: 'Ally', notes: 'Working together on hellgate mission' }
+    ]
+  },
+  {
+    name: 'Annika',
+    type: 'npc',
+    race: 'Human',
+    role: 'Adventurer',
+    status: 'alive',
+    summary: 'Daughter of Arthur and Leila Pence. Was regressed into a baby by a cursed wishing well after Atlas charmed her into making a wish.',
+    description: 'Was working with her brother Atlas on a plan to use the cursed wishing well to obtain immortality so they could survive the ritual to close hellgates. The plan backfired when Atlas charmed her into making the wish, and she was regressed to a baby. The curse was lifted when the party dealt with the devil Disarray.',
+    important_people: [
+      { name: 'Arthur', relationship: 'Father', notes: 'Very upset when he learned Atlas charmed her' },
+      { name: 'Leila Pence', relationship: 'Mother', notes: 'Teacher at the academy' },
+      { name: 'Atlas', relationship: 'Brother', notes: 'Charmed her into making the wish' }
+    ]
+  },
+  {
+    name: 'Atlas',
+    type: 'npc',
+    race: 'Human',
+    role: 'Adventurer',
+    status: 'alive',
+    summary: 'Son of Arthur and Leila Pence. Can read celestial. Working with Emily to close hellgates. Charmed his sister into making a cursed wish.',
+    description: 'Knowledgeable about infernal matters. Gave the party information about soul coins and how they\'re needed for closing hellgates. Has a celestial book with rituals for opening and closing planar gates. Charmed his sister Annika into making a wish at the cursed wishing well, which backfired.',
+    important_people: [
+      { name: 'Arthur', relationship: 'Father', notes: 'Adventurer, not pleased about the charming incident' },
+      { name: 'Leila Pence', relationship: 'Mother', notes: 'Teacher at the academy' },
+      { name: 'Annika', relationship: 'Sister', notes: 'Charmed her into making the wish' },
+      { name: 'Emily', relationship: 'Ally', notes: 'Working together on hellgate mission' }
+    ]
+  },
 ]
 
 // Full session data with actual notes from the campaign document
