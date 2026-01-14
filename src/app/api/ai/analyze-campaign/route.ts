@@ -282,8 +282,8 @@ IMPORTANT INSTRUCTIONS:
       })
     }
 
-    // Map character names to IDs and include current values
-    const suggestionsWithIds = suggestions.map(suggestion => {
+    // Map character names to IDs and prepare for database insertion
+    const suggestionsToInsert = suggestions.map(suggestion => {
       const character = allCharacters?.find(c =>
         c.name.toLowerCase() === suggestion.character_name.toLowerCase() ||
         c.name.toLowerCase().includes(suggestion.character_name.toLowerCase()) ||
@@ -298,12 +298,35 @@ IMPORTANT INSTRUCTIONS:
       }
 
       return {
-        ...suggestion,
+        campaign_id: campaignId,
         character_id: character?.id || null,
+        character_name: suggestion.character_name,
+        suggestion_type: suggestion.suggestion_type,
+        field_name: suggestion.field_name,
         current_value: currentValue,
-        is_new_character: !character && suggestion.suggestion_type !== 'relationship',
+        suggested_value: suggestion.suggested_value,
+        source_excerpt: suggestion.source_excerpt,
+        ai_reasoning: suggestion.ai_reasoning,
+        confidence: suggestion.confidence,
+        status: 'pending' as const,
       }
     })
+
+    // Insert suggestions into database
+    let insertedCount = 0
+    if (suggestionsToInsert.length > 0) {
+      const { data: inserted, error: insertError } = await supabase
+        .from('intelligence_suggestions')
+        .insert(suggestionsToInsert)
+        .select('id')
+
+      if (insertError) {
+        console.error('Failed to insert suggestions:', insertError)
+        // Don't fail the whole request, just log it
+      } else {
+        insertedCount = inserted?.length || 0
+      }
+    }
 
     // Update last intelligence run timestamp
     await supabase
@@ -313,7 +336,7 @@ IMPORTANT INSTRUCTIONS:
 
     return new Response(JSON.stringify({
       success: true,
-      suggestions: suggestionsWithIds,
+      suggestionsCreated: insertedCount,
       analyzedSince: lastRunTime,
       stats: {
         sessionsAnalyzed: updatedSessions?.length || 0,

@@ -12,7 +12,9 @@ import {
   BookOpen,
   Swords,
   Network,
+  Brain,
 } from 'lucide-react'
+import { useAppStore } from '@/store'
 
 interface FloatingDockProps {
   campaignId?: string
@@ -20,12 +22,14 @@ interface FloatingDockProps {
 
 export function FloatingDock({ campaignId }: FloatingDockProps) {
   const pathname = usePathname()
+  const { aiEnabled } = useAppStore()
 
   const campaignLinks = campaignId
     ? [
         { href: `/campaigns/${campaignId}/canvas`, label: 'Canvas', icon: LayoutGrid },
         { href: `/campaigns/${campaignId}/sessions`, label: 'Sessions', icon: ScrollText },
         { href: `/campaigns/${campaignId}/timeline`, label: 'Timeline', icon: Clock },
+        ...(aiEnabled ? [{ href: `/campaigns/${campaignId}/intelligence`, label: 'Intelligence', icon: Brain }] : []),
         { href: `/campaigns/${campaignId}/lore`, label: 'Lore', icon: Network },
         { href: `/campaigns/${campaignId}/map`, label: 'World Map', icon: Map },
         { href: `/campaigns/${campaignId}/gallery`, label: 'Gallery', icon: Image },

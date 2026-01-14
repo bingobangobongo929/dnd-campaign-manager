@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  Brain,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui'
@@ -27,13 +28,14 @@ interface SidebarProps {
 export function Sidebar({ campaignId }: SidebarProps) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
-  const { setIsAIAssistantOpen } = useAppStore()
+  const { setIsAIAssistantOpen, aiEnabled } = useAppStore()
 
   const campaignLinks = campaignId
     ? [
         { href: `/campaigns/${campaignId}/canvas`, label: 'Canvas', icon: LayoutGrid },
         { href: `/campaigns/${campaignId}/sessions`, label: 'Sessions', icon: ScrollText },
         { href: `/campaigns/${campaignId}/timeline`, label: 'Timeline', icon: Clock },
+        ...(aiEnabled ? [{ href: `/campaigns/${campaignId}/intelligence`, label: 'Intelligence', icon: Brain }] : []),
         { href: `/campaigns/${campaignId}/map`, label: 'World Map', icon: Map },
         { href: `/campaigns/${campaignId}/gallery`, label: 'Gallery', icon: Image },
       ]

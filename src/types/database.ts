@@ -1032,8 +1032,9 @@ export interface Database {
         Row: {
           id: string
           campaign_id: string
-          session_id: string
+          session_id: string | null
           character_id: string | null
+          character_name: string | null
           suggestion_type: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship'
           field_name: string
           current_value: Json | null
@@ -1041,15 +1042,16 @@ export interface Database {
           source_excerpt: string
           ai_reasoning: string | null
           confidence: 'high' | 'medium' | 'low'
-          status: 'applied' | 'rejected'
+          status: 'pending' | 'applied' | 'rejected'
           final_value: Json | null
           created_at: string
         }
         Insert: {
           id?: string
           campaign_id: string
-          session_id: string
+          session_id?: string | null
           character_id?: string | null
+          character_name?: string | null
           suggestion_type: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship'
           field_name: string
           current_value?: Json | null
@@ -1057,15 +1059,16 @@ export interface Database {
           source_excerpt: string
           ai_reasoning?: string | null
           confidence?: 'high' | 'medium' | 'low'
-          status?: 'applied' | 'rejected'
+          status?: 'pending' | 'applied' | 'rejected'
           final_value?: Json | null
           created_at?: string
         }
         Update: {
           id?: string
           campaign_id?: string
-          session_id?: string
+          session_id?: string | null
           character_id?: string | null
+          character_name?: string | null
           suggestion_type?: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship'
           field_name?: string
           current_value?: Json | null
@@ -1073,7 +1076,7 @@ export interface Database {
           source_excerpt?: string
           ai_reasoning?: string | null
           confidence?: 'high' | 'medium' | 'low'
-          status?: 'applied' | 'rejected'
+          status?: 'pending' | 'applied' | 'rejected'
           final_value?: Json | null
           created_at?: string
         }
