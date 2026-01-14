@@ -50,7 +50,11 @@ import {
   ArrowLeft,
   BarChart3,
   Image as GalleryIcon,
+  Sparkles,
+  Loader2,
+  Check,
 } from 'lucide-react'
+import { useAppStore } from '@/store'
 import { Modal } from '@/components/ui'
 import { VaultImageCropModal } from './VaultImageCropModal'
 import { ShareCharacterModal } from './ShareCharacterModal'
@@ -94,6 +98,7 @@ const SECTIONS: { id: SectionType; label: string; icon: React.ComponentType<{ cl
 export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   const router = useRouter()
   const supabase = createClient()
+  const { aiEnabled } = useAppStore()
   const imageInputRef = useRef<HTMLInputElement>(null)
   const portraitInputRef = useRef<HTMLInputElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -165,6 +170,12 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   const [cropModalOpen, setCropModalOpen] = useState(false)
   const [pendingImageSrc, setPendingImageSrc] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+
+  // AI prompt modal state
+  const [aiPromptModalOpen, setAiPromptModalOpen] = useState(false)
+  const [generatingPrompt, setGeneratingPrompt] = useState(false)
+  const [generatedPrompt, setGeneratedPrompt] = useState({ prompt: '', shortPrompt: '' })
+  const [promptCopied, setPromptCopied] = useState(false)
 
   // Scroll to section when clicking nav
   const scrollToSection = useCallback((sectionId: SectionType) => {
@@ -313,6 +324,50 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     if (portraitInputRef.current) {
       portraitInputRef.current.value = ''
     }
+  }, [])
+
+  // Generate AI prompt for character portrait
+  const handleGenerateAiPrompt = useCallback(async () => {
+    if (!formData.name.trim()) {
+      alert('Please add a name first')
+      return
+    }
+
+    setGeneratingPrompt(true)
+    try {
+      const res = await fetch('/api/ai/generate-character-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          type: formData.type,
+          race: formData.race,
+          class: formData.class,
+          backstory: formData.notes,
+          personality: formData.personality,
+        }),
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || 'Failed to generate prompt')
+      }
+
+      const data = await res.json()
+      setGeneratedPrompt({ prompt: data.prompt, shortPrompt: data.shortPrompt })
+      setAiPromptModalOpen(true)
+    } catch (err: any) {
+      console.error('Generate prompt error:', err)
+      alert(err.message || 'Failed to generate prompt')
+    } finally {
+      setGeneratingPrompt(false)
+    }
+  }, [formData.name, formData.type, formData.race, formData.class, formData.notes, formData.personality])
+
+  const copyPromptToClipboard = useCallback(async (text: string) => {
+    await navigator.clipboard.writeText(text)
+    setPromptCopied(true)
+    setTimeout(() => setPromptCopied(false), 2000)
   }, [])
 
   // Handle crop save
@@ -896,32 +951,58 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 <span className="text-white/90 text-[13px] font-medium px-3 py-1.5 bg-black/40 backdrop-blur-sm rounded-lg">View Full Size</span>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); portraitInputRef.current?.click() }}
-              disabled={isUploading}
-              className="absolute bottom-2.5 right-2.5 p-2 bg-black/60 backdrop-blur-sm rounded-lg text-white/80 hover:text-white hover:bg-black/80 transition-all duration-200 border border-white/[0.08]"
-            >
-              <Camera className="w-3.5 h-3.5" />
-            </button>
+            <div className="absolute bottom-2.5 right-2.5 flex gap-1.5">
+              {aiEnabled && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handleGenerateAiPrompt() }}
+                  disabled={generatingPrompt}
+                  className="p-2 bg-black/60 backdrop-blur-sm rounded-lg text-white/80 hover:text-purple-300 hover:bg-black/80 transition-all duration-200 border border-white/[0.08]"
+                  title="Generate AI image prompt"
+                >
+                  {generatingPrompt ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); portraitInputRef.current?.click() }}
+                disabled={isUploading}
+                className="p-2 bg-black/60 backdrop-blur-sm rounded-lg text-white/80 hover:text-white hover:bg-black/80 transition-all duration-200 border border-white/[0.08]"
+              >
+                <Camera className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => portraitInputRef.current?.click()}
-            className="w-full aspect-[3/4] rounded-xl bg-white/[0.02] border border-dashed border-white/[0.1] flex flex-col items-center justify-center gap-3 transition-all duration-300 hover:border-purple-500/40 hover:bg-purple-500/[0.03] group cursor-pointer"
-          >
-            {formData.name ? (
-              <span className="text-4xl font-semibold text-gray-600 group-hover:text-gray-500 transition-colors duration-200">
-                {getInitials(formData.name)}
+          <div className="w-full aspect-[3/4] rounded-xl bg-white/[0.02] border border-dashed border-white/[0.1] flex flex-col items-center justify-center gap-3 transition-all duration-300 hover:border-purple-500/40 hover:bg-purple-500/[0.03] group">
+            <button
+              type="button"
+              onClick={() => portraitInputRef.current?.click()}
+              className="flex flex-col items-center gap-3 cursor-pointer"
+            >
+              {formData.name ? (
+                <span className="text-4xl font-semibold text-gray-600 group-hover:text-gray-500 transition-colors duration-200">
+                  {getInitials(formData.name)}
+                </span>
+              ) : (
+                <Camera className="w-8 h-8 text-gray-600 group-hover:text-purple-400/80 transition-colors duration-200" />
+              )}
+              <span className="text-[13px] text-gray-500 group-hover:text-gray-400 transition-colors duration-200">
+                Upload portrait
               </span>
-            ) : (
-              <Camera className="w-8 h-8 text-gray-600 group-hover:text-purple-400/80 transition-colors duration-200" />
+            </button>
+            {aiEnabled && (
+              <button
+                type="button"
+                onClick={handleGenerateAiPrompt}
+                disabled={generatingPrompt}
+                className="flex items-center gap-1.5 text-[12px] text-purple-400/70 hover:text-purple-300 transition-colors"
+              >
+                {generatingPrompt ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                Generate AI prompt
+              </button>
             )}
-            <span className="text-[13px] text-gray-500 group-hover:text-gray-400 transition-colors duration-200">
-              Upload portrait
-            </span>
-          </button>
+          </div>
         )}
       </div>
     )
@@ -1870,6 +1951,55 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         <div className="flex justify-end gap-3">
           <button className="btn btn-secondary" onClick={() => setAddJournalModalOpen(false)}>Cancel</button>
           <button className="btn btn-primary" onClick={handleAddJournalEntry}>Add Entry</button>
+        </div>
+      </Modal>
+
+      {/* AI Prompt Modal */}
+      <Modal
+        isOpen={aiPromptModalOpen}
+        onClose={() => setAiPromptModalOpen(false)}
+        title="AI Image Prompt"
+        description="Copy this prompt to use with Midjourney, DALL-E, or other AI image tools"
+      >
+        <div className="space-y-4 py-4">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-300">Full Prompt</span>
+              <button
+                onClick={() => copyPromptToClipboard(generatedPrompt.prompt)}
+                className="flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                {promptCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                {promptCopied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+            <div className="p-3 bg-white/[0.03] border border-white/[0.08] rounded-lg text-sm text-gray-300 max-h-48 overflow-y-auto">
+              {generatedPrompt.prompt}
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-300">Short Version</span>
+              <button
+                onClick={() => copyPromptToClipboard(generatedPrompt.shortPrompt)}
+                className="flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                <Copy className="w-3 h-3" />
+                Copy
+              </button>
+            </div>
+            <div className="p-3 bg-white/[0.03] border border-white/[0.08] rounded-lg text-sm text-gray-300">
+              {generatedPrompt.shortPrompt}
+            </div>
+          </div>
+
+          <p className="text-xs text-gray-500">
+            Optimized for character portraits with centered composition that works for both 1:1 avatars and 2:3 detail crops.
+          </p>
+        </div>
+        <div className="flex justify-end">
+          <button className="btn btn-secondary" onClick={() => setAiPromptModalOpen(false)}>Close</button>
         </div>
       </Modal>
     </>

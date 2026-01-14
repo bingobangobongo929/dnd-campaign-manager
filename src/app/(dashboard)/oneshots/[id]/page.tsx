@@ -515,6 +515,14 @@ export default function OneshotEditorPage() {
               {!isNew && (
                 <>
                   <button
+                    onClick={() => router.push(`/oneshots/${oneshotId}/run`)}
+                    className="flex items-center gap-2 px-3 py-2 bg-emerald-600/80 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition-colors"
+                    title="Start Run Mode"
+                  >
+                    <Play className="w-4 h-4" />
+                    Run
+                  </button>
+                  <button
                     onClick={() => setShareModalOpen(true)}
                     className="p-2 text-gray-400 hover:text-purple-400 transition-colors"
                     title="Share"

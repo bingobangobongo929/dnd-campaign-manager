@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Gamepad2, Camera, Loader2, X, ChevronDown, ChevronUp, Scroll, Grid, List, Star } from 'lucide-react'
-import { Modal, Input, Textarea, Dropdown } from '@/components/ui'
+import { Modal, Input, Textarea, Dropdown, UnifiedImageModal } from '@/components/ui'
 import { CampaignCard } from '@/components/ui/campaign-card'
 import { OneshotCard } from '@/components/ui/oneshot-card'
 import { AppLayout } from '@/components/layout/app-layout'
@@ -43,8 +43,8 @@ export default function CampaignsPage() {
     image_url: null as string | null,
   })
   const [saving, setSaving] = useState(false)
-  const [uploadingImage, setUploadingImage] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [imageModalOpen, setImageModalOpen] = useState(false)
+  const [imageModalContext, setImageModalContext] = useState<'create' | 'edit'>('create')
 
   // View mode and one-shots expanded state
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
@@ -108,44 +108,27 @@ export default function CampaignsPage() {
     setLoading(false)
   }
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  // Handle image upload from UnifiedImageModal
+  const handleImageUpload = async (blob: Blob): Promise<string> => {
+    const uniqueId = uuidv4()
+    const path = `campaigns/${uniqueId}.webp`
 
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file')
-      return
-    }
+    const { error: uploadError } = await supabase.storage
+      .from('campaign-images')
+      .upload(path, blob, { contentType: 'image/webp' })
 
-    if (file.size > 10 * 1024 * 1024) {
-      alert('Image must be less than 10MB')
-      return
-    }
+    if (uploadError) throw uploadError
 
-    setUploadingImage(true)
-    try {
-      const uniqueId = uuidv4()
-      const ext = file.name.split('.').pop()
-      const path = `campaigns/${uniqueId}.${ext}`
+    const { data: urlData } = supabase.storage
+      .from('campaign-images')
+      .getPublicUrl(path)
 
-      const { error: uploadError } = await supabase.storage
-        .from('campaign-images')
-        .upload(path, file, { contentType: file.type })
+    return urlData.publicUrl
+  }
 
-      if (uploadError) throw uploadError
-
-      const { data: urlData } = supabase.storage
-        .from('campaign-images')
-        .getPublicUrl(path)
-
-      setFormData({ ...formData, image_url: urlData.publicUrl })
-    } catch (err) {
-      console.error('Upload error:', err)
-      alert('Failed to upload image')
-    } finally {
-      setUploadingImage(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
-    }
+  const openImageModal = (context: 'create' | 'edit') => {
+    setImageModalContext(context)
+    setImageModalOpen(true)
   }
 
   const handleCreate = async () => {
@@ -431,15 +414,6 @@ export default function CampaignsPage() {
         </button>
       )}
 
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleImageUpload}
-      />
-
       {/* Create Modal */}
       <Modal
         isOpen={isCreateModalOpen}
@@ -455,52 +429,34 @@ export default function CampaignsPage() {
           {/* Campaign Image */}
           <div className="form-group">
             <label className="form-label">Campaign Image</label>
-            <div className="flex items-start gap-4">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingImage}
-                className="relative w-32 h-24 rounded-xl overflow-hidden transition-all group"
-                style={{
-                  backgroundColor: formData.image_url ? 'transparent' : '#1a1a24',
-                  border: formData.image_url ? '2px solid #2a2a3a' : '2px dashed #606070',
-                }}
-              >
-                {formData.image_url ? (
-                  <>
-                    <Image
-                      src={formData.image_url}
-                      alt="Campaign"
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Camera className="w-6 h-6 text-white" />
-                    </div>
-                  </>
-                ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-                    {uploadingImage ? (
-                      <Loader2 className="w-6 h-6 text-[#606070] animate-spin" />
-                    ) : (
-                      <>
-                        <Camera className="w-6 h-6 text-[#606070] group-hover:text-[#8B5CF6] transition-colors" />
-                        <span className="text-xs text-[#606070] group-hover:text-[#8B5CF6] transition-colors">Add Image</span>
-                      </>
-                    )}
+            <button
+              type="button"
+              onClick={() => openImageModal('create')}
+              className="relative w-full aspect-video rounded-xl overflow-hidden transition-all group"
+              style={{
+                backgroundColor: formData.image_url ? 'transparent' : '#1a1a24',
+                border: formData.image_url ? '2px solid #2a2a3a' : '2px dashed #606070',
+              }}
+            >
+              {formData.image_url ? (
+                <>
+                  <Image
+                    src={formData.image_url}
+                    alt="Campaign"
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Camera className="w-8 h-8 text-white" />
                   </div>
-                )}
-              </button>
-              {formData.image_url && (
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, image_url: null })}
-                  className="text-sm text-[#e85d4c] hover:underline"
-                >
-                  Remove
-                </button>
+                </>
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                  <Camera className="w-8 h-8 text-[#606070] group-hover:text-[#8B5CF6] transition-colors" />
+                  <span className="text-sm text-[#606070] group-hover:text-[#8B5CF6] transition-colors">Click to add image</span>
+                </div>
               )}
-            </div>
+            </button>
           </div>
 
           <div className="form-group">
@@ -539,7 +495,7 @@ export default function CampaignsPage() {
             <button
               className="btn btn-primary"
               onClick={handleCreate}
-              disabled={!formData.name.trim() || saving || uploadingImage}
+              disabled={!formData.name.trim() || saving}
             >
               {saving ? 'Creating...' : 'Create Campaign'}
             </button>
@@ -561,52 +517,34 @@ export default function CampaignsPage() {
           {/* Campaign Image */}
           <div className="form-group">
             <label className="form-label">Campaign Image</label>
-            <div className="flex items-start gap-4">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingImage}
-                className="relative w-32 h-24 rounded-xl overflow-hidden transition-all group"
-                style={{
-                  backgroundColor: formData.image_url ? 'transparent' : '#1a1a24',
-                  border: formData.image_url ? '2px solid #2a2a3a' : '2px dashed #606070',
-                }}
-              >
-                {formData.image_url ? (
-                  <>
-                    <Image
-                      src={formData.image_url}
-                      alt="Campaign"
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Camera className="w-6 h-6 text-white" />
-                    </div>
-                  </>
-                ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-                    {uploadingImage ? (
-                      <Loader2 className="w-6 h-6 text-[#606070] animate-spin" />
-                    ) : (
-                      <>
-                        <Camera className="w-6 h-6 text-[#606070] group-hover:text-[#8B5CF6] transition-colors" />
-                        <span className="text-xs text-[#606070] group-hover:text-[#8B5CF6] transition-colors">Add Image</span>
-                      </>
-                    )}
+            <button
+              type="button"
+              onClick={() => openImageModal('edit')}
+              className="relative w-full aspect-video rounded-xl overflow-hidden transition-all group"
+              style={{
+                backgroundColor: formData.image_url ? 'transparent' : '#1a1a24',
+                border: formData.image_url ? '2px solid #2a2a3a' : '2px dashed #606070',
+              }}
+            >
+              {formData.image_url ? (
+                <>
+                  <Image
+                    src={formData.image_url}
+                    alt="Campaign"
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Camera className="w-8 h-8 text-white" />
                   </div>
-                )}
-              </button>
-              {formData.image_url && (
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, image_url: null })}
-                  className="text-sm text-[#e85d4c] hover:underline"
-                >
-                  Remove
-                </button>
+                </>
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                  <Camera className="w-8 h-8 text-[#606070] group-hover:text-[#8B5CF6] transition-colors" />
+                  <span className="text-sm text-[#606070] group-hover:text-[#8B5CF6] transition-colors">Click to add image</span>
+                </div>
               )}
-            </div>
+            </button>
           </div>
 
           <div className="form-group">
@@ -645,13 +583,28 @@ export default function CampaignsPage() {
             <button
               className="btn btn-primary"
               onClick={handleUpdate}
-              disabled={!formData.name.trim() || saving || uploadingImage}
+              disabled={!formData.name.trim() || saving}
             >
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </div>
       </Modal>
+
+      {/* Unified Image Modal */}
+      <UnifiedImageModal
+        isOpen={imageModalOpen}
+        onClose={() => setImageModalOpen(false)}
+        imageType="campaign"
+        currentImageUrl={formData.image_url}
+        onImageChange={(url) => setFormData({ ...formData, image_url: url })}
+        onUpload={handleImageUpload}
+        promptData={{
+          title: formData.name,
+          summary: formData.description,
+        }}
+        title="Campaign"
+      />
     </AppLayout>
   )
 }
