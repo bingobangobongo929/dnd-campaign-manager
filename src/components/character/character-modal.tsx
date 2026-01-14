@@ -9,7 +9,33 @@ import { RichTextEditor } from '@/components/editor/rich-text-editor'
 import { useSupabase } from '@/hooks'
 import { useAutoSave } from '@/hooks'
 import { cn, TAG_COLORS } from '@/lib/utils'
-import type { Character, Tag, CharacterTag } from '@/types/database'
+import type { Character, Tag, CharacterTag, Json } from '@/types/database'
+
+// Helper to safely convert JSONB field to string array
+// Handles: null, string[], object[] (converts to readable strings), or any other format
+function toStringArray(value: Json | null | undefined): string[] {
+  if (!value) return []
+  if (!Array.isArray(value)) return []
+
+  return value.map(item => {
+    if (typeof item === 'string') return item
+    if (typeof item === 'object' && item !== null) {
+      // Handle important_people format: { name, relationship, notes }
+      const obj = item as Record<string, unknown>
+      if ('name' in obj && 'relationship' in obj) {
+        const name = obj.name || ''
+        const rel = obj.relationship || ''
+        const notes = obj.notes ? ` - ${obj.notes}` : ''
+        return `${name} (${rel})${notes}`
+      }
+      // Handle story_hook format: { hook, ... } or similar objects
+      if ('hook' in obj) return String(obj.hook)
+      // Fallback: stringify the object
+      return JSON.stringify(item)
+    }
+    return String(item)
+  }).filter(Boolean)
+}
 
 interface CharacterModalProps {
   character?: Character | null
@@ -71,10 +97,10 @@ export function CharacterModal({
     secrets: character?.secrets || '',
     // NPC fields
     role: character?.role || '',
-    // List fields
-    important_people: (character?.important_people as string[] | null) || [] as string[],
-    story_hooks: (character?.story_hooks as string[] | null) || [] as string[],
-    quotes: (character?.quotes as string[] | null) || [] as string[],
+    // List fields - use safe converter for JSONB data
+    important_people: toStringArray(character?.important_people),
+    story_hooks: toStringArray(character?.story_hooks),
+    quotes: toStringArray(character?.quotes),
   })
 
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
@@ -119,9 +145,9 @@ export function CharacterModal({
         goals: character.goals || '',
         secrets: character.secrets || '',
         role: character.role || '',
-        important_people: (character.important_people as string[] | null) || [],
-        story_hooks: (character.story_hooks as string[] | null) || [],
-        quotes: (character.quotes as string[] | null) || [],
+        important_people: toStringArray(character.important_people),
+        story_hooks: toStringArray(character.story_hooks),
+        quotes: toStringArray(character.quotes),
       })
     }
   }, [character?.id])

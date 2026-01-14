@@ -17,6 +17,7 @@ export interface Database {
           game_system: string
           description: string | null
           image_url: string | null
+          status: 'active' | 'completed' | 'hiatus' | 'archived'
           created_at: string
           updated_at: string
         }
@@ -27,6 +28,7 @@ export interface Database {
           game_system?: string
           description?: string | null
           image_url?: string | null
+          status?: 'active' | 'completed' | 'hiatus' | 'archived'
           created_at?: string
           updated_at?: string
         }
@@ -37,6 +39,7 @@ export interface Database {
           game_system?: string
           description?: string | null
           image_url?: string | null
+          status?: 'active' | 'completed' | 'hiatus' | 'archived'
           created_at?: string
           updated_at?: string
         }

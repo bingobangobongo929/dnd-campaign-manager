@@ -1,6 +1,6 @@
 'use client'
 
-import { Edit, Trash2 } from 'lucide-react'
+import { Edit, Trash2, CheckCircle, Pause, Archive, Play } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import type { Campaign } from '@/types/database'
 
@@ -11,6 +11,13 @@ interface CampaignCardProps {
   onDelete: () => void
   animationDelay?: number
 }
+
+const STATUS_CONFIG = {
+  active: { label: 'Active', icon: Play, color: 'bg-emerald-500/90', textColor: 'text-emerald-100' },
+  completed: { label: 'Completed', icon: CheckCircle, color: 'bg-purple-500/90', textColor: 'text-purple-100' },
+  hiatus: { label: 'On Hiatus', icon: Pause, color: 'bg-amber-500/90', textColor: 'text-amber-100' },
+  archived: { label: 'Archived', icon: Archive, color: 'bg-gray-500/90', textColor: 'text-gray-100' },
+} as const
 
 export function CampaignCard({
   campaign,
@@ -48,6 +55,22 @@ export function CampaignCard({
                 d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
               />
             </svg>
+          </div>
+        )}
+
+        {/* Status badge - top right */}
+        {campaign.status && campaign.status !== 'active' && (
+          <div className="absolute top-3 right-3 z-10">
+            {(() => {
+              const config = STATUS_CONFIG[campaign.status]
+              const Icon = config.icon
+              return (
+                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${config.color} backdrop-blur-sm`}>
+                  <Icon className={`w-3.5 h-3.5 ${config.textColor}`} />
+                  <span className={`text-xs font-medium ${config.textColor}`}>{config.label}</span>
+                </div>
+              )
+            })()}
           </div>
         )}
 
