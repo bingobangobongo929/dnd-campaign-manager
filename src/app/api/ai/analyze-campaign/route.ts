@@ -3,7 +3,7 @@ import { getAIModel, AI_PROMPTS, AIProvider } from '@/lib/ai/config'
 import { createClient } from '@/lib/supabase/server'
 import { SuggestionType, ConfidenceLevel } from '@/types/database'
 
-export const maxDuration = 60 // Vercel Hobby plan limit for serverless functions
+export const maxDuration = 300 // Vercel Pro plan allows up to 300 seconds
 
 interface GeneratedSuggestion {
   suggestion_type: SuggestionType
