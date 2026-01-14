@@ -24,7 +24,17 @@ import {
   Link,
   History,
   CalendarDays,
+  Edit2,
+  Scroll,
+  Swords,
+  MapPin,
+  Crown,
+  Star,
+  Heart,
+  Shield,
+  Calendar,
 } from 'lucide-react'
+import { Modal, Input, Dropdown } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
@@ -126,6 +136,28 @@ export default function IntelligencePage() {
 
   // Action state
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set())
+
+  // Edit state for timeline suggestions
+  const [editingSuggestion, setEditingSuggestion] = useState<IntelligenceSuggestion | null>(null)
+  const [editFormData, setEditFormData] = useState<{
+    title: string
+    description: string
+    event_type: string
+    event_date: string
+  }>({ title: '', description: '', event_type: 'other', event_date: '' })
+
+  const EVENT_TYPES = [
+    { value: 'session', label: 'Session' },
+    { value: 'character_intro', label: 'Character Introduction' },
+    { value: 'combat', label: 'Combat/Battle' },
+    { value: 'discovery', label: 'Discovery' },
+    { value: 'quest_start', label: 'Quest Started' },
+    { value: 'quest_complete', label: 'Quest Completed' },
+    { value: 'death', label: 'Death' },
+    { value: 'romance', label: 'Romance' },
+    { value: 'alliance', label: 'Alliance' },
+    { value: 'other', label: 'Other' },
+  ]
 
   const loadData = useCallback(async () => {
     if (!user || !campaignId) return
@@ -231,14 +263,14 @@ export default function IntelligencePage() {
     }
   }
 
-  const handleAction = async (suggestionId: string, action: 'approve' | 'reject') => {
+  const handleAction = async (suggestionId: string, action: 'approve' | 'reject', finalValue?: unknown) => {
     setProcessingIds(prev => new Set(prev).add(suggestionId))
 
     try {
       const response = await fetch('/api/ai/suggestions', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ suggestionId, action }),
+        body: JSON.stringify({ suggestionId, action, finalValue }),
       })
 
       if (response.ok) {
@@ -263,6 +295,47 @@ export default function IntelligencePage() {
         return next
       })
     }
+  }
+
+  // Open edit modal for timeline suggestions
+  const openEditModal = (suggestion: IntelligenceSuggestion) => {
+    if (suggestion.suggestion_type !== 'timeline_event') return
+
+    const value = suggestion.suggested_value as {
+      title: string
+      description: string
+      event_type: string
+      event_date?: string
+      character_names?: string[]
+    }
+
+    setEditFormData({
+      title: value.title || '',
+      description: value.description || '',
+      event_type: value.event_type || 'other',
+      event_date: value.event_date || new Date().toISOString().split('T')[0],
+    })
+    setEditingSuggestion(suggestion)
+  }
+
+  // Save edited suggestion
+  const handleSaveEdit = async () => {
+    if (!editingSuggestion) return
+
+    const originalValue = editingSuggestion.suggested_value as {
+      character_names?: string[]
+    }
+
+    const finalValue = {
+      title: editFormData.title,
+      description: editFormData.description,
+      event_type: editFormData.event_type,
+      event_date: editFormData.event_date,
+      character_names: originalValue.character_names || [],
+    }
+
+    await handleAction(editingSuggestion.id, 'approve', finalValue)
+    setEditingSuggestion(null)
   }
 
   const toggleExpanded = (id: string) => {
@@ -667,6 +740,16 @@ export default function IntelligencePage() {
                           >
                             {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                           </button>
+                          {suggestion.suggestion_type === 'timeline_event' && (
+                            <button
+                              onClick={() => openEditModal(suggestion)}
+                              disabled={isProcessing}
+                              className="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 transition-colors disabled:opacity-50"
+                              title="Edit before approving"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => handleAction(suggestion.id, 'reject')}
                             disabled={isProcessing}
@@ -732,6 +815,73 @@ export default function IntelligencePage() {
           </main>
         </div>
       </div>
+
+      {/* Edit Timeline Event Modal */}
+      <Modal
+        isOpen={!!editingSuggestion}
+        onClose={() => setEditingSuggestion(null)}
+        title="Edit Timeline Event"
+        description="Edit the details before adding to your timeline"
+      >
+        <div className="space-y-4">
+          <div className="form-group">
+            <label className="form-label">Event Title</label>
+            <Input
+              value={editFormData.title}
+              onChange={(e) => setEditFormData(prev => ({ ...prev, title: e.target.value }))}
+              placeholder="What happened..."
+              className="w-full"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="form-group">
+              <label className="form-label">Event Type</label>
+              <Dropdown
+                options={EVENT_TYPES}
+                value={editFormData.event_type}
+                onChange={(value) => setEditFormData(prev => ({ ...prev, event_type: value }))}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Date</label>
+              <Input
+                type="date"
+                value={editFormData.event_date}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, event_date: e.target.value }))}
+                className="w-full"
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Description</label>
+            <textarea
+              value={editFormData.description}
+              onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="Describe what happened..."
+              className="form-input w-full min-h-[120px] resize-none"
+              rows={4}
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setEditingSuggestion(null)}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleSaveEdit}
+              disabled={!editFormData.title.trim()}
+            >
+              Save & Add to Timeline
+            </button>
+          </div>
+        </div>
+      </Modal>
     </AppLayout>
   )
 }
