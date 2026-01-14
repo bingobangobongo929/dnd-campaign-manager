@@ -2,11 +2,13 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, BookOpen, Trash2, Copy, Filter, X } from 'lucide-react'
+import { Plus, Search, BookOpen, Trash2, Copy, Filter, X, CheckSquare, Square, CopyPlus, Check } from 'lucide-react'
+import { toast } from 'sonner'
 import { Modal, Dropdown } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { CharacterCard } from '@/components/vault/CharacterCard'
 import { useSupabase, useUser } from '@/hooks'
+import { cn } from '@/lib/utils'
 import type { VaultCharacter, Campaign } from '@/types/database'
 
 export default function VaultPage() {
@@ -34,6 +36,10 @@ export default function VaultPage() {
     y: number
     character: VaultCharacter
   } | null>(null)
+
+  // Multi-select state
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (user) {
@@ -166,6 +172,75 @@ export default function VaultPage() {
     setContextMenu(null)
   }
 
+  // Multi-select handlers
+  const toggleSelection = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const selectAll = () => {
+    setSelectedIds(new Set(filteredCharacters.map(c => c.id)))
+  }
+
+  const clearSelection = () => {
+    setSelectedIds(new Set())
+    setSelectionMode(false)
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return
+
+    const count = selectedIds.size
+    if (!confirm(`Are you sure you want to delete ${count} character${count === 1 ? '' : 's'} from your vault?`)) return
+
+    const ids = Array.from(selectedIds)
+    await supabase.from('vault_characters').delete().in('id', ids)
+    setVaultCharacters(prev => prev.filter(c => !selectedIds.has(c.id)))
+    toast.success(`Deleted ${count} character${count === 1 ? '' : 's'}`)
+    clearSelection()
+  }
+
+  const handleBulkDuplicate = async () => {
+    if (selectedIds.size === 0) return
+
+    setSaving(true)
+    const charactersToDuplicate = vaultCharacters.filter(c => selectedIds.has(c.id))
+
+    const duplicates = charactersToDuplicate.map(char => ({
+      user_id: user!.id,
+      name: `${char.name} (Copy)`,
+      type: char.type,
+      summary: char.summary,
+      notes: char.notes,
+      image_url: char.image_url,
+      detail_image_url: (char as any).detail_image_url,
+      race: char.race,
+      class: char.class,
+      status: char.status,
+    }))
+
+    const { data, error } = await supabase
+      .from('vault_characters')
+      .insert(duplicates)
+      .select()
+
+    if (!error && data) {
+      setVaultCharacters(prev => [...data, ...prev])
+      toast.success(`Duplicated ${data.length} character${data.length === 1 ? '' : 's'}`)
+      clearSelection()
+    } else {
+      toast.error('Failed to duplicate characters')
+    }
+    setSaving(false)
+  }
+
   const handleContextMenu = (e: React.MouseEvent, char: VaultCharacter) => {
     e.preventDefault()
     e.stopPropagation()
@@ -195,14 +270,74 @@ export default function VaultPage() {
             <h1 className="page-title">Character Vault</h1>
             <p className="page-subtitle">Store characters to reuse across campaigns</p>
           </div>
-          <button
-            className="btn btn-primary"
-            onClick={() => router.push('/vault/new')}
-          >
-            <Plus className="w-4 h-4" />
-            Add Character
-          </button>
+          <div className="flex items-center gap-3">
+            {vaultCharacters.length > 0 && (
+              <button
+                className={cn(
+                  "btn btn-secondary",
+                  selectionMode && "ring-2 ring-[--arcane-purple] ring-offset-2 ring-offset-[--bg-base]"
+                )}
+                onClick={() => {
+                  if (selectionMode) {
+                    clearSelection()
+                  } else {
+                    setSelectionMode(true)
+                  }
+                }}
+              >
+                {selectionMode ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                {selectionMode ? 'Cancel' : 'Select'}
+              </button>
+            )}
+            <button
+              className="btn btn-primary"
+              onClick={() => router.push('/vault/new')}
+            >
+              <Plus className="w-4 h-4" />
+              Add Character
+            </button>
+          </div>
         </div>
+
+        {/* Bulk Actions Bar */}
+        {selectionMode && selectedIds.size > 0 && (
+          <div className="mb-6 p-4 rounded-xl bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <span className="font-medium text-[--arcane-purple]">
+                {selectedIds.size} selected
+              </span>
+              <button
+                onClick={selectAll}
+                className="text-sm text-[--text-secondary] hover:text-[--text-primary] underline"
+              >
+                Select all ({filteredCharacters.length})
+              </button>
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="text-sm text-[--text-secondary] hover:text-[--text-primary] underline"
+              >
+                Clear selection
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                className="btn btn-secondary flex items-center gap-2"
+                onClick={handleBulkDuplicate}
+                disabled={saving}
+              >
+                <CopyPlus className="w-4 h-4" />
+                Duplicate
+              </button>
+              <button
+                className="btn bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 flex items-center gap-2"
+                onClick={handleBulkDelete}
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Search and Filters */}
         <div className="flex flex-col gap-4 mb-10">
@@ -302,19 +437,47 @@ export default function VaultPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCharacters.map((char, index) => (
-              <div
-                key={char.id}
-                className="animate-slide-in-up"
-                style={{ animationDelay: `${index * 50}ms` }}
-                onContextMenu={(e) => handleContextMenu(e, char)}
-              >
-                <CharacterCard
-                  character={char}
-                  onClick={() => router.push(`/vault/${char.id}`)}
-                />
-              </div>
-            ))}
+            {filteredCharacters.map((char, index) => {
+              const isSelected = selectedIds.has(char.id)
+              return (
+                <div
+                  key={char.id}
+                  className={cn(
+                    "animate-slide-in-up relative",
+                    selectionMode && isSelected && "ring-2 ring-[--arcane-purple] ring-offset-2 ring-offset-[--bg-base] rounded-xl"
+                  )}
+                  style={{ animationDelay: `${index * 50}ms` }}
+                  onContextMenu={(e) => !selectionMode && handleContextMenu(e, char)}
+                >
+                  {/* Selection checkbox overlay */}
+                  {selectionMode && (
+                    <button
+                      className="absolute top-3 left-3 z-10 w-6 h-6 rounded-md flex items-center justify-center transition-colors"
+                      style={{
+                        backgroundColor: isSelected ? 'var(--arcane-purple)' : 'rgba(26, 26, 36, 0.9)',
+                        border: isSelected ? 'none' : '2px solid rgba(255, 255, 255, 0.2)',
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleSelection(char.id)
+                      }}
+                    >
+                      {isSelected && <Check className="w-4 h-4 text-white" />}
+                    </button>
+                  )}
+                  <CharacterCard
+                    character={char}
+                    onClick={() => {
+                      if (selectionMode) {
+                        toggleSelection(char.id)
+                      } else {
+                        router.push(`/vault/${char.id}`)
+                      }
+                    }}
+                  />
+                </div>
+              )
+            })}
           </div>
         )}
 
