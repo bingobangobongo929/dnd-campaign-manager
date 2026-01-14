@@ -102,6 +102,7 @@ Return your response as valid JSON with this exact structure:
    - **story_hook**: Plot threads resolved OR new ones introduced involving specific characters.
    - **quote**: Memorable lines spoken by characters during the session (direct quotes only, preserve exact wording).
    - **relationship**: New relationships between existing characters or significant changes (allies, enemies, etc.).
+   - **timeline_event**: Significant campaign events worth recording in the timeline (battles, discoveries, deaths, alliances, quest milestones, character introductions, major plot points). IMPORTANT: Check the existing timeline events provided and don't suggest duplicates.
 
 5. **CONFIDENCE LEVELS**:
    - high: Explicitly and unambiguously stated in the notes
@@ -115,6 +116,7 @@ Return your response as valid JSON with this exact structure:
    - story_hook → field_name: "story_hooks" (append {hook, notes} or mark existing as resolved)
    - quote → field_name: "quotes" (append the exact quote string)
    - relationship → field_name: "relationship" (for character_relationships table)
+   - timeline_event → field_name: "timeline" (value should include title, description, event_type, and character_names array)
 
 ## OUTPUT FORMAT
 
@@ -137,6 +139,20 @@ Return valid JSON with this structure:
       "suggested_value": "The party discovered that Faust is the true king - the last living person with royal blood.",
       "source_excerpt": "The party also discovered that the true king and last of his family was Faust",
       "ai_reasoning": "Major revelation that the party now knows about Faust's heritage",
+      "confidence": "high"
+    },
+    {
+      "suggestion_type": "timeline_event",
+      "character_name": null,
+      "field_name": "timeline",
+      "suggested_value": {
+        "title": "The True King Revealed",
+        "description": "The party discovered that Faust Blackwood is the true heir to the throne, the last living person with royal blood.",
+        "event_type": "discovery",
+        "character_names": ["Faust Blackwood"]
+      },
+      "source_excerpt": "The party also discovered that the true king and last of his family was Faust",
+      "ai_reasoning": "Major plot revelation that should be recorded in the campaign timeline",
       "confidence": "high"
     }
   ]

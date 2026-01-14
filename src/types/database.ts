@@ -1035,7 +1035,7 @@ export interface Database {
           session_id: string | null
           character_id: string | null
           character_name: string | null
-          suggestion_type: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship'
+          suggestion_type: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship' | 'timeline_event'
           field_name: string
           current_value: Json | null
           suggested_value: Json
@@ -1052,7 +1052,7 @@ export interface Database {
           session_id?: string | null
           character_id?: string | null
           character_name?: string | null
-          suggestion_type: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship'
+          suggestion_type: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship' | 'timeline_event'
           field_name: string
           current_value?: Json | null
           suggested_value: Json
@@ -1069,7 +1069,7 @@ export interface Database {
           session_id?: string | null
           character_id?: string | null
           character_name?: string | null
-          suggestion_type?: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship'
+          suggestion_type?: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship' | 'timeline_event'
           field_name?: string
           current_value?: Json | null
           suggested_value?: Json
@@ -1152,7 +1152,7 @@ export type CampaignShare = Database['public']['Tables']['campaign_shares']['Row
 export type IntelligenceSuggestion = Database['public']['Tables']['intelligence_suggestions']['Row']
 
 // Suggestion types for Campaign Intelligence
-export type SuggestionType = 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship'
+export type SuggestionType = 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship' | 'timeline_event'
 export type ConfidenceLevel = 'high' | 'medium' | 'low'
 
 // Extended types with relations

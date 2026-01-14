@@ -13,7 +13,8 @@ import {
   Eye,
   Bookmark,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  CalendarDays,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { SuggestionType, ConfidenceLevel, Character } from '@/types/database'
@@ -45,6 +46,7 @@ const SUGGESTION_ICONS: Record<SuggestionType, typeof User> = {
   quote: Quote,
   important_person: User,
   relationship: Link,
+  timeline_event: CalendarDays,
 }
 
 const SUGGESTION_COLORS: Record<SuggestionType, { bg: string; text: string; border: string }> = {
@@ -54,6 +56,7 @@ const SUGGESTION_COLORS: Record<SuggestionType, { bg: string; text: string; bord
   quote: { bg: 'rgba(16, 185, 129, 0.12)', text: '#34d399', border: 'rgba(16, 185, 129, 0.3)' },
   important_person: { bg: 'rgba(245, 158, 11, 0.12)', text: '#fbbf24', border: 'rgba(245, 158, 11, 0.3)' },
   relationship: { bg: 'rgba(236, 72, 153, 0.12)', text: '#f472b6', border: 'rgba(236, 72, 153, 0.3)' },
+  timeline_event: { bg: 'rgba(99, 102, 241, 0.12)', text: '#818cf8', border: 'rgba(99, 102, 241, 0.3)' },
 }
 
 const CONFIDENCE_INDICATORS: Record<ConfidenceLevel, { label: string; color: string }> = {

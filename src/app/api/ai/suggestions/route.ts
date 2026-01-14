@@ -140,7 +140,77 @@ export async function PATCH(req: Request) {
       })
     }
 
-    // action === 'approve' - Apply the suggestion to the character
+    // action === 'approve' - Apply the suggestion
+
+    // Handle timeline_event suggestions
+    if (suggestion.suggestion_type === 'timeline_event') {
+      const timelineData = (finalValue ?? suggestion.suggested_value) as {
+        title: string
+        description: string
+        event_type: string
+        character_names?: string[]
+      }
+
+      // Look up character IDs from names
+      let characterIds: string[] = []
+      if (timelineData.character_names && timelineData.character_names.length > 0) {
+        const { data: characters } = await supabase
+          .from('characters')
+          .select('id, name')
+          .eq('campaign_id', suggestion.campaign_id)
+
+        if (characters) {
+          characterIds = timelineData.character_names
+            .map(name => {
+              const char = characters.find(c =>
+                c.name.toLowerCase() === name.toLowerCase() ||
+                c.name.toLowerCase().includes(name.toLowerCase()) ||
+                name.toLowerCase().includes(c.name.toLowerCase())
+              )
+              return char?.id
+            })
+            .filter((id): id is string => !!id)
+        }
+      }
+
+      // Create the timeline event
+      const { data: newEvent, error: eventError } = await supabase
+        .from('timeline_events')
+        .insert({
+          campaign_id: suggestion.campaign_id,
+          title: timelineData.title,
+          description: timelineData.description,
+          event_type: timelineData.event_type || 'other',
+          character_ids: characterIds.length > 0 ? characterIds : null,
+          character_id: characterIds.length > 0 ? characterIds[0] : null, // backward compat
+        })
+        .select('id')
+        .single()
+
+      if (eventError) throw eventError
+
+      // Mark suggestion as applied
+      const { error } = await supabase
+        .from('intelligence_suggestions')
+        .update({
+          status: 'applied',
+          final_value: { ...timelineData, timeline_event_id: newEvent.id }
+        })
+        .eq('id', suggestionId)
+
+      if (error) throw error
+
+      return new Response(JSON.stringify({
+        success: true,
+        action: 'applied',
+        message: 'Timeline event created',
+        timelineEventId: newEvent.id
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
     if (!suggestion.character_id) {
       // New character suggestion - just mark as applied for now
       // TODO: Could auto-create the character

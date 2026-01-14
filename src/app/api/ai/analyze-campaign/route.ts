@@ -98,6 +98,13 @@ export async function POST(req: Request) {
       `)
       .eq('campaign_id', campaignId)
 
+    // Load ALL timeline events for context (so AI doesn't suggest duplicates)
+    const { data: timelineEvents } = await supabase
+      .from('timeline_events')
+      .select('*')
+      .eq('campaign_id', campaignId)
+      .order('event_date', { ascending: true })
+
     // Check if there's anything new to analyze
     const hasNewContent = (updatedSessions?.length ?? 0) > 0 ||
                          (updatedCharacters?.length ?? 0) > 0
@@ -168,6 +175,14 @@ export async function POST(req: Request) {
       return null
     }).filter(Boolean).join('\n')
 
+    // Build timeline context (so AI can avoid duplicates)
+    const timelineContext = (timelineEvents || []).map(e => {
+      const charNames = e.character_ids?.map((id: string) =>
+        allCharacters?.find(c => c.id === id)?.name
+      ).filter(Boolean).join(', ')
+      return `- ${e.event_date || 'Unknown date'}: ${e.title} (${e.event_type})${charNames ? ` - Involving: ${charNames}` : ''}`
+    }).join('\n')
+
     // Build NEW content to analyze
     const newSessionContent = (updatedSessions || []).map(s => {
       return `## Session ${s.session_number}: ${s.title || 'Untitled'}
@@ -185,6 +200,7 @@ Current state: ${c.summary || c.description || 'No summary'}`
     }).join('\n\n')
 
     // Construct the full prompt
+    const timelineIsEmpty = !timelineEvents || timelineEvents.length === 0
     const fullContext = `# Campaign: ${campaign.name}
 # Analysis Since: ${new Date(lastRunTime).toLocaleDateString()}
 
@@ -193,6 +209,10 @@ ${fullCharacterContext || 'No characters recorded yet.'}
 
 ## KNOWN RELATIONSHIPS
 ${relationshipContext || 'No relationships recorded.'}
+
+## EXISTING TIMELINE EVENTS (${timelineEvents?.length || 0} events)
+${timelineContext || 'No timeline events recorded yet.'}
+${timelineIsEmpty ? '\n⚠️ THE TIMELINE IS EMPTY - Please suggest significant events from the session notes that should be added to build out the campaign timeline.' : ''}
 
 ---
 
@@ -214,7 +234,8 @@ IMPORTANT INSTRUCTIONS:
 5. Look for status changes (dead, missing, corrupted, etc.)
 6. Extract memorable quotes from session notes
 7. Identify new NPCs that should be added
-8. Note any revealed secrets or plot developments`
+8. Note any revealed secrets or plot developments
+9. TIMELINE EVENTS: Suggest significant events for the timeline (battles, discoveries, deaths, alliances, quest milestones). ${timelineIsEmpty ? 'The timeline is currently EMPTY so please suggest key events from the sessions to populate it.' : 'Check existing timeline events above to avoid duplicates.'}`
 
     const model = getAIModel(provider || 'anthropic')
 

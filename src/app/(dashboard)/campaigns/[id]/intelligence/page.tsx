@@ -22,6 +22,7 @@ import {
   User,
   Link,
   History,
+  CalendarDays,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
@@ -36,6 +37,7 @@ const SUGGESTION_ICONS: Record<SuggestionType, typeof Skull> = {
   quote: Quote,
   important_person: User,
   relationship: Link,
+  timeline_event: CalendarDays,
 }
 
 const SUGGESTION_COLORS: Record<SuggestionType, { bg: string; text: string; border: string }> = {
@@ -45,6 +47,7 @@ const SUGGESTION_COLORS: Record<SuggestionType, { bg: string; text: string; bord
   quote: { bg: 'rgba(16, 185, 129, 0.12)', text: '#34d399', border: 'rgba(16, 185, 129, 0.3)' },
   important_person: { bg: 'rgba(245, 158, 11, 0.12)', text: '#fbbf24', border: 'rgba(245, 158, 11, 0.3)' },
   relationship: { bg: 'rgba(236, 72, 153, 0.12)', text: '#f472b6', border: 'rgba(236, 72, 153, 0.3)' },
+  timeline_event: { bg: 'rgba(99, 102, 241, 0.12)', text: '#818cf8', border: 'rgba(99, 102, 241, 0.3)' },
 }
 
 const CONFIDENCE_COLORS: Record<ConfidenceLevel, string> = {
@@ -68,10 +71,15 @@ function formatTimeAgo(dateString: string): string {
   return date.toLocaleDateString()
 }
 
-function formatValue(value: unknown): string {
+function formatValue(value: unknown, suggestionType?: SuggestionType): string {
   if (value === null || value === undefined) return 'None'
   if (typeof value === 'string') return value
   if (typeof value === 'object') {
+    // Timeline event formatting
+    if (suggestionType === 'timeline_event' && 'title' in (value as object)) {
+      const e = value as { title: string; description: string; event_type: string; character_names?: string[] }
+      return `${e.title} (${e.event_type})${e.character_names?.length ? ` - ${e.character_names.join(', ')}` : ''}`
+    }
     if ('status' in (value as object)) {
       return (value as { status: string }).status
     }
@@ -596,12 +604,24 @@ export default function IntelligencePage() {
                           )}
                         </div>
 
-                        <p className="font-semibold text-[15px] mb-1" style={{ color: '#f3f4f6' }}>
-                          {suggestion.character_name || character?.name || 'Unknown'}
-                          <span className="font-normal text-sm ml-2" style={{ color: '#6b7280' }}>
-                            → {suggestion.field_name.replace(/_/g, ' ')}
-                          </span>
-                        </p>
+                        {suggestion.suggestion_type === 'timeline_event' ? (
+                          <p className="font-semibold text-[15px] mb-1" style={{ color: '#f3f4f6' }}>
+                            {(() => {
+                              const val = suggestion.suggested_value as { title?: string; event_type?: string } | null
+                              return val?.title || 'New Timeline Event'
+                            })()}
+                            <span className="font-normal text-sm ml-2" style={{ color: '#6b7280' }}>
+                              → Campaign Timeline
+                            </span>
+                          </p>
+                        ) : (
+                          <p className="font-semibold text-[15px] mb-1" style={{ color: '#f3f4f6' }}>
+                            {suggestion.character_name || character?.name || 'Unknown'}
+                            <span className="font-normal text-sm ml-2" style={{ color: '#6b7280' }}>
+                              → {suggestion.field_name.replace(/_/g, ' ')}
+                            </span>
+                          </p>
+                        )}
 
                         {/* Suggested value */}
                         <div
@@ -612,7 +632,7 @@ export default function IntelligencePage() {
                           }}
                         >
                           <p style={{ color: '#d1d5db' }}>
-                            {formatValue(suggestion.suggested_value)}
+                            {formatValue(suggestion.suggested_value, suggestion.suggestion_type)}
                           </p>
                         </div>
 
@@ -688,7 +708,7 @@ export default function IntelligencePage() {
                             Current Value
                           </span>
                           <p className="text-sm" style={{ color: '#6b7280' }}>
-                            {formatValue(suggestion.current_value)}
+                            {formatValue(suggestion.current_value, suggestion.suggestion_type)}
                           </p>
                         </div>
                       )}
