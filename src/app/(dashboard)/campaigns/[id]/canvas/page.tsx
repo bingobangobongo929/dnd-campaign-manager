@@ -33,6 +33,7 @@ export default function CampaignCanvasPage() {
   const [characterTags, setCharacterTags] = useState<Map<string, (CharacterTag & { tag: Tag; related_character?: Character | null })[]>>(new Map())
   const [groups, setGroups] = useState<CanvasGroup[]>([])
   const [loading, setLoading] = useState(true)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
 
   // Modals
   const [isCreateCharacterModalOpen, setIsCreateCharacterModalOpen] = useState(false)
@@ -64,7 +65,10 @@ export default function CampaignCanvasPage() {
   }, [user, campaignId])
 
   const loadCampaignData = async () => {
-    setLoading(true)
+    // Only show loading spinner on initial load, not refetches
+    if (!hasLoadedOnce) {
+      setLoading(true)
+    }
 
     // Load campaign
     const { data: campaignData } = await supabase
@@ -122,6 +126,7 @@ export default function CampaignCanvasPage() {
     setGroups(groupsData || [])
 
     setLoading(false)
+    setHasLoadedOnce(true)
   }
 
   const handleCharacterPreview = useCallback((id: string) => {

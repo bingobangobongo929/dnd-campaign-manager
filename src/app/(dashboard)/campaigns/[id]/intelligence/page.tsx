@@ -101,6 +101,7 @@ export default function IntelligencePage() {
   const [suggestions, setSuggestions] = useState<IntelligenceSuggestion[]>([])
   const [counts, setCounts] = useState({ pending: 0, applied: 0, rejected: 0 })
   const [loading, setLoading] = useState(true)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
 
   // Analysis state
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -120,7 +121,10 @@ export default function IntelligencePage() {
   const loadData = useCallback(async () => {
     if (!user || !campaignId) return
 
-    setLoading(true)
+    // Only show loading spinner on initial load, not refetches
+    if (!hasLoadedOnce) {
+      setLoading(true)
+    }
 
     // Load campaign
     const { data: campaignData } = await supabase
@@ -152,7 +156,8 @@ export default function IntelligencePage() {
     setCounts(data.counts || { pending: 0, applied: 0, rejected: 0 })
 
     setLoading(false)
-  }, [user, campaignId, showHistory, supabase, router])
+    setHasLoadedOnce(true)
+  }, [user, campaignId, showHistory, supabase, router, hasLoadedOnce])
 
   useEffect(() => {
     loadData()

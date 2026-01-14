@@ -52,6 +52,7 @@ export default function TimelineEventDetailPage() {
   const [characters, setCharacters] = useState<Character[]>([])
   const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -66,7 +67,10 @@ export default function TimelineEventDetailPage() {
   }, [user, campaignId, eventId])
 
   const loadData = async () => {
-    setLoading(true)
+    // Only show loading spinner on initial load, not refetches
+    if (!hasLoadedOnce) {
+      setLoading(true)
+    }
 
     // Load campaign
     const { data: campaignData } = await supabase
@@ -115,6 +119,7 @@ export default function TimelineEventDetailPage() {
 
     setCharacters(charactersData || [])
     setLoading(false)
+    setHasLoadedOnce(true)
   }
 
   // Toggle character selection

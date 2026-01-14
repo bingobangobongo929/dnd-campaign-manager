@@ -34,6 +34,7 @@ export default function SessionsPage() {
   const [sessions, setSessions] = useState<SessionWithAttendees[]>([])
   const [characters, setCharacters] = useState<Character[]>([])
   const [loading, setLoading] = useState(true)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [formData, setFormData] = useState({
@@ -54,7 +55,10 @@ export default function SessionsPage() {
   }, [user, campaignId])
 
   const loadData = async () => {
-    setLoading(true)
+    // Only show loading spinner on initial load, not refetches
+    if (!hasLoadedOnce) {
+      setLoading(true)
+    }
 
     const { data: campaignData } = await supabase
       .from('campaigns')
@@ -107,6 +111,7 @@ export default function SessionsPage() {
     }
 
     setLoading(false)
+    setHasLoadedOnce(true)
   }
 
   const filteredSessions = sessions.filter((session) => {

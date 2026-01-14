@@ -26,6 +26,7 @@ export default function SessionDetailPage() {
   const [characters, setCharacters] = useState<Character[]>([])
   const [attendees, setAttendees] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [summarizing, setSummarizing] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
@@ -48,7 +49,10 @@ export default function SessionDetailPage() {
   }, [user, campaignId, sessionId])
 
   const loadData = async () => {
-    setLoading(true)
+    // Only show loading spinner on initial load, not refetches
+    if (!hasLoadedOnce) {
+      setLoading(true)
+    }
 
     // Load campaign
     const { data: campaignData } = await supabase
@@ -101,6 +105,7 @@ export default function SessionDetailPage() {
 
     setAttendees(attendeesData?.map(a => a.character_id) || [])
     setLoading(false)
+    setHasLoadedOnce(true)
   }
 
   // Toggle character attendance

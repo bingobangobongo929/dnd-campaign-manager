@@ -17,6 +17,7 @@ export default function VaultPage() {
   const [vaultCharacters, setVaultCharacters] = useState<VaultCharacter[]>([])
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'pc' | 'npc'>('all')
@@ -48,7 +49,10 @@ export default function VaultPage() {
   }, [])
 
   const loadData = async () => {
-    setLoading(true)
+    // Only show loading spinner on initial load, not refetches
+    if (!hasLoadedOnce) {
+      setLoading(true)
+    }
 
     const { data: charactersData } = await supabase
       .from('vault_characters')
@@ -67,6 +71,7 @@ export default function VaultPage() {
     setCampaigns(campaignsData || [])
 
     setLoading(false)
+    setHasLoadedOnce(true)
   }
 
   // Get unique statuses from characters
