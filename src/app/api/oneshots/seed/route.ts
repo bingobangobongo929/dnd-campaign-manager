@@ -296,7 +296,16 @@ SHADOW DRUID LEADERSHIP - The source of the dark magic corrupting the land.`,
   },
 ]
 
+// Support both GET and POST for easy browser access
+export async function GET() {
+  return seedOneshots()
+}
+
 export async function POST() {
+  return seedOneshots()
+}
+
+async function seedOneshots() {
   try {
     const supabase = await createClient()
 
