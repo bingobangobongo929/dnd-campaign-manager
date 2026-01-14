@@ -277,6 +277,8 @@ export function CharacterModal({
     data: formData,
     onSave: saveCharacter,
     delay: 1000,
+    showToast: true,
+    toastMessage: 'Character saved',
   })
 
   const handleDelete = async () => {

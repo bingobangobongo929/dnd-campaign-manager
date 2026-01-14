@@ -224,11 +224,12 @@ export default function VaultPage() {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as 'all' | 'pc' | 'npc')}
-              className="px-4 py-2.5 bg-[--bg-elevated] border border-[--border] rounded-xl text-[--text-primary] focus:outline-none focus:border-[--arcane-purple]"
+              className="px-4 py-2.5 bg-[--bg-elevated] border border-[--border] rounded-xl text-[--text-primary] focus:outline-none focus:border-[--arcane-purple] cursor-pointer"
+              style={{ colorScheme: 'dark' }}
             >
-              <option value="all">All Types</option>
-              <option value="pc">Player Characters</option>
-              <option value="npc">NPCs</option>
+              <option value="all" className="bg-[#1a1a24] text-white">All Types</option>
+              <option value="pc" className="bg-[#1a1a24] text-white">Player Characters</option>
+              <option value="npc" className="bg-[#1a1a24] text-white">NPCs</option>
             </select>
 
             {/* Status Filter */}
@@ -236,11 +237,12 @@ export default function VaultPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2.5 bg-[--bg-elevated] border border-[--border] rounded-xl text-[--text-primary] focus:outline-none focus:border-[--arcane-purple]"
+                className="px-4 py-2.5 bg-[--bg-elevated] border border-[--border] rounded-xl text-[--text-primary] focus:outline-none focus:border-[--arcane-purple] cursor-pointer"
+                style={{ colorScheme: 'dark' }}
               >
-                <option value="all">All Statuses</option>
+                <option value="all" className="bg-[#1a1a24] text-white">All Statuses</option>
                 {availableStatuses.map(status => (
-                  <option key={status} value={status}>{status}</option>
+                  <option key={status} value={status} className="bg-[#1a1a24] text-white">{status}</option>
                 ))}
               </select>
             )}

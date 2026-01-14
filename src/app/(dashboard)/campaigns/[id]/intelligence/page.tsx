@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import {
   Brain,
   Sparkles,
@@ -200,8 +201,15 @@ export default function IntelligencePage() {
 
       // Reload suggestions
       await loadData()
+
+      if (data.suggestionsCreated > 0) {
+        toast.success(`Analysis complete: ${data.suggestionsCreated} suggestion${data.suggestionsCreated === 1 ? '' : 's'} found`)
+      } else {
+        toast.info('Analysis complete: No new suggestions')
+      }
     } catch (err) {
       setAnalysisError(err instanceof Error ? err.message : 'Analysis failed')
+      toast.error('Analysis failed')
     } finally {
       setIsAnalyzing(false)
     }
@@ -241,9 +249,13 @@ export default function IntelligencePage() {
           pending: prev.pending - 1,
           [action === 'approve' ? 'applied' : 'rejected']: prev[action === 'approve' ? 'applied' : 'rejected'] + 1,
         }))
+        toast.success(action === 'approve' ? 'Suggestion applied' : 'Suggestion dismissed')
+      } else {
+        toast.error('Failed to process suggestion')
       }
     } catch (err) {
       console.error('Action error:', err)
+      toast.error('Failed to process suggestion')
     } finally {
       setProcessingIds(prev => {
         const next = new Set(prev)

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Image from 'next/image'
+import { toast } from 'sonner'
 import {
   ArrowLeft,
   Save,
@@ -433,6 +434,7 @@ export default function OneshotEditorPage() {
           .single()
 
         if (error) throw error
+        toast.success('One-shot created')
         router.replace(`/oneshots/${data.id}`)
       } else {
         const { error } = await supabase
@@ -441,10 +443,11 @@ export default function OneshotEditorPage() {
           .eq('id', oneshotId)
 
         if (error) throw error
+        toast.success('One-shot saved')
       }
     } catch (err) {
       console.error('Save error:', err)
-      alert('Failed to save')
+      toast.error('Failed to save')
     } finally {
       setSaving(false)
     }

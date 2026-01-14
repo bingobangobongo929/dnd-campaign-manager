@@ -7,11 +7,11 @@ export const maxDuration = 300 // Vercel Pro plan allows up to 300 seconds
 
 interface GeneratedSuggestion {
   suggestion_type: SuggestionType
-  character_name: string
+  character_name: string | null  // null for timeline_event suggestions
   field_name: string
   suggested_value: unknown
   source_excerpt: string
-  source_type: 'session' | 'character' | 'relationship'
+  source_type?: 'session' | 'character' | 'relationship'
   source_id?: string
   ai_reasoning: string
   confidence: ConfidenceLevel
@@ -305,15 +305,17 @@ IMPORTANT INSTRUCTIONS:
 
     // Map character names to IDs and prepare for database insertion
     const suggestionsToInsert = suggestions.map(suggestion => {
-      const character = allCharacters?.find(c =>
-        c.name.toLowerCase() === suggestion.character_name.toLowerCase() ||
-        c.name.toLowerCase().includes(suggestion.character_name.toLowerCase()) ||
-        suggestion.character_name.toLowerCase().includes(c.name.toLowerCase())
-      )
+      // For timeline events, character_name may be null
+      const characterName = suggestion.character_name
+      const character = characterName ? allCharacters?.find(c =>
+        c.name.toLowerCase() === characterName.toLowerCase() ||
+        c.name.toLowerCase().includes(characterName.toLowerCase()) ||
+        characterName.toLowerCase().includes(c.name.toLowerCase())
+      ) : null
 
-      // Get current value for the field
+      // Get current value for the field (only for character-related suggestions)
       let currentValue: unknown = null
-      if (character && suggestion.field_name) {
+      if (character && suggestion.field_name && suggestion.suggestion_type !== 'timeline_event') {
         const fieldName = suggestion.field_name as keyof typeof character
         currentValue = character[fieldName] ?? null
       }
@@ -321,7 +323,7 @@ IMPORTANT INSTRUCTIONS:
       return {
         campaign_id: campaignId,
         character_id: character?.id || null,
-        character_name: suggestion.character_name,
+        character_name: suggestion.character_name || null,
         suggestion_type: suggestion.suggestion_type,
         field_name: suggestion.field_name,
         current_value: currentValue,

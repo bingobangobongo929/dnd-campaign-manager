@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
+import { Toaster } from "sonner"
 import "./globals.css"
 import { Providers } from "@/components/providers"
 
@@ -32,6 +33,17 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
+        <Toaster
+          theme="dark"
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: 'rgba(26, 26, 36, 0.95)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              color: '#f3f4f6',
+            },
+          }}
+        />
       </body>
     </html>
   )

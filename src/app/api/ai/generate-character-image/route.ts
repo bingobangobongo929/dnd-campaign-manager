@@ -77,19 +77,36 @@ export async function POST(req: Request) {
 
     // Determine art style based on game system
     let artStyle = 'high fantasy'
+    let isSciF = false
     if (game_system) {
       const sys = game_system.toLowerCase()
-      if (sys.includes('lancer') || sys.includes('mech')) {
-        artStyle = 'sci-fi mecha anime style'
-      } else if (sys.includes('call of cthulhu') || sys.includes('coc')) {
-        artStyle = 'cosmic horror, 1920s aesthetic'
-      } else if (sys.includes('vampire') || sys.includes('masquerade')) {
-        artStyle = 'gothic modern, dark urban fantasy'
-      } else if (sys.includes('cyberpunk')) {
-        artStyle = 'cyberpunk, neon-lit, high tech'
+      if (sys.includes('lancer') || sys.includes('mech') || sys.includes('starfinder') || sys.includes('traveller')) {
+        artStyle = 'sci-fi mecha pilot, futuristic military, space opera aesthetic'
+        isSciF = true
+      } else if (sys.includes('call of cthulhu') || sys.includes('coc') || sys.includes('delta green')) {
+        artStyle = 'cosmic horror, 1920s aesthetic, noir lighting'
+      } else if (sys.includes('vampire') || sys.includes('masquerade') || sys.includes('world of darkness')) {
+        artStyle = 'gothic modern, dark urban fantasy, nightclub aesthetic'
+      } else if (sys.includes('cyberpunk') || sys.includes('shadowrun')) {
+        artStyle = 'cyberpunk, neon-lit, high tech low life, chrome and leather'
+        isSciF = true
       } else if (sys.includes('pathfinder') || sys.includes('d&d') || sys.includes('5e')) {
         artStyle = 'high fantasy'
       }
+    }
+
+    // For sci-fi systems, adjust race/class interpretation
+    let adjustedCharacterDesc = characterDesc
+    if (isSciF) {
+      // Replace fantasy terms with sci-fi equivalents for the visual prompt
+      adjustedCharacterDesc = characterDesc
+        .replace(/wizard/gi, 'tech specialist')
+        .replace(/rogue/gi, 'smuggler')
+        .replace(/fighter/gi, 'soldier')
+        .replace(/paladin/gi, 'elite operative')
+        .replace(/elf/gi, 'humanoid')
+        .replace(/dwarf/gi, 'stocky humanoid')
+        .replace(/halfling/gi, 'small humanoid')
     }
 
     // Determine mood based on all available context
@@ -148,7 +165,7 @@ export async function POST(req: Request) {
 
     // Build the prompt - optimized for portrait/bust with centered face
     const promptParts = [
-      `${artStyle} character portrait of ${name}${characterDesc ? `, a ${characterDesc}` : ''}`,
+      `${artStyle} character portrait of ${name}${adjustedCharacterDesc ? `, a ${adjustedCharacterDesc}` : ''}`,
       `IMPORTANT COMPOSITION: Head and shoulders portrait, face centered in frame, suitable for both square avatar crop and 2:3 vertical crop`,
       contextSnippets.length > 0 ? `Character essence: ${contextSnippets[0]}` : null,
       personality ? `Personality: ${personality.slice(0, 150)}` : null,
@@ -165,7 +182,7 @@ export async function POST(req: Request) {
     // Shorter version
     const shortPrompt = [
       `${artStyle} portrait of ${name}`,
-      characterDesc || 'fantasy character',
+      adjustedCharacterDesc || 'fantasy character',
       moodGuide,
       visualHints.length > 0 ? visualHints.slice(0, 2).join(', ') : null,
       'head and shoulders, centered face, painterly, dramatic lighting, no text',

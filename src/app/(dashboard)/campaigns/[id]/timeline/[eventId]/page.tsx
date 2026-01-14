@@ -153,6 +153,8 @@ export default function TimelineEventDetailPage() {
     data: { ...formData, selectedCharacterIds },
     onSave: saveEvent,
     delay: 1500,
+    showToast: true,
+    toastMessage: 'Event saved',
   })
 
   // Group characters by type

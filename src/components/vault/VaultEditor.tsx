@@ -285,6 +285,8 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
     onSave: saveCharacter,
     delay: 1500,
     enabled: !!formData.name.trim(),
+    showToast: true,
+    toastMessage: 'Character saved',
   })
 
   // Handle inline image upload for notes editor

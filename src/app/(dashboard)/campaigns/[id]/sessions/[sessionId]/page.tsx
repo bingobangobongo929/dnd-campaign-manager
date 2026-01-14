@@ -146,6 +146,8 @@ export default function SessionDetailPage() {
     data: formData,
     onSave: saveSession,
     delay: 1500,
+    showToast: true,
+    toastMessage: 'Session saved',
   })
 
   // AI Summarize - now with accept/edit/decline flow

@@ -38,19 +38,41 @@ export async function POST(req: Request) {
     // Determine style based on genres
     let styleGuide = 'epic fantasy movie poster style'
     let moodGuide = 'dramatic and atmospheric'
+    let isSciF = false
+
+    // Check for sci-fi genres first to set the flag
+    if (genreTags?.some(g => {
+      const lower = g.toLowerCase()
+      return lower.includes('sci-fi') || lower.includes('scifi') || lower.includes('science fiction') ||
+             lower.includes('cyberpunk') || lower.includes('space') || lower.includes('mecha') ||
+             lower.includes('futuristic') || lower.includes('starship')
+    })) {
+      isSciF = true
+      styleGuide = 'sci-fi movie poster style, futuristic aesthetic, space opera'
+      moodGuide = 'epic, futuristic, adventurous'
+    }
 
     if (genreTags?.some(g => g.toLowerCase().includes('horror'))) {
-      styleGuide = 'dark horror movie poster style, ominous shadows'
+      styleGuide = isSciF
+        ? 'sci-fi horror movie poster, cosmic dread, alien terror'
+        : 'dark horror movie poster style, ominous shadows'
       moodGuide = 'dread, tension, foreboding'
     } else if (genreTags?.some(g => g.toLowerCase().includes('mystery'))) {
-      styleGuide = 'noir mystery poster style, moody lighting'
+      styleGuide = isSciF
+        ? 'sci-fi noir mystery poster, neon-lit shadows, futuristic detective'
+        : 'noir mystery poster style, moody lighting'
       moodGuide = 'mysterious, atmospheric, intriguing'
     } else if (genreTags?.some(g => g.toLowerCase().includes('survival'))) {
-      styleGuide = 'gritty survival thriller poster, harsh lighting'
+      styleGuide = isSciF
+        ? 'sci-fi survival thriller poster, hostile alien environment, desperate astronauts'
+        : 'gritty survival thriller poster, harsh lighting'
       moodGuide = 'desperate, tense, visceral'
     } else if (genreTags?.some(g => g.toLowerCase().includes('dark fantasy'))) {
       styleGuide = 'dark fantasy movie poster, gothic aesthetic'
       moodGuide = 'brooding, epic, morally complex'
+    } else if (genreTags?.some(g => g.toLowerCase().includes('cyberpunk'))) {
+      styleGuide = 'cyberpunk movie poster, neon-lit streets, chrome and leather, high tech low life'
+      moodGuide = 'gritty, neon-soaked, rebellious'
     }
 
     // Build the prompt parts - optimized for text overlay in bottom third

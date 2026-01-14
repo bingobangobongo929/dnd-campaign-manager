@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useDebouncedCallback } from 'use-debounce'
+import { toast } from 'sonner'
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -10,9 +11,11 @@ interface UseAutoSaveOptions<T> {
   onSave: (data: T) => Promise<void>
   delay?: number
   enabled?: boolean
+  showToast?: boolean
+  toastMessage?: string
 }
 
-export function useAutoSave<T>({ data, onSave, delay = 2000, enabled = true }: UseAutoSaveOptions<T>) {
+export function useAutoSave<T>({ data, onSave, delay = 2000, enabled = true, showToast = false, toastMessage = 'Changes saved' }: UseAutoSaveOptions<T>) {
   const [status, setStatus] = useState<SaveStatus>('idle')
   const previousDataRef = useRef<T>(data)
   const savedTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
@@ -24,6 +27,10 @@ export function useAutoSave<T>({ data, onSave, delay = 2000, enabled = true }: U
       setStatus('saving')
       await onSave(dataToSave)
       setStatus('saved')
+
+      if (showToast) {
+        toast.success(toastMessage, { duration: 2000 })
+      }
 
       // Clear any existing timeout
       if (savedTimeoutRef.current) {
@@ -37,8 +44,11 @@ export function useAutoSave<T>({ data, onSave, delay = 2000, enabled = true }: U
     } catch (error) {
       console.error('Auto-save error:', error)
       setStatus('error')
+      if (showToast) {
+        toast.error('Failed to save changes')
+      }
     }
-  }, [onSave, enabled])
+  }, [onSave, enabled, showToast, toastMessage])
 
   const debouncedSave = useDebouncedCallback(save, delay)
 
