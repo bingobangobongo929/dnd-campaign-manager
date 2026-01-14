@@ -72,7 +72,10 @@ export function CampaignIntelligenceModal({
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to analyze campaign')
+        const errorMsg = data.details
+          ? `${data.error}: ${data.details}`
+          : data.error || 'Failed to analyze campaign'
+        throw new Error(errorMsg)
       }
 
       if (data.message === 'No new content since last analysis') {

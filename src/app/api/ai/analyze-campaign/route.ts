@@ -219,29 +219,64 @@ IMPORTANT INSTRUCTIONS:
 
     const model = getAIModel(provider || 'anthropic')
 
-    const result = await generateText({
-      model,
-      system: AI_PROMPTS.analyzeSession, // Reuse the same prompt structure
-      prompt: fullContext,
-    })
+    let result
+    try {
+      result = await generateText({
+        model,
+        system: AI_PROMPTS.analyzeSession, // Reuse the same prompt structure
+        prompt: fullContext,
+      })
+    } catch (aiError) {
+      console.error('AI generation error:', aiError)
+      return new Response(JSON.stringify({
+        error: 'AI model failed to generate response',
+        details: aiError instanceof Error ? aiError.message : 'Unknown AI error'
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
 
     // Parse the JSON response
     let suggestions: GeneratedSuggestion[] = []
     try {
       let jsonText = result.text
+
+      // Check if response looks like an error
+      if (jsonText.toLowerCase().startsWith('an error') || jsonText.toLowerCase().startsWith('i ') || !jsonText.includes('{')) {
+        console.error('AI returned non-JSON response:', jsonText.slice(0, 200))
+        return new Response(JSON.stringify({
+          error: 'AI returned an invalid response',
+          details: 'The AI model did not return valid JSON. This may be a temporary issue.',
+          raw: jsonText.slice(0, 500)
+        }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+
       // Handle potential markdown code blocks
       const jsonMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/)
       if (jsonMatch) {
         jsonText = jsonMatch[1].trim()
       }
 
+      // Try to extract JSON if it's mixed with other text
+      const jsonStartIndex = jsonText.indexOf('{')
+      const jsonEndIndex = jsonText.lastIndexOf('}')
+      if (jsonStartIndex !== -1 && jsonEndIndex !== -1 && jsonEndIndex > jsonStartIndex) {
+        jsonText = jsonText.slice(jsonStartIndex, jsonEndIndex + 1)
+      }
+
       const parsed = JSON.parse(jsonText)
       suggestions = parsed.suggestions || []
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError)
+      console.error('Raw response:', result.text?.slice(0, 500))
       return new Response(JSON.stringify({
         error: 'Failed to parse AI response',
-        raw: result.text
+        details: parseError instanceof Error ? parseError.message : 'JSON parse error',
+        raw: result.text?.slice(0, 500)
       }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
