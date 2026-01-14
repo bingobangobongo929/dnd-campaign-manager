@@ -712,6 +712,164 @@ export interface Database {
           created_at?: string
         }
       }
+      oneshot_genre_tags: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          color: string
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          color?: string
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          color?: string
+          sort_order?: number
+          created_at?: string
+        }
+      }
+      oneshots: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          tagline: string | null
+          image_url: string | null
+          genre_tag_ids: string[] | null
+          game_system: string
+          level: number | null
+          player_count_min: number
+          player_count_max: number
+          estimated_duration: string | null
+          introduction: string | null
+          setting_notes: string | null
+          character_creation: string | null
+          session_plan: string | null
+          twists: string | null
+          key_npcs: string | null
+          handouts: string | null
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          tagline?: string | null
+          image_url?: string | null
+          genre_tag_ids?: string[] | null
+          game_system?: string
+          level?: number | null
+          player_count_min?: number
+          player_count_max?: number
+          estimated_duration?: string | null
+          introduction?: string | null
+          setting_notes?: string | null
+          character_creation?: string | null
+          session_plan?: string | null
+          twists?: string | null
+          key_npcs?: string | null
+          handouts?: string | null
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          tagline?: string | null
+          image_url?: string | null
+          genre_tag_ids?: string[] | null
+          game_system?: string
+          level?: number | null
+          player_count_min?: number
+          player_count_max?: number
+          estimated_duration?: string | null
+          introduction?: string | null
+          setting_notes?: string | null
+          character_creation?: string | null
+          session_plan?: string | null
+          twists?: string | null
+          key_npcs?: string | null
+          handouts?: string | null
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      oneshot_runs: {
+        Row: {
+          id: string
+          oneshot_id: string
+          run_date: string
+          group_name: string | null
+          player_count: number | null
+          notes: string | null
+          rating: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          oneshot_id: string
+          run_date?: string
+          group_name?: string | null
+          player_count?: number | null
+          notes?: string | null
+          rating?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          oneshot_id?: string
+          run_date?: string
+          group_name?: string | null
+          player_count?: number | null
+          notes?: string | null
+          rating?: number | null
+          created_at?: string
+        }
+      }
+      oneshot_shares: {
+        Row: {
+          id: string
+          share_code: string
+          oneshot_id: string
+          included_sections: Json
+          expires_at: string | null
+          view_count: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          share_code: string
+          oneshot_id: string
+          included_sections: Json
+          expires_at?: string | null
+          view_count?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          share_code?: string
+          oneshot_id?: string
+          included_sections?: Json
+          expires_at?: string | null
+          view_count?: number
+          created_at?: string
+        }
+      }
       user_settings: {
         Row: {
           user_id: string
@@ -761,6 +919,10 @@ export type CharacterMoodBoard = Database['public']['Tables']['character_mood_bo
 export type CharacterStatus = Database['public']['Tables']['character_statuses']['Row']
 export type CharacterShare = Database['public']['Tables']['character_shares']['Row']
 export type CharacterConnection = Database['public']['Tables']['character_connections']['Row']
+export type OneshotGenreTag = Database['public']['Tables']['oneshot_genre_tags']['Row']
+export type Oneshot = Database['public']['Tables']['oneshots']['Row']
+export type OneshotRun = Database['public']['Tables']['oneshot_runs']['Row']
+export type OneshotShare = Database['public']['Tables']['oneshot_shares']['Row']
 
 // Extended types with relations
 export type CharacterWithTags = Character & {
@@ -776,4 +938,9 @@ export type CampaignWithDetails = Campaign & {
   characters: Character[]
   sessions: Session[]
   tags: Tag[]
+}
+
+export type OneshotWithDetails = Oneshot & {
+  genre_tags: OneshotGenreTag[]
+  runs: OneshotRun[]
 }

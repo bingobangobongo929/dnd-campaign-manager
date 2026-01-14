@@ -2,14 +2,16 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Gamepad2, Camera, Loader2, X } from 'lucide-react'
+import { Plus, Gamepad2, Camera, Loader2, X, ChevronDown, ChevronUp, Scroll, Grid, List, Star } from 'lucide-react'
 import { Modal, Input, Textarea, Dropdown } from '@/components/ui'
 import { CampaignCard } from '@/components/ui/campaign-card'
+import { OneshotCard } from '@/components/ui/oneshot-card'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
 import { v4 as uuidv4 } from 'uuid'
 import Image from 'next/image'
-import type { Campaign } from '@/types/database'
+import { cn } from '@/lib/utils'
+import type { Campaign, Oneshot, OneshotGenreTag, OneshotRun } from '@/types/database'
 
 const GAME_SYSTEMS = [
   { value: 'D&D 5e', label: 'D&D 5e' },
@@ -21,11 +23,16 @@ const GAME_SYSTEMS = [
   { value: 'Custom', label: 'Custom System' },
 ]
 
+type ViewMode = 'grid' | 'list' | 'featured'
+
 export default function CampaignsPage() {
   const router = useRouter()
   const supabase = useSupabase()
   const { user, loading: userLoading } = useUser()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [oneshots, setOneshots] = useState<Oneshot[]>([])
+  const [genreTags, setGenreTags] = useState<OneshotGenreTag[]>([])
+  const [oneshotRuns, setOneshotRuns] = useState<Record<string, OneshotRun[]>>({})
   const [loading, setLoading] = useState(true)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null)
@@ -39,22 +46,65 @@ export default function CampaignsPage() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // View mode and one-shots expanded state
+  const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [oneshotsExpanded, setOneshotsExpanded] = useState(true)
+
   useEffect(() => {
     if (user) {
-      loadCampaigns()
+      loadData()
     }
   }, [user])
 
-  const loadCampaigns = async () => {
-    const { data } = await supabase
+  const loadData = async () => {
+    // Load campaigns
+    const { data: campaignsData } = await supabase
       .from('campaigns')
       .select('*')
       .eq('user_id', user!.id)
       .order('updated_at', { ascending: false })
 
-    if (data) {
-      setCampaigns(data)
+    if (campaignsData) {
+      setCampaigns(campaignsData)
     }
+
+    // Load one-shots
+    const { data: oneshotsData } = await supabase
+      .from('oneshots')
+      .select('*')
+      .eq('user_id', user!.id)
+      .order('updated_at', { ascending: false })
+
+    if (oneshotsData) {
+      setOneshots(oneshotsData)
+
+      // Load runs for each oneshot
+      const runsMap: Record<string, OneshotRun[]> = {}
+      for (const oneshot of oneshotsData) {
+        const { data: runsData } = await supabase
+          .from('oneshot_runs')
+          .select('*')
+          .eq('oneshot_id', oneshot.id)
+          .order('run_date', { ascending: false })
+
+        if (runsData) {
+          runsMap[oneshot.id] = runsData
+        }
+      }
+      setOneshotRuns(runsMap)
+    }
+
+    // Load genre tags
+    const { data: tagsData } = await supabase
+      .from('oneshot_genre_tags')
+      .select('*')
+      .eq('user_id', user!.id)
+      .order('sort_order')
+
+    if (tagsData) {
+      setGenreTags(tagsData)
+    }
+
     setLoading(false)
   }
 
@@ -157,6 +207,16 @@ export default function CampaignsPage() {
     }
   }
 
+  const handleDeleteOneshot = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this one-shot? This cannot be undone.')) return
+
+    const { error } = await supabase.from('oneshots').delete().eq('id', id)
+
+    if (!error) {
+      setOneshots(oneshots.filter((o) => o.id !== id))
+    }
+  }
+
   const openEditModal = (campaign: Campaign) => {
     setFormData({
       name: campaign.name,
@@ -177,15 +237,55 @@ export default function CampaignsPage() {
     )
   }
 
+  const isEmpty = campaigns.length === 0 && oneshots.length === 0
+
   return (
     <AppLayout>
       {/* Page Header */}
-      <div className="page-header">
-        <h1 className="page-title">Your Campaigns</h1>
-        <p className="page-subtitle">Manage your tabletop adventures</p>
+      <div className="page-header flex items-start justify-between">
+        <div>
+          <h1 className="page-title">Your Campaigns</h1>
+          <p className="page-subtitle">Manage your tabletop adventures</p>
+        </div>
+
+        {/* View Mode Toggle */}
+        {campaigns.length > 0 && (
+          <div className="flex items-center gap-1 bg-white/[0.03] rounded-lg p-1 border border-white/[0.06]">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={cn(
+                "p-2 rounded-md transition-colors",
+                viewMode === 'grid' ? "bg-purple-500/20 text-purple-400" : "text-gray-500 hover:text-gray-300"
+              )}
+              title="Grid View"
+            >
+              <Grid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={cn(
+                "p-2 rounded-md transition-colors",
+                viewMode === 'list' ? "bg-purple-500/20 text-purple-400" : "text-gray-500 hover:text-gray-300"
+              )}
+              title="List View"
+            >
+              <List className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('featured')}
+              className={cn(
+                "p-2 rounded-md transition-colors",
+                viewMode === 'featured' ? "bg-purple-500/20 text-purple-400" : "text-gray-500 hover:text-gray-300"
+              )}
+              title="Featured View"
+            >
+              <Star className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
 
-      {campaigns.length === 0 ? (
+      {isEmpty ? (
         /* Empty State */
         <div className="empty-state">
           <Gamepad2 className="empty-state-icon" />
@@ -193,32 +293,135 @@ export default function CampaignsPage() {
           <p className="empty-state-description">
             Create your first campaign to start organizing your world, characters, and stories.
           </p>
-          <button
-            className="btn btn-primary"
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            <Plus className="w-5 h-5" />
-            Create Your First Campaign
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              className="btn btn-primary"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              <Plus className="w-5 h-5" />
+              Create Campaign
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => router.push('/oneshots/new')}
+            >
+              <Scroll className="w-5 h-5" />
+              Create One-Shot
+            </button>
+          </div>
         </div>
       ) : (
-        /* Campaign Grid */
-        <div className="campaign-grid">
-          {campaigns.map((campaign, index) => (
-            <CampaignCard
-              key={campaign.id}
-              campaign={campaign}
-              onClick={() => router.push(`/campaigns/${campaign.id}/canvas`)}
-              onEdit={() => openEditModal(campaign)}
-              onDelete={() => handleDelete(campaign.id)}
-              animationDelay={index * 50}
-            />
-          ))}
-        </div>
+        <>
+          {/* Campaign Grid/List/Featured */}
+          {campaigns.length > 0 && (
+            <div className={cn(
+              viewMode === 'grid' && "campaign-grid",
+              viewMode === 'list' && "space-y-3",
+              viewMode === 'featured' && "grid grid-cols-1 md:grid-cols-2 gap-6"
+            )}>
+              {campaigns.map((campaign, index) => (
+                viewMode === 'list' ? (
+                  <CampaignListItem
+                    key={campaign.id}
+                    campaign={campaign}
+                    onClick={() => router.push(`/campaigns/${campaign.id}/canvas`)}
+                    onEdit={() => openEditModal(campaign)}
+                    onDelete={() => handleDelete(campaign.id)}
+                  />
+                ) : viewMode === 'featured' ? (
+                  <FeaturedCampaignCard
+                    key={campaign.id}
+                    campaign={campaign}
+                    onClick={() => router.push(`/campaigns/${campaign.id}/canvas`)}
+                    onEdit={() => openEditModal(campaign)}
+                    onDelete={() => handleDelete(campaign.id)}
+                  />
+                ) : (
+                  <CampaignCard
+                    key={campaign.id}
+                    campaign={campaign}
+                    onClick={() => router.push(`/campaigns/${campaign.id}/canvas`)}
+                    onEdit={() => openEditModal(campaign)}
+                    onDelete={() => handleDelete(campaign.id)}
+                    animationDelay={index * 50}
+                  />
+                )
+              ))}
+            </div>
+          )}
+
+          {/* One-Shots Section */}
+          <div className="mt-12">
+            <button
+              onClick={() => setOneshotsExpanded(!oneshotsExpanded)}
+              className="w-full flex items-center justify-between py-4 px-1 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                  <Scroll className="w-5 h-5 text-purple-400" />
+                </div>
+                <div className="text-left">
+                  <h2 className="text-lg font-semibold text-white/90">One-Shots</h2>
+                  <p className="text-sm text-gray-500">{oneshots.length} adventure{oneshots.length !== 1 ? 's' : ''} ready to run</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    router.push('/oneshots/new')
+                  }}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-colors border border-purple-500/20"
+                >
+                  <Plus className="w-4 h-4" />
+                  New
+                </button>
+                {oneshotsExpanded ? (
+                  <ChevronUp className="w-5 h-5 text-gray-500 group-hover:text-gray-300 transition-colors" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-gray-500 group-hover:text-gray-300 transition-colors" />
+                )}
+              </div>
+            </button>
+
+            {oneshotsExpanded && (
+              <div className="mt-4">
+                {oneshots.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                    <Scroll className="w-10 h-10 mb-4 text-gray-600" />
+                    <p className="text-sm text-gray-500 mb-4">No one-shots yet</p>
+                    <button
+                      onClick={() => router.push('/oneshots/new')}
+                      className="btn btn-secondary text-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Create Your First One-Shot
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {oneshots.map((oneshot, index) => (
+                      <OneshotCard
+                        key={oneshot.id}
+                        oneshot={oneshot}
+                        genreTags={genreTags}
+                        runs={oneshotRuns[oneshot.id] || []}
+                        onClick={() => router.push(`/oneshots/${oneshot.id}`)}
+                        onEdit={() => router.push(`/oneshots/${oneshot.id}`)}
+                        onDelete={() => handleDeleteOneshot(oneshot.id)}
+                        animationDelay={index * 50}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {/* Floating Action Button */}
-      {campaigns.length > 0 && (
+      {!isEmpty && (
         <button
           className="fab"
           onClick={() => setIsCreateModalOpen(true)}
@@ -450,5 +653,125 @@ export default function CampaignsPage() {
         </div>
       </Modal>
     </AppLayout>
+  )
+}
+
+// List View Item Component
+function CampaignListItem({
+  campaign,
+  onClick,
+  onEdit,
+  onDelete,
+}: {
+  campaign: Campaign
+  onClick: () => void
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  return (
+    <div
+      onClick={onClick}
+      className="flex items-center gap-4 p-4 bg-[--bg-elevated] rounded-xl border border-white/[0.06] hover:border-purple-500/30 cursor-pointer transition-all group"
+    >
+      {/* Image */}
+      <div className="relative w-20 h-14 rounded-lg overflow-hidden bg-[--bg-surface] flex-shrink-0">
+        {campaign.image_url ? (
+          <Image src={campaign.image_url} alt={campaign.name} fill className="object-cover" />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Gamepad2 className="w-6 h-6 text-gray-600" />
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <h3 className="font-display font-semibold text-white/90 truncate">{campaign.name}</h3>
+        <div className="flex items-center gap-3 mt-1">
+          <span className="text-xs text-purple-400 bg-purple-500/15 px-2 py-0.5 rounded">{campaign.game_system}</span>
+          {campaign.description && (
+            <span className="text-xs text-gray-500 truncate">{campaign.description}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={(e) => { e.stopPropagation(); onEdit() }}
+          className="p-2 text-gray-400 hover:text-purple-400 transition-colors"
+        >
+          Edit
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete() }}
+          className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// Featured Card Component
+function FeaturedCampaignCard({
+  campaign,
+  onClick,
+  onEdit,
+  onDelete,
+}: {
+  campaign: Campaign
+  onClick: () => void
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  return (
+    <div
+      onClick={onClick}
+      className="relative h-64 rounded-2xl overflow-hidden cursor-pointer group border border-white/[0.06] hover:border-purple-500/30 transition-all"
+    >
+      {/* Background Image */}
+      {campaign.image_url ? (
+        <Image
+          src={campaign.image_url}
+          alt={campaign.name}
+          fill
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-indigo-900/30" />
+      )}
+
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+
+      {/* Content */}
+      <div className="absolute bottom-0 left-0 right-0 p-6">
+        <span className="inline-block text-xs text-purple-400 bg-purple-500/20 px-2.5 py-1 rounded-md mb-2 border border-purple-500/30">
+          {campaign.game_system}
+        </span>
+        <h3 className="font-display text-2xl font-bold text-white mb-2">{campaign.name}</h3>
+        {campaign.description && (
+          <p className="text-sm text-gray-300 line-clamp-2">{campaign.description}</p>
+        )}
+      </div>
+
+      {/* Hover Actions */}
+      <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={(e) => { e.stopPropagation(); onEdit() }}
+          className="px-3 py-1.5 text-sm bg-black/60 backdrop-blur-sm rounded-lg text-white hover:bg-purple-500/80 transition-colors"
+        >
+          Edit
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete() }}
+          className="px-3 py-1.5 text-sm bg-black/60 backdrop-blur-sm rounded-lg text-white hover:bg-red-500/80 transition-colors"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
   )
 }
