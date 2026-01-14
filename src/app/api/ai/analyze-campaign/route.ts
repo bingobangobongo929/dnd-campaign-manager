@@ -3,8 +3,7 @@ import { getAIModel, AI_PROMPTS, AIProvider } from '@/lib/ai/config'
 import { createClient } from '@/lib/supabase/server'
 import { SuggestionType, ConfidenceLevel } from '@/types/database'
 
-export const runtime = 'edge'
-export const maxDuration = 300 // 5 minutes for large campaigns
+export const maxDuration = 60 // Vercel Hobby plan limit for serverless functions
 
 interface GeneratedSuggestion {
   suggestion_type: SuggestionType
