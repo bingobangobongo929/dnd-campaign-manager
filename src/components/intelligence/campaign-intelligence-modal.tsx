@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Brain, Check, Loader2, AlertCircle, Sparkles, Clock, FileText, Users } from 'lucide-react'
+import { Brain, Check, Loader2, AlertCircle, Sparkles, Clock, FileText, Users, RotateCcw } from 'lucide-react'
 import { Modal } from '@/components/ui'
 import { SuggestionCard, GeneratedSuggestion } from './suggestion-card'
 import type { Campaign, Character } from '@/types/database'
@@ -54,6 +54,27 @@ export function CampaignIntelligenceModal({
   const [stats, setStats] = useState<AnalysisStats | null>(null)
   const [analyzedSince, setAnalyzedSince] = useState<string | null>(null)
   const [noNewContent, setNoNewContent] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
+
+  const handleReset = async () => {
+    setIsResetting(true)
+    try {
+      const response = await fetch('/api/ai/reset-intelligence-run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaignId: campaign.id }),
+      })
+      if (response.ok) {
+        setNoNewContent(false)
+        setStep('idle')
+        onSuggestionsApplied() // Refresh campaign data
+      }
+    } catch (err) {
+      console.error('Reset error:', err)
+    } finally {
+      setIsResetting(false)
+    }
+  }
 
   const handleAnalyze = async () => {
     setStep('analyzing')
@@ -339,9 +360,23 @@ export function CampaignIntelligenceModal({
                   No new sessions or character updates since the last analysis.
                   Add new session notes or update characters, then run the analysis again.
                 </p>
-                <button className="btn btn-secondary mt-6" onClick={handleClose}>
-                  Close
-                </button>
+                <div className="flex justify-center gap-3 mt-6">
+                  <button
+                    className="btn btn-secondary flex items-center gap-2"
+                    onClick={handleReset}
+                    disabled={isResetting}
+                  >
+                    {isResetting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <RotateCcw className="w-4 h-4" />
+                    )}
+                    Re-scan Everything
+                  </button>
+                  <button className="btn btn-secondary" onClick={handleClose}>
+                    Close
+                  </button>
+                </div>
               </div>
             ) : (
               <>
