@@ -455,7 +455,7 @@
 }
 
 .card-campaign-image {
-  height: 140px;
+  aspect-ratio: 16 / 9;
   background: linear-gradient(135deg, var(--bg-elevated), var(--bg-surface));
   position: relative;
   overflow: hidden;

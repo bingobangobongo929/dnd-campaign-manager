@@ -714,7 +714,7 @@ function CampaignListItem({
   )
 }
 
-// Featured Card Component
+// Featured Card Component - Expanded for longer summaries
 function FeaturedCampaignCard({
   campaign,
   onClick,
@@ -729,49 +729,59 @@ function FeaturedCampaignCard({
   return (
     <div
       onClick={onClick}
-      className="relative h-64 rounded-2xl overflow-hidden cursor-pointer group border border-white/[0.06] hover:border-purple-500/30 transition-all"
+      className="relative rounded-2xl overflow-hidden cursor-pointer group border border-white/[0.06] hover:border-purple-500/30 transition-all"
     >
-      {/* Background Image */}
-      {campaign.image_url ? (
-        <Image
-          src={campaign.image_url}
-          alt={campaign.name}
-          fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-indigo-900/30" />
-      )}
-
-      {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-
-      {/* Content */}
-      <div className="absolute bottom-0 left-0 right-0 p-6">
-        <span className="inline-block text-xs text-purple-400 bg-purple-500/20 px-2.5 py-1 rounded-md mb-2 border border-purple-500/30">
-          {campaign.game_system}
-        </span>
-        <h3 className="font-display text-2xl font-bold text-white mb-2">{campaign.name}</h3>
-        {campaign.description && (
-          <p className="text-sm text-gray-300 line-clamp-2">{campaign.description}</p>
+      {/* 16:9 Image Container */}
+      <div className="relative aspect-video">
+        {campaign.image_url ? (
+          <Image
+            src={campaign.image_url}
+            alt={campaign.name}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-indigo-900/30" />
         )}
+
+        {/* Gradient Overlay - stronger at bottom for text */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+
+        {/* Game System Badge */}
+        <div className="absolute top-4 left-4">
+          <span className="inline-block text-xs text-purple-400 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-md border border-purple-500/30">
+            {campaign.game_system}
+          </span>
+        </div>
+
+        {/* Hover Actions */}
+        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={(e) => { e.stopPropagation(); onEdit() }}
+            className="px-3 py-1.5 text-sm bg-black/60 backdrop-blur-sm rounded-lg text-white hover:bg-purple-500/80 transition-colors"
+          >
+            Edit
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete() }}
+            className="px-3 py-1.5 text-sm bg-black/60 backdrop-blur-sm rounded-lg text-white hover:bg-red-500/80 transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+
+        {/* Title at bottom of image */}
+        <div className="absolute bottom-0 left-0 right-0 p-5">
+          <h3 className="font-display text-2xl font-bold text-white drop-shadow-lg">{campaign.name}</h3>
+        </div>
       </div>
 
-      {/* Hover Actions */}
-      <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={(e) => { e.stopPropagation(); onEdit() }}
-          className="px-3 py-1.5 text-sm bg-black/60 backdrop-blur-sm rounded-lg text-white hover:bg-purple-500/80 transition-colors"
-        >
-          Edit
-        </button>
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete() }}
-          className="px-3 py-1.5 text-sm bg-black/60 backdrop-blur-sm rounded-lg text-white hover:bg-red-500/80 transition-colors"
-        >
-          Delete
-        </button>
-      </div>
+      {/* Description below image - full text visible */}
+      {campaign.description && (
+        <div className="p-5 pt-3 bg-[--bg-elevated]">
+          <p className="text-sm text-gray-300 leading-relaxed">{campaign.description}</p>
+        </div>
+      )}
     </div>
   )
 }

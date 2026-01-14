@@ -1,9 +1,15 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Campaign, Character, Tag, Session, UserSettings, CanvasGroup } from '@/types/database'
 import type { AIProvider } from '@/lib/ai/config'
 
-interface AppState {
+// Persisted settings (saved to localStorage)
+interface PersistedSettings {
+  aiEnabled: boolean
+  aiProvider: AIProvider
+}
+
+interface AppState extends PersistedSettings {
   // Current user
   userId: string | null
   setUserId: (id: string | null) => void
@@ -57,79 +63,96 @@ interface AppState {
   setCanvasViewport: (viewport: { x: number; y: number; zoom: number }) => void
 
   // AI Settings
+  aiEnabled: boolean
+  setAIEnabled: (enabled: boolean) => void
   aiProvider: AIProvider
   setAIProvider: (provider: AIProvider) => void
 }
 
-export const useAppStore = create<AppState>((set) => ({
-  // User
-  userId: null,
-  setUserId: (id) => set({ userId: id }),
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
+      // User
+      userId: null,
+      setUserId: (id) => set({ userId: id }),
 
-  // Settings
-  settings: null,
-  setSettings: (settings) => set({ settings }),
+      // Settings
+      settings: null,
+      setSettings: (settings) => set({ settings }),
 
-  // Campaign
-  currentCampaign: null,
-  setCurrentCampaign: (campaign) => set({ currentCampaign: campaign }),
+      // Campaign
+      currentCampaign: null,
+      setCurrentCampaign: (campaign) => set({ currentCampaign: campaign }),
 
-  // Characters
-  characters: [],
-  setCharacters: (characters) => set({ characters }),
-  addCharacter: (character) => set((state) => ({ characters: [...state.characters, character] })),
-  updateCharacter: (id, updates) =>
-    set((state) => ({
-      characters: state.characters.map((c) => (c.id === id ? { ...c, ...updates } : c)),
-    })),
-  removeCharacter: (id) =>
-    set((state) => ({ characters: state.characters.filter((c) => c.id !== id) })),
+      // Characters
+      characters: [],
+      setCharacters: (characters) => set({ characters }),
+      addCharacter: (character) => set((state) => ({ characters: [...state.characters, character] })),
+      updateCharacter: (id, updates) =>
+        set((state) => ({
+          characters: state.characters.map((c) => (c.id === id ? { ...c, ...updates } : c)),
+        })),
+      removeCharacter: (id) =>
+        set((state) => ({ characters: state.characters.filter((c) => c.id !== id) })),
 
-  // Tags
-  tags: [],
-  setTags: (tags) => set({ tags }),
-  addTag: (tag) => set((state) => ({ tags: [...state.tags, tag] })),
-  updateTag: (id, updates) =>
-    set((state) => ({
-      tags: state.tags.map((t) => (t.id === id ? { ...t, ...updates } : t)),
-    })),
-  removeTag: (id) => set((state) => ({ tags: state.tags.filter((t) => t.id !== id) })),
+      // Tags
+      tags: [],
+      setTags: (tags) => set({ tags }),
+      addTag: (tag) => set((state) => ({ tags: [...state.tags, tag] })),
+      updateTag: (id, updates) =>
+        set((state) => ({
+          tags: state.tags.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+        })),
+      removeTag: (id) => set((state) => ({ tags: state.tags.filter((t) => t.id !== id) })),
 
-  // Canvas groups
-  canvasGroups: [],
-  setCanvasGroups: (groups) => set({ canvasGroups: groups }),
-  addCanvasGroup: (group) => set((state) => ({ canvasGroups: [...state.canvasGroups, group] })),
-  updateCanvasGroup: (id, updates) =>
-    set((state) => ({
-      canvasGroups: state.canvasGroups.map((g) => (g.id === id ? { ...g, ...updates } : g)),
-    })),
-  removeCanvasGroup: (id) =>
-    set((state) => ({ canvasGroups: state.canvasGroups.filter((g) => g.id !== id) })),
+      // Canvas groups
+      canvasGroups: [],
+      setCanvasGroups: (groups) => set({ canvasGroups: groups }),
+      addCanvasGroup: (group) => set((state) => ({ canvasGroups: [...state.canvasGroups, group] })),
+      updateCanvasGroup: (id, updates) =>
+        set((state) => ({
+          canvasGroups: state.canvasGroups.map((g) => (g.id === id ? { ...g, ...updates } : g)),
+        })),
+      removeCanvasGroup: (id) =>
+        set((state) => ({ canvasGroups: state.canvasGroups.filter((g) => g.id !== id) })),
 
-  // Sessions
-  sessions: [],
-  setSessions: (sessions) => set({ sessions }),
-  addSession: (session) => set((state) => ({ sessions: [...state.sessions, session] })),
-  updateSession: (id, updates) =>
-    set((state) => ({
-      sessions: state.sessions.map((s) => (s.id === id ? { ...s, ...updates } : s)),
-    })),
-  removeSession: (id) =>
-    set((state) => ({ sessions: state.sessions.filter((s) => s.id !== id) })),
+      // Sessions
+      sessions: [],
+      setSessions: (sessions) => set({ sessions }),
+      addSession: (session) => set((state) => ({ sessions: [...state.sessions, session] })),
+      updateSession: (id, updates) =>
+        set((state) => ({
+          sessions: state.sessions.map((s) => (s.id === id ? { ...s, ...updates } : s)),
+        })),
+      removeSession: (id) =>
+        set((state) => ({ sessions: state.sessions.filter((s) => s.id !== id) })),
 
-  // UI State
-  selectedCharacterId: null,
-  setSelectedCharacterId: (id) => set({ selectedCharacterId: id }),
-  isCharacterPanelOpen: false,
-  setIsCharacterPanelOpen: (open) => set({ isCharacterPanelOpen: open }),
-  isAIAssistantOpen: false,
-  setIsAIAssistantOpen: (open) => set({ isAIAssistantOpen: open }),
+      // UI State
+      selectedCharacterId: null,
+      setSelectedCharacterId: (id) => set({ selectedCharacterId: id }),
+      isCharacterPanelOpen: false,
+      setIsCharacterPanelOpen: (open) => set({ isCharacterPanelOpen: open }),
+      isAIAssistantOpen: false,
+      setIsAIAssistantOpen: (open) => set({ isAIAssistantOpen: open }),
 
-  // Canvas state
-  canvasViewport: { x: 0, y: 0, zoom: 1 },
-  setCanvasViewport: (viewport) => set({ canvasViewport: viewport }),
+      // Canvas state
+      canvasViewport: { x: 0, y: 0, zoom: 1 },
+      setCanvasViewport: (viewport) => set({ canvasViewport: viewport }),
 
-  // AI Settings
-  aiProvider: 'anthropic',
-  setAIProvider: (provider) => set({ aiProvider: provider }),
-}))
+      // AI Settings (persisted)
+      aiEnabled: true, // Default to enabled
+      setAIEnabled: (enabled) => set({ aiEnabled: enabled }),
+      aiProvider: 'anthropic',
+      setAIProvider: (provider) => set({ aiProvider: provider }),
+    }),
+    {
+      name: 'dnd-campaign-manager-settings',
+      storage: createJSONStorage(() => localStorage),
+      // Only persist AI settings
+      partialize: (state) => ({
+        aiEnabled: state.aiEnabled,
+        aiProvider: state.aiProvider,
+      }),
+    }
+  )
+)

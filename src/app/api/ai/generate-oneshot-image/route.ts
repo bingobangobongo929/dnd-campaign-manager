@@ -53,16 +53,18 @@ export async function POST(req: Request) {
       moodGuide = 'brooding, epic, morally complex'
     }
 
-    // Build the prompt parts
+    // Build the prompt parts - optimized for text overlay in bottom third
     const promptParts = [
       `Dramatic vertical movie poster artwork`,
+      `IMPORTANT COMPOSITION: Place all characters, focal points, and key details in the UPPER TWO-THIRDS of the image. Leave the bottom third relatively empty, darker, or with subtle background elements only - this area will have text overlay`,
       tagline ? `Theme: "${tagline}"` : null,
       genreContext ? `Genre: ${genreContext}` : null,
       introContext ? `Setting context: ${introContext}` : null,
       `Style: ${styleGuide}`,
       `Mood: ${moodGuide}`,
+      `The bottom 30% should fade to darkness or have a natural dark gradient/vignette - perfect for text legibility`,
       `Cinematic composition, dramatic lighting, painterly digital art, highly detailed`,
-      `No text, no letters, no words, no title`,
+      `No text, no letters, no words, no title anywhere in the image`,
       `2:3 aspect ratio, vertical poster orientation`,
     ].filter(Boolean)
 
@@ -73,7 +75,8 @@ export async function POST(req: Request) {
       `Movie poster for "${title}"`,
       genreContext || 'fantasy adventure',
       styleGuide,
-      'cinematic, dramatic lighting, no text, 2:3 vertical',
+      'main subject in upper 2/3, dark/empty bottom third for text',
+      'cinematic lighting, no text, 2:3 vertical',
     ].join(', ')
 
     return NextResponse.json({
