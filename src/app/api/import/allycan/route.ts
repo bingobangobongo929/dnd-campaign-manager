@@ -32,16 +32,29 @@ const CHARACTERS = [
     race: 'Human',
     class: 'Warlock',
     status: 'alive',
-    summary: 'A medium who can hear the voices of the dead, raised by violent raiders.',
+    summary: 'A medium who can hear the voices of the dead, raised by violent raiders. Her mother made a deal with the Iron Duke.',
     faction: 'The Party',
-    personality: 'Resourceful and street-smart, having survived a harsh upbringing with the Ivory Reavers. Can communicate with spirits and the dead.',
-    goals: 'Seeking to understand her powers and break free from her past with the raiders.',
+    personality: 'Resourceful and street-smart, having survived a harsh upbringing with the Ivory Reavers. Can communicate with spirits and the dead. Was seen as weak compared to clan assassins and fighters, being more magically gifted than skilled with weapons.',
+    goals: 'Seeking to understand her powers and break free from her past with the raiders. Must eventually confront Dispater, the Iron Duke, who claims ownership over her.',
+    description: `Esther's mother Lilith was a warlock who made a deal with the devil Dispater (the Iron Duke) to keep their village safe. Even though the deal ended in plague and death, Lilith begged Dispater to spare her daughter - and now Esther "belongs to him."
+
+Crystal and Urza, co-leaders of the Ivory Reavers, took in Esther as a child. They tried raising her like the other kids in the clan, teaching her to fight, but realized from an early age that she was more magically gifted and didn't thrive with weapons in hand. Not being able to have kids of their own, they loved her like their own child and would go through fire for her.
+
+When she originally left the clan, they searched far and wide for her, worrying she wouldn't be able to make it on her own, viewing her as weak compared to the clan assassins and fighters.
+
+The Ivory Reavers wear masks of ivory and gold, using strange curved sickles as weapons.`,
     important_people: [
-      { name: 'Crystal', relationship: 'Adoptive mother', notes: 'Co-leader of the Ivory Reavers' },
-      { name: 'Urza', relationship: 'Adoptive father', notes: 'Co-leader of the Ivory Reavers' },
-      { name: 'Despater', relationship: 'Patron/Adoptive father', notes: 'Devil who wants her to rule the material plane as a 10th hell' }
+      { name: 'Lilith', relationship: 'Biological mother', notes: 'Warlock, dead. Made a deal with Dispater to protect their village.' },
+      { name: 'Crystal', relationship: 'Adoptive mother', notes: 'Co-leader of the Ivory Reavers. Couldn\'t have kids of her own, loved Esther like her own.' },
+      { name: 'Urza', relationship: 'Adoptive father', notes: 'Co-leader of the Ivory Reavers. Would go through fire for Esther.' },
+      { name: 'Dispater (Iron Duke)', relationship: 'Patron/Owner', notes: 'Devil who Esther "belongs to" due to her mother\'s deal. Will encounter him before lvl 10.' }
     ],
-    secrets: 'Despater, her devil patron, crafted the Crown of Command and wants Esther to take it and control the material plane in his name.'
+    secrets: 'Esther belongs to Dispater (the Iron Duke) due to her mother\'s deal. She will have a run-in with him before level 10 where he shows off his power. Dispater crafted the Crown of Command and wants Esther to take it and control the material plane in his name as a 10th hell.',
+    story_hooks: [
+      'Encounter with Dispater before level 10',
+      'The Ivory Reavers are searching for her',
+      'Her connection to Jayce Killigan through the raiders'
+    ]
   },
   {
     name: 'Faust Blackwood',
@@ -50,17 +63,30 @@ const CHARACTERS = [
     class: 'Way of Mercy Monk',
     age: 25,
     status: 'alive',
-    summary: 'The Revenant Doctor - a healer with a dark past, raised by Darketh after his family was killed.',
+    summary: 'The Revenant Doctor - a healer with a dark past, raised by Darketh after his family was killed. A ghost follows him - his mother\'s spirit.',
     faction: 'The Party',
     appearance: `Stands six foot three with an impressive physique. A shirt of black fabric lies partially open at the chest with long sleeves rolled up across forearms decorated with intricate tattoos and a plethora of wristlets and bands. Handsome visage with sharp features and vibrant, meadow green eyes that seem entirely too intense. His crimson hair falls sleek and smooth across his broad back to his waist, beneath a bandana of white and pale pinks. Carries an easy smile and wise eyes. Features are notably noble in shape though diminished by the constant smile and almost lazy warmth.`,
     personality: `At the heart of all things, Faust is a kind man who wants to make friends and keep as many people safe as he can. After living a youth of desperation and poverty and witnessing the poor and meek die and suffer whilst the powerful and rich turned a blind eye, Faust grew to operate on a karmic scale. He believes everyone deserves a chance to prove themselves worth respecting or aiding. However, beneath the surface lies a darker side - dangerously capable and willing to do what must be done.`,
+    description: `Faust's family was killed by "assassins" from the Ivory Reavers during a "bleeding" ritual where young warriors get their first kill. Jayce Killigan was tasked with killing Faust but couldn't do it - he cut himself to put blood on his blade to pretend he had killed Faust, then ran.
+
+Darketh Rothwell, an old man-doctor, took in Faust as an apprentice after his family's death. Knowing there was a moon-druid at the school, Darketh sent Faust off with a moon-lily - a flower from another planet with extraordinary healing abilities that can only be planted and bred by moon and star druids. This bought Faust his spot at the academy.
+
+A ghost follows Faust around - this is the ghost of his mother. Her love for her son was so strong that even in death she couldn't let anyone harm him, and she remains trapped watching over him.`,
     goals: 'To heal those in need while uncovering the truth about his noble heritage. Recently discovered he is the true king - the last living person with royal blood.',
     important_people: [
-      { name: 'Darketh Rothwell', relationship: 'Adoptive father/Mentor', notes: 'Raised Faust as his own after his family was killed' },
-      { name: 'Jayce Killigan', relationship: 'Complex', notes: 'Was supposed to kill Faust but let him go' },
-      { name: 'Emily', relationship: 'Ally', notes: 'Runs a refugee camp in Chico, Faust now helps there' }
+      { name: 'Darketh Rothwell', relationship: 'Adoptive father/Mentor', notes: 'Old man-doctor who raised Faust. Knew about the moon-druid at the school.' },
+      { name: 'Jayce Killigan', relationship: 'Complex/Savior', notes: 'Was supposed to kill Faust during the bleeding ritual but let him go, faking his death.' },
+      { name: 'Emily', relationship: 'Ally', notes: 'Runs a refugee camp in Chico, Faust now helps there' },
+      { name: 'Faust\'s Mother (Ghost)', relationship: 'Mother', notes: 'Her ghost follows and protects him. Her love was so strong she couldn\'t leave even in death.' },
+      { name: 'Mortissa Gloam', relationship: 'Nemesis', notes: 'Drug smuggler in Rovenia. Connected to Dream Pastries.' }
     ],
-    secrets: 'Faust is the true king of Obeon - the last living person with royal blood. The Burlington family has always known and stood by his family through generations as the royal family\'s most trusted advisors.'
+    secrets: 'Faust is the true king of Obeon - the last living person with royal blood. The Burlington family has always known and stood by his family through generations as the royal family\'s most trusted advisors. His mother\'s ghost follows and protects him.',
+    story_hooks: [
+      'Moon-lily flower from another planet brought him to the academy',
+      'Connection to Jayce who spared his life',
+      'Mortissa Gloam as nemesis - Dream Pastries from CoS',
+      'Mother\'s ghost protects him'
+    ]
   },
   {
     name: 'Ilviana Gloam',
@@ -88,17 +114,31 @@ She was assigned to track down an enemy spy who told her "The Cappera family isn
     race: 'Half-Human/Half-Orc',
     class: 'Barbarian',
     status: 'alive',
-    summary: 'Son of Gerold Allycan, nephew of the wealthy Roderick Allycan, can grow massive when raging.',
+    summary: 'Son of Gerold Allycan, nephew of the wealthy Roderick Allycan. Known for his unique ability to grow massive while raging.',
     faction: 'The Party',
-    personality: 'Strong and protective, deeply loyal to family. Has giant ancestry through his great-great-grandfather.',
-    goals: 'To honor his family name and protect his remaining family after his village was attacked and his mother and youngest brother were killed.',
+    personality: 'Strong and protective, deeply loyal to family. Fascinated by Giant history and ruins. Earned a reputation for ferocity and prowess as a barbarian.',
+    description: `Born in a tribe north of Goset, comprising humans, half-orcs, and goliaths. His mother Kura is a half-orc. His father Gerold Allycan is a tall human with noble status in Rovenia - considered the "black sheep" of the family for pursuing a different lifestyle.
+
+Gerold was adventurous, traveling extensively in the northern regions of Obeon. He married Kura and chose to live with her in the tribe despite his noble heritage, maintaining sporadic contact with his brother Roderick through letters and occasional visits to Rovenia.
+
+The tribe is sedentary, living in a walled settlement at the base of a mountain. The settlement was built atop the ruins of a giant city. Torik was fascinated by the ruins, learning to write and speak the giants' runic language.
+
+Torik participated in hunts and battles, earning a reputation for ferocity and prowess. He is known for a unique ability to grow to a massive size while raging, which brought him fame within his tribe. Roderick offered to secure a place for Torik in one of his academies after hearing of his abilities.`,
+    goals: 'To honor his family name and protect his remaining family. To learn more about his father\'s family and explore his abilities further. To avenge his village.',
     important_people: [
-      { name: 'Gerold Allycan', relationship: 'Father', notes: 'Lives with a northern tribe, has giant ancestry' },
-      { name: 'Roderick Allycan', relationship: 'Uncle', notes: 'Richest man in Rovenia, runs the academies' },
-      { name: 'Betar', relationship: 'Brother', notes: 'Was found being sold at the black market, now travels with the party' },
+      { name: 'Gerold Allycan', relationship: 'Father', notes: 'The "black sheep" of the Allycan family. Adventurer who settled with a northern tribe. Has giant ancestry.' },
+      { name: 'Kura', relationship: 'Mother', notes: 'Half-orc woman from the tribe. Killed in the attack.' },
+      { name: 'Roderick Allycan', relationship: 'Uncle', notes: 'Richest and most influential man in Rovenia. Runs the academies.' },
+      { name: 'Garn', relationship: 'Younger brother', notes: 'One of two younger brothers.' },
+      { name: 'Betar', relationship: 'Younger brother', notes: 'Was found being sold at the black market. Now travels with the party. Took an oath to Chauntea.' },
       { name: 'Arthur', relationship: 'Family friend/Protector', notes: 'Old adventuring companion of Gerold, sent to watch over Torik' }
     ],
-    secrets: 'His village was specifically targeted by people in ivory white masks (Ivory Reavers) who went for his family first.'
+    secrets: 'His village was specifically targeted by people in ivory white masks (Ivory Reavers) who went for his family first. His mother and youngest brother were killed. He can read and speak the ancient Giant runic language.',
+    story_hooks: [
+      'Giant ruins beneath his village - what secrets do they hold?',
+      'Connection to Giant ancestry through his father',
+      'The Ivory Reavers targeted his family specifically - why?'
+    ]
   },
   {
     name: 'Wolfgang Runecarver',
@@ -106,14 +146,29 @@ She was assigned to track down an enemy spy who told her "The Cappera family isn
     race: 'Dwarf',
     class: 'Runecarver',
     status: 'alive',
-    summary: 'A dwarven runecarver searching for Giants and his lost dwarven kin. His parents are enslaved by the Crown of Command.',
+    summary: 'A dwarven runecarver searching for Giants and his lost dwarven kin. His parents disappeared and are now enslaved by the Crown of Command.',
     faction: 'The Party',
-    personality: 'Stoic and determined, deeply connected to dwarven traditions and rune magic. Fiercely protective of those he cares about.',
-    goals: 'To find his lost dwarven kin and free his parents from the Crown of Command\'s control.',
+    personality: 'Stoic and determined, deeply connected to dwarven traditions and rune magic. Fiercely protective of those he cares about. Cautious but sees the academy as a potential source of answers.',
+    description: `Wolfgang has spent much of his life underground or in the mountains. He is searching for any clues about the existence of other Giants or his lost dwarven kin. His parents disappeared, and he has been searching for any sign of his people ever since.
+
+His main goals at the academy are:
+1. Finding Giants or Giant-Kin - He heard rumors that the wealthy family funding the academy (the Allycans) might have Giant blood. If true, they could have knowledge of other Giants or ancient Giant history.
+2. Discovering Lost Dwarven Tribes - Since his parents disappeared, Wolfgang has been searching for any sign of his people. The academy might hold historical records, maps, or legends that could lead him to lost dwarven settlements.
+3. Expanding His Knowledge of Runes - As a runecarver, Wolfgang wants to deepen his understanding of Giant runes and their ancient magic, which could be documented in the academy's library.
+4. Learning About the Surface World - Having spent much of his life underground, he studies books on languages, herbs, and geography to navigate the world better.
+
+Though he remains cautious, the academy represents a potential source of the answers he has sought for decades.`,
+    goals: 'To find Giants or Giant-Kin who might have knowledge of ancient history. To discover lost dwarven tribes and find his people. To free his parents from the Crown of Command. To expand his knowledge of Giant runes.',
     important_people: [
-      { name: 'Wolfgang\'s Parents', relationship: 'Parents', notes: 'Enslaved by the Crown of Command, slip into coma when the eyedrops stop working' }
+      { name: 'Wolfgang\'s Parents', relationship: 'Parents', notes: 'Disappeared. Now enslaved by the Crown of Command - slip into coma when the eyedrops stop working.' }
     ],
-    secrets: 'The devil Disarray gestured that his parents were dead, though they are actually enslaved by the Crown of Command.'
+    secrets: 'The devil Disarray gestured that his parents were dead, but they are actually enslaved by the Crown of Command. The Allycan family may have Giant blood - this could be key to his search.',
+    story_hooks: [
+      'The Allycans may have Giant blood - connection to his search',
+      'Lost dwarven settlements may be documented in the academy library',
+      'His parents are enslaved by the Crown of Command',
+      'Ancient Giant runes and magic'
+    ]
   },
   {
     name: 'Ravyn Ha\'an-Vodusas',
@@ -160,28 +215,28 @@ The paladin Landon, leader of the insurrection group, insisted on sparing the ch
     secrets: 'Her grandmother Liriel O\'Malley sits as head of the council of the Elven city Chico. Umberlee demands 10,000 gold to return her heart, and is hunting someone who has become more famous than her on the seas.'
   },
   // Teachers
-  { name: 'Alistair "Cupcake" Killigan', type: 'npc', race: 'Goliath', role: 'Teacher - Physical/Fighting', status: 'alive', summary: 'Teaches physical fighting, absolutely loves cupcakes. Hard on the outside but a big softy.', faction: 'Teachers' },
-  { name: 'Hannibal James', type: 'npc', race: 'Wendigo (disguised)', role: 'Teacher - Magic', status: 'alive', summary: 'Teaches magic. Is really a wendigo.', faction: 'Teachers', secrets: 'Is actually a wendigo.' },
-  { name: 'Brea "Dean" Aman', type: 'npc', race: 'Unknown', role: 'Dean - Politics', status: 'alive', summary: 'The dean of the academy. Teaches politics. Goodhearted, was a Dark Warden before becoming the dean.', faction: 'Teachers' },
+  { name: 'Alistair "Cupcake" Killigan', type: 'npc', race: 'Goliath', role: 'Teacher - Physical/Fighting', status: 'alive', summary: 'Teaches physical fighting, absolutely loves cupcakes. Hard on the outside but a big softy. Jayce\'s father.', faction: 'Teachers' },
+  { name: 'Hannibal James', type: 'npc', race: 'Wendigo (disguised)', role: 'Teacher - Magic', status: 'dead', summary: 'Taught magic. Was really a wendigo who kidnapped and ate students. Killed by the party.', faction: 'Teachers', secrets: 'Was actually a wendigo. Responsible for Alice and Kale going missing.' },
+  { name: 'Brea "Dean" Aman', type: 'npc', race: 'Unknown', role: 'Dean - Politics', status: 'alive', summary: 'The dean of the academy. Teaches politics. Is goodhearted. Was a Dark Warden before becoming the dean.', faction: 'Teachers' },
   { name: 'Leila Pence', type: 'npc', race: 'Unknown', role: 'Teacher - Necromancy', status: 'alive', summary: 'Teaches necromancy and anything beyond the living.', faction: 'Teachers' },
   { name: 'Nilas Finnick', type: 'npc', race: 'Unknown', role: 'Teacher - Potions', status: 'alive', summary: 'Teaches potions.', faction: 'Teachers' },
   // Students
-  { name: 'Jayce Killigan', type: 'npc', race: 'Drow', class: 'Unknown', status: 'alive', summary: 'Son of Alistair. From the Ivory Reavers clan - was supposed to kill Faust but let him go.', faction: 'Students' },
-  { name: 'Valerie Novak', type: 'npc', race: 'Vampire', class: 'Unknown', status: 'alive', summary: '2nd year vampire student. Made a deal with Mr. Allycan for her freedom from her enslaver.', faction: 'Students' },
-  { name: 'Aelin Huxly', type: 'npc', race: 'Half Elf', class: 'Moon Druid', status: 'alive', summary: '3rd year Moon Druid. Her and her dad found refuge with Shadow Druids but left when they discovered their alliance.', faction: 'Students' },
-  { name: 'L.R. Scooter Burlington II "NightMoose"', type: 'npc', race: 'Human', class: 'Ranger', status: 'alive', summary: '2nd year ranger from a rich family. Calls himself Night Moose. Goofy and nerdy but means well.', faction: 'Students' },
-  { name: 'Kale Sthorm', type: 'npc', race: 'Unknown', class: 'Warlock', status: 'missing', summary: 'The quiet type, always seemed nervous. Would stare at blank space. First student to go missing.', faction: 'Students' },
-  { name: 'Alice Acorn', type: 'npc', race: 'Elf', class: 'Sorcerer', status: 'missing', summary: 'Kind and intelligent elf sorcerer. Always took your side. Currently missing.', faction: 'Students' },
-  { name: 'Peter Burlington', type: 'npc', race: 'Half-Goliath', class: 'Barbarian', status: 'alive', summary: '2nd year barbarian with a tragic past. Sold to circus as a child, eventually sold to the academy.', faction: 'Students' },
+  { name: 'Jayce Killigan', type: 'npc', race: 'Drow', class: 'Unknown', status: 'alive', summary: 'Son of Alistair. From the Ivory Reavers clan - knows Esther though she might not recognize him. During the clan\'s bleeding ritual, he was tasked with killing Faust but couldn\'t do it. He dipped his sickle in blood on the floor and ran, letting Faust live.', faction: 'Students', secrets: 'He was supposed to kill Faust during the bleeding ritual but faked his death instead.' },
+  { name: 'Valerie Novak', type: 'npc', race: 'Vampire (Lord/Free)', class: 'Unknown', status: 'alive', summary: '2nd year vampire student. Kind of a bitch. Was turned by Castiel the vampire lord of Rovenia. Made a deal with Mr. Allycan - they killed her enslaver Castiel to give her freedom, and she pledged her allegiance to the school.', faction: 'Students' },
+  { name: 'Aelin Huxly', type: 'npc', race: 'Half Elf', class: 'Moon Druid', status: 'alive', summary: '3rd year Moon Druid. Her and her dad found refuge with Shadow Druids but stepped away when they found out they had formed an alliance with dark forces.', faction: 'Students' },
+  { name: 'L.R. Scooter Burlington II "NightMoose"', type: 'npc', race: 'Human', class: 'Ranger', status: 'alive', summary: '2nd year ranger. Comes from a very rich family. Believes himself to be the next big hero but is goofy, nerdy and not much talent. Calls himself Night Moose. He means well. Family sigil: Head of a boar, one whole fang and one half.', faction: 'Students' },
+  { name: 'Kale Sthorm', type: 'npc', race: 'Unknown', class: 'Warlock', status: 'missing', summary: 'The quiet type, always seemed nervous. Would stare at blank space like he saw something others couldn\'t. First student to go missing - used Magic Jar to preserve his soul. Now possesses Scooter to help him through his arranged marriage.', faction: 'Students' },
+  { name: 'Alice Acorn', type: 'npc', race: 'Elf', class: 'Sorcerer', status: 'dead', summary: 'Kind and very intelligent elf sorcerer. Always took your side. Killed by the wendigo (Hannibal James).', faction: 'Students' },
+  { name: 'Peter Burlington', type: 'npc', race: 'Half-Goliath', class: 'Barbarian', status: 'alive', summary: '2nd year barbarian. His father, a gentle goliath, fell in love with a human woman - their love was seen as a disgrace. At age 4, his family was killed and he was sold to the circus where he was used and abused. His anger issues often led him into trouble. When older, the circus couldn\'t control him and sold him to the academy. Knows Esther - was part of the same group of Raiders her adoptive parents lead.', faction: 'Students' },
   // Key NPCs
   { name: 'Roderick Allycan', type: 'npc', race: 'Human', role: 'Academy Patron', status: 'alive', summary: 'Father figure. Richest and most influential man in the world. Owns most of Rovenia where he resides.', faction: 'Allycan Academy' },
   { name: 'Gerold Allycan', type: 'npc', race: 'Human', role: 'Noble (estranged)', status: 'alive', summary: 'Roderick\'s brother. Torik\'s father. Lives with a northern tribe.', faction: 'Allycan Academy' },
-  { name: 'Darketh Rothwell', type: 'npc', race: 'Unknown', role: 'Doctor/Mentor', status: 'alive', summary: 'Uncle figure. Raised Faust as his own. Saved Ravyn\'s brother and never agreed with the Ha\'an-Vodusas family.' },
-  { name: 'Mortissa Gloam', type: 'npc', race: 'Unknown', role: 'Drug Smuggler', status: 'alive', summary: 'Ilviana\'s father\'s sister. Develops drugs from corpses with her brother. Faust\'s nemesis.' },
-  { name: 'Ki-Ev Cappera', type: 'npc', race: 'Unknown', role: 'Crime Boss', status: 'alive', summary: 'Head of Cappera family. Fishing empire is a cover for weapon smuggling.', faction: 'Cappera Family' },
-  { name: 'Crystal', type: 'npc', race: 'Unknown', role: 'Ivory Reavers Leader', status: 'alive', summary: 'Co-leader of Ivory Reavers with Urza. Esther\'s adoptive mother.', faction: 'Ivory Reavers' },
-  { name: 'Urza', type: 'npc', race: 'Unknown', role: 'Ivory Reavers Leader', status: 'alive', summary: 'Co-leader of Ivory Reavers with Crystal. Esther\'s adoptive father.', faction: 'Ivory Reavers' },
-  { name: 'Umberlee', type: 'npc', race: 'Deity', role: 'Goddess of the Sea', status: 'alive', summary: 'Goddess of the sea. Took Lynn\'s heart so she could walk the earth. Jealous of Lynn\'s mother.' },
+  { name: 'Darketh Rothwell', type: 'npc', race: 'Unknown', role: 'Doctor/Mentor', status: 'alive', summary: 'Uncle figure. Raised Faust as his own. Saved Ravyn\'s brother Drago when her house fell and delivered him to distant family in Egmont. Moved to Rovenia to stay under the radar. Never agreed with what the Ha\'an-Vodusas family were doing in Solaria.' },
+  { name: 'Mortissa Gloam', type: 'npc', race: 'Unknown', role: 'Drug Smuggler', status: 'alive', summary: 'Ilviana\'s father\'s sister. Develops a selection of drugs from corpses with her brother (Ilviana\'s father). Faust\'s nemesis. Connected to Dream Pastries.' },
+  { name: 'Ki-Ev Cappera', type: 'npc', race: 'Unknown', role: 'Crime Boss', status: 'alive', summary: 'Head of Cappera family. Known for owning a smaller fishing empire and shipping low value goods. The transport and fishing business is a cover for weapon smuggling.', faction: 'Cappera Family' },
+  { name: 'Crystal', type: 'npc', race: 'Unknown', role: 'Ivory Reavers Leader', status: 'alive', summary: 'Co-leader of Ivory Reavers with Urza. Esther\'s adoptive mother. Couldn\'t have kids of her own, so she loved Esther like her own child. Would go through fire for her. When Esther left, she searched far and wide, worrying she wouldn\'t survive on her own.', faction: 'Ivory Reavers' },
+  { name: 'Urza', type: 'npc', race: 'Unknown', role: 'Ivory Reavers Leader', status: 'alive', summary: 'Co-leader of Ivory Reavers with Crystal. Esther\'s adoptive father. Couldn\'t have kids of his own, so he loved Esther like his own child. Would go through fire for her.', faction: 'Ivory Reavers' },
+  { name: 'Umberlee', type: 'npc', race: 'Deity', role: 'Goddess of the Sea', status: 'alive', summary: 'Goddess of the sea. Took Lynn\'s heart so she could walk the earth. Is viciously jealous of Lynn\'s mother Miranda\'s reputation on the sea and wants to destroy her reputation and take her down.' },
 ]
 
 // Full session data with actual notes from the campaign document
@@ -860,6 +915,7 @@ Your adventure starts with admission to Allycan - The academy for heroes.`,
           goals: c.goals || null,
           secrets: c.secrets || null,
           important_people: c.important_people || [],
+          story_hooks: c.story_hooks || [],
           position_x: posX,
           position_y: posY,
         })
