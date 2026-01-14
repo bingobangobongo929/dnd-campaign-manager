@@ -26,12 +26,14 @@ import {
   Copy,
   Check,
   RotateCcw,
+  Upload,
 } from 'lucide-react'
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css'
 import { Modal } from '@/components/ui'
 import { ShareOneshotModal } from '@/components/oneshots/ShareOneshotModal'
 import { useSupabase, useUser } from '@/hooks'
+import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 import { v4 as uuidv4 } from 'uuid'
 import type { Oneshot, OneshotGenreTag, OneshotRun } from '@/types/database'
@@ -135,6 +137,10 @@ export default function OneshotEditorPage() {
   const cropImgRef = useRef<HTMLImageElement>(null)
   const [newTagName, setNewTagName] = useState('')
   const [newTagColor, setNewTagColor] = useState('#8B5CF6')
+  const [imageOptionsModalOpen, setImageOptionsModalOpen] = useState(false)
+
+  // AI settings from store
+  const { aiEnabled } = useAppStore()
 
   // Collapsible sections
   const [expandedSections, setExpandedSections] = useState({
@@ -564,9 +570,9 @@ export default function OneshotEditorPage() {
           <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8">
             {/* Left Sidebar - Poster Image & Meta */}
             <div className="space-y-6">
-              {/* Movie Poster Image */}
+              {/* Movie Poster Image - Click to open options modal */}
               <div
-                onClick={() => imageInputRef.current?.click()}
+                onClick={() => setImageOptionsModalOpen(true)}
                 className={cn(
                   "relative aspect-[2/3] rounded-2xl overflow-hidden cursor-pointer group border-2 transition-all",
                   formData.image_url
@@ -595,36 +601,6 @@ export default function OneshotEditorPage() {
                     <Camera className="w-12 h-12" />
                     <span className="text-sm">Add Poster Image</span>
                   </div>
-                )}
-              </div>
-
-              {/* Image Actions */}
-              <div className="flex gap-2">
-                <button
-                  onClick={handleGeneratePrompt}
-                  disabled={generatingImage || !formData.title.trim()}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-purple-600/80 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-colors"
-                >
-                  {generatingImage ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      Get AI Prompt
-                    </>
-                  )}
-                </button>
-                {formData.image_url && (
-                  <button
-                    onClick={() => setFormData(prev => ({ ...prev, image_url: null }))}
-                    className="px-3 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-colors"
-                    title="Remove image"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
                 )}
               </div>
 
@@ -923,6 +899,84 @@ export default function OneshotEditorPage() {
           oneshotTitle={formData.title || 'Untitled One-Shot'}
         />
       )}
+
+      {/* Image Options Modal */}
+      <Modal
+        isOpen={imageOptionsModalOpen}
+        onClose={() => setImageOptionsModalOpen(false)}
+        title="Poster Image"
+        description="Upload an image or generate an AI prompt"
+      >
+        <div className="space-y-3 py-4">
+          {/* Upload Option */}
+          <button
+            onClick={() => {
+              setImageOptionsModalOpen(false)
+              imageInputRef.current?.click()
+            }}
+            className="w-full flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] rounded-xl transition-colors text-left"
+          >
+            <div className="p-3 bg-purple-500/20 rounded-lg">
+              <Upload className="w-5 h-5 text-purple-400" />
+            </div>
+            <div>
+              <p className="font-medium text-white">Upload Image</p>
+              <p className="text-sm text-gray-500">Choose an image from your device</p>
+            </div>
+          </button>
+
+          {/* AI Prompt Option - only show if AI is enabled */}
+          {aiEnabled && (
+            <button
+              onClick={() => {
+                setImageOptionsModalOpen(false)
+                handleGeneratePrompt()
+              }}
+              disabled={generatingImage || !formData.title.trim()}
+              className="w-full flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] rounded-xl transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div className="p-3 bg-purple-500/20 rounded-lg">
+                {generatingImage ? (
+                  <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
+                ) : (
+                  <Sparkles className="w-5 h-5 text-purple-400" />
+                )}
+              </div>
+              <div>
+                <p className="font-medium text-white">Generate AI Prompt</p>
+                <p className="text-sm text-gray-500">Get a prompt for Midjourney, DALL-E, etc.</p>
+              </div>
+            </button>
+          )}
+
+          {/* Delete Option - only show if image exists */}
+          {formData.image_url && (
+            <button
+              onClick={() => {
+                setFormData(prev => ({ ...prev, image_url: null }))
+                setImageOptionsModalOpen(false)
+              }}
+              className="w-full flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-red-500/10 border border-white/[0.08] hover:border-red-500/30 rounded-xl transition-colors text-left"
+            >
+              <div className="p-3 bg-red-500/20 rounded-lg">
+                <Trash2 className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <p className="font-medium text-red-400">Remove Image</p>
+                <p className="text-sm text-gray-500">Delete the current poster image</p>
+              </div>
+            </button>
+          )}
+        </div>
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={() => setImageOptionsModalOpen(false)}
+            className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </Modal>
 
       {/* Add Tag Modal */}
       <Modal

@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Gamepad2, Camera, Loader2, X, ChevronDown, ChevronUp, Scroll, Grid, List, Star } from 'lucide-react'
+import { Plus, Gamepad2, Camera, Loader2, X, ChevronDown, ChevronUp, Scroll, Grid, List, Star, Edit, Trash2 } from 'lucide-react'
+import { formatDate } from '@/lib/utils'
 import { Modal, Input, Textarea, Dropdown, UnifiedImageModal } from '@/components/ui'
 import { CampaignCard } from '@/components/ui/campaign-card'
 import { OneshotCard } from '@/components/ui/oneshot-card'
@@ -682,10 +683,10 @@ function FeaturedCampaignCard({
   return (
     <div
       onClick={onClick}
-      className="relative rounded-2xl overflow-hidden cursor-pointer group border border-white/[0.06] hover:border-purple-500/30 transition-all"
+      className="card group cursor-pointer"
     >
       {/* 16:9 Image Container */}
-      <div className="relative aspect-video">
+      <div className="relative aspect-video overflow-hidden rounded-t-xl">
         {campaign.image_url ? (
           <Image
             src={campaign.image_url}
@@ -698,43 +699,48 @@ function FeaturedCampaignCard({
         )}
 
         {/* Gradient Overlay - stronger at bottom for text */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
-        {/* Game System Badge */}
-        <div className="absolute top-4 left-4">
-          <span className="inline-block text-xs text-purple-400 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-md border border-purple-500/30">
-            {campaign.game_system}
-          </span>
-        </div>
-
-        {/* Hover Actions */}
-        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Hover Actions - Icons only */}
+        <div className="absolute top-3 left-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
           <button
             onClick={(e) => { e.stopPropagation(); onEdit() }}
-            className="px-3 py-1.5 text-sm bg-black/60 backdrop-blur-sm rounded-lg text-white hover:bg-purple-500/80 transition-colors"
+            className="p-2 bg-black/60 backdrop-blur-sm rounded-lg hover:bg-purple-500/80 transition-colors"
+            title="Edit"
           >
-            Edit
+            <Edit className="w-4 h-4 text-white" />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete() }}
-            className="px-3 py-1.5 text-sm bg-black/60 backdrop-blur-sm rounded-lg text-white hover:bg-red-500/80 transition-colors"
+            className="p-2 bg-black/60 backdrop-blur-sm rounded-lg hover:bg-red-500/80 transition-colors"
+            title="Delete"
           >
-            Delete
+            <Trash2 className="w-4 h-4 text-white" />
           </button>
         </div>
 
-        {/* Title at bottom of image */}
+        {/* Title and system at bottom of image */}
         <div className="absolute bottom-0 left-0 right-0 p-5">
+          <span className="inline-block text-xs text-purple-400 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-md border border-purple-500/30 mb-2">
+            {campaign.game_system}
+          </span>
           <h3 className="font-display text-2xl font-bold text-white drop-shadow-lg">{campaign.name}</h3>
         </div>
       </div>
 
-      {/* Description below image - full text visible */}
-      {campaign.description && (
-        <div className="p-5 pt-3 bg-[--bg-elevated]">
-          <p className="text-sm text-gray-300 leading-relaxed">{campaign.description}</p>
-        </div>
-      )}
+      {/* Content area below image - consistent with grid cards */}
+      <div className="p-5 bg-[--bg-elevated] rounded-b-xl border-t border-white/[0.04]">
+        {campaign.description ? (
+          <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">
+            {campaign.description}
+          </p>
+        ) : (
+          <p className="text-sm text-gray-500 italic">No description yet</p>
+        )}
+        <p className="text-xs text-gray-500 mt-4">
+          Updated {formatDate(campaign.updated_at)}
+        </p>
+      </div>
     </div>
   )
 }

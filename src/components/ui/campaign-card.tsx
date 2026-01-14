@@ -21,7 +21,7 @@ export function CampaignCard({
 }: CampaignCardProps) {
   return (
     <div
-      className="card card-campaign animate-slide-in-up"
+      className="card card-campaign group animate-slide-in-up"
       style={{ animationDelay: `${animationDelay}ms` }}
       onClick={onClick}
     >
@@ -50,42 +50,42 @@ export function CampaignCard({
             </svg>
           </div>
         )}
+
+        {/* Hover action buttons - top left like oneshot cards */}
+        <div
+          className="absolute top-3 left-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={onEdit}
+            className="p-2 bg-black/60 backdrop-blur-sm rounded-lg hover:bg-purple-500/80 transition-colors"
+            title="Edit"
+          >
+            <Edit className="w-4 h-4 text-white" />
+          </button>
+          <button
+            onClick={onDelete}
+            className="p-2 bg-black/60 backdrop-blur-sm rounded-lg hover:bg-red-500/80 transition-colors"
+            title="Delete"
+          >
+            <Trash2 className="w-4 h-4 text-white" />
+          </button>
+        </div>
       </div>
 
       {/* Content area */}
       <div className="card-campaign-content">
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <span className="card-campaign-system">{campaign.game_system}</span>
-            <h3 className="card-campaign-title truncate">{campaign.name}</h3>
-            {campaign.description && (
-              <p className="text-sm text-[--text-secondary] line-clamp-2 mt-1">
-                {campaign.description}
-              </p>
-            )}
-            <p className="card-campaign-meta mt-2">
-              Updated {formatDate(campaign.updated_at)}
+        <div className="flex-1 min-w-0">
+          <span className="card-campaign-system">{campaign.game_system}</span>
+          <h3 className="card-campaign-title truncate">{campaign.name}</h3>
+          {campaign.description && (
+            <p className="text-sm text-[--text-secondary] line-clamp-2 mt-1">
+              {campaign.description}
             </p>
-          </div>
-
-          {/* Action buttons */}
-          <div
-            className="flex items-center gap-1 ml-2"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className="btn-ghost btn-icon w-8 h-8"
-              onClick={onEdit}
-            >
-              <Edit className="w-4 h-4" />
-            </button>
-            <button
-              className="btn-ghost btn-icon w-8 h-8 text-[--arcane-ember]"
-              onClick={onDelete}
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
+          )}
+          <p className="card-campaign-meta mt-2">
+            Updated {formatDate(campaign.updated_at)}
+          </p>
         </div>
       </div>
     </div>
