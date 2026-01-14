@@ -6,11 +6,11 @@ import { Plus, FolderPlus, Scaling, Trash2, Undo2, Brain } from 'lucide-react'
 import { Modal, Input, ColorPicker, IconPicker, getGroupIcon } from '@/components/ui'
 import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
-import { CampaignIntelligenceModal } from '@/components/intelligence'
+import { CampaignHub } from '@/components/intelligence'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
-import type { Campaign, Character, Tag, CharacterTag, CanvasGroup } from '@/types/database'
+import type { Campaign, Character, Tag, CharacterTag, CanvasGroup, Session, TimelineEvent } from '@/types/database'
 
 // Type for undo history
 interface UndoAction {
@@ -33,6 +33,8 @@ export default function CampaignCanvasPage() {
   const [characters, setCharacters] = useState<Character[]>([])
   const [characterTags, setCharacterTags] = useState<Map<string, (CharacterTag & { tag: Tag; related_character?: Character | null })[]>>(new Map())
   const [groups, setGroups] = useState<CanvasGroup[]>([])
+  const [sessions, setSessions] = useState<Session[]>([])
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
   const [loading, setLoading] = useState(true)
 
   // Modals
@@ -122,6 +124,24 @@ export default function CampaignCanvasPage() {
       .eq('campaign_id', campaignId)
 
     setGroups(groupsData || [])
+
+    // Load sessions for intelligence hub
+    const { data: sessionsData } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('campaign_id', campaignId)
+      .order('session_number', { ascending: true })
+
+    setSessions(sessionsData || [])
+
+    // Load timeline events for intelligence hub
+    const { data: timelineData } = await supabase
+      .from('timeline_events')
+      .select('*')
+      .eq('campaign_id', campaignId)
+      .order('event_date', { ascending: false })
+
+    setTimelineEvents(timelineData || [])
 
     setLoading(false)
   }
@@ -807,14 +827,16 @@ export default function CampaignCanvasPage() {
         </div>
       </Modal>
 
-      {/* Campaign Intelligence Modal */}
+      {/* Campaign Intelligence Hub */}
       {campaign && (
-        <CampaignIntelligenceModal
+        <CampaignHub
           isOpen={isIntelligenceModalOpen}
           onClose={() => setIsIntelligenceModalOpen(false)}
           campaign={campaign}
           characters={characters}
-          onSuggestionsApplied={loadCampaignData}
+          sessions={sessions}
+          timelineEvents={timelineEvents}
+          onDataRefresh={loadCampaignData}
         />
       )}
     </AppLayout>
