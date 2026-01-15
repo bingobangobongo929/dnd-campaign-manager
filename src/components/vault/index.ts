@@ -1,5 +1,7 @@
 export { CharacterCard } from './CharacterCard'
 export { CharacterEditor } from './CharacterEditor'
-export { VaultEditor } from './VaultEditor'
 export { VaultImageCropModal } from './VaultImageCropModal'
 export { VaultImageUpload } from './VaultImageUpload'
+export { NPCCard } from './NPCCard'
+export { CompanionCard } from './CompanionCard'
+export { SessionNoteCard } from './SessionNoteCard'

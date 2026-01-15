@@ -1,8 +1,175 @@
-# CLAUDE.md - Project Design System & Instructions
+# CLAUDE.md - Project Documentation & Design System
+
+## PROJECT OVERVIEW
+
+D&D Campaign Manager - A comprehensive web app for Dungeon Masters and players to manage TTRPG campaigns, characters, sessions, and lore.
+
+**Tech Stack:**
+- Next.js 16 (App Router)
+- TypeScript
+- Supabase (PostgreSQL + Auth + Storage)
+- TipTap rich text editor
+- Tailwind CSS v4
+- AI: Google Gemini Pro 3 (`gemini-3-pro-preview`), Claude Sonnet
+
+---
+
+## PROJECT STRUCTURE
+
+```
+src/
+├── app/
+│   ├── (dashboard)/           # Main authenticated routes
+│   │   ├── campaigns/         # Campaign management
+│   │   ├── characters/        # Campaign-specific characters
+│   │   ├── vault/             # Character Vault (personal character storage)
+│   │   │   ├── [id]/          # Character editor (uses CharacterEditor.tsx)
+│   │   │   ├── import/        # AI-powered document import
+│   │   │   └── new/           # Create new character
+│   │   ├── oneshots/          # One-shot adventures
+│   │   └── timeline/          # Campaign timeline view
+│   └── api/
+│       ├── ai/                # AI endpoints (chat, suggestions, analysis)
+│       └── vault/             # Vault API routes
+│           ├── parse-file/    # Gemini file upload & parsing
+│           ├── import-structured/  # Import parsed data
+│           └── import-parsed/ # Alternative import endpoint
+├── components/
+│   ├── vault/                 # Character vault components
+│   │   ├── CharacterEditor.tsx    # Main editor (8 sections, 2000+ lines)
+│   │   ├── NPCCard.tsx           # NPC display with relationship colors
+│   │   ├── CompanionCard.tsx     # Companion display
+│   │   ├── SessionNoteCard.tsx   # Session notes display
+│   │   └── VaultEditor.tsx       # DEPRECATED - don't use
+│   ├── intelligence/          # AI suggestion components
+│   │   └── suggestion-card.tsx   # Approval flow card pattern
+│   └── ui/                    # Shared UI components
+└── lib/
+    ├── ai/config.ts           # AI model configuration
+    └── supabase/              # Supabase client utilities
+```
+
+---
+
+## KEY FEATURES
+
+### 1. Character Vault (`/vault`)
+Personal character storage for players/DMs. Independent of campaigns.
+
+**CharacterEditor.tsx** - The main editor with 8 sections:
+- `backstory` - Main narrative, TL;DR bullets
+- `details` - Appearance, personality, ideals, bonds, flaws
+- `people` - NPCs and Companions (separate arrays)
+- `journal` - Session notes (play_journal)
+- `writings` - Letters, stories, poems, diary entries
+- `stats` - Combat stats, inventory, gold
+- `player` - Discord, timezone, experience, preferences
+- `gallery` - Character images
+
+### 2. Character Import (`/vault/import`)
+AI-powered document import using Gemini Pro 3:
+- **File upload**: Drag & drop .docx, .pdf, .png, .jpg, .jpeg, .webp
+- **AI parsing**: Gemini extracts character data with zero data loss
+- **Approval flow**: Section-by-section approve/reject before import
+- **Sections**: Character, NPCs, Companions, Sessions, Writings, Tables
+
+### 3. Campaign Intelligence
+AI analysis of session notes to suggest character updates:
+- Status changes
+- Secrets revealed
+- New NPCs detected
+- Timeline events
+- Relationship changes
+
+---
+
+## DATABASE SCHEMA (Key Tables)
+
+### vault_characters
+Main character storage with 50+ fields including:
+- Basic: name, type (pc/npc), race, class, subclass, level, background
+- Story: backstory, backstory_phases (JSONB), tldr, appearance, personality
+- Character: ideals, bonds, flaws, goals, secrets, fears
+- Voice: quotes, plot_hooks, gameplay_tips
+- Links: theme_music_url, character_sheet_url, external_links
+- Player: player_discord, player_timezone, player_experience
+- Meta: status, status_color, source_file, raw_document_text
+
+### vault_character_relationships
+NPCs AND companions (unified table with `is_companion` flag):
+- Basic: related_name, related_image_url, relationship_type, relationship_label
+- NPC fields: nickname, faction_affiliations, location, occupation, origin
+- NPC detail: needs, can_provide, goals, secrets, personality_traits, full_notes
+- Companion fields: is_companion, companion_type, companion_species, companion_abilities
+- Status: relationship_status (active/deceased/estranged/missing/complicated)
+
+**Relationship Types** (with colors in NPCCard):
+- family (red), mentor (blue), friend (green), enemy (orange)
+- patron (purple), contact (cyan), ally (emerald), employer (yellow)
+- love_interest (pink), rival (amber), acquaintance (slate), other (gray)
+
+**Companion Types** (with colors in CompanionCard):
+- familiar (purple), pet (pink), mount (amber), animal_companion (green)
+- construct (blue), other (gray)
+
+### play_journal
+Session notes per character:
+- session_number, session_date, title, campaign_name
+- notes (main content), summary (brief)
+- kill_count, loot, thoughts_for_next
+- npcs_met (array), locations_visited (array)
+
+### vault_character_writings
+Creative writing attached to characters:
+- title, writing_type, content, recipient
+- Types: letter, story, poem, diary, journal, campfire_story, note, speech, song
+
+### vault_character_images
+Character portrait gallery with display_order.
+
+---
+
+## AI CONFIGURATION
+
+Located in `src/lib/ai/config.ts`:
+
+```typescript
+AI_PROVIDERS = {
+  anthropic: { model: 'claude-sonnet-4-5-20250929' },  // Creative writing
+  google: { model: 'gemini-2.0-flash' },               // Fast general
+  googlePro: { model: 'gemini-3-pro-preview' },        // Document parsing
+}
+```
+
+**Usage:**
+```typescript
+import { getAIModel } from '@/lib/ai/config'
+const model = getAIModel('googlePro')  // For document parsing
+```
+
+---
+
+## API ROUTES
+
+### Vault Import Routes
+| Route | Purpose |
+|-------|---------|
+| `/api/vault/parse-file` | Upload file → Gemini parses → returns structured JSON |
+| `/api/vault/import-structured` | Takes parsed JSON → creates character + relations |
+| `/api/vault/import-parsed` | Alternative import, handles updates |
+
+### AI Routes
+| Route | Purpose |
+|-------|---------|
+| `/api/ai/chat` | General AI chat |
+| `/api/ai/suggestions` | Campaign intelligence suggestions |
+| `/api/ai/analyze-session` | Analyze session for character updates |
+
+---
 
 ## READ THIS BEFORE ANY UI/STYLING WORK
 
-This project has an established design system using CSS variables defined in `globals.css`. 
+This project has an established design system using CSS variables defined in `globals.css`.
 **USE THE CSS VARIABLES AND EXISTING CLASSES - do not hardcode hex values.**
 
 ---
@@ -29,6 +196,7 @@ bg-[--bg-elevated]  /* NOT bg-[#1a1a24] */
 ```css
 --arcane-purple: #8B5CF6
 --arcane-gold: #d4a843
+--arcane-ember: #EF4444
 ```
 
 Usage:
@@ -51,15 +219,13 @@ border-[--border]    /* Standard border - 80+ uses in codebase */
 ### Text:
 ```css
 --text-primary: #ffffff
---text-secondary: #a0a0b0  
+--text-secondary: #a0a0b0
 --text-tertiary: #6b6b7b
 ```
 
 ---
 
 ## EXISTING CSS CLASSES (use these instead of inline Tailwind)
-
-The project has semantic CSS classes in globals.css. Use them:
 
 ### Page structure:
 ```tsx
@@ -94,56 +260,9 @@ The project has semantic CSS classes in globals.css. Use them:
 </div>
 ```
 
-### Grids:
-```tsx
-<div className="campaign-grid">...</div>
-```
-
 ---
 
-## SPACING PATTERNS (based on actual codebase usage)
-
-### Most common patterns:
-| Pattern | Count | Usage |
-|---------|-------|-------|
-| mb-4 | 63 | Standard gap between elements |
-| mb-6 | 37 | Larger gap between related groups |
-| mb-3 | 37 | Smaller gap |
-| space-y-4 | 17 | Vertical spacing in lists |
-| space-y-2 | 14 | Tight list spacing |
-| mb-16 | 16 | Large section gaps |
-| p-3 | 97 | Standard padding |
-| p-4 | 62 | Slightly larger padding |
-| p-6 | 32 | Panel padding |
-| p-8 | 21 | Large panel padding |
-
-### Recommended spacing:
-- Between form fields in same section: `mb-6` or `space-y-4`
-- Between sections: `mb-12` or `mb-16`
-- Between major page sections: `mb-16` or `mb-32`
-- Inside cards/panels: `p-4` to `p-6`
-- Large panels: `p-6` to `p-8`
-- Input padding: `py-3 px-4` or `py-4 px-4`
-
----
-
-## COMPONENT PATTERNS (matching existing codebase)
-
-### Input field:
-```tsx
-<div className="form-group">
-  <label className="form-label">Label</label>
-  <input className="form-input" placeholder="..." />
-</div>
-```
-
-Or with Tailwind (matching existing patterns):
-```tsx
-<div className="mb-6">
-  <label className="block text-sm font-medium text-[--text-secondary] mb-2">Label</label>
-  <input className="w-full py-3 px-4 bg-white/[0.03] border border-[--border] rounded-xl focus:border-[--arcane-purple]/50 focus:outline-none" />
-</div>
-```
+## COMPONENT PATTERNS
 
 ### Card/Panel:
 ```tsx
@@ -152,7 +271,28 @@ Or with Tailwind (matching existing patterns):
 </div>
 ```
 
-### Section header:
+### Expandable card (see NPCCard, SessionNoteCard):
+```tsx
+<div className="bg-[--bg-surface] rounded-xl border border-[--border] hover:border-[--arcane-purple]/30 transition-all duration-200 overflow-hidden">
+  {/* Header */}
+  <div className="p-4">...</div>
+
+  {/* Expand button */}
+  <button className="w-full px-4 py-2 flex items-center justify-center gap-2 text-xs text-gray-500 hover:text-purple-400 bg-white/[0.02] hover:bg-white/[0.04] border-t border-[--border]">
+    <ChevronDown className="w-4 h-4" />
+    Expand Details
+  </button>
+
+  {/* Expanded content */}
+  {expanded && (
+    <div className="px-4 pb-4 space-y-4 border-t border-[--border] bg-white/[0.01]">
+      ...
+    </div>
+  )}
+</div>
+```
+
+### Section header with icon:
 ```tsx
 <div className="flex items-center gap-4 mb-8">
   <div className="p-3 bg-purple-500/20 rounded-xl">
@@ -163,34 +303,31 @@ Or with Tailwind (matching existing patterns):
 </div>
 ```
 
-### Empty state:
+### Badge/tag styling:
 ```tsx
-<div className="empty-state">
-  <Icon className="empty-state-icon" />
-  <h3 className="empty-state-title">No items yet</h3>
-  <p className="empty-state-description">Add your first item</p>
-</div>
-```
+{/* Relationship type badge */}
+<span className="text-xs px-2 py-0.5 rounded-md capitalize border bg-blue-500/15 text-blue-400 border-blue-500/20">
+  mentor
+</span>
 
-Or with Tailwind:
-```tsx
-<div className="flex flex-col items-center justify-center py-16 px-8 bg-white/[0.02] border-2 border-dashed border-[--border] rounded-xl">
-  <Icon className="w-12 h-12 text-gray-600 mb-4" />
-  <p className="text-gray-400">No items yet</p>
-</div>
+{/* Status badge */}
+<span className="text-xs px-2 py-0.5 bg-gray-500/15 text-gray-400 rounded capitalize">
+  deceased
+</span>
 ```
 
 ---
 
-## TAILWIND V4 NOTES
+## SPACING PATTERNS
 
-This project uses Tailwind v4. The `globals.css` includes:
-```css
-@config "../../tailwind.config.ts";
-@source "../**/*.{js,ts,jsx,tsx}";
-```
-
-Both `space-y-*` and explicit `mb-*` margins work. Use whichever is cleaner for the situation.
+| Pattern | Usage |
+|---------|-------|
+| mb-4 | Standard gap between elements |
+| mb-6 | Larger gap between related groups |
+| space-y-4 | Vertical spacing in lists |
+| mb-12/mb-16 | Section gaps |
+| p-4 to p-6 | Panel padding |
+| py-3 px-4 | Input padding |
 
 ---
 
@@ -201,27 +338,6 @@ Both `space-y-*` and explicit `mb-*` margins work. Use whichever is cleaner for 
 3. **Use existing CSS classes** when they exist (btn, form-input, empty-state, etc.)
 4. **Consistent borders** - `border-[--border]` is the standard
 5. **Purple accents** - `--arcane-purple` (#8B5CF6) for highlights
-
----
-
-## BEFORE CREATING ANY NEW PAGE OR COMPONENT
-
-1. Check `globals.css` for existing CSS classes that might fit
-2. Use CSS variables for colors, not hardcoded hex values
-3. Check similar existing components for patterns
-4. Use dark purple theme - NEVER white/light backgrounds
-5. Test visually before committing
-
----
-
-## KNOWN ISSUES
-
-### CharacterEditor.tsx
-This component uses hardcoded hex values instead of CSS variables and doesn't use the semantic CSS classes from globals.css. When editing it:
-- Replace `bg-[#0a0a0f]` with `bg-[--bg-base]`
-- Replace `bg-[#0d0d14]` with `bg-[--bg-surface]`
-- Replace `border-white/10` with `border-[--border]` where appropriate
-- Consider using `form-group`, `form-label`, `form-input` classes
 
 ---
 
@@ -237,5 +353,15 @@ This component uses hardcoded hex values instead of CSS variables and doesn't us
 | Form input | `className="form-input"` |
 | Standard gap | `mb-4` or `mb-6` |
 | Section gap | `mb-12` or `mb-16` |
-| Panel padding | `p-4` to `p-6` |
-| Input padding | `py-3 px-4` |
+
+---
+
+## KNOWN ISSUES
+
+### CharacterEditor.tsx
+This component uses some hardcoded hex values instead of CSS variables. When editing:
+- Replace `bg-[#0a0a0f]` with `bg-[--bg-base]`
+- Replace `border-white/10` with `border-[--border]` where appropriate
+
+### VaultEditor.tsx
+**DEPRECATED** - Do not use. Use CharacterEditor.tsx instead.
