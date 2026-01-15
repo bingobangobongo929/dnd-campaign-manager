@@ -280,7 +280,7 @@ export async function POST(req: Request) {
     try {
       const result = await generateText({
         model,
-        maxTokens: 32000, // Large output for comprehensive extraction
+        maxOutputTokens: 32000, // Large output for comprehensive extraction
         messages: [
           {
             role: 'user',
