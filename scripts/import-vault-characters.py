@@ -804,48 +804,202 @@ def extract_inline_quotes(full_text: str) -> list[str]:
 # =============================================================================
 
 def extract_relationships(paragraphs: list[str], char_name: str) -> list[dict]:
-    """Extract NPC/relationship information."""
+    """Extract NPC/relationship information.
+
+    NPCs appear in documents as:
+    - A standalone name line (short, capitalized, like "Giselbert Almayda")
+    - Followed by bullet points/detail lines
+    - Separated by blank lines from other NPCs
+
+    We scan the ENTIRE document looking for NPC blocks, not just after markers.
+    """
     relationships = []
-    current_npc = None
-    current_details = []
-    in_npc_section = False
 
-    # Known NPC section markers
-    npc_markers = ['how she bonds', 'how he bonds', 'important people', 'npcs']
+    # First pass: find all potential NPC blocks
+    # An NPC block is: a name line followed by detail lines
+    i = 0
+    while i < len(paragraphs):
+        para = paragraphs[i].strip()
 
-    for i, para in enumerate(paragraphs):
-        lower = para.lower().strip()
-
-        # Detect NPC section start
-        if any(marker in lower for marker in npc_markers):
-            in_npc_section = True
+        # Skip empty paragraphs
+        if not para:
+            i += 1
             continue
 
-        if in_npc_section:
-            # Check if this is an NPC name
-            if is_npc_header(para, char_name):
-                # Save previous
-                if current_npc and current_details:
-                    relationships.append(build_relationship(current_npc, current_details))
+        # Check if this looks like an NPC name header
+        if is_npc_name_line(para, char_name):
+            npc_name = para
 
-                current_npc = para.strip()
-                # Handle "Name - Title" pattern
-                if ' - ' in current_npc:
-                    parts = current_npc.split(' - ')
-                    current_npc = parts[0].strip()
-                current_details = []
-            elif current_npc:
-                if is_section_header(para) and not is_npc_header(para, char_name):
-                    # End of NPC section
-                    relationships.append(build_relationship(current_npc, current_details))
+            # Handle "Name - Title" pattern (e.g., "Penny - Fam.")
+            if ' - ' in npc_name:
+                parts = npc_name.split(' - ', 1)
+                npc_name = parts[0].strip()
+                # Include the title as first detail if present
+                title = parts[1].strip() if len(parts) > 1 else None
+            else:
+                title = None
+
+            # Collect detail lines until we hit another NPC name or major section
+            details = []
+            if title:
+                details.append(title)
+
+            j = i + 1
+            while j < len(paragraphs):
+                detail = paragraphs[j].strip()
+
+                # Empty line might indicate end of this NPC's details
+                # But only if followed by another NPC name
+                if not detail:
+                    # Look ahead for another NPC name
+                    k = j + 1
+                    while k < len(paragraphs) and not paragraphs[k].strip():
+                        k += 1
+                    if k < len(paragraphs) and is_npc_name_line(paragraphs[k].strip(), char_name):
+                        break
+                    j += 1
+                    continue
+
+                # Stop if we hit another NPC name
+                if is_npc_name_line(detail, char_name):
                     break
-                current_details.append(para)
 
-    # Save last NPC
-    if current_npc and current_details:
-        relationships.append(build_relationship(current_npc, current_details))
+                # Stop if we hit a MAJOR section header (backstory, session, etc.)
+                # But NOT for detail-like lines
+                if is_major_section_header(detail):
+                    break
+
+                details.append(detail)
+                j += 1
+
+            # Only add if we have actual details (not just a lone name)
+            if details:
+                relationships.append(build_relationship(npc_name, details))
+
+            i = j
+        else:
+            i += 1
 
     return relationships
+
+
+def is_npc_name_line(text: str, char_name: str) -> bool:
+    """Check if text looks like a standalone NPC name line.
+
+    NPC names are:
+    - Short (under 40 chars)
+    - Start with capital letter
+    - Look like names (1-4 words, mostly capitalized)
+    - NOT known section headers
+    - NOT the main character's name
+    """
+    if not text or len(text) > 40:
+        return False
+
+    text = text.strip()
+
+    # Skip if contains the main character's name
+    if char_name:
+        char_first = char_name.split()[0].lower()
+        if char_first in text.lower() and len(char_first) > 3:
+            return False
+
+    # Skip known section headers
+    section_words = [
+        'backstory', 'background', 'early life', 'adult life', 'student life',
+        'childhood', 'youth', 'quotes', 'session', 'notes', 'tldr', 'summary',
+        'important people', 'npcs', 'bonds', 'path', 'how she bonds', 'how he bonds',
+        'knives', 'rumors', 'letters', 'campfire', 'possessions', 'inventory',
+        'appearance', 'personality', 'traits', 'ideals', 'flaws', 'goals',
+        'pre-session', 'player info', 'character info', 'dm', 'extra',
+        'the good path', 'the new', 'speaking to', 'crew member',
+        'personal session', 'from the vail', 'highlights', 'dms question'
+    ]
+    lower = text.lower()
+    if any(lower.startswith(sw) or lower == sw for sw in section_words):
+        return False
+
+    # Skip lines that start with descriptive words (not names)
+    desc_starts = [
+        'dont', "don't", 'has ', 'is ', 'was ', 'were ', 'very ', 'needs',
+        'uses ', 'he ', 'she ', 'they ', 'his ', 'her ', 'their ', 'its ',
+        'interesting', 'talks ', 'dislikes', 'loves ', 'enjoys ', 'hates ',
+        'favors', 'got ', 'from ', 'prev', 'when ', 'we ', 'i ', 'the ',
+        'a ', 'an ', 'smart', 'good', 'bad', 'nice', 'can ', 'will ',
+        'cemetery', 'priests', 'relations', 'knickname', 'meetingplace'
+    ]
+    if any(lower.startswith(w) for w in desc_starts):
+        return False
+
+    # Must start with a capital letter OR be a known relationship word
+    # Handle cases like "dad", "mom", "uncle"
+    relationship_words = ['dad', 'mom', 'mother', 'father', 'uncle', 'aunt', 'nana', 'grandma', 'grandpa']
+    if lower in relationship_words:
+        return True
+
+    if not text[0].isupper():
+        return False
+
+    # Must look like a name pattern:
+    # - 1-4 words
+    # - First word capitalized
+    # - May contain particles like "de", "von", "la"
+    # - May end with " - Title" which we handle separately
+
+    # Remove " - Title" suffix for checking
+    name_part = text.split(' - ')[0].strip()
+
+    # Check word count (1-4 words for a name)
+    words = name_part.split()
+    if len(words) > 5:
+        return False
+
+    # First word must be capitalized
+    if not words[0][0].isupper():
+        return False
+
+    # Name pattern: capitalized words, optional particles (de, von, etc.)
+    name_pattern = r'^[A-Z][a-zA-Z\']+(\s+(de|von|van|la|el|[A-Z][a-zA-Z\']+))*$'
+    if re.match(name_pattern, name_part):
+        return True
+
+    # Also accept single word names like "dad" if capitalized -> actually "dad" is lowercase
+    # Accept "Penny" style single names
+    if len(words) == 1 and words[0][0].isupper() and len(words[0]) >= 3:
+        return True
+
+    return False
+
+
+def is_major_section_header(text: str) -> bool:
+    """Check if this is a MAJOR section header that would end an NPC block.
+
+    We want to stop at things like "Backstory", "Session 1", "Quotes"
+    but NOT at NPC detail lines like "Dont trust him".
+    """
+    if not text:
+        return False
+
+    lower = text.lower().strip()
+
+    # Explicit major sections
+    major_sections = [
+        'backstory', 'background', 'early life', 'adult life', 'student life',
+        'quotes', 'session', 'tldr', 'summary', 'appearance', 'personality',
+        'pre-session', 'player info', 'character info', 'how she bonds',
+        'how he bonds', 'important people', 'npcs', 'letters to', 'campfire',
+        'knives', 'rumors about', 'possessions', 'the good path'
+    ]
+
+    for section in major_sections:
+        if lower.startswith(section) or lower == section:
+            return True
+
+    # Session pattern
+    if re.match(r'^session\s*#?\d+', lower):
+        return True
+
+    return False
 
 
 def is_npc_header(text: str, char_name: str) -> bool:
@@ -897,6 +1051,7 @@ def build_relationship(npc_name: str, details: list[str]) -> dict:
     """Build a relationship object from extracted data."""
     description = ' '.join(details)[:1500]
     details_lower = description.lower()
+    name_lower = npc_name.lower()
 
     rel = {
         'related_name': npc_name,
@@ -904,40 +1059,65 @@ def build_relationship(npc_name: str, details: list[str]) -> dict:
         'relationship_type': 'other'
     }
 
-    # Determine relationship type
-    if any(w in details_lower for w in ['father', 'dad', 'mother', 'mom', 'parent', 'brother', 'sister', 'sibling', 'twin', 'grandmother', 'nana']):
+    # Helper to check for whole words only (avoid "talagaad" matching "dad")
+    def has_word(text: str, word: str) -> bool:
+        return bool(re.search(r'\b' + re.escape(word) + r'\b', text))
+
+    # First, check the NPC NAME for titles
+    if 'baron' in name_lower or 'lord' in name_lower or 'captain' in name_lower:
+        rel['relationship_type'] = 'employer'
+        rel['relationship_label'] = 'Employer/Noble'
+    # Check if the NPC name IS "dad", "mom", etc.
+    elif name_lower in ['dad', 'father', 'mom', 'mother', 'uncle', 'aunt', 'nana', 'grandma', 'grandpa']:
         rel['relationship_type'] = 'family'
-        if 'father' in details_lower or 'dad' in details_lower:
+        if name_lower in ['dad', 'father']:
             rel['relationship_label'] = 'Father'
-        elif 'mother' in details_lower or 'mom' in details_lower:
+        elif name_lower in ['mom', 'mother']:
             rel['relationship_label'] = 'Mother'
-        elif 'brother' in details_lower:
-            rel['relationship_label'] = 'Brother'
-        elif 'sister' in details_lower:
-            rel['relationship_label'] = 'Sister'
-        elif 'twin' in details_lower:
-            rel['relationship_label'] = 'Twin'
-        elif 'grandmother' in details_lower or 'nana' in details_lower:
+        elif name_lower == 'nana':
             rel['relationship_label'] = 'Grandmother'
-    elif any(w in details_lower for w in ['patron', 'warlock']):
+        else:
+            rel['relationship_label'] = 'Family'
+    # Check description for relationship indicators (using word boundaries)
+    elif any(has_word(details_lower, w) for w in ['father', 'dad', 'mother', 'mom', 'parent', 'brother', 'sister', 'sibling', 'twin', 'grandmother', 'nana']):
+        rel['relationship_type'] = 'family'
+        if has_word(details_lower, 'father') or has_word(details_lower, 'dad'):
+            rel['relationship_label'] = 'Father'
+        elif has_word(details_lower, 'mother') or has_word(details_lower, 'mom'):
+            rel['relationship_label'] = 'Mother'
+        elif has_word(details_lower, 'brother'):
+            rel['relationship_label'] = 'Brother'
+        elif has_word(details_lower, 'sister'):
+            rel['relationship_label'] = 'Sister'
+        elif has_word(details_lower, 'twin'):
+            rel['relationship_label'] = 'Twin'
+        elif has_word(details_lower, 'grandmother') or has_word(details_lower, 'nana'):
+            rel['relationship_label'] = 'Grandmother'
+        else:
+            rel['relationship_label'] = 'Family'
+    elif any(has_word(details_lower, w) for w in ['patron', 'warlock']):
         rel['relationship_type'] = 'patron'
         rel['relationship_label'] = 'Patron'
-    elif any(w in details_lower for w in ['mentor', 'teacher', 'master', 'tutor', 'tutoring']):
+    elif any(has_word(details_lower, w) for w in ['mentor', 'teacher', 'master', 'tutor', 'tutoring']):
         rel['relationship_type'] = 'mentor'
         rel['relationship_label'] = 'Mentor'
-    elif any(w in details_lower for w in ['friend', 'ally', 'close']):
-        rel['relationship_type'] = 'friend'
-        rel['relationship_label'] = 'Friend'
-    elif any(w in details_lower for w in ['enemy', 'rival', 'nemesis', "don't trust"]):
+    elif "don't trust" in details_lower or 'dont trust' in details_lower:
+        # Check for distrust BEFORE checking for friend
+        rel['relationship_type'] = 'contact'
+        rel['relationship_label'] = 'Untrustworthy Contact'
+    elif any(has_word(details_lower, w) for w in ['enemy', 'rival', 'nemesis', 'hates']):
         rel['relationship_type'] = 'enemy'
         rel['relationship_label'] = 'Enemy'
-    elif any(w in details_lower for w in ['love', 'romantic', 'partner', 'spouse', 'husband', 'wife']):
+    elif any(has_word(details_lower, w) for w in ['friend', 'ally']):
+        rel['relationship_type'] = 'friend'
+        rel['relationship_label'] = 'Friend'
+    elif any(has_word(details_lower, w) for w in ['love', 'romantic', 'partner', 'spouse', 'husband', 'wife']):
         rel['relationship_type'] = 'romantic'
         rel['relationship_label'] = 'Romantic Interest'
-    elif any(w in details_lower for w in ['familiar', 'pet', 'fam.']):
+    elif any(has_word(details_lower, w) for w in ['familiar', 'pet']) or 'fam.' in details_lower:
         rel['relationship_type'] = 'companion'
         rel['relationship_label'] = 'Companion/Familiar'
-    elif any(w in details_lower for w in ['baron', 'employer', 'boss', 'captain']):
+    elif any(has_word(details_lower, w) for w in ['employer', 'boss', 'captain', 'works for']):
         rel['relationship_type'] = 'employer'
         rel['relationship_label'] = 'Employer'
 
@@ -949,28 +1129,86 @@ def build_relationship(npc_name: str, details: list[str]) -> dict:
 # =============================================================================
 
 def extract_backstory_phases(paragraphs: list[str]) -> list[dict]:
-    """Extract structured backstory phases."""
+    """Extract structured backstory phases.
+
+    Handles various header patterns including:
+    - Plain text: "Early Life"
+    - Quoted: "The "good path""
+    - Encoding artifacts: "The �?ogood path�??"
+    """
     phases = []
+
+    # Phase headers to look for (title, list of patterns to match)
     phase_headers = [
         ('Early Life', ['early life', 'childhood', 'youth']),
         ('Student Life', ['student life', 'the cracks', 'training']),
-        ('The Good Path', ['the good path', 'the "good path"']),
-        ('Upbringing', ['upbringing']),
-        ('Tension', ['tension and diverging paths', 'tension']),
-        ('Rebellion', ['rebellion and escape', 'rebellion']),
-        ('New Life', ['new life and inner conflict', 'new life']),
+        ('The Good Path', ['the good path', 'good path', 'the "good path"', 'the \u201cgood path']),
+        ('Upbringing', ['upbringing', 'background']),
+        ('Tension', ['tension and diverging paths', 'tension', 'diverging paths']),
+        ('Rebellion', ['rebellion and escape', 'rebellion', 'escape']),
+        ('New Life', ['new life and inner conflict', 'new life', 'inner conflict']),
         ('Turning Point', ['turning point']),
         ('New Path', ['new path']),
-        ('Adult Life', ['adult life', 'the new and the boring']),
-        ('Current', ['current', 'recent events', 'present day']),
+        ('Adult Life', ['adult life', 'the new and the boring', 'adulthood']),
+        ('Current', ['current', 'recent events', 'present day', 'nowadays']),
+        ('How She Bonds', ['how she bonds', 'how he bonds', 'bonds with']),
     ]
 
     for title, headers in phase_headers:
         content = find_section(paragraphs, headers)
-        if content and len(content) > 50:
+        if content and len(content) > 30:  # Lower threshold
             phases.append({
                 'title': title,
                 'content': fix_formatting(content)
+            })
+
+    # Also try to find phases by scanning for section-like headers
+    # This catches phases that might have non-standard names
+    seen_titles = {p['title'].lower() for p in phases}
+    current_phase = None
+    current_content = []
+
+    for para in paragraphs:
+        text = para.strip()
+        lower = text.lower()
+
+        # Check if this looks like a phase header (short, title-like)
+        if len(text) < 50 and text and text[0].isupper():
+            # Looks like a potential phase title?
+            phase_patterns = [
+                r'^(early|student|adult|new|current)\s+life',
+                r'^the\s+.*(path|life|beginning)',
+                r'^(childhood|youth|upbringing)',
+                r'^how\s+(she|he)\s+bonds',
+            ]
+            is_phase = any(re.match(p, lower) for p in phase_patterns)
+
+            if is_phase and lower not in seen_titles:
+                # Save previous phase
+                if current_phase and current_content:
+                    combined = '\n\n'.join(current_content)
+                    if len(combined) > 30:
+                        phases.append({
+                            'title': current_phase,
+                            'content': fix_formatting(combined)
+                        })
+                        seen_titles.add(current_phase.lower())
+
+                current_phase = text
+                current_content = []
+                continue
+
+        # Collect content for current phase
+        if current_phase and text:
+            current_content.append(text)
+
+    # Save last phase
+    if current_phase and current_content and current_phase.lower() not in seen_titles:
+        combined = '\n\n'.join(current_content)
+        if len(combined) > 30:
+            phases.append({
+                'title': current_phase,
+                'content': fix_formatting(combined)
             })
 
     return phases
@@ -981,29 +1219,63 @@ def extract_backstory_phases(paragraphs: list[str]) -> list[dict]:
 # =============================================================================
 
 def extract_companions(paragraphs: list[str], full_text: str) -> list[dict]:
-    """Extract companion/pet/familiar information."""
-    companions = []
+    """Extract companion/pet/familiar information.
 
-    # Pattern matching for companions
+    Look for patterns like:
+    - "Penny - Fam." (standalone line)
+    - "her ferret familiar, Penny"
+    - "a black ferret called Penny"
+    - "Penny the ferret"
+    """
+    companions = []
+    seen_names = set()
+
+    # First: look for standalone companion lines like "Penny - Fam."
+    for para in paragraphs:
+        text = para.strip()
+        if ' - Fam' in text or ' - fam' in text:
+            # Extract name before " - Fam"
+            name = text.split(' - ')[0].strip()
+            if name and name not in seen_names and len(name) >= 2:
+                companions.append({
+                    'name': name,
+                    'type': 'familiar',
+                    'description': 'Familiar'
+                })
+                seen_names.add(name)
+
+    # Pattern matching for companions mentioned in text
+    # Be more specific to avoid false positives
     patterns = [
-        r'(?:familiar|pet|mount|companion)[,:\s]+(?:a\s+)?(?:named\s+)?([A-Z][a-z]+)',
-        r'([A-Z][a-z]+)(?:\s+the\s+|\s+is\s+(?:her|his)\s+)(?:familiar|pet|mount|companion)',
-        r'(?:named|called)\s+([A-Z][a-z]+)[\s,]+(?:her|his)\s+(?:familiar|pet|companion)',
-        r'([A-Z][a-z]+)\s+-\s+Fam\.',  # Penny - Fam.
+        # "called/named X" for familiars
+        r'(?:ferret|cat|owl|raven|hawk|dog|wolf|horse|familiar|pet|companion)\s+(?:called|named)\s+([A-Z][a-z]{2,})',
+        # "X the ferret/familiar"
+        r'\b([A-Z][a-z]{2,})\s+the\s+(?:ferret|cat|owl|raven|familiar)',
+        # "X, her/his familiar"
+        r'\b([A-Z][a-z]{2,}),?\s+(?:her|his)\s+(?:ferret|familiar|pet)',
+        # "familiar X" or "pet X" (direct name)
+        r'(?:familiar|pet)\s+([A-Z][a-z]{2,})\b',
     ]
+
+    # Words to exclude - common words that might match but aren't names
+    exclude_words = {
+        'the', 'her', 'his', 'she', 'they', 'very', 'black', 'white', 'brown',
+        'small', 'large', 'old', 'new', 'good', 'bad', 'called', 'named',
+        'ferret', 'familiar', 'companion', 'pet', 'mount', 'animal'
+    }
 
     for pattern in patterns:
         matches = re.finditer(pattern, full_text, re.IGNORECASE)
         for match in matches:
             name = match.group(1)
-            if name and len(name) > 2 and name.lower() not in ['the', 'her', 'his']:
-                # Check if already added
-                if not any(c['name'].lower() == name.lower() for c in companions):
+            if name and name.lower() not in exclude_words and name not in seen_names:
+                if len(name) >= 3 and name[0].isupper():
                     companions.append({
                         'name': name,
                         'type': 'companion',
                         'description': ''
                     })
+                    seen_names.add(name)
 
     return companions
 
