@@ -16,7 +16,13 @@ const VAULT_CHARACTER_PARSE_PROMPT = `You are an expert at parsing TTRPG charact
 
 2. **PRESERVE ORIGINAL TEXT**: Keep the original wording and tone. Do not paraphrase or "clean up" the writing. Only fix obvious typos if necessary.
 
-3. **PRESERVE FORMATTING**: For backstory and long text, preserve paragraph breaks using "\\n\\n". Preserve bullet points using "\\n- " or "\\n• ".
+3. **PRESERVE FORMATTING WITH MARKDOWN**: For backstory and long text fields, use markdown formatting:
+   - Paragraph breaks: Use "\\n\\n" between paragraphs
+   - Bullet points: Use "\\n- " for each bullet item
+   - Bold text: Use **bold** for important names, terms, or emphasis
+   - Italic text: Use *italic* for thoughts, foreign words, or mild emphasis
+   - Headings: Use "## Heading" for section headers within the text
+   - Keep the original structure and emphasis from the document
 
 4. **NPCs ARE CRITICAL**: When you find an NPC section (usually a bold name followed by bullet points), extract EVERY bullet point into the "full_notes" field verbatim. Also parse out structured fields like location, faction, needs, goals when identifiable.
 
@@ -50,7 +56,7 @@ Return valid JSON with this EXACT structure:
     "pronouns": "string | null",
     "background": "string | null - D&D background or origin",
     "alignment": "string | null",
-    "backstory": "string - FULL prose backstory with \\n\\n for paragraph breaks. This is the main narrative.",
+    "backstory": "string - FULL prose backstory with MARKDOWN formatting: \\n\\n for paragraphs, **bold** for names/emphasis, *italic* for thoughts, ## for headings, - for bullets. Preserve all original formatting and structure.",
     "backstory_phases": [{"title": "Phase Name", "content": "Full text of this life phase"}],
     "tldr": ["string - each TLDR bullet as separate item"],
     "appearance": "string | null - physical description",
@@ -91,7 +97,7 @@ Return valid JSON with this EXACT structure:
       "goals": "string | null - their personal goals",
       "secrets": "string | null - secrets about them",
       "personality_traits": ["string - key traits"],
-      "full_notes": "string - EVERY bullet point about this NPC, VERBATIM, preserving original formatting",
+      "full_notes": "string - EVERY bullet point about this NPC, VERBATIM, with markdown: - for bullets, **bold** for emphasis, \\n\\n between sections",
       "relationship_status": "active|deceased|estranged|missing|complicated|unknown"
     }
   ],
@@ -111,7 +117,7 @@ Return valid JSON with this EXACT structure:
       "title": "string | null - session title if present",
       "campaign_name": "string | null - campaign name if mentioned",
       "summary": "string | null - brief summary if separate from notes",
-      "notes": "string - FULL session notes, preserving all formatting",
+      "notes": "string - FULL session notes with markdown formatting preserved (\\n\\n, **bold**, - bullets)",
       "kill_count": "number | null - if kill count/score mentioned",
       "loot": "string | null - items/gold acquired",
       "thoughts_for_next": "string | null - plans for next session",
