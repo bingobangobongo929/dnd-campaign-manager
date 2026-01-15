@@ -340,49 +340,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     loadStatuses()
   }, [supabase])
 
-  // Summary editor
-  const summaryEditor = useEditor({
-    extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2] } }),
-      Placeholder.configure({ placeholder: 'Brief description - role, personality, key traits...' }),
-      Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-purple-400 underline' } }),
-      Highlight.configure({ HTMLAttributes: { class: 'bg-yellow-500/30 px-1 rounded' } }),
-      Underline,
-    ],
-    content: formData.summary || '',
-    editorProps: {
-      attributes: {
-        class: 'prose prose-invert prose-sm max-w-none focus:outline-none min-h-[60px] prose-p:text-gray-300 prose-p:my-2',
-      },
-    },
-    onUpdate: ({ editor }) => {
-      setFormData(prev => ({ ...prev, summary: editor.getHTML() }))
-    },
-  })
-
-  // Notes/Backstory editor
-  const notesEditor = useEditor({
-    extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2] } }),
-      Placeholder.configure({ placeholder: 'Write the full backstory, history, and narrative...' }),
-      Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-purple-400 underline' } }),
-      Highlight.configure({ HTMLAttributes: { class: 'bg-yellow-500/30 px-1 rounded' } }),
-      TiptapImage.configure({ HTMLAttributes: { class: 'rounded-lg max-w-full' } }),
-      Underline,
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
-    ],
-    content: formData.notes,
-    editorProps: {
-      attributes: {
-        class: 'prose prose-invert max-w-none focus:outline-none min-h-[350px] prose-headings:text-white prose-p:text-gray-300 prose-p:my-2 prose-ul:text-gray-300 prose-li:text-gray-300 prose-blockquote:border-l-purple-500 prose-blockquote:text-gray-400',
-      },
-    },
-    onUpdate: ({ editor }) => {
-      setFormData(prev => ({ ...prev, notes: editor.getHTML() }))
-    },
-  })
-
-  // Process inline formatting (bold, italic) - defined first so textToHtml can use it
+  // Process inline formatting (bold, italic) - must be defined before textToHtml
   const processInlineFormatting = (text: string): string => {
     return text
       // Bold: **text** or __text__
@@ -480,6 +438,48 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
     return htmlBlocks.join('')
   }
+
+  // Summary editor
+  const summaryEditor = useEditor({
+    extensions: [
+      StarterKit.configure({ heading: { levels: [1, 2] } }),
+      Placeholder.configure({ placeholder: 'Brief description - role, personality, key traits...' }),
+      Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-purple-400 underline' } }),
+      Highlight.configure({ HTMLAttributes: { class: 'bg-yellow-500/30 px-1 rounded' } }),
+      Underline,
+    ],
+    content: textToHtml(formData.summary),
+    editorProps: {
+      attributes: {
+        class: 'prose prose-invert prose-sm max-w-none focus:outline-none min-h-[60px] prose-p:text-gray-300 prose-p:my-2',
+      },
+    },
+    onUpdate: ({ editor }) => {
+      setFormData(prev => ({ ...prev, summary: editor.getHTML() }))
+    },
+  })
+
+  // Notes/Backstory editor
+  const notesEditor = useEditor({
+    extensions: [
+      StarterKit.configure({ heading: { levels: [1, 2] } }),
+      Placeholder.configure({ placeholder: 'Write the full backstory, history, and narrative...' }),
+      Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-purple-400 underline' } }),
+      Highlight.configure({ HTMLAttributes: { class: 'bg-yellow-500/30 px-1 rounded' } }),
+      TiptapImage.configure({ HTMLAttributes: { class: 'rounded-lg max-w-full' } }),
+      Underline,
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+    ],
+    content: textToHtml(formData.notes),
+    editorProps: {
+      attributes: {
+        class: 'prose prose-invert max-w-none focus:outline-none min-h-[350px] prose-headings:text-white prose-p:text-gray-300 prose-p:my-2 prose-ul:text-gray-300 prose-li:text-gray-300 prose-blockquote:border-l-purple-500 prose-blockquote:text-gray-400',
+      },
+    },
+    onUpdate: ({ editor }) => {
+      setFormData(prev => ({ ...prev, notes: editor.getHTML() }))
+    },
+  })
 
   // Sync editor content when character data loads (for async loading)
   useEffect(() => {
