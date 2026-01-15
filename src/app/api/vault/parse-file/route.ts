@@ -280,7 +280,6 @@ export async function POST(req: Request) {
     const dataUrl = `data:${mimeType};base64,${base64}`
 
     // Send file to Gemini for parsing
-    // Use experimental_providerMetadata to pass file as inline data
     const { text } = await generateText({
       model,
       messages: [
@@ -290,6 +289,7 @@ export async function POST(req: Request) {
             {
               type: 'file',
               data: dataUrl,
+              mediaType: mimeType,
             },
             {
               type: 'text',
