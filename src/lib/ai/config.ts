@@ -16,7 +16,7 @@ export const AI_PROVIDERS = {
   },
   googlePro: {
     name: 'Gemini 3 Pro (Google)',
-    model: 'gemini-3.0-pro',
+    model: 'gemini-3-pro-preview',
     description: 'Best quality for complex document parsing',
   },
 } as const
