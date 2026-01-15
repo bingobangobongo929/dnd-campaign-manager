@@ -22,7 +22,10 @@ export default function ImportPage() {
 
     try {
       const text = await file.text()
-      const characters = JSON.parse(text)
+      const parsed = JSON.parse(text)
+
+      // Handle both formats: { characters: [...] } or just [...]
+      const characters = Array.isArray(parsed) ? parsed : parsed.characters
 
       const response = await fetch('/api/vault/import', {
         method: 'POST',
