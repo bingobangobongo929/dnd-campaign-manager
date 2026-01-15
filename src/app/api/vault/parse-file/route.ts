@@ -3,8 +3,9 @@ import { generateText } from 'ai'
 import { createClient } from '@/lib/supabase/server'
 import { getAIModel } from '@/lib/ai/config'
 
-export const runtime = 'edge'
-export const maxDuration = 300 // 5 minutes for large documents
+// Use Node.js runtime for longer timeout (edge has 25s limit on hobby)
+export const runtime = 'nodejs'
+export const maxDuration = 60 // 60 seconds (Vercel hobby limit)
 
 // Comprehensive prompt for extracting ALL character data with zero data loss
 const VAULT_CHARACTER_PARSE_PROMPT = `You are an expert at parsing TTRPG character documents. Your task is to extract EVERY piece of information from this document with ZERO data loss.
