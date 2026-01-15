@@ -144,9 +144,12 @@ interface ParseStats {
   tldrCount: number
   hasBackstory: boolean
   backstoryLength: number
+  backstoryPhaseCount: number
+  backstoryPhases: string[]
   referenceTableCount: number
   secondaryCharacterCount: number
   hasUnclassifiedContent: boolean
+  unclassifiedContentLength: number
 }
 
 // Section approval states
@@ -561,6 +564,25 @@ export default function VaultImportPage() {
         </div>
       )}
 
+      {/* Backstory Phases - CRITICAL: These are often missed! */}
+      {character.backstory_phases && character.backstory_phases.length > 0 && (
+        <div>
+          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+            Backstory Phases ({character.backstory_phases.length} phases)
+          </h4>
+          <div className="space-y-3">
+            {character.backstory_phases.map((phase, i) => (
+              <div key={i} className="bg-white/[0.02] rounded-lg p-3 border-l-2 border-purple-500/50">
+                <h5 className="text-sm font-medium text-purple-400 mb-2">{phase.title}</h5>
+                <div className="text-sm text-gray-400 whitespace-pre-wrap">
+                  {phase.content}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* TL;DR - ALL items */}
       {character.tldr && character.tldr.length > 0 && (
         <div>
@@ -950,7 +972,7 @@ export default function VaultImportPage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-4">
               <div className="bg-white/[0.02] rounded-lg p-3 text-center">
                 <p className="text-lg font-semibold text-white">{stats.npcCount}</p>
                 <p className="text-xs text-gray-500">NPCs</p>
@@ -967,6 +989,13 @@ export default function VaultImportPage() {
                 <p className="text-lg font-semibold text-white">{stats.writingCount}</p>
                 <p className="text-xs text-gray-500">Writings</p>
               </div>
+            </div>
+
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-6">
+              <div className="bg-white/[0.02] rounded-lg p-3 text-center">
+                <p className="text-lg font-semibold text-white">{stats.backstoryPhaseCount}</p>
+                <p className="text-xs text-gray-500">Life Phases</p>
+              </div>
               <div className="bg-white/[0.02] rounded-lg p-3 text-center">
                 <p className="text-lg font-semibold text-white">{stats.quoteCount}</p>
                 <p className="text-xs text-gray-500">Quotes</p>
@@ -975,7 +1004,19 @@ export default function VaultImportPage() {
                 <p className="text-lg font-semibold text-white">{stats.plotHookCount}</p>
                 <p className="text-xs text-gray-500">Plot Hooks</p>
               </div>
+              <div className="bg-white/[0.02] rounded-lg p-3 text-center">
+                <p className="text-lg font-semibold text-white">{Math.round(stats.backstoryLength / 1000)}k</p>
+                <p className="text-xs text-gray-500">Backstory Chars</p>
+              </div>
             </div>
+
+            {/* Show backstory phases titles for quick verification */}
+            {stats.backstoryPhases && stats.backstoryPhases.length > 0 && (
+              <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                <p className="text-xs text-purple-400 font-medium mb-1">Life phases detected:</p>
+                <p className="text-sm text-gray-400">{stats.backstoryPhases.join(' → ')}</p>
+              </div>
+            )}
 
             <div className="flex items-center justify-between mb-6">
               <p className="text-sm text-gray-500">

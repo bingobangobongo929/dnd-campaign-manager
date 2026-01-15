@@ -12,7 +12,11 @@ const VAULT_CHARACTER_PARSE_PROMPT = `You are an expert at parsing TTRPG charact
 
 ## CRITICAL RULES
 
-1. **ZERO DATA LOSS**: Every single piece of information in the document must be captured somewhere. If you're unsure where something goes, put it in the appropriate "notes" or "full_notes" field.
+1. **ABSOLUTE ZERO DATA LOSS**: Every single piece of information in the document MUST be captured somewhere. This is non-negotiable. If you cannot find a specific field for something, put it in:
+   - "full_notes" for NPC-related content
+   - "backstory" or "backstory_phases" for character history
+   - "unclassified_content" as a last resort
+   NEVER silently drop content. The user wrote it for a reason.
 
 2. **PRESERVE ORIGINAL TEXT**: Keep the original wording and tone. Do not paraphrase or "clean up" the writing. Only fix obvious typos if necessary.
 
@@ -24,22 +28,38 @@ const VAULT_CHARACTER_PARSE_PROMPT = `You are an expert at parsing TTRPG charact
    - Headings: Use "## Heading" for section headers within the text
    - Keep the original structure and emphasis from the document
 
-4. **NPCs ARE CRITICAL**: When you find an NPC section (usually a bold name followed by bullet points), extract EVERY bullet point into the "full_notes" field verbatim. Also parse out structured fields like location, faction, needs, goals when identifiable.
+4. **BACKSTORY vs BACKSTORY_PHASES - CRITICAL**:
+   - "backstory": Contains the main PROSE narrative of the character's history
+   - "backstory_phases": Contains BULLETED/OUTLINED life sections that supplement the prose
 
-5. **DETECT SECTIONS**: Look for these section patterns:
-   - "Backstory" or prose text at the start → backstory
+   IMPORTANT: Many documents have BOTH a prose backstory AND bulleted life phase sections like:
+   - "Early Life" with bullet points
+   - "The Good Path" with bullet points
+   - "Student Life" with bullet points
+   - "Adult Life" with bullet points
+   - "Childhood", "Teenage Years", "How I Met X" etc.
+
+   These bulleted sections are BACKSTORY PHASES and must ALL be captured in the backstory_phases array. They often come AFTER the prose backstory and contain additional detail. DO NOT DROP THEM.
+
+5. **NPCs ARE CRITICAL**: When you find an NPC section (usually a bold name followed by bullet points), extract EVERY bullet point into the "full_notes" field verbatim. Also parse out structured fields like location, faction, needs, goals when identifiable. Look for sections like "How she bonds with the PCs" - these describe relationships with OTHER player characters and should be captured as NPCs or in the main character's notes.
+
+6. **DETECT SECTIONS**: Look for these section patterns:
+   - "Backstory" or prose text at the start → backstory (prose field)
+   - Life phases with bullets (Early Life, Student Life, etc.) → backstory_phases array
    - "TL;DR" or "TLDR" → tldr bullet points
    - Bold names followed by bullets → NPCs
+   - "dad", "father", "mother", person names with notes → NPCs (family)
    - "Session 1", "Session 2" etc. → Session notes
    - "Dear...", letters, stories, poems → Character writings
    - "Quotes" section → Voice lines
    - "Knives", "Plot Hooks", hooks for DMs → plot_hooks
    - Player info (Discord, timezone) → player fields
    - Possessions, inventory, gold → possessions/gold
-   - "Companion", "Familiar", "Pet", "Mount" → Companions
+   - "Companion", "Familiar", "Pet", "Mount", "Fam." → Companions
    - Tables with data → reference_tables
+   - "How she bonds with PCs", party relationships → Can be NPCs or party_relations notes
 
-6. **GAME SYSTEM AGNOSTIC**: Documents may be for D&D 5e, Warhammer Fantasy, LANCER, Pathfinder, etc. Extract what you find without assuming a system.
+7. **GAME SYSTEM AGNOSTIC**: Documents may be for D&D 5e, Warhammer Fantasy, LANCER, Pathfinder, etc. Extract what you find without assuming a system.
 
 ## OUTPUT FORMAT
 
@@ -59,7 +79,7 @@ Return valid JSON with this EXACT structure:
     "alignment": "string | null",
     "deity": "string | null - god/gods they worship",
     "backstory": "string - FULL prose backstory with MARKDOWN: \\n\\n for paragraphs, **bold** for names/emphasis, *italic* for thoughts, ## for headings, - for bullets. Include ALL narrative content.",
-    "backstory_phases": [{"title": "Phase Name", "content": "Full text with markdown formatting"}],
+    "backstory_phases": [{"title": "Phase Name like 'Early Life' or 'Student Years'", "content": "Full bulleted content with markdown: \\n- bullet1\\n- bullet2. CRITICAL: Include ALL bulleted life phase sections here!"}],
     "tldr": ["string - each TLDR/summary bullet as separate item"],
     "appearance": "string | null - general physical description prose",
     "height": "string | null - e.g. '5\\'10\"' or '180cm' or 'tall'",
@@ -238,12 +258,57 @@ When she was 15, bandits attacked their caravan. She discovered her magical abil
 Format the backstory as:
 "## Early Life\\n\\n**Kira** was born in *Waterdeep* to a merchant family. Her father, **Marcus**, taught her the trade.\\n\\n## The Incident\\n\\nWhen she was 15, bandits attacked their caravan. She discovered her magical abilities that day, accidentally burning the attackers alive."
 
-Key points:
-- Use ## for section headings
-- Use **name** for important people/places on first mention
-- Use *italic* for place names or emphasis
-- Use \\n\\n between paragraphs
-- Preserve ALL content, don't summarize
+## BACKSTORY_PHASES EXAMPLE - CRITICAL
+
+Many documents have BOTH prose AND bulleted life sections. If you see:
+"""
+Backstory (prose section)
+The smoke and screams from the pyre never reached her sense...
+
+(later in document, after the prose)
+
+Early life
+• She was born in a small village. Her mother was accused of witchcraft.
+• Her father Egon fled with baby Ana to the city.
+
+The "good path"
+• When she started showing magical signs, her father panicked.
+• Through his services, he met Baron Feuerbach and made a deal.
+
+Student life: the cracks
+• She got a mentor, Giselbert Almayda
+• She started sneaking out, drinking, chasing excitement
+"""
+
+You MUST capture these as backstory_phases:
+{
+  "backstory": "The smoke and screams from the pyre never reached her sense... (full prose)",
+  "backstory_phases": [
+    {
+      "title": "Early life",
+      "content": "- She was born in a small village. Her mother was accused of witchcraft.\\n- Her father **Egon** fled with baby Ana to the city."
+    },
+    {
+      "title": "The good path",
+      "content": "- When she started showing magical signs, her father panicked.\\n- Through his services, he met **Baron Feuerbach** and made a deal."
+    },
+    {
+      "title": "Student life: the cracks",
+      "content": "- She got a mentor, **Giselbert Almayda**\\n- She started sneaking out, drinking, chasing excitement"
+    }
+  ]
+}
+
+CRITICAL: These bulleted life sections often appear AFTER the main prose and are easily missed. They contain important detail. NEVER drop them!
+
+## FINAL VERIFICATION
+
+Before returning your JSON, verify:
+1. Did you capture ALL prose backstory content?
+2. Did you capture ALL bulleted life phase sections (Early Life, Student Life, Adult Life, etc.)?
+3. Did you capture ALL NPCs mentioned (including family like "dad", mentor names, etc.)?
+4. Did you capture ALL companions/familiars?
+5. Is there ANY text from the document that isn't in your JSON? If yes, put it in unclassified_content.
 
 Remember: ZERO DATA LOSS. Every word matters. If in doubt, include it in the appropriate notes field.`
 
@@ -385,9 +450,12 @@ export async function POST(req: Request) {
       tldrCount: parsedData.character?.tldr?.length || 0,
       hasBackstory: !!parsedData.character?.backstory,
       backstoryLength: parsedData.character?.backstory?.length || 0,
+      backstoryPhaseCount: parsedData.character?.backstory_phases?.length || 0,
+      backstoryPhases: parsedData.character?.backstory_phases?.map((p: { title: string }) => p.title) || [],
       referenceTableCount: parsedData.reference_tables?.length || 0,
       secondaryCharacterCount: parsedData.secondary_characters?.length || 0,
       hasUnclassifiedContent: !!parsedData.unclassified_content,
+      unclassifiedContentLength: parsedData.unclassified_content?.length || 0,
     }
 
     return NextResponse.json({
