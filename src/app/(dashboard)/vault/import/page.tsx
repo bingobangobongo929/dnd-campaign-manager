@@ -516,41 +516,36 @@ export default function VaultImportPage() {
         </div>
       </div>
 
-      {/* Backstory preview */}
+      {/* Backstory - FULL content */}
       {character.backstory && (
         <div>
           <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
             Backstory ({character.backstory.length.toLocaleString()} characters)
           </h4>
-          <p className="text-sm text-gray-400 line-clamp-4 whitespace-pre-wrap">
+          <div className="text-sm text-gray-400 whitespace-pre-wrap bg-white/[0.02] rounded-lg p-3 max-h-96 overflow-y-auto">
             {character.backstory}
-          </p>
+          </div>
         </div>
       )}
 
-      {/* TL;DR */}
+      {/* TL;DR - ALL items */}
       {character.tldr && character.tldr.length > 0 && (
         <div>
           <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
             TL;DR ({character.tldr.length} points)
           </h4>
           <ul className="space-y-1">
-            {character.tldr.slice(0, 5).map((item, i) => (
+            {character.tldr.map((item, i) => (
               <li key={i} className="text-sm text-gray-400 flex items-start gap-2">
                 <span className="text-purple-400">•</span>
                 <span>{item}</span>
               </li>
             ))}
-            {character.tldr.length > 5 && (
-              <li className="text-sm text-gray-500 italic">
-                +{character.tldr.length - 5} more...
-              </li>
-            )}
           </ul>
         </div>
       )}
 
-      {/* Quotes */}
+      {/* Quotes - ALL quotes */}
       {character.quotes && character.quotes.length > 0 && (
         <div>
           <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
@@ -558,17 +553,14 @@ export default function VaultImportPage() {
             Quotes ({character.quotes.length})
           </h4>
           <div className="space-y-1">
-            {character.quotes.slice(0, 3).map((quote, i) => (
+            {character.quotes.map((quote, i) => (
               <p key={i} className="text-sm text-gray-400 italic">"{quote}"</p>
             ))}
-            {character.quotes.length > 3 && (
-              <p className="text-sm text-gray-500">+{character.quotes.length - 3} more...</p>
-            )}
           </div>
         </div>
       )}
 
-      {/* Plot hooks */}
+      {/* Plot hooks - ALL hooks */}
       {character.plot_hooks && character.plot_hooks.length > 0 && (
         <div>
           <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
@@ -576,24 +568,19 @@ export default function VaultImportPage() {
             Plot Hooks ({character.plot_hooks.length})
           </h4>
           <ul className="space-y-1">
-            {character.plot_hooks.slice(0, 3).map((hook, i) => (
+            {character.plot_hooks.map((hook, i) => (
               <li key={i} className="text-sm text-gray-400 flex items-start gap-2">
                 <span className="text-amber-400">•</span>
                 <span>{hook}</span>
               </li>
             ))}
-            {character.plot_hooks.length > 3 && (
-              <li className="text-sm text-gray-500 italic">
-                +{character.plot_hooks.length - 3} more...
-              </li>
-            )}
           </ul>
         </div>
       )}
     </div>
   )
 
-  // NPCs preview component
+  // NPCs preview component - FULL content, no truncation
   const NPCsPreview = ({ npcs }: { npcs: NPC[] }) => (
     <div className="space-y-3">
       {npcs.map((npc, i) => {
@@ -617,13 +604,34 @@ export default function VaultImportPage() {
                 </span>
               )}
             </div>
+            {npc.occupation && (
+              <p className="text-xs text-gray-500 mt-1">💼 {npc.occupation}</p>
+            )}
             {npc.location && (
               <p className="text-xs text-gray-500 mt-1">📍 {npc.location}</p>
             )}
+            {npc.faction_affiliations && npc.faction_affiliations.length > 0 && (
+              <p className="text-xs text-gray-500 mt-1">🏛️ {npc.faction_affiliations.join(', ')}</p>
+            )}
+            {npc.needs && (
+              <p className="text-xs text-gray-500 mt-1">🎯 Needs: {npc.needs}</p>
+            )}
+            {npc.can_provide && (
+              <p className="text-xs text-gray-500 mt-1">🎁 Can provide: {npc.can_provide}</p>
+            )}
+            {npc.goals && (
+              <p className="text-xs text-gray-500 mt-1">⭐ Goals: {npc.goals}</p>
+            )}
+            {npc.secrets && (
+              <p className="text-xs text-amber-400/70 mt-1">🔒 Secrets: {npc.secrets}</p>
+            )}
             {npc.full_notes && (
-              <p className="text-xs text-gray-400 mt-2 line-clamp-2 whitespace-pre-wrap">
-                {npc.full_notes}
-              </p>
+              <div className="mt-2 pt-2 border-t border-white/[0.06]">
+                <p className="text-xs text-gray-500 mb-1">Full Notes:</p>
+                <p className="text-xs text-gray-400 whitespace-pre-wrap">
+                  {npc.full_notes}
+                </p>
+              </div>
             )}
           </div>
         )
@@ -631,7 +639,7 @@ export default function VaultImportPage() {
     </div>
   )
 
-  // Companions preview component
+  // Companions preview component - FULL content
   const CompanionsPreview = ({ companions }: { companions: Companion[] }) => (
     <div className="space-y-3">
       {companions.map((companion, i) => {
@@ -652,7 +660,10 @@ export default function VaultImportPage() {
               )}
             </div>
             {companion.description && (
-              <p className="text-xs text-gray-400 mt-2">{companion.description}</p>
+              <p className="text-xs text-gray-400 mt-2 whitespace-pre-wrap">{companion.description}</p>
+            )}
+            {companion.abilities && (
+              <p className="text-xs text-purple-400/80 mt-1">✨ Abilities: {companion.abilities}</p>
             )}
           </div>
         )
@@ -660,7 +671,7 @@ export default function VaultImportPage() {
     </div>
   )
 
-  // Sessions preview component
+  // Sessions preview component - FULL content
   const SessionsPreview = ({ sessions }: { sessions: SessionNote[] }) => (
     <div className="space-y-3">
       {sessions.map((session, i) => (
@@ -675,6 +686,9 @@ export default function VaultImportPage() {
             {session.title && (
               <span className="font-medium text-white/90">{session.title}</span>
             )}
+            {session.session_date && (
+              <span className="text-xs text-gray-500">{session.session_date}</span>
+            )}
             {session.campaign_name && (
               <span className="text-xs px-2 py-0.5 bg-purple-500/15 text-purple-400 rounded">
                 {session.campaign_name}
@@ -686,17 +700,32 @@ export default function VaultImportPage() {
               </span>
             )}
           </div>
+          {session.summary && (
+            <p className="text-xs text-gray-500 mt-2 italic">{session.summary}</p>
+          )}
           {session.notes && (
-            <p className="text-xs text-gray-400 mt-2 line-clamp-2 whitespace-pre-wrap">
-              {session.notes}
-            </p>
+            <div className="mt-2 pt-2 border-t border-white/[0.06]">
+              <p className="text-xs text-gray-400 whitespace-pre-wrap">{session.notes}</p>
+            </div>
+          )}
+          {session.loot && (
+            <p className="text-xs text-yellow-400/80 mt-2">💰 Loot: {session.loot}</p>
+          )}
+          {session.thoughts_for_next && (
+            <p className="text-xs text-purple-400/80 mt-1">💭 Next: {session.thoughts_for_next}</p>
+          )}
+          {session.npcs_met && session.npcs_met.length > 0 && (
+            <p className="text-xs text-gray-500 mt-1">👥 NPCs: {session.npcs_met.join(', ')}</p>
+          )}
+          {session.locations_visited && session.locations_visited.length > 0 && (
+            <p className="text-xs text-gray-500 mt-1">📍 Locations: {session.locations_visited.join(', ')}</p>
           )}
         </div>
       ))}
     </div>
   )
 
-  // Writings preview component
+  // Writings preview component - FULL content
   const WritingsPreview = ({ writings }: { writings: Writing[] }) => (
     <div className="space-y-3">
       {writings.map((writing, i) => (
@@ -714,31 +743,55 @@ export default function VaultImportPage() {
           {writing.recipient && (
             <p className="text-xs text-gray-500 mt-1">To: {writing.recipient}</p>
           )}
-          <p className="text-xs text-gray-400 mt-2 line-clamp-2 whitespace-pre-wrap">
-            {writing.content}
-          </p>
+          {writing.in_universe_date && (
+            <p className="text-xs text-gray-500 mt-1">Date: {writing.in_universe_date}</p>
+          )}
+          <div className="mt-2 pt-2 border-t border-white/[0.06]">
+            <p className="text-xs text-gray-400 whitespace-pre-wrap">{writing.content}</p>
+          </div>
         </div>
       ))}
     </div>
   )
 
-  // Tables preview component
+  // Tables preview component - FULL content with actual table
   const TablesPreview = ({ tables }: { tables: ReferenceTable[] }) => (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {tables.map((table, i) => (
         <div
           key={i}
           className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-3"
         >
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-3">
             <Table2 className="w-4 h-4 text-blue-400" />
             <span className="font-medium text-white/90">{table.title}</span>
             <span className="text-xs text-gray-500">
               ({table.rows.length} rows, {table.headers.length} columns)
             </span>
           </div>
-          <div className="text-xs text-gray-500">
-            Columns: {table.headers.join(', ')}
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-white/[0.1]">
+                  {table.headers.map((header, hi) => (
+                    <th key={hi} className="text-left py-2 px-2 text-gray-500 font-medium">
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {table.rows.map((row, ri) => (
+                  <tr key={ri} className="border-b border-white/[0.04]">
+                    {row.map((cell, ci) => (
+                      <td key={ci} className="py-2 px-2 text-gray-400">
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       ))}
