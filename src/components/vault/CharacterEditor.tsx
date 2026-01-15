@@ -119,7 +119,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   const [formData, setFormData] = useState({
     name: character?.name || '',
     summary: character?.summary || '',
-    notes: character?.notes || '',
+    notes: (character as any)?.backstory || character?.notes || '',
     type: (character?.type || 'npc') as 'pc' | 'npc',
     image_url: character?.image_url || null as string | null,
     detail_image_url: character?.detail_image_url || null as string | null,
@@ -523,6 +523,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       image_url: dataToSave.image_url,
       detail_image_url: dataToSave.detail_image_url,
       notes: dataToSave.notes,
+      backstory: dataToSave.notes,
       status: dataToSave.status,
       status_color: dataToSave.status_color,
       race: dataToSave.race || null,
