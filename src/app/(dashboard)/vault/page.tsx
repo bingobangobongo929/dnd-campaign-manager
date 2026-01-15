@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, BookOpen, Trash2, Copy, Filter, X, CheckSquare, Square, CopyPlus, Check, LayoutGrid, Grid3X3, User } from 'lucide-react'
+import { Plus, Search, BookOpen, Trash2, Copy, Filter, X, CheckSquare, Square, CopyPlus, Check, LayoutGrid, Grid3X3, User, FileUp, PenLine, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import { Modal, Dropdown } from '@/components/ui'
@@ -47,6 +47,9 @@ export default function VaultPage() {
 
   // Gallery lightbox state
   const [lightboxCharacter, setLightboxCharacter] = useState<VaultCharacter | null>(null)
+
+  // Add character modal state
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -323,7 +326,7 @@ export default function VaultPage() {
             )}
             <button
               className="btn btn-primary"
-              onClick={() => router.push('/vault/new')}
+              onClick={() => setIsAddModalOpen(true)}
             >
               <Plus className="w-4 h-4" />
               Add Character
@@ -460,7 +463,7 @@ export default function VaultPage() {
             {!searchQuery && (
               <button
                 className="btn btn-primary"
-                onClick={() => router.push('/vault/new')}
+                onClick={() => setIsAddModalOpen(true)}
               >
                 <Plus className="w-5 h-5" />
                 Add Character
@@ -588,7 +591,7 @@ export default function VaultPage() {
         {filteredCharacters.length > 0 && (
           <button
             className="fab"
-            onClick={() => router.push('/vault/new')}
+            onClick={() => setIsAddModalOpen(true)}
             aria-label="Add character"
           >
             <Plus className="fab-icon" />
@@ -719,6 +722,50 @@ export default function VaultPage() {
             </div>
           </div>
         )}
+
+        {/* Add Character Modal */}
+        <Modal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          title="Add Character"
+          description="How would you like to create your character?"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            {/* Import with AI */}
+            <button
+              onClick={() => {
+                setIsAddModalOpen(false)
+                router.push('/vault/import')
+              }}
+              className="group p-6 rounded-xl border border-[--border] bg-[--bg-elevated] hover:border-[--arcane-purple]/50 hover:bg-[--arcane-purple]/5 transition-all text-left"
+            >
+              <div className="w-12 h-12 rounded-xl bg-[--arcane-purple]/20 flex items-center justify-center mb-4 group-hover:bg-[--arcane-purple]/30 transition-colors">
+                <Sparkles className="w-6 h-6 text-[--arcane-purple]" />
+              </div>
+              <h3 className="font-semibold text-[--text-primary] mb-1">Import with AI</h3>
+              <p className="text-sm text-[--text-secondary]">
+                Upload a document (.docx, .pdf, image) and let AI extract your character data
+              </p>
+            </button>
+
+            {/* Create from Scratch */}
+            <button
+              onClick={() => {
+                setIsAddModalOpen(false)
+                router.push('/vault/new')
+              }}
+              className="group p-6 rounded-xl border border-[--border] bg-[--bg-elevated] hover:border-[--arcane-purple]/50 hover:bg-[--arcane-purple]/5 transition-all text-left"
+            >
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-4 group-hover:bg-emerald-500/30 transition-colors">
+                <PenLine className="w-6 h-6 text-emerald-400" />
+              </div>
+              <h3 className="font-semibold text-[--text-primary] mb-1">Create from Scratch</h3>
+              <p className="text-sm text-[--text-secondary]">
+                Start with a blank editor and build your character manually
+              </p>
+            </button>
+          </div>
+        </Modal>
       </div>
     </AppLayout>
   )

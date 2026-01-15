@@ -104,6 +104,8 @@ interface StructuredImportRequest {
   session_notes?: SessionNote[]
   writings?: Writing[]
   raw_document_text?: string
+  unclassified_content?: string | null
+  sourceFile?: string
 }
 
 export async function POST(req: Request) {
@@ -122,6 +124,13 @@ export async function POST(req: Request) {
     }
 
     // Step 1: Create the vault_character record
+    // If there's unclassified content, append it to backstory to ensure zero data loss
+    let finalBackstory = data.character.backstory || null
+    if (data.unclassified_content) {
+      const separator = finalBackstory ? '\n\n---\n\n## Unclassified Content\n\n' : ''
+      finalBackstory = (finalBackstory || '') + separator + data.unclassified_content
+    }
+
     const characterInsert = {
       user_id: user.id,
       name: data.character.name,
@@ -134,7 +143,7 @@ export async function POST(req: Request) {
       alignment: data.character.alignment || null,
       age: data.character.age || null,
       pronouns: data.character.pronouns || null,
-      backstory: data.character.backstory || null,
+      backstory: finalBackstory,
       backstory_phases: data.character.backstory_phases || null,
       tldr: data.character.tldr || null,
       appearance: data.character.appearance || null,

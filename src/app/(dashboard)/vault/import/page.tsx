@@ -351,6 +351,11 @@ export default function VaultImportPage() {
         importData.sourceFile = sourceFileName
       }
 
+      // Include unclassified content to ensure zero data loss
+      if (parsedData.unclassified_content) {
+        importData.unclassified_content = parsedData.unclassified_content
+      }
+
       const response = await fetch('/api/vault/import-structured', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
