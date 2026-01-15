@@ -3,9 +3,9 @@ import { generateText } from 'ai'
 import { createClient } from '@/lib/supabase/server'
 import { getAIModel } from '@/lib/ai/config'
 
-// Use Node.js runtime for longer timeout (edge has 25s limit on hobby)
+// Use Node.js runtime for longer timeout
 export const runtime = 'nodejs'
-export const maxDuration = 60 // 60 seconds (Vercel hobby limit)
+export const maxDuration = 300 // 5 minutes (Vercel Pro)
 
 // Comprehensive prompt for extracting ALL character data with zero data loss
 const VAULT_CHARACTER_PARSE_PROMPT = `You are an expert at parsing TTRPG character documents. Your task is to extract EVERY piece of information from this document with ZERO data loss.
@@ -245,9 +245,9 @@ export async function POST(req: Request) {
       }, { status: 400 })
     }
 
-    // Check file size (max 20MB)
-    if (file.size > 20 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File too large. Maximum size is 20MB.' }, { status: 400 })
+    // Check file size (max 50MB for Vercel Pro)
+    if (file.size > 50 * 1024 * 1024) {
+      return NextResponse.json({ error: 'File too large. Maximum size is 50MB.' }, { status: 400 })
     }
 
     // Convert file to base64 for Gemini
@@ -280,6 +280,7 @@ export async function POST(req: Request) {
     try {
       const result = await generateText({
         model,
+        maxTokens: 32000, // Large output for comprehensive extraction
         messages: [
           {
             role: 'user',
