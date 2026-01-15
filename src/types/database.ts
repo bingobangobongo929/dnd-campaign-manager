@@ -1465,6 +1465,23 @@ export interface Database {
           display_order: number
           created_at: string
           updated_at: string
+          // New NPC detail fields (migration 019)
+          nickname: string | null
+          faction_affiliations: string[] | null
+          location: string | null
+          needs: string | null
+          can_provide: string | null
+          goals: string | null
+          secrets: string | null
+          personality_traits: string[] | null
+          full_notes: string | null
+          occupation: string | null
+          origin: string | null
+          // Companion fields
+          is_companion: boolean
+          companion_type: string | null
+          companion_species: string | null
+          companion_abilities: string | null
         }
         Insert: {
           id?: string
@@ -1485,6 +1502,23 @@ export interface Database {
           display_order?: number
           created_at?: string
           updated_at?: string
+          // New NPC detail fields (migration 019)
+          nickname?: string | null
+          faction_affiliations?: string[] | null
+          location?: string | null
+          needs?: string | null
+          can_provide?: string | null
+          goals?: string | null
+          secrets?: string | null
+          personality_traits?: string[] | null
+          full_notes?: string | null
+          occupation?: string | null
+          origin?: string | null
+          // Companion fields
+          is_companion?: boolean
+          companion_type?: string | null
+          companion_species?: string | null
+          companion_abilities?: string | null
         }
         Update: {
           id?: string
@@ -1505,6 +1539,23 @@ export interface Database {
           display_order?: number
           created_at?: string
           updated_at?: string
+          // New NPC detail fields (migration 019)
+          nickname?: string | null
+          faction_affiliations?: string[] | null
+          location?: string | null
+          needs?: string | null
+          can_provide?: string | null
+          goals?: string | null
+          secrets?: string | null
+          personality_traits?: string[] | null
+          full_notes?: string | null
+          occupation?: string | null
+          origin?: string | null
+          // Companion fields
+          is_companion?: boolean
+          companion_type?: string | null
+          companion_species?: string | null
+          companion_abilities?: string | null
         }
       }
       vault_locations: {

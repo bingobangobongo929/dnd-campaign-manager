@@ -1,7 +1,7 @@
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 
-export type AIProvider = 'anthropic' | 'google'
+export type AIProvider = 'anthropic' | 'google' | 'googlePro'
 
 export const AI_PROVIDERS = {
   anthropic: {
@@ -11,8 +11,13 @@ export const AI_PROVIDERS = {
   },
   google: {
     name: 'Gemini (Google)',
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-2.0-flash',
     description: 'Fast responses with good general performance',
+  },
+  googlePro: {
+    name: 'Gemini 3 Pro (Google)',
+    model: 'gemini-3.0-pro',
+    description: 'Best quality for complex document parsing',
   },
 } as const
 
@@ -22,6 +27,13 @@ export function getAIModel(provider: AIProvider = 'anthropic') {
       apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     })
     return google(AI_PROVIDERS.google.model)
+  }
+
+  if (provider === 'googlePro') {
+    const google = createGoogleGenerativeAI({
+      apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+    })
+    return google(AI_PROVIDERS.googlePro.model)
   }
 
   const anthropic = createAnthropic({

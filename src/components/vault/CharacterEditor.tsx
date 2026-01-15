@@ -65,8 +65,12 @@ import type {
   PlayJournal,
   CharacterLink,
   CharacterLearnedFact,
-  CharacterStatus
+  CharacterStatus,
+  VaultCharacterRelationship
 } from '@/types/database'
+import { NPCCard } from './NPCCard'
+import { CompanionCard } from './CompanionCard'
+import { SessionNoteCard } from './SessionNoteCard'
 import { v4 as uuidv4 } from 'uuid'
 
 // Section types for navigation
@@ -163,11 +167,15 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   const [showSecrets, setShowSecrets] = useState(false)
 
   // Related data
-  const [storyCharacters, setStoryCharacters] = useState<StoryCharacter[]>([])
+  const [relationships, setRelationships] = useState<VaultCharacterRelationship[]>([])
   const [journalEntries, setJournalEntries] = useState<PlayJournal[]>([])
   const [links, setLinks] = useState<CharacterLink[]>([])
   const [learnedFacts, setLearnedFacts] = useState<CharacterLearnedFact[]>([])
   const [customStatuses, setCustomStatuses] = useState<CharacterStatus[]>([])
+
+  // Derived: separate NPCs from Companions
+  const npcs = relationships.filter(r => !r.is_companion)
+  const companions = relationships.filter(r => r.is_companion)
 
   // Modals
   const [addLinkModalOpen, setAddLinkModalOpen] = useState(false)
@@ -232,18 +240,18 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
     const loadRelatedData = async () => {
       const [
-        { data: storyChars },
+        { data: rels },
         { data: journal },
         { data: charLinks },
         { data: facts },
       ] = await Promise.all([
-        supabase.from('story_characters').select('*').eq('character_id', characterId).order('sort_order'),
-        supabase.from('play_journal').select('*').eq('character_id', characterId).order('session_date', { ascending: false }),
+        supabase.from('vault_character_relationships').select('*').eq('character_id', characterId).order('display_order'),
+        supabase.from('play_journal').select('*').eq('character_id', characterId).order('session_number', { ascending: true }),
         supabase.from('character_links').select('*').eq('character_id', characterId).order('sort_order'),
         supabase.from('character_learned_facts').select('*').eq('character_id', characterId),
       ])
 
-      if (storyChars) setStoryCharacters(storyChars)
+      if (rels) setRelationships(rels)
       if (journal) setJournalEntries(journal)
       if (charLinks) setLinks(charLinks)
       if (facts) setLearnedFacts(facts)
@@ -628,31 +636,37 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     }
   }
 
-  // Handle adding a story character
+  // Handle adding an NPC/relationship
   const handleAddStoryCharacter = async () => {
     if (!characterId || !storyCharForm.name.trim()) return
 
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
       const { data, error } = await supabase
-        .from('story_characters')
+        .from('vault_character_relationships')
         .insert({
+          user_id: user.id,
           character_id: characterId,
-          name: storyCharForm.name.trim(),
-          relationship: storyCharForm.relationship,
-          tagline: storyCharForm.tagline.trim() || null,
-          notes: storyCharForm.notes.trim() || null,
-          sort_order: storyCharacters.length
+          related_name: storyCharForm.name.trim(),
+          relationship_type: storyCharForm.relationship,
+          relationship_label: storyCharForm.relationship,
+          description: storyCharForm.tagline.trim() || null,
+          full_notes: storyCharForm.notes.trim() || null,
+          display_order: relationships.length,
+          is_companion: false,
         })
         .select()
         .single()
 
       if (error) throw error
-      if (data) setStoryCharacters(prev => [...prev, data])
+      if (data) setRelationships(prev => [...prev, data])
 
       setStoryCharForm({ name: '', relationship: 'friend', tagline: '', notes: '' })
       setAddStoryCharacterModalOpen(false)
     } catch (error) {
-      console.error('Add story character error:', error)
+      console.error('Add NPC error:', error)
     }
   }
 
@@ -1573,49 +1587,77 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
                 </div>
 
-                <div className="space-y-8">
-                  {/* Story Characters */}
+                <div className="space-y-10">
+                  {/* NPCs Section */}
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <label className="text-sm font-medium text-gray-400/90">Story Characters</label>
+                      <label className="text-sm font-medium text-gray-400/90">NPCs & Contacts ({npcs.length})</label>
                       <button
                         onClick={() => setAddStoryCharacterModalOpen(true)}
                         className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
                       >
                         <Plus className="w-4 h-4" />
-                        Add Character
+                        Add NPC
                       </button>
                     </div>
 
-                    {storyCharacters.length === 0 ? (
+                    {npcs.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-16 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
                         <Users className="w-10 h-10 mb-4 text-gray-600" />
-                        <p className="text-sm text-gray-500">No story characters yet</p>
+                        <p className="text-sm text-gray-500">No NPCs yet</p>
+                        <p className="text-xs text-gray-600 mt-1">Add mentors, family, contacts, allies, and enemies</p>
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {storyCharacters.map((char) => (
-                          <div
-                            key={char.id}
-                            className="flex items-start gap-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.04] hover:border-purple-500/20 transition-all duration-200"
-                          >
-                            {char.image_url ? (
-                              <Image src={char.image_url} alt={char.name} width={48} height={48} className="rounded-lg object-cover" />
-                            ) : (
-                              <div className="w-10 h-10 rounded-lg bg-white/[0.04] flex items-center justify-center">
-                                <User className="w-4 h-4 text-gray-500" />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-0.5">
-                                <span className="text-[13px] font-medium text-white/90">{char.name}</span>
-                                <span className="text-[10px] px-1.5 py-0.5 bg-purple-500/15 text-purple-400 rounded-md capitalize border border-purple-500/20">
-                                  {char.relationship.replace(/_/g, ' ')}
-                                </span>
-                              </div>
-                              {char.tagline && <p className="text-[12px] text-gray-500">{char.tagline}</p>}
-                            </div>
-                          </div>
+                        {npcs.map((npc) => (
+                          <NPCCard
+                            key={npc.id}
+                            npc={npc}
+                            onEdit={() => {/* TODO: Edit modal */}}
+                            onDelete={async () => {
+                              if (confirm(`Delete ${npc.related_name}?`)) {
+                                await supabase.from('vault_character_relationships').delete().eq('id', npc.id)
+                                setRelationships(prev => prev.filter(r => r.id !== npc.id))
+                              }
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Companions Section */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="text-sm font-medium text-gray-400/90">Companions ({companions.length})</label>
+                      <button
+                        onClick={() => {/* TODO: Add companion modal */}}
+                        className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Companion
+                      </button>
+                    </div>
+
+                    {companions.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                        <User className="w-8 h-8 mb-3 text-gray-600" />
+                        <p className="text-sm text-gray-500">No companions yet</p>
+                        <p className="text-xs text-gray-600 mt-1">Add familiars, pets, mounts, or animal companions</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {companions.map((companion) => (
+                          <CompanionCard
+                            key={companion.id}
+                            companion={companion}
+                            onDelete={async () => {
+                              if (confirm(`Delete ${companion.related_name}?`)) {
+                                await supabase.from('vault_character_relationships').delete().eq('id', companion.id)
+                                setRelationships(prev => prev.filter(r => r.id !== companion.id))
+                              }
+                            }}
+                          />
                         ))}
                       </div>
                     )}
@@ -1625,8 +1667,8 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   <div>
                     <label className="block text-sm font-medium text-gray-400/90 mb-4">Learned Facts</label>
                     {learnedFacts.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-16 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
-                        <BookOpen className="w-10 h-10 mb-4 text-gray-600" />
+                      <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                        <BookOpen className="w-8 h-8 mb-3 text-gray-600" />
                         <p className="text-sm text-gray-500">No learned facts recorded</p>
                       </div>
                     ) : (
