@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Upload,
@@ -194,9 +194,77 @@ const COMPANION_TYPE_COLORS: Record<string, string> = {
   other: 'bg-gray-500/15 text-gray-400 border-gray-500/20',
 }
 
+// Helper to render markdown text with basic formatting
+function renderMarkdown(text: string): React.ReactNode {
+  if (!text) return null
+
+  // Split by newlines and process each line
+  const lines = text.split('\n')
+
+  return lines.map((line, lineIndex) => {
+    // Process inline formatting
+    let processed: React.ReactNode[] = []
+    let remaining = line
+    let keyIndex = 0
+
+    // Handle bold (**text** or __text__)
+    const boldRegex = /\*\*([^*]+)\*\*|__([^_]+)__/g
+    let lastIndex = 0
+    let match
+
+    while ((match = boldRegex.exec(remaining)) !== null) {
+      // Add text before the match
+      if (match.index > lastIndex) {
+        processed.push(remaining.slice(lastIndex, match.index))
+      }
+      // Add bold text
+      processed.push(
+        <strong key={`b-${lineIndex}-${keyIndex++}`} className="text-white/90 font-semibold">
+          {match[1] || match[2]}
+        </strong>
+      )
+      lastIndex = match.index + match[0].length
+    }
+
+    // Add remaining text
+    if (lastIndex < remaining.length) {
+      processed.push(remaining.slice(lastIndex))
+    }
+
+    // If no formatting was found, just use the line
+    if (processed.length === 0) {
+      processed = [line]
+    }
+
+    // Check if line is a bullet point
+    const isBullet = line.trim().startsWith('- ') || line.trim().startsWith('• ')
+
+    if (isBullet) {
+      const bulletContent = processed.map((p, i) =>
+        typeof p === 'string' ? p.replace(/^[\s]*[-•]\s*/, '') : p
+      )
+      return (
+        <div key={lineIndex} className="flex items-start gap-2 ml-2">
+          <span className="text-purple-400 flex-shrink-0">•</span>
+          <span>{bulletContent}</span>
+        </div>
+      )
+    }
+
+    // Regular line
+    return (
+      <div key={lineIndex}>
+        {processed}
+        {lineIndex < lines.length - 1 && line === '' && <br />}
+      </div>
+    )
+  })
+}
+
 export default function VaultImportPage() {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const importResultRef = useRef<HTMLDivElement>(null)
 
   // State
   const [isDragging, setIsDragging] = useState(false)
@@ -240,6 +308,13 @@ export default function VaultImportPage() {
       writingsImported: number
     }
   } | null>(null)
+
+  // Auto-scroll to import result when it appears
+  useEffect(() => {
+    if (importResult && importResultRef.current) {
+      importResultRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [importResult])
 
   // File handling
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -562,8 +637,8 @@ export default function VaultImportPage() {
           <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
             Backstory ({character.backstory.length.toLocaleString()} characters)
           </h4>
-          <div className="text-sm text-gray-400 whitespace-pre-wrap bg-white/[0.02] rounded-lg p-3 max-h-96 overflow-y-auto">
-            {character.backstory}
+          <div className="text-sm text-gray-400 bg-white/[0.02] rounded-lg p-3 max-h-96 overflow-y-auto">
+            {renderMarkdown(character.backstory)}
           </div>
         </div>
       )}
@@ -578,8 +653,8 @@ export default function VaultImportPage() {
             {character.backstory_phases.map((phase, i) => (
               <div key={i} className="bg-white/[0.02] rounded-lg p-3 border-l-2 border-purple-500/50">
                 <h5 className="text-sm font-medium text-purple-400 mb-2">{phase.title}</h5>
-                <div className="text-sm text-gray-400 whitespace-pre-wrap">
-                  {phase.content}
+                <div className="text-sm text-gray-400">
+                  {renderMarkdown(phase.content)}
                 </div>
               </div>
             ))}
@@ -743,9 +818,9 @@ export default function VaultImportPage() {
             {npc.full_notes && (
               <div className="mt-2 pt-2 border-t border-white/[0.06]">
                 <p className="text-xs text-gray-500 mb-1">Full Notes:</p>
-                <p className="text-xs text-gray-400 whitespace-pre-wrap">
-                  {npc.full_notes}
-                </p>
+                <div className="text-xs text-gray-400">
+                  {renderMarkdown(npc.full_notes)}
+                </div>
               </div>
             )}
           </div>
@@ -1097,25 +1172,9 @@ export default function VaultImportPage() {
               </div>
             )}
 
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-sm text-gray-500">
-                Review each section below and approve what you want to import.
-              </p>
-              <button
-                type="button"
-                onClick={approveAll}
-                disabled={allApproved}
-                className={cn(
-                  'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
-                  allApproved
-                    ? 'bg-green-500/20 text-green-400 border border-green-500/30 cursor-default'
-                    : 'bg-purple-500/20 text-purple-400 border border-purple-500/30 hover:bg-purple-500/30'
-                )}
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                {allApproved ? 'All Approved' : 'Approve All'}
-              </button>
-            </div>
+            <p className="text-sm text-gray-500">
+              Review each section below and approve what you want to import.
+            </p>
           </div>
         )}
 
@@ -1182,8 +1241,25 @@ export default function VaultImportPage() {
               </div>
             )}
 
-            {/* Import button */}
-            <div className="pt-6 border-t border-white/[0.06]">
+            {/* Approve All and Import buttons */}
+            <div className="pt-6 border-t border-white/[0.06] space-y-4">
+              {/* Approve All button */}
+              <button
+                type="button"
+                onClick={approveAll}
+                disabled={allApproved}
+                className={cn(
+                  'w-full flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all',
+                  allApproved
+                    ? 'bg-green-500/20 text-green-400 border border-green-500/30 cursor-default'
+                    : 'bg-white/[0.04] text-gray-300 border border-white/[0.08] hover:bg-white/[0.08] hover:border-purple-500/30'
+                )}
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                {allApproved ? 'All Sections Approved' : 'Approve All Sections'}
+              </button>
+
+              {/* Import button */}
               <button
                 onClick={handleImport}
                 disabled={importing || !hasApprovedSections || approvals.character !== 'approved'}
@@ -1203,7 +1279,7 @@ export default function VaultImportPage() {
               </button>
 
               {approvals.character !== 'approved' && parsedData && (
-                <p className="text-center text-sm text-gray-500 mt-2">
+                <p className="text-center text-sm text-gray-500">
                   You must approve the Character section to import
                 </p>
               )}
@@ -1212,6 +1288,7 @@ export default function VaultImportPage() {
             {/* Import result */}
             {importResult && (
               <div
+                ref={importResultRef}
                 className={cn(
                   'p-4 rounded-lg border',
                   importResult.success

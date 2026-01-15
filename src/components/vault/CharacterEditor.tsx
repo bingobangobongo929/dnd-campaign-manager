@@ -58,6 +58,7 @@ import {
 } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { Modal } from '@/components/ui'
+import { UnifiedImageModal } from '@/components/ui/unified-image-modal'
 import { VaultImageCropModal } from './VaultImageCropModal'
 import { ShareCharacterModal } from './ShareCharacterModal'
 import type {
@@ -208,9 +209,11 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   const [addStoryCharacterModalOpen, setAddStoryCharacterModalOpen] = useState(false)
   const [editNPCModalOpen, setEditNPCModalOpen] = useState(false)
   const [editingNPC, setEditingNPC] = useState<VaultCharacterRelationship | null>(null)
+  const [npcImageModalOpen, setNpcImageModalOpen] = useState(false)
   const [addCompanionModalOpen, setAddCompanionModalOpen] = useState(false)
   const [editCompanionModalOpen, setEditCompanionModalOpen] = useState(false)
   const [editingCompanion, setEditingCompanion] = useState<VaultCharacterRelationship | null>(null)
+  const [companionImageModalOpen, setCompanionImageModalOpen] = useState(false)
   const [addJournalModalOpen, setAddJournalModalOpen] = useState(false)
   const [editJournalModalOpen, setEditJournalModalOpen] = useState(false)
   const [editingJournal, setEditingJournal] = useState<PlayJournal | null>(null)
@@ -1064,6 +1067,31 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     } catch (error) {
       console.error('Save companion error:', error)
     }
+  }
+
+  // Upload relationship image (NPC/Companion)
+  const uploadRelationshipImage = async (blob: Blob): Promise<string> => {
+    const { data: userData } = await supabase.auth.getUser()
+    if (!userData.user) throw new Error('Not authenticated')
+
+    const timestamp = Date.now()
+    const uniqueId = uuidv4().slice(0, 8)
+    const path = `${userData.user.id}/relationships/${timestamp}-${uniqueId}.webp`
+
+    const { error } = await supabase.storage
+      .from('vault-images')
+      .upload(path, blob, {
+        contentType: 'image/webp',
+        upsert: true,
+      })
+
+    if (error) throw error
+
+    const { data: urlData } = supabase.storage
+      .from('vault-images')
+      .getPublicUrl(path)
+
+    return urlData.publicUrl
   }
 
   // Open journal edit modal
@@ -3642,28 +3670,61 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         onClose={() => { setEditNPCModalOpen(false); setEditingNPC(null); }}
         title="Edit NPC"
         description="Update NPC details"
+        size="xl"
       >
         <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <FormLabel>Name</FormLabel>
-              <input
-                type="text"
-                placeholder="NPC name"
-                value={npcForm.related_name}
-                onChange={(e) => setNpcForm(prev => ({ ...prev, related_name: e.target.value }))}
-                className={inputStyles}
-              />
+          {/* Avatar and Basic Info Row */}
+          <div className="flex gap-6 items-start">
+            {/* Avatar */}
+            <div className="flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setNpcImageModalOpen(true)}
+                className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-dashed border-white/[0.08] hover:border-purple-500/40 transition-all group bg-white/[0.02]"
+              >
+                {npcForm.related_image_url ? (
+                  <>
+                    <Image
+                      src={npcForm.related_image_url}
+                      alt={npcForm.related_name || 'NPC'}
+                      fill
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Camera className="w-6 h-6 text-white" />
+                    </div>
+                  </>
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 group-hover:text-purple-400 transition-colors">
+                    <User className="w-8 h-8 mb-1" />
+                    <span className="text-xs">Add Image</span>
+                  </div>
+                )}
+              </button>
             </div>
-            <div>
-              <FormLabel>Nickname</FormLabel>
-              <input
-                type="text"
-                placeholder="Alias or nickname"
-                value={npcForm.nickname}
-                onChange={(e) => setNpcForm(prev => ({ ...prev, nickname: e.target.value }))}
-                className={inputStyles}
-              />
+
+            {/* Name and Nickname */}
+            <div className="flex-1 grid grid-cols-2 gap-4">
+              <div>
+                <FormLabel>Name</FormLabel>
+                <input
+                  type="text"
+                  placeholder="NPC name"
+                  value={npcForm.related_name}
+                  onChange={(e) => setNpcForm(prev => ({ ...prev, related_name: e.target.value }))}
+                  className={inputStyles}
+                />
+              </div>
+              <div>
+                <FormLabel>Nickname</FormLabel>
+                <input
+                  type="text"
+                  placeholder="Alias or nickname"
+                  value={npcForm.nickname}
+                  onChange={(e) => setNpcForm(prev => ({ ...prev, nickname: e.target.value }))}
+                  className={inputStyles}
+                />
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -3993,6 +4054,56 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
           <button className="btn btn-secondary" onClick={() => setAiPromptModalOpen(false)}>Close</button>
         </div>
       </Modal>
+
+      {/* NPC Image Upload Modal */}
+      <UnifiedImageModal
+        isOpen={npcImageModalOpen}
+        onClose={() => setNpcImageModalOpen(false)}
+        imageType="npc"
+        currentImageUrl={npcForm.related_image_url}
+        onImageChange={(url) => setNpcForm(prev => ({ ...prev, related_image_url: url }))}
+        onUpload={uploadRelationshipImage}
+        promptData={{
+          type: 'npc',
+          name: npcForm.related_name,
+          relationship_type: npcForm.relationship_type,
+          relationship_label: npcForm.relationship_label,
+          occupation: npcForm.occupation,
+          location: npcForm.location,
+          personality_traits: npcForm.personality_traits,
+          full_notes: npcForm.full_notes,
+          parentCharacter: {
+            name: formData.name,
+            race: formData.race,
+            class: formData.class,
+          }
+        }}
+        title="NPC Avatar"
+      />
+
+      {/* Companion Image Upload Modal */}
+      <UnifiedImageModal
+        isOpen={companionImageModalOpen}
+        onClose={() => setCompanionImageModalOpen(false)}
+        imageType="companion"
+        currentImageUrl={companionForm.related_image_url}
+        onImageChange={(url) => setCompanionForm(prev => ({ ...prev, related_image_url: url }))}
+        onUpload={uploadRelationshipImage}
+        promptData={{
+          type: 'companion',
+          name: companionForm.related_name,
+          companion_type: companionForm.companion_type,
+          companion_species: companionForm.companion_species,
+          description: companionForm.description,
+          companion_abilities: companionForm.companion_abilities,
+          parentCharacter: {
+            name: formData.name,
+            race: formData.race,
+            class: formData.class,
+          }
+        }}
+        title="Companion Avatar"
+      />
     </>
   )
 }
