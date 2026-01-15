@@ -182,6 +182,8 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     party_relations: (character?.party_relations as { name: string; notes: string; relationship?: string }[]) || [],
     combat_stats: (character?.combat_stats as { kills?: number; deaths?: number; unconscious?: number; last_updated_session?: number }) || null,
     open_questions: (character as any)?.open_questions || [] as string[],
+    secondary_characters: (character as any)?.secondary_characters || [] as { name: string; concept: string; notes?: string }[],
+    reference_tables: (character as any)?.reference_tables || [] as { title: string; headers: string[]; rows: string[][] }[],
   })
 
   const [characterId, setCharacterId] = useState<string | null>(character?.id || null)
@@ -583,6 +585,8 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       party_relations: dataToSave.party_relations.length > 0 ? dataToSave.party_relations : null,
       combat_stats: dataToSave.combat_stats,
       open_questions: dataToSave.open_questions.length > 0 ? dataToSave.open_questions : null,
+      secondary_characters: dataToSave.secondary_characters.length > 0 ? dataToSave.secondary_characters : null,
+      reference_tables: dataToSave.reference_tables.length > 0 ? dataToSave.reference_tables : null,
       updated_at: new Date().toISOString(),
     }
 
@@ -2499,6 +2503,89 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                       bulletChar="?"
                     />
                   </div>
+
+                  {/* Secondary Characters */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="text-sm font-medium text-gray-400/90">Secondary Character Ideas</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            secondary_characters: [...prev.secondary_characters, { name: '', concept: '', notes: '' }]
+                          }))
+                        }}
+                        className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Character Idea
+                      </button>
+                    </div>
+
+                    {formData.secondary_characters.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                        <Users className="w-8 h-8 mb-3 text-gray-600" />
+                        <p className="text-sm text-gray-500">No secondary character ideas yet</p>
+                        <p className="text-xs text-gray-600 mt-1">Store backup or alternate character concepts</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {formData.secondary_characters.map((char: { name: string; concept: string; notes?: string }, index: number) => (
+                          <div key={index} className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04] hover:border-purple-500/20 transition-all">
+                            <div className="flex items-start gap-3">
+                              <div className="flex-1 grid grid-cols-2 gap-3">
+                                <input
+                                  type="text"
+                                  value={char.name}
+                                  onChange={(e) => {
+                                    const newChars = [...formData.secondary_characters]
+                                    newChars[index] = { ...char, name: e.target.value }
+                                    setFormData(prev => ({ ...prev, secondary_characters: newChars }))
+                                  }}
+                                  placeholder="Character name..."
+                                  className="py-2 px-3 text-sm bg-white/[0.03] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.05] focus:border-purple-500/30"
+                                />
+                                <input
+                                  type="text"
+                                  value={char.concept}
+                                  onChange={(e) => {
+                                    const newChars = [...formData.secondary_characters]
+                                    newChars[index] = { ...char, concept: e.target.value }
+                                    setFormData(prev => ({ ...prev, secondary_characters: newChars }))
+                                  }}
+                                  placeholder="Concept (e.g. 'Tiefling warlock')"
+                                  className="py-2 px-3 text-sm bg-white/[0.03] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.05] focus:border-purple-500/30"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    secondary_characters: prev.secondary_characters.filter((_: { name: string; concept: string; notes?: string }, i: number) => i !== index)
+                                  }))
+                                }}
+                                className="p-2 text-gray-600 hover:text-red-400/80 transition-all"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <textarea
+                              value={char.notes || ''}
+                              onChange={(e) => {
+                                const newChars = [...formData.secondary_characters]
+                                newChars[index] = { ...char, notes: e.target.value }
+                                setFormData(prev => ({ ...prev, secondary_characters: newChars }))
+                              }}
+                              placeholder="Notes about this character idea..."
+                              className="w-full mt-3 py-2 px-3 text-sm bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/80 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 resize-none min-h-[60px]"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </section>
 
@@ -2672,6 +2759,164 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                       onChange={(items) => setFormData(prev => ({ ...prev, gameplay_tips: items }))}
                       bulletChar="→"
                     />
+                  </div>
+
+                  {/* Reference Tables */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="text-sm font-medium text-gray-400/90">Reference Tables</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            reference_tables: [...prev.reference_tables, { title: '', headers: ['Column 1', 'Column 2'], rows: [['', '']] }]
+                          }))
+                        }}
+                        className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Table
+                      </button>
+                    </div>
+
+                    {formData.reference_tables.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                        <BarChart3 className="w-8 h-8 mb-3 text-gray-600" />
+                        <p className="text-sm text-gray-500">No reference tables yet</p>
+                        <p className="text-xs text-gray-600 mt-1">Store potion inventories, known locations, etc.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {formData.reference_tables.map((table: { title: string; headers: string[]; rows: string[][] }, tableIndex: number) => (
+                          <div key={tableIndex} className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                            <div className="flex items-center gap-3 mb-4">
+                              <input
+                                type="text"
+                                value={table.title}
+                                onChange={(e) => {
+                                  const newTables = [...formData.reference_tables]
+                                  newTables[tableIndex] = { ...table, title: e.target.value }
+                                  setFormData(prev => ({ ...prev, reference_tables: newTables }))
+                                }}
+                                placeholder="Table title..."
+                                className="flex-1 py-2 px-3 text-sm font-medium bg-white/[0.03] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.05] focus:border-purple-500/30"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newTables = [...formData.reference_tables]
+                                  newTables[tableIndex] = {
+                                    ...table,
+                                    headers: [...table.headers, `Column ${table.headers.length + 1}`],
+                                    rows: table.rows.map((row: string[]) => [...row, ''])
+                                  }
+                                  setFormData(prev => ({ ...prev, reference_tables: newTables }))
+                                }}
+                                className="p-2 text-gray-500 hover:text-purple-400 transition-all"
+                                title="Add column"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    reference_tables: prev.reference_tables.filter((_: { title: string; headers: string[]; rows: string[][] }, i: number) => i !== tableIndex)
+                                  }))
+                                }}
+                                className="p-2 text-gray-600 hover:text-red-400/80 transition-all"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr>
+                                    {table.headers.map((header: string, colIndex: number) => (
+                                      <th key={colIndex} className="p-2 text-left">
+                                        <input
+                                          type="text"
+                                          value={header}
+                                          onChange={(e) => {
+                                            const newTables = [...formData.reference_tables]
+                                            const newHeaders = [...table.headers]
+                                            newHeaders[colIndex] = e.target.value
+                                            newTables[tableIndex] = { ...table, headers: newHeaders }
+                                            setFormData(prev => ({ ...prev, reference_tables: newTables }))
+                                          }}
+                                          className="w-full py-1.5 px-2 text-xs font-medium bg-purple-500/10 border border-purple-500/20 rounded text-purple-300 placeholder:text-gray-600 focus:outline-none focus:border-purple-500/40"
+                                        />
+                                      </th>
+                                    ))}
+                                    <th className="w-8"></th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {table.rows.map((row: string[], rowIndex: number) => (
+                                    <tr key={rowIndex}>
+                                      {row.map((cell: string, cellIndex: number) => (
+                                        <td key={cellIndex} className="p-1">
+                                          <input
+                                            type="text"
+                                            value={cell}
+                                            onChange={(e) => {
+                                              const newTables = [...formData.reference_tables]
+                                              const newRows = table.rows.map((r: string[], ri: number) =>
+                                                ri === rowIndex
+                                                  ? r.map((c: string, ci: number) => ci === cellIndex ? e.target.value : c)
+                                                  : r
+                                              )
+                                              newTables[tableIndex] = { ...table, rows: newRows }
+                                              setFormData(prev => ({ ...prev, reference_tables: newTables }))
+                                            }}
+                                            className="w-full py-1.5 px-2 text-xs bg-white/[0.02] border border-white/[0.06] rounded text-white/80 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30"
+                                          />
+                                        </td>
+                                      ))}
+                                      <td className="w-8 p-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const newTables = [...formData.reference_tables]
+                                            newTables[tableIndex] = {
+                                              ...table,
+                                              rows: table.rows.filter((_: string[], i: number) => i !== rowIndex)
+                                            }
+                                            setFormData(prev => ({ ...prev, reference_tables: newTables }))
+                                          }}
+                                          className="p-1 text-gray-600 hover:text-red-400/80 transition-all"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newTables = [...formData.reference_tables]
+                                newTables[tableIndex] = {
+                                  ...table,
+                                  rows: [...table.rows, table.headers.map(() => '')]
+                                }
+                                setFormData(prev => ({ ...prev, reference_tables: newTables }))
+                              }}
+                              className="mt-2 w-full py-1.5 text-xs text-gray-500 hover:text-purple-400 bg-white/[0.02] hover:bg-white/[0.04] border border-dashed border-white/[0.08] rounded transition-all"
+                            >
+                              + Add Row
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </section>
