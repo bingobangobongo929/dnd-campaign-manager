@@ -36,6 +36,8 @@ const RELATIONSHIP_COLORS: Record<string, string> = {
   employer: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/20',
   love_interest: 'bg-pink-500/15 text-pink-400 border-pink-500/20',
   rival: 'bg-amber-500/15 text-amber-400 border-amber-500/20',
+  acquaintance: 'bg-slate-500/15 text-slate-400 border-slate-500/20',
+  party_member: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/20',
   other: 'bg-gray-500/15 text-gray-400 border-gray-500/20',
 }
 

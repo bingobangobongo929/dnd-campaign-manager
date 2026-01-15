@@ -1831,6 +1831,75 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     </div>
                   </div>
 
+                  {/* Backstory Life Phases */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="text-sm font-medium text-gray-400/90">Life Phases</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            backstory_phases: [...prev.backstory_phases, { title: '', content: '' }]
+                          }))
+                        }}
+                        className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Life Phase
+                      </button>
+                    </div>
+
+                    {formData.backstory_phases.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                        <p className="text-sm text-gray-500">No life phases defined</p>
+                        <p className="text-xs text-gray-600 mt-1">Break the backstory into phases like &quot;Early Life&quot;, &quot;Student Years&quot;, etc.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {formData.backstory_phases.map((phase: { title: string; content: string }, index: number) => (
+                          <div key={index} className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04] border-l-2 border-l-purple-500/50">
+                            <div className="flex items-center gap-3 mb-3">
+                              <input
+                                type="text"
+                                value={phase.title}
+                                onChange={(e) => {
+                                  const newPhases = [...formData.backstory_phases]
+                                  newPhases[index] = { ...phase, title: e.target.value }
+                                  setFormData(prev => ({ ...prev, backstory_phases: newPhases }))
+                                }}
+                                placeholder="Phase title (e.g. 'Early Life')"
+                                className="flex-1 py-2.5 px-3.5 text-[14px] bg-white/[0.03] border border-white/[0.06] rounded-lg text-purple-400 font-medium placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.05] focus:border-purple-500/30 transition-all duration-200"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    backstory_phases: prev.backstory_phases.filter((_: { title: string; content: string }, i: number) => i !== index)
+                                  }))
+                                }}
+                                className="p-1.5 text-gray-600 hover:text-red-400/80 transition-all duration-200"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <textarea
+                              value={phase.content}
+                              onChange={(e) => {
+                                const newPhases = [...formData.backstory_phases]
+                                newPhases[index] = { ...phase, content: e.target.value }
+                                setFormData(prev => ({ ...prev, backstory_phases: newPhases }))
+                              }}
+                              placeholder="Key events, bullet points, or prose for this life phase..."
+                              className="w-full min-h-[120px] py-3 px-4 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/80 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200 resize-none leading-relaxed"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Plot Hooks */}
                   <div>
                     <ArrayFieldEditor
@@ -2410,7 +2479,14 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                                   <option value="story">Story</option>
                                   <option value="poem">Poem</option>
                                   <option value="diary">Diary</option>
+                                  <option value="journal">Journal</option>
                                   <option value="speech">Speech</option>
+                                  <option value="song">Song</option>
+                                  <option value="note">Note</option>
+                                  <option value="campfire_story">Campfire Story</option>
+                                  <option value="meeting_story">Meeting Story</option>
+                                  <option value="recap">Recap</option>
+                                  <option value="conversation">Conversation</option>
                                   <option value="other">Other</option>
                                 </select>
                               </div>
@@ -3609,6 +3685,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 <option value="love_interest">Love Interest</option>
                 <option value="rival">Rival</option>
                 <option value="acquaintance">Acquaintance</option>
+                <option value="party_member">Party Member</option>
                 <option value="other">Other</option>
               </select>
             </div>

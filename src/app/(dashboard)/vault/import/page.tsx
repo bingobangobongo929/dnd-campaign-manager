@@ -146,6 +146,9 @@ interface ParseStats {
   backstoryLength: number
   backstoryPhaseCount: number
   backstoryPhases: string[]
+  dmQaCount: number
+  rumorCount: number
+  fearCount: number
   referenceTableCount: number
   secondaryCharacterCount: number
   hasUnclassifiedContent: boolean
@@ -177,6 +180,7 @@ const RELATIONSHIP_COLORS: Record<string, string> = {
   love_interest: 'bg-pink-500/15 text-pink-400 border-pink-500/20',
   rival: 'bg-amber-500/15 text-amber-400 border-amber-500/20',
   acquaintance: 'bg-slate-500/15 text-slate-400 border-slate-500/20',
+  party_member: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/20',
   other: 'bg-gray-500/15 text-gray-400 border-gray-500/20',
 }
 
@@ -632,6 +636,62 @@ export default function VaultImportPage() {
           </ul>
         </div>
       )}
+
+      {/* DM Q&A */}
+      {character.dm_qa && character.dm_qa.length > 0 && (
+        <div>
+          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+            DM Q&A ({character.dm_qa.length} questions)
+          </h4>
+          <div className="space-y-2">
+            {character.dm_qa.map((qa, i) => (
+              <div key={i} className="bg-white/[0.02] rounded-lg p-3">
+                <p className="text-sm text-purple-400 font-medium mb-1">Q: {qa.question}</p>
+                <p className="text-sm text-gray-400">A: {qa.answer}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Rumors */}
+      {character.rumors && character.rumors.length > 0 && (
+        <div>
+          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+            Rumors ({character.rumors.length})
+          </h4>
+          <ul className="space-y-1">
+            {character.rumors.map((rumor, i) => (
+              <li key={i} className="text-sm text-gray-400 flex items-start gap-2">
+                <span className={rumor.is_true ? 'text-green-400' : 'text-red-400'}>
+                  {rumor.is_true ? '✓' : '✗'}
+                </span>
+                <span>{rumor.statement}</span>
+                <span className={`text-xs ${rumor.is_true ? 'text-green-400/60' : 'text-red-400/60'}`}>
+                  ({rumor.is_true ? 'true' : 'false'})
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Fears */}
+      {character.fears && character.fears.length > 0 && (
+        <div>
+          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+            Fears ({character.fears.length})
+          </h4>
+          <ul className="space-y-1">
+            {character.fears.map((fear, i) => (
+              <li key={i} className="text-sm text-gray-400 flex items-start gap-2">
+                <span className="text-orange-400">•</span>
+                <span>{fear}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   )
 
@@ -991,7 +1051,7 @@ export default function VaultImportPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-6">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-4">
               <div className="bg-white/[0.02] rounded-lg p-3 text-center">
                 <p className="text-lg font-semibold text-white">{stats.backstoryPhaseCount}</p>
                 <p className="text-xs text-gray-500">Life Phases</p>
@@ -1007,6 +1067,25 @@ export default function VaultImportPage() {
               <div className="bg-white/[0.02] rounded-lg p-3 text-center">
                 <p className="text-lg font-semibold text-white">{Math.round(stats.backstoryLength / 1000)}k</p>
                 <p className="text-xs text-gray-500">Backstory Chars</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-6">
+              <div className="bg-white/[0.02] rounded-lg p-3 text-center">
+                <p className="text-lg font-semibold text-white">{stats.dmQaCount}</p>
+                <p className="text-xs text-gray-500">DM Q&A</p>
+              </div>
+              <div className="bg-white/[0.02] rounded-lg p-3 text-center">
+                <p className="text-lg font-semibold text-white">{stats.rumorCount}</p>
+                <p className="text-xs text-gray-500">Rumors</p>
+              </div>
+              <div className="bg-white/[0.02] rounded-lg p-3 text-center">
+                <p className="text-lg font-semibold text-white">{stats.fearCount}</p>
+                <p className="text-xs text-gray-500">Fears</p>
+              </div>
+              <div className="bg-white/[0.02] rounded-lg p-3 text-center">
+                <p className="text-lg font-semibold text-white">{stats.referenceTableCount}</p>
+                <p className="text-xs text-gray-500">Tables</p>
               </div>
             </div>
 

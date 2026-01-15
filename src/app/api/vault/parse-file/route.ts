@@ -45,21 +45,45 @@ const VAULT_CHARACTER_PARSE_PROMPT = `You are an expert at parsing TTRPG charact
 
 6. **DETECT SECTIONS**: Look for these section patterns:
    - "Backstory" or prose text at the start → backstory (prose field)
-   - Life phases with bullets (Early Life, Student Life, etc.) → backstory_phases array
-   - "TL;DR" or "TLDR" → tldr bullet points
+   - Life phases with bullets (Early Life, Student Life, Adult Life, Background, Upbringing, etc.) → backstory_phases array
+   - "TL;DR", "TLDR", "Backstory Highlights" → tldr bullet points (if has subsections like "Background:", "Upbringing:", treat as backstory_phases instead)
    - Bold names followed by bullets → NPCs
    - "dad", "father", "mother", person names with notes → NPCs (family)
    - "Session 1", "Session 2" etc. → Session notes
+   - "Personal Session notes" (brief bullets without session number) → session_notes with session_number: 0
+   - "Recap for X", campaign summary prose → session_notes (as a recap entry)
    - "Dear...", letters, stories, poems → Character writings
+   - "New friend - Meeting X", "How I met X" → writings (type: "meeting_story") with full prose
    - "Quotes" section → Voice lines
    - "Knives", "Plot Hooks", hooks for DMs → plot_hooks
    - Player info (Discord, timezone) → player fields
    - Possessions, inventory, gold → possessions/gold
    - "Companion", "Familiar", "Pet", "Mount", "Fam." → Companions
    - Tables with data → reference_tables
-   - "How she bonds with PCs", party relationships → Can be NPCs or party_relations notes
+   - "How she bonds with PCs", "Crew member relations", "Party relations" → NPCs with relationship_type "party_member"
+   - "What she knows about X", "Notes on X" → Add to that NPC's full_notes field
+   - "Speaking to X", conversation notes → Add to relevant NPC's full_notes
+   - "DM Questions", "DM's Question about the character" → dm_qa array
+   - "Truth:", "Secret:" labeled content → secrets field
+   - "X rumors about you", rumors with "(this is not true)"/"(This is true)" → rumors array
 
-7. **GAME SYSTEM AGNOSTIC**: Documents may be for D&D 5e, Warhammer Fantasy, LANCER, Pathfinder, etc. Extract what you find without assuming a system.
+7. **IMPLICIT NPCs - CRITICAL**: Characters mentioned IN the backstory prose should ALSO be extracted as NPCs if they're significant. Examples:
+   - "Her twin brother Tide was sent away to the clergy" → Create NPC: Tide (family, twin brother)
+   - "She made a deal with Neritha, a deep sea witch" → Create NPC: Neritha (patron, sea witch)
+   - "Her father Egon, a priest of Morr" → Create NPC: Egon (family, father)
+   Don't only look for explicit NPC sections - extract people mentioned in prose too!
+
+8. **DM Q&A FORMAT**: Documents may have numbered Q&A sections like:
+   "1. A reason to stick to a group." followed by an answer
+   "2. What does your character hope to achieve?" followed by an answer
+   Extract ALL of these into the dm_qa array.
+
+9. **RUMORS FORMAT**: Rumors may appear as:
+   - "A) If you express dislike... (this is not true)" → is_true: false
+   - "B) She's killed a man... (This is true)" → is_true: true
+   Parse the true/false from parenthetical notes.
+
+10. **GAME SYSTEM AGNOSTIC**: Documents may be for D&D 5e, Warhammer Fantasy, LANCER, Pathfinder, Spelljammer, etc. Extract what you find without assuming a system.
 
 ## OUTPUT FORMAT
 
@@ -117,7 +141,7 @@ Return valid JSON with this EXACT structure:
     {
       "name": "string - NPC's full name",
       "nickname": "string | null - alias like 'Orchpyre'",
-      "relationship_type": "family|mentor|friend|enemy|patron|contact|ally|employer|love_interest|rival|acquaintance|other",
+      "relationship_type": "family|mentor|friend|enemy|patron|contact|ally|employer|love_interest|rival|acquaintance|party_member|other",
       "relationship_label": "string - specific label like 'Father', 'Criminal Contact', 'Ex-Wife'",
       "faction_affiliations": ["string - groups/organizations they belong to"],
       "location": "string | null - where they can be found",
@@ -159,7 +183,7 @@ Return valid JSON with this EXACT structure:
   "writings": [
     {
       "title": "string - title or 'Letter to X' or 'Untitled Story'",
-      "writing_type": "letter|story|poem|diary|journal|campfire_story|note|speech|song|other",
+      "writing_type": "letter|story|poem|diary|journal|campfire_story|note|speech|song|meeting_story|recap|conversation|other",
       "content": "string - FULL text with markdown formatting (\\n\\n, **bold**, *italic*)",
       "recipient": "string | null - for letters",
       "in_universe_date": "string | null - if dated in-universe"
@@ -301,16 +325,150 @@ You MUST capture these as backstory_phases:
 
 CRITICAL: These bulleted life sections often appear AFTER the main prose and are easily missed. They contain important detail. NEVER drop them!
 
+## DM Q&A EXAMPLE
+
+If you see numbered questions about the character like:
+"""
+DM's Question about the character
+
+1. A reason to stick to a group.
+She's looking for people willing to do things others might find unsavory.
+
+2. What does your character hope to achieve?
+She wants to find her missing brother.
+
+3. An Accomplishment your character is proud of.
+She once saved a noble family from assassination.
+"""
+
+Extract as:
+{
+  "dm_qa": [
+    {"question": "A reason to stick to a group", "answer": "She's looking for people willing to do things others might find unsavory."},
+    {"question": "What does your character hope to achieve?", "answer": "She wants to find her missing brother."},
+    {"question": "An Accomplishment your character is proud of", "answer": "She once saved a noble family from assassination."}
+  ]
+}
+
+## RUMORS EXAMPLE
+
+If you see rumors with truth markers:
+"""
+Rumors about you:
+A) If you express dislike of her, she'll get someone to kill you. (this is not true)
+B) She's killed a man in a duel. (This is true)
+C) She practices dark magic. (this is not true)
+"""
+
+Extract as:
+{
+  "rumors": [
+    {"statement": "If you express dislike of her, she'll get someone to kill you", "is_true": false},
+    {"statement": "She's killed a man in a duel", "is_true": true},
+    {"statement": "She practices dark magic", "is_true": false}
+  ]
+}
+
+## PARTY MEMBER / CREW RELATIONS EXAMPLE
+
+If you see sections about other player characters:
+"""
+How she bonds with the PCs:
+
+Captain Thorne
+- She respects his leadership but questions his ethics sometimes
+- They have a shared history from before the campaign
+
+Ezra the Cleric
+- She finds his optimism annoying but secretly appreciates it
+- He reminds her of her brother
+"""
+
+Extract as NPCs with relationship_type "party_member":
+{
+  "npcs": [
+    {
+      "name": "Captain Thorne",
+      "relationship_type": "party_member",
+      "relationship_label": "Party Member - Captain",
+      "full_notes": "- She respects his leadership but questions his ethics sometimes\\n- They have a shared history from before the campaign"
+    },
+    {
+      "name": "Ezra the Cleric",
+      "relationship_type": "party_member",
+      "relationship_label": "Party Member - Cleric",
+      "full_notes": "- She finds his optimism annoying but secretly appreciates it\\n- He reminds her of her brother"
+    }
+  ]
+}
+
+## MEETING STORY / PROSE VIGNETTE EXAMPLE
+
+If you see prose stories about meetings or events:
+"""
+New friend - Meeting Rosalie
+
+The tavern was crowded that evening. Ana sat alone in the corner nursing her third ale when a woman with bright red hair sat down across from her uninvited.
+
+"You look like someone who knows things," the woman said with a sly smile.
+
+And that's how their partnership began...
+"""
+
+Extract as a writing with type "meeting_story":
+{
+  "writings": [
+    {
+      "title": "New friend - Meeting Rosalie",
+      "writing_type": "meeting_story",
+      "content": "The tavern was crowded that evening. Ana sat alone in the corner nursing her third ale when a woman with bright red hair sat down across from her uninvited.\\n\\n\\"You look like someone who knows things,\\" the woman said with a sly smile.\\n\\nAnd that's how their partnership began..."
+    }
+  ]
+}
+
+Also extract Rosalie as an NPC since she's a significant character!
+
+## IMPLICIT NPC FROM PROSE EXAMPLE
+
+If the backstory prose mentions:
+"""
+Her father Egon, a priest of Morr, raised her alone after her mother was burned as a witch. Her twin brother Tide was sent to the clergy to hide his magical abilities.
+"""
+
+You should extract BOTH Egon AND Tide as NPCs, even without a dedicated NPC section:
+{
+  "npcs": [
+    {
+      "name": "Egon",
+      "relationship_type": "family",
+      "relationship_label": "Father",
+      "occupation": "Priest of Morr",
+      "full_notes": "- Raised her alone after her mother was burned as a witch\\n- Sent her twin brother to the clergy"
+    },
+    {
+      "name": "Tide",
+      "relationship_type": "family",
+      "relationship_label": "Twin Brother",
+      "full_notes": "- Was sent to the clergy to hide his magical abilities\\n- Twin brother to the character"
+    }
+  ]
+}
+
 ## FINAL VERIFICATION
 
-Before returning your JSON, verify:
+Before returning your JSON, verify EACH of these:
 1. Did you capture ALL prose backstory content?
-2. Did you capture ALL bulleted life phase sections (Early Life, Student Life, Adult Life, etc.)?
-3. Did you capture ALL NPCs mentioned (including family like "dad", mentor names, etc.)?
+2. Did you capture ALL bulleted life phase sections (Early Life, Student Life, Adult Life, etc.) in backstory_phases?
+3. Did you capture ALL NPCs mentioned (including family, mentors, implicit mentions in prose)?
 4. Did you capture ALL companions/familiars?
-5. Is there ANY text from the document that isn't in your JSON? If yes, put it in unclassified_content.
+5. Did you capture ALL DM Q&A numbered questions?
+6. Did you capture ALL rumors (with their true/false status)?
+7. Did you capture party member/crew relations as NPCs?
+8. Did you capture ALL prose stories/vignettes as writings?
+9. Did you capture session notes/recaps?
+10. Is there ANY text from the document that isn't in your JSON? If yes, put it in unclassified_content.
 
-Remember: ZERO DATA LOSS. Every word matters. If in doubt, include it in the appropriate notes field.`
+Remember: ZERO DATA LOSS. Every single word matters. The user wrote it for a reason. If in doubt, include it somewhere - backstory, full_notes, writings, or unclassified_content.`
 
 export async function POST(req: Request) {
   try {
@@ -452,6 +610,9 @@ export async function POST(req: Request) {
       backstoryLength: parsedData.character?.backstory?.length || 0,
       backstoryPhaseCount: parsedData.character?.backstory_phases?.length || 0,
       backstoryPhases: parsedData.character?.backstory_phases?.map((p: { title: string }) => p.title) || [],
+      dmQaCount: parsedData.character?.dm_qa?.length || 0,
+      rumorCount: parsedData.character?.rumors?.length || 0,
+      fearCount: parsedData.character?.fears?.length || 0,
       referenceTableCount: parsedData.reference_tables?.length || 0,
       secondaryCharacterCount: parsedData.secondary_characters?.length || 0,
       hasUnclassifiedContent: !!parsedData.unclassified_content,
