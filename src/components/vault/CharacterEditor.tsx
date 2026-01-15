@@ -382,18 +382,58 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     },
   })
 
-  // Convert plain text with \n to HTML paragraphs for TipTap
+  // Convert plain text/markdown to HTML for TipTap
   const textToHtml = (text: string): string => {
     if (!text) return ''
     // If it already looks like HTML, return as-is
     if (text.startsWith('<') && (text.includes('<p>') || text.includes('<div>'))) {
       return text
     }
-    // Convert double newlines to paragraph breaks, single newlines to <br>
+
+    // Process the text block by block (split on double newlines)
+    const blocks = text.split(/\n\n+/)
+    const htmlBlocks: string[] = []
+
+    for (const block of blocks) {
+      const trimmedBlock = block.trim()
+      if (!trimmedBlock) continue
+
+      // Check if this block is a list (starts with - or • or *)
+      const lines = trimmedBlock.split('\n')
+      const isListBlock = lines.every(line => /^[\-\•\*]\s/.test(line.trim()) || line.trim() === '')
+
+      if (isListBlock) {
+        // Convert to unordered list
+        const listItems = lines
+          .filter(line => line.trim())
+          .map(line => `<li>${processInlineFormatting(line.replace(/^[\-\•\*]\s*/, ''))}</li>`)
+          .join('')
+        htmlBlocks.push(`<ul>${listItems}</ul>`)
+      } else if (trimmedBlock.startsWith('## ')) {
+        // H2 heading
+        htmlBlocks.push(`<h2>${processInlineFormatting(trimmedBlock.slice(3))}</h2>`)
+      } else if (trimmedBlock.startsWith('# ')) {
+        // H1 heading
+        htmlBlocks.push(`<h1>${processInlineFormatting(trimmedBlock.slice(2))}</h1>`)
+      } else {
+        // Regular paragraph - convert single newlines to <br>
+        const processed = lines.map(line => processInlineFormatting(line)).join('<br>')
+        htmlBlocks.push(`<p>${processed}</p>`)
+      }
+    }
+
+    return htmlBlocks.join('')
+  }
+
+  // Process inline formatting (bold, italic)
+  const processInlineFormatting = (text: string): string => {
     return text
-      .split(/\n\n+/)
-      .map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`)
-      .join('')
+      // Bold: **text** or __text__
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/__([^_]+)__/g, '<strong>$1</strong>')
+      // Italic: *text* or _text_
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/_([^_]+)_/g, '<em>$1</em>')
   }
 
   // Sync editor content when character data loads (for async loading)
