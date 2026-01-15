@@ -330,9 +330,8 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: var(--glass-bg);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
   border-radius: 10px;
   cursor: pointer;
   transition: all var(--transition-fast);

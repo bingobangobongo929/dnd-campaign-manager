@@ -42,7 +42,10 @@ export function TopBar({ campaigns = [], currentCampaignId, transparent = false,
 
   const handleCampaignChange = (campaignId: string) => {
     setShowDropdown(false)
-    router.push(`/campaigns/${campaignId}/canvas`)
+    // Preserve current sub-page when switching campaigns
+    const parts = pathname.split('/').filter(Boolean)
+    const currentSubPage = parts[2] || 'canvas' // e.g., 'intelligence', 'sessions', 'timeline'
+    router.push(`/campaigns/${campaignId}/${currentSubPage}`)
   }
 
   // Build breadcrumb from pathname
@@ -64,6 +67,8 @@ export function TopBar({ campaigns = [], currentCampaignId, transparent = false,
             canvas: 'Canvas',
             sessions: 'Sessions',
             timeline: 'Timeline',
+            intelligence: 'Intelligence',
+            lore: 'Lore',
             map: 'World Map',
             gallery: 'Gallery',
           }
