@@ -422,6 +422,23 @@ def extract_backstory_phases(paragraphs: list[str]) -> list[dict]:
     return phases
 
 
+def clean_backstory_text(text: str) -> str:
+    """Remove markdown headers from backstory text to create clean prose."""
+    if not text:
+        return text
+
+    # Remove ## headers but keep the content
+    cleaned = re.sub(r'^#{1,3}\s+[A-Za-z\s]+\n+', '\n', text, flags=re.MULTILINE)
+
+    # Remove **bold** section headers that were converted
+    cleaned = re.sub(r'^\*\*[A-Za-z\s]+\*\*\n+', '\n', cleaned, flags=re.MULTILINE)
+
+    # Clean up multiple newlines
+    cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
+
+    return cleaned.strip()
+
+
 # =============================================================================
 # COMPANIONS EXTRACTION
 # =============================================================================
@@ -722,9 +739,9 @@ def extract_character(filepath: str) -> dict:
         'age': appearance.get('age'),
         'distinguishing_marks': appearance.get('distinguishing_marks'),
 
-        # Text content
-        'backstory': fix_formatting(backstory) if backstory else fix_formatting(full_text),
-        'description': fix_formatting(backstory) if backstory else fix_formatting(full_text),  # Also set description
+        # Text content - clean up backstory if we have phases
+        'backstory': clean_backstory_text(fix_formatting(backstory)) if backstory else clean_backstory_text(fix_formatting(full_text)),
+        'description': clean_backstory_text(fix_formatting(backstory)) if backstory else clean_backstory_text(fix_formatting(full_text)),
         'summary': fix_formatting(summary) if summary else None,
         'personality': fix_formatting(personality) if personality else None,
         'goals': fix_formatting(goals) if goals else None,
