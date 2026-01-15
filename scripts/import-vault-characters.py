@@ -225,7 +225,11 @@ SECTION_HEADERS = {
 
 
 def is_section_header(text: str) -> bool:
-    """Check if text looks like a section header."""
+    """Check if text looks like a section header.
+
+    Must be conservative - we don't want to match content lines like
+    "Fighting the crickets" or "Barricade the city" or "during our campfire".
+    """
     if not text:
         return False
 
@@ -235,23 +239,34 @@ def is_section_header(text: str) -> bool:
 
     lower = text.lower().strip().rstrip(':')
 
-    # Check against known headers
+    # Check against known headers - exact match or starts with (NOT ends with)
+    # The "ends with" check was too aggressive, matching prose like "our campfire"
     for headers in SECTION_HEADERS.values():
         for h in headers:
-            if lower == h or lower.startswith(h + ' ') or lower.endswith(' ' + h):
+            # Exact match
+            if lower == h:
+                return True
+            # Starts with header word followed by space (like "Backstory continued")
+            if lower.startswith(h + ' '):
+                return True
+            # Only match "ends with" for very short lines that look like headers
+            # e.g., "## Campfire" stripped of # becomes "Campfire"
+            if len(text) < 30 and lower.endswith(' ' + h):
                 return True
 
-    # Check for Session X pattern
-    if re.match(r'^session\s*#?\d+', lower):
+    # Check for Session X pattern (numbered or date-based)
+    if re.match(r'^session\s*[#]?\d+', lower):
+        return True
+    if re.match(r'^session\s+\d{1,2}[/.\-]\d{1,2}', lower):
         return True
 
     # Short ALL CAPS titles
     if len(text) < 40 and text.isupper():
         return True
 
-    # Capitalized short titles
-    if len(text) < 50 and re.match(r'^[A-Z][a-z]+(\s+[A-Za-z]+){0,4}:?\s*$', text):
-        return True
+    # NOTE: Removed the generic "capitalized short titles" check because it
+    # was matching content lines like "Fighting the crickets". Only match
+    # specific known section patterns now.
 
     return False
 
@@ -295,14 +310,23 @@ def find_section(paragraphs: list[str], target_headers: list[str], stop_at_any_h
 
 
 def find_all_sections_of_type(paragraphs: list[str], section_prefix: str) -> list[dict]:
-    """Find all sections that start with a prefix (like 'Session 1', 'Session 2')."""
+    """Find all sections that start with a prefix (like 'Session 1', 'Session 2').
+
+    Handles both plain text and markdown-prefixed headers:
+    - "Session 1"
+    - "# Session 1"
+    - "## Session 1"
+    """
     sections = []
     current_section = None
     current_content = []
 
     for para in paragraphs:
+        # Strip markdown header prefix if present
+        clean_para = para.lstrip('#').strip()
+
         # Check for section start
-        match = re.match(rf'^{section_prefix}\s*#?(\d+)', para, re.IGNORECASE)
+        match = re.match(rf'^{section_prefix}\s*#?(\d+)', clean_para, re.IGNORECASE)
         if match:
             # Save previous section
             if current_section is not None:
@@ -313,13 +337,14 @@ def find_all_sections_of_type(paragraphs: list[str], section_prefix: str) -> lis
 
             current_section = int(match.group(1))
             # Get rest of header line
-            rest = para[match.end():].strip()
+            rest = clean_para[match.end():].strip()
             if rest.startswith('-') or rest.startswith(':'):
                 rest = rest[1:].strip()
             current_content = [rest] if rest else []
         elif current_section is not None:
-            # Check if this is a different section type
-            if is_section_header(para) and not para.lower().startswith(section_prefix.lower()):
+            # Check if this is a different section type (but not the same prefix)
+            clean_lower = clean_para.lower()
+            if is_section_header(para) and not clean_lower.startswith(section_prefix.lower()):
                 sections.append({
                     'number': current_section,
                     'content': '\n\n'.join(current_content)
@@ -804,29 +829,27 @@ def extract_inline_quotes(full_text: str) -> list[str]:
 # =============================================================================
 
 def extract_relationships(paragraphs: list[str], char_name: str) -> list[dict]:
-    """Extract NPC/relationship information.
+    """Extract NPC/relationship information from BOTH:
+    1. Standalone NPC blocks (name line + details)
+    2. Inline mentions in backstory prose
 
     NPCs appear in documents as:
-    - A standalone name line (short, capitalized, like "Giselbert Almayda")
-    - Followed by bullet points/detail lines
-    - Separated by blank lines from other NPCs
-
-    We scan the ENTIRE document looking for NPC blocks, not just after markers.
+    - Standalone: "Giselbert Almayda" followed by bullet points
+    - Inline: "her twin, Tide" or "Neritha, a deep sea witch"
     """
     relationships = []
+    seen_names = set()  # Track to avoid duplicates
+    full_text = '\n\n'.join(paragraphs)
 
-    # First pass: find all potential NPC blocks
-    # An NPC block is: a name line followed by detail lines
+    # ========== PASS 1: Extract standalone NPC blocks ==========
     i = 0
     while i < len(paragraphs):
         para = paragraphs[i].strip()
 
-        # Skip empty paragraphs
         if not para:
             i += 1
             continue
 
-        # Check if this looks like an NPC name header
         if is_npc_name_line(para, char_name):
             npc_name = para
 
@@ -834,12 +857,11 @@ def extract_relationships(paragraphs: list[str], char_name: str) -> list[dict]:
             if ' - ' in npc_name:
                 parts = npc_name.split(' - ', 1)
                 npc_name = parts[0].strip()
-                # Include the title as first detail if present
                 title = parts[1].strip() if len(parts) > 1 else None
             else:
                 title = None
 
-            # Collect detail lines until we hit another NPC name or major section
+            # Collect detail lines
             details = []
             if title:
                 details.append(title)
@@ -848,10 +870,7 @@ def extract_relationships(paragraphs: list[str], char_name: str) -> list[dict]:
             while j < len(paragraphs):
                 detail = paragraphs[j].strip()
 
-                # Empty line might indicate end of this NPC's details
-                # But only if followed by another NPC name
                 if not detail:
-                    # Look ahead for another NPC name
                     k = j + 1
                     while k < len(paragraphs) and not paragraphs[k].strip():
                         k += 1
@@ -860,27 +879,411 @@ def extract_relationships(paragraphs: list[str], char_name: str) -> list[dict]:
                     j += 1
                     continue
 
-                # Stop if we hit another NPC name
                 if is_npc_name_line(detail, char_name):
                     break
 
-                # Stop if we hit a MAJOR section header (backstory, session, etc.)
-                # But NOT for detail-like lines
                 if is_major_section_header(detail):
                     break
 
                 details.append(detail)
                 j += 1
 
-            # Only add if we have actual details (not just a lone name)
             if details:
-                relationships.append(build_relationship(npc_name, details))
+                rel = build_relationship(npc_name, details)
+                relationships.append(rel)
+                seen_names.add(npc_name.lower())
 
             i = j
         else:
             i += 1
 
+    # ========== PASS 2: Extract inline NPC mentions from prose ==========
+    inline_npcs = extract_inline_npcs(full_text, char_name, seen_names)
+    relationships.extend(inline_npcs)
+
+    # ========== PASS 3: Deduplicate relationships ==========
+    relationships = deduplicate_relationships(relationships)
+
     return relationships
+
+
+def deduplicate_relationships(relationships: list[dict]) -> list[dict]:
+    """Deduplicate NPCs by merging similar names.
+
+    Rules:
+    - If one name contains another (e.g., "Giselbert" vs "Giselbert Almayda"), keep the longer one
+    - If we have both a relation word (e.g., "dad") and a proper name (e.g., "Egon") for same person,
+      keep the proper name but preserve the relationship label
+    - Remove entries with garbage names (single words that are clearly not names)
+    - Merge synonyms like "Mom"/"Mother", "Dad"/"Father"
+    """
+    if not relationships:
+        return relationships
+
+    # Relation word synonyms - map to canonical form
+    relation_synonyms = {
+        'dad': 'father', 'father': 'father',
+        'mom': 'mother', 'mother': 'mother',
+        'nana': 'grandmother', 'grandmother': 'grandmother', 'grandma': 'grandmother',
+        'grandpa': 'grandfather', 'grandfather': 'grandfather',
+        'sis': 'sister', 'sister': 'sister',
+        'bro': 'brother', 'brother': 'brother',
+    }
+
+    # Generic relation words that should be replaced by proper names
+    generic_relation_words = {'father', 'mother', 'dad', 'mom', 'brother', 'sister', 'twin',
+                              'grandmother', 'grandfather', 'nana', 'grandparent', 'grandma', 'grandpa'}
+
+    # Group by similar names
+    deduped = []
+    seen_base_names = {}  # Maps base name -> full entry
+    seen_relations = {}  # Maps canonical relation type -> entry (for merging Father with proper name)
+
+    # Sort by name length (longer first) so we prefer full names
+    relationships_sorted = sorted(relationships, key=lambda r: len(r['related_name']), reverse=True)
+
+    for rel in relationships_sorted:
+        name = rel['related_name']
+        name_lower = name.lower()
+        label = rel.get('relationship_label', '').lower()
+
+        # Skip garbage entries
+        if is_garbage_npc_name(name):
+            continue
+
+        # Check if name IS a relation word (like "Father" or "Mom" used as the name)
+        is_generic_relation = name_lower in generic_relation_words
+
+        # Get canonical relation type from label or name
+        canonical_relation = relation_synonyms.get(label, '')
+        if not canonical_relation:
+            canonical_relation = relation_synonyms.get(name_lower, '')
+
+        # Check if this is a duplicate by name overlap
+        is_duplicate = False
+        for base_name, existing in list(seen_base_names.items()):
+            # Check if names overlap (one contains the other)
+            if base_name in name_lower or name_lower in base_name:
+                is_duplicate = True
+                # If current name is longer (more complete), replace
+                if len(name) > len(existing['related_name']):
+                    # But keep the relationship label if it's more specific
+                    if existing.get('relationship_label') and existing['relationship_label'] != 'other':
+                        rel['relationship_label'] = existing['relationship_label']
+                        rel['relationship_type'] = existing['relationship_type']
+                    seen_base_names[name_lower] = rel
+                    # Update deduped list
+                    deduped = [r for r in deduped if r['related_name'].lower() != base_name]
+                    deduped.append(rel)
+                    del seen_base_names[base_name]
+                break
+
+        if is_duplicate:
+            continue
+
+        # Check if this is a generic relation word that should be merged with a proper name
+        if is_generic_relation and canonical_relation:
+            # Check if we already have an entry for this relation type
+            if canonical_relation in seen_relations:
+                existing = seen_relations[canonical_relation]
+                existing_is_generic = existing['related_name'].lower() in generic_relation_words
+                if not existing_is_generic:
+                    # We already have a proper name, skip this generic one
+                    continue
+                # Both are generic - keep existing
+                continue
+            # Store this as the entry for this relation type
+            seen_relations[canonical_relation] = rel
+
+        # If this is a proper name with a family relation, register it
+        elif not is_generic_relation and canonical_relation:
+            if canonical_relation in seen_relations:
+                existing = seen_relations[canonical_relation]
+                existing_is_generic = existing['related_name'].lower() in generic_relation_words
+                if existing_is_generic:
+                    # Replace the generic with the proper name
+                    rel['relationship_label'] = existing.get('relationship_label', label)
+                    # Remove the generic from deduped
+                    deduped = [r for r in deduped if r['related_name'].lower() != existing['related_name'].lower()]
+                    seen_base_names = {k: v for k, v in seen_base_names.items() if v['related_name'].lower() != existing['related_name'].lower()}
+            # Always register proper names for this relation type
+            seen_relations[canonical_relation] = rel
+
+        seen_base_names[name_lower] = rel
+        deduped.append(rel)
+
+    return deduped
+
+
+def is_garbage_npc_name(name: str) -> bool:
+    """Check if a name is clearly garbage that should be filtered out."""
+    name_lower = name.lower().strip()
+
+    # Names ending with punctuation are garbage
+    if name.endswith(':') or name.endswith('!') or name.endswith('?'):
+        return True
+
+    # Very short names are suspicious
+    if len(name) < 3:
+        return True
+
+    # Names that are clearly not names (exact match or starts with)
+    garbage_exact = [
+        'tips', 'description', 'goblin', 'lightfoot', 'halfling', 'rouge', 'rogue',
+        'hated', 'keeps', 'ana', 'faine', 'devin', 'morris',
+    ]
+    if name_lower in garbage_exact:
+        return True
+
+    # Names starting with these garbage words (catches "Centuries-old" etc.)
+    garbage_prefixes = [
+        'centuries', 'century', 'ancient', 'old', 'young', 'the ', 'a ', 'an ',
+    ]
+    for prefix in garbage_prefixes:
+        if name_lower.startswith(prefix):
+            return True
+
+    # Names containing these garbage patterns anywhere
+    garbage_contains = [
+        '-old', '-year', 'years old', 'year old',
+    ]
+    for pattern in garbage_contains:
+        if pattern in name_lower:
+            return True
+
+    # Names with numbers
+    if any(c.isdigit() for c in name):
+        return True
+
+    # Names that look like race/class combos
+    if ' ' in name and any(w in name_lower for w in ['halfling', 'elf', 'dwarf', 'human', 'rogue', 'rouge']):
+        return True
+
+    return False
+
+
+def extract_inline_npcs(text: str, char_name: str, seen_names: set) -> list[dict]:
+    """Extract NPCs mentioned inline in prose text.
+
+    Only extracts CLEAR NPC mentions - must have a proper name followed by
+    descriptive content about that person. Filters out:
+    - Partial character name matches
+    - Random capitalized words from sentences
+    - Section headers
+    - Race/class descriptions
+    """
+    npcs = []
+
+    # Get all parts of the main character's name for filtering
+    char_name_parts = set()
+    if char_name:
+        for part in char_name.split():
+            if len(part) >= 3:
+                char_name_parts.add(part.lower())
+        # Also add common nicknames/abbreviations
+        char_first = char_name.split()[0].lower()
+        if len(char_first) > 3:
+            char_name_parts.add(char_first[:3])  # "Ana" from "Anastasia"
+    else:
+        char_first = ''
+
+    # Pattern 1: "her/his [relation], Name" or "her/his [relation] Name"
+    relation_patterns = [
+        # "her twin, Tide" or "his brother Tide"
+        (r"(?:her|his|their)\s+(twin|brother|sister|father|mother|dad|mom|grandmother|grandfather|nana|uncle|aunt)[,\s]+([A-Z][a-z]+)", 'family'),
+        # "Tide, her twin brother"
+        (r"([A-Z][a-z]+),?\s+(?:her|his|their)\s+(twin\s+)?(?:brother|sister)", 'family'),
+        # "[Name] and [Name2] were born" - catches sibling pairs like "Mascha and Aala"
+        (r"([A-Z][a-z]+)\s+and\s+([A-Z][a-z]+)\s+were\s+born", 'family'),
+        # "her mentor, Name" or "his mentor Name"
+        (r"(?:her|his|their)\s+(mentor|teacher|master|tutor)[,\s]+([A-Z][a-z]+)", 'mentor'),
+        # "her patron, Name"
+        (r"(?:her|his|their)\s+(patron)[,\s]+([A-Z][a-z]+)", 'patron'),
+        # "her friend, Name" / "her friend Name"
+        (r"(?:her|his|their)\s+(friend|ally|companion)[,\s]+([A-Z][a-z]+)", 'friend'),
+        # Boss/leader mentions: "Tower was a good leader"
+        (r"([A-Z][a-z]+)\s+was\s+a\s+(?:good|great|strong|inspiring)\s+(leader|boss|captain|mentor)", 'mentor'),
+        # "their father/mother wept" pattern for Cove
+        (r"(?:her|his|their)\s+(father|mother)\s+(?:wept|cried|died|helped|taught|raised)", 'family'),
+    ]
+
+    # COMPREHENSIVE list of words that should never be extracted as NPC names
+    skip_name_words = {
+        # Common words
+        'the', 'this', 'that', 'there', 'here', 'when', 'where', 'what', 'who',
+        'then', 'after', 'before', 'during', 'while', 'because', 'since', 'until',
+        # Verbs/participles that might be capitalized
+        'being', 'having', 'getting', 'taking', 'making', 'coming', 'going',
+        'seeing', 'knowing', 'thinking', 'feeling', 'looking', 'finding',
+        'kept', 'keeps', 'hated', 'loved', 'wanted', 'needed', 'found',
+        # Pronouns
+        'she', 'her', 'his', 'they', 'their', 'him', 'its', 'our', 'your',
+        # Common verbs
+        'was', 'got', 'did', 'had', 'has', 'have', 'been', 'were', 'are',
+        # Races
+        'elf', 'human', 'dwarf', 'halfling', 'gnome', 'tiefling', 'genasi',
+        'goblin', 'orc', 'dragonborn', 'aasimar', 'changeling', 'warforged',
+        # Classes
+        'rogue', 'rouge', 'fighter', 'wizard', 'cleric', 'ranger', 'paladin',
+        'barbarian', 'bard', 'druid', 'monk', 'sorcerer', 'warlock', 'artificer',
+        # Game terms
+        'crew', 'party', 'guild', 'group', 'order', 'faction', 'tips',
+        'possession', 'description', 'backstory', 'background', 'session',
+        # Adjectives that might start sentences
+        'old', 'young', 'new', 'ancient', 'centuries', 'hated', 'beloved',
+        'greedy', 'brave', 'wise', 'kind', 'cruel', 'dark', 'light', 'black',
+        # Story terms
+        'aela', 'upon', 'throughout', 'through', 'around', 'upbringing',
+        'illithid', 'lotus', 'golarious', 'faine', 'lightfoot',
+        # Section headers
+        'extra', 'notes', 'quotes', 'knives', 'rumors', 'goals', 'fears',
+    }
+
+    for pattern, rel_type in relation_patterns:
+        matches = re.finditer(pattern, text, re.IGNORECASE)
+        for match in matches:
+            groups = match.groups()
+            # Find the name (capitalized word)
+            name = None
+            relation_word = None
+            for g in groups:
+                if g and len(g) >= 3 and g[0].isupper():
+                    # Check if this looks like a real name (not a common word)
+                    g_lower = g.lower()
+                    if g_lower not in skip_name_words and g_lower not in char_name_parts:
+                        name = g
+                elif g and g.lower() in ['twin', 'brother', 'sister', 'father', 'mother', 'dad', 'mom',
+                                          'grandmother', 'grandfather', 'nana', 'mentor', 'patron',
+                                          'friend', 'teacher', 'master', 'uncle', 'aunt', 'ally', 'companion',
+                                          'leader', 'boss', 'captain']:
+                    relation_word = g.lower()
+
+            if name and name.lower() not in seen_names:
+                # Skip if name is part of main character's name
+                if name.lower() in char_name_parts:
+                    continue
+
+                # Get context around the match
+                start = max(0, match.start() - 100)
+                end = min(len(text), match.end() + 200)
+                context = text[start:end]
+
+                rel = {
+                    'related_name': name,
+                    'description': context.strip(),
+                    'relationship_type': rel_type
+                }
+
+                # Set label based on relation word
+                if relation_word in ['twin']:
+                    rel['relationship_label'] = 'Twin'
+                elif relation_word in ['brother']:
+                    rel['relationship_label'] = 'Brother'
+                elif relation_word in ['sister']:
+                    rel['relationship_label'] = 'Sister'
+                elif relation_word in ['father', 'dad']:
+                    rel['relationship_label'] = 'Father'
+                elif relation_word in ['mother', 'mom']:
+                    rel['relationship_label'] = 'Mother'
+                elif relation_word in ['grandmother', 'nana', 'grandfather']:
+                    rel['relationship_label'] = 'Grandparent'
+                elif relation_word in ['uncle', 'aunt']:
+                    rel['relationship_label'] = 'Family'
+                elif relation_word in ['mentor', 'teacher', 'master']:
+                    rel['relationship_label'] = 'Mentor'
+                elif relation_word == 'patron':
+                    rel['relationship_label'] = 'Patron'
+                elif relation_word in ['friend', 'ally', 'companion']:
+                    rel['relationship_label'] = 'Friend'
+                else:
+                    rel['relationship_label'] = rel_type.title()
+
+                npcs.append(rel)
+                seen_names.add(name.lower())
+
+    # Pattern 2: DISABLED - "Name, a/an [description]" generates too many false positives
+    # like "Centuries-old", "Hated", etc. Only use specific relation patterns above.
+
+    # Pattern 3: Specific family mentions like "little sister (half elf/ Flora)"
+    # or "dad (Elf)" - extract the NAME if present, otherwise use the relation
+    family_mention_pattern = r'\b(dad|mom|mother|father|sister|brother|grandmother|grandfather)[,\s]+\(([^)]+)\)'
+    matches = re.finditer(family_mention_pattern, text, re.IGNORECASE)
+    for match in matches:
+        relation = match.group(1).lower()
+        details = match.group(2)
+
+        # Skip race-only mentions like "dad (Elf)" - these should use the relation as name
+        race_words = {'elf', 'human', 'dwarf', 'halfling', 'gnome', 'tiefling', 'half-elf',
+                      'dragonborn', 'orc', 'half-orc', 'genasi', 'aasimar'}
+
+        # Check if there's a proper name (not a race) in details
+        name_match = re.search(r'([A-Z][a-z]{2,})', details)
+        if name_match and name_match.group(1).lower() not in race_words:
+            name = name_match.group(1)
+        else:
+            # Use relation as the name (e.g., "Dad", "Mom")
+            name = relation.title()
+
+        # Check if we already have this
+        if name.lower() in seen_names or relation in seen_names:
+            continue
+
+        # Get context
+        start = max(0, match.start() - 50)
+        end = min(len(text), match.end() + 150)
+        context = text[start:end]
+
+        label_map = {
+            'dad': 'Father', 'father': 'Father',
+            'mom': 'Mother', 'mother': 'Mother',
+            'sister': 'Sister', 'brother': 'Brother',
+            'grandmother': 'Grandmother', 'grandfather': 'Grandfather'
+        }
+
+        npcs.append({
+            'related_name': name,
+            'description': context.strip(),
+            'relationship_type': 'family',
+            'relationship_label': label_map.get(relation, 'Family')
+        })
+        seen_names.add(name.lower())
+        seen_names.add(relation)  # Also mark relation as seen to avoid duplicates
+
+    # Pattern 4: Extract parents mentioned only by relation (for Cove-style backstories)
+    # "their father wept", "her mother was killed", "with their father"
+    parent_patterns = [
+        (r'(?:her|his|their)\s+(father|mother)\s+(?:wept|cried|died|was\s+killed|was\s+struck|helped|taught|raised|retired|encouraged)', 'family'),
+        (r'(?:with|to|from)\s+(?:her|his|their)\s+(father|mother)', 'family'),
+        (r'(?:her|his|their)\s+(father|mother)\s+(?:and|with)', 'family'),
+    ]
+
+    for pattern, rel_type in parent_patterns:
+        matches = re.finditer(pattern, text, re.IGNORECASE)
+        for match in matches:
+            relation = match.group(1).lower()
+
+            # Use "Father" or "Mother" as the name
+            name = relation.title()
+
+            # Skip if already seen
+            if name.lower() in seen_names or relation in seen_names:
+                continue
+
+            # Get context
+            start = max(0, match.start() - 50)
+            end = min(len(text), match.end() + 150)
+            context = text[start:end]
+
+            npcs.append({
+                'related_name': name,
+                'description': context.strip(),
+                'relationship_type': 'family',
+                'relationship_label': name
+            })
+            seen_names.add(name.lower())
+            seen_names.add(relation)
+
+    return npcs
 
 
 def is_npc_name_line(text: str, char_name: str) -> bool:
@@ -892,6 +1295,7 @@ def is_npc_name_line(text: str, char_name: str) -> bool:
     - Look like names (1-4 words, mostly capitalized)
     - NOT known section headers
     - NOT the main character's name
+    - NOT common nouns or game mechanics
     """
     if not text or len(text) > 40:
         return False
@@ -904,7 +1308,7 @@ def is_npc_name_line(text: str, char_name: str) -> bool:
         if char_first in text.lower() and len(char_first) > 3:
             return False
 
-    # Skip known section headers
+    # Skip known section headers and game mechanics
     section_words = [
         'backstory', 'background', 'early life', 'adult life', 'student life',
         'childhood', 'youth', 'quotes', 'session', 'notes', 'tldr', 'summary',
@@ -913,7 +1317,18 @@ def is_npc_name_line(text: str, char_name: str) -> bool:
         'appearance', 'personality', 'traits', 'ideals', 'flaws', 'goals',
         'pre-session', 'player info', 'character info', 'dm', 'extra',
         'the good path', 'the new', 'speaking to', 'crew member',
-        'personal session', 'from the vail', 'highlights', 'dms question'
+        'personal session', 'from the vail', 'highlights', 'dms question',
+        # Game mechanics that look like names but aren't
+        'possession', 'inspiration', 'gold', 'equipment', 'items', 'spells',
+        'abilities', 'skills', 'weapons', 'armor', 'attacks', 'saving',
+        'healing', 'damage', 'strength', 'dexterity', 'constitution',
+        'intelligence', 'wisdom', 'charisma', 'proficiency', 'advantage',
+        'disadvantage', 'resistance', 'immunity', 'vulnerability',
+        # Other false positives found
+        'terask', 'vvv', 'earn', 'travel', 'campaign', 'character',
+        # More false positives from Shae document
+        'upbringing', 'black lotus', 'got', 'was', 'crew', 'golarious',
+        'greedy', 'illithid', 'she', 'her', 'his', 'they',
     ]
     lower = text.lower()
     if any(lower.startswith(sw) or lower == sw for sw in section_words):
@@ -926,9 +1341,17 @@ def is_npc_name_line(text: str, char_name: str) -> bool:
         'interesting', 'talks ', 'dislikes', 'loves ', 'enjoys ', 'hates ',
         'favors', 'got ', 'from ', 'prev', 'when ', 'we ', 'i ', 'the ',
         'a ', 'an ', 'smart', 'good', 'bad', 'nice', 'can ', 'will ',
-        'cemetery', 'priests', 'relations', 'knickname', 'meetingplace'
+        'cemetery', 'priests', 'relations', 'knickname', 'meetingplace',
+        'no one', 'no act', 'if you', 'with ', 'truth', 'happiness',
+        'pain', 'compassion', 'we rise', 'kindness', 'resentment',
+        # Numbers/stats
+        '1 ', '2 ', '3 ', '4 ', '5 ', '6 ', '7 ', '8 ', '9 ', '0 ',
     ]
     if any(lower.startswith(w) for w in desc_starts):
+        return False
+
+    # Skip quotes and philosophical statements
+    if text.startswith('"') or text.startswith("'") or text.startswith('"'):
         return False
 
     # Must start with a capital letter OR be a known relationship word
@@ -1128,6 +1551,33 @@ def build_relationship(npc_name: str, details: list[str]) -> dict:
 # BACKSTORY PHASES EXTRACTION
 # =============================================================================
 
+def deduplicate_backstory_phases(phases: list[dict]) -> list[dict]:
+    """Deduplicate backstory phases by title.
+
+    Removes duplicates like "Upbringing" and "Upbringing:" that have the same content.
+    When duplicates exist, keeps the one with more content.
+    """
+    if not phases:
+        return phases
+
+    seen_titles = {}  # normalized title -> phase entry
+
+    for phase in phases:
+        # Normalize title: strip, lowercase, remove trailing punctuation
+        title_norm = phase['title'].lower().strip().rstrip(':').strip()
+        content = phase['content']
+
+        if title_norm in seen_titles:
+            # Keep the one with more content
+            existing = seen_titles[title_norm]
+            if len(content) > len(existing['content']):
+                seen_titles[title_norm] = phase
+        else:
+            seen_titles[title_norm] = phase
+
+    return list(seen_titles.values())
+
+
 def extract_backstory_phases(paragraphs: list[str]) -> list[dict]:
     """Extract structured backstory phases.
 
@@ -1211,7 +1661,8 @@ def extract_backstory_phases(paragraphs: list[str]) -> list[dict]:
                 'content': fix_formatting(combined)
             })
 
-    return phases
+    # Deduplicate phases before returning (handles "Upbringing" vs "Upbringing:" etc.)
+    return deduplicate_backstory_phases(phases)
 
 
 # =============================================================================
@@ -1226,6 +1677,8 @@ def extract_companions(paragraphs: list[str], full_text: str) -> list[dict]:
     - "her ferret familiar, Penny"
     - "a black ferret called Penny"
     - "Penny the ferret"
+    - "she called him Kato" (for rescued animals)
+    - "cyborg dog" patterns for Mascha
     """
     companions = []
     seen_names = set()
@@ -1245,35 +1698,46 @@ def extract_companions(paragraphs: list[str], full_text: str) -> list[dict]:
                 seen_names.add(name)
 
     # Pattern matching for companions mentioned in text
-    # Be more specific to avoid false positives
     patterns = [
-        # "called/named X" for familiars
-        r'(?:ferret|cat|owl|raven|hawk|dog|wolf|horse|familiar|pet|companion)\s+(?:called|named)\s+([A-Z][a-z]{2,})',
+        # "called/named X" for familiars and pets
+        (r'(?:ferret|cat|owl|raven|hawk|dog|wolf|horse|familiar|pet|companion)\s+(?:called|named)\s+([A-Z][a-z]{2,})', 'companion'),
         # "X the ferret/familiar"
-        r'\b([A-Z][a-z]{2,})\s+the\s+(?:ferret|cat|owl|raven|familiar)',
+        (r'\b([A-Z][a-z]{2,})\s+the\s+(?:ferret|cat|owl|raven|familiar|dog)', 'companion'),
         # "X, her/his familiar"
-        r'\b([A-Z][a-z]{2,}),?\s+(?:her|his)\s+(?:ferret|familiar|pet)',
-        # "familiar X" or "pet X" (direct name)
-        r'(?:familiar|pet)\s+([A-Z][a-z]{2,})\b',
+        (r'\b([A-Z][a-z]{2,}),?\s+(?:her|his)\s+(?:ferret|familiar|pet|dog)', 'companion'),
+        # "familiar/pet X" (direct name)
+        (r'(?:familiar|pet)\s+([A-Z][a-z]{2,})\b', 'companion'),
+        # "she/he called him/her/it X" - naming pattern
+        (r'(?:she|he)\s+called\s+(?:him|her|it)\s+([A-Z][a-z]{2,})', 'companion'),
+        # "the dog X" or "cyborg dog X"
+        (r'(?:the|a|cyborg)\s+dog[,\s]+([A-Z][a-z]{2,})', 'companion'),
+        # "X slowly became" or "X ended up becoming" - for pets that become part of the story
+        (r'\b([A-Z][a-z]{2,})\s+(?:slowly\s+)?(?:became|ended\s+up)', 'companion'),
     ]
 
     # Words to exclude - common words that might match but aren't names
     exclude_words = {
         'the', 'her', 'his', 'she', 'they', 'very', 'black', 'white', 'brown',
         'small', 'large', 'old', 'new', 'good', 'bad', 'called', 'named',
-        'ferret', 'familiar', 'companion', 'pet', 'mount', 'animal'
+        'ferret', 'familiar', 'companion', 'pet', 'mount', 'animal', 'dog',
+        'cat', 'owl', 'raven', 'hawk', 'wolf', 'horse', 'cyborg',
     }
 
-    for pattern in patterns:
+    for pattern, comp_type in patterns:
         matches = re.finditer(pattern, full_text, re.IGNORECASE)
         for match in matches:
             name = match.group(1)
             if name and name.lower() not in exclude_words and name not in seen_names:
                 if len(name) >= 3 and name[0].isupper():
+                    # Get context around the match to use as description
+                    start = max(0, match.start() - 20)
+                    end = min(len(full_text), match.end() + 50)
+                    context = full_text[start:end].strip()
+
                     companions.append({
                         'name': name,
-                        'type': 'companion',
-                        'description': ''
+                        'type': comp_type,
+                        'description': context
                     })
                     seen_names.add(name)
 
@@ -1285,19 +1749,117 @@ def extract_companions(paragraphs: list[str], full_text: str) -> list[dict]:
 # =============================================================================
 
 def extract_session_journal(paragraphs: list[str]) -> list[dict]:
-    """Extract session journal entries."""
-    sessions = find_all_sections_of_type(paragraphs, 'Session')
+    """Extract session journal entries.
 
+    Handles multiple formats:
+    - "Session 1", "Session 2", etc. (numbered)
+    - "Session 21/03/2021", "Session 15/04/2021" (date-based)
+    - "Session #1 - Title"
+
+    Deduplicates sessions with the same number.
+    """
     journal = []
-    for session in sessions:
+    seen_session_numbers = set()
+
+    # First try numbered sessions
+    numbered_sessions = find_all_sections_of_type(paragraphs, 'Session')
+    for session in numbered_sessions:
+        session_num = session['number']
+        # Skip duplicates - keep the one with more content
+        if session_num in seen_session_numbers:
+            # Find existing and compare content length
+            for i, existing in enumerate(journal):
+                if existing['session_number'] == session_num:
+                    if len(session['content']) > len(existing['summary']):
+                        journal[i] = {
+                            'session_number': session_num,
+                            'title': f"Session {session_num}",
+                            'summary': fix_formatting(session['content'])
+                        }
+                    break
+            continue
+
         if session['content'] and len(session['content']) > 10:
             journal.append({
-                'session_number': session['number'],
-                'title': f"Session {session['number']}",
+                'session_number': session_num,
+                'title': f"Session {session_num}",
                 'summary': fix_formatting(session['content'])
             })
+            seen_session_numbers.add(session_num)
+
+    # If no numbered sessions found, try date-based sessions
+    if not journal:
+        date_sessions = extract_date_based_sessions(paragraphs)
+        journal.extend(date_sessions)
+
+    # Sort by session number
+    journal.sort(key=lambda s: s['session_number'])
 
     return journal
+
+
+def extract_date_based_sessions(paragraphs: list[str]) -> list[dict]:
+    """Extract sessions with date-based headers like 'Session 21/03/2021'.
+
+    Keeps the full date in the title instead of converting to a number.
+    """
+    sessions = []
+    current_session_date = None
+    current_content = []
+    session_counter = 1
+
+    for para in paragraphs:
+        # Strip markdown prefix for checking
+        clean_para = para.lstrip('#').strip()
+
+        # Check for date-based session header: "Session DD/MM/YYYY" or "Session DD.MM.YYYY"
+        match = re.match(r'^Session\s+(\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4})', clean_para, re.IGNORECASE)
+        if match:
+            # Save previous session
+            if current_session_date and current_content:
+                sessions.append({
+                    'session_number': session_counter,
+                    'title': f"Session {current_session_date}",  # Keep full date
+                    'summary': fix_formatting('\n\n'.join(current_content)),
+                    'date': current_session_date
+                })
+                session_counter += 1
+
+            current_session_date = match.group(1)
+            # Get rest of header line
+            rest = clean_para[match.end():].strip()
+            if rest.startswith('-') or rest.startswith(':'):
+                rest = rest[1:].strip()
+            current_content = [rest] if rest else []
+
+        elif current_session_date:
+            # Check if this is a different section type
+            clean_lower = clean_para.lower()
+            if is_section_header(para) and not clean_lower.startswith('session'):
+                # End current session
+                if current_content:
+                    sessions.append({
+                        'session_number': session_counter,
+                        'title': f"Session {current_session_date}",
+                        'summary': fix_formatting('\n\n'.join(current_content)),
+                        'date': current_session_date
+                    })
+                    session_counter += 1
+                current_session_date = None
+                current_content = []
+            else:
+                current_content.append(para)
+
+    # Don't forget the last session
+    if current_session_date and current_content:
+        sessions.append({
+            'session_number': session_counter,
+            'title': f"Session {current_session_date}",
+            'summary': fix_formatting('\n\n'.join(current_content)),
+            'date': current_session_date
+        })
+
+    return sessions
 
 
 # =============================================================================
@@ -1741,6 +2303,84 @@ def extract_character(filepath: str) -> dict:
 # PROCESS DIRECTORY
 # =============================================================================
 
+def extract_ideas_document(filepath: str) -> dict:
+    """Extract the Backstorie Ideas document as a special meta document.
+
+    This file contains character concepts, unused ideas, and planning notes.
+    Store it as a special 'ideas' type document for reference.
+    """
+    filename = os.path.basename(filepath)
+    print(f"\nProcessing: {filename} (Ideas Document)")
+
+    paragraphs = extract_paragraphs(filepath)
+    if not paragraphs:
+        print(f"  Warning: No paragraphs extracted")
+        return None
+
+    full_text = extract_full_text(paragraphs)
+
+    # Extract any character concepts/ideas mentioned
+    ideas = []
+    current_idea = None
+    current_content = []
+
+    for para in paragraphs:
+        text = para.strip()
+        lower = text.lower()
+
+        # Check if this looks like a new idea/concept header
+        if (len(text) < 80 and text and
+            (text.startswith('#') or
+             text[0].isupper() and ':' in text[:50] or
+             re.match(r'^[A-Z][a-z]+\s+(concept|idea|character)', lower))):
+
+            # Save previous idea
+            if current_idea and current_content:
+                ideas.append({
+                    'title': current_idea,
+                    'content': '\n\n'.join(current_content)
+                })
+
+            current_idea = text.lstrip('#').strip()
+            current_content = []
+        elif current_idea:
+            current_content.append(text)
+
+    # Save last idea
+    if current_idea and current_content:
+        ideas.append({
+            'title': current_idea,
+            'content': '\n\n'.join(current_content)
+        })
+
+    document = {
+        'name': 'Backstory Ideas',
+        'type': 'meta',  # Special type for meta documents
+        'game_system': DEFAULT_GAME_SYSTEM,
+        'status': 'Reference',
+
+        # Store full text as notes
+        'notes': fix_formatting(full_text),
+
+        # Store structured ideas if found
+        'backstory_phases': ideas if ideas else None,
+
+        # Meta
+        'source_file': filename,
+        'imported_at': datetime.now().isoformat(),
+        'raw_document_text': full_text,
+
+        # Tags for filtering
+        'character_tags': ['ideas', 'planning', 'concepts', 'reference'],
+    }
+
+    print(f"  Type: Ideas/Planning Document")
+    print(f"  Content: {len(full_text)} chars")
+    print(f"  Ideas extracted: {len(ideas)}")
+
+    return document
+
+
 def process_directory(directory: str) -> list[dict]:
     """Process all Word documents in a directory."""
     characters = []
@@ -1754,11 +2394,21 @@ def process_directory(directory: str) -> list[dict]:
             continue
         if filename.startswith('~'):
             continue
-        # Skip the ideas file
-        if 'Ideas' in filename or 'ideas' in filename:
-            continue
 
         filepath = os.path.join(directory, filename)
+
+        # Handle ideas file specially
+        if 'Ideas' in filename or 'ideas' in filename:
+            try:
+                doc = extract_ideas_document(filepath)
+                if doc:
+                    characters.append(doc)
+            except Exception as e:
+                print(f"  Error: {e}")
+                import traceback
+                traceback.print_exc()
+            continue
+
         try:
             char = extract_character(filepath)
             if char:
