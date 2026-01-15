@@ -15,50 +15,135 @@ interface CharacterSuggestion {
   confidence: 'high' | 'medium' | 'low'
 }
 
-const ANALYSIS_PROMPT = `You are analyzing a D&D/TTRPG character profile for completeness, consistency, and potential improvements.
+const ANALYSIS_PROMPT = `You are an expert D&D/TTRPG character analyst. Perform a COMPREHENSIVE analysis of this character profile.
 
-Analyze this character and generate suggestions for improvements. Look for:
+## ANALYSIS CATEGORIES
 
-1. **Completeness** - Missing important fields (physical appearance, personality traits, goals, etc.)
-2. **Consistency** - Timeline issues, contradictory information
-3. **Quote Extraction** - Memorable quotes that could be highlighted
-4. **NPC Detection** - Names mentioned that could be tracked as relationships
-5. **Location Detection** - Places mentioned that could be tracked
-6. **Plot Hooks** - Story opportunities based on backstory
-7. **Enrichment** - Details that could be inferred from context
+### 1. COMPLETENESS
+- Missing important fields (appearance, personality, goals, fears, secrets)
+- Empty sections that should have content
+- Partial information that needs expansion
 
-Return a JSON object with a "suggestions" array. Each suggestion must have:
-- suggestion_type: One of "completeness", "consistency", "quote", "npc_detected", "location_detected", "plot_hook", "enrichment", "timeline_issue"
-- field_name: The field this suggestion relates to (e.g., "personality", "goals", "relationships")
-- current_value: What currently exists (can be null if field is empty)
-- suggested_value: The suggested content or change
-- source_excerpt: The part of the character data that led to this suggestion
-- ai_reasoning: Brief explanation of why this suggestion is valuable
-- confidence: "high", "medium", or "low"
+### 2. CONSISTENCY & LORE
+- Timeline contradictions (age vs events, dates that don't align)
+- Factual contradictions within the character's story
+- Lore conflicts (e.g., claiming to be from a destroyed city after it was rebuilt)
+- Relationship inconsistencies (NPC described differently in different places)
 
-Focus on actionable, valuable suggestions. Do not suggest obvious things. Prioritize:
-- Missing personality details
-- Untracked NPCs mentioned in backstory
-- Potential plot hooks from backstory events
-- Quotes that reveal character voice
-- Inconsistencies in timeline or facts
+### 3. GRAMMAR & WRITING
+- Spelling errors and typos
+- Grammar issues that affect readability
+- Awkward phrasing that could be improved
+- Inconsistent tense usage
 
-Return ONLY valid JSON with this structure:
+### 4. FORMATTING & STYLE
+- Inconsistent bullet point styles (mixing -, *, •, etc.)
+- Inconsistent capitalization in lists
+- Paragraph vs bullet point inconsistency
+- Heading style inconsistencies
+
+### 5. QUOTE EXTRACTION
+- Memorable lines that reveal character voice
+- Dialogue that defines personality
+- Catchphrases or verbal tics
+
+### 6. NPC & LOCATION DETECTION
+- Named characters in backstory not in relationships list
+- Locations mentioned but not tracked
+- Organizations or factions referenced
+
+### 7. PLOT HOOKS & STORY OPPORTUNITIES
+- Unresolved conflicts that could become quests
+- Secrets that could be revealed
+- Relationships that could develop
+- Vengeance or redemption arcs
+
+### 8. RELATIONSHIP ANALYSIS
+- NPCs mentioned in backstory but not in relationships
+- Relationships with missing reciprocal connections
+- Family members implied but not listed
+- Gaps in relationship network (e.g., no mentor, no enemies)
+
+### 9. VOICE & CHARACTER CONSISTENCY
+- Personality described vs demonstrated in quotes/writing
+- Alignment vs actions described
+- Class/background vs actual skills/knowledge shown
+
+### 10. REDUNDANCY & CLEANUP
+- Repeated information in multiple places
+- Duplicate NPCs with slightly different names
+- Content that could be consolidated
+
+### 11. CROSS-REFERENCES
+- NPCs mentioned in backstory that should link to existing relationships
+- Events that should be reflected in multiple sections
+- Session notes that should update character status
+
+### 12. SECRET OPPORTUNITIES
+- Hidden information that could be expanded into secrets
+- Backstory elements that NPCs might know
+- Information asymmetry opportunities for DM
+
+## SUGGESTION TYPES
+Use these exact types:
+- completeness: Missing or incomplete fields
+- consistency: Factual or timeline contradictions
+- grammar: Spelling, grammar, or phrasing fixes
+- formatting: Style and formatting unification
+- quote: Extractable memorable quotes
+- npc_detected: NPCs that should be tracked
+- location_detected: Locations to track
+- plot_hook: Story opportunities
+- enrichment: Content that could be expanded
+- timeline_issue: Chronological problems
+- lore_conflict: World/setting contradictions
+- redundancy: Duplicate or repeated content
+- voice_inconsistency: Character voice/behavior mismatches
+- relationship_gap: Missing relationship connections
+- secret_opportunity: Potential secrets to develop
+- cross_reference: Content that should link together
+
+## OUTPUT FORMAT
+
+Return ONLY valid JSON:
 {
   "suggestions": [
     {
-      "suggestion_type": "npc_detected",
-      "field_name": "relationships",
-      "current_value": null,
-      "suggested_value": { "name": "Lord Blackwood", "relationship_type": "enemy", "description": "The noble who destroyed the character's village" },
-      "source_excerpt": "When Lord Blackwood's soldiers burned my village...",
-      "ai_reasoning": "Named NPC mentioned in backstory that should be tracked as a relationship",
+      "suggestion_type": "grammar",
+      "field_name": "backstory",
+      "current_value": "She was borned in a small village",
+      "suggested_value": "She was born in a small village",
+      "source_excerpt": "borned in a small village",
+      "ai_reasoning": "Grammar error: 'borned' should be 'born'",
       "confidence": "high"
+    },
+    {
+      "suggestion_type": "formatting",
+      "field_name": "personality",
+      "current_value": "- Kind\\n* Brave\\n• Stubborn",
+      "suggested_value": "- Kind\\n- Brave\\n- Stubborn",
+      "source_excerpt": "- Kind\\n* Brave\\n• Stubborn",
+      "ai_reasoning": "Inconsistent bullet point styles should be unified",
+      "confidence": "high"
+    },
+    {
+      "suggestion_type": "lore_conflict",
+      "field_name": "backstory",
+      "current_value": null,
+      "suggested_value": "Potential conflict: Character claims to be 25 but describes events 30 years ago as childhood memories",
+      "source_excerpt": "I remember when the war started 30 years ago... I was just a child",
+      "ai_reasoning": "Timeline math doesn't add up - needs clarification",
+      "confidence": "medium"
     }
   ]
 }
 
-If no suggestions are found, return: {"suggestions": []}`
+## IMPORTANT RULES
+1. Be thorough - check EVERY field for issues
+2. Prioritize high-impact suggestions (grammar errors, major conflicts)
+3. Include source_excerpt for EVERY suggestion
+4. Be specific in suggested_value - provide exact fixes
+5. If no issues found, return {"suggestions": []}`
 
 // POST /api/ai/analyze-character - Analyze a vault character
 export async function POST(req: NextRequest) {

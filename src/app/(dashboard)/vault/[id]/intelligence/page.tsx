@@ -17,6 +17,14 @@ const SUGGESTION_TYPE_LABELS: Record<string, string> = {
   plot_hook: 'Plot Hook',
   enrichment: 'Enrichment',
   timeline_issue: 'Timeline Issue',
+  grammar: 'Grammar Fix',
+  formatting: 'Formatting',
+  lore_conflict: 'Lore Conflict',
+  redundancy: 'Redundancy',
+  voice_inconsistency: 'Voice Issue',
+  relationship_gap: 'Relationship Gap',
+  secret_opportunity: 'Secret Opportunity',
+  cross_reference: 'Cross Reference',
 }
 
 const CONFIDENCE_COLORS: Record<string, string> = {
@@ -37,7 +45,7 @@ export default function CharacterIntelligencePage() {
   const [loading, setLoading] = useState(true)
   const [analyzing, setAnalyzing] = useState(false)
   const [filter, setFilter] = useState<SuggestionFilter>('pending')
-  const [provider, setProvider] = useState<'anthropic' | 'google'>('anthropic')
+  const [provider, setProvider] = useState<'anthropic' | 'google' | 'googlePro'>('anthropic')
   const [lastAnalysis, setLastAnalysis] = useState<string | null>(null)
 
   const loadCharacter = useCallback(async () => {
@@ -187,11 +195,12 @@ export default function CharacterIntelligencePage() {
               {/* Provider selector */}
               <select
                 value={provider}
-                onChange={(e) => setProvider(e.target.value as 'anthropic' | 'google')}
+                onChange={(e) => setProvider(e.target.value as 'anthropic' | 'google' | 'googlePro')}
                 className="px-3 py-2 rounded-lg bg-[--bg-surface] border border-[--border-default] text-[--text-primary] text-sm"
               >
-                <option value="anthropic">Claude</option>
-                <option value="google">Gemini</option>
+                <option value="anthropic">Claude (Sonnet)</option>
+                <option value="google">Gemini Flash</option>
+                <option value="googlePro">Gemini 3 Pro (Recommended)</option>
               </select>
 
               {/* Analyze button */}
