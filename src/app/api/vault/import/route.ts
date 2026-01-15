@@ -79,46 +79,48 @@ export async function POST(req: NextRequest) {
           .eq('name', char.name)
           .single()
 
-        const characterData = {
+        // Build character data - only include fields that have values
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const characterData: Record<string, any> = {
           user_id: user.id,
           name: char.name,
           type: char.type || 'pc',
-          game_system: char.game_system,
-          race: char.race,
-          class: char.class,
-          background: char.background,
-          pronouns: char.pronouns || 'she/her',
-          age: char.age,
-          description: char.description,
-          summary: char.summary,
-          personality: char.personality,
-          goals: char.goals,
-          secrets: char.secrets,
-          notes: char.notes,
-          status: char.status || 'active',
-          // Arrays
-          quotes: char.quotes,
-          common_phrases: char.common_phrases,
-          weaknesses: char.weaknesses,
-          fears: char.fears,
-          plot_hooks: char.plot_hooks,
-          tldr: char.tldr,
-          open_questions: char.open_questions,
-          character_tags: char.character_tags,
-          // JSON fields
-          important_people: char.important_people,
-          family: char.family,
-          signature_items: char.signature_items,
-          session_journal: char.session_journal,
-          // URLs
-          character_sheet_url: char.character_sheet_url,
-          theme_music_url: char.theme_music_url,
-          theme_music_title: char.theme_music_title,
-          // Metadata
-          gold: char.gold,
-          source_file: char.source_file,
-          imported_at: char.imported_at || new Date().toISOString(),
         }
+
+        // Core fields (original schema)
+        if (char.game_system) characterData.game_system = char.game_system
+        if (char.race) characterData.race = char.race
+        if (char.class) characterData.class = char.class
+        if (char.background) characterData.background = char.background
+        if (char.description) characterData.description = char.description
+        if (char.summary) characterData.summary = char.summary
+        if (char.personality) characterData.personality = char.personality
+        if (char.goals) characterData.goals = char.goals
+        if (char.secrets) characterData.secrets = char.secrets
+        if (char.notes) characterData.notes = char.notes
+        if (char.status) characterData.status = char.status
+        if (char.quotes) characterData.quotes = char.quotes
+        if (char.common_phrases) characterData.common_phrases = char.common_phrases
+        if (char.weaknesses) characterData.weaknesses = char.weaknesses
+        if (char.plot_hooks) characterData.plot_hooks = char.plot_hooks
+        if (char.tldr) characterData.tldr = char.tldr
+        if (char.character_sheet_url) characterData.character_sheet_url = char.character_sheet_url
+        if (char.theme_music_url) characterData.theme_music_url = char.theme_music_url
+        if (char.theme_music_title) characterData.theme_music_title = char.theme_music_title
+        if (char.gold) characterData.gold = char.gold
+        if (char.source_file) characterData.source_file = char.source_file
+        if (char.imported_at) characterData.imported_at = char.imported_at
+
+        // New fields from migration 014 - try to include them
+        if (char.pronouns) characterData.pronouns = char.pronouns
+        if (char.age) characterData.age = char.age
+        if (char.fears) characterData.fears = char.fears
+        if (char.open_questions) characterData.open_questions = char.open_questions
+        if (char.character_tags) characterData.character_tags = char.character_tags
+        if (char.important_people) characterData.important_people = char.important_people
+        if (char.family) characterData.family = char.family
+        if (char.signature_items) characterData.signature_items = char.signature_items
+        if (char.session_journal) characterData.session_journal = char.session_journal
 
         if (existing) {
           // Update existing character
@@ -138,9 +140,22 @@ export async function POST(req: NextRequest) {
           if (error) throw error
           results.imported++
         }
-      } catch (charError) {
-        const errorMsg = charError instanceof Error ? charError.message : 'Unknown error'
+      } catch (charError: unknown) {
+        // Handle Supabase errors which have a different structure
+        let errorMsg = 'Unknown error'
+        if (charError && typeof charError === 'object') {
+          if ('message' in charError && typeof charError.message === 'string') {
+            errorMsg = charError.message
+          } else if ('error' in charError && typeof charError.error === 'string') {
+            errorMsg = charError.error
+          } else if ('details' in charError && typeof charError.details === 'string') {
+            errorMsg = charError.details
+          } else if ('code' in charError) {
+            errorMsg = `DB Error: ${String(charError.code)}`
+          }
+        }
         results.errors.push(`${char.name}: ${errorMsg}`)
+        console.error(`Import error for ${char.name}:`, charError)
       }
     }
 
