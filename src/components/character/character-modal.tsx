@@ -371,8 +371,8 @@ export function CharacterModal({
   const currentCharacterId = createdCharacterId || character?.id
   const otherCharacters = allCharacters.filter(c => c.id !== currentCharacterId)
   const unusedTags = availableTags.filter(t => !tags.some(ct => ct.tag_id === t.id))
-  const factionTags = unusedTags.filter(t => (t as any).category === 'faction')
-  const generalTags = unusedTags.filter(t => (t as any).category !== 'faction')
+  const factionTags = unusedTags.filter(t => t.category === 'faction')
+  const relationshipTags = unusedTags.filter(t => t.category === 'relationship' || t.category === 'general')
 
   const handleBackdropClick = useCallback(() => {
     if (isFullscreen) {
@@ -762,14 +762,14 @@ export function CharacterModal({
                   {/* Factions & Tags */}
                   <div className="form-group">
                     {/* Factions */}
-                    {tags.filter(ct => (ct.tag as any).category === 'faction').length > 0 && (
+                    {tags.filter(ct => ct.tag.category === 'faction').length > 0 && (
                       <div className="mb-3">
                         <label className="form-label text-xs flex items-center gap-1.5">
                           <Shield className="w-3 h-3 text-[--arcane-gold]" />
                           Factions
                         </label>
                         <div className="flex flex-wrap gap-2">
-                          {tags.filter(ct => (ct.tag as any).category === 'faction').map((ct) => (
+                          {tags.filter(ct => ct.tag.category === 'faction').map((ct) => (
                             <TagBadge
                               key={ct.id}
                               name={ct.tag.name}
@@ -786,7 +786,7 @@ export function CharacterModal({
                     {/* Relationship Tags */}
                     <label className="form-label text-xs">Relationship Tags</label>
                     <div className="flex flex-wrap gap-2 mb-2">
-                      {tags.filter(ct => (ct.tag as any).category !== 'faction').map((ct) => (
+                      {tags.filter(ct => ct.tag.category !== 'faction').map((ct) => (
                         <TagBadge
                           key={ct.id}
                           name={ct.tag.name}
@@ -795,7 +795,7 @@ export function CharacterModal({
                           onRemove={() => handleRemoveTag(ct.id)}
                         />
                       ))}
-                      {tags.filter(ct => (ct.tag as any).category !== 'faction').length === 0 && (
+                      {tags.filter(ct => ct.tag.category !== 'faction').length === 0 && (
                         <span className="text-xs text-[--text-tertiary]">No relationship tags</span>
                       )}
                     </div>
@@ -924,14 +924,14 @@ export function CharacterModal({
                 {tags.length > 0 && (
                   <div className="pb-4 border-b border-[--border] space-y-3">
                     {/* Factions */}
-                    {tags.filter(ct => (ct.tag as any).category === 'faction').length > 0 && (
+                    {tags.filter(ct => ct.tag.category === 'faction').length > 0 && (
                       <div>
                         <div className="flex items-center gap-1.5 mb-2">
                           <Shield className="w-3 h-3 text-[--arcane-gold]" />
                           <span className="text-xs font-medium text-[--text-tertiary] uppercase tracking-wide">Factions</span>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          {tags.filter(ct => (ct.tag as any).category === 'faction').map((ct) => (
+                          {tags.filter(ct => ct.tag.category === 'faction').map((ct) => (
                             <TagBadge
                               key={ct.id}
                               name={ct.tag.name}
@@ -946,11 +946,11 @@ export function CharacterModal({
                     )}
 
                     {/* Relationship Tags */}
-                    {tags.filter(ct => (ct.tag as any).category !== 'faction').length > 0 && (
+                    {tags.filter(ct => ct.tag.category !== 'faction').length > 0 && (
                       <div>
                         <span className="text-xs font-medium text-[--text-tertiary] uppercase tracking-wide mb-2 block">Relationships</span>
                         <div className="flex flex-wrap gap-2">
-                          {tags.filter(ct => (ct.tag as any).category !== 'faction').map((ct) => (
+                          {tags.filter(ct => ct.tag.category !== 'faction').map((ct) => (
                             <TagBadge
                               key={ct.id}
                               name={ct.tag.name}
@@ -1069,12 +1069,12 @@ export function CharacterModal({
                 </div>
               )}
 
-              {/* General Tags */}
-              {generalTags.length > 0 && (
+              {/* Relationship Tags */}
+              {relationshipTags.length > 0 && (
                 <div className="space-y-2">
-                  <label className="form-label">Tags</label>
+                  <label className="form-label">Relationship Tags</label>
                   <div className="flex flex-wrap gap-2">
-                    {generalTags.map((tag) => (
+                    {relationshipTags.map((tag) => (
                       <button
                         key={tag.id}
                         onClick={() => handleAddExistingTag(tag.id)}
@@ -1090,6 +1090,13 @@ export function CharacterModal({
                     ))}
                   </div>
                 </div>
+              )}
+
+              {/* Show message if no existing tags */}
+              {factionTags.length === 0 && relationshipTags.length === 0 && (
+                <p className="text-sm text-[--text-tertiary] text-center py-4">
+                  No existing tags. Create a new one below.
+                </p>
               )}
 
               <button className="btn btn-secondary w-full" onClick={() => setIsCreatingNewTag(true)}>
