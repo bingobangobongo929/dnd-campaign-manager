@@ -15,6 +15,12 @@ import {
   ChevronDown,
   ChevronUp,
   CalendarDays,
+  FileQuestion,
+  UserPlus,
+  MapPin,
+  Lightbulb,
+  Wand2,
+  Clock,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { SuggestionType, ConfidenceLevel, Character } from '@/types/database'
@@ -47,6 +53,13 @@ const SUGGESTION_ICONS: Record<SuggestionType, typeof User> = {
   important_person: User,
   relationship: Link,
   timeline_event: CalendarDays,
+  completeness: FileQuestion,
+  consistency: AlertTriangle,
+  npc_detected: UserPlus,
+  location_detected: MapPin,
+  plot_hook: Lightbulb,
+  enrichment: Wand2,
+  timeline_issue: Clock,
 }
 
 const SUGGESTION_COLORS: Record<SuggestionType, { bg: string; text: string; border: string }> = {
@@ -57,6 +70,13 @@ const SUGGESTION_COLORS: Record<SuggestionType, { bg: string; text: string; bord
   important_person: { bg: 'rgba(245, 158, 11, 0.12)', text: '#fbbf24', border: 'rgba(245, 158, 11, 0.3)' },
   relationship: { bg: 'rgba(236, 72, 153, 0.12)', text: '#f472b6', border: 'rgba(236, 72, 153, 0.3)' },
   timeline_event: { bg: 'rgba(99, 102, 241, 0.12)', text: '#818cf8', border: 'rgba(99, 102, 241, 0.3)' },
+  completeness: { bg: 'rgba(251, 191, 36, 0.12)', text: '#fbbf24', border: 'rgba(251, 191, 36, 0.3)' },
+  consistency: { bg: 'rgba(249, 115, 22, 0.12)', text: '#fb923c', border: 'rgba(249, 115, 22, 0.3)' },
+  npc_detected: { bg: 'rgba(34, 211, 238, 0.12)', text: '#22d3ee', border: 'rgba(34, 211, 238, 0.3)' },
+  location_detected: { bg: 'rgba(74, 222, 128, 0.12)', text: '#4ade80', border: 'rgba(74, 222, 128, 0.3)' },
+  plot_hook: { bg: 'rgba(192, 132, 252, 0.12)', text: '#c084fc', border: 'rgba(192, 132, 252, 0.3)' },
+  enrichment: { bg: 'rgba(56, 189, 248, 0.12)', text: '#38bdf8', border: 'rgba(56, 189, 248, 0.3)' },
+  timeline_issue: { bg: 'rgba(251, 146, 60, 0.12)', text: '#fb923c', border: 'rgba(251, 146, 60, 0.3)' },
 }
 
 const CONFIDENCE_INDICATORS: Record<ConfidenceLevel, { label: string; color: string }> = {

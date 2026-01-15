@@ -426,48 +426,132 @@ export interface Database {
           user_id: string
           name: string
           type: 'pc' | 'npc'
+          // Core text fields
           description: string | null
+          backstory: string | null
           summary: string | null
           notes: string | null
+          // Images (legacy - use vault_character_images table)
           image_url: string | null
           detail_image_url: string | null
+          // Tags and status
           tags: string[] | null
           status: string | null
           status_color: string | null
+          // Basic info
           race: string | null
           class: string | null
+          subclass: string | null
+          level: number | null
           background: string | null
+          alignment: string | null
+          deity: string | null
+          // Demographics
+          age: string | null
+          pronouns: string | null
+          // Physical appearance
+          height: string | null
+          weight: string | null
+          hair: string | null
+          eyes: string | null
+          skin: string | null
+          voice: string | null
+          distinguishing_marks: string | null
+          typical_attire: string | null
           appearance: string | null
+          // Creative references
+          faceclaim: string | null
+          voice_claim: string | null
+          // Personality
           personality: string | null
+          ideals: string | null
+          bonds: string | null
+          flaws: string | null
+          mannerisms: string | null
+          speech_patterns: string | null
+          motivations: string | null
+          // Goals and secrets
           goals: string | null
           secrets: string | null
+          // Arrays
           quotes: string[] | null
           common_phrases: string[] | null
           weaknesses: string[] | null
+          fears: string[] | null
           plot_hooks: string[] | null
           tldr: string[] | null
+          open_questions: string[] | null
+          character_tags: string[] | null
+          // Media links
           theme_music_url: string | null
           theme_music_title: string | null
           character_sheet_url: string | null
+          spotify_playlist: string | null
+          pinterest_board: string | null
+          // Campaign context
           game_system: string | null
           external_campaign: string | null
+          linked_campaign_id: string | null
+          party_name: string | null
+          party_role: string | null
+          player_name: string | null
           dm_name: string | null
           campaign_started: string | null
+          joined_session: number | null
+          retired_session: number | null
+          // Legacy JSONB (use new tables instead)
           quick_stats: Json | null
           inventory: Json | null
+          important_people: Json | null
+          session_journal: Json | null
+          signature_items: Json | null
+          family: Json | null
+          // New structured JSONB
+          backstory_phases: Json | null
+          story_arcs: Json | null
+          factions: Json | null
+          companions: Json | null
+          possessions: Json | null
+          art_references: Json | null
+          // Game mechanics
+          ability_scores: Json | null
+          hit_points: Json | null
+          armor_class: number | null
+          speed: string | null
+          proficiencies: Json | null
+          languages: string[] | null
+          saving_throws: string[] | null
+          resistances: string[] | null
+          immunities: string[] | null
+          vulnerabilities: string[] | null
+          // Aesthetic
+          aesthetic_tags: string[] | null
+          color_palette: string[] | null
+          // Organization
+          folder: string | null
+          is_archived: boolean
+          is_favorite: boolean
+          display_order: number
+          // Privacy & Sharing
+          visibility: string | null
+          dm_notes: string | null
+          share_token: string | null
+          is_public: boolean
+          allow_comments: boolean
+          // Backstory
+          origin_location: string | null
+          // NPC-specific
+          npc_role: string | null
+          first_appearance: string | null
+          location: string | null
+          disposition: string | null
+          occupation: string | null
+          // Tracking
           gold: number | null
           source_file: string | null
           imported_at: string | null
-          // New enrichment fields
-          important_people: Json | null
-          session_journal: Json | null
-          fears: string[] | null
-          signature_items: Json | null
-          open_questions: string[] | null
-          character_tags: string[] | null
-          age: number | null
-          pronouns: string | null
-          family: Json | null
+          raw_document_text: string | null
+          last_intelligence_run: string | null
           created_at: string
           updated_at: string
         }
@@ -477,6 +561,7 @@ export interface Database {
           name: string
           type?: 'pc' | 'npc'
           description?: string | null
+          backstory?: string | null
           summary?: string | null
           notes?: string | null
           image_url?: string | null
@@ -486,38 +571,100 @@ export interface Database {
           status_color?: string | null
           race?: string | null
           class?: string | null
+          subclass?: string | null
+          level?: number | null
           background?: string | null
+          alignment?: string | null
+          deity?: string | null
+          age?: string | null
+          pronouns?: string | null
+          height?: string | null
+          weight?: string | null
+          hair?: string | null
+          eyes?: string | null
+          skin?: string | null
+          voice?: string | null
+          distinguishing_marks?: string | null
+          typical_attire?: string | null
           appearance?: string | null
+          faceclaim?: string | null
+          voice_claim?: string | null
           personality?: string | null
+          ideals?: string | null
+          bonds?: string | null
+          flaws?: string | null
+          mannerisms?: string | null
+          speech_patterns?: string | null
+          motivations?: string | null
           goals?: string | null
           secrets?: string | null
           quotes?: string[] | null
           common_phrases?: string[] | null
           weaknesses?: string[] | null
+          fears?: string[] | null
           plot_hooks?: string[] | null
           tldr?: string[] | null
+          open_questions?: string[] | null
+          character_tags?: string[] | null
           theme_music_url?: string | null
           theme_music_title?: string | null
           character_sheet_url?: string | null
+          spotify_playlist?: string | null
+          pinterest_board?: string | null
           game_system?: string | null
           external_campaign?: string | null
+          linked_campaign_id?: string | null
+          party_name?: string | null
+          party_role?: string | null
+          player_name?: string | null
           dm_name?: string | null
           campaign_started?: string | null
+          joined_session?: number | null
+          retired_session?: number | null
           quick_stats?: Json | null
           inventory?: Json | null
+          important_people?: Json | null
+          session_journal?: Json | null
+          signature_items?: Json | null
+          family?: Json | null
+          backstory_phases?: Json | null
+          story_arcs?: Json | null
+          factions?: Json | null
+          companions?: Json | null
+          possessions?: Json | null
+          art_references?: Json | null
+          ability_scores?: Json | null
+          hit_points?: Json | null
+          armor_class?: number | null
+          speed?: string | null
+          proficiencies?: Json | null
+          languages?: string[] | null
+          saving_throws?: string[] | null
+          resistances?: string[] | null
+          immunities?: string[] | null
+          vulnerabilities?: string[] | null
+          aesthetic_tags?: string[] | null
+          color_palette?: string[] | null
+          folder?: string | null
+          is_archived?: boolean
+          is_favorite?: boolean
+          display_order?: number
+          visibility?: string | null
+          dm_notes?: string | null
+          share_token?: string | null
+          is_public?: boolean
+          allow_comments?: boolean
+          origin_location?: string | null
+          npc_role?: string | null
+          first_appearance?: string | null
+          location?: string | null
+          disposition?: string | null
+          occupation?: string | null
           gold?: number | null
           source_file?: string | null
           imported_at?: string | null
-          // New enrichment fields
-          important_people?: Json | null
-          session_journal?: Json | null
-          fears?: string[] | null
-          signature_items?: Json | null
-          open_questions?: string[] | null
-          character_tags?: string[] | null
-          age?: number | null
-          pronouns?: string | null
-          family?: Json | null
+          raw_document_text?: string | null
+          last_intelligence_run?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -527,6 +674,7 @@ export interface Database {
           name?: string
           type?: 'pc' | 'npc'
           description?: string | null
+          backstory?: string | null
           summary?: string | null
           notes?: string | null
           image_url?: string | null
@@ -536,38 +684,100 @@ export interface Database {
           status_color?: string | null
           race?: string | null
           class?: string | null
+          subclass?: string | null
+          level?: number | null
           background?: string | null
+          alignment?: string | null
+          deity?: string | null
+          age?: string | null
+          pronouns?: string | null
+          height?: string | null
+          weight?: string | null
+          hair?: string | null
+          eyes?: string | null
+          skin?: string | null
+          voice?: string | null
+          distinguishing_marks?: string | null
+          typical_attire?: string | null
           appearance?: string | null
+          faceclaim?: string | null
+          voice_claim?: string | null
           personality?: string | null
+          ideals?: string | null
+          bonds?: string | null
+          flaws?: string | null
+          mannerisms?: string | null
+          speech_patterns?: string | null
+          motivations?: string | null
           goals?: string | null
           secrets?: string | null
           quotes?: string[] | null
           common_phrases?: string[] | null
           weaknesses?: string[] | null
+          fears?: string[] | null
           plot_hooks?: string[] | null
           tldr?: string[] | null
+          open_questions?: string[] | null
+          character_tags?: string[] | null
           theme_music_url?: string | null
           theme_music_title?: string | null
           character_sheet_url?: string | null
+          spotify_playlist?: string | null
+          pinterest_board?: string | null
           game_system?: string | null
           external_campaign?: string | null
+          linked_campaign_id?: string | null
+          party_name?: string | null
+          party_role?: string | null
+          player_name?: string | null
           dm_name?: string | null
           campaign_started?: string | null
+          joined_session?: number | null
+          retired_session?: number | null
           quick_stats?: Json | null
           inventory?: Json | null
+          important_people?: Json | null
+          session_journal?: Json | null
+          signature_items?: Json | null
+          family?: Json | null
+          backstory_phases?: Json | null
+          story_arcs?: Json | null
+          factions?: Json | null
+          companions?: Json | null
+          possessions?: Json | null
+          art_references?: Json | null
+          ability_scores?: Json | null
+          hit_points?: Json | null
+          armor_class?: number | null
+          speed?: string | null
+          proficiencies?: Json | null
+          languages?: string[] | null
+          saving_throws?: string[] | null
+          resistances?: string[] | null
+          immunities?: string[] | null
+          vulnerabilities?: string[] | null
+          aesthetic_tags?: string[] | null
+          color_palette?: string[] | null
+          folder?: string | null
+          is_archived?: boolean
+          is_favorite?: boolean
+          display_order?: number
+          visibility?: string | null
+          dm_notes?: string | null
+          share_token?: string | null
+          is_public?: boolean
+          allow_comments?: boolean
+          origin_location?: string | null
+          npc_role?: string | null
+          first_appearance?: string | null
+          location?: string | null
+          disposition?: string | null
+          occupation?: string | null
           gold?: number | null
           source_file?: string | null
           imported_at?: string | null
-          // New enrichment fields
-          important_people?: Json | null
-          session_journal?: Json | null
-          fears?: string[] | null
-          signature_items?: Json | null
-          open_questions?: string[] | null
-          character_tags?: string[] | null
-          age?: number | null
-          pronouns?: string | null
-          family?: Json | null
+          raw_document_text?: string | null
+          last_intelligence_run?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1067,11 +1277,12 @@ export interface Database {
       intelligence_suggestions: {
         Row: {
           id: string
-          campaign_id: string
+          campaign_id: string | null
           session_id: string | null
           character_id: string | null
+          vault_character_id: string | null
           character_name: string | null
-          suggestion_type: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship' | 'timeline_event'
+          suggestion_type: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship' | 'timeline_event' | 'completeness' | 'consistency' | 'npc_detected' | 'location_detected' | 'plot_hook' | 'enrichment' | 'timeline_issue'
           field_name: string
           current_value: Json | null
           suggested_value: Json
@@ -1084,11 +1295,12 @@ export interface Database {
         }
         Insert: {
           id?: string
-          campaign_id: string
+          campaign_id?: string | null
           session_id?: string | null
           character_id?: string | null
+          vault_character_id?: string | null
           character_name?: string | null
-          suggestion_type: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship' | 'timeline_event'
+          suggestion_type: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship' | 'timeline_event' | 'completeness' | 'consistency' | 'npc_detected' | 'location_detected' | 'plot_hook' | 'enrichment' | 'timeline_issue'
           field_name: string
           current_value?: Json | null
           suggested_value: Json
@@ -1101,11 +1313,12 @@ export interface Database {
         }
         Update: {
           id?: string
-          campaign_id?: string
+          campaign_id?: string | null
           session_id?: string | null
           character_id?: string | null
+          vault_character_id?: string | null
           character_name?: string | null
-          suggestion_type?: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship' | 'timeline_event'
+          suggestion_type?: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship' | 'timeline_event' | 'completeness' | 'consistency' | 'npc_detected' | 'location_detected' | 'plot_hook' | 'enrichment' | 'timeline_issue'
           field_name?: string
           current_value?: Json | null
           suggested_value?: Json
@@ -1152,6 +1365,297 @@ export interface Database {
           created_at?: string
         }
       }
+      // =====================================================
+      // NEW VAULT TABLES
+      // =====================================================
+      vault_character_images: {
+        Row: {
+          id: string
+          user_id: string
+          character_id: string
+          image_url: string
+          image_type: string | null
+          caption: string | null
+          artist_credit: string | null
+          artist_url: string | null
+          is_primary: boolean
+          is_ai_generated: boolean
+          display_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          character_id: string
+          image_url: string
+          image_type?: string | null
+          caption?: string | null
+          artist_credit?: string | null
+          artist_url?: string | null
+          is_primary?: boolean
+          is_ai_generated?: boolean
+          display_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          character_id?: string
+          image_url?: string
+          image_type?: string | null
+          caption?: string | null
+          artist_credit?: string | null
+          artist_url?: string | null
+          is_primary?: boolean
+          is_ai_generated?: boolean
+          display_order?: number
+          created_at?: string
+        }
+      }
+      vault_character_relationships: {
+        Row: {
+          id: string
+          user_id: string
+          character_id: string
+          related_character_id: string | null
+          related_name: string | null
+          related_image_url: string | null
+          relationship_type: string
+          relationship_label: string | null
+          description: string | null
+          from_perspective: string | null
+          to_perspective: string | null
+          relationship_status: string | null
+          is_known: boolean
+          is_mutual: boolean
+          first_met: string | null
+          display_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          character_id: string
+          related_character_id?: string | null
+          related_name?: string | null
+          related_image_url?: string | null
+          relationship_type: string
+          relationship_label?: string | null
+          description?: string | null
+          from_perspective?: string | null
+          to_perspective?: string | null
+          relationship_status?: string | null
+          is_known?: boolean
+          is_mutual?: boolean
+          first_met?: string | null
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          character_id?: string
+          related_character_id?: string | null
+          related_name?: string | null
+          related_image_url?: string | null
+          relationship_type?: string
+          relationship_label?: string | null
+          description?: string | null
+          from_perspective?: string | null
+          to_perspective?: string | null
+          relationship_status?: string | null
+          is_known?: boolean
+          is_mutual?: boolean
+          first_met?: string | null
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      vault_locations: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          location_type: string | null
+          description: string | null
+          image_url: string | null
+          campaign_name: string | null
+          game_system: string | null
+          parent_location_id: string | null
+          notable_features: string | null
+          dangers: string | null
+          inhabitants: string | null
+          notes: string | null
+          is_public: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          location_type?: string | null
+          description?: string | null
+          image_url?: string | null
+          campaign_name?: string | null
+          game_system?: string | null
+          parent_location_id?: string | null
+          notable_features?: string | null
+          dangers?: string | null
+          inhabitants?: string | null
+          notes?: string | null
+          is_public?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          location_type?: string | null
+          description?: string | null
+          image_url?: string | null
+          campaign_name?: string | null
+          game_system?: string | null
+          parent_location_id?: string | null
+          notable_features?: string | null
+          dangers?: string | null
+          inhabitants?: string | null
+          notes?: string | null
+          is_public?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      vault_character_locations: {
+        Row: {
+          id: string
+          character_id: string
+          location_id: string
+          relationship: string
+          significance: string | null
+          notes: string | null
+          time_period: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          character_id: string
+          location_id: string
+          relationship: string
+          significance?: string | null
+          notes?: string | null
+          time_period?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          character_id?: string
+          location_id?: string
+          relationship?: string
+          significance?: string | null
+          notes?: string | null
+          time_period?: string | null
+          created_at?: string
+        }
+      }
+      vault_character_snapshots: {
+        Row: {
+          id: string
+          user_id: string
+          character_id: string
+          snapshot_name: string
+          snapshot_type: string | null
+          level_at_snapshot: number | null
+          snapshot_data: Json
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          character_id: string
+          snapshot_name: string
+          snapshot_type?: string | null
+          level_at_snapshot?: number | null
+          snapshot_data: Json
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          character_id?: string
+          snapshot_name?: string
+          snapshot_type?: string | null
+          level_at_snapshot?: number | null
+          snapshot_data?: Json
+          notes?: string | null
+          created_at?: string
+        }
+      }
+      vault_character_spells: {
+        Row: {
+          id: string
+          character_id: string
+          spell_name: string
+          spell_level: number
+          spell_school: string | null
+          source: string | null
+          source_detail: string | null
+          is_prepared: boolean
+          is_ritual: boolean
+          is_concentration: boolean
+          casting_time: string | null
+          range: string | null
+          components: string | null
+          duration: string | null
+          description: string | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          character_id: string
+          spell_name: string
+          spell_level?: number
+          spell_school?: string | null
+          source?: string | null
+          source_detail?: string | null
+          is_prepared?: boolean
+          is_ritual?: boolean
+          is_concentration?: boolean
+          casting_time?: string | null
+          range?: string | null
+          components?: string | null
+          duration?: string | null
+          description?: string | null
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          character_id?: string
+          spell_name?: string
+          spell_level?: number
+          spell_school?: string | null
+          source?: string | null
+          source_detail?: string | null
+          is_prepared?: boolean
+          is_ritual?: boolean
+          is_concentration?: boolean
+          casting_time?: string | null
+          range?: string | null
+          components?: string | null
+          duration?: string | null
+          description?: string | null
+          notes?: string | null
+          created_at?: string
+        }
+      }
     }
   }
 }
@@ -1187,9 +1691,26 @@ export type CampaignLore = Database['public']['Tables']['campaign_lore']['Row']
 export type CampaignShare = Database['public']['Tables']['campaign_shares']['Row']
 export type IntelligenceSuggestion = Database['public']['Tables']['intelligence_suggestions']['Row']
 
-// Suggestion types for Campaign Intelligence
-export type SuggestionType = 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship' | 'timeline_event'
+// New Vault table types
+export type VaultCharacterImage = Database['public']['Tables']['vault_character_images']['Row']
+export type VaultCharacterRelationship = Database['public']['Tables']['vault_character_relationships']['Row']
+export type VaultLocation = Database['public']['Tables']['vault_locations']['Row']
+export type VaultCharacterLocation = Database['public']['Tables']['vault_character_locations']['Row']
+export type VaultCharacterSnapshot = Database['public']['Tables']['vault_character_snapshots']['Row']
+export type VaultCharacterSpell = Database['public']['Tables']['vault_character_spells']['Row']
+
+// Suggestion types for Campaign & Character Intelligence
+export type SuggestionType = 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship' | 'timeline_event' | 'completeness' | 'consistency' | 'npc_detected' | 'location_detected' | 'plot_hook' | 'enrichment' | 'timeline_issue'
 export type ConfidenceLevel = 'high' | 'medium' | 'low'
+
+// Vault character with all relations
+export type VaultCharacterFull = VaultCharacter & {
+  images: VaultCharacterImage[]
+  relationships: (VaultCharacterRelationship & { related_character?: VaultCharacter | null })[]
+  locations: (VaultCharacterLocation & { location: VaultLocation })[]
+  spells: VaultCharacterSpell[]
+  snapshots: VaultCharacterSnapshot[]
+}
 
 // Extended types with relations
 export type CharacterWithTags = Character & {

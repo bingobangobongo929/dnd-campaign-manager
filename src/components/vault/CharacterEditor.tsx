@@ -53,6 +53,7 @@ import {
   Sparkles,
   Loader2,
   Check,
+  Brain,
 } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { Modal } from '@/components/ui'
@@ -1076,6 +1077,15 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
           <div className="flex items-center gap-1">
             {characterId && (
               <>
+                {aiEnabled && (
+                  <button
+                    onClick={() => router.push(`/vault/${characterId}/intelligence`)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-purple-500/10 transition-all duration-200 text-purple-400 hover:text-purple-300"
+                  >
+                    <Brain className="w-3.5 h-3.5" />
+                    <span className="text-[13px]">Intelligence</span>
+                  </button>
+                )}
                 <button
                   onClick={() => setShareModalOpen(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white/[0.05] transition-all duration-200 text-gray-500 hover:text-gray-300"
