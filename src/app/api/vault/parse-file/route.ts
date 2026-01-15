@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { generateText } from 'ai'
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { createClient } from '@/lib/supabase/server'
+import { getAIModel } from '@/lib/ai/config'
 
 export const runtime = 'edge'
 export const maxDuration = 300 // 5 minutes for large documents
@@ -268,37 +268,41 @@ export async function POST(req: Request) {
       mimeType = mimeMap[fileExtension || ''] || 'application/octet-stream'
     }
 
-    // Create Google AI client with Gemini Pro 3
-    const google = createGoogleGenerativeAI({
-      apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-    })
-
     // Use Gemini Pro 3 for best document parsing quality
-    const model = google('gemini-3-pro-preview')
+    const model = getAIModel('googlePro')
 
     // Build the data URL for the file
     const dataUrl = `data:${mimeType};base64,${base64}`
 
     // Send file to Gemini for parsing
-    const { text } = await generateText({
-      model,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'file',
-              data: dataUrl,
-              mediaType: mimeType,
-            },
-            {
-              type: 'text',
-              text: `${VAULT_CHARACTER_PARSE_PROMPT}\n\n---\n\nParse this character document completely. Extract EVERY piece of information with zero data loss.\n\n${characterNameHint ? `Character Name Hint: ${characterNameHint}\n\n` : ''}The document is attached as a file. Read it carefully and extract all content.`,
-            },
-          ],
-        },
-      ],
-    })
+    let text: string
+    try {
+      const result = await generateText({
+        model,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'file',
+                data: dataUrl,
+                mediaType: mimeType as 'application/pdf' | 'image/png' | 'image/jpeg' | 'image/webp',
+              },
+              {
+                type: 'text',
+                text: `${VAULT_CHARACTER_PARSE_PROMPT}\n\n---\n\nParse this character document completely. Extract EVERY piece of information with zero data loss.\n\n${characterNameHint ? `Character Name Hint: ${characterNameHint}\n\n` : ''}The document is attached as a file. Read it carefully and extract all content.`,
+              },
+            ],
+          },
+        ],
+      })
+      text = result.text
+    } catch (aiError) {
+      console.error('AI generation error:', aiError)
+      return NextResponse.json({
+        error: `AI parsing failed: ${aiError instanceof Error ? aiError.message : 'Unknown error'}`,
+      }, { status: 500 })
+    }
 
     // Parse the JSON response
     let parsedData
