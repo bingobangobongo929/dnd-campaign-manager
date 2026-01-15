@@ -313,8 +313,10 @@ export default function VaultImportPage() {
     }
   }, [file])
 
-  // Toggle section approval
-  const toggleApproval = (section: keyof SectionApproval) => {
+  // Toggle section approval (without scrolling)
+  const toggleApproval = (section: keyof SectionApproval, e?: React.MouseEvent) => {
+    e?.preventDefault()
+    e?.stopPropagation()
     setApprovals(prev => ({
       ...prev,
       [section]: prev[section] === 'approved' ? 'rejected' : 'approved',
@@ -328,6 +330,29 @@ export default function VaultImportPage() {
 
   // Check if any section is approved
   const hasApprovedSections = Object.values(approvals).some(s => s === 'approved')
+
+  // Approve all sections that have content
+  const approveAll = () => {
+    if (!parsedData) return
+    setApprovals({
+      character: parsedData.character ? 'approved' : 'pending',
+      npcs: parsedData.npcs && parsedData.npcs.length > 0 ? 'approved' : 'pending',
+      companions: parsedData.companions && parsedData.companions.length > 0 ? 'approved' : 'pending',
+      sessions: parsedData.session_notes && parsedData.session_notes.length > 0 ? 'approved' : 'pending',
+      writings: parsedData.writings && parsedData.writings.length > 0 ? 'approved' : 'pending',
+      tables: parsedData.reference_tables && parsedData.reference_tables.length > 0 ? 'approved' : 'pending',
+    })
+  }
+
+  // Check if all sections with content are approved
+  const allApproved = !!(parsedData && (
+    (!parsedData.character || approvals.character === 'approved') &&
+    (!parsedData.npcs?.length || approvals.npcs === 'approved') &&
+    (!parsedData.companions?.length || approvals.companions === 'approved') &&
+    (!parsedData.session_notes?.length || approvals.sessions === 'approved') &&
+    (!parsedData.writings?.length || approvals.writings === 'approved') &&
+    (!parsedData.reference_tables?.length || approvals.tables === 'approved')
+  ))
 
   // Import approved sections
   const handleImport = useCallback(async () => {
@@ -432,7 +457,8 @@ export default function VaultImportPage() {
           {/* Approval buttons */}
           <div className="flex items-center gap-2 ml-4">
             <button
-              onClick={() => toggleApproval(section)}
+              type="button"
+              onClick={(e) => toggleApproval(section, e)}
               className={cn(
                 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
                 status === 'approved'
@@ -949,9 +975,25 @@ export default function VaultImportPage() {
               </div>
             </div>
 
-            <p className="text-sm text-gray-500 mb-6">
-              Review each section below and approve what you want to import.
-            </p>
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-sm text-gray-500">
+                Review each section below and approve what you want to import.
+              </p>
+              <button
+                type="button"
+                onClick={approveAll}
+                disabled={allApproved}
+                className={cn(
+                  'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                  allApproved
+                    ? 'bg-green-500/20 text-green-400 border border-green-500/30 cursor-default'
+                    : 'bg-purple-500/20 text-purple-400 border border-purple-500/30 hover:bg-purple-500/30'
+                )}
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                {allApproved ? 'All Approved' : 'Approve All'}
+              </button>
+            </div>
           </div>
         )}
 

@@ -335,7 +335,11 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error('Structured import error:', error)
     return NextResponse.json(
-      { error: 'Failed to import character data' },
+      {
+        error: 'Failed to import character data',
+        details: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      },
       { status: 500 }
     )
   }
