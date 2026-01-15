@@ -458,6 +458,16 @@ export interface Database {
           gold: number | null
           source_file: string | null
           imported_at: string | null
+          // New enrichment fields
+          important_people: Json | null
+          session_journal: Json | null
+          fears: string[] | null
+          signature_items: Json | null
+          open_questions: string[] | null
+          character_tags: string[] | null
+          age: number | null
+          pronouns: string | null
+          family: Json | null
           created_at: string
           updated_at: string
         }
@@ -498,6 +508,16 @@ export interface Database {
           gold?: number | null
           source_file?: string | null
           imported_at?: string | null
+          // New enrichment fields
+          important_people?: Json | null
+          session_journal?: Json | null
+          fears?: string[] | null
+          signature_items?: Json | null
+          open_questions?: string[] | null
+          character_tags?: string[] | null
+          age?: number | null
+          pronouns?: string | null
+          family?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -538,6 +558,16 @@ export interface Database {
           gold?: number | null
           source_file?: string | null
           imported_at?: string | null
+          // New enrichment fields
+          important_people?: Json | null
+          session_journal?: Json | null
+          fears?: string[] | null
+          signature_items?: Json | null
+          open_questions?: string[] | null
+          character_tags?: string[] | null
+          age?: number | null
+          pronouns?: string | null
+          family?: Json | null
           created_at?: string
           updated_at?: string
         }
