@@ -382,6 +382,17 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     },
   })
 
+  // Process inline formatting (bold, italic) - defined first so textToHtml can use it
+  const processInlineFormatting = (text: string): string => {
+    return text
+      // Bold: **text** or __text__
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/__([^_]+)__/g, '<strong>$1</strong>')
+      // Italic: *text* or _text_ (but not if it's inside a word)
+      .replace(/(?<![a-zA-Z])\*([^*]+)\*(?![a-zA-Z])/g, '<em>$1</em>')
+      .replace(/(?<![a-zA-Z])_([^_]+)_(?![a-zA-Z])/g, '<em>$1</em>')
+  }
+
   // Convert plain text/markdown to HTML for TipTap
   const textToHtml = (text: string): string => {
     if (!text) return ''
@@ -390,31 +401,76 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       return text
     }
 
-    // Process the text block by block (split on double newlines)
-    const blocks = text.split(/\n\n+/)
+    // First, normalize the text
+    let normalized = text
+      // CRITICAL: Split heading from content on same line
+      // Pattern: ## Heading Title followed by sentence content (capital letter starting a sentence)
+      // This handles cases like "## Backstory The smoke..." -> "## Backstory\n\nThe smoke..."
+      .replace(/^(#{1,2}\s+[A-Z][a-z]*(?:\s+(?:&|and|or|of|the|in|to|for|[A-Z][a-z]*)){0,3})\s+([A-Z][a-z])/gm, '$1\n\n$2')
+      // Also split if heading is followed by a quote or other content marker
+      .replace(/^(#{1,2}\s+[A-Z][^\n]{0,30}?)\s+(["'\*\-])/gm, '$1\n\n$2')
+      // Ensure --- has newlines around it
+      .replace(/([^\n])\n?---\n?([^\n])/g, '$1\n\n---\n\n$2')
+      // Make sure bullet points have proper newlines
+      .replace(/([.!?])\s*\n?-\s+/g, '$1\n\n- ')
+
+    // Split on double newlines
+    const blocks = normalized.split(/\n\n+/).filter(b => b.trim())
     const htmlBlocks: string[] = []
 
     for (const block of blocks) {
       const trimmedBlock = block.trim()
-      if (!trimmedBlock) continue
+      if (!trimmedBlock || trimmedBlock === '---') {
+        if (trimmedBlock === '---') htmlBlocks.push('<hr>')
+        continue
+      }
 
       // Check if this block is a list (starts with - or • or *)
       const lines = trimmedBlock.split('\n')
-      const isListBlock = lines.every(line => /^[\-\•\*]\s/.test(line.trim()) || line.trim() === '')
+      const nonEmptyLines = lines.filter(l => l.trim())
+      const isListBlock = nonEmptyLines.length > 0 &&
+        nonEmptyLines.every(line => /^[\-\•\*]\s/.test(line.trim()))
 
       if (isListBlock) {
         // Convert to unordered list
-        const listItems = lines
-          .filter(line => line.trim())
-          .map(line => `<li>${processInlineFormatting(line.replace(/^[\-\•\*]\s*/, ''))}</li>`)
+        const listItems = nonEmptyLines
+          .map(line => `<li>${processInlineFormatting(line.replace(/^[\-\•\*]\s*/, '').trim())}</li>`)
           .join('')
         htmlBlocks.push(`<ul>${listItems}</ul>`)
-      } else if (trimmedBlock.startsWith('## ')) {
-        // H2 heading
-        htmlBlocks.push(`<h2>${processInlineFormatting(trimmedBlock.slice(3))}</h2>`)
-      } else if (trimmedBlock.startsWith('# ')) {
+      } else if (/^##\s+/.test(trimmedBlock)) {
+        // H2 heading - extract heading vs content if on same line
+        // First try to split on sentence boundary (heading words followed by sentence)
+        const splitMatch = trimmedBlock.match(/^##\s+([A-Z][a-z]*(?:\s+(?:&|and|or|of|the|in|to|for|[A-Z][a-z]*)){0,3})\s+([A-Z][\s\S]*)$/)
+        if (splitMatch) {
+          htmlBlocks.push(`<h2>${processInlineFormatting(splitMatch[1])}</h2>`)
+          htmlBlocks.push(`<p>${processInlineFormatting(splitMatch[2].replace(/\n/g, '<br>'))}</p>`)
+        } else {
+          // Standard heading with newline separation
+          const headingMatch = trimmedBlock.match(/^##\s+(.+?)(?:\n|$)/)
+          if (headingMatch) {
+            htmlBlocks.push(`<h2>${processInlineFormatting(headingMatch[1])}</h2>`)
+            const remaining = trimmedBlock.slice(headingMatch[0].length).trim()
+            if (remaining) {
+              htmlBlocks.push(`<p>${processInlineFormatting(remaining.replace(/\n/g, '<br>'))}</p>`)
+            }
+          }
+        }
+      } else if (/^#\s+/.test(trimmedBlock)) {
         // H1 heading
-        htmlBlocks.push(`<h1>${processInlineFormatting(trimmedBlock.slice(2))}</h1>`)
+        const splitMatch = trimmedBlock.match(/^#\s+([A-Z][a-z]*(?:\s+(?:&|and|or|of|the|in|to|for|[A-Z][a-z]*)){0,3})\s+([A-Z][\s\S]*)$/)
+        if (splitMatch) {
+          htmlBlocks.push(`<h1>${processInlineFormatting(splitMatch[1])}</h1>`)
+          htmlBlocks.push(`<p>${processInlineFormatting(splitMatch[2].replace(/\n/g, '<br>'))}</p>`)
+        } else {
+          const headingMatch = trimmedBlock.match(/^#\s+(.+?)(?:\n|$)/)
+          if (headingMatch) {
+            htmlBlocks.push(`<h1>${processInlineFormatting(headingMatch[1])}</h1>`)
+            const remaining = trimmedBlock.slice(headingMatch[0].length).trim()
+            if (remaining) {
+              htmlBlocks.push(`<p>${processInlineFormatting(remaining.replace(/\n/g, '<br>'))}</p>`)
+            }
+          }
+        }
       } else {
         // Regular paragraph - convert single newlines to <br>
         const processed = lines.map(line => processInlineFormatting(line)).join('<br>')
@@ -423,17 +479,6 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     }
 
     return htmlBlocks.join('')
-  }
-
-  // Process inline formatting (bold, italic)
-  const processInlineFormatting = (text: string): string => {
-    return text
-      // Bold: **text** or __text__
-      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-      .replace(/__([^_]+)__/g, '<strong>$1</strong>')
-      // Italic: *text* or _text_
-      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-      .replace(/_([^_]+)_/g, '<em>$1</em>')
   }
 
   // Sync editor content when character data loads (for async loading)
