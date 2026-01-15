@@ -276,7 +276,11 @@ export async function POST(req: Request) {
     // Use Gemini Pro 3 for best document parsing quality
     const model = google('gemini-3-pro-preview')
 
+    // Build the data URL for the file
+    const dataUrl = `data:${mimeType};base64,${base64}`
+
     // Send file to Gemini for parsing
+    // Use experimental_providerMetadata to pass file as inline data
     const { text } = await generateText({
       model,
       messages: [
@@ -285,8 +289,7 @@ export async function POST(req: Request) {
           content: [
             {
               type: 'file',
-              data: base64,
-              mimeType: mimeType as any,
+              data: dataUrl,
             },
             {
               type: 'text',

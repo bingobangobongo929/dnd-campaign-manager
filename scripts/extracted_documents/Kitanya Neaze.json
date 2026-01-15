@@ -1,0 +1,78 @@
+{
+  "filename": "Kitanya Neaze.docx",
+  "character_name": "Kitanya Neaze",
+  "paragraphs": [
+    {
+      "text": "Kitanya Neaze",
+      "is_bold": false,
+      "style": "Title"
+    },
+    {
+      "text": "Goblin - Rouge Criminal",
+      "is_bold": true,
+      "style": "normal"
+    },
+    {
+      "text": "Common phrases: “Hold me back” - “Who are you calling small?!” - “Let me have em!” - “I’m human you doofus”",
+      "is_bold": true,
+      "style": "normal"
+    },
+    {
+      "text": "Weakness: Terrified of water and frogs",
+      "is_bold": true,
+      "style": "normal"
+    },
+    {
+      "text": "Background: Anya grew up in a human family, always thinking they were her biological parents, her mama always said everyone is different and that was right because her brother Morris was dumb as a door, at least she just looked different. She’d never seen anyone like her but that was okay.",
+      "is_bold": true,
+      "style": "normal"
+    },
+    {
+      "text": "Character sheet:",
+      "is_bold": true,
+      "style": "normal"
+    },
+    {
+      "text": "Tips!!!",
+      "is_bold": true,
+      "style": "normal"
+    },
+    {
+      "text": "Make sure you attack when there's another player within melee range to gain sneak attack on your attack",
+      "is_bold": false,
+      "style": "normal"
+    },
+    {
+      "text": "Session 3 notes 10/02/2020",
+      "is_bold": true,
+      "style": "normal"
+    },
+    {
+      "text": "Flanking.",
+      "is_bold": false,
+      "style": "normal"
+    }
+  ],
+  "full_text": "Kitanya Neaze\n\nGoblin - Rouge Criminal\n\nCommon phrases: “Hold me back” - “Who are you calling small?!” - “Let me have em!” - “I’m human you doofus”\n\nWeakness: Terrified of water and frogs\n\nBackground: Anya grew up in a human family, always thinking they were her biological parents, her mama always said everyone is different and that was right because her brother Morris was dumb as a door, at least she just looked different. She’d never seen anyone like her but that was okay.\n\nCharacter sheet:\n\nTips!!!\n\nMake sure you attack when there's another player within melee range to gain sneak attack on your attack\n\nSession 3 notes 10/02/2020\n\nFlanking.",
+  "images": [
+    {
+      "index": 1,
+      "filename": "image_001.png",
+      "path": "C:\\Users\\edbar\\Documents\\Projects\\dnd-campaign-manager\\scripts\\extracted_documents\\images\\Kitanya Neaze\\image_001.png",
+      "size_bytes": 2435213
+    },
+    {
+      "index": 2,
+      "filename": "image_002.png",
+      "path": "C:\\Users\\edbar\\Documents\\Projects\\dnd-campaign-manager\\scripts\\extracted_documents\\images\\Kitanya Neaze\\image_002.png",
+      "size_bytes": 144656
+    },
+    {
+      "index": 3,
+      "filename": "image_003.png",
+      "path": "C:\\Users\\edbar\\Documents\\Projects\\dnd-campaign-manager\\scripts\\extracted_documents\\images\\Kitanya Neaze\\image_003.png",
+      "size_bytes": 156554
+    }
+  ],
+  "image_count": 3
+}

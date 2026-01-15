@@ -1,0 +1,74 @@
+[
+  {
+    "character_name": "Anastasia Callahan",
+    "error": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""
+  },
+  {
+    "character_name": "Backstorie Ideas",
+    "error": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""
+  },
+  {
+    "character_name": "Cornelia \u201cLia\u201d O\u2019Nest",
+    "error": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""
+  },
+  {
+    "character_name": "Cove",
+    "error": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""
+  },
+  {
+    "character_name": "Daeja",
+    "error": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""
+  },
+  {
+    "character_name": "Emerlin Reeves",
+    "error": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""
+  },
+  {
+    "character_name": "Eve Astor",
+    "error": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""
+  },
+  {
+    "character_name": "Fleur Alerie",
+    "error": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""
+  },
+  {
+    "character_name": "Fleur",
+    "error": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""
+  },
+  {
+    "character_name": "Kitanya Neaze",
+    "error": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""
+  },
+  {
+    "character_name": "Lyra Forglemmigej",
+    "error": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""
+  },
+  {
+    "character_name": "Mascha Huxley",
+    "error": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""
+  },
+  {
+    "character_name": "Mei Day",
+    "error": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""
+  },
+  {
+    "character_name": "Nora _ Two",
+    "error": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""
+  },
+  {
+    "character_name": "Rue Redistuo",
+    "error": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""
+  },
+  {
+    "character_name": "Seraphine Valeriel",
+    "error": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""
+  },
+  {
+    "character_name": "Shae Nadine Flint",
+    "error": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""
+  },
+  {
+    "character_name": "Silvia _Baby_ Jennings",
+    "error": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\""
+  }
+]

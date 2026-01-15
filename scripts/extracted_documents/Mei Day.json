@@ -1,0 +1,41 @@
+{
+  "filename": "Mei Day.docx",
+  "character_name": "Mei Day",
+  "paragraphs": [
+    {
+      "text": "Mei Day",
+      "is_bold": false,
+      "style": "Title"
+    },
+    {
+      "text": "Lightfoot Halfling Rouge",
+      "is_bold": true,
+      "style": "normal"
+    },
+    {
+      "text": "Character sheet: https://www.dndbeyond.com/profile/Sorreia/characters/42170499",
+      "is_bold": true,
+      "style": "normal"
+    },
+    {
+      "text": "Backstory: Mei has no recollection of her family, she was taken in by a man by the name of Huxley as very young. Huxley was many things, he was a scammer, he was a con artist, he was a thief, but even criminals get lonely sometimes, so when he found Mei abandoned as a baby he took her in and raised her as his own daughter. He taught her to thrills and excitement of his lifestyle and before she knew it, she slipped things out of people's pockets without barely noticing herself.",
+      "is_bold": true,
+      "style": "normal"
+    },
+    {
+      "text": "Huxley might be a bit of a loner, but he did have criminal acquaintances and one night she was listening in to a conversation he had with another guy, she’d never seen him before and she wasn’t sure what they were saying, just picking up some worlds here and there",
+      "is_bold": false,
+      "style": "normal"
+    }
+  ],
+  "full_text": "Mei Day\n\nLightfoot Halfling Rouge\n\nCharacter sheet: https://www.dndbeyond.com/profile/Sorreia/characters/42170499\n\nBackstory: Mei has no recollection of her family, she was taken in by a man by the name of Huxley as very young. Huxley was many things, he was a scammer, he was a con artist, he was a thief, but even criminals get lonely sometimes, so when he found Mei abandoned as a baby he took her in and raised her as his own daughter. He taught her to thrills and excitement of his lifestyle and before she knew it, she slipped things out of people's pockets without barely noticing herself.\n\nHuxley might be a bit of a loner, but he did have criminal acquaintances and one night she was listening in to a conversation he had with another guy, she’d never seen him before and she wasn’t sure what they were saying, just picking up some worlds here and there",
+  "images": [
+    {
+      "index": 1,
+      "filename": "image_001.png",
+      "path": "C:\\Users\\edbar\\Documents\\Projects\\dnd-campaign-manager\\scripts\\extracted_documents\\images\\Mei Day\\image_001.png",
+      "size_bytes": 595275
+    }
+  ],
+  "image_count": 1
+}

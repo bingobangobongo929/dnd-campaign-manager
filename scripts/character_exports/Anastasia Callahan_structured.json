@@ -1,0 +1,114 @@
+{
+  "character": {
+    "name": "Anastasia Callahan",
+    "type": "pc",
+    "race": null,
+    "class": "Wizard",
+    "backstory": "The smoke and screams from the pyre never reached Anastasia's sense, she was too young to remember it, but it shaped her life all the same. Her mother was accused of witchcraft in a small village outside Talabheim and burned at the stake when Anastasia was still a baby. Her father, Egon, a priest of Morr, took Ana and fled into the crater city, where stone walls and Morr's rites offered the safety the countryside never would.\n\nYears later, when Ana began to take after her mum, showing unmistakable signs of magic, Egon realized it'd only be a matter of time before his daughter would meet the same fate as his wife, unless he found her way to keep her safe. Through his work he met Baron Rainer Feuerbach and struck up a deal, Rainer would pay for a proper mentor for Ana to master her magic, and in return Ana would serve as the Baron's mage when she'd finished her training. A safe future, Egon called it.\n\nHer mentor, Giselbert Almayda, one of the famed Talabheim Eleven, wasn't the pretentious wizard she expected. He was sharp, patient, and oddly kind, and over time he became a friend as much as a teacher.\n\nGetting bored of running in the same hamsterwheel she called life, she started slipping out at night, chasing tavern noise and bad ideas. That's where she met Jaime de Sabatin, who found her magic and penny, her ferret familiar, very useful in his line of work. Ana helped him often enough to profit, and told herself it was harmless.\n\nWhen her training ended, she joined Baron Feuerbach as promised. The job was pure boredom: standing behind him, silent and unseen, while he barely acknowledged she existed. The only entertainment was learning his secrets as he let his guard down around his \"furniture.\" Eventually she decided she'd rather risk consequences than rot in someone else's service, so day she just left, no note, no goodbye, just left.\n\nShe reunited with Giselbert, he offered her shelter of a different kind: the Hexenguilde. A hidden circle that could protect her if the Baron came hunting, and a discreet place to shift the \"interesting\" items Jaime's work turned up. Ana accepted useful, flexible, not as suffocating as a noble's leash, though commitment was never her strength.\n\nThese days she makes friends the way she makes trouble..",
+    "backstory_phases": [
+      {
+        "title": "Early life",
+        "content": "Anastasia was born in a small village outside Talabheim. Her mother was accused of witchcraft and burned at the stake when Anastasia was very young.\n\nHer father Egon, who was and still is a priest of Morr, fled with baby Ana to Talabheim inside the crater, where Morr's rites and order offered a kind of shelter and structure away from the superstitious village folk."
+      },
+      {
+        "title": "The \"good path\"",
+        "content": "When Anastasia started showing clear magical signs, her father panicked and does what he believed through his faith would be best: control the risk.\n\nThrough one of his services, Ana's father met Baron Rainer Feuerbach, who he made a deal with, he sponsors a mentor to Ana and in exchange she will serve as a mage for him, securing Ana a safe future."
+      },
+      {
+        "title": "Student life: the cracks",
+        "content": "Ana gets a mentor, Giselbert Almayda, one of the big talebheim 11, but he turned out to not be a pretentious as she thought he would and they became good friends.\n\nShe started sneaking out, drinking, chasing excitement, becoming friends with a particularly bad influence by the name Jaime de Sabatin, who finds her familiar, a black ferret called she calls Penny and magic powers very useful in his line of work. She helps him out now and then, profiting her as well."
+      },
+      {
+        "title": "Adult life: The new and the boring",
+        "content": "After finishing her tutoring with Giselbert, she joins Baron Rainer as his bodyguard, which entailed him ignoring her existence, her being the quiet shadow making sure nothing happens to him, absolutely boring. She did come to learn a lot about him, given that for the most time, it felt like Rainer forgot about her existence, which let to him letting his guard down around her, she observed of his private life.\n\nThen one day, she decided her life was better lived away from the Baron, so she just left, no notes, no nothing, just left and returned to Giselbert, explaining her situation he invited her to become part of the Hexenguilde, which could server as a place of shelter, should she ever need to hide from trouble.\n\nThe Hexenguild also served as a very useful place to sell magic items she would get through Jamie."
+      }
+    ],
+    "pre_session_hook": "Morten: She spots someone who sits alone and seems well-behaved and decides it's practically her civic duty to corrupt him. \"One drink. One night out. One little sin.\" during her time as a student she'd often visit him, bringing food and drinks, other times taking him to the local tavern and getting him into fights.\n\nJon's PC: The tavern becomes their base. Anastasia is the regular who always pays late, tells stories, starts fights, and somehow always walks out smiling.",
+    "quotes": [],
+    "plot_hooks": [],
+    "tldr": null,
+    "theme_music_url": null,
+    "character_sheet_url": null
+  },
+  "npcs": [
+    {
+      "name": "Giselbert Almayda",
+      "nickname": "Orchpyre",
+      "relationship_type": "mentor",
+      "relationship_label": "Mentor & Friend",
+      "faction_affiliations": ["Talebheim 11", "Hexenguild"],
+      "location": "Stone cottages outskirts of town or at meetingplace for Hexenguild",
+      "occupation": "Wizard",
+      "origin": "Astallian (not original from Talebheim)",
+      "needs": "Allies to help investigate the murder of his old mentor. Needs help investigating the hexenguild.",
+      "can_provide": "Powerful wizard, can talk about arcane magic, could help in a fight, could get hands on magical items",
+      "goals": "Wants revenge for his mentor Eike von Hath. Does not believe Eike is dead, but rather imprisoned in a different realm, possibly the chaos realm.",
+      "secrets": null,
+      "personality_traits": ["Has a distaste for necromancy", "Hates necromancers"],
+      "full_notes": "- Talebheim 11\n- Astallian (not original from talebheim)\n- Was taken in as a charity case as a kid\n- He is here to investigate his mentor who was killed\n- Knickname is Orchpyre (set a lot of orcs on fire and killed them)\n- He needs allies to help investigate the murder of his old mentor\n- He needs help investigating the hexenguild, He is a powerful person in the hexenguild\n- Favors: Powerful wizard, can talk about arcane magic, could help in a fight, could get hands on magical items\n- Meetingplace + hidden in lab, stone cottages outskirts of town or at meetingplace for Hexenguild\n- Hexenguild meetingplace - close to the docs, its called the cursed ally (interesting location, rumours that the location changes, if you go there you'd get lost, its due to the spell casted on it. Those who look for it will not find it. I can find it because i put my blood in a ledger. There are rooms, if she needs a place to stay\n- He has a distaste for necromancy, Gis that is\n- His mentors name is Eike von Hath and does not believe he is dead, but rather imprisoned in a different realm, possibly the chaos realm\n- Gis wants revenge\n- Hates necromancer",
+      "relationship_status": "active"
+    },
+    {
+      "name": "Jaime de Sabatin",
+      "nickname": null,
+      "relationship_type": "contact",
+      "relationship_label": "Criminal Contact",
+      "faction_affiliations": [],
+      "location": "Transient - doesn't know where he stays, will have to bump into him",
+      "occupation": "Criminal/Fence",
+      "origin": null,
+      "needs": "Protection from powerful enemies. Asks Ana to go look for stuff or protect him.",
+      "can_provide": "Jobs, information about his work. Uses Ana as middleman for selling magic items to hexenguild members.",
+      "goals": null,
+      "secrets": "Has very powerful enemies that keep him in Talagaad",
+      "personality_traits": ["Don't trust him"],
+      "full_notes": "- Dont trust him\n- Needs: tells me about his jobs, got some very powerful enemies that keeps him in talagaad, will ask me to go look for stuff or protects him\n- Uses me as middleman for selling magic items to hexenguild members\n- He is transient, doesn't know where he stays, will have to bump into him",
+      "relationship_status": "active"
+    },
+    {
+      "name": "Egon",
+      "nickname": "Dad",
+      "relationship_type": "family",
+      "relationship_label": "Father",
+      "faction_affiliations": ["Church of Morr"],
+      "location": "Garden of Morr (Cemetery)",
+      "occupation": "Priest of Morr / Undertaker",
+      "origin": "Small village outside Talabheim",
+      "needs": null,
+      "can_provide": "Shelter, guidance, connections to the Church of Morr",
+      "goals": "Keep Anastasia safe from her mother's fate",
+      "secrets": null,
+      "personality_traits": [],
+      "full_notes": "- Cemetery are called garden of morr\n- Priests of morr are normally undertakers",
+      "relationship_status": "active"
+    },
+    {
+      "name": "Baron Rainer Feuerbach",
+      "nickname": null,
+      "relationship_type": "employer",
+      "relationship_label": "Former Employer",
+      "faction_affiliations": ["Nobility"],
+      "location": null,
+      "occupation": "Baron / Noble",
+      "origin": null,
+      "needs": null,
+      "can_provide": "Money, political connections",
+      "goals": null,
+      "secrets": "In a relationship with Ebore who's a courtier, they're not supposed to be together. She is strange and probably magically gifted. Relations with Caroline Von Kassel (noble).",
+      "personality_traits": ["Very smart and ambitious", "Has good connections"],
+      "full_notes": "- Very smart and ambitious\n- Has good connections\n- Interesting lover, hes in a relationship with Ebore whos a courtier, they're not supposed to be together. She is strange and probably magically gifted\n- Relations with Caroline Von Kassel (nobel)",
+      "relationship_status": "estranged"
+    }
+  ],
+  "companions": [
+    {
+      "name": "Penny",
+      "companion_type": "familiar",
+      "companion_species": "Black Ferret",
+      "description": "Anastasia's ferret familiar. Jaime finds her very useful in his line of work.",
+      "abilities": "Familiar abilities"
+    }
+  ],
+  "session_notes": [],
+  "writings": []
+}
