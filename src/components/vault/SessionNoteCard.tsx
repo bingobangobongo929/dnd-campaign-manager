@@ -15,19 +15,8 @@ import {
 } from 'lucide-react'
 import type { PlayJournal } from '@/types/database'
 
-// Extended PlayJournal type with new fields from migration 019
-interface ExtendedPlayJournal extends PlayJournal {
-  campaign_name?: string | null
-  summary?: string | null
-  kill_count?: number | null
-  loot?: string | null
-  thoughts_for_next?: string | null
-  npcs_met?: string[] | null
-  locations_visited?: string[] | null
-}
-
 interface SessionNoteCardProps {
-  session: ExtendedPlayJournal
+  session: PlayJournal
   onEdit?: () => void
   onDelete?: () => void
 }

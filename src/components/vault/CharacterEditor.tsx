@@ -54,6 +54,7 @@ import {
   Loader2,
   Check,
   Brain,
+  Edit2,
 } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { Modal } from '@/components/ui'
@@ -126,19 +127,32 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     status_color: character?.status_color || '#8B5CF6',
     race: character?.race || '',
     class: character?.class || '',
+    subclass: (character as any)?.subclass || '',
+    level: (character as any)?.level || null as number | null,
     background: character?.background || '',
+    alignment: (character as any)?.alignment || '',
+    age: (character as any)?.age || '',
+    pronouns: (character as any)?.pronouns || '',
+    deity: (character as any)?.deity || '',
     appearance: character?.appearance || '',
     personality: character?.personality || '',
+    ideals: (character as any)?.ideals || '',
+    bonds: (character as any)?.bonds || '',
+    flaws: (character as any)?.flaws || '',
     goals: character?.goals || '',
     secrets: character?.secrets || '',
+    fears: (character as any)?.fears || [] as string[],
     quotes: character?.quotes || [] as string[],
     common_phrases: character?.common_phrases || [] as string[],
     weaknesses: character?.weaknesses || [] as string[],
     plot_hooks: character?.plot_hooks || [] as string[],
     tldr: character?.tldr || [] as string[],
+    pre_session_hook: (character as any)?.pre_session_hook || '',
+    backstory_phases: (character as any)?.backstory_phases || [] as { title: string; content: string }[],
     theme_music_url: character?.theme_music_url || '',
     theme_music_title: character?.theme_music_title || '',
     character_sheet_url: character?.character_sheet_url || '',
+    external_links: (character as any)?.external_links || [] as { url: string; label: string; type: string }[],
     game_system: character?.game_system || '',
     external_campaign: character?.external_campaign || '',
     dm_name: character?.dm_name || '',
@@ -146,8 +160,18 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     quick_stats: character?.quick_stats || null,
     inventory: character?.inventory || null,
     gold: character?.gold || 0,
+    possessions: (character as any)?.possessions || [] as { name: string; quantity: number; notes?: string }[],
+    // Physical appearance fields
+    height: (character as any)?.height || '',
+    weight: (character as any)?.weight || '',
+    hair: (character as any)?.hair || '',
+    eyes: (character as any)?.eyes || '',
+    skin: (character as any)?.skin || '',
+    voice: (character as any)?.voice || '',
+    distinguishing_marks: (character as any)?.distinguishing_marks || '',
+    typical_attire: (character as any)?.typical_attire || '',
     // New fields from migration 018
-    character_writings: (character?.character_writings as { title: string; type: string; content: string; recipient?: string; date_written?: string }[]) || [],
+    character_writings: (character?.character_writings as { title: string; type: string; content: string; recipient?: string; in_universe_date?: string }[]) || [],
     rumors: (character?.rumors as { statement: string; is_true: boolean }[]) || [],
     dm_qa: (character?.dm_qa as { question: string; answer: string }[]) || [],
     player_discord: (character as any)?.player_discord || '',
@@ -180,14 +204,59 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   // Modals
   const [addLinkModalOpen, setAddLinkModalOpen] = useState(false)
   const [addStoryCharacterModalOpen, setAddStoryCharacterModalOpen] = useState(false)
+  const [editNPCModalOpen, setEditNPCModalOpen] = useState(false)
+  const [editingNPC, setEditingNPC] = useState<VaultCharacterRelationship | null>(null)
+  const [addCompanionModalOpen, setAddCompanionModalOpen] = useState(false)
+  const [editCompanionModalOpen, setEditCompanionModalOpen] = useState(false)
+  const [editingCompanion, setEditingCompanion] = useState<VaultCharacterRelationship | null>(null)
   const [addJournalModalOpen, setAddJournalModalOpen] = useState(false)
+  const [editJournalModalOpen, setEditJournalModalOpen] = useState(false)
+  const [editingJournal, setEditingJournal] = useState<PlayJournal | null>(null)
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [duplicateModalOpen, setDuplicateModalOpen] = useState(false)
 
   // Modal form state
   const [linkForm, setLinkForm] = useState({ type: 'other' as string, title: '', url: '' })
   const [storyCharForm, setStoryCharForm] = useState({ name: '', relationship: 'friend', tagline: '', notes: '' })
-  const [journalForm, setJournalForm] = useState({ session_number: '', session_date: '', title: '', notes: '' })
+  const [npcForm, setNpcForm] = useState({
+    related_name: '',
+    nickname: '',
+    relationship_type: 'friend',
+    relationship_label: '',
+    faction_affiliations: [] as string[],
+    location: '',
+    occupation: '',
+    origin: '',
+    needs: '',
+    can_provide: '',
+    goals: '',
+    secrets: '',
+    personality_traits: [] as string[],
+    full_notes: '',
+    relationship_status: 'active',
+    related_image_url: null as string | null,
+  })
+  const [companionForm, setCompanionForm] = useState({
+    related_name: '',
+    companion_type: 'familiar',
+    companion_species: '',
+    description: '',
+    companion_abilities: '',
+    related_image_url: null as string | null,
+  })
+  const [journalForm, setJournalForm] = useState({
+    session_number: '',
+    session_date: '',
+    title: '',
+    notes: '',
+    campaign_name: '',
+    summary: '',
+    kill_count: '',
+    loot: '',
+    thoughts_for_next: '',
+    npcs_met: [] as string[],
+    locations_visited: [] as string[],
+  })
 
   // Crop modal state
   const [cropModalOpen, setCropModalOpen] = useState(false)
@@ -458,19 +527,32 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       status_color: dataToSave.status_color,
       race: dataToSave.race || null,
       class: dataToSave.class || null,
+      subclass: dataToSave.subclass || null,
+      level: dataToSave.level,
       background: dataToSave.background || null,
+      alignment: dataToSave.alignment || null,
+      age: dataToSave.age || null,
+      pronouns: dataToSave.pronouns || null,
+      deity: dataToSave.deity || null,
       appearance: dataToSave.appearance || null,
       personality: dataToSave.personality || null,
+      ideals: dataToSave.ideals || null,
+      bonds: dataToSave.bonds || null,
+      flaws: dataToSave.flaws || null,
       goals: dataToSave.goals || null,
       secrets: dataToSave.secrets || null,
+      fears: dataToSave.fears.length > 0 ? dataToSave.fears : null,
       quotes: dataToSave.quotes.length > 0 ? dataToSave.quotes : null,
       common_phrases: dataToSave.common_phrases.length > 0 ? dataToSave.common_phrases : null,
       weaknesses: dataToSave.weaknesses.length > 0 ? dataToSave.weaknesses : null,
       plot_hooks: dataToSave.plot_hooks.length > 0 ? dataToSave.plot_hooks : null,
       tldr: dataToSave.tldr.length > 0 ? dataToSave.tldr : null,
+      pre_session_hook: dataToSave.pre_session_hook || null,
+      backstory_phases: dataToSave.backstory_phases.length > 0 ? dataToSave.backstory_phases : null,
       theme_music_url: dataToSave.theme_music_url || null,
       theme_music_title: dataToSave.theme_music_title || null,
       character_sheet_url: dataToSave.character_sheet_url || null,
+      external_links: dataToSave.external_links.length > 0 ? dataToSave.external_links : null,
       game_system: dataToSave.game_system || null,
       external_campaign: dataToSave.external_campaign || null,
       dm_name: dataToSave.dm_name || null,
@@ -478,6 +560,16 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       quick_stats: dataToSave.quick_stats,
       inventory: dataToSave.inventory,
       gold: dataToSave.gold,
+      possessions: dataToSave.possessions.length > 0 ? dataToSave.possessions : null,
+      // Physical appearance fields
+      height: dataToSave.height || null,
+      weight: dataToSave.weight || null,
+      hair: dataToSave.hair || null,
+      eyes: dataToSave.eyes || null,
+      skin: dataToSave.skin || null,
+      voice: dataToSave.voice || null,
+      distinguishing_marks: dataToSave.distinguishing_marks || null,
+      typical_attire: dataToSave.typical_attire || null,
       // New fields from migration 018
       character_writings: dataToSave.character_writings.length > 0 ? dataToSave.character_writings : null,
       rumors: dataToSave.rumors.length > 0 ? dataToSave.rumors : null,
@@ -682,18 +774,239 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
           session_number: journalForm.session_number ? parseInt(journalForm.session_number) : null,
           session_date: journalForm.session_date || null,
           title: journalForm.title.trim() || null,
-          notes: journalForm.notes.trim()
+          notes: journalForm.notes.trim(),
+          campaign_name: journalForm.campaign_name.trim() || null,
+          summary: journalForm.summary.trim() || null,
+          kill_count: journalForm.kill_count ? parseInt(journalForm.kill_count) : null,
+          loot: journalForm.loot.trim() || null,
+          thoughts_for_next: journalForm.thoughts_for_next.trim() || null,
+          npcs_met: journalForm.npcs_met.length > 0 ? journalForm.npcs_met : null,
+          locations_visited: journalForm.locations_visited.length > 0 ? journalForm.locations_visited : null,
         })
         .select()
         .single()
 
       if (error) throw error
-      if (data) setJournalEntries(prev => [data, ...prev])
+      if (data) setJournalEntries(prev => [data, ...prev].sort((a, b) => (a.session_number || 0) - (b.session_number || 0)))
 
-      setJournalForm({ session_number: '', session_date: '', title: '', notes: '' })
+      setJournalForm({ session_number: '', session_date: '', title: '', notes: '', campaign_name: '', summary: '', kill_count: '', loot: '', thoughts_for_next: '', npcs_met: [], locations_visited: [] })
       setAddJournalModalOpen(false)
     } catch (error) {
       console.error('Add journal entry error:', error)
+    }
+  }
+
+  // Open NPC edit modal
+  const openEditNPC = (npc: VaultCharacterRelationship) => {
+    setEditingNPC(npc)
+    setNpcForm({
+      related_name: npc.related_name || '',
+      nickname: npc.nickname || '',
+      relationship_type: npc.relationship_type || 'friend',
+      relationship_label: npc.relationship_label || '',
+      faction_affiliations: npc.faction_affiliations || [],
+      location: npc.location || '',
+      occupation: npc.occupation || '',
+      origin: npc.origin || '',
+      needs: npc.needs || '',
+      can_provide: npc.can_provide || '',
+      goals: npc.goals || '',
+      secrets: npc.secrets || '',
+      personality_traits: npc.personality_traits || [],
+      full_notes: npc.full_notes || '',
+      relationship_status: npc.relationship_status || 'active',
+      related_image_url: npc.related_image_url || null,
+    })
+    setEditNPCModalOpen(true)
+  }
+
+  // Save NPC edits
+  const handleSaveNPC = async () => {
+    if (!editingNPC || !npcForm.related_name.trim()) return
+
+    try {
+      const { data, error } = await supabase
+        .from('vault_character_relationships')
+        .update({
+          related_name: npcForm.related_name.trim(),
+          nickname: npcForm.nickname.trim() || null,
+          relationship_type: npcForm.relationship_type,
+          relationship_label: npcForm.relationship_label.trim() || null,
+          faction_affiliations: npcForm.faction_affiliations.length > 0 ? npcForm.faction_affiliations : null,
+          location: npcForm.location.trim() || null,
+          occupation: npcForm.occupation.trim() || null,
+          origin: npcForm.origin.trim() || null,
+          needs: npcForm.needs.trim() || null,
+          can_provide: npcForm.can_provide.trim() || null,
+          goals: npcForm.goals.trim() || null,
+          secrets: npcForm.secrets.trim() || null,
+          personality_traits: npcForm.personality_traits.length > 0 ? npcForm.personality_traits : null,
+          full_notes: npcForm.full_notes.trim() || null,
+          relationship_status: npcForm.relationship_status,
+          related_image_url: npcForm.related_image_url,
+        })
+        .eq('id', editingNPC.id)
+        .select()
+        .single()
+
+      if (error) throw error
+      if (data) {
+        setRelationships(prev => prev.map(r => r.id === data.id ? data : r))
+      }
+
+      setEditNPCModalOpen(false)
+      setEditingNPC(null)
+    } catch (error) {
+      console.error('Save NPC error:', error)
+    }
+  }
+
+  // Handle adding a companion
+  const handleAddCompanion = async () => {
+    if (!characterId || !companionForm.related_name.trim()) return
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      const { data, error } = await supabase
+        .from('vault_character_relationships')
+        .insert({
+          user_id: user.id,
+          character_id: characterId,
+          related_name: companionForm.related_name.trim(),
+          companion_type: companionForm.companion_type,
+          companion_species: companionForm.companion_species.trim() || null,
+          description: companionForm.description.trim() || null,
+          companion_abilities: companionForm.companion_abilities.trim() || null,
+          related_image_url: companionForm.related_image_url,
+          relationship_type: 'companion',
+          is_companion: true,
+          display_order: companions.length,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      if (data) setRelationships(prev => [...prev, data])
+
+      setCompanionForm({ related_name: '', companion_type: 'familiar', companion_species: '', description: '', companion_abilities: '', related_image_url: null })
+      setAddCompanionModalOpen(false)
+    } catch (error) {
+      console.error('Add companion error:', error)
+    }
+  }
+
+  // Open companion edit modal
+  const openEditCompanion = (companion: VaultCharacterRelationship) => {
+    setEditingCompanion(companion)
+    setCompanionForm({
+      related_name: companion.related_name || '',
+      companion_type: companion.companion_type || 'familiar',
+      companion_species: companion.companion_species || '',
+      description: companion.description || '',
+      companion_abilities: companion.companion_abilities || '',
+      related_image_url: companion.related_image_url || null,
+    })
+    setEditCompanionModalOpen(true)
+  }
+
+  // Save companion edits
+  const handleSaveCompanion = async () => {
+    if (!editingCompanion || !companionForm.related_name.trim()) return
+
+    try {
+      const { data, error } = await supabase
+        .from('vault_character_relationships')
+        .update({
+          related_name: companionForm.related_name.trim(),
+          companion_type: companionForm.companion_type,
+          companion_species: companionForm.companion_species.trim() || null,
+          description: companionForm.description.trim() || null,
+          companion_abilities: companionForm.companion_abilities.trim() || null,
+          related_image_url: companionForm.related_image_url,
+        })
+        .eq('id', editingCompanion.id)
+        .select()
+        .single()
+
+      if (error) throw error
+      if (data) {
+        setRelationships(prev => prev.map(r => r.id === data.id ? data : r))
+      }
+
+      setEditCompanionModalOpen(false)
+      setEditingCompanion(null)
+    } catch (error) {
+      console.error('Save companion error:', error)
+    }
+  }
+
+  // Open journal edit modal
+  const openEditJournal = (entry: PlayJournal) => {
+    setEditingJournal(entry)
+    setJournalForm({
+      session_number: entry.session_number?.toString() || '',
+      session_date: entry.session_date || '',
+      title: entry.title || '',
+      notes: entry.notes || '',
+      campaign_name: entry.campaign_name || '',
+      summary: entry.summary || '',
+      kill_count: entry.kill_count?.toString() || '',
+      loot: entry.loot || '',
+      thoughts_for_next: entry.thoughts_for_next || '',
+      npcs_met: entry.npcs_met || [],
+      locations_visited: entry.locations_visited || [],
+    })
+    setEditJournalModalOpen(true)
+  }
+
+  // Save journal edits
+  const handleSaveJournal = async () => {
+    if (!editingJournal || !journalForm.notes.trim()) return
+
+    try {
+      const { data, error } = await supabase
+        .from('play_journal')
+        .update({
+          session_number: journalForm.session_number ? parseInt(journalForm.session_number) : null,
+          session_date: journalForm.session_date || null,
+          title: journalForm.title.trim() || null,
+          notes: journalForm.notes.trim(),
+          campaign_name: journalForm.campaign_name.trim() || null,
+          summary: journalForm.summary.trim() || null,
+          kill_count: journalForm.kill_count ? parseInt(journalForm.kill_count) : null,
+          loot: journalForm.loot.trim() || null,
+          thoughts_for_next: journalForm.thoughts_for_next.trim() || null,
+          npcs_met: journalForm.npcs_met.length > 0 ? journalForm.npcs_met : null,
+          locations_visited: journalForm.locations_visited.length > 0 ? journalForm.locations_visited : null,
+        })
+        .eq('id', editingJournal.id)
+        .select()
+        .single()
+
+      if (error) throw error
+      if (data) {
+        setJournalEntries(prev => prev.map(e => e.id === data.id ? data : e).sort((a, b) => (a.session_number || 0) - (b.session_number || 0)))
+      }
+
+      setEditJournalModalOpen(false)
+      setEditingJournal(null)
+      setJournalForm({ session_number: '', session_date: '', title: '', notes: '', campaign_name: '', summary: '', kill_count: '', loot: '', thoughts_for_next: '', npcs_met: [], locations_visited: [] })
+    } catch (error) {
+      console.error('Save journal error:', error)
+    }
+  }
+
+  // Delete journal entry
+  const handleDeleteJournal = async (entry: PlayJournal) => {
+    if (!confirm(`Delete session ${entry.session_number || 'entry'}?`)) return
+
+    try {
+      await supabase.from('play_journal').delete().eq('id', entry.id)
+      setJournalEntries(prev => prev.filter(e => e.id !== entry.id))
+    } catch (error) {
+      console.error('Delete journal error:', error)
     }
   }
 
@@ -1446,6 +1759,93 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     </div>
                   </div>
 
+                  {/* Physical Details Grid */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400/90 mb-4">Physical Details</label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-2">Height</label>
+                        <input
+                          type="text"
+                          value={formData.height}
+                          onChange={(e) => setFormData(prev => ({ ...prev, height: e.target.value }))}
+                          placeholder="5'10&quot;"
+                          className="w-full py-2.5 px-3 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-2">Weight</label>
+                        <input
+                          type="text"
+                          value={formData.weight}
+                          onChange={(e) => setFormData(prev => ({ ...prev, weight: e.target.value }))}
+                          placeholder="170 lbs"
+                          className="w-full py-2.5 px-3 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-2">Hair</label>
+                        <input
+                          type="text"
+                          value={formData.hair}
+                          onChange={(e) => setFormData(prev => ({ ...prev, hair: e.target.value }))}
+                          placeholder="Black, curly"
+                          className="w-full py-2.5 px-3 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-2">Eyes</label>
+                        <input
+                          type="text"
+                          value={formData.eyes}
+                          onChange={(e) => setFormData(prev => ({ ...prev, eyes: e.target.value }))}
+                          placeholder="Green"
+                          className="w-full py-2.5 px-3 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-2">Skin</label>
+                        <input
+                          type="text"
+                          value={formData.skin}
+                          onChange={(e) => setFormData(prev => ({ ...prev, skin: e.target.value }))}
+                          placeholder="Tan, weathered"
+                          className="w-full py-2.5 px-3 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-2">Voice</label>
+                        <input
+                          type="text"
+                          value={formData.voice}
+                          onChange={(e) => setFormData(prev => ({ ...prev, voice: e.target.value }))}
+                          placeholder="Deep, gravelly"
+                          className="w-full py-2.5 px-3 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs text-gray-500 mb-2">Typical Attire</label>
+                        <input
+                          type="text"
+                          value={formData.typical_attire}
+                          onChange={(e) => setFormData(prev => ({ ...prev, typical_attire: e.target.value }))}
+                          placeholder="Worn leather armor, dusty cloak"
+                          className="w-full py-2.5 px-3 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <label className="block text-xs text-gray-500 mb-2">Distinguishing Marks</label>
+                      <input
+                        type="text"
+                        value={formData.distinguishing_marks}
+                        onChange={(e) => setFormData(prev => ({ ...prev, distinguishing_marks: e.target.value }))}
+                        placeholder="Scar across left cheek, burn marks on hands, tribal tattoo"
+                        className="w-full py-2.5 px-3 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
+                      />
+                    </div>
+                  </div>
+
                   {/* Personality */}
                   <div>
                     <label className="block text-sm font-medium text-gray-400/90 mb-3">Personality</label>
@@ -1470,6 +1870,50 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                         className="w-full px-6 py-5 min-h-[160px] text-[15px] bg-transparent text-white/80 placeholder:text-gray-600 focus:outline-none resize-none leading-relaxed"
                       />
                     </div>
+                  </div>
+
+                  {/* Ideals, Bonds, Flaws Grid */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400/90 mb-4">Character Values</label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-2">Ideals</label>
+                        <textarea
+                          value={formData.ideals}
+                          onChange={(e) => setFormData(prev => ({ ...prev, ideals: e.target.value }))}
+                          placeholder="What principles guide this character?"
+                          className="w-full py-3 px-4 min-h-[100px] text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200 resize-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-2">Bonds</label>
+                        <textarea
+                          value={formData.bonds}
+                          onChange={(e) => setFormData(prev => ({ ...prev, bonds: e.target.value }))}
+                          placeholder="What people, places, or things are they connected to?"
+                          className="w-full py-3 px-4 min-h-[100px] text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200 resize-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-2">Flaws</label>
+                        <textarea
+                          value={formData.flaws}
+                          onChange={(e) => setFormData(prev => ({ ...prev, flaws: e.target.value }))}
+                          placeholder="What shortcomings or vices do they have?"
+                          className="w-full py-3 px-4 min-h-[100px] text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200 resize-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Fears */}
+                  <div>
+                    <ArrayFieldEditor
+                      label="Fears"
+                      items={formData.fears}
+                      placeholder="Add something this character fears..."
+                      onChange={(items) => setFormData(prev => ({ ...prev, fears: items }))}
+                    />
                   </div>
 
                   {/* Secrets */}
@@ -1613,7 +2057,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                           <NPCCard
                             key={npc.id}
                             npc={npc}
-                            onEdit={() => {/* TODO: Edit modal */}}
+                            onEdit={() => openEditNPC(npc)}
                             onDelete={async () => {
                               if (confirm(`Delete ${npc.related_name}?`)) {
                                 await supabase.from('vault_character_relationships').delete().eq('id', npc.id)
@@ -1631,7 +2075,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     <div className="flex items-center justify-between mb-4">
                       <label className="text-sm font-medium text-gray-400/90">Companions ({companions.length})</label>
                       <button
-                        onClick={() => {/* TODO: Add companion modal */}}
+                        onClick={() => setAddCompanionModalOpen(true)}
                         className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
                       >
                         <Plus className="w-4 h-4" />
@@ -1651,6 +2095,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                           <CompanionCard
                             key={companion.id}
                             companion={companion}
+                            onEdit={() => openEditCompanion(companion)}
                             onDelete={async () => {
                               if (confirm(`Delete ${companion.related_name}?`)) {
                                 await supabase.from('vault_character_relationships').delete().eq('id', companion.id)
@@ -1734,14 +2179,37 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                               </span>
                             )}
                             {entry.title && <span className="text-sm font-medium text-white/90">{entry.title}</span>}
+                            {entry.campaign_name && <span className="text-xs text-gray-500">• {entry.campaign_name}</span>}
                           </div>
-                          {entry.session_date && (
-                            <span className="text-xs text-gray-500">
-                              {new Date(entry.session_date).toLocaleDateString()}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {entry.session_date && (
+                              <span className="text-xs text-gray-500">
+                                {new Date(entry.session_date).toLocaleDateString()}
+                              </span>
+                            )}
+                            <button
+                              onClick={() => openEditJournal(entry)}
+                              className="p-1.5 text-gray-500 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-all"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteJournal(entry)}
+                              className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
+                        {entry.summary && <p className="text-sm text-gray-300 mb-2">{entry.summary}</p>}
                         <p className="text-sm text-gray-400 whitespace-pre-wrap leading-relaxed">{entry.notes}</p>
+                        {(entry.kill_count || entry.loot || entry.thoughts_for_next) && (
+                          <div className="mt-3 pt-3 border-t border-white/[0.04] flex flex-wrap gap-4 text-xs text-gray-500">
+                            {entry.kill_count !== null && entry.kill_count > 0 && <span>Kills: {entry.kill_count}</span>}
+                            {entry.loot && <span>Loot: {entry.loot}</span>}
+                            {entry.thoughts_for_next && <span className="text-purple-400">Next: {entry.thoughts_for_next}</span>}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1834,19 +2302,35 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                                 <X className="w-4 h-4" />
                               </button>
                             </div>
-                            {writing.type === 'letter' && (
+                            <div className="flex gap-3 mb-3">
+                              {writing.type === 'letter' && (
+                                <input
+                                  type="text"
+                                  value={writing.recipient || ''}
+                                  onChange={(e) => {
+                                    const newWritings = [...formData.character_writings]
+                                    newWritings[index] = { ...writing, recipient: e.target.value }
+                                    setFormData(prev => ({ ...prev, character_writings: newWritings }))
+                                  }}
+                                  placeholder="Recipient..."
+                                  className="flex-1 py-2.5 px-3.5 text-[14px] bg-white/[0.03] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.05] focus:border-purple-500/30 transition-all duration-200"
+                                />
+                              )}
                               <input
                                 type="text"
-                                value={writing.recipient || ''}
+                                value={writing.in_universe_date || ''}
                                 onChange={(e) => {
                                   const newWritings = [...formData.character_writings]
-                                  newWritings[index] = { ...writing, recipient: e.target.value }
+                                  newWritings[index] = { ...writing, in_universe_date: e.target.value }
                                   setFormData(prev => ({ ...prev, character_writings: newWritings }))
                                 }}
-                                placeholder="Recipient..."
-                                className="w-full mb-3 py-2.5 px-3.5 text-[14px] bg-white/[0.03] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.05] focus:border-purple-500/30 transition-all duration-200"
+                                placeholder="In-universe date (e.g. '15th of Hammer')"
+                                className={cn(
+                                  "py-2.5 px-3.5 text-[14px] bg-white/[0.03] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.05] focus:border-purple-500/30 transition-all duration-200",
+                                  writing.type === 'letter' ? 'w-48' : 'flex-1'
+                                )}
                               />
-                            )}
+                            </div>
                             <textarea
                               value={writing.content}
                               onChange={(e) => {
@@ -2502,7 +2986,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         title="Add Journal Entry"
         description="Record a new adventure or experience"
       >
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <FormLabel>Session Number</FormLabel>
@@ -2524,13 +3008,35 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               />
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FormLabel>Title</FormLabel>
+              <input
+                type="text"
+                placeholder="Entry title (optional)"
+                value={journalForm.title}
+                onChange={(e) => setJournalForm(prev => ({ ...prev, title: e.target.value }))}
+                className={inputStyles}
+              />
+            </div>
+            <div>
+              <FormLabel>Campaign</FormLabel>
+              <input
+                type="text"
+                placeholder="Campaign name"
+                value={journalForm.campaign_name}
+                onChange={(e) => setJournalForm(prev => ({ ...prev, campaign_name: e.target.value }))}
+                className={inputStyles}
+              />
+            </div>
+          </div>
           <div>
-            <FormLabel>Title</FormLabel>
+            <FormLabel>Summary</FormLabel>
             <input
               type="text"
-              placeholder="Entry title (optional)"
-              value={journalForm.title}
-              onChange={(e) => setJournalForm(prev => ({ ...prev, title: e.target.value }))}
+              placeholder="Brief summary of the session"
+              value={journalForm.summary}
+              onChange={(e) => setJournalForm(prev => ({ ...prev, summary: e.target.value }))}
               className={inputStyles}
             />
           </div>
@@ -2540,13 +3046,460 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               placeholder="What happened this session?"
               value={journalForm.notes}
               onChange={(e) => setJournalForm(prev => ({ ...prev, notes: e.target.value }))}
-              className={cn(textareaStyles, "min-h-[180px]")}
+              className={cn(textareaStyles, "min-h-[120px]")}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FormLabel>Kill Count</FormLabel>
+              <input
+                type="number"
+                placeholder="0"
+                value={journalForm.kill_count}
+                onChange={(e) => setJournalForm(prev => ({ ...prev, kill_count: e.target.value }))}
+                className={inputStyles}
+              />
+            </div>
+            <div>
+              <FormLabel>Loot</FormLabel>
+              <input
+                type="text"
+                placeholder="Items found..."
+                value={journalForm.loot}
+                onChange={(e) => setJournalForm(prev => ({ ...prev, loot: e.target.value }))}
+                className={inputStyles}
+              />
+            </div>
+          </div>
+          <div>
+            <FormLabel>Thoughts for Next Session</FormLabel>
+            <textarea
+              placeholder="Plans, questions, things to follow up on..."
+              value={journalForm.thoughts_for_next}
+              onChange={(e) => setJournalForm(prev => ({ ...prev, thoughts_for_next: e.target.value }))}
+              className={textareaStyles}
             />
           </div>
         </div>
         <div className="flex justify-end gap-3">
           <button className="btn btn-secondary" onClick={() => setAddJournalModalOpen(false)}>Cancel</button>
           <button className="btn btn-primary" onClick={handleAddJournalEntry}>Add Entry</button>
+        </div>
+      </Modal>
+
+      {/* Edit Journal Entry Modal */}
+      <Modal
+        isOpen={editJournalModalOpen}
+        onClose={() => { setEditJournalModalOpen(false); setEditingJournal(null); }}
+        title="Edit Journal Entry"
+        description="Update this session entry"
+      >
+        <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FormLabel>Session Number</FormLabel>
+              <input
+                type="number"
+                placeholder="1, 2, 3..."
+                value={journalForm.session_number}
+                onChange={(e) => setJournalForm(prev => ({ ...prev, session_number: e.target.value }))}
+                className={inputStyles}
+              />
+            </div>
+            <div>
+              <FormLabel>Date</FormLabel>
+              <input
+                type="date"
+                value={journalForm.session_date}
+                onChange={(e) => setJournalForm(prev => ({ ...prev, session_date: e.target.value }))}
+                className={inputStyles}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FormLabel>Title</FormLabel>
+              <input
+                type="text"
+                placeholder="Entry title (optional)"
+                value={journalForm.title}
+                onChange={(e) => setJournalForm(prev => ({ ...prev, title: e.target.value }))}
+                className={inputStyles}
+              />
+            </div>
+            <div>
+              <FormLabel>Campaign</FormLabel>
+              <input
+                type="text"
+                placeholder="Campaign name"
+                value={journalForm.campaign_name}
+                onChange={(e) => setJournalForm(prev => ({ ...prev, campaign_name: e.target.value }))}
+                className={inputStyles}
+              />
+            </div>
+          </div>
+          <div>
+            <FormLabel>Summary</FormLabel>
+            <input
+              type="text"
+              placeholder="Brief summary of the session"
+              value={journalForm.summary}
+              onChange={(e) => setJournalForm(prev => ({ ...prev, summary: e.target.value }))}
+              className={inputStyles}
+            />
+          </div>
+          <div>
+            <FormLabel>Notes</FormLabel>
+            <textarea
+              placeholder="What happened this session?"
+              value={journalForm.notes}
+              onChange={(e) => setJournalForm(prev => ({ ...prev, notes: e.target.value }))}
+              className={cn(textareaStyles, "min-h-[120px]")}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FormLabel>Kill Count</FormLabel>
+              <input
+                type="number"
+                placeholder="0"
+                value={journalForm.kill_count}
+                onChange={(e) => setJournalForm(prev => ({ ...prev, kill_count: e.target.value }))}
+                className={inputStyles}
+              />
+            </div>
+            <div>
+              <FormLabel>Loot</FormLabel>
+              <input
+                type="text"
+                placeholder="Items found..."
+                value={journalForm.loot}
+                onChange={(e) => setJournalForm(prev => ({ ...prev, loot: e.target.value }))}
+                className={inputStyles}
+              />
+            </div>
+          </div>
+          <div>
+            <FormLabel>Thoughts for Next Session</FormLabel>
+            <textarea
+              placeholder="Plans, questions, things to follow up on..."
+              value={journalForm.thoughts_for_next}
+              onChange={(e) => setJournalForm(prev => ({ ...prev, thoughts_for_next: e.target.value }))}
+              className={textareaStyles}
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-3">
+          <button className="btn btn-secondary" onClick={() => { setEditJournalModalOpen(false); setEditingJournal(null); }}>Cancel</button>
+          <button className="btn btn-primary" onClick={handleSaveJournal}>Save Changes</button>
+        </div>
+      </Modal>
+
+      {/* Edit NPC Modal */}
+      <Modal
+        isOpen={editNPCModalOpen}
+        onClose={() => { setEditNPCModalOpen(false); setEditingNPC(null); }}
+        title="Edit NPC"
+        description="Update NPC details"
+      >
+        <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FormLabel>Name</FormLabel>
+              <input
+                type="text"
+                placeholder="NPC name"
+                value={npcForm.related_name}
+                onChange={(e) => setNpcForm(prev => ({ ...prev, related_name: e.target.value }))}
+                className={inputStyles}
+              />
+            </div>
+            <div>
+              <FormLabel>Nickname</FormLabel>
+              <input
+                type="text"
+                placeholder="Alias or nickname"
+                value={npcForm.nickname}
+                onChange={(e) => setNpcForm(prev => ({ ...prev, nickname: e.target.value }))}
+                className={inputStyles}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FormLabel>Relationship Type</FormLabel>
+              <select
+                value={npcForm.relationship_type}
+                onChange={(e) => setNpcForm(prev => ({ ...prev, relationship_type: e.target.value }))}
+                className={inputStyles}
+              >
+                <option value="family">Family</option>
+                <option value="mentor">Mentor</option>
+                <option value="friend">Friend</option>
+                <option value="enemy">Enemy</option>
+                <option value="patron">Patron</option>
+                <option value="contact">Contact</option>
+                <option value="ally">Ally</option>
+                <option value="employer">Employer</option>
+                <option value="love_interest">Love Interest</option>
+                <option value="rival">Rival</option>
+                <option value="acquaintance">Acquaintance</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <FormLabel>Relationship Label</FormLabel>
+              <input
+                type="text"
+                placeholder="e.g. 'Father', 'Old Friend'"
+                value={npcForm.relationship_label}
+                onChange={(e) => setNpcForm(prev => ({ ...prev, relationship_label: e.target.value }))}
+                className={inputStyles}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FormLabel>Location</FormLabel>
+              <input
+                type="text"
+                placeholder="Where they can be found"
+                value={npcForm.location}
+                onChange={(e) => setNpcForm(prev => ({ ...prev, location: e.target.value }))}
+                className={inputStyles}
+              />
+            </div>
+            <div>
+              <FormLabel>Occupation</FormLabel>
+              <input
+                type="text"
+                placeholder="Job or role"
+                value={npcForm.occupation}
+                onChange={(e) => setNpcForm(prev => ({ ...prev, occupation: e.target.value }))}
+                className={inputStyles}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FormLabel>Origin</FormLabel>
+              <input
+                type="text"
+                placeholder="Where they're from"
+                value={npcForm.origin}
+                onChange={(e) => setNpcForm(prev => ({ ...prev, origin: e.target.value }))}
+                className={inputStyles}
+              />
+            </div>
+            <div>
+              <FormLabel>Status</FormLabel>
+              <select
+                value={npcForm.relationship_status}
+                onChange={(e) => setNpcForm(prev => ({ ...prev, relationship_status: e.target.value }))}
+                className={inputStyles}
+              >
+                <option value="active">Active</option>
+                <option value="deceased">Deceased</option>
+                <option value="estranged">Estranged</option>
+                <option value="missing">Missing</option>
+                <option value="complicated">Complicated</option>
+                <option value="unknown">Unknown</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <FormLabel>Needs (from PC)</FormLabel>
+            <input
+              type="text"
+              placeholder="What they need from the character"
+              value={npcForm.needs}
+              onChange={(e) => setNpcForm(prev => ({ ...prev, needs: e.target.value }))}
+              className={inputStyles}
+            />
+          </div>
+          <div>
+            <FormLabel>Can Provide</FormLabel>
+            <input
+              type="text"
+              placeholder="What help or resources they can offer"
+              value={npcForm.can_provide}
+              onChange={(e) => setNpcForm(prev => ({ ...prev, can_provide: e.target.value }))}
+              className={inputStyles}
+            />
+          </div>
+          <div>
+            <FormLabel>Goals</FormLabel>
+            <input
+              type="text"
+              placeholder="Their personal goals"
+              value={npcForm.goals}
+              onChange={(e) => setNpcForm(prev => ({ ...prev, goals: e.target.value }))}
+              className={inputStyles}
+            />
+          </div>
+          <div>
+            <FormLabel>Secrets</FormLabel>
+            <input
+              type="text"
+              placeholder="Secrets about this NPC"
+              value={npcForm.secrets}
+              onChange={(e) => setNpcForm(prev => ({ ...prev, secrets: e.target.value }))}
+              className={inputStyles}
+            />
+          </div>
+          <div>
+            <FormLabel>Full Notes</FormLabel>
+            <textarea
+              placeholder="All additional details about this NPC..."
+              value={npcForm.full_notes}
+              onChange={(e) => setNpcForm(prev => ({ ...prev, full_notes: e.target.value }))}
+              className={cn(textareaStyles, "min-h-[120px]")}
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-3">
+          <button className="btn btn-secondary" onClick={() => { setEditNPCModalOpen(false); setEditingNPC(null); }}>Cancel</button>
+          <button className="btn btn-primary" onClick={handleSaveNPC}>Save Changes</button>
+        </div>
+      </Modal>
+
+      {/* Add Companion Modal */}
+      <Modal
+        isOpen={addCompanionModalOpen}
+        onClose={() => setAddCompanionModalOpen(false)}
+        title="Add Companion"
+        description="Add a familiar, pet, mount, or other companion"
+      >
+        <div className="space-y-4 py-4">
+          <div>
+            <FormLabel>Name</FormLabel>
+            <input
+              type="text"
+              placeholder="Companion name"
+              value={companionForm.related_name}
+              onChange={(e) => setCompanionForm(prev => ({ ...prev, related_name: e.target.value }))}
+              className={inputStyles}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FormLabel>Type</FormLabel>
+              <select
+                value={companionForm.companion_type}
+                onChange={(e) => setCompanionForm(prev => ({ ...prev, companion_type: e.target.value }))}
+                className={inputStyles}
+              >
+                <option value="familiar">Familiar</option>
+                <option value="pet">Pet</option>
+                <option value="mount">Mount</option>
+                <option value="animal_companion">Animal Companion</option>
+                <option value="construct">Construct</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <FormLabel>Species</FormLabel>
+              <input
+                type="text"
+                placeholder="e.g. Ferret, Horse, Owl"
+                value={companionForm.companion_species}
+                onChange={(e) => setCompanionForm(prev => ({ ...prev, companion_species: e.target.value }))}
+                className={inputStyles}
+              />
+            </div>
+          </div>
+          <div>
+            <FormLabel>Description</FormLabel>
+            <textarea
+              placeholder="Appearance and personality..."
+              value={companionForm.description}
+              onChange={(e) => setCompanionForm(prev => ({ ...prev, description: e.target.value }))}
+              className={textareaStyles}
+            />
+          </div>
+          <div>
+            <FormLabel>Abilities</FormLabel>
+            <textarea
+              placeholder="Special abilities, skills, or traits..."
+              value={companionForm.companion_abilities}
+              onChange={(e) => setCompanionForm(prev => ({ ...prev, companion_abilities: e.target.value }))}
+              className={textareaStyles}
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-3">
+          <button className="btn btn-secondary" onClick={() => setAddCompanionModalOpen(false)}>Cancel</button>
+          <button className="btn btn-primary" onClick={handleAddCompanion}>Add Companion</button>
+        </div>
+      </Modal>
+
+      {/* Edit Companion Modal */}
+      <Modal
+        isOpen={editCompanionModalOpen}
+        onClose={() => { setEditCompanionModalOpen(false); setEditingCompanion(null); }}
+        title="Edit Companion"
+        description="Update companion details"
+      >
+        <div className="space-y-4 py-4">
+          <div>
+            <FormLabel>Name</FormLabel>
+            <input
+              type="text"
+              placeholder="Companion name"
+              value={companionForm.related_name}
+              onChange={(e) => setCompanionForm(prev => ({ ...prev, related_name: e.target.value }))}
+              className={inputStyles}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FormLabel>Type</FormLabel>
+              <select
+                value={companionForm.companion_type}
+                onChange={(e) => setCompanionForm(prev => ({ ...prev, companion_type: e.target.value }))}
+                className={inputStyles}
+              >
+                <option value="familiar">Familiar</option>
+                <option value="pet">Pet</option>
+                <option value="mount">Mount</option>
+                <option value="animal_companion">Animal Companion</option>
+                <option value="construct">Construct</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <FormLabel>Species</FormLabel>
+              <input
+                type="text"
+                placeholder="e.g. Ferret, Horse, Owl"
+                value={companionForm.companion_species}
+                onChange={(e) => setCompanionForm(prev => ({ ...prev, companion_species: e.target.value }))}
+                className={inputStyles}
+              />
+            </div>
+          </div>
+          <div>
+            <FormLabel>Description</FormLabel>
+            <textarea
+              placeholder="Appearance and personality..."
+              value={companionForm.description}
+              onChange={(e) => setCompanionForm(prev => ({ ...prev, description: e.target.value }))}
+              className={textareaStyles}
+            />
+          </div>
+          <div>
+            <FormLabel>Abilities</FormLabel>
+            <textarea
+              placeholder="Special abilities, skills, or traits..."
+              value={companionForm.companion_abilities}
+              onChange={(e) => setCompanionForm(prev => ({ ...prev, companion_abilities: e.target.value }))}
+              className={textareaStyles}
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-3">
+          <button className="btn btn-secondary" onClick={() => { setEditCompanionModalOpen(false); setEditingCompanion(null); }}>Cancel</button>
+          <button className="btn btn-primary" onClick={handleSaveCompanion}>Save Changes</button>
         </div>
       </Modal>
 

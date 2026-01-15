@@ -861,6 +861,13 @@ export interface Database {
           session_date: string | null
           title: string | null
           notes: string
+          campaign_name: string | null
+          summary: string | null
+          kill_count: number | null
+          loot: string | null
+          thoughts_for_next: string | null
+          npcs_met: string[] | null
+          locations_visited: string[] | null
           created_at: string
           updated_at: string
         }
@@ -871,6 +878,13 @@ export interface Database {
           session_date?: string | null
           title?: string | null
           notes: string
+          campaign_name?: string | null
+          summary?: string | null
+          kill_count?: number | null
+          loot?: string | null
+          thoughts_for_next?: string | null
+          npcs_met?: string[] | null
+          locations_visited?: string[] | null
           created_at?: string
           updated_at?: string
         }
@@ -881,6 +895,13 @@ export interface Database {
           session_date?: string | null
           title?: string | null
           notes?: string
+          campaign_name?: string | null
+          summary?: string | null
+          kill_count?: number | null
+          loot?: string | null
+          thoughts_for_next?: string | null
+          npcs_met?: string[] | null
+          locations_visited?: string[] | null
           created_at?: string
           updated_at?: string
         }
