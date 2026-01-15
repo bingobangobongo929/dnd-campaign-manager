@@ -369,6 +369,8 @@ export default function VaultImportPage() {
         companions: approvals.companions === 'approved' ? parsedData.companions : [],
         session_notes: approvals.sessions === 'approved' ? parsedData.session_notes : [],
         writings: approvals.writings === 'approved' ? parsedData.writings : [],
+        reference_tables: approvals.tables === 'approved' ? parsedData.reference_tables : [],
+        secondary_characters: parsedData.secondary_characters || [],
       }
 
       // Add source file info

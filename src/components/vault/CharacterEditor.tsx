@@ -382,6 +382,26 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     },
   })
 
+  // Sync editor content when character data loads (for async loading)
+  useEffect(() => {
+    if (character && notesEditor && !notesEditor.isDestroyed) {
+      const backstory = (character as any)?.backstory || character?.notes || ''
+      // Only update if content is different and editor is empty
+      if (backstory && notesEditor.isEmpty) {
+        notesEditor.commands.setContent(backstory)
+      }
+    }
+  }, [character, notesEditor])
+
+  useEffect(() => {
+    if (character && summaryEditor && !summaryEditor.isDestroyed) {
+      const summary = character?.summary || ''
+      if (summary && summaryEditor.isEmpty) {
+        summaryEditor.commands.setContent(summary)
+      }
+    }
+  }, [character, summaryEditor])
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
