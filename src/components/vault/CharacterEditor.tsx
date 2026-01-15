@@ -382,13 +382,27 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     },
   })
 
+  // Convert plain text with \n to HTML paragraphs for TipTap
+  const textToHtml = (text: string): string => {
+    if (!text) return ''
+    // If it already looks like HTML, return as-is
+    if (text.startsWith('<') && (text.includes('<p>') || text.includes('<div>'))) {
+      return text
+    }
+    // Convert double newlines to paragraph breaks, single newlines to <br>
+    return text
+      .split(/\n\n+/)
+      .map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`)
+      .join('')
+  }
+
   // Sync editor content when character data loads (for async loading)
   useEffect(() => {
     if (character && notesEditor && !notesEditor.isDestroyed) {
       const backstory = (character as any)?.backstory || character?.notes || ''
       // Only update if content is different and editor is empty
       if (backstory && notesEditor.isEmpty) {
-        notesEditor.commands.setContent(backstory)
+        notesEditor.commands.setContent(textToHtml(backstory))
       }
     }
   }, [character, notesEditor])
@@ -397,7 +411,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     if (character && summaryEditor && !summaryEditor.isDestroyed) {
       const summary = character?.summary || ''
       if (summary && summaryEditor.isEmpty) {
-        summaryEditor.commands.setContent(summary)
+        summaryEditor.commands.setContent(textToHtml(summary))
       }
     }
   }, [character, summaryEditor])
