@@ -2355,7 +2355,7 @@ def extract_ideas_document(filepath: str) -> dict:
 
     document = {
         'name': 'Backstory Ideas',
-        'type': 'meta',  # Special type for meta documents
+        'type': 'npc',  # Use 'npc' since only 'pc' and 'npc' are allowed in DB
         'game_system': DEFAULT_GAME_SYSTEM,
         'status': 'Reference',
 
@@ -2370,8 +2370,8 @@ def extract_ideas_document(filepath: str) -> dict:
         'imported_at': datetime.now().isoformat(),
         'raw_document_text': full_text,
 
-        # Tags for filtering
-        'character_tags': ['ideas', 'planning', 'concepts', 'reference'],
+        # Tags for filtering - mark as ideas/reference document
+        'character_tags': ['ideas', 'planning', 'concepts', 'reference', 'meta-document'],
     }
 
     print(f"  Type: Ideas/Planning Document")

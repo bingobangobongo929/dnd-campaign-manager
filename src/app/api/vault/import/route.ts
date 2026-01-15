@@ -403,20 +403,45 @@ export async function POST(req: NextRequest) {
           results.imported++
         }
 
-        // Create relationships if provided
+        // Create relationships if provided - insert into story_characters table (used by UI)
         if (char.relationships && char.relationships.length > 0) {
-          for (const rel of char.relationships) {
+          // Map relationship types to allowed values in story_characters table
+          const mapRelType = (type: string): string => {
+            const mapping: Record<string, string> = {
+              'companion': 'familiar',
+              'contact': 'other',
+              'criminal_contact': 'criminal_contact',
+              'patron': 'employer',
+              // These map directly
+              'mentor': 'mentor',
+              'father': 'father',
+              'mother': 'mother',
+              'sibling': 'sibling',
+              'rival': 'rival',
+              'familiar': 'familiar',
+              'love_interest': 'love_interest',
+              'friend': 'friend',
+              'enemy': 'enemy',
+              'employer': 'employer',
+              'family': 'family',
+              'other': 'other',
+            }
+            return mapping[type.toLowerCase()] || 'other'
+          }
+
+          for (let i = 0; i < char.relationships.length; i++) {
+            const rel = char.relationships[i]
             try {
               const { error: relError } = await supabase
-                .from('vault_character_relationships')
+                .from('story_characters')
                 .insert({
-                  user_id: user.id,
                   character_id: characterId,
-                  related_name: rel.related_name,
-                  relationship_type: rel.relationship_type,
-                  relationship_label: rel.relationship_label,
-                  description: rel.description,
-                  related_image_url: rel.related_image_url,
+                  name: rel.related_name,
+                  relationship: mapRelType(rel.relationship_type),
+                  tagline: rel.relationship_label || null,
+                  notes: rel.description || null,
+                  image_url: rel.related_image_url || null,
+                  sort_order: i,
                 })
 
               if (!relError) results.relationships_created++
