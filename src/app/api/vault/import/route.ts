@@ -141,6 +141,25 @@ interface ImportedCharacter {
   imported_at?: string | null
   raw_document_text?: string | null
 
+  // ===== NEW FIELDS FROM MIGRATION 018 =====
+  // Character writings (letters, stories, poems, diary entries)
+  character_writings?: { title: string; type: string; content: string; recipient?: string; date_written?: string }[] | null
+  // Rumors about the character
+  rumors?: { statement: string; is_true: boolean }[] | null
+  // DM Q&A responses
+  dm_qa?: { question: string; answer: string }[] | null
+  // Player meta info (OOC)
+  player_discord?: string | null
+  player_timezone?: string | null
+  player_experience?: string | null
+  player_preferences?: { fun_in_dnd?: string; annoys_me?: string; ideal_party?: string; ideal_dm?: string } | null
+  // Gameplay tips and combat reminders
+  gameplay_tips?: string[] | null
+  // Relations with party members
+  party_relations?: { name: string; notes: string; relationship?: string }[] | null
+  // Combat statistics
+  combat_stats?: { kills?: number; deaths?: number; unconscious?: number; last_updated_session?: number } | null
+
   // Related data (for creating relationships/images separately)
   relationships?: {
     related_name: string
@@ -346,6 +365,18 @@ export async function POST(req: NextRequest) {
         addIfPresent(characterData, 'source_file', char.source_file)
         addIfPresent(characterData, 'imported_at', char.imported_at)
         addIfPresent(characterData, 'raw_document_text', char.raw_document_text)
+
+        // New fields from migration 018
+        addIfPresent(characterData, 'character_writings', char.character_writings)
+        addIfPresent(characterData, 'rumors', char.rumors)
+        addIfPresent(characterData, 'dm_qa', char.dm_qa)
+        addIfPresent(characterData, 'player_discord', char.player_discord)
+        addIfPresent(characterData, 'player_timezone', char.player_timezone)
+        addIfPresent(characterData, 'player_experience', char.player_experience)
+        addIfPresent(characterData, 'player_preferences', char.player_preferences)
+        addIfPresent(characterData, 'gameplay_tips', char.gameplay_tips)
+        addIfPresent(characterData, 'party_relations', char.party_relations)
+        addIfPresent(characterData, 'combat_stats', char.combat_stats)
 
         let characterId: string
 

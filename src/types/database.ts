@@ -552,6 +552,17 @@ export interface Database {
           imported_at: string | null
           raw_document_text: string | null
           last_intelligence_run: string | null
+          // New fields from migration 018
+          character_writings: Json | null
+          rumors: Json | null
+          dm_qa: Json | null
+          player_discord: string | null
+          player_timezone: string | null
+          player_experience: string | null
+          player_preferences: Json | null
+          gameplay_tips: string[] | null
+          party_relations: Json | null
+          combat_stats: Json | null
           created_at: string
           updated_at: string
         }
@@ -665,6 +676,17 @@ export interface Database {
           imported_at?: string | null
           raw_document_text?: string | null
           last_intelligence_run?: string | null
+          // New fields from migration 018
+          character_writings?: Json | null
+          rumors?: Json | null
+          dm_qa?: Json | null
+          player_discord?: string | null
+          player_timezone?: string | null
+          player_experience?: string | null
+          player_preferences?: Json | null
+          gameplay_tips?: string[] | null
+          party_relations?: Json | null
+          combat_stats?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -778,6 +800,17 @@ export interface Database {
           imported_at?: string | null
           raw_document_text?: string | null
           last_intelligence_run?: string | null
+          // New fields from migration 018
+          character_writings?: Json | null
+          rumors?: Json | null
+          dm_qa?: Json | null
+          player_discord?: string | null
+          player_timezone?: string | null
+          player_experience?: string | null
+          player_preferences?: Json | null
+          gameplay_tips?: string[] | null
+          party_relations?: Json | null
+          combat_stats?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -1656,6 +1689,53 @@ export interface Database {
           created_at?: string
         }
       }
+      vault_character_writings: {
+        Row: {
+          id: string
+          user_id: string
+          character_id: string
+          title: string
+          writing_type: string | null
+          content: string
+          recipient: string | null
+          in_universe_date: string | null
+          session_reference: string | null
+          is_sent: boolean
+          display_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          character_id: string
+          title: string
+          writing_type?: string | null
+          content: string
+          recipient?: string | null
+          in_universe_date?: string | null
+          session_reference?: string | null
+          is_sent?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          character_id?: string
+          title?: string
+          writing_type?: string | null
+          content?: string
+          recipient?: string | null
+          in_universe_date?: string | null
+          session_reference?: string | null
+          is_sent?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }
@@ -1698,6 +1778,7 @@ export type VaultLocation = Database['public']['Tables']['vault_locations']['Row
 export type VaultCharacterLocation = Database['public']['Tables']['vault_character_locations']['Row']
 export type VaultCharacterSnapshot = Database['public']['Tables']['vault_character_snapshots']['Row']
 export type VaultCharacterSpell = Database['public']['Tables']['vault_character_spells']['Row']
+export type VaultCharacterWriting = Database['public']['Tables']['vault_character_writings']['Row']
 
 // Suggestion types for Campaign & Character Intelligence
 export type SuggestionType = 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship' | 'timeline_event' | 'completeness' | 'consistency' | 'npc_detected' | 'location_detected' | 'plot_hook' | 'enrichment' | 'timeline_issue'
@@ -1710,6 +1791,7 @@ export type VaultCharacterFull = VaultCharacter & {
   locations: (VaultCharacterLocation & { location: VaultLocation })[]
   spells: VaultCharacterSpell[]
   snapshots: VaultCharacterSnapshot[]
+  writings: VaultCharacterWriting[]
 }
 
 // Extended types with relations

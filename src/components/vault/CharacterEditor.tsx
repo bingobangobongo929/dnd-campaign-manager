@@ -70,7 +70,7 @@ import type {
 import { v4 as uuidv4 } from 'uuid'
 
 // Section types for navigation
-type SectionType = 'backstory' | 'details' | 'people' | 'journal' | 'stats' | 'gallery'
+type SectionType = 'backstory' | 'details' | 'people' | 'journal' | 'writings' | 'stats' | 'player' | 'gallery'
 
 interface CharacterEditorProps {
   character?: VaultCharacter | null
@@ -92,7 +92,9 @@ const SECTIONS: { id: SectionType; label: string; icon: React.ComponentType<{ cl
   { id: 'details', label: 'Details', icon: FileText },
   { id: 'people', label: 'People', icon: Users },
   { id: 'journal', label: 'Journal', icon: Scroll },
+  { id: 'writings', label: 'Writings', icon: Quote },
   { id: 'stats', label: 'Stats', icon: BarChart3 },
+  { id: 'player', label: 'Player', icon: User },
   { id: 'gallery', label: 'Gallery', icon: GalleryIcon },
 ]
 
@@ -140,6 +142,18 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     quick_stats: character?.quick_stats || null,
     inventory: character?.inventory || null,
     gold: character?.gold || 0,
+    // New fields from migration 018
+    character_writings: (character?.character_writings as { title: string; type: string; content: string; recipient?: string; date_written?: string }[]) || [],
+    rumors: (character?.rumors as { statement: string; is_true: boolean }[]) || [],
+    dm_qa: (character?.dm_qa as { question: string; answer: string }[]) || [],
+    player_discord: (character as any)?.player_discord || '',
+    player_timezone: (character as any)?.player_timezone || '',
+    player_experience: (character as any)?.player_experience || '',
+    player_preferences: (character?.player_preferences as { fun_in_dnd?: string; annoys_me?: string; ideal_party?: string; ideal_dm?: string }) || null,
+    gameplay_tips: (character as any)?.gameplay_tips || [] as string[],
+    party_relations: (character?.party_relations as { name: string; notes: string; relationship?: string }[]) || [],
+    combat_stats: (character?.combat_stats as { kills?: number; deaths?: number; unconscious?: number; last_updated_session?: number }) || null,
+    open_questions: (character as any)?.open_questions || [] as string[],
   })
 
   const [characterId, setCharacterId] = useState<string | null>(character?.id || null)
@@ -192,7 +206,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     if (!container) return
 
     const handleScroll = () => {
-      const sectionIds: SectionType[] = ['backstory', 'details', 'people', 'journal', 'stats', 'gallery']
+      const sectionIds: SectionType[] = ['backstory', 'details', 'people', 'journal', 'writings', 'stats', 'player', 'gallery']
       const containerRect = container.getBoundingClientRect()
 
       for (const sectionId of sectionIds) {
@@ -456,6 +470,18 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       quick_stats: dataToSave.quick_stats,
       inventory: dataToSave.inventory,
       gold: dataToSave.gold,
+      // New fields from migration 018
+      character_writings: dataToSave.character_writings.length > 0 ? dataToSave.character_writings : null,
+      rumors: dataToSave.rumors.length > 0 ? dataToSave.rumors : null,
+      dm_qa: dataToSave.dm_qa.length > 0 ? dataToSave.dm_qa : null,
+      player_discord: dataToSave.player_discord || null,
+      player_timezone: dataToSave.player_timezone || null,
+      player_experience: dataToSave.player_experience || null,
+      player_preferences: dataToSave.player_preferences,
+      gameplay_tips: dataToSave.gameplay_tips.length > 0 ? dataToSave.gameplay_tips : null,
+      party_relations: dataToSave.party_relations.length > 0 ? dataToSave.party_relations : null,
+      combat_stats: dataToSave.combat_stats,
+      open_questions: dataToSave.open_questions.length > 0 ? dataToSave.open_questions : null,
       updated_at: new Date().toISOString(),
     }
 
@@ -1685,6 +1711,275 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
               </div>
 
+              {/* ═══════════════ WRITINGS SECTION ═══════════════ */}
+              <section id="writings" className="scroll-mt-8 mb-20">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                    <Quote className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-white/90 uppercase tracking-wider">Writings</h2>
+                  <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
+                </div>
+
+                <div className="space-y-8">
+                  {/* Character Writings (Letters, Stories, Poems) */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="text-sm font-medium text-gray-400/90">Letters, Stories & Poems</label>
+                      <button
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            character_writings: [...prev.character_writings, { title: '', type: 'letter', content: '' }]
+                          }))
+                        }}
+                        className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Writing
+                      </button>
+                    </div>
+
+                    {formData.character_writings.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-16 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                        <Quote className="w-10 h-10 mb-4 text-gray-600" />
+                        <p className="text-sm text-gray-500">No character writings yet</p>
+                        <p className="text-xs text-gray-600 mt-1">Add letters, campfire stories, poems, or diary entries</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {formData.character_writings.map((writing, index) => (
+                          <div key={index} className="p-5 bg-white/[0.02] rounded-xl border border-white/[0.04] hover:border-purple-500/20 transition-all duration-200">
+                            <div className="flex items-start gap-4 mb-4">
+                              <div className="flex-1 grid grid-cols-2 gap-4">
+                                <input
+                                  type="text"
+                                  value={writing.title}
+                                  onChange={(e) => {
+                                    const newWritings = [...formData.character_writings]
+                                    newWritings[index] = { ...writing, title: e.target.value }
+                                    setFormData(prev => ({ ...prev, character_writings: newWritings }))
+                                  }}
+                                  placeholder="Title..."
+                                  className="py-2.5 px-3.5 text-[14px] bg-white/[0.03] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.05] focus:border-purple-500/30 transition-all duration-200"
+                                />
+                                <select
+                                  value={writing.type}
+                                  onChange={(e) => {
+                                    const newWritings = [...formData.character_writings]
+                                    newWritings[index] = { ...writing, type: e.target.value }
+                                    setFormData(prev => ({ ...prev, character_writings: newWritings }))
+                                  }}
+                                  className="py-2.5 px-3.5 text-[14px] bg-white/[0.03] border border-white/[0.06] rounded-lg text-white/85 focus:outline-none focus:bg-white/[0.05] focus:border-purple-500/30 transition-all duration-200"
+                                >
+                                  <option value="letter">Letter</option>
+                                  <option value="story">Story</option>
+                                  <option value="poem">Poem</option>
+                                  <option value="diary">Diary</option>
+                                  <option value="speech">Speech</option>
+                                  <option value="other">Other</option>
+                                </select>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    character_writings: prev.character_writings.filter((_, i) => i !== index)
+                                  }))
+                                }}
+                                className="p-2 text-gray-600 hover:text-red-400/80 transition-all duration-200"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            {writing.type === 'letter' && (
+                              <input
+                                type="text"
+                                value={writing.recipient || ''}
+                                onChange={(e) => {
+                                  const newWritings = [...formData.character_writings]
+                                  newWritings[index] = { ...writing, recipient: e.target.value }
+                                  setFormData(prev => ({ ...prev, character_writings: newWritings }))
+                                }}
+                                placeholder="Recipient..."
+                                className="w-full mb-3 py-2.5 px-3.5 text-[14px] bg-white/[0.03] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.05] focus:border-purple-500/30 transition-all duration-200"
+                              />
+                            )}
+                            <textarea
+                              value={writing.content}
+                              onChange={(e) => {
+                                const newWritings = [...formData.character_writings]
+                                newWritings[index] = { ...writing, content: e.target.value }
+                                setFormData(prev => ({ ...prev, character_writings: newWritings }))
+                              }}
+                              placeholder="Content..."
+                              className="w-full min-h-[150px] py-3 px-4 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/80 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200 resize-none leading-relaxed"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Rumors */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="text-sm font-medium text-gray-400/90">Rumors</label>
+                      <button
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            rumors: [...prev.rumors, { statement: '', is_true: false }]
+                          }))
+                        }}
+                        className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Rumor
+                      </button>
+                    </div>
+
+                    {formData.rumors.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                        <p className="text-sm text-gray-500">No rumors yet</p>
+                        <p className="text-xs text-gray-600 mt-1">Add things people say about this character (true or false)</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {formData.rumors.map((rumor, index) => (
+                          <div key={index} className="flex items-center gap-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                            <button
+                              onClick={() => {
+                                const newRumors = [...formData.rumors]
+                                newRumors[index] = { ...rumor, is_true: !rumor.is_true }
+                                setFormData(prev => ({ ...prev, rumors: newRumors }))
+                              }}
+                              className={cn(
+                                "flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-md border transition-all duration-200",
+                                rumor.is_true
+                                  ? "bg-green-500/15 text-green-400 border-green-500/20"
+                                  : "bg-red-500/15 text-red-400 border-red-500/20"
+                              )}
+                            >
+                              {rumor.is_true ? 'TRUE' : 'FALSE'}
+                            </button>
+                            <input
+                              type="text"
+                              value={rumor.statement}
+                              onChange={(e) => {
+                                const newRumors = [...formData.rumors]
+                                newRumors[index] = { ...rumor, statement: e.target.value }
+                                setFormData(prev => ({ ...prev, rumors: newRumors }))
+                              }}
+                              placeholder="What do people say about this character?"
+                              className="flex-1 py-2.5 px-3.5 text-[14px] bg-transparent border-0 text-white/85 placeholder:text-gray-600 focus:outline-none"
+                            />
+                            <button
+                              onClick={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  rumors: prev.rumors.filter((_, i) => i !== index)
+                                }))
+                              }}
+                              className="p-1.5 text-gray-600 hover:text-red-400/80 transition-all duration-200"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* DM Q&A */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="text-sm font-medium text-gray-400/90">DM Q&A</label>
+                      <button
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            dm_qa: [...prev.dm_qa, { question: '', answer: '' }]
+                          }))
+                        }}
+                        className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Q&A
+                      </button>
+                    </div>
+
+                    {formData.dm_qa.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                        <p className="text-sm text-gray-500">No DM Q&A yet</p>
+                        <p className="text-xs text-gray-600 mt-1">Questions and answers from DM questionnaires</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {formData.dm_qa.map((qa, index) => (
+                          <div key={index} className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                            <div className="flex items-start gap-3 mb-3">
+                              <span className="text-purple-400 font-medium text-sm mt-2.5">Q:</span>
+                              <input
+                                type="text"
+                                value={qa.question}
+                                onChange={(e) => {
+                                  const newQA = [...formData.dm_qa]
+                                  newQA[index] = { ...qa, question: e.target.value }
+                                  setFormData(prev => ({ ...prev, dm_qa: newQA }))
+                                }}
+                                placeholder="Question from DM..."
+                                className="flex-1 py-2.5 px-3.5 text-[14px] bg-white/[0.03] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.05] focus:border-purple-500/30 transition-all duration-200"
+                              />
+                              <button
+                                onClick={() => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    dm_qa: prev.dm_qa.filter((_, i) => i !== index)
+                                  }))
+                                }}
+                                className="p-1.5 text-gray-600 hover:text-red-400/80 transition-all duration-200"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <span className="text-green-400 font-medium text-sm mt-3">A:</span>
+                              <textarea
+                                value={qa.answer}
+                                onChange={(e) => {
+                                  const newQA = [...formData.dm_qa]
+                                  newQA[index] = { ...qa, answer: e.target.value }
+                                  setFormData(prev => ({ ...prev, dm_qa: newQA }))
+                                }}
+                                placeholder="Your answer..."
+                                className="flex-1 min-h-[80px] py-3 px-4 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/80 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200 resize-none leading-relaxed"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Open Questions */}
+                  <div>
+                    <ArrayFieldEditor
+                      label="Open Questions"
+                      items={formData.open_questions}
+                      placeholder="Add an unanswered question from backstory..."
+                      onChange={(items) => setFormData(prev => ({ ...prev, open_questions: items }))}
+                      bulletChar="?"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* Section Divider */}
+              <div className="flex items-center gap-6 my-14">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
+              </div>
+
               {/* ═══════════════ STATS SECTION ═══════════════ */}
               <section id="stats" className="scroll-mt-8 mb-20">
                 <div className="flex items-center gap-4 mb-8">
@@ -1695,7 +1990,8 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-8">
+                  {/* Gold */}
                   <div>
                     <label className="block text-sm text-gray-500 mb-2">Gold</label>
                     <input
@@ -1706,9 +2002,257 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     />
                   </div>
 
-                  <div className="flex flex-col items-center justify-center py-16 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
-                    <BarChart3 className="w-10 h-10 mb-4 text-gray-600" />
-                    <p className="text-sm text-gray-500">More stats coming soon</p>
+                  {/* Combat Stats */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400/90 mb-4">Combat Statistics</label>
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                        <label className="block text-xs text-gray-500 mb-2">Kills</label>
+                        <input
+                          type="number"
+                          value={formData.combat_stats?.kills || 0}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            combat_stats: { ...prev.combat_stats, kills: parseInt(e.target.value) || 0 }
+                          }))}
+                          className="w-full py-2 px-3 text-lg bg-transparent border border-white/[0.06] rounded-lg text-red-400 font-medium focus:outline-none focus:border-red-500/30 transition-all duration-200"
+                        />
+                      </div>
+                      <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                        <label className="block text-xs text-gray-500 mb-2">Deaths</label>
+                        <input
+                          type="number"
+                          value={formData.combat_stats?.deaths || 0}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            combat_stats: { ...prev.combat_stats, deaths: parseInt(e.target.value) || 0 }
+                          }))}
+                          className="w-full py-2 px-3 text-lg bg-transparent border border-white/[0.06] rounded-lg text-gray-400 font-medium focus:outline-none focus:border-gray-500/30 transition-all duration-200"
+                        />
+                      </div>
+                      <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                        <label className="block text-xs text-gray-500 mb-2">Unconscious</label>
+                        <input
+                          type="number"
+                          value={formData.combat_stats?.unconscious || 0}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            combat_stats: { ...prev.combat_stats, unconscious: parseInt(e.target.value) || 0 }
+                          }))}
+                          className="w-full py-2 px-3 text-lg bg-transparent border border-white/[0.06] rounded-lg text-orange-400 font-medium focus:outline-none focus:border-orange-500/30 transition-all duration-200"
+                        />
+                      </div>
+                      <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                        <label className="block text-xs text-gray-500 mb-2">Last Session</label>
+                        <input
+                          type="number"
+                          value={formData.combat_stats?.last_updated_session || 0}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            combat_stats: { ...prev.combat_stats, last_updated_session: parseInt(e.target.value) || 0 }
+                          }))}
+                          className="w-full py-2 px-3 text-lg bg-transparent border border-white/[0.06] rounded-lg text-purple-400 font-medium focus:outline-none focus:border-purple-500/30 transition-all duration-200"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Party Relations */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="text-sm font-medium text-gray-400/90">Party Relations</label>
+                      <button
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            party_relations: [...prev.party_relations, { name: '', notes: '', relationship: '' }]
+                          }))
+                        }}
+                        className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Relation
+                      </button>
+                    </div>
+
+                    {formData.party_relations.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                        <Users className="w-10 h-10 mb-4 text-gray-600" />
+                        <p className="text-sm text-gray-500">No party relations yet</p>
+                        <p className="text-xs text-gray-600 mt-1">Add notes about relationships with other party members</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {formData.party_relations.map((relation, index) => (
+                          <div key={index} className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                            <div className="flex items-center gap-4 mb-3">
+                              <input
+                                type="text"
+                                value={relation.name}
+                                onChange={(e) => {
+                                  const newRelations = [...formData.party_relations]
+                                  newRelations[index] = { ...relation, name: e.target.value }
+                                  setFormData(prev => ({ ...prev, party_relations: newRelations }))
+                                }}
+                                placeholder="Character name..."
+                                className="flex-1 py-2.5 px-3.5 text-[14px] bg-white/[0.03] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.05] focus:border-purple-500/30 transition-all duration-200"
+                              />
+                              <input
+                                type="text"
+                                value={relation.relationship || ''}
+                                onChange={(e) => {
+                                  const newRelations = [...formData.party_relations]
+                                  newRelations[index] = { ...relation, relationship: e.target.value }
+                                  setFormData(prev => ({ ...prev, party_relations: newRelations }))
+                                }}
+                                placeholder="Relationship (friend, rival...)"
+                                className="w-48 py-2.5 px-3.5 text-[14px] bg-white/[0.03] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.05] focus:border-purple-500/30 transition-all duration-200"
+                              />
+                              <button
+                                onClick={() => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    party_relations: prev.party_relations.filter((_, i) => i !== index)
+                                  }))
+                                }}
+                                className="p-1.5 text-gray-600 hover:text-red-400/80 transition-all duration-200"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <textarea
+                              value={relation.notes}
+                              onChange={(e) => {
+                                const newRelations = [...formData.party_relations]
+                                newRelations[index] = { ...relation, notes: e.target.value }
+                                setFormData(prev => ({ ...prev, party_relations: newRelations }))
+                              }}
+                              placeholder="Notes about this relationship..."
+                              className="w-full min-h-[80px] py-3 px-4 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/80 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200 resize-none leading-relaxed"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Gameplay Tips */}
+                  <div>
+                    <ArrayFieldEditor
+                      label="Gameplay Tips"
+                      items={formData.gameplay_tips}
+                      placeholder="Add a combat tip or mechanical reminder..."
+                      onChange={(items) => setFormData(prev => ({ ...prev, gameplay_tips: items }))}
+                      bulletChar="→"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* Section Divider */}
+              <div className="flex items-center gap-6 my-14">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
+              </div>
+
+              {/* ═══════════════ PLAYER SECTION (OOC) ═══════════════ */}
+              <section id="player" className="scroll-mt-8 mb-20">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                    <User className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-white/90 uppercase tracking-wider">Player Info</h2>
+                  <span className="text-xs bg-gray-500/15 text-gray-400 px-2.5 py-1 rounded-md border border-gray-500/20">OOC</span>
+                  <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
+                </div>
+
+                <div className="space-y-6">
+                  {/* Basic Player Info */}
+                  <div className="grid grid-cols-3 gap-6">
+                    <div>
+                      <label className="block text-sm text-gray-500 mb-2">Discord</label>
+                      <input
+                        type="text"
+                        value={formData.player_discord}
+                        onChange={(e) => setFormData(prev => ({ ...prev, player_discord: e.target.value }))}
+                        placeholder="username#1234"
+                        className="w-full py-3 px-4 text-[15px] bg-white/[0.02] border border-white/[0.06] rounded-xl text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-500 mb-2">Timezone</label>
+                      <input
+                        type="text"
+                        value={formData.player_timezone}
+                        onChange={(e) => setFormData(prev => ({ ...prev, player_timezone: e.target.value }))}
+                        placeholder="GMT+2, EST..."
+                        className="w-full py-3 px-4 text-[15px] bg-white/[0.02] border border-white/[0.06] rounded-xl text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-500 mb-2">TTRPG Experience</label>
+                      <input
+                        type="text"
+                        value={formData.player_experience}
+                        onChange={(e) => setFormData(prev => ({ ...prev, player_experience: e.target.value }))}
+                        placeholder="5+ years, new player..."
+                        className="w-full py-3 px-4 text-[15px] bg-white/[0.02] border border-white/[0.06] rounded-xl text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Player Preferences */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400/90 mb-4">Player Preferences</label>
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-2">What is fun in D&D for you?</label>
+                        <textarea
+                          value={formData.player_preferences?.fun_in_dnd || ''}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            player_preferences: { ...prev.player_preferences, fun_in_dnd: e.target.value }
+                          }))}
+                          placeholder="What do you enjoy most about tabletop RPGs?"
+                          className="w-full min-h-[100px] py-3 px-4 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-xl text-white/80 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200 resize-none leading-relaxed"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-2">What annoys you?</label>
+                        <textarea
+                          value={formData.player_preferences?.annoys_me || ''}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            player_preferences: { ...prev.player_preferences, annoys_me: e.target.value }
+                          }))}
+                          placeholder="What frustrates you or breaks immersion?"
+                          className="w-full min-h-[100px] py-3 px-4 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-xl text-white/80 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200 resize-none leading-relaxed"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-2">Ideal party</label>
+                        <textarea
+                          value={formData.player_preferences?.ideal_party || ''}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            player_preferences: { ...prev.player_preferences, ideal_party: e.target.value }
+                          }))}
+                          placeholder="What makes a great group for you?"
+                          className="w-full min-h-[100px] py-3 px-4 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-xl text-white/80 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200 resize-none leading-relaxed"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-2">Ideal DM</label>
+                        <textarea
+                          value={formData.player_preferences?.ideal_dm || ''}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            player_preferences: { ...prev.player_preferences, ideal_dm: e.target.value }
+                          }))}
+                          placeholder="What DM style works best for you?"
+                          className="w-full min-h-[100px] py-3 px-4 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-xl text-white/80 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200 resize-none leading-relaxed"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </section>
