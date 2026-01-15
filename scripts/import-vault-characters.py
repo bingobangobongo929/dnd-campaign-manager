@@ -708,14 +708,10 @@ def extract_character(filepath: str) -> dict:
     media_links = extract_media_links(full_text)
     gold = extract_gold(full_text)
 
-    # Additional sections as notes
-    additional_sections = []
-    for section_name in ['Early Life', 'Student Life', 'Adult Life', 'The Good Path', 'How She Bonds', 'How He Bonds']:
-        content = find_section(paragraphs, [section_name.lower()])
-        if content and len(content) > 50:
-            additional_sections.append(f"## {section_name}\n{content}")
-
-    notes = '\n\n'.join(additional_sections) if additional_sections else None
+    # Notes field is what the UI displays as "Full Backstory"
+    # Use the clean backstory text (without ## headers) for notes
+    # The backstory_phases array captures the structured data separately
+    notes = clean_backstory_text(fix_formatting(backstory)) if backstory else clean_backstory_text(fix_formatting(full_text))
 
     # Build character data
     character = {
