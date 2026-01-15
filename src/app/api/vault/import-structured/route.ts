@@ -94,7 +94,20 @@ interface CharacterData {
   gold?: number | null
   rumors?: { statement: string; is_true: boolean }[]
   dm_qa?: { question: string; answer: string }[]
+  gameplay_tips?: string[]
   image_url?: string | null
+}
+
+interface SecondaryCharacter {
+  name: string
+  concept: string
+  notes?: string | null
+}
+
+interface ReferenceTable {
+  title: string
+  headers: string[]
+  rows: string[][]
 }
 
 interface StructuredImportRequest {
@@ -103,6 +116,8 @@ interface StructuredImportRequest {
   companions?: Companion[]
   session_notes?: SessionNote[]
   writings?: Writing[]
+  secondary_characters?: SecondaryCharacter[]
+  reference_tables?: ReferenceTable[]
   raw_document_text?: string
   unclassified_content?: string | null
   sourceFile?: string
@@ -167,6 +182,9 @@ export async function POST(req: Request) {
       gold: data.character.gold || null,
       rumors: data.character.rumors || null,
       dm_qa: data.character.dm_qa || null,
+      gameplay_tips: data.character.gameplay_tips || null,
+      secondary_characters: data.secondary_characters || null,
+      reference_tables: data.reference_tables || null,
       image_url: data.character.image_url || null,
       raw_document_text: data.raw_document_text || null,
       source_file: data.character.name + '.docx',

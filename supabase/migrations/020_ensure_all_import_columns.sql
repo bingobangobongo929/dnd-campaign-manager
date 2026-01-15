@@ -73,6 +73,9 @@ ALTER TABLE vault_characters ADD COLUMN IF NOT EXISTS party_relations JSONB;
 ALTER TABLE vault_characters ADD COLUMN IF NOT EXISTS combat_stats JSONB;
 ALTER TABLE vault_characters ADD COLUMN IF NOT EXISTS secondary_characters JSONB;
 
+-- Reference tables (for tables found in documents)
+ALTER TABLE vault_characters ADD COLUMN IF NOT EXISTS reference_tables JSONB;
+
 -- Import metadata
 ALTER TABLE vault_characters ADD COLUMN IF NOT EXISTS raw_document_text TEXT;
 ALTER TABLE vault_characters ADD COLUMN IF NOT EXISTS source_file TEXT;
