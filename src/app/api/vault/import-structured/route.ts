@@ -68,12 +68,21 @@ interface CharacterData {
   level?: number | null
   background?: string | null
   alignment?: string | null
+  deity?: string | null
   age?: string | null
   pronouns?: string | null
   backstory?: string | null
   backstory_phases?: BackstoryPhase[] | null
   tldr?: string[] | null
   appearance?: string | null
+  height?: string | null
+  weight?: string | null
+  hair?: string | null
+  eyes?: string | null
+  skin?: string | null
+  voice?: string | null
+  distinguishing_marks?: string | null
+  typical_attire?: string | null
   personality?: string | null
   ideals?: string | null
   bonds?: string | null
@@ -156,12 +165,21 @@ export async function POST(req: Request) {
       level: data.character.level || null,
       background: data.character.background || null,
       alignment: data.character.alignment || null,
+      deity: data.character.deity || null,
       age: data.character.age || null,
       pronouns: data.character.pronouns || null,
       backstory: finalBackstory,
       backstory_phases: data.character.backstory_phases || null,
       tldr: data.character.tldr || null,
       appearance: data.character.appearance || null,
+      height: data.character.height || null,
+      weight: data.character.weight || null,
+      hair: data.character.hair || null,
+      eyes: data.character.eyes || null,
+      skin: data.character.skin || null,
+      voice: data.character.voice || null,
+      distinguishing_marks: data.character.distinguishing_marks || null,
+      typical_attire: data.character.typical_attire || null,
       personality: data.character.personality || null,
       ideals: data.character.ideals || null,
       bonds: data.character.bonds || null,

@@ -48,36 +48,47 @@ Return valid JSON with this EXACT structure:
 {
   "character": {
     "name": "string - character name",
-    "race": "string | null - species/race",
+    "type": "pc|npc - 'pc' if player character, 'npc' if non-player character (default to 'pc' if unclear)",
+    "race": "string | null - species/race/ancestry",
     "class": "string | null - class/career/profession",
-    "subclass": "string | null",
+    "subclass": "string | null - specialization/archetype",
     "level": "number | null",
-    "age": "string | null",
+    "age": "string | null - can be descriptive like 'young adult' or specific",
     "pronouns": "string | null",
-    "background": "string | null - D&D background or origin",
+    "background": "string | null - D&D background or origin story hook",
     "alignment": "string | null",
-    "backstory": "string - FULL prose backstory with MARKDOWN formatting: \\n\\n for paragraphs, **bold** for names/emphasis, *italic* for thoughts, ## for headings, - for bullets. Preserve all original formatting and structure.",
-    "backstory_phases": [{"title": "Phase Name", "content": "Full text of this life phase"}],
-    "tldr": ["string - each TLDR bullet as separate item"],
-    "appearance": "string | null - physical description",
+    "deity": "string | null - god/gods they worship",
+    "backstory": "string - FULL prose backstory with MARKDOWN: \\n\\n for paragraphs, **bold** for names/emphasis, *italic* for thoughts, ## for headings, - for bullets. Include ALL narrative content.",
+    "backstory_phases": [{"title": "Phase Name", "content": "Full text with markdown formatting"}],
+    "tldr": ["string - each TLDR/summary bullet as separate item"],
+    "appearance": "string | null - general physical description prose",
+    "height": "string | null - e.g. '5\\'10\"' or '180cm' or 'tall'",
+    "weight": "string | null - e.g. '150 lbs' or 'slender'",
+    "hair": "string | null - color, style, length",
+    "eyes": "string | null - color, notable features",
+    "skin": "string | null - tone, complexion, notable features",
+    "voice": "string | null - description of how they sound",
+    "distinguishing_marks": "string | null - scars, tattoos, birthmarks",
+    "typical_attire": "string | null - what they usually wear",
     "personality": "string | null - personality description",
-    "ideals": "string | null",
-    "bonds": "string | null",
-    "flaws": "string | null",
-    "goals": "string | null - character's goals",
-    "secrets": "string | null - secrets the character has",
+    "ideals": "string | null - what principles guide them",
+    "bonds": "string | null - connections to people/places/things",
+    "flaws": "string | null - weaknesses, vices, bad habits",
+    "goals": "string | null - what they want to achieve",
+    "secrets": "string | null - things they hide",
     "fears": ["string - things they fear"],
-    "quotes": ["string - exact voice lines/catchphrases"],
-    "plot_hooks": ["string - DM story hooks, 'knives'"],
-    "pre_session_hook": "string | null - what brought them to the party",
-    "theme_music_url": "string | null - YouTube or other link",
-    "character_sheet_url": "string | null - D&D Beyond or similar",
-    "external_links": [{"url": "string", "label": "string", "type": "dndbeyond|youtube|pinterest|other"}],
-    "player_discord": "string | null",
+    "quotes": ["string - exact voice lines, catchphrases, things they say"],
+    "plot_hooks": ["string - DM story hooks, 'knives', adventure seeds"],
+    "pre_session_hook": "string | null - what brought them to the party/adventure",
+    "theme_music_url": "string | null - YouTube or Spotify link if mentioned",
+    "character_sheet_url": "string | null - D&D Beyond, Demiplane, etc.",
+    "image_url": "string | null - if an image URL is mentioned in the document",
+    "external_links": [{"url": "string", "label": "string", "type": "dndbeyond|youtube|pinterest|spotify|other"}],
+    "player_discord": "string | null - Discord username",
     "player_timezone": "string | null",
-    "player_experience": "string | null - player's TTRPG experience",
+    "player_experience": "string | null - player's TTRPG experience level",
     "possessions": [{"name": "string", "quantity": "number", "notes": "string | null"}],
-    "gold": "number | null",
+    "gold": "number | null - currency amount",
     "rumors": [{"statement": "string", "is_true": "boolean"}],
     "dm_qa": [{"question": "string", "answer": "string"}],
     "gameplay_tips": ["string - tips for playing/DMing this character"]
@@ -129,7 +140,7 @@ Return valid JSON with this EXACT structure:
     {
       "title": "string - title or 'Letter to X' or 'Untitled Story'",
       "writing_type": "letter|story|poem|diary|journal|campfire_story|note|speech|song|other",
-      "content": "string - FULL text preserving formatting",
+      "content": "string - FULL text with markdown formatting (\\n\\n, **bold**, *italic*)",
       "recipient": "string | null - for letters",
       "in_universe_date": "string | null - if dated in-universe"
     }
@@ -212,6 +223,27 @@ Extract as:
   "companion_species": "Ferret",
   "description": "A clever little ferret who helps scout ahead. Can understand Common but can't speak."
 }
+
+## BACKSTORY FORMATTING EXAMPLE
+
+If the document has prose like:
+"""
+Early Life
+Kira was born in Waterdeep to a merchant family. Her father, Marcus, taught her the trade.
+
+The Incident
+When she was 15, bandits attacked their caravan. She discovered her magical abilities that day, accidentally burning the attackers alive.
+"""
+
+Format the backstory as:
+"## Early Life\\n\\n**Kira** was born in *Waterdeep* to a merchant family. Her father, **Marcus**, taught her the trade.\\n\\n## The Incident\\n\\nWhen she was 15, bandits attacked their caravan. She discovered her magical abilities that day, accidentally burning the attackers alive."
+
+Key points:
+- Use ## for section headings
+- Use **name** for important people/places on first mention
+- Use *italic* for place names or emphasis
+- Use \\n\\n between paragraphs
+- Preserve ALL content, don't summarize
 
 Remember: ZERO DATA LOSS. Every word matters. If in doubt, include it in the appropriate notes field.`
 
