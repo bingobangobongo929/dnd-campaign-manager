@@ -342,9 +342,27 @@ export default function SessionDetailPage() {
     }
   }
 
+  // Convert bullet point text to HTML list
+  const formatSummaryAsHtml = (text: string): string => {
+    const lines = text.split('\n').filter(line => line.trim())
+    const bulletLines = lines.filter(line => line.trim().startsWith('•') || line.trim().startsWith('-') || line.trim().startsWith('*'))
+
+    if (bulletLines.length > 0) {
+      // Convert to HTML list
+      const listItems = lines.map(line => {
+        const cleanLine = line.replace(/^[\s]*[•\-\*]\s*/, '').trim()
+        return cleanLine ? `<li>${cleanLine}</li>` : ''
+      }).filter(Boolean).join('')
+      return `<ul>${listItems}</ul>`
+    }
+
+    // If no bullets, just convert newlines to <br/>
+    return text.replace(/\n/g, '<br/>')
+  }
+
   const acceptExpanded = () => {
     if (pendingSummary) {
-      setFormData(prev => ({ ...prev, summary: pendingSummary }))
+      setFormData(prev => ({ ...prev, summary: formatSummaryAsHtml(pendingSummary) }))
     }
     if (pendingNotes) {
       setFormData(prev => ({ ...prev, notes: pendingNotes }))
@@ -362,7 +380,7 @@ export default function SessionDetailPage() {
 
   const editExpanded = () => {
     if (pendingSummary) {
-      setFormData(prev => ({ ...prev, summary: pendingSummary }))
+      setFormData(prev => ({ ...prev, summary: formatSummaryAsHtml(pendingSummary) }))
     }
     if (pendingNotes) {
       setFormData(prev => ({ ...prev, notes: pendingNotes }))

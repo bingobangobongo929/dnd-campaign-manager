@@ -324,10 +324,28 @@ export default function VaultSessionEditorPage() {
     }
   }
 
+  // Convert bullet point text to HTML list
+  const formatSummaryAsHtml = (text: string): string => {
+    const lines = text.split('\n').filter(line => line.trim())
+    const bulletLines = lines.filter(line => line.trim().startsWith('•') || line.trim().startsWith('-') || line.trim().startsWith('*'))
+
+    if (bulletLines.length > 0) {
+      // Convert to HTML list
+      const listItems = lines.map(line => {
+        const cleanLine = line.replace(/^[\s]*[•\-\*]\s*/, '').trim()
+        return cleanLine ? `<li>${cleanLine}</li>` : ''
+      }).filter(Boolean).join('')
+      return `<ul>${listItems}</ul>`
+    }
+
+    // If no bullets, just convert newlines to <br/>
+    return text.replace(/\n/g, '<br/>')
+  }
+
   const acceptExpanded = () => {
     // Apply cleaned summary if available
     if (pendingSummary) {
-      setFormData(prev => ({ ...prev, summary: pendingSummary }))
+      setFormData(prev => ({ ...prev, summary: formatSummaryAsHtml(pendingSummary) }))
     }
     // Apply detailed notes
     if (pendingNotes) {
@@ -347,7 +365,7 @@ export default function VaultSessionEditorPage() {
   const editExpanded = () => {
     // Apply both but keep editing open
     if (pendingSummary) {
-      setFormData(prev => ({ ...prev, summary: pendingSummary }))
+      setFormData(prev => ({ ...prev, summary: formatSummaryAsHtml(pendingSummary) }))
     }
     if (pendingNotes) {
       setFormData(prev => ({ ...prev, notes: pendingNotes }))
