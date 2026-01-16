@@ -2,24 +2,42 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Calendar, Sparkles, Loader2, Users, Check, X, Pencil, Brain, Wand2, ChevronDown, ChevronUp } from 'lucide-react'
-import { Input } from '@/components/ui'
+import {
+  ArrowLeft,
+  Calendar,
+  Sparkles,
+  Loader2,
+  Users,
+  Check,
+  X,
+  Pencil,
+  Brain,
+  Wand2,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+} from 'lucide-react'
+import { toast } from 'sonner'
+import { Input, Button } from '@/components/ui'
 import { RichTextEditor } from '@/components/editor'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser, useAutoSave } from '@/hooks'
-import { formatDate, cn, getInitials } from '@/lib/utils'
+import { useAppStore } from '@/store'
+import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
 import { IntelligenceModal } from '@/components/intelligence'
-import type { Session, Campaign, Character, SessionCharacter } from '@/types/database'
+import type { Session, Campaign, Character } from '@/types/database'
 
 export default function SessionDetailPage() {
   const params = useParams()
   const router = useRouter()
   const supabase = useSupabase()
   const { user } = useUser()
+  const { aiProvider } = useAppStore()
 
   const campaignId = params.id as string
   const sessionId = params.sessionId as string
+  const isNew = sessionId === 'new'
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [session, setSession] = useState<Session | null>(null)
@@ -27,21 +45,20 @@ export default function SessionDetailPage() {
   const [attendees, setAttendees] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
-  const [summarizing, setSummarizing] = useState(false)
+
   const [formData, setFormData] = useState({
+    session_number: '',
     title: '',
     date: '',
-    notes: '',
     summary: '',
+    notes: '',
   })
-
-  // AI Summary suggestion state
-  const [aiSummary, setAiSummary] = useState<string | null>(null)
-  const [showAiSuggestion, setShowAiSuggestion] = useState(false)
 
   // AI Expand Notes state
   const [expanding, setExpanding] = useState(false)
-  const [expandedNotes, setExpandedNotes] = useState<string | null>(null)
+  const [pendingNotes, setPendingNotes] = useState<string | null>(null)
+  const [pendingSummary, setPendingSummary] = useState<string | null>(null)
+  const [pendingTitle, setPendingTitle] = useState<string | null>(null)
   const [showExpandedPreview, setShowExpandedPreview] = useState(false)
   const [aiReasoning, setAiReasoning] = useState<string>('')
   const [detailedNotesCollapsed, setDetailedNotesCollapsed] = useState(true)
@@ -56,7 +73,6 @@ export default function SessionDetailPage() {
   }, [user, campaignId, sessionId])
 
   const loadData = async () => {
-    // Only show loading spinner on initial load, not refetches
     if (!hasLoadedOnce) {
       setLoading(true)
     }
@@ -74,7 +90,42 @@ export default function SessionDetailPage() {
     }
     setCampaign(campaignData)
 
-    // Load session
+    // Load all characters for attendance
+    const { data: charactersData } = await supabase
+      .from('characters')
+      .select('*')
+      .eq('campaign_id', campaignId)
+      .order('type', { ascending: true })
+      .order('name')
+
+    setCharacters(charactersData || [])
+
+    if (isNew) {
+      // Get next session number
+      const { data: sessions } = await supabase
+        .from('sessions')
+        .select('session_number')
+        .eq('campaign_id', campaignId)
+        .order('session_number', { ascending: false })
+        .limit(1)
+
+      const nextNumber = sessions && sessions.length > 0 && sessions[0].session_number !== null
+        ? sessions[0].session_number + 1
+        : 0
+
+      setFormData({
+        session_number: nextNumber.toString(),
+        title: '',
+        date: new Date().toISOString().split('T')[0],
+        summary: '',
+        notes: '',
+      })
+      setLoading(false)
+      setHasLoadedOnce(true)
+      return
+    }
+
+    // Load existing session
     const { data: sessionData } = await supabase
       .from('sessions')
       .select('*')
@@ -88,21 +139,12 @@ export default function SessionDetailPage() {
 
     setSession(sessionData)
     setFormData({
+      session_number: sessionData.session_number?.toString() || '',
       title: sessionData.title || '',
       date: sessionData.date || '',
-      notes: sessionData.notes || '',
       summary: sessionData.summary || '',
+      notes: sessionData.notes || '',
     })
-
-    // Load all characters for attendance (both PCs and NPCs)
-    const { data: charactersData } = await supabase
-      .from('characters')
-      .select('*')
-      .eq('campaign_id', campaignId)
-      .order('type', { ascending: true }) // PCs first
-      .order('name')
-
-    setCharacters(charactersData || [])
 
     // Load session attendees
     const { data: attendeesData } = await supabase
@@ -111,12 +153,28 @@ export default function SessionDetailPage() {
       .eq('session_id', sessionId)
 
     setAttendees(attendeesData?.map(a => a.character_id) || [])
+
+    // If there's existing notes, show them expanded
+    if (sessionData.notes && sessionData.notes.trim()) {
+      setDetailedNotesCollapsed(false)
+    }
+
     setLoading(false)
     setHasLoadedOnce(true)
   }
 
   // Toggle character attendance
   const toggleAttendee = async (characterId: string) => {
+    if (isNew) {
+      // For new sessions, just track locally
+      setAttendees(prev =>
+        prev.includes(characterId)
+          ? prev.filter(id => id !== characterId)
+          : [...prev, characterId]
+      )
+      return
+    }
+
     const isAttending = attendees.includes(characterId)
 
     if (isAttending) {
@@ -136,161 +194,199 @@ export default function SessionDetailPage() {
 
   // Auto-save functionality
   const saveSession = useCallback(async () => {
-    if (!session) return
+    if (isNew || !session) return
 
     await supabase
       .from('sessions')
       .update({
-        title: formData.title,
-        date: formData.date,
-        notes: formData.notes || null,
+        title: formData.title || null,
+        date: formData.date || null,
         summary: formData.summary || null,
+        notes: formData.notes || '',
       })
       .eq('id', session.id)
-  }, [formData, session, supabase])
+  }, [formData, session, supabase, isNew])
 
   const { status } = useAutoSave({
     data: formData,
     onSave: saveSession,
     delay: 1500,
-    showToast: true,
-    toastMessage: 'Session saved',
+    showToast: false,
   })
 
-  // AI Summarize - now with accept/edit/decline flow
-  const handleSummarize = async () => {
-    if (!formData.notes || summarizing) return
+  // Create new session
+  const handleCreate = async () => {
+    if (!formData.summary.trim()) {
+      toast.error('Please add a summary first')
+      return
+    }
 
-    setSummarizing(true)
-    setAiSummary('')
-    setShowAiSuggestion(true)
-
-    try {
-      const response = await fetch('/api/ai/summarize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: formData.notes,
-          sessionTitle: formData.title,
-        }),
+    const { data: newSession, error } = await supabase
+      .from('sessions')
+      .insert({
+        campaign_id: campaignId,
+        session_number: formData.session_number ? parseInt(formData.session_number) : 0,
+        title: formData.title || null,
+        date: formData.date || null,
+        summary: formData.summary || null,
+        notes: formData.notes || '',
       })
+      .select()
+      .single()
 
-      if (!response.ok) throw new Error('Failed to summarize')
-
-      const reader = response.body?.getReader()
-      if (!reader) throw new Error('No reader')
-
-      let summary = ''
-      const decoder = new TextDecoder()
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        summary += decoder.decode(value)
-        setAiSummary(summary)
-      }
-    } catch (error) {
-      console.error('Summarize error:', error)
-      setShowAiSuggestion(false)
-      setAiSummary(null)
-    } finally {
-      setSummarizing(false)
+    if (error || !newSession) {
+      toast.error('Failed to create session')
+      return
     }
-  }
 
-  const acceptSummary = () => {
-    if (aiSummary) {
-      setFormData(prev => ({ ...prev, summary: aiSummary }))
+    // Save attendees
+    if (attendees.length > 0) {
+      await supabase
+        .from('session_characters')
+        .insert(attendees.map(charId => ({
+          session_id: newSession.id,
+          character_id: charId,
+        })))
     }
-    setShowAiSuggestion(false)
-    setAiSummary(null)
+
+    toast.success('Session created')
+    router.replace(`/campaigns/${campaignId}/sessions/${newSession.id}`)
   }
 
-  const editSummary = () => {
-    // Accept but keep in edit mode
-    if (aiSummary) {
-      setFormData(prev => ({ ...prev, summary: aiSummary }))
-    }
-    setShowAiSuggestion(false)
-    setAiSummary(null)
-  }
-
-  const declineSummary = () => {
-    setShowAiSuggestion(false)
-    setAiSummary(null)
-  }
-
-  // AI Expand Notes - takes summary and creates detailed narrative notes
+  // AI Expand Notes
   const handleExpandNotes = async () => {
     if (!formData.summary.trim() || expanding) return
 
     setExpanding(true)
-    setExpandedNotes('')
+    setPendingNotes('')
+    setPendingSummary('')
+    setPendingTitle(null)
     setAiReasoning('')
     setShowExpandedPreview(true)
-    setDetailedNotesCollapsed(false)
 
     try {
+      // Build known entities from campaign characters
+      const knownEntities: string[] = []
+      characters.forEach(char => {
+        if (char.name) knownEntities.push(char.name)
+      })
+
+      // Build context
+      const contextParts = []
+      if (campaign?.name) contextParts.push(`Campaign: ${campaign.name}`)
+      if (formData.title) contextParts.push(`Session Title: ${formData.title}`)
+      contextParts.push(`Session Number: ${formData.session_number}`)
+
       const response = await fetch('/api/ai/expand', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          summary: formData.summary,
-          campaignId: campaignId,
-          sessionTitle: formData.title,
+          text: formData.summary,
+          context: contextParts.join('\n'),
+          provider: aiProvider,
+          mode: 'session',
+          knownEntities,
         }),
       })
 
-      if (!response.ok) throw new Error('Failed to expand notes')
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('API Error:', errorText)
+        throw new Error('Failed to expand notes')
+      }
 
       const reader = response.body?.getReader()
       if (!reader) throw new Error('No reader')
 
-      let notes = ''
+      let fullText = ''
       const decoder = new TextDecoder()
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
         const chunk = decoder.decode(value)
+        fullText += chunk
 
-        if (chunk.includes('---REASONING---')) {
-          const parts = chunk.split('---REASONING---')
-          notes += parts[0]
-          setAiReasoning(parts[1] || '')
-        } else if (aiReasoning) {
-          setAiReasoning(prev => prev + chunk)
-        } else {
-          notes += chunk
+        // Parse sections from accumulated text
+        const summaryMatch = fullText.match(/---CLEANED_SUMMARY---\n?([\s\S]*?)(?=---DETAILED_NOTES---|$)/)
+        const notesMatch = fullText.match(/---DETAILED_NOTES---\n?([\s\S]*?)(?=---TITLE---|---REASONING---|$)/)
+        const titleMatch = fullText.match(/---TITLE---\n?([\s\S]*?)(?=---REASONING---|$)/)
+        const reasoningMatch = fullText.match(/---REASONING---\n?([\s\S]*)$/)
+
+        if (summaryMatch) {
+          setPendingSummary(summaryMatch[1].trim())
         }
-        setExpandedNotes(notes)
+        if (notesMatch) {
+          setPendingNotes(notesMatch[1].trim())
+        }
+        if (titleMatch) {
+          setPendingTitle(titleMatch[1].trim())
+        }
+        if (reasoningMatch) {
+          setAiReasoning(reasoningMatch[1].trim())
+        }
+      }
+
+      // Fallback if no sections found
+      const summaryMatch = fullText.match(/---CLEANED_SUMMARY---\n?([\s\S]*?)(?=---DETAILED_NOTES---|$)/)
+      const notesMatch = fullText.match(/---DETAILED_NOTES---\n?([\s\S]*?)(?=---TITLE---|---REASONING---|$)/)
+
+      if (!summaryMatch && !notesMatch) {
+        setPendingNotes(fullText.trim())
       }
     } catch (error) {
       console.error('Expand error:', error)
+      toast.error('Failed to expand notes')
       setShowExpandedPreview(false)
-      setExpandedNotes(null)
+      setPendingNotes(null)
+      setPendingSummary(null)
+      setPendingTitle(null)
     } finally {
       setExpanding(false)
     }
   }
 
   const acceptExpanded = () => {
-    if (expandedNotes) {
-      setFormData(prev => ({ ...prev, notes: expandedNotes }))
+    if (pendingSummary) {
+      setFormData(prev => ({ ...prev, summary: pendingSummary }))
+    }
+    if (pendingNotes) {
+      setFormData(prev => ({ ...prev, notes: pendingNotes }))
+    }
+    if (pendingTitle && !formData.title.trim()) {
+      setFormData(prev => ({ ...prev, title: pendingTitle }))
     }
     setShowExpandedPreview(false)
+    setPendingNotes(null)
+    setPendingSummary(null)
+    setPendingTitle(null)
+    setAiReasoning('')
+    setDetailedNotesCollapsed(false)
   }
 
   const editExpanded = () => {
-    if (expandedNotes) {
-      setFormData(prev => ({ ...prev, notes: expandedNotes }))
+    if (pendingSummary) {
+      setFormData(prev => ({ ...prev, summary: pendingSummary }))
+    }
+    if (pendingNotes) {
+      setFormData(prev => ({ ...prev, notes: pendingNotes }))
+    }
+    if (pendingTitle && !formData.title.trim()) {
+      setFormData(prev => ({ ...prev, title: pendingTitle }))
     }
     setShowExpandedPreview(false)
+    setPendingNotes(null)
+    setPendingSummary(null)
+    setPendingTitle(null)
+    setAiReasoning('')
+    setDetailedNotesCollapsed(false)
   }
 
   const declineExpanded = () => {
     setShowExpandedPreview(false)
-    setExpandedNotes(null)
+    setPendingNotes(null)
+    setPendingSummary(null)
+    setPendingTitle(null)
     setAiReasoning('')
   }
 
@@ -298,11 +394,11 @@ export default function SessionDetailPage() {
   const pcCharacters = characters.filter(c => c.type === 'pc')
   const npcCharacters = characters.filter(c => c.type === 'npc')
 
-  if (loading || !session) {
+  if (loading) {
     return (
       <AppLayout campaignId={campaignId}>
         <div className="flex items-center justify-center h-[60vh]">
-          <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
+          <Loader2 className="w-10 h-10 animate-spin text-[--arcane-purple]" />
         </div>
       </AppLayout>
     )
@@ -310,12 +406,12 @@ export default function SessionDetailPage() {
 
   return (
     <AppLayout campaignId={campaignId}>
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="mb-10">
+        <div className="mb-8">
           <button
             onClick={() => router.push(`/campaigns/${campaignId}/sessions`)}
-            className="btn btn-ghost mb-6 -ml-2"
+            className="flex items-center gap-2 text-sm text-[--text-secondary] hover:text-[--text-primary] transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Sessions
@@ -324,10 +420,9 @@ export default function SessionDetailPage() {
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <span className="px-3 py-1 text-sm font-semibold rounded-lg bg-[--arcane-purple]/10 text-[--arcane-purple]">
-                  Session {session.session_number}
+                <span className="text-xs font-bold text-[--arcane-purple] bg-[--arcane-purple]/10 px-2 py-0.5 rounded">
+                  Session {formData.session_number || '?'}
                 </span>
-                {/* Editable Date */}
                 <div className="flex items-center gap-1.5 text-sm text-[--text-tertiary]">
                   <Calendar className="w-4 h-4" />
                   <Input
@@ -342,44 +437,48 @@ export default function SessionDetailPage() {
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 className="text-2xl font-display font-semibold border-none bg-transparent px-0 h-auto focus:ring-0 placeholder:text-[--text-tertiary]"
-                placeholder="Session title..."
+                placeholder="Session title (AI will suggest one)..."
               />
             </div>
             <div className="flex items-center gap-3">
-              <span className={cn(
-                "text-sm transition-opacity",
-                status === 'saving' ? 'text-[--text-tertiary]' : 'text-[--text-tertiary] opacity-60'
-              )}>
-                {status === 'saving' && 'Saving...'}
-                {status === 'saved' && 'Saved'}
-                {status === 'idle' && 'All changes saved'}
-              </span>
+              {!isNew && (
+                <span className={cn(
+                  "text-sm transition-opacity",
+                  status === 'saving' ? 'text-[--text-tertiary]' : 'text-[--text-tertiary] opacity-60'
+                )}>
+                  {status === 'saving' && 'Saving...'}
+                  {status === 'saved' && 'Saved'}
+                  {status === 'idle' && 'All changes saved'}
+                </span>
+              )}
+              {isNew && (
+                <Button onClick={handleCreate}>
+                  Create Session
+                </Button>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Attendance Section - Prominent placement */}
-        <div className="card p-6 mb-12" style={{ marginTop: '24px', marginBottom: '32px' }}>
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <Users className="w-6 h-6 text-[--arcane-purple]" />
-              <label className="text-xl font-semibold text-[--text-primary]">
-                Attendance
-              </label>
-              <span className="text-sm text-[--text-tertiary]">
-                ({attendees.length} selected)
-              </span>
-            </div>
+        {/* Attendance Section */}
+        <div className="card p-6 mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <Users className="w-5 h-5 text-[--arcane-purple]" />
+            <label className="text-lg font-semibold text-[--text-primary]">
+              Attendance
+            </label>
+            <span className="text-sm text-[--text-tertiary]">
+              ({attendees.length} present)
+            </span>
           </div>
 
           {/* PC Characters */}
           {pcCharacters.length > 0 && (
-            <div className="mb-6" style={{ marginBottom: '24px' }}>
-              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-4">
+            <div className="mb-4">
+              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-3">
                 Player Characters
               </h4>
-              {/* Extra padding to prevent ring cutoff */}
-              <div className="flex flex-wrap gap-3 -m-1 p-1">
+              <div className="flex flex-wrap gap-2">
                 {pcCharacters.map((char) => {
                   const isAttending = attendees.includes(char.id)
                   return (
@@ -387,36 +486,31 @@ export default function SessionDetailPage() {
                       key={char.id}
                       onClick={() => toggleAttendee(char.id)}
                       className={cn(
-                        'flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all',
+                        'flex items-center gap-2 px-3 py-2 rounded-lg transition-all border-2',
                         isAttending
-                          ? 'bg-[--arcane-purple] text-white shadow-lg shadow-[--arcane-purple]/25 ring-2 ring-[--arcane-purple] ring-offset-2 ring-offset-[--bg-surface]'
-                          : 'bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 text-[--text-secondary] hover:text-[--text-primary]'
+                          ? 'bg-[--arcane-purple]/20 border-[--arcane-purple] text-white'
+                          : 'bg-transparent border-white/10 text-[--text-secondary] hover:border-white/20 opacity-50 hover:opacity-75'
                       )}
                     >
-                      <div className={cn(
-                        "relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0",
-                        !isAttending && 'bg-[--bg-surface]'
-                      )}>
+                      <div className="relative w-6 h-6 rounded-full overflow-hidden flex-shrink-0 bg-[--bg-surface]">
                         {char.image_url ? (
                           <Image
                             src={char.image_url}
                             alt={char.name}
                             fill
                             className="object-cover"
-                            sizes="28px"
+                            sizes="24px"
                           />
                         ) : (
-                          <div className={cn(
-                            "w-full h-full flex items-center justify-center text-xs font-medium",
-                            isAttending ? 'bg-white/20 text-white' : 'text-[--text-secondary]'
-                          )}>
+                          <div className="w-full h-full flex items-center justify-center text-xs font-medium">
                             {getInitials(char.name)}
                           </div>
                         )}
                       </div>
-                      <span className="text-sm font-medium pr-1">
-                        {char.name}
-                      </span>
+                      <span className="text-sm font-medium">{char.name}</span>
+                      {isAttending && (
+                        <CheckCircle2 className="w-4 h-4 text-[--arcane-purple]" />
+                      )}
                     </button>
                   )
                 })}
@@ -427,11 +521,10 @@ export default function SessionDetailPage() {
           {/* NPC Characters */}
           {npcCharacters.length > 0 && (
             <div>
-              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-4">
-                Non-Player Characters
+              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-3">
+                NPCs Present
               </h4>
-              {/* Extra padding to prevent ring cutoff */}
-              <div className="flex flex-wrap gap-3 -m-1 p-1">
+              <div className="flex flex-wrap gap-2">
                 {npcCharacters.map((char) => {
                   const isAttending = attendees.includes(char.id)
                   return (
@@ -439,36 +532,31 @@ export default function SessionDetailPage() {
                       key={char.id}
                       onClick={() => toggleAttendee(char.id)}
                       className={cn(
-                        'flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all',
+                        'flex items-center gap-2 px-3 py-2 rounded-lg transition-all border-2',
                         isAttending
-                          ? 'bg-[--arcane-gold] text-[--bg-base] shadow-lg shadow-[--arcane-gold]/25 ring-2 ring-[--arcane-gold] ring-offset-2 ring-offset-[--bg-surface]'
-                          : 'bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-gold]/50 text-[--text-secondary] hover:text-[--text-primary]'
+                          ? 'bg-[--arcane-gold]/20 border-[--arcane-gold] text-white'
+                          : 'bg-transparent border-white/10 text-[--text-secondary] hover:border-white/20 opacity-50 hover:opacity-75'
                       )}
                     >
-                      <div className={cn(
-                        "relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0",
-                        !isAttending && 'bg-[--bg-surface]'
-                      )}>
+                      <div className="relative w-6 h-6 rounded-full overflow-hidden flex-shrink-0 bg-[--bg-surface]">
                         {char.image_url ? (
                           <Image
                             src={char.image_url}
                             alt={char.name}
                             fill
                             className="object-cover"
-                            sizes="28px"
+                            sizes="24px"
                           />
                         ) : (
-                          <div className={cn(
-                            "w-full h-full flex items-center justify-center text-xs font-medium",
-                            isAttending ? 'bg-black/20 text-[--bg-base]' : 'text-[--text-secondary]'
-                          )}>
+                          <div className="w-full h-full flex items-center justify-center text-xs font-medium">
                             {getInitials(char.name)}
                           </div>
                         )}
                       </div>
-                      <span className="text-sm font-medium pr-1">
-                        {char.name}
-                      </span>
+                      <span className="text-sm font-medium">{char.name}</span>
+                      {isAttending && (
+                        <CheckCircle2 className="w-4 h-4 text-[--arcane-gold]" />
+                      )}
                     </button>
                   )
                 })}
@@ -478,219 +566,231 @@ export default function SessionDetailPage() {
 
           {characters.length === 0 && (
             <p className="text-sm text-[--text-tertiary] text-center py-4">
-              No characters in this campaign yet. Add characters on the Canvas to track attendance.
+              No characters in this campaign yet.
             </p>
           )}
         </div>
 
-        {/* Summary Section */}
-        <div className="card p-6 mb-12">
+        {/* Summary Section - PRIMARY FOCUS */}
+        <div className="card p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <label className="text-xl font-semibold text-[--text-primary] block mb-1">
+              <label className="text-lg font-semibold text-[--text-primary] block">
                 Summary
               </label>
               <span className="text-sm text-[--text-tertiary]">
-                Write bullet points, then expand with AI
+                Write bullet points of what happened, then expand with AI
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              {!showExpandedPreview && (
-                <button
-                  onClick={handleExpandNotes}
-                  disabled={!formData.summary.trim() || expanding}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
-                    "bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple]",
-                    "hover:bg-[--arcane-purple]/20 hover:border-[--arcane-purple]/50",
-                    "disabled:opacity-50 disabled:cursor-not-allowed"
-                  )}
-                >
-                  <Wand2 className="w-3.5 h-3.5" />
-                  Expand Notes
-                </button>
-              )}
-              {!showAiSuggestion && (
-                <button
-                  onClick={handleSummarize}
-                  disabled={!formData.notes || summarizing}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
-                    "bg-[--arcane-gold]/10 border border-[--arcane-gold]/30 text-[--arcane-gold]",
-                    "hover:bg-[--arcane-gold]/20 hover:border-[--arcane-gold]/50",
-                    "disabled:opacity-50 disabled:cursor-not-allowed"
-                  )}
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  AI Summarize
-                </button>
-              )}
-            </div>
+            {!showExpandedPreview && (
+              <button
+                onClick={handleExpandNotes}
+                disabled={!formData.summary.trim() || expanding}
+                className={cn(
+                  "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                  "bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple]",
+                  "hover:bg-[--arcane-purple]/20 hover:border-[--arcane-purple]/50",
+                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                )}
+              >
+                {expanding ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Wand2 className="w-4 h-4" />
+                )}
+                Expand Notes
+              </button>
+            )}
           </div>
-
-          {/* AI Suggestion Panel */}
-          {showAiSuggestion && (
-            <div className="mb-4 p-4 rounded-xl bg-[--arcane-gold]/5 border border-[--arcane-gold]/30">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="w-4 h-4 text-[--arcane-gold]" />
-                <span className="text-sm font-medium text-[--arcane-gold]">
-                  {summarizing ? 'Generating summary...' : 'AI Generated Summary'}
-                </span>
-                {summarizing && (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[--arcane-gold]" />
-                )}
-              </div>
-              <p className="text-sm text-[--text-secondary] mb-4 whitespace-pre-wrap min-h-[3rem]">
-                {aiSummary || 'Analyzing your notes...'}
-              </p>
-              {!summarizing && aiSummary && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={acceptSummary}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    Accept
-                  </button>
-                  <button
-                    onClick={editSummary}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple] hover:bg-[--arcane-purple]/20 transition-colors"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                    Accept & Edit
-                  </button>
-                  <button
-                    onClick={declineSummary}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[--arcane-ember]/10 border border-[--arcane-ember]/30 text-[--arcane-ember] hover:bg-[--arcane-ember]/20 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    Decline
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* AI Expanded Notes Preview */}
-          {showExpandedPreview && (
-            <div className="mb-4 p-4 rounded-xl bg-[--arcane-purple]/5 border border-[--arcane-purple]/30">
-              <div className="flex items-center gap-2 mb-3">
-                <Wand2 className="w-4 h-4 text-[--arcane-purple]" />
-                <span className="text-sm font-medium text-[--arcane-purple]">
-                  {expanding ? 'Expanding notes...' : 'AI Expanded Notes'}
-                </span>
-                {expanding && (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[--arcane-purple]" />
-                )}
-              </div>
-              {aiReasoning && (
-                <div className="mb-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-                  <p className="text-xs text-[--text-tertiary] mb-1">AI Context Used:</p>
-                  <p className="text-sm text-[--text-secondary] whitespace-pre-wrap">{aiReasoning}</p>
-                </div>
-              )}
-              <div className="text-sm text-[--text-secondary] mb-4 whitespace-pre-wrap min-h-[3rem] prose prose-invert prose-sm max-w-none">
-                {expandedNotes || 'Analyzing your summary...'}
-              </div>
-              {!expanding && expandedNotes && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={acceptExpanded}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    Accept
-                  </button>
-                  <button
-                    onClick={editExpanded}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple] hover:bg-[--arcane-purple]/20 transition-colors"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                    Accept & Edit
-                  </button>
-                  <button
-                    onClick={declineExpanded}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[--arcane-ember]/10 border border-[--arcane-ember]/30 text-[--arcane-ember] hover:bg-[--arcane-ember]/20 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    Decline
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
 
           <textarea
             value={formData.summary}
             onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-            placeholder={`Write your session summary in bullet points:
+            placeholder="Write your session notes as bullet points...
 
-* Met with the town mayor about the goblin threat
-* Tracked the goblins to a cave outside town
-* Fought and defeated 5 goblins, found a map to their main camp`}
+• Party met the mayor about the goblin threat
+• Tracked goblins to a cave system
+• Combat with 5 goblins, found a map to their camp
+• Discovered the goblins are working for someone"
             rows={8}
-            className="form-textarea min-h-[200px] font-mono text-sm"
+            className="w-full bg-[--bg-elevated] border border-[--border] rounded-lg px-4 py-3 text-sm resize-none focus:outline-none focus:border-[--arcane-purple]/50 placeholder:text-[--text-tertiary]"
           />
         </div>
+
+        {/* AI Expansion Preview */}
+        {showExpandedPreview && (
+          <div className="card p-6 mb-8 border-[--arcane-purple]/30 bg-[--arcane-purple]/5">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-5 h-5 text-[--arcane-purple]" />
+              <span className="text-lg font-semibold text-[--arcane-purple]">
+                {expanding ? 'Processing...' : 'AI Expansion Preview'}
+              </span>
+              {expanding && (
+                <Loader2 className="w-4 h-4 animate-spin text-[--arcane-purple]" />
+              )}
+            </div>
+
+            {/* Cleaned Summary Preview */}
+            {pendingSummary && (
+              <div className="mb-6">
+                <h4 className="text-sm font-medium text-[--text-secondary] mb-2">Cleaned Summary:</h4>
+                <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                  <div
+                    className="text-sm text-[--text-primary] whitespace-pre-wrap prose prose-invert prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: pendingSummary.replace(/•/g, '&bull;').replace(/\n/g, '<br/>') }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* AI-Generated Title Preview */}
+            {pendingTitle && !formData.title.trim() && (
+              <div className="mb-6">
+                <h4 className="text-sm font-medium text-[--text-secondary] mb-2">Suggested Title:</h4>
+                <div className="p-3 rounded-lg bg-[--arcane-gold]/5 border border-[--arcane-gold]/20">
+                  <p className="text-base font-medium text-[--arcane-gold]">{pendingTitle}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Detailed Notes Preview */}
+            {pendingNotes && (
+              <div className="mb-6">
+                <h4 className="text-sm font-medium text-[--text-secondary] mb-2">Detailed Notes:</h4>
+                <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                  <div
+                    className="prose prose-invert prose-sm max-w-none [&>h4]:mt-6 [&>h4:first-child]:mt-0 [&>h4]:mb-2 [&>h4]:text-base [&>h4]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4"
+                    dangerouslySetInnerHTML={{ __html: pendingNotes }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* AI Reasoning */}
+            {aiReasoning && (
+              <div className="mb-6 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                <p className="text-xs text-[--text-tertiary] mb-1">AI Context Used:</p>
+                <p className="text-sm text-[--text-secondary] whitespace-pre-wrap">{aiReasoning}</p>
+              </div>
+            )}
+
+            {!expanding && (pendingNotes || pendingSummary) && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={acceptExpanded}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors"
+                >
+                  <Check className="w-4 h-4" />
+                  Accept
+                </button>
+                <button
+                  onClick={editExpanded}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple] hover:bg-[--arcane-purple]/20 transition-colors"
+                >
+                  <Pencil className="w-4 h-4" />
+                  Accept & Edit
+                </button>
+                <button
+                  onClick={declineExpanded}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                  Decline
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Campaign Intelligence Section */}
-        <div className="card p-6 mb-12">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Brain className="w-6 h-6 text-[--arcane-purple]" />
-              <div>
-                <label className="text-xl font-semibold text-[--text-primary] block">
-                  Campaign Intelligence
-                </label>
-                <span className="text-sm text-[--text-tertiary]">
-                  Analyze session for character updates
-                </span>
+        {!isNew && session && (
+          <div className="card p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Brain className="w-5 h-5 text-[--arcane-purple]" />
+                <div>
+                  <label className="text-lg font-semibold text-[--text-primary] block">
+                    Campaign Intelligence
+                  </label>
+                  <span className="text-sm text-[--text-tertiary]">
+                    Analyze session for character updates
+                  </span>
+                </div>
               </div>
+              <button
+                onClick={() => setIntelligenceModalOpen(true)}
+                disabled={!formData.notes || formData.notes.trim().length === 0}
+                className={cn(
+                  "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                  "bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple]",
+                  "hover:bg-[--arcane-purple]/20 hover:border-[--arcane-purple]/50",
+                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                )}
+              >
+                <Sparkles className="w-4 h-4" />
+                Analyze Session
+              </button>
             </div>
-            <button
-              onClick={() => setIntelligenceModalOpen(true)}
-              disabled={!formData.notes || formData.notes.trim().length === 0}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
-                "bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple]",
-                "hover:bg-[--arcane-purple]/20 hover:border-[--arcane-purple]/50",
-                "disabled:opacity-50 disabled:cursor-not-allowed"
-              )}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Analyze Session
-            </button>
           </div>
-          <p className="text-sm text-[--text-tertiary]">
-            AI will scan your session notes to detect character status changes, secret revelations,
-            new story hooks, memorable quotes, and relationship updates. You review and approve each
-            suggestion before it&apos;s applied to character cards.
-          </p>
-        </div>
+        )}
 
-        {/* Notes Section */}
-        <div className="card p-6">
-          <label className="text-xl font-semibold text-[--text-primary] block mb-6">Detailed Notes</label>
-          <RichTextEditor
-            content={formData.notes}
-            onChange={(content) => setFormData({ ...formData, notes: content })}
-            placeholder="Write your detailed session notes here..."
-            className="min-h-[400px]"
-            enableAI
-            aiContext={`Session ${session.session_number}: ${formData.title}`}
-          />
-        </div>
+        {/* Detailed Notes Section */}
+        {(formData.notes || !detailedNotesCollapsed) && (
+          <div className="card p-6 mb-8">
+            <button
+              onClick={() => setDetailedNotesCollapsed(!detailedNotesCollapsed)}
+              className="w-full flex items-center justify-between mb-4"
+            >
+              <div className="flex items-center gap-3">
+                <Brain className="w-5 h-5 text-[--arcane-purple]" />
+                <div className="text-left">
+                  <label className="text-lg font-semibold text-[--text-primary] block">
+                    Detailed Notes
+                  </label>
+                  <span className="text-sm text-[--text-tertiary]">
+                    Expanded session narrative
+                  </span>
+                </div>
+              </div>
+              {detailedNotesCollapsed ? (
+                <ChevronDown className="w-5 h-5 text-[--text-tertiary]" />
+              ) : (
+                <ChevronUp className="w-5 h-5 text-[--text-tertiary]" />
+              )}
+            </button>
+
+            {!detailedNotesCollapsed && (
+              <RichTextEditor
+                content={formData.notes}
+                onChange={(content) => setFormData({ ...formData, notes: content })}
+                placeholder="Detailed session notes..."
+                className="min-h-[300px]"
+              />
+            )}
+          </div>
+        )}
+
+        {/* Create button for new sessions at bottom */}
+        {isNew && (
+          <div className="flex justify-end">
+            <Button onClick={handleCreate} size="lg">
+              Create Session
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Intelligence Modal */}
-      <IntelligenceModal
-        isOpen={intelligenceModalOpen}
-        onClose={() => setIntelligenceModalOpen(false)}
-        session={session}
-        campaignId={campaignId}
-        characters={characters}
-        onSuggestionsApplied={loadData}
-      />
+      {session && (
+        <IntelligenceModal
+          isOpen={intelligenceModalOpen}
+          onClose={() => setIntelligenceModalOpen(false)}
+          session={session}
+          campaignId={campaignId}
+          characters={characters}
+          onSuggestionsApplied={loadData}
+        />
+      )}
     </AppLayout>
   )
 }
