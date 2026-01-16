@@ -11,7 +11,7 @@ interface ModalProps {
   title?: string
   description?: string
   children: React.ReactNode
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full'
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full' | 'fullscreen'
   showCloseButton?: boolean
 }
 
@@ -50,6 +50,7 @@ export function Modal({
     lg: 'max-w-lg',
     xl: 'max-w-2xl',
     full: 'max-w-4xl',
+    fullscreen: 'w-[90vw] max-w-[90vw] h-[90vh] max-h-[90vh]',
   }
 
   const modalContent = (

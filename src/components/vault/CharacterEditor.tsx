@@ -55,6 +55,7 @@ import {
   Check,
   Brain,
   Edit2,
+  Heart,
 } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { Modal } from '@/components/ui'
@@ -3633,345 +3634,514 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         </div>
       </Modal>
 
-      {/* Edit NPC Modal */}
+      {/* Edit NPC Modal - Fullscreen with all fields */}
       <Modal
         isOpen={editNPCModalOpen}
         onClose={() => { setEditNPCModalOpen(false); setEditingNPC(null); }}
         title="Edit NPC"
-        description="Update NPC details"
-        size="xl"
+        description="Update NPC details and information"
+        size="fullscreen"
       >
-        <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
-          {/* Avatar and Basic Info Row */}
-          <div className="flex gap-6 items-start">
-            {/* Avatar */}
-            <div className="flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => setNpcImageModalOpen(true)}
-                className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-dashed border-white/[0.08] hover:border-purple-500/40 transition-all group bg-white/[0.02]"
-              >
-                {npcForm.related_image_url ? (
-                  <>
-                    <Image
-                      src={npcForm.related_image_url}
-                      alt={npcForm.related_name || 'NPC'}
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Camera className="w-6 h-6 text-white" />
-                    </div>
-                  </>
-                ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 group-hover:text-purple-400 transition-colors">
-                    <User className="w-8 h-8 mb-1" />
-                    <span className="text-xs">Add Image</span>
-                  </div>
-                )}
-              </button>
-            </div>
+        <div className="flex flex-col h-full">
+          <div className="flex-1 overflow-y-auto py-6 px-2">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Left Column - Avatar & Identity */}
+              <div className="space-y-6">
+                {/* Avatar Section */}
+                <div className="bg-white/[0.02] rounded-xl p-5 border border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white/80 mb-4 flex items-center gap-2">
+                    <User className="w-4 h-4 text-purple-400" />
+                    Portrait
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setNpcImageModalOpen(true)}
+                    className="relative w-full aspect-square max-w-[200px] mx-auto rounded-xl overflow-hidden border-2 border-dashed border-white/[0.08] hover:border-purple-500/40 transition-all group bg-white/[0.02]"
+                  >
+                    {npcForm.related_image_url ? (
+                      <>
+                        <Image
+                          src={npcForm.related_image_url}
+                          alt={npcForm.related_name || 'NPC'}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Camera className="w-8 h-8 text-white" />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 group-hover:text-purple-400 transition-colors">
+                        <User className="w-12 h-12 mb-2" />
+                        <span className="text-sm">Add Portrait</span>
+                      </div>
+                    )}
+                  </button>
+                </div>
 
-            {/* Name and Nickname */}
-            <div className="flex-1 grid grid-cols-2 gap-4">
-              <div>
-                <FormLabel>Name</FormLabel>
-                <input
-                  type="text"
-                  placeholder="NPC name"
-                  value={npcForm.related_name}
-                  onChange={(e) => setNpcForm(prev => ({ ...prev, related_name: e.target.value }))}
-                  className={inputStyles}
-                />
+                {/* Identity Section */}
+                <div className="bg-white/[0.02] rounded-xl p-5 border border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white/80 mb-4">Identity</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <FormLabel>Name *</FormLabel>
+                      <input
+                        type="text"
+                        placeholder="NPC name"
+                        value={npcForm.related_name}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, related_name: e.target.value }))}
+                        className={inputStyles}
+                      />
+                    </div>
+                    <div>
+                      <FormLabel>Nickname / Alias</FormLabel>
+                      <input
+                        type="text"
+                        placeholder="'Big Al', 'The Shadow'"
+                        value={npcForm.nickname}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, nickname: e.target.value }))}
+                        className={inputStyles}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Relationship Section */}
+                <div className="bg-white/[0.02] rounded-xl p-5 border border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white/80 mb-4">Relationship</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <FormLabel>Type</FormLabel>
+                      <select
+                        value={npcForm.relationship_type}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, relationship_type: e.target.value }))}
+                        className={inputStyles}
+                      >
+                        <option value="family">Family</option>
+                        <option value="mentor">Mentor</option>
+                        <option value="friend">Friend</option>
+                        <option value="enemy">Enemy</option>
+                        <option value="patron">Patron</option>
+                        <option value="contact">Contact</option>
+                        <option value="ally">Ally</option>
+                        <option value="employer">Employer</option>
+                        <option value="love_interest">Love Interest</option>
+                        <option value="rival">Rival</option>
+                        <option value="acquaintance">Acquaintance</option>
+                        <option value="party_member">Party Member</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <FormLabel>Label</FormLabel>
+                      <input
+                        type="text"
+                        placeholder="e.g. 'Father', 'Old Friend'"
+                        value={npcForm.relationship_label}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, relationship_label: e.target.value }))}
+                        className={inputStyles}
+                      />
+                    </div>
+                    <div>
+                      <FormLabel>Status</FormLabel>
+                      <select
+                        value={npcForm.relationship_status}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, relationship_status: e.target.value }))}
+                        className={inputStyles}
+                      >
+                        <option value="active">Active</option>
+                        <option value="deceased">Deceased</option>
+                        <option value="estranged">Estranged</option>
+                        <option value="missing">Missing</option>
+                        <option value="complicated">Complicated</option>
+                        <option value="unknown">Unknown</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <FormLabel>Nickname</FormLabel>
-                <input
-                  type="text"
-                  placeholder="Alias or nickname"
-                  value={npcForm.nickname}
-                  onChange={(e) => setNpcForm(prev => ({ ...prev, nickname: e.target.value }))}
-                  className={inputStyles}
-                />
+
+              {/* Middle Column - Details with Emoji Fields */}
+              <div className="space-y-6">
+                <div className="bg-white/[0.02] rounded-xl p-5 border border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white/80 mb-4">Details</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <FormLabel>💼 Occupation</FormLabel>
+                      <input
+                        type="text"
+                        placeholder="Job, role, or profession"
+                        value={npcForm.occupation}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, occupation: e.target.value }))}
+                        className={inputStyles}
+                      />
+                    </div>
+                    <div>
+                      <FormLabel>📍 Location</FormLabel>
+                      <input
+                        type="text"
+                        placeholder="Where they can be found"
+                        value={npcForm.location}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, location: e.target.value }))}
+                        className={inputStyles}
+                      />
+                    </div>
+                    <div>
+                      <FormLabel>Origin</FormLabel>
+                      <input
+                        type="text"
+                        placeholder="Where they're from"
+                        value={npcForm.origin}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, origin: e.target.value }))}
+                        className={inputStyles}
+                      />
+                    </div>
+                    <div>
+                      <FormLabel>🏛️ Faction Affiliations</FormLabel>
+                      <input
+                        type="text"
+                        placeholder="Guilds, organizations (comma-separated)"
+                        value={npcForm.faction_affiliations?.join(', ') || ''}
+                        onChange={(e) => setNpcForm(prev => ({
+                          ...prev,
+                          faction_affiliations: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                        }))}
+                        className={inputStyles}
+                      />
+                    </div>
+                    <div>
+                      <FormLabel>Personality Traits</FormLabel>
+                      <input
+                        type="text"
+                        placeholder="Brave, cunning, loyal (comma-separated)"
+                        value={npcForm.personality_traits?.join(', ') || ''}
+                        onChange={(e) => setNpcForm(prev => ({
+                          ...prev,
+                          personality_traits: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                        }))}
+                        className={inputStyles}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Motivations Section */}
+                <div className="bg-white/[0.02] rounded-xl p-5 border border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white/80 mb-4">Motivations</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <FormLabel>🎯 Needs (from PC)</FormLabel>
+                      <textarea
+                        placeholder="What they need from the character"
+                        value={npcForm.needs}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, needs: e.target.value }))}
+                        className={cn(inputStyles, "min-h-[80px] resize-none")}
+                      />
+                    </div>
+                    <div>
+                      <FormLabel>🎁 Can Provide</FormLabel>
+                      <textarea
+                        placeholder="What help or resources they can offer"
+                        value={npcForm.can_provide}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, can_provide: e.target.value }))}
+                        className={cn(inputStyles, "min-h-[80px] resize-none")}
+                      />
+                    </div>
+                    <div>
+                      <FormLabel>⭐ Goals</FormLabel>
+                      <textarea
+                        placeholder="Their personal goals and ambitions"
+                        value={npcForm.goals}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, goals: e.target.value }))}
+                        className={cn(inputStyles, "min-h-[80px] resize-none")}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - Secrets & Notes */}
+              <div className="space-y-6">
+                <div className="bg-amber-500/5 rounded-xl p-5 border border-amber-500/20">
+                  <h3 className="text-sm font-semibold text-amber-400 mb-4 flex items-center gap-2">
+                    🔒 Secrets
+                  </h3>
+                  <textarea
+                    placeholder="Hidden information, things the PC doesn't know yet..."
+                    value={npcForm.secrets}
+                    onChange={(e) => setNpcForm(prev => ({ ...prev, secrets: e.target.value }))}
+                    className={cn(inputStyles, "min-h-[120px] resize-none bg-amber-500/5 border-amber-500/20 focus:border-amber-500/40")}
+                  />
+                </div>
+
+                <div className="bg-white/[0.02] rounded-xl p-5 border border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white/80 mb-4">Full Notes</h3>
+                  <textarea
+                    placeholder="All additional details about this NPC - backstory, quirks, important events, anything else..."
+                    value={npcForm.full_notes}
+                    onChange={(e) => setNpcForm(prev => ({ ...prev, full_notes: e.target.value }))}
+                    className={cn(textareaStyles, "min-h-[300px]")}
+                  />
+                </div>
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <FormLabel>Relationship Type</FormLabel>
-              <select
-                value={npcForm.relationship_type}
-                onChange={(e) => setNpcForm(prev => ({ ...prev, relationship_type: e.target.value }))}
-                className={inputStyles}
-              >
-                <option value="family">Family</option>
-                <option value="mentor">Mentor</option>
-                <option value="friend">Friend</option>
-                <option value="enemy">Enemy</option>
-                <option value="patron">Patron</option>
-                <option value="contact">Contact</option>
-                <option value="ally">Ally</option>
-                <option value="employer">Employer</option>
-                <option value="love_interest">Love Interest</option>
-                <option value="rival">Rival</option>
-                <option value="acquaintance">Acquaintance</option>
-                <option value="party_member">Party Member</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div>
-              <FormLabel>Relationship Label</FormLabel>
-              <input
-                type="text"
-                placeholder="e.g. 'Father', 'Old Friend'"
-                value={npcForm.relationship_label}
-                onChange={(e) => setNpcForm(prev => ({ ...prev, relationship_label: e.target.value }))}
-                className={inputStyles}
-              />
-            </div>
+
+          {/* Footer */}
+          <div className="flex-shrink-0 border-t border-white/[0.06] px-6 py-4 bg-[--bg-surface] flex justify-end gap-3">
+            <button className="btn btn-secondary" onClick={() => { setEditNPCModalOpen(false); setEditingNPC(null); }}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleSaveNPC}>Save Changes</button>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <FormLabel>Location</FormLabel>
-              <input
-                type="text"
-                placeholder="Where they can be found"
-                value={npcForm.location}
-                onChange={(e) => setNpcForm(prev => ({ ...prev, location: e.target.value }))}
-                className={inputStyles}
-              />
-            </div>
-            <div>
-              <FormLabel>Occupation</FormLabel>
-              <input
-                type="text"
-                placeholder="Job or role"
-                value={npcForm.occupation}
-                onChange={(e) => setNpcForm(prev => ({ ...prev, occupation: e.target.value }))}
-                className={inputStyles}
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <FormLabel>Origin</FormLabel>
-              <input
-                type="text"
-                placeholder="Where they're from"
-                value={npcForm.origin}
-                onChange={(e) => setNpcForm(prev => ({ ...prev, origin: e.target.value }))}
-                className={inputStyles}
-              />
-            </div>
-            <div>
-              <FormLabel>Status</FormLabel>
-              <select
-                value={npcForm.relationship_status}
-                onChange={(e) => setNpcForm(prev => ({ ...prev, relationship_status: e.target.value }))}
-                className={inputStyles}
-              >
-                <option value="active">Active</option>
-                <option value="deceased">Deceased</option>
-                <option value="estranged">Estranged</option>
-                <option value="missing">Missing</option>
-                <option value="complicated">Complicated</option>
-                <option value="unknown">Unknown</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <FormLabel>Needs (from PC)</FormLabel>
-            <input
-              type="text"
-              placeholder="What they need from the character"
-              value={npcForm.needs}
-              onChange={(e) => setNpcForm(prev => ({ ...prev, needs: e.target.value }))}
-              className={inputStyles}
-            />
-          </div>
-          <div>
-            <FormLabel>Can Provide</FormLabel>
-            <input
-              type="text"
-              placeholder="What help or resources they can offer"
-              value={npcForm.can_provide}
-              onChange={(e) => setNpcForm(prev => ({ ...prev, can_provide: e.target.value }))}
-              className={inputStyles}
-            />
-          </div>
-          <div>
-            <FormLabel>Goals</FormLabel>
-            <input
-              type="text"
-              placeholder="Their personal goals"
-              value={npcForm.goals}
-              onChange={(e) => setNpcForm(prev => ({ ...prev, goals: e.target.value }))}
-              className={inputStyles}
-            />
-          </div>
-          <div>
-            <FormLabel>Secrets</FormLabel>
-            <input
-              type="text"
-              placeholder="Secrets about this NPC"
-              value={npcForm.secrets}
-              onChange={(e) => setNpcForm(prev => ({ ...prev, secrets: e.target.value }))}
-              className={inputStyles}
-            />
-          </div>
-          <div>
-            <FormLabel>Full Notes</FormLabel>
-            <textarea
-              placeholder="All additional details about this NPC..."
-              value={npcForm.full_notes}
-              onChange={(e) => setNpcForm(prev => ({ ...prev, full_notes: e.target.value }))}
-              className={cn(textareaStyles, "min-h-[120px]")}
-            />
-          </div>
-        </div>
-        <div className="flex justify-end gap-3">
-          <button className="btn btn-secondary" onClick={() => { setEditNPCModalOpen(false); setEditingNPC(null); }}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleSaveNPC}>Save Changes</button>
         </div>
       </Modal>
 
-      {/* Add Companion Modal */}
+      {/* Add Companion Modal - Fullscreen */}
       <Modal
         isOpen={addCompanionModalOpen}
         onClose={() => setAddCompanionModalOpen(false)}
         title="Add Companion"
         description="Add a familiar, pet, mount, or other companion"
+        size="fullscreen"
       >
-        <div className="space-y-4 py-4">
-          <div>
-            <FormLabel>Name</FormLabel>
-            <input
-              type="text"
-              placeholder="Companion name"
-              value={companionForm.related_name}
-              onChange={(e) => setCompanionForm(prev => ({ ...prev, related_name: e.target.value }))}
-              className={inputStyles}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <FormLabel>Type</FormLabel>
-              <select
-                value={companionForm.companion_type}
-                onChange={(e) => setCompanionForm(prev => ({ ...prev, companion_type: e.target.value }))}
-                className={inputStyles}
-              >
-                <option value="familiar">Familiar</option>
-                <option value="pet">Pet</option>
-                <option value="mount">Mount</option>
-                <option value="animal_companion">Animal Companion</option>
-                <option value="construct">Construct</option>
-                <option value="other">Other</option>
-              </select>
+        <div className="flex flex-col h-full">
+          <div className="flex-1 overflow-y-auto py-6 px-2">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
+              {/* Left Column - Portrait & Basic Info */}
+              <div className="space-y-6">
+                {/* Portrait Section */}
+                <div className="bg-white/[0.02] rounded-xl p-5 border border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white/80 mb-4 flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-pink-400" />
+                    Portrait
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setCompanionImageModalOpen(true)}
+                    className="relative w-full aspect-square max-w-[200px] mx-auto rounded-xl overflow-hidden border-2 border-dashed border-white/[0.08] hover:border-pink-500/40 transition-all group bg-white/[0.02]"
+                  >
+                    {companionForm.related_image_url ? (
+                      <>
+                        <Image
+                          src={companionForm.related_image_url}
+                          alt={companionForm.related_name || 'Companion'}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Camera className="w-8 h-8 text-white" />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 group-hover:text-pink-400 transition-colors">
+                        <Heart className="w-12 h-12 mb-2" />
+                        <span className="text-sm">Add Portrait</span>
+                      </div>
+                    )}
+                  </button>
+                </div>
+
+                {/* Identity Section */}
+                <div className="bg-white/[0.02] rounded-xl p-5 border border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white/80 mb-4">Identity</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <FormLabel>Name *</FormLabel>
+                      <input
+                        type="text"
+                        placeholder="Companion name"
+                        value={companionForm.related_name}
+                        onChange={(e) => setCompanionForm(prev => ({ ...prev, related_name: e.target.value }))}
+                        className={inputStyles}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <FormLabel>Type</FormLabel>
+                        <select
+                          value={companionForm.companion_type}
+                          onChange={(e) => setCompanionForm(prev => ({ ...prev, companion_type: e.target.value }))}
+                          className={inputStyles}
+                        >
+                          <option value="familiar">Familiar</option>
+                          <option value="pet">Pet</option>
+                          <option value="mount">Mount</option>
+                          <option value="animal_companion">Animal Companion</option>
+                          <option value="construct">Construct</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                      <div>
+                        <FormLabel>Species</FormLabel>
+                        <input
+                          type="text"
+                          placeholder="e.g. Ferret, Horse, Owl"
+                          value={companionForm.companion_species}
+                          onChange={(e) => setCompanionForm(prev => ({ ...prev, companion_species: e.target.value }))}
+                          className={inputStyles}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - Description & Abilities */}
+              <div className="space-y-6">
+                <div className="bg-white/[0.02] rounded-xl p-5 border border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white/80 mb-4">Description</h3>
+                  <textarea
+                    placeholder="Appearance, personality, quirks, backstory..."
+                    value={companionForm.description}
+                    onChange={(e) => setCompanionForm(prev => ({ ...prev, description: e.target.value }))}
+                    className={cn(textareaStyles, "min-h-[200px]")}
+                  />
+                </div>
+
+                <div className="bg-purple-500/5 rounded-xl p-5 border border-purple-500/20">
+                  <h3 className="text-sm font-semibold text-purple-400 mb-4 flex items-center gap-2">
+                    ✨ Abilities
+                  </h3>
+                  <textarea
+                    placeholder="Special abilities, skills, or traits..."
+                    value={companionForm.companion_abilities}
+                    onChange={(e) => setCompanionForm(prev => ({ ...prev, companion_abilities: e.target.value }))}
+                    className={cn(textareaStyles, "min-h-[200px] bg-purple-500/5 border-purple-500/20 focus:border-purple-500/40")}
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <FormLabel>Species</FormLabel>
-              <input
-                type="text"
-                placeholder="e.g. Ferret, Horse, Owl"
-                value={companionForm.companion_species}
-                onChange={(e) => setCompanionForm(prev => ({ ...prev, companion_species: e.target.value }))}
-                className={inputStyles}
-              />
-            </div>
           </div>
-          <div>
-            <FormLabel>Description</FormLabel>
-            <textarea
-              placeholder="Appearance and personality..."
-              value={companionForm.description}
-              onChange={(e) => setCompanionForm(prev => ({ ...prev, description: e.target.value }))}
-              className={textareaStyles}
-            />
+
+          {/* Footer */}
+          <div className="flex-shrink-0 border-t border-white/[0.06] px-6 py-4 bg-[--bg-surface] flex justify-end gap-3">
+            <button className="btn btn-secondary" onClick={() => setAddCompanionModalOpen(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleAddCompanion}>Add Companion</button>
           </div>
-          <div>
-            <FormLabel>Abilities</FormLabel>
-            <textarea
-              placeholder="Special abilities, skills, or traits..."
-              value={companionForm.companion_abilities}
-              onChange={(e) => setCompanionForm(prev => ({ ...prev, companion_abilities: e.target.value }))}
-              className={textareaStyles}
-            />
-          </div>
-        </div>
-        <div className="flex justify-end gap-3">
-          <button className="btn btn-secondary" onClick={() => setAddCompanionModalOpen(false)}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleAddCompanion}>Add Companion</button>
         </div>
       </Modal>
 
-      {/* Edit Companion Modal */}
+      {/* Edit Companion Modal - Fullscreen */}
       <Modal
         isOpen={editCompanionModalOpen}
         onClose={() => { setEditCompanionModalOpen(false); setEditingCompanion(null); }}
         title="Edit Companion"
         description="Update companion details"
+        size="fullscreen"
       >
-        <div className="space-y-4 py-4">
-          <div>
-            <FormLabel>Name</FormLabel>
-            <input
-              type="text"
-              placeholder="Companion name"
-              value={companionForm.related_name}
-              onChange={(e) => setCompanionForm(prev => ({ ...prev, related_name: e.target.value }))}
-              className={inputStyles}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <FormLabel>Type</FormLabel>
-              <select
-                value={companionForm.companion_type}
-                onChange={(e) => setCompanionForm(prev => ({ ...prev, companion_type: e.target.value }))}
-                className={inputStyles}
-              >
-                <option value="familiar">Familiar</option>
-                <option value="pet">Pet</option>
-                <option value="mount">Mount</option>
-                <option value="animal_companion">Animal Companion</option>
-                <option value="construct">Construct</option>
-                <option value="other">Other</option>
-              </select>
+        <div className="flex flex-col h-full">
+          <div className="flex-1 overflow-y-auto py-6 px-2">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
+              {/* Left Column - Portrait & Basic Info */}
+              <div className="space-y-6">
+                {/* Portrait Section */}
+                <div className="bg-white/[0.02] rounded-xl p-5 border border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white/80 mb-4 flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-pink-400" />
+                    Portrait
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setCompanionImageModalOpen(true)}
+                    className="relative w-full aspect-square max-w-[200px] mx-auto rounded-xl overflow-hidden border-2 border-dashed border-white/[0.08] hover:border-pink-500/40 transition-all group bg-white/[0.02]"
+                  >
+                    {companionForm.related_image_url ? (
+                      <>
+                        <Image
+                          src={companionForm.related_image_url}
+                          alt={companionForm.related_name || 'Companion'}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Camera className="w-8 h-8 text-white" />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 group-hover:text-pink-400 transition-colors">
+                        <Heart className="w-12 h-12 mb-2" />
+                        <span className="text-sm">Add Portrait</span>
+                      </div>
+                    )}
+                  </button>
+                </div>
+
+                {/* Identity Section */}
+                <div className="bg-white/[0.02] rounded-xl p-5 border border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white/80 mb-4">Identity</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <FormLabel>Name *</FormLabel>
+                      <input
+                        type="text"
+                        placeholder="Companion name"
+                        value={companionForm.related_name}
+                        onChange={(e) => setCompanionForm(prev => ({ ...prev, related_name: e.target.value }))}
+                        className={inputStyles}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <FormLabel>Type</FormLabel>
+                        <select
+                          value={companionForm.companion_type}
+                          onChange={(e) => setCompanionForm(prev => ({ ...prev, companion_type: e.target.value }))}
+                          className={inputStyles}
+                        >
+                          <option value="familiar">Familiar</option>
+                          <option value="pet">Pet</option>
+                          <option value="mount">Mount</option>
+                          <option value="animal_companion">Animal Companion</option>
+                          <option value="construct">Construct</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                      <div>
+                        <FormLabel>Species</FormLabel>
+                        <input
+                          type="text"
+                          placeholder="e.g. Ferret, Horse, Owl"
+                          value={companionForm.companion_species}
+                          onChange={(e) => setCompanionForm(prev => ({ ...prev, companion_species: e.target.value }))}
+                          className={inputStyles}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - Description & Abilities */}
+              <div className="space-y-6">
+                <div className="bg-white/[0.02] rounded-xl p-5 border border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white/80 mb-4">Description</h3>
+                  <textarea
+                    placeholder="Appearance, personality, quirks, backstory..."
+                    value={companionForm.description}
+                    onChange={(e) => setCompanionForm(prev => ({ ...prev, description: e.target.value }))}
+                    className={cn(textareaStyles, "min-h-[200px]")}
+                  />
+                </div>
+
+                <div className="bg-purple-500/5 rounded-xl p-5 border border-purple-500/20">
+                  <h3 className="text-sm font-semibold text-purple-400 mb-4 flex items-center gap-2">
+                    ✨ Abilities
+                  </h3>
+                  <textarea
+                    placeholder="Special abilities, skills, or traits..."
+                    value={companionForm.companion_abilities}
+                    onChange={(e) => setCompanionForm(prev => ({ ...prev, companion_abilities: e.target.value }))}
+                    className={cn(textareaStyles, "min-h-[200px] bg-purple-500/5 border-purple-500/20 focus:border-purple-500/40")}
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <FormLabel>Species</FormLabel>
-              <input
-                type="text"
-                placeholder="e.g. Ferret, Horse, Owl"
-                value={companionForm.companion_species}
-                onChange={(e) => setCompanionForm(prev => ({ ...prev, companion_species: e.target.value }))}
-                className={inputStyles}
-              />
-            </div>
           </div>
-          <div>
-            <FormLabel>Description</FormLabel>
-            <textarea
-              placeholder="Appearance and personality..."
-              value={companionForm.description}
-              onChange={(e) => setCompanionForm(prev => ({ ...prev, description: e.target.value }))}
-              className={textareaStyles}
-            />
+
+          {/* Footer */}
+          <div className="flex-shrink-0 border-t border-white/[0.06] px-6 py-4 bg-[--bg-surface] flex justify-end gap-3">
+            <button className="btn btn-secondary" onClick={() => { setEditCompanionModalOpen(false); setEditingCompanion(null); }}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleSaveCompanion}>Save Changes</button>
           </div>
-          <div>
-            <FormLabel>Abilities</FormLabel>
-            <textarea
-              placeholder="Special abilities, skills, or traits..."
-              value={companionForm.companion_abilities}
-              onChange={(e) => setCompanionForm(prev => ({ ...prev, companion_abilities: e.target.value }))}
-              className={textareaStyles}
-            />
-          </div>
-        </div>
-        <div className="flex justify-end gap-3">
-          <button className="btn btn-secondary" onClick={() => { setEditCompanionModalOpen(false); setEditingCompanion(null); }}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleSaveCompanion}>Save Changes</button>
         </div>
       </Modal>
 
