@@ -1,7 +1,7 @@
 /**
  * AI Image Generation API
  *
- * Generates images using Google's Gemini image generation models (Nano Banana)
+ * Generates images using Google's Gemini 2.0 Flash with image generation capabilities
  * Supports text-to-image generation with feedback/regeneration flow
  */
 
@@ -11,8 +11,8 @@ import { createClient } from '@/lib/supabase/server'
 export const runtime = 'nodejs'
 export const maxDuration = 120 // 2 minutes for image generation
 
-// Available image models
-type ImageModel = 'imagen-3.0-generate-002' | 'gemini-2.0-flash-exp'
+// Available image models - gemini-2.0-flash-exp supports native image generation
+type ImageModel = 'gemini-2.0-flash-exp'
 
 interface GenerateImageRequest {
   prompt: string
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     const body: GenerateImageRequest = await req.json()
     const {
       prompt,
-      model = 'imagen-3.0-generate-002',
+      model = 'gemini-2.0-flash-exp',
       aspectRatio = '1:1',
       feedback,
       previousPrompt,

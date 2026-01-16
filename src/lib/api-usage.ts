@@ -16,8 +16,7 @@ const COST_PER_1K_TOKENS: Record<string, { input: number; output: number }> = {
 
 // Cost per image (in cents)
 const COST_PER_IMAGE: Record<string, number> = {
-  'imagen-3.0-generate-002': 4, // $0.04 per image
-  'gemini-2.0-flash-exp': 2, // $0.02 per image (experimental)
+  'gemini-2.0-flash-exp': 2, // $0.02 per image generation
 }
 
 export interface UsageRecordParams {
