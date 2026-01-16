@@ -73,7 +73,7 @@
 
   html {
     color-scheme: dark;
-    scroll-behavior: smooth;
+    /* scroll-behavior: smooth; - Disabled to prevent scroll issues */
   }
 
   body {
@@ -82,9 +82,9 @@
     font-family: var(--font-body);
     font-weight: 400;
     line-height: 1.6;
+    overflow: hidden; /* Prevent body scroll - content scrolls in containers */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
   }
 
   /* ─── Ambient Background ─── */
