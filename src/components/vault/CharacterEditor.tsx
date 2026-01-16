@@ -1665,14 +1665,9 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               )}>
                 {formData.type === 'pc' ? <User className="w-4 h-4" /> : <Users className="w-4 h-4" />}
               </div>
-              <div>
-                <h1 className="text-[15px] font-medium text-white/90">
-                  {formData.name || (isCreateMode ? 'New Character' : 'Edit Character')}
-                </h1>
-                <p className="text-[11px] text-gray-500">
-                  {status === 'saving' ? 'Saving...' : status === 'saved' ? 'All changes saved' : formData.name.trim() ? 'Ready' : 'Enter a name to start'}
-                </p>
-              </div>
+              <h1 className="text-[15px] font-medium text-white/90">
+                {status === 'saving' ? 'Saving...' : formData.name || (isCreateMode ? 'New Character' : 'Enter a name to start')}
+              </h1>
             </div>
           </div>
 

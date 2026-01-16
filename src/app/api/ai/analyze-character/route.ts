@@ -19,7 +19,13 @@ const ANALYSIS_PROMPT = `You are an expert D&D/TTRPG character analyst. Perform 
 
 ## ANALYSIS CATEGORIES
 
-### 1. COMPLETENESS
+### 1. SUMMARY GENERATION/UPDATE
+- If the summary field is empty or weak, generate a compelling 1-2 sentence summary
+- If the summary exists but doesn't reflect the character well, suggest an improved version
+- The summary should capture the essence: who they are, what drives them, what makes them interesting
+- Example: "A disgraced noble paladin seeking redemption after failing to protect her sworn charge"
+
+### 2. COMPLETENESS
 - Missing important fields (appearance, personality, goals, fears, secrets)
 - Empty sections that should have content
 - Partial information that needs expansion
@@ -86,6 +92,7 @@ const ANALYSIS_PROMPT = `You are an expert D&D/TTRPG character analyst. Perform 
 
 ## SUGGESTION TYPES
 Use these exact types:
+- summary: Generate or improve the character summary
 - completeness: Missing or incomplete fields
 - consistency: Factual or timeline contradictions
 - grammar: Spelling, grammar, or phrasing fixes
