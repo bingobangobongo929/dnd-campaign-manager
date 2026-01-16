@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
@@ -12,7 +12,8 @@ import type { VaultCharacter } from '@/types/database'
 export default function EditVaultCharacterPage() {
   const params = useParams()
   const router = useRouter()
-  const supabase = createClient()
+  // Memoize supabase client to prevent recreation on each render
+  const supabase = useMemo(() => createClient(), [])
   const characterId = params.id as string
 
   const [character, setCharacter] = useState<VaultCharacter | null>(null)

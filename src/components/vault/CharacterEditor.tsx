@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
@@ -114,7 +114,9 @@ const SECTIONS: { id: SectionType; label: string; icon: React.ComponentType<{ cl
 
 export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   const router = useRouter()
-  const supabase = createClient()
+  // Memoize supabase client to prevent recreation on each render
+  // This is critical - without memoization, all useEffects with supabase dependency re-run every render
+  const supabase = useMemo(() => createClient(), [])
   const { aiEnabled } = useAppStore()
   const imageInputRef = useRef<HTMLInputElement>(null)
   const portraitInputRef = useRef<HTMLInputElement>(null)
