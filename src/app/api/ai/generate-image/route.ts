@@ -1,7 +1,7 @@
 /**
  * AI Image Generation API
  *
- * Generates images using Google's Gemini 2.0 Flash with image generation capabilities
+ * Generates images using Google's Imagen 3 (Nano Banana 2)
  * Supports text-to-image generation with feedback/regeneration flow
  */
 
@@ -11,13 +11,14 @@ import { createClient } from '@/lib/supabase/server'
 export const runtime = 'nodejs'
 export const maxDuration = 120 // 2 minutes for image generation
 
-// Available image models - gemini-2.0-flash-exp supports native image generation
-type ImageModel = 'gemini-2.0-flash-exp'
+// Available image models
+type ImageModel = 'imagen-3.0-generate-002' | 'imagen-3.0-fast-generate-001'
 
 interface GenerateImageRequest {
   prompt: string
   model?: ImageModel
-  aspectRatio?: '1:1' | '2:3' | '16:9' | '3:2' | '9:16' | '3:4' | '4:3'
+  aspectRatio?: '1:1' | '3:4' | '4:3' | '9:16' | '16:9'
+  numberOfImages?: number
   feedback?: string // User feedback for regeneration
   previousPrompt?: string // For regeneration context
   negativePrompt?: string // Things to avoid
@@ -35,8 +36,9 @@ export async function POST(req: Request) {
     const body: GenerateImageRequest = await req.json()
     const {
       prompt,
-      model = 'gemini-2.0-flash-exp',
+      model = 'imagen-3.0-generate-002',
       aspectRatio = '1:1',
+      numberOfImages = 1,
       feedback,
       previousPrompt,
       negativePrompt
@@ -61,27 +63,25 @@ User feedback for improvement: ${feedback}
 Updated prompt: ${prompt}`
     }
 
-    // Use Imagen 3 for high quality image generation
+    // Imagen 3 uses the predict endpoint with a different request format
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${apiKey}`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: [
+          instances: [
             {
-              parts: [
-                {
-                  text: fullPrompt,
-                },
-              ],
+              prompt: fullPrompt,
             },
           ],
-          generationConfig: {
-            responseModalities: ['IMAGE', 'TEXT'],
-            // Note: Gemini handles aspect ratios automatically based on prompt
+          parameters: {
+            sampleCount: numberOfImages,
+            aspectRatio: aspectRatio,
+            personGeneration: 'allow_adult',
+            ...(negativePrompt && { negativePrompt }),
           },
         }),
       }
@@ -89,13 +89,20 @@ Updated prompt: ${prompt}`
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      console.error('Gemini API error:', response.status, errorData)
+      console.error('Imagen API error:', response.status, errorData)
 
       // Handle specific error cases
       if (response.status === 400) {
+        const errorMessage = errorData.error?.message || ''
+        if (errorMessage.includes('safety') || errorMessage.includes('blocked')) {
+          return NextResponse.json({
+            error: 'Image generation blocked',
+            details: 'The prompt was blocked by content safety filters. Please modify your prompt.',
+          }, { status: 422 })
+        }
         return NextResponse.json({
           error: 'Invalid request to image generation API',
-          details: errorData.error?.message || 'The prompt may have been rejected by content filters',
+          details: errorMessage || 'The prompt may have been rejected',
         }, { status: 400 })
       }
 
@@ -107,10 +114,9 @@ Updated prompt: ${prompt}`
       }
 
       if (response.status === 404) {
-        // Model not available, try fallback
         return NextResponse.json({
           error: 'Image generation model not available',
-          details: 'The selected model is not available. Please try a different model.',
+          details: 'Imagen 3 model not available. Check your API key has access to Imagen.',
         }, { status: 404 })
       }
 
@@ -122,35 +128,24 @@ Updated prompt: ${prompt}`
 
     const data = await response.json()
 
-    // Extract the generated image from the response
-    const parts = data.candidates?.[0]?.content?.parts || []
-    let imageData: string | null = null
-    let mimeType: string = 'image/png'
-    let textResponse: string | null = null
-
-    for (const part of parts) {
-      if (part.inlineData?.mimeType?.startsWith('image/')) {
-        imageData = part.inlineData.data // Base64 encoded image
-        mimeType = part.inlineData.mimeType
-      } else if (part.text) {
-        textResponse = part.text
-      }
-    }
-
-    if (!imageData) {
-      // Check for safety blocks
-      const blockReason = data.candidates?.[0]?.finishReason
-      if (blockReason === 'SAFETY') {
-        return NextResponse.json({
-          error: 'Image generation blocked',
-          details: 'The request was blocked by content safety filters. Please modify your prompt.',
-        }, { status: 422 })
-      }
-
+    // Imagen 3 returns predictions array with bytesBase64Encoded images
+    const predictions = data.predictions || []
+    if (predictions.length === 0) {
       return NextResponse.json({
         error: 'No image generated',
-        details: textResponse || 'The model did not return an image. Try a different prompt.',
-        blockReason,
+        details: 'The model did not return any images. Try a different prompt.',
+      }, { status: 422 })
+    }
+
+    // Get the first generated image
+    const prediction = predictions[0]
+    const imageData = prediction.bytesBase64Encoded
+    const mimeType = prediction.mimeType || 'image/png'
+
+    if (!imageData) {
+      return NextResponse.json({
+        error: 'No image data',
+        details: 'The model response did not contain image data.',
       }, { status: 422 })
     }
 
@@ -164,7 +159,12 @@ Updated prompt: ${prompt}`
       },
       model,
       prompt: fullPrompt,
-      textResponse, // Any text the model returned alongside the image
+      // Include all images if multiple were generated
+      allImages: predictions.map((p: { bytesBase64Encoded: string; mimeType?: string }) => ({
+        data: p.bytesBase64Encoded,
+        mimeType: p.mimeType || 'image/png',
+        dataUrl: `data:${p.mimeType || 'image/png'};base64,${p.bytesBase64Encoded}`,
+      })),
     })
   } catch (error) {
     console.error('Image generation error:', error)
