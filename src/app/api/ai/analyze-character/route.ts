@@ -51,44 +51,39 @@ const ANALYSIS_PROMPT = `You are an expert D&D/TTRPG character analyst. Perform 
 - Paragraph vs bullet point inconsistency
 - Heading style inconsistencies
 
-### 5. QUOTE EXTRACTION
-- Memorable lines that reveal character voice
-- Dialogue that defines personality
-- Catchphrases or verbal tics
-
-### 6. NPC & LOCATION DETECTION
+### 5. NPC & LOCATION DETECTION
 - Named characters in backstory not in relationships list
 - Locations mentioned but not tracked
 - Organizations or factions referenced
 
-### 7. PLOT HOOKS & STORY OPPORTUNITIES
+### 6. PLOT HOOKS & STORY OPPORTUNITIES
 - Unresolved conflicts that could become quests
 - Secrets that could be revealed
 - Relationships that could develop
 - Vengeance or redemption arcs
 
-### 8. RELATIONSHIP ANALYSIS
+### 7. RELATIONSHIP ANALYSIS
 - NPCs mentioned in backstory but not in relationships
 - Relationships with missing reciprocal connections
 - Family members implied but not listed
 - Gaps in relationship network (e.g., no mentor, no enemies)
 
-### 9. VOICE & CHARACTER CONSISTENCY
-- Personality described vs demonstrated in quotes/writing
+### 8. VOICE & CHARACTER CONSISTENCY
+- Personality described vs demonstrated in writing
 - Alignment vs actions described
 - Class/background vs actual skills/knowledge shown
 
-### 10. REDUNDANCY & CLEANUP
+### 9. REDUNDANCY & CLEANUP
 - Repeated information in multiple places
 - Duplicate NPCs with slightly different names
 - Content that could be consolidated
 
-### 11. CROSS-REFERENCES
+### 10. CROSS-REFERENCES
 - NPCs mentioned in backstory that should link to existing relationships
 - Events that should be reflected in multiple sections
 - Session notes that should update character status
 
-### 12. SECRET OPPORTUNITIES
+### 11. SECRET OPPORTUNITIES
 - Hidden information that could be expanded into secrets
 - Backstory elements that NPCs might know
 - Information asymmetry opportunities for DM
@@ -99,7 +94,6 @@ Use these exact types:
 - completeness: Missing or incomplete fields
 - consistency: Factual or timeline contradictions
 - formatting: Style and formatting unification
-- quote: Extractable memorable quotes
 - npc_detected: NPCs that should be tracked
 - location_detected: Locations to track
 - plot_hook: Story opportunities

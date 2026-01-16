@@ -212,10 +212,13 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   })
 
   const toggleSection = (section: SectionType) => {
-    const scrollY = window.scrollY
+    const container = scrollContainerRef.current
+    const scrollTop = container?.scrollTop ?? 0
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
     // Preserve scroll position after state update
-    requestAnimationFrame(() => window.scrollTo(0, scrollY))
+    requestAnimationFrame(() => {
+      if (container) container.scrollTop = scrollTop
+    })
   }
 
   // Related data
