@@ -226,7 +226,10 @@ export default function CharacterIntelligencePage() {
       await loadData()
 
       if (data.suggestionsSaved > 0) {
-        toast.success(`Analysis complete: ${data.suggestionsSaved} suggestion${data.suggestionsSaved === 1 ? '' : 's'} saved`)
+        const skippedMsg = data.suggestionsSkipped > 0 ? ` (${data.suggestionsSkipped} duplicates skipped)` : ''
+        toast.success(`Analysis complete: ${data.suggestionsSaved} new suggestion${data.suggestionsSaved === 1 ? '' : 's'}${skippedMsg}`)
+      } else if (data.suggestionsSkipped > 0) {
+        toast.info(`Analysis complete: ${data.suggestionsSkipped} duplicate suggestion${data.suggestionsSkipped === 1 ? '' : 's'} skipped`)
       } else if (data.suggestionsGenerated > 0) {
         // AI found suggestions but none were saved - likely RLS issue
         toast.error(`Found ${data.suggestionsGenerated} suggestions but failed to save them. Please run migration 022 in Supabase.`)

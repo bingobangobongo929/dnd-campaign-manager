@@ -284,9 +284,30 @@ ${ANALYSIS_PROMPT}`
       })
     }
 
-    // Save suggestions to database
+    // Load existing pending suggestions to avoid duplicates
+    const { data: existingSuggestions } = await supabase
+      .from('intelligence_suggestions')
+      .select('suggestion_type, field_name, suggested_value')
+      .eq('vault_character_id', characterId)
+      .eq('status', 'pending')
+
+    const existingSet = new Set(
+      (existingSuggestions || []).map(s =>
+        `${s.suggestion_type}|${s.field_name}|${JSON.stringify(s.suggested_value)}`
+      )
+    )
+
+    // Save suggestions to database (skip duplicates)
     let savedCount = 0
+    let skippedCount = 0
     for (const suggestion of suggestions) {
+      // Check if this suggestion already exists
+      const key = `${suggestion.suggestion_type}|${suggestion.field_name}|${JSON.stringify(suggestion.suggested_value)}`
+      if (existingSet.has(key)) {
+        skippedCount++
+        continue
+      }
+
       try {
         const { error: insertError } = await supabase
           .from('intelligence_suggestions')
@@ -303,7 +324,10 @@ ${ANALYSIS_PROMPT}`
             status: 'pending',
           })
 
-        if (!insertError) savedCount++
+        if (!insertError) {
+          savedCount++
+          existingSet.add(key) // Add to set to prevent duplicates within same batch
+        }
       } catch (err) {
         console.error('Failed to save suggestion:', err)
       }
@@ -319,6 +343,7 @@ ${ANALYSIS_PROMPT}`
       success: true,
       suggestionsGenerated: suggestions.length,
       suggestionsSaved: savedCount,
+      suggestionsSkipped: skippedCount,
       provider,
     }), {
       status: 200,
