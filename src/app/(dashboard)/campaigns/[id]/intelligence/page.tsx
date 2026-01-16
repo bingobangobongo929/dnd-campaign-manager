@@ -31,6 +31,12 @@ import {
   Lightbulb,
   Wand2,
   Clock,
+  Type,
+  ListChecks,
+  Copy,
+  MessageSquare,
+  Link2,
+  GitMerge,
 } from 'lucide-react'
 import { Modal } from '@/components/ui'
 import { TimelineEventEditor, type TimelineEventFormData } from '@/components/timeline'
@@ -55,6 +61,15 @@ const SUGGESTION_ICONS: Record<SuggestionType, typeof Skull> = {
   plot_hook: Lightbulb,
   enrichment: Wand2,
   timeline_issue: Clock,
+  // Character Intelligence types
+  grammar: Type,
+  formatting: ListChecks,
+  lore_conflict: AlertTriangle,
+  redundancy: Copy,
+  voice_inconsistency: MessageSquare,
+  relationship_gap: Link2,
+  secret_opportunity: Eye,
+  cross_reference: GitMerge,
 }
 
 const SUGGESTION_COLORS: Record<SuggestionType, { bg: string; text: string; border: string }> = {
@@ -72,6 +87,15 @@ const SUGGESTION_COLORS: Record<SuggestionType, { bg: string; text: string; bord
   plot_hook: { bg: 'rgba(192, 132, 252, 0.12)', text: '#c084fc', border: 'rgba(192, 132, 252, 0.3)' },
   enrichment: { bg: 'rgba(56, 189, 248, 0.12)', text: '#38bdf8', border: 'rgba(56, 189, 248, 0.3)' },
   timeline_issue: { bg: 'rgba(251, 146, 60, 0.12)', text: '#fb923c', border: 'rgba(251, 146, 60, 0.3)' },
+  // Character Intelligence types
+  grammar: { bg: 'rgba(239, 68, 68, 0.12)', text: '#f87171', border: 'rgba(239, 68, 68, 0.3)' },
+  formatting: { bg: 'rgba(99, 102, 241, 0.12)', text: '#818cf8', border: 'rgba(99, 102, 241, 0.3)' },
+  lore_conflict: { bg: 'rgba(239, 68, 68, 0.12)', text: '#f87171', border: 'rgba(239, 68, 68, 0.3)' },
+  redundancy: { bg: 'rgba(156, 163, 175, 0.12)', text: '#9ca3af', border: 'rgba(156, 163, 175, 0.3)' },
+  voice_inconsistency: { bg: 'rgba(236, 72, 153, 0.12)', text: '#f472b6', border: 'rgba(236, 72, 153, 0.3)' },
+  relationship_gap: { bg: 'rgba(245, 158, 11, 0.12)', text: '#fbbf24', border: 'rgba(245, 158, 11, 0.3)' },
+  secret_opportunity: { bg: 'rgba(139, 92, 246, 0.12)', text: '#a78bfa', border: 'rgba(139, 92, 246, 0.3)' },
+  cross_reference: { bg: 'rgba(59, 130, 246, 0.12)', text: '#60a5fa', border: 'rgba(59, 130, 246, 0.3)' },
 }
 
 const CONFIDENCE_COLORS: Record<ConfidenceLevel, string> = {

@@ -198,8 +198,14 @@ const COMPANION_TYPE_COLORS: Record<string, string> = {
 function renderMarkdown(text: string): React.ReactNode {
   if (!text) return null
 
+  // First, normalize the text:
+  // - Handle escaped newlines from JSON (\\n → actual newline)
+  // - Handle literal \n strings that didn't get parsed
+  let normalizedText = text
+    .replace(/\\n/g, '\n')  // Escaped newlines to actual newlines
+
   // Split by newlines and process each line
-  const lines = text.split('\n')
+  const lines = normalizedText.split('\n')
 
   return lines.map((line, lineIndex) => {
     // Process inline formatting
@@ -208,7 +214,8 @@ function renderMarkdown(text: string): React.ReactNode {
     let keyIndex = 0
 
     // Handle bold (**text** or __text__)
-    const boldRegex = /\*\*([^*]+)\*\*|__([^_]+)__/g
+    // Use a more permissive regex that allows asterisks within the bold text
+    const boldRegex = /\*\*(.+?)\*\*|__(.+?)__/g
     let lastIndex = 0
     let match
 
@@ -226,9 +233,31 @@ function renderMarkdown(text: string): React.ReactNode {
       lastIndex = match.index + match[0].length
     }
 
-    // Add remaining text
+    // Add remaining text after last match
     if (lastIndex < remaining.length) {
-      processed.push(remaining.slice(lastIndex))
+      // Process remaining text for italics (*text* or _text_)
+      const remainingStr = remaining.slice(lastIndex)
+      const italicRegex = /(?<![*\w])\*([^*]+)\*(?![*\w])|(?<![_\w])_([^_]+)_(?![_\w])/g
+      let italicLastIndex = 0
+      let italicMatch
+
+      while ((italicMatch = italicRegex.exec(remainingStr)) !== null) {
+        if (italicMatch.index > italicLastIndex) {
+          processed.push(remainingStr.slice(italicLastIndex, italicMatch.index))
+        }
+        processed.push(
+          <em key={`i-${lineIndex}-${keyIndex++}`} className="text-gray-300 italic">
+            {italicMatch[1] || italicMatch[2]}
+          </em>
+        )
+        italicLastIndex = italicMatch.index + italicMatch[0].length
+      }
+
+      if (italicLastIndex < remainingStr.length) {
+        processed.push(remainingStr.slice(italicLastIndex))
+      } else if (italicLastIndex === 0) {
+        processed.push(remainingStr)
+      }
     }
 
     // If no formatting was found, just use the line
@@ -237,11 +266,12 @@ function renderMarkdown(text: string): React.ReactNode {
     }
 
     // Check if line is a bullet point
-    const isBullet = line.trim().startsWith('- ') || line.trim().startsWith('• ')
+    const trimmedLine = line.trim()
+    const isBullet = trimmedLine.startsWith('- ') || trimmedLine.startsWith('• ') || trimmedLine.startsWith('* ')
 
     if (isBullet) {
       const bulletContent = processed.map((p, i) =>
-        typeof p === 'string' ? p.replace(/^[\s]*[-•]\s*/, '') : p
+        typeof p === 'string' ? p.replace(/^[\s]*[-•*]\s*/, '') : p
       )
       return (
         <div key={lineIndex} className="flex items-start gap-2 ml-2">

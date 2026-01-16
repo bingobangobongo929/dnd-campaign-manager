@@ -1,87 +1,176 @@
 /**
- * AI Image Generation Endpoint
+ * AI Image Generation API
  *
- * STATUS: INACTIVE - Requires REPLICATE_API_TOKEN in .env.local
- *
- * To enable:
- * 1. Sign up at https://replicate.com
- * 2. Get your API token from account settings
- * 3. Add REPLICATE_API_TOKEN=r8_xxxxx to .env.local
- * 4. Set AI_IMAGE_GENERATION_ENABLED = true in character-image-upload.tsx
+ * Generates images using Google's Gemini image generation models (Nano Banana)
+ * Supports text-to-image generation with feedback/regeneration flow
  */
 
-import Replicate from 'replicate'
 import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60 // Allow up to 60 seconds for image generation
+export const maxDuration = 120 // 2 minutes for image generation
+
+// Available image models
+type ImageModel = 'imagen-3.0-generate-002' | 'gemini-2.0-flash-exp'
 
 interface GenerateImageRequest {
-  characterName: string
-  characterType: 'pc' | 'npc'
-  description?: string | null
-  summary?: string | null
+  prompt: string
+  model?: ImageModel
+  aspectRatio?: '1:1' | '2:3' | '16:9' | '3:2' | '9:16' | '3:4' | '4:3'
+  feedback?: string // User feedback for regeneration
+  previousPrompt?: string // For regeneration context
+  negativePrompt?: string // Things to avoid
 }
 
 export async function POST(req: Request) {
   try {
-    const { characterName, characterType, description, summary }: GenerateImageRequest = await req.json()
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    if (!characterName) {
-      return NextResponse.json({ error: 'Character name is required' }, { status: 400 })
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const apiKey = process.env.REPLICATE_API_TOKEN
+    const body: GenerateImageRequest = await req.json()
+    const {
+      prompt,
+      model = 'imagen-3.0-generate-002',
+      aspectRatio = '1:1',
+      feedback,
+      previousPrompt,
+      negativePrompt
+    } = body
+
+    if (!prompt) {
+      return NextResponse.json({ error: 'Prompt is required' }, { status: 400 })
+    }
+
+    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY
     if (!apiKey) {
-      return NextResponse.json({ error: 'Image generation not configured' }, { status: 503 })
+      return NextResponse.json({ error: 'Google AI API key not configured' }, { status: 500 })
     }
 
-    const replicate = new Replicate({ auth: apiKey })
+    // Build the full prompt with any feedback
+    let fullPrompt = prompt
+    if (feedback && previousPrompt) {
+      fullPrompt = `${previousPrompt}
 
-    // Build a descriptive prompt for the character portrait
-    const characterInfo = [
-      description,
-      summary,
-    ].filter(Boolean).join('. ')
+User feedback for improvement: ${feedback}
 
-    const typeDescription = characterType === 'pc'
-      ? 'heroic adventurer'
-      : 'fantasy character'
+Updated prompt: ${prompt}`
+    }
 
-    const prompt = characterInfo
-      ? `Fantasy character portrait of ${characterName}, a ${typeDescription}. ${characterInfo}. Detailed digital art, dramatic lighting, painterly style, high quality character portrait suitable for a tabletop RPG.`
-      : `Fantasy character portrait of ${characterName}, a ${typeDescription}. Detailed digital art, dramatic lighting, painterly style, high quality character portrait suitable for a tabletop RPG.`
-
-    // Use Flux Schnell for fast generation (or Flux Dev for higher quality)
-    const output = await replicate.run(
-      'black-forest-labs/flux-schnell',
+    // Use Imagen 3 for high quality image generation
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
       {
-        input: {
-          prompt,
-          num_outputs: 1,
-          aspect_ratio: '3:4', // Portrait orientation
-          output_format: 'webp',
-          output_quality: 90,
-        }
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: fullPrompt,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            responseModalities: ['IMAGE', 'TEXT'],
+            // Note: Gemini handles aspect ratios automatically based on prompt
+          },
+        }),
       }
     )
 
-    // Flux returns an array of URLs
-    const imageUrls = output as string[]
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      console.error('Gemini API error:', response.status, errorData)
 
-    if (!imageUrls || imageUrls.length === 0) {
-      return NextResponse.json({ error: 'No image generated' }, { status: 500 })
+      // Handle specific error cases
+      if (response.status === 400) {
+        return NextResponse.json({
+          error: 'Invalid request to image generation API',
+          details: errorData.error?.message || 'The prompt may have been rejected by content filters',
+        }, { status: 400 })
+      }
+
+      if (response.status === 429) {
+        return NextResponse.json({
+          error: 'Rate limit exceeded',
+          details: 'Too many image generation requests. Please try again in a few minutes.',
+        }, { status: 429 })
+      }
+
+      if (response.status === 404) {
+        // Model not available, try fallback
+        return NextResponse.json({
+          error: 'Image generation model not available',
+          details: 'The selected model is not available. Please try a different model.',
+        }, { status: 404 })
+      }
+
+      return NextResponse.json({
+        error: 'Image generation failed',
+        details: errorData.error?.message || `API returned status ${response.status}`,
+      }, { status: 500 })
     }
 
+    const data = await response.json()
+
+    // Extract the generated image from the response
+    const parts = data.candidates?.[0]?.content?.parts || []
+    let imageData: string | null = null
+    let mimeType: string = 'image/png'
+    let textResponse: string | null = null
+
+    for (const part of parts) {
+      if (part.inlineData?.mimeType?.startsWith('image/')) {
+        imageData = part.inlineData.data // Base64 encoded image
+        mimeType = part.inlineData.mimeType
+      } else if (part.text) {
+        textResponse = part.text
+      }
+    }
+
+    if (!imageData) {
+      // Check for safety blocks
+      const blockReason = data.candidates?.[0]?.finishReason
+      if (blockReason === 'SAFETY') {
+        return NextResponse.json({
+          error: 'Image generation blocked',
+          details: 'The request was blocked by content safety filters. Please modify your prompt.',
+        }, { status: 422 })
+      }
+
+      return NextResponse.json({
+        error: 'No image generated',
+        details: textResponse || 'The model did not return an image. Try a different prompt.',
+        blockReason,
+      }, { status: 422 })
+    }
+
+    // Return the base64 image data
     return NextResponse.json({
-      imageUrl: imageUrls[0],
-      prompt // Return prompt for transparency
+      success: true,
+      image: {
+        data: imageData,
+        mimeType,
+        dataUrl: `data:${mimeType};base64,${imageData}`,
+      },
+      model,
+      prompt: fullPrompt,
+      textResponse, // Any text the model returned alongside the image
     })
   } catch (error) {
-    console.error('AI image generation error:', error)
-    return NextResponse.json(
-      { error: 'Failed to generate image' },
-      { status: 500 }
-    )
+    console.error('Image generation error:', error)
+    return NextResponse.json({
+      error: 'Failed to generate image',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    }, { status: 500 })
   }
 }

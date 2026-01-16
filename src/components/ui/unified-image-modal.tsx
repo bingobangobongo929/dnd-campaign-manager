@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css'
 import { Modal } from './modal'
-import { Upload, Sparkles, Trash2, Loader2, Check, Copy, RotateCcw, X } from 'lucide-react'
+import { Upload, Sparkles, Trash2, Loader2, Check, Copy, RotateCcw, X, Wand2, RefreshCw, MessageSquare, Send } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 
@@ -14,6 +14,7 @@ export type ImageType = 'campaign' | 'oneshot' | 'worldmap' | 'npc' | 'companion
 interface ImageTypeConfig {
   aspectRatio: number
   aspectLabel: string
+  aspectRatioApi: '1:1' | '2:3' | '16:9' | '3:2' | '9:16' | '3:4' | '4:3'
   promptEndpoint?: string
   bucketName: string
   generatePromptData?: (data: any) => any
@@ -23,35 +24,41 @@ const IMAGE_CONFIGS: Record<ImageType, ImageTypeConfig> = {
   campaign: {
     aspectRatio: 16 / 9,
     aspectLabel: '16:9 (widescreen)',
+    aspectRatioApi: '16:9',
     promptEndpoint: '/api/ai/generate-campaign-image',
     bucketName: 'campaign-images',
   },
   oneshot: {
     aspectRatio: 2 / 3,
     aspectLabel: '2:3 (poster)',
+    aspectRatioApi: '2:3',
     promptEndpoint: '/api/ai/generate-oneshot-image',
     bucketName: 'oneshot-images',
   },
   worldmap: {
     aspectRatio: 16 / 9,
     aspectLabel: '16:9 (landscape)',
+    aspectRatioApi: '16:9',
     bucketName: 'world-maps',
   },
   npc: {
     aspectRatio: 1,
     aspectLabel: '1:1 (avatar)',
+    aspectRatioApi: '1:1',
     promptEndpoint: '/api/ai/generate-avatar-prompt',
     bucketName: 'vault-images',
   },
   companion: {
     aspectRatio: 1,
     aspectLabel: '1:1 (avatar)',
+    aspectRatioApi: '1:1',
     promptEndpoint: '/api/ai/generate-avatar-prompt',
     bucketName: 'vault-images',
   },
   character: {
     aspectRatio: 2 / 3,
     aspectLabel: '2:3 (portrait)',
+    aspectRatioApi: '2:3',
     promptEndpoint: '/api/ai/generate-avatar-prompt',
     bucketName: 'vault-images',
   },
@@ -101,7 +108,7 @@ export function UnifiedImageModal({
   const cropImgRef = useRef<HTMLImageElement>(null)
 
   // View states
-  const [view, setView] = useState<'options' | 'crop' | 'prompt'>('options')
+  const [view, setView] = useState<'options' | 'crop' | 'prompt' | 'generate' | 'preview'>('options')
 
   // Crop state
   const [pendingImage, setPendingImage] = useState<string | null>(null)
@@ -112,6 +119,12 @@ export function UnifiedImageModal({
   const [generatingPrompt, setGeneratingPrompt] = useState(false)
   const [generatedPrompt, setGeneratedPrompt] = useState({ prompt: '', shortPrompt: '' })
   const [promptCopied, setPromptCopied] = useState(false)
+
+  // AI Generation state
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generatedImage, setGeneratedImage] = useState<{ dataUrl: string; prompt: string } | null>(null)
+  const [generationError, setGenerationError] = useState<string | null>(null)
+  const [feedback, setFeedback] = useState('')
 
   // Loading state
   const [uploading, setUploading] = useState(false)
@@ -224,6 +237,81 @@ export function UnifiedImageModal({
     }
   }
 
+  const handleGenerateImage = async (withFeedback = false) => {
+    if (!config.promptEndpoint || !promptData) return
+
+    setIsGenerating(true)
+    setGenerationError(null)
+
+    try {
+      // First, get the prompt
+      let prompt = generatedPrompt.prompt
+      if (!prompt) {
+        const res = await fetch(config.promptEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(promptData),
+        })
+        if (!res.ok) throw new Error('Failed to generate prompt')
+        const data = await res.json()
+        prompt = data.prompt
+        setGeneratedPrompt({ prompt: data.prompt, shortPrompt: data.shortPrompt })
+      }
+
+      // Now generate the image
+      const genRes = await fetch('/api/ai/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt,
+          aspectRatio: config.aspectRatioApi,
+          feedback: withFeedback ? feedback : undefined,
+          previousPrompt: withFeedback ? generatedImage?.prompt : undefined,
+        }),
+      })
+
+      const genData = await genRes.json()
+
+      if (!genRes.ok) {
+        throw new Error(genData.details || genData.error || 'Failed to generate image')
+      }
+
+      setGeneratedImage({
+        dataUrl: genData.image.dataUrl,
+        prompt: genData.prompt,
+      })
+      setView('preview')
+      setFeedback('')
+    } catch (err: any) {
+      console.error('Generate image error:', err)
+      setGenerationError(err.message || 'Failed to generate image')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleUseGeneratedImage = async () => {
+    if (!generatedImage) return
+
+    setUploading(true)
+
+    try {
+      // Convert data URL to blob
+      const res = await fetch(generatedImage.dataUrl)
+      const blob = await res.blob()
+
+      // Upload the blob
+      const url = await onUpload(blob)
+      onImageChange(url)
+      handleClose()
+    } catch (err) {
+      console.error('Upload error:', err)
+      alert('Failed to upload generated image')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const copyPrompt = async (text: string) => {
     await navigator.clipboard.writeText(text)
     setPromptCopied(true)
@@ -241,6 +329,9 @@ export function UnifiedImageModal({
     setCrop(undefined)
     setCompletedCrop(undefined)
     setGeneratedPrompt({ prompt: '', shortPrompt: '' })
+    setGeneratedImage(null)
+    setGenerationError(null)
+    setFeedback('')
     onClose()
   }
 
@@ -250,15 +341,25 @@ export function UnifiedImageModal({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={view === 'crop' ? 'Crop Image' : view === 'prompt' ? 'AI Image Prompt' : `${title} Image`}
+      title={
+        view === 'crop' ? 'Crop Image' :
+        view === 'prompt' ? 'AI Image Prompt' :
+        view === 'generate' ? 'Generating Image' :
+        view === 'preview' ? 'Generated Image' :
+        `${title} Image`
+      }
       description={
         view === 'crop'
           ? `Adjust the crop area (${config.aspectLabel}). Full resolution preserved.`
           : view === 'prompt'
           ? 'Copy this prompt to use in your preferred image AI tool'
-          : 'Upload your own image or generate an AI prompt'
+          : view === 'generate'
+          ? 'AI is creating your image...'
+          : view === 'preview'
+          ? 'Review the generated image or provide feedback to regenerate'
+          : 'Upload your own image or generate with AI'
       }
-      size={view === 'crop' ? 'xl' : 'lg'}
+      size={view === 'crop' || view === 'preview' ? 'xl' : 'lg'}
     >
       <input
         ref={fileInputRef}
@@ -300,25 +401,49 @@ export function UnifiedImageModal({
             </button>
 
             {aiEnabled && hasPromptSupport && (
-              <button
-                onClick={handleGeneratePrompt}
-                disabled={generatingPrompt}
-                className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-[--border] hover:border-purple-500/50 transition-colors text-left disabled:opacity-50"
-              >
-                <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                  {generatingPrompt ? (
-                    <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-6 h-6 text-amber-400" />
-                  )}
-                </div>
-                <div>
-                  <p className="font-medium text-[--text-primary]">Generate AI Prompt</p>
-                  <p className="text-sm text-[--text-tertiary]">
-                    Get a prompt for Midjourney, DALL-E, etc.
-                  </p>
-                </div>
-              </button>
+              <>
+                {/* Generate with AI */}
+                <button
+                  onClick={() => handleGenerateImage()}
+                  disabled={isGenerating}
+                  className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-[--border] hover:border-emerald-500/50 transition-colors text-left disabled:opacity-50"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                    {isGenerating ? (
+                      <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
+                    ) : (
+                      <Wand2 className="w-6 h-6 text-emerald-400" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium text-[--text-primary]">Generate with AI</p>
+                    <p className="text-sm text-[--text-tertiary]">
+                      Create an image using Google Imagen
+                    </p>
+                  </div>
+                </button>
+
+                {/* Get Prompt Only */}
+                <button
+                  onClick={handleGeneratePrompt}
+                  disabled={generatingPrompt}
+                  className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-[--border] hover:border-amber-500/50 transition-colors text-left disabled:opacity-50"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                    {generatingPrompt ? (
+                      <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-6 h-6 text-amber-400" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium text-[--text-primary]">Get AI Prompt</p>
+                    <p className="text-sm text-[--text-tertiary]">
+                      Copy prompt for Midjourney, DALL-E, etc.
+                    </p>
+                  </div>
+                </button>
+              </>
             )}
 
             {currentImageUrl && (
@@ -338,6 +463,13 @@ export function UnifiedImageModal({
               </button>
             )}
           </div>
+
+          {/* Generation Error */}
+          {generationError && (
+            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+              <p className="text-sm text-red-400">{generationError}</p>
+            </div>
+          )}
 
           <div className="flex justify-end pt-2">
             <button
@@ -487,6 +619,101 @@ export function UnifiedImageModal({
               className="px-4 py-2 text-sm text-[--text-secondary] hover:text-[--text-primary] transition-colors"
             >
               Done
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Generate View (Loading) */}
+      {view === 'generate' && (
+        <div className="py-12 flex flex-col items-center justify-center">
+          <div className="w-20 h-20 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-6">
+            <Loader2 className="w-10 h-10 text-emerald-400 animate-spin" />
+          </div>
+          <p className="text-lg font-semibold text-[--text-primary] mb-2">
+            Generating Image
+          </p>
+          <p className="text-sm text-[--text-tertiary] text-center max-w-md">
+            Using Google Imagen to create your image. This may take up to a minute...
+          </p>
+        </div>
+      )}
+
+      {/* Preview View */}
+      {view === 'preview' && generatedImage && (
+        <div className="py-4 space-y-4">
+          {/* Generated Image Preview */}
+          <div className="relative rounded-xl overflow-hidden bg-black/20">
+            <img
+              src={generatedImage.dataUrl}
+              alt="Generated"
+              className="w-full max-h-[50vh] object-contain"
+            />
+          </div>
+
+          {/* Feedback Input */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-[--text-secondary] flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" />
+              Not quite right? Provide feedback:
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                placeholder="e.g., Make it more dramatic, add a sword, change hair color..."
+                className="flex-1 px-4 py-2 bg-[--bg-surface] border border-[--border] rounded-lg text-sm text-[--text-primary] placeholder-[--text-tertiary] focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+              />
+              <button
+                onClick={() => handleGenerateImage(true)}
+                disabled={!feedback.trim() || isGenerating}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                {isGenerating ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+                Regenerate
+              </button>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-between pt-4 border-t border-[--border]">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setView('options')}
+                className="px-4 py-2 text-sm text-[--text-secondary] hover:text-[--text-primary] transition-colors"
+              >
+                Back
+              </button>
+              <button
+                onClick={() => handleGenerateImage(false)}
+                disabled={isGenerating}
+                className="flex items-center gap-2 px-4 py-2 text-sm text-[--text-secondary] hover:text-[--text-primary] transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Generate New
+              </button>
+            </div>
+            <button
+              onClick={handleUseGeneratedImage}
+              disabled={uploading}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  Use This Image
+                </>
+              )}
             </button>
           </div>
         </div>

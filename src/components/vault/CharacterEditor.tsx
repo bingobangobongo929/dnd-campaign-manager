@@ -313,32 +313,42 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     if (!characterId) return
 
     const loadRelatedData = async () => {
+      // Load core data that definitely exists
       const [
         { data: rels },
         { data: journal },
         { data: charLinks },
-        { data: facts },
       ] = await Promise.all([
         supabase.from('vault_character_relationships').select('*').eq('character_id', characterId).order('display_order'),
         supabase.from('play_journal').select('*').eq('character_id', characterId).order('session_number', { ascending: true }),
         supabase.from('character_links').select('*').eq('character_id', characterId).order('sort_order'),
-        supabase.from('character_learned_facts').select('*').eq('character_id', characterId),
       ])
 
       if (rels) setRelationships(rels)
       if (journal) setJournalEntries(journal)
       if (charLinks) setLinks(charLinks)
-      if (facts) setLearnedFacts(facts)
+
+      // Try to load learned facts (table may not exist yet)
+      try {
+        const { data: facts, error } = await supabase.from('character_learned_facts').select('*').eq('character_id', characterId)
+        if (!error && facts) setLearnedFacts(facts)
+      } catch {
+        // Table doesn't exist, silently ignore
+      }
     }
 
     loadRelatedData()
   }, [characterId, supabase])
 
-  // Load custom statuses
+  // Load custom statuses (table may not exist yet)
   useEffect(() => {
     const loadStatuses = async () => {
-      const { data } = await supabase.from('character_statuses').select('*').order('sort_order')
-      if (data) setCustomStatuses(data)
+      try {
+        const { data, error } = await supabase.from('character_statuses').select('*').order('sort_order')
+        if (!error && data) setCustomStatuses(data)
+      } catch {
+        // Table doesn't exist, silently ignore
+      }
     }
     loadStatuses()
   }, [supabase])

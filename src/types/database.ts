@@ -1853,7 +1853,14 @@ export type VaultCharacterSpell = Database['public']['Tables']['vault_character_
 export type VaultCharacterWriting = Database['public']['Tables']['vault_character_writings']['Row']
 
 // Suggestion types for Campaign & Character Intelligence
-export type SuggestionType = 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship' | 'timeline_event' | 'completeness' | 'consistency' | 'npc_detected' | 'location_detected' | 'plot_hook' | 'enrichment' | 'timeline_issue'
+export type SuggestionType =
+  // Campaign Intelligence types
+  | 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person'
+  | 'relationship' | 'timeline_event' | 'completeness' | 'consistency'
+  | 'npc_detected' | 'location_detected' | 'plot_hook' | 'enrichment' | 'timeline_issue'
+  // Character Intelligence types
+  | 'grammar' | 'formatting' | 'lore_conflict' | 'redundancy'
+  | 'voice_inconsistency' | 'relationship_gap' | 'secret_opportunity' | 'cross_reference'
 export type ConfidenceLevel = 'high' | 'medium' | 'low'
 
 // Vault character with all relations
