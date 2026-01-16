@@ -38,7 +38,7 @@ HTML FORMATTING RULES:
 - Locations: <em>Location Name</em>
 - Items of note: <strong>item name</strong>
 - Use <ul><li> for lists
-- Use <h4> for section headers (NOT h1/h2/h3)
+- Use <h3> for section headers
 - Use <p> for paragraphs
 - Use <hr> between major sections${entitiesList}
 
@@ -50,38 +50,38 @@ IMPORTANT: Add a blank line between each section for visual spacing.
 Bullet points with grammar fixed. Keep it brief.
 
 ---DETAILED_NOTES---
-<h4>📍 What Happened</h4>
+<h3>📍 What Happened</h3>
 <p>Chronological summary of events in 2-4 short paragraphs. Plain factual language.</p>
 
-<h4>👥 People</h4>
+<h3>👥 People</h3>
 <ul>
 <li><strong>Name</strong> - who they are, what they did (NEW if first appearance)</li>
 </ul>
 
-<h4>🗺️ Locations</h4>
+<h3>🗺️ Locations</h3>
 <ul>
 <li><em>Location</em> - brief note about what happened there</li>
 </ul>
 
-<h4>⚔️ Combat</h4>
+<h3>⚔️ Combat</h3>
 <p>Brief combat summary if any fighting occurred. Who fought whom, outcome.</p>
 
-<h4>📦 Items & Loot</h4>
+<h3>📦 Items & Loot</h3>
 <ul>
 <li><strong>Item</strong> - where found, why important</li>
 </ul>
 
-<h4>🔍 Discoveries</h4>
+<h3>🔍 Discoveries</h3>
 <ul>
 <li>Important information learned</li>
 </ul>
 
-<h4>📝 Decisions</h4>
+<h3>📝 Decisions</h3>
 <ul>
 <li>Key choices made and their consequences</li>
 </ul>
 
-<h4>🎯 Hooks & Setup</h4>
+<h3>🎯 Hooks & Setup</h3>
 <ul>
 <li>Things set up for future sessions</li>
 </ul>
@@ -103,23 +103,23 @@ EXAMPLE OUTPUT:
 • Found treasure map
 
 ---DETAILED_NOTES---
-<h4>📍 What Happened</h4>
+<h3>📍 What Happened</h3>
 <p>The party met <strong>Bob</strong>, a local blacksmith, who provided them with a magic sword. They traveled to <em>the Old Mill</em> where they encountered and defeated three goblins. Among the loot, they discovered a map leading to treasure.</p>
 
-<h4>👥 People</h4>
+<h3>👥 People</h3>
 <ul>
 <li><strong>Bob</strong> - Blacksmith, gave the party a magic sword (NEW)</li>
 </ul>
 
-<h4>🗺️ Locations</h4>
+<h3>🗺️ Locations</h3>
 <ul>
 <li><em>The Old Mill</em> - Site of goblin encounter</li>
 </ul>
 
-<h4>⚔️ Combat</h4>
+<h3>⚔️ Combat</h3>
 <p>Fought 3 goblins at <em>the Old Mill</em>. Party victorious.</p>
 
-<h4>📦 Items & Loot</h4>
+<h3>📦 Items & Loot</h3>
 <ul>
 <li><strong>Magic sword</strong> - Gift from Bob</li>
 <li><strong>Treasure map</strong> - Found after goblin fight</li>

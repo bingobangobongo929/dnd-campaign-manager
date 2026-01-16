@@ -154,7 +154,7 @@ export default function CharacterSessionsPage() {
                       {entry.notes && (
                         <div className="py-4">
                           <div
-                            className="prose prose-invert prose-sm max-w-none [&>h4]:mt-6 [&>h4:first-child]:mt-0 [&>h4]:mb-2 [&>h4]:text-base [&>h4]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4"
+                            className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4"
                             dangerouslySetInnerHTML={{ __html: entry.notes }}
                           />
                         </div>
