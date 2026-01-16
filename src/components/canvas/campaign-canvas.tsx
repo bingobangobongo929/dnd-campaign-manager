@@ -375,13 +375,16 @@ function CampaignCanvasInner({
         maxZoom={2}
         snapToGrid
         snapGrid={[SNAP_GRID, SNAP_GRID]}
-        zoomOnScroll
-        zoomOnPinch
-        panOnDrag={[2]} // Right mouse button only for panning
-        selectionOnDrag // Enable selection box with left click drag
+        zoomOnScroll={true}
+        zoomOnPinch={true}
+        zoomOnDoubleClick={true}
+        panOnScroll={false} // Scroll zooms, not pans
+        panOnDrag={[0, 2]} // Left click (when not on node) or right click to pan
+        selectionOnDrag={true} // Enable selection box with left click drag on empty space
         selectionMode={SelectionMode.Partial} // Select when touching the box
-        selectNodesOnDrag
+        selectNodesOnDrag={true}
         multiSelectionKeyCode={['Shift', 'Control', 'Meta']} // Hold shift/ctrl/cmd to add to selection
+        zoomActivationKeyCode={['Meta', 'Control']} // CMD/CTRL + scroll to zoom (alternative)
         deleteKeyCode={null} // We handle delete ourselves
         className="bg-[--bg-base]"
       >
