@@ -18,33 +18,39 @@ export async function POST(req: Request) {
     let userPrompt: string
 
     if (mode === 'session') {
-      // Session notes expansion - two-step process
-      systemPrompt = `You are a skilled session notes editor for tabletop RPG campaigns. Your task is to:
+      // Session notes expansion - practical, scannable format
+      systemPrompt = `You are a session notes editor. Your job is to make session notes CLEAN and SCANNABLE - NOT creative writing.
 
-1. CLEAN UP the user's raw bullet-point summary:
-   - Fix grammar and spelling mistakes
-   - Improve clarity while keeping their voice
-   - Keep it concise - don't add information they didn't mention
-   - Preserve all the facts they wrote
+TASK 1 - CLEAN THE SUMMARY:
+- Fix grammar and spelling only
+- Keep bullet point format
+- Don't change meaning or add anything
+- Keep it brief and factual
 
-2. EXPAND into detailed narrative notes (3-6 paragraphs):
-   - Transform the bullet points into a narrative session log
-   - Use the context provided to make it richer
-   - NEVER invent details, NPCs, locations, or events they didn't mention
-   - Maintain the character's perspective if this is their journal
-   - Be descriptive but stay true to what actually happened
+TASK 2 - EXPAND INTO DETAILED NOTES:
+Create a longer but still FACTUAL version. Rules:
+- Write in simple, clear sentences - NOT flowery prose
+- Keep it scannable - use short paragraphs
+- Wrap character/NPC names in <strong> tags (e.g., <strong>Mr. Giggles</strong>)
+- Wrap location names in <em> tags (e.g., <em>The Rusty Anchor</em>)
+- NEVER add atmosphere, emotions, or descriptions that weren't mentioned
+- NEVER use phrases like "a fortunate turn of events", "peeling back layers", "crucial step forward"
+- Just state what happened in plain language
+- If they wrote "met Mr. Giggles, a potion seller" - write "Met <strong>Mr. Giggles</strong>, a potion seller"
+- Don't embellish or add meaning - just make it readable
 
-CRITICAL: Never make anything up. Only expand on what the user wrote. If something is unclear, keep it vague rather than inventing details.
+BAD example: "We were introduced to a peculiar individual who goes by the name Mr. Giggles. We learned that his trade is alchemy..."
+GOOD example: "Met <strong>Mr. Giggles</strong>, a potion seller at the tavern. He could be useful for supplies."
 
 Output format:
 ---CLEANED_SUMMARY---
-[The cleaned up summary here]
+[Cleaned bullet points - just fix grammar]
 ---DETAILED_NOTES---
-[The expanded narrative notes here - use HTML formatting with <p>, <strong>, <em> tags]`
+[Expanded but FACTUAL notes with name highlighting - 2-4 short paragraphs max]`
 
-      userPrompt = `${context ? `Context:\n${context}\n\n` : ''}Raw Session Summary:\n${text}
+      userPrompt = `${context ? `Context:\n${context}\n\n` : ''}Raw Session Notes:\n${text}
 
-Please clean up the summary and expand it into detailed notes.`
+Clean up and expand these notes. Keep it factual and scannable - no creative writing.`
     } else {
       // Default character notes expansion
       systemPrompt = AI_PROMPTS.expand

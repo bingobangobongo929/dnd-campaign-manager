@@ -703,12 +703,10 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       weaknesses: dataToSave.weaknesses.length > 0 ? dataToSave.weaknesses : null,
       plot_hooks: dataToSave.plot_hooks.length > 0 ? dataToSave.plot_hooks : null,
       tldr: dataToSave.tldr.length > 0 ? dataToSave.tldr : null,
-      pre_session_hook: dataToSave.pre_session_hook || null,
       backstory_phases: dataToSave.backstory_phases.length > 0 ? dataToSave.backstory_phases : null,
       theme_music_url: dataToSave.theme_music_url || null,
       theme_music_title: dataToSave.theme_music_title || null,
       character_sheet_url: dataToSave.character_sheet_url || null,
-      external_links: dataToSave.external_links.length > 0 ? dataToSave.external_links : null,
       game_system: dataToSave.game_system || null,
       external_campaign: dataToSave.external_campaign || null,
       dm_name: dataToSave.dm_name || null,
@@ -738,8 +736,6 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       party_relations: dataToSave.party_relations.length > 0 ? dataToSave.party_relations : null,
       combat_stats: dataToSave.combat_stats,
       open_questions: dataToSave.open_questions.length > 0 ? dataToSave.open_questions : null,
-      secondary_characters: dataToSave.secondary_characters.length > 0 ? dataToSave.secondary_characters : null,
-      reference_tables: dataToSave.reference_tables.length > 0 ? dataToSave.reference_tables : null,
       updated_at: new Date().toISOString(),
     }
 
