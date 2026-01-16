@@ -21,6 +21,7 @@ import { Button, Input } from '@/components/ui'
 import { RichTextEditor } from '@/components/editor'
 import { createClient } from '@/lib/supabase/client'
 import { useAutoSave } from '@/hooks'
+import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 import type { PlayJournal, VaultCharacter } from '@/types/database'
 
@@ -28,6 +29,7 @@ export default function VaultSessionEditorPage() {
   const params = useParams()
   const router = useRouter()
   const supabase = createClient()
+  const { aiProvider } = useAppStore()
 
   const characterId = params.id as string
   const sessionId = params.sessionId as string
@@ -45,12 +47,12 @@ export default function VaultSessionEditorPage() {
     campaign_name: '',
     summary: '',
     notes: '',
-    thoughts_for_next: '',
   })
 
   // AI Expand Notes state
   const [expanding, setExpanding] = useState(false)
-  const [expandedNotes, setExpandedNotes] = useState<string | null>(null)
+  const [pendingNotes, setPendingNotes] = useState<string | null>(null)
+  const [pendingSummary, setPendingSummary] = useState<string | null>(null)
   const [showExpandedPreview, setShowExpandedPreview] = useState(false)
   const [aiReasoning, setAiReasoning] = useState<string>('')
   const [detailedNotesCollapsed, setDetailedNotesCollapsed] = useState(true)
@@ -98,12 +100,10 @@ export default function VaultSessionEditorPage() {
         campaign_name: sessionData.campaign_name || '',
         summary: sessionData.summary || '',
         notes: sessionData.notes || '',
-        thoughts_for_next: sessionData.thoughts_for_next || '',
       })
 
-      // If there's existing detailed notes, show them
-      if (sessionData.detailed_notes) {
-        setExpandedNotes(sessionData.detailed_notes)
+      // If there's existing detailed notes, show them expanded
+      if (sessionData.notes && sessionData.notes.trim()) {
         setDetailedNotesCollapsed(false)
       }
     } else {
@@ -126,7 +126,6 @@ export default function VaultSessionEditorPage() {
         campaign_name: '',
         summary: '',
         notes: '',
-        thoughts_for_next: '',
       })
     }
 
@@ -144,19 +143,21 @@ export default function VaultSessionEditorPage() {
       title: formData.title || null,
       campaign_name: formData.campaign_name || null,
       summary: formData.summary || null,
-      notes: formData.notes || null,
-      thoughts_for_next: formData.thoughts_for_next || null,
-      detailed_notes: expandedNotes || null,
+      notes: formData.notes || '',
     }
 
-    await supabase
+    const { error } = await supabase
       .from('play_journal')
       .update(payload)
       .eq('id', sessionId)
-  }, [formData, expandedNotes, sessionId, isNew, supabase])
+
+    if (error) {
+      console.error('Save error:', error)
+    }
+  }, [formData, sessionId, isNew, supabase])
 
   const { status } = useAutoSave({
-    data: { ...formData, expandedNotes },
+    data: formData,
     onSave: saveSession,
     delay: 1500,
     showToast: !isNew,
@@ -177,9 +178,7 @@ export default function VaultSessionEditorPage() {
       title: formData.title || null,
       campaign_name: formData.campaign_name || null,
       summary: formData.summary || null,
-      notes: formData.notes || null,
-      thoughts_for_next: formData.thoughts_for_next || null,
-      detailed_notes: expandedNotes || null,
+      notes: formData.notes || '',
     }
 
     const { data, error } = await supabase
@@ -189,6 +188,7 @@ export default function VaultSessionEditorPage() {
       .single()
 
     if (error) {
+      console.error('Create error:', error)
       toast.error('Failed to create session')
     } else {
       toast.success('Session created')
@@ -196,76 +196,142 @@ export default function VaultSessionEditorPage() {
     }
   }
 
-  // AI Expand Notes - takes bullet summary and creates detailed notes
+  // AI Expand Notes - cleans summary and generates detailed notes
   const handleExpandNotes = async () => {
     if (!formData.summary.trim() || expanding) return
 
     setExpanding(true)
-    setExpandedNotes('')
+    setPendingNotes('')
+    setPendingSummary('')
     setAiReasoning('')
     setShowExpandedPreview(true)
     setDetailedNotesCollapsed(false)
 
     try {
+      // Fetch character context for better expansion
+      const { data: charContext } = await supabase
+        .from('vault_characters')
+        .select('name, summary, notes, backstory, personality, goals')
+        .eq('id', characterId)
+        .single()
+
+      const contextParts = []
+      if (charContext?.name) contextParts.push(`Character: ${charContext.name}`)
+      if (formData.campaign_name) contextParts.push(`Campaign: ${formData.campaign_name}`)
+      if (formData.title) contextParts.push(`Session Title: ${formData.title}`)
+      if (charContext?.summary) contextParts.push(`Character Summary: ${charContext.summary}`)
+      const context = contextParts.join('\n')
+
       const response = await fetch('/api/ai/expand', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          summary: formData.summary,
-          characterId: characterId,
-          sessionTitle: formData.title,
-          campaignName: formData.campaign_name,
+          text: formData.summary,
+          context: context,
+          provider: aiProvider,
+          mode: 'session', // Tell API this is session notes expansion
         }),
       })
 
-      if (!response.ok) throw new Error('Failed to expand notes')
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('API Error:', errorText)
+        throw new Error('Failed to expand notes')
+      }
 
       const reader = response.body?.getReader()
       if (!reader) throw new Error('No reader')
 
       let notes = ''
+      let cleanedSummary = ''
       const decoder = new TextDecoder()
+      let inSummarySection = false
+      let inNotesSection = false
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
         const chunk = decoder.decode(value)
 
-        // Check if chunk contains reasoning marker
+        // Parse the streamed response for sections
+        if (chunk.includes('---CLEANED_SUMMARY---')) {
+          inSummarySection = true
+          inNotesSection = false
+          continue
+        }
+        if (chunk.includes('---DETAILED_NOTES---')) {
+          inSummarySection = false
+          inNotesSection = true
+          continue
+        }
         if (chunk.includes('---REASONING---')) {
+          inSummarySection = false
+          inNotesSection = false
           const parts = chunk.split('---REASONING---')
-          notes += parts[0]
+          if (inNotesSection) notes += parts[0]
           setAiReasoning(parts[1] || '')
+          continue
+        }
+
+        if (inSummarySection) {
+          cleanedSummary += chunk
+          setPendingSummary(cleanedSummary)
+        } else if (inNotesSection) {
+          notes += chunk
+          setPendingNotes(notes)
         } else if (aiReasoning) {
           setAiReasoning(prev => prev + chunk)
-        } else {
-          notes += chunk
         }
-        setExpandedNotes(notes)
+      }
+
+      // If we didn't get sectioned output, treat the whole response as notes
+      if (!cleanedSummary && !notes) {
+        setPendingNotes(decoder.decode())
       }
     } catch (error) {
       console.error('Expand error:', error)
       toast.error('Failed to expand notes')
       setShowExpandedPreview(false)
-      setExpandedNotes(null)
+      setPendingNotes(null)
+      setPendingSummary(null)
     } finally {
       setExpanding(false)
     }
   }
 
   const acceptExpanded = () => {
+    // Apply cleaned summary if available
+    if (pendingSummary) {
+      setFormData(prev => ({ ...prev, summary: pendingSummary }))
+    }
+    // Apply detailed notes
+    if (pendingNotes) {
+      setFormData(prev => ({ ...prev, notes: pendingNotes }))
+    }
     setShowExpandedPreview(false)
-    // Notes are already in expandedNotes state
+    setPendingNotes(null)
+    setPendingSummary(null)
+    setAiReasoning('')
   }
 
   const editExpanded = () => {
+    // Apply both but keep editing open
+    if (pendingSummary) {
+      setFormData(prev => ({ ...prev, summary: pendingSummary }))
+    }
+    if (pendingNotes) {
+      setFormData(prev => ({ ...prev, notes: pendingNotes }))
+    }
     setShowExpandedPreview(false)
-    // Notes are already in expandedNotes state, user can edit
+    setPendingNotes(null)
+    setPendingSummary(null)
+    setAiReasoning('')
   }
 
   const declineExpanded = () => {
     setShowExpandedPreview(false)
-    setExpandedNotes(null)
+    setPendingNotes(null)
+    setPendingSummary(null)
     setAiReasoning('')
   }
 
@@ -350,7 +416,7 @@ export default function VaultSessionEditorPage() {
                 Summary
               </label>
               <span className="text-sm text-[--text-tertiary]">
-                Write bullet points of what happened - AI will expand into detailed notes
+                Write bullet points of what happened - AI will clean up and expand into detailed notes
               </span>
             </div>
             {!showExpandedPreview && (
@@ -361,7 +427,7 @@ export default function VaultSessionEditorPage() {
                 className="bg-[--arcane-gold]/10 border-[--arcane-gold]/30 text-[--arcane-gold] hover:bg-[--arcane-gold]/20"
               >
                 <Wand2 className="w-4 h-4 mr-2" />
-                Expand Notes
+                {expanding ? 'Expanding...' : 'Expand Notes'}
               </Button>
             )}
           </div>
@@ -379,8 +445,80 @@ export default function VaultSessionEditorPage() {
           />
         </div>
 
-        {/* AI Expanded Notes Section */}
-        {(expandedNotes || showExpandedPreview) && (
+        {/* AI Preview Panel - shows when expanding */}
+        {showExpandedPreview && (
+          <div className="card p-6 mb-8 bg-[--arcane-purple]/5 border-[--arcane-purple]/30">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-5 h-5 text-[--arcane-purple]" />
+              <span className="text-lg font-semibold text-[--arcane-purple]">
+                {expanding ? 'Processing...' : 'AI Expansion Preview'}
+              </span>
+              {expanding && (
+                <Loader2 className="w-4 h-4 animate-spin text-[--arcane-purple]" />
+              )}
+            </div>
+
+            {/* Cleaned Summary Preview */}
+            {pendingSummary && (
+              <div className="mb-6">
+                <h4 className="text-sm font-medium text-[--text-secondary] mb-2">Cleaned Summary:</h4>
+                <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                  <p className="text-sm text-[--text-primary] whitespace-pre-wrap">{pendingSummary}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Detailed Notes Preview */}
+            {pendingNotes && (
+              <div className="mb-6">
+                <h4 className="text-sm font-medium text-[--text-secondary] mb-2">Detailed Notes:</h4>
+                <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                  <div
+                    className="prose prose-invert prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: pendingNotes }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* AI Reasoning */}
+            {aiReasoning && (
+              <div className="mb-6 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                <p className="text-xs text-[--text-tertiary] mb-1">AI Context Used:</p>
+                <p className="text-sm text-[--text-secondary] whitespace-pre-wrap">{aiReasoning}</p>
+              </div>
+            )}
+
+            {!expanding && (pendingNotes || pendingSummary) && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={acceptExpanded}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors"
+                >
+                  <Check className="w-4 h-4" />
+                  Accept
+                </button>
+                <button
+                  onClick={editExpanded}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple] hover:bg-[--arcane-purple]/20 transition-colors"
+                >
+                  <Pencil className="w-4 h-4" />
+                  Accept & Edit
+                </button>
+                <button
+                  onClick={declineExpanded}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-[--arcane-ember]/10 border border-[--arcane-ember]/30 text-[--arcane-ember] hover:bg-[--arcane-ember]/20 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                  Decline
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Detailed Notes Section - Shows when notes exist */}
+        {formData.notes && !showExpandedPreview && (
           <div className="card p-6 mb-8">
             <button
               onClick={() => setDetailedNotesCollapsed(!detailedNotesCollapsed)}
@@ -393,7 +531,7 @@ export default function VaultSessionEditorPage() {
                     Detailed Notes
                   </label>
                   <span className="text-sm text-[--text-tertiary]">
-                    AI-expanded session narrative
+                    Expanded session narrative
                   </span>
                 </div>
               </div>
@@ -405,81 +543,15 @@ export default function VaultSessionEditorPage() {
             </button>
 
             {!detailedNotesCollapsed && (
-              <>
-                {/* AI Preview Panel */}
-                {showExpandedPreview && (
-                  <div className="mb-4 p-4 rounded-xl bg-[--arcane-purple]/5 border border-[--arcane-purple]/30">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Sparkles className="w-4 h-4 text-[--arcane-purple]" />
-                      <span className="text-sm font-medium text-[--arcane-purple]">
-                        {expanding ? 'Expanding notes...' : 'AI Expanded Notes'}
-                      </span>
-                      {expanding && (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[--arcane-purple]" />
-                      )}
-                    </div>
-
-                    {/* AI Reasoning */}
-                    {aiReasoning && (
-                      <div className="mb-4 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-                        <p className="text-xs text-[--text-tertiary] mb-1">AI Context Used:</p>
-                        <p className="text-sm text-[--text-secondary] whitespace-pre-wrap">{aiReasoning}</p>
-                      </div>
-                    )}
-
-                    {!expanding && expandedNotes && (
-                      <div className="flex items-center gap-2 mt-4">
-                        <button
-                          onClick={acceptExpanded}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                          Accept
-                        </button>
-                        <button
-                          onClick={editExpanded}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple] hover:bg-[--arcane-purple]/20 transition-colors"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                          Accept & Edit
-                        </button>
-                        <button
-                          onClick={declineExpanded}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[--arcane-ember]/10 border border-[--arcane-ember]/30 text-[--arcane-ember] hover:bg-[--arcane-ember]/20 transition-colors"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                          Decline
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Detailed Notes Editor */}
-                <RichTextEditor
-                  content={expandedNotes || ''}
-                  onChange={(content) => setExpandedNotes(content)}
-                  placeholder="AI-expanded detailed notes will appear here..."
-                  className="min-h-[300px]"
-                />
-              </>
+              <RichTextEditor
+                content={formData.notes}
+                onChange={(content) => setFormData({ ...formData, notes: content })}
+                placeholder="Detailed session notes..."
+                className="min-h-[300px]"
+              />
             )}
           </div>
         )}
-
-        {/* Thoughts for Next Section */}
-        <div className="card p-6">
-          <label className="text-xl font-semibold text-[--text-primary] block mb-4">
-            Thoughts for Next Session
-          </label>
-          <textarea
-            value={formData.thoughts_for_next}
-            onChange={(e) => setFormData({ ...formData, thoughts_for_next: e.target.value })}
-            placeholder="Ideas, plans, or questions to remember for next time..."
-            rows={4}
-            className="form-textarea"
-          />
-        </div>
 
         {/* Create button for new sessions at bottom */}
         {isNew && (
