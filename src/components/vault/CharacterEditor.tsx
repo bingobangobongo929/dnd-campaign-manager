@@ -37,6 +37,7 @@ import {
   Copy,
   Share2,
   ChevronDown,
+  ChevronUp,
   Plus,
   ExternalLink,
   Music,
@@ -198,6 +199,22 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false)
   const [showSecrets, setShowSecrets] = useState(false)
+
+  // Collapsible sections state
+  const [expandedSections, setExpandedSections] = useState<Record<SectionType, boolean>>({
+    backstory: true,
+    details: true,
+    people: true,
+    journal: true,
+    writings: true,
+    stats: true,
+    player: true,
+    gallery: true,
+  })
+
+  const toggleSection = (section: SectionType) => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
+  }
 
   // Related data
   const [relationships, setRelationships] = useState<VaultCharacterRelationship[]>([])
@@ -1288,7 +1305,65 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     </div>
   )
 
-  // Section header component - minimal with subtle accent
+  // Collapsible Section component - matches import preview styling
+  const CollapsibleSection = ({
+    id,
+    title,
+    icon: Icon,
+    count,
+    children,
+    actionButton
+  }: {
+    id: SectionType
+    title: string
+    icon: React.ComponentType<{ className?: string }>
+    count?: number
+    children: React.ReactNode
+    actionButton?: React.ReactNode
+  }) => {
+    const isExpanded = expandedSections[id]
+
+    return (
+      <section id={id} className="scroll-mt-8 mb-6">
+        <div className="border border-white/[0.06] rounded-xl overflow-hidden">
+          {/* Collapsible Header */}
+          <button
+            onClick={() => toggleSection(id)}
+            className="flex items-center gap-4 w-full p-4 bg-white/[0.02] hover:bg-white/[0.04] transition-all duration-200 text-left"
+          >
+            <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
+              <Icon className="w-5 h-5 text-purple-400" />
+            </div>
+            <h2 className="text-lg font-semibold text-white/90 tracking-wide uppercase flex-1">
+              {title}
+              {count !== undefined && count > 0 && (
+                <span className="ml-2 text-sm text-gray-500 font-normal normal-case">({count})</span>
+              )}
+            </h2>
+            {isExpanded ? (
+              <ChevronUp className="w-5 h-5 text-gray-500" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-500" />
+            )}
+          </button>
+
+          {/* Section Content */}
+          {isExpanded && (
+            <div className="p-6 border-t border-white/[0.06]">
+              {actionButton && (
+                <div className="flex justify-end mb-6">
+                  {actionButton}
+                </div>
+              )}
+              {children}
+            </div>
+          )}
+        </div>
+      </section>
+    )
+  }
+
+  // Legacy Section header for inline use (non-collapsible)
   const SectionHeader = ({ title, icon: Icon }: { title: string; icon: React.ComponentType<{ className?: string }> }) => (
     <div className="flex items-center gap-5 mb-8">
       <div className="p-2.5 bg-purple-500/10 rounded-xl border border-purple-500/20">
@@ -1836,16 +1911,48 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
             <div className="w-full max-w-[1400px] mx-auto px-10 xl:px-16 2xl:px-20 py-10 xl:py-12">
               <div>
 
-              {/* ═══════════════ BACKSTORY SECTION ═══════════════ */}
-              <section id="backstory" className="scroll-mt-8 mb-20">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                    <BookOpen className="w-5 h-5 text-purple-400" />
+              {/* ═══════════════ STATS OVERVIEW GRID ═══════════════ */}
+              {!isCreateMode && characterId && (
+                <div className="mb-8">
+                  <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3">
+                    <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                      <p className="text-lg font-semibold text-white">{npcs.length}</p>
+                      <p className="text-xs text-gray-500">NPCs</p>
+                    </div>
+                    <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                      <p className="text-lg font-semibold text-white">{companions.length}</p>
+                      <p className="text-xs text-gray-500">Companions</p>
+                    </div>
+                    <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                      <p className="text-lg font-semibold text-white">{journalEntries.length}</p>
+                      <p className="text-xs text-gray-500">Sessions</p>
+                    </div>
+                    <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                      <p className="text-lg font-semibold text-white">{formData.character_writings.length}</p>
+                      <p className="text-xs text-gray-500">Writings</p>
+                    </div>
+                    <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                      <p className="text-lg font-semibold text-white">{formData.backstory_phases.length}</p>
+                      <p className="text-xs text-gray-500">Life Phases</p>
+                    </div>
+                    <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                      <p className="text-lg font-semibold text-white">{formData.quotes.length}</p>
+                      <p className="text-xs text-gray-500">Quotes</p>
+                    </div>
+                    <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                      <p className="text-lg font-semibold text-white">{formData.plot_hooks.length}</p>
+                      <p className="text-xs text-gray-500">Plot Hooks</p>
+                    </div>
+                    <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                      <p className="text-lg font-semibold text-white">{formData.tldr.length}</p>
+                      <p className="text-xs text-gray-500">TL;DR</p>
+                    </div>
                   </div>
-                  <h2 className="text-lg font-semibold text-white/90 uppercase tracking-wider">Backstory</h2>
-                  <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
                 </div>
+              )}
 
+              {/* ═══════════════ BACKSTORY SECTION ═══════════════ */}
+              <CollapsibleSection id="backstory" title="Backstory" icon={BookOpen}>
                 <div className="space-y-10">
                   {/* Summary */}
                   <div>
@@ -1916,23 +2023,10 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     />
                   </div>
                 </div>
-              </section>
-
-              {/* Section Divider */}
-              <div className="flex items-center gap-6 my-14">
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
-              </div>
+              </CollapsibleSection>
 
               {/* ═══════════════ DETAILS SECTION ═══════════════ */}
-              <section id="details" className="scroll-mt-8 mb-20">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                    <FileText className="w-5 h-5 text-purple-400" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-white/90 uppercase tracking-wider">Details</h2>
-                  <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
-                </div>
-
+              <CollapsibleSection id="details" title="Details" icon={FileText}>
                 <div className="space-y-8">
                   {/* Appearance */}
                   <div>
@@ -2205,23 +2299,15 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     </div>
                   </div>
                 </div>
-              </section>
-
-              {/* Section Divider */}
-              <div className="flex items-center gap-6 my-14">
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
-              </div>
+              </CollapsibleSection>
 
               {/* ═══════════════ PEOPLE SECTION ═══════════════ */}
-              <section id="people" className="scroll-mt-8 mb-20">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                    <Users className="w-5 h-5 text-purple-400" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-white/90 uppercase tracking-wider">People</h2>
-                  <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
-                </div>
-
+              <CollapsibleSection
+                id="people"
+                title="People"
+                icon={Users}
+                count={npcs.length + companions.length}
+              >
                 <div className="space-y-10">
                   {/* NPCs Section */}
                   <div>
@@ -2326,21 +2412,15 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     )}
                   </div>
                 </div>
-              </section>
-
-              {/* Section Divider */}
-              <div className="flex items-center gap-6 my-14">
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
-              </div>
+              </CollapsibleSection>
 
               {/* ═══════════════ JOURNAL SECTION ═══════════════ */}
-              <section id="journal" className="scroll-mt-8 mb-20">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                    <Scroll className="w-5 h-5 text-purple-400" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-white/90 uppercase tracking-wider">Journal</h2>
-                  <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
+              <CollapsibleSection
+                id="journal"
+                title="Journal"
+                icon={Scroll}
+                count={journalEntries.length}
+                actionButton={
                   <button
                     onClick={() => setAddJournalModalOpen(true)}
                     className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
@@ -2348,8 +2428,8 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     <Plus className="w-4 h-4" />
                     Add Entry
                   </button>
-                </div>
-
+                }
+              >
                 {journalEntries.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
                     <Scroll className="w-10 h-10 mb-4 text-gray-600" />
@@ -2405,23 +2485,15 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     ))}
                   </div>
                 )}
-              </section>
-
-              {/* Section Divider */}
-              <div className="flex items-center gap-6 my-14">
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
-              </div>
+              </CollapsibleSection>
 
               {/* ═══════════════ WRITINGS SECTION ═══════════════ */}
-              <section id="writings" className="scroll-mt-8 mb-20">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                    <Quote className="w-5 h-5 text-purple-400" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-white/90 uppercase tracking-wider">Writings</h2>
-                  <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
-                </div>
-
+              <CollapsibleSection
+                id="writings"
+                title="Writings"
+                icon={Quote}
+                count={formData.character_writings.length}
+              >
                 <div className="space-y-8">
                   {/* Character Writings (Letters, Stories, Poems) */}
                   <div>
@@ -2780,23 +2852,10 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     )}
                   </div>
                 </div>
-              </section>
-
-              {/* Section Divider */}
-              <div className="flex items-center gap-6 my-14">
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
-              </div>
+              </CollapsibleSection>
 
               {/* ═══════════════ STATS SECTION ═══════════════ */}
-              <section id="stats" className="scroll-mt-8 mb-20">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                    <BarChart3 className="w-5 h-5 text-purple-400" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-white/90 uppercase tracking-wider">Stats</h2>
-                  <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
-                </div>
-
+              <CollapsibleSection id="stats" title="Stats" icon={BarChart3}>
                 <div className="space-y-8">
                   {/* Gold */}
                   <div>
@@ -3112,24 +3171,10 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     )}
                   </div>
                 </div>
-              </section>
-
-              {/* Section Divider */}
-              <div className="flex items-center gap-6 my-14">
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
-              </div>
+              </CollapsibleSection>
 
               {/* ═══════════════ PLAYER SECTION (OOC) ═══════════════ */}
-              <section id="player" className="scroll-mt-8 mb-20">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                    <User className="w-5 h-5 text-purple-400" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-white/90 uppercase tracking-wider">Player Info</h2>
-                  <span className="text-xs bg-gray-500/15 text-gray-400 px-2.5 py-1 rounded-md border border-gray-500/20">OOC</span>
-                  <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
-                </div>
-
+              <CollapsibleSection id="player" title="Player Info (OOC)" icon={User}>
                 <div className="space-y-6">
                   {/* Basic Player Info */}
                   <div className="grid grid-cols-3 gap-6">
@@ -3220,28 +3265,15 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     </div>
                   </div>
                 </div>
-              </section>
-
-              {/* Section Divider */}
-              <div className="flex items-center gap-6 my-14">
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
-              </div>
+              </CollapsibleSection>
 
               {/* ═══════════════ GALLERY SECTION ═══════════════ */}
-              <section id="gallery" className="scroll-mt-8">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                    <GalleryIcon className="w-5 h-5 text-purple-400" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-white/90 uppercase tracking-wider">Gallery</h2>
-                  <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
-                </div>
-
+              <CollapsibleSection id="gallery" title="Gallery" icon={GalleryIcon}>
                 <div className="flex flex-col items-center justify-center py-16 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
                   <GalleryIcon className="w-10 h-10 mb-4 text-gray-600" />
                   <p className="text-sm text-gray-500">Gallery coming soon</p>
                 </div>
-              </section>
+              </CollapsibleSection>
 
               </div>
 
