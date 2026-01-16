@@ -451,7 +451,7 @@ export function LifePhaseDisplay({
 }
 
 // ============================================================================
-// NPC PREVIEW CARD (for display, not editing)
+// NPC PREVIEW CARD (for display, matching import preview exactly)
 // ============================================================================
 
 interface NPCPreviewCardProps {
@@ -465,7 +465,16 @@ export function NPCPreviewCard({ npc, onEdit, onDelete }: NPCPreviewCardProps) {
 
   return (
     <div className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-3 hover:border-white/[0.1] transition-colors group">
+      {/* Header row: Name, nickname, badges, actions */}
       <div className="flex items-center gap-2 flex-wrap">
+        {/* Avatar thumbnail if available */}
+        {npc.image_url && (
+          <img
+            src={npc.image_url}
+            alt={npc.name}
+            className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+          />
+        )}
         <span className="font-medium text-white/90">{npc.name}</span>
         {npc.nickname && (
           <span className="text-sm text-gray-500 italic">"{npc.nickname}"</span>
@@ -493,6 +502,8 @@ export function NPCPreviewCard({ npc, onEdit, onDelete }: NPCPreviewCardProps) {
           </div>
         )}
       </div>
+
+      {/* Emoji fields - ALL VISIBLE (matching import preview exactly) */}
       {npc.occupation && (
         <p className="text-xs text-gray-500 mt-1">{DISPLAY_EMOJIS.occupation} {npc.occupation}</p>
       )}
@@ -514,6 +525,19 @@ export function NPCPreviewCard({ npc, onEdit, onDelete }: NPCPreviewCardProps) {
       {npc.secrets && (
         <p className="text-xs text-amber-400/70 mt-1">{DISPLAY_EMOJIS.secret} Secrets: {npc.secrets}</p>
       )}
+
+      {/* Personality traits as chips */}
+      {npc.personality_traits && npc.personality_traits.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {npc.personality_traits.map((trait, i) => (
+            <span key={i} className="text-xs px-2 py-0.5 bg-white/[0.04] text-gray-400 rounded-md">
+              {trait}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Full notes section */}
       {npc.full_notes && (
         <div className="mt-2 pt-2 border-t border-white/[0.06]">
           <p className="text-xs text-gray-500 mb-1">Full Notes:</p>
@@ -527,7 +551,7 @@ export function NPCPreviewCard({ npc, onEdit, onDelete }: NPCPreviewCardProps) {
 }
 
 // ============================================================================
-// COMPANION PREVIEW CARD
+// COMPANION PREVIEW CARD (matching import preview exactly)
 // ============================================================================
 
 interface CompanionPreviewCardProps {
@@ -541,8 +565,18 @@ export function CompanionPreviewCard({ companion, onEdit, onDelete }: CompanionP
 
   return (
     <div className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-3 hover:border-white/[0.1] transition-colors group">
+      {/* Header row - matching import preview */}
       <div className="flex items-center gap-2">
-        <Heart className="w-4 h-4 text-pink-400" />
+        {/* Portrait thumbnail if available */}
+        {companion.image_url ? (
+          <img
+            src={companion.image_url}
+            alt={companion.name}
+            className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
+          />
+        ) : (
+          <Heart className="w-4 h-4 text-pink-400" />
+        )}
         <span className="font-medium text-white/90">{companion.name}</span>
         <span className={`text-xs px-2 py-0.5 rounded-md capitalize border ${typeColor}`}>
           {companion.companion_type.replace(/_/g, ' ')}
@@ -565,11 +599,15 @@ export function CompanionPreviewCard({ companion, onEdit, onDelete }: CompanionP
           </div>
         )}
       </div>
+
+      {/* Description */}
       {companion.description && (
         <p className="text-xs text-gray-400 mt-2 whitespace-pre-wrap">{companion.description}</p>
       )}
+
+      {/* Abilities with emoji (matching import preview) */}
       {companion.abilities && (
-        <p className="text-xs text-purple-400/80 mt-1">{DISPLAY_EMOJIS.abilities} Abilities: {companion.abilities}</p>
+        <p className="text-xs text-purple-400/80 mt-1">✨ Abilities: {companion.abilities}</p>
       )}
     </div>
   )

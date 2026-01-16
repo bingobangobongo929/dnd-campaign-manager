@@ -1567,7 +1567,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
   return (
     <>
-      <div className="fixed top-0 right-0 bottom-0 z-50 bg-[#0c0c0e] flex flex-col p-2 xl:p-3 2xl:p-4" style={{ left: 'calc(var(--dock-width-collapsed) + 16px)' }}>
+      <div className="fixed right-0 bottom-0 z-50 bg-[#0c0c0e] flex flex-col p-2 xl:p-3 2xl:p-4" style={{ top: 'var(--topbar-height)', left: 'calc(var(--dock-width-collapsed) + 16px)' }}>
         <div className="flex-1 flex flex-col rounded-2xl border border-white/[0.06] overflow-hidden bg-[#111113]">
         {/* Header */}
         <header className="flex-shrink-0 flex items-center justify-between px-5 xl:px-6 h-14 border-b border-white/[0.06] bg-white/[0.01]">
