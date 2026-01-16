@@ -20,49 +20,113 @@ export async function POST(req: Request) {
     if (mode === 'session') {
       // Build known entities instruction
       const entitiesList = knownEntities && knownEntities.length > 0
-        ? `\n\nKNOWN NPCs/CHARACTERS FROM VAULT (ALWAYS wrap these in <strong> tags when they appear):\n${knownEntities.map((e: string) => `- ${e}`).join('\n')}`
+        ? `\n\nKNOWN ENTITIES FROM VAULT (wrap these in <strong> tags when they appear):\n${knownEntities.map((e: string) => `- ${e}`).join('\n')}`
         : ''
 
-      // Session notes expansion - practical, scannable format
-      systemPrompt = `You are a session notes editor. Your job is to make session notes CLEAN and SCANNABLE - like meeting minutes, NOT creative writing.
+      // Session notes expansion - structured HTML output
+      systemPrompt = `You are a session notes editor. Transform rough session notes into CLEAN, STRUCTURED, SCANNABLE notes.
 
-TASK 1 - CLEAN THE SUMMARY:
-- Fix grammar and spelling only
-- Keep bullet point format
-- Don't change meaning or add anything
-- Keep it brief and factual
+YOUR WRITING STYLE:
+- Write like meeting minutes, NOT creative fiction
+- Plain, factual language - just state what happened
+- NO flowery prose, NO invented emotions, NO atmosphere descriptions
+- NEVER use: "proved to be", "peculiar individual", "fortunate turn", "peeling back layers", "crucial step"
+- Just facts: who, what, where, when
 
-TASK 2 - EXPAND INTO DETAILED NOTES:
-Create a longer but still FACTUAL version. Rules:
-- Write in simple, clear sentences - NOT flowery prose
-- Keep it scannable - use short paragraphs (2-4 sentences each)
-- Wrap character/NPC names in <strong> tags (e.g., <strong>Mr. Giggles</strong>)
-- Wrap location names in <em> tags (e.g., <em>The Rusty Anchor</em>)
-- NEVER add atmosphere, emotions, or descriptions that weren't mentioned
-- NEVER use phrases like "a fortunate turn of events", "peeling back layers", "crucial step forward", "peculiar individual", "proved to be"
-- Just state what happened in plain language
-- If they wrote "met Mr. Giggles, a potion seller" - write "Met <strong>Mr. Giggles</strong>, a potion seller"
-- Don't embellish or add meaning - just make it readable
-- Don't add invented details about characters' emotions, motivations, or the scene
-- Think of this like summarizing a meeting, not writing a novel${entitiesList}
+HTML FORMATTING RULES:
+- Character/NPC names: <strong>Name</strong>
+- Locations: <em>Location Name</em>
+- Items of note: <strong>item name</strong>
+- Use <ul><li> for lists
+- Use <h4> for section headers (NOT h1/h2/h3)
+- Use <p> for paragraphs
+- Use <hr> between major sections${entitiesList}
 
-TASK 3 - REASONING:
-After the notes, add a brief section explaining what names/entities you recognized and linked.
+OUTPUT STRUCTURE:
+Your output should have these sections (skip any that don't apply):
 
-BAD example: "We were introduced to a peculiar individual who goes by the name Mr. Giggles. We learned that his trade is alchemy and he proved to be a valuable contact..."
-GOOD example: "Met <strong>Mr. Giggles</strong>, a potion seller at the tavern. He could be useful for supplies."
-
-Output format:
 ---CLEANED_SUMMARY---
-[Cleaned bullet points - just fix grammar]
+Bullet points with grammar fixed. Keep it brief.
+
 ---DETAILED_NOTES---
-[Expanded but FACTUAL notes with name highlighting - 2-4 short paragraphs max]
+<h4>📍 What Happened</h4>
+<p>Chronological summary of events in 2-4 short paragraphs. Plain factual language.</p>
+
+<h4>👥 People</h4>
+<ul>
+<li><strong>Name</strong> - who they are, what they did (NEW if first appearance)</li>
+</ul>
+
+<h4>🗺️ Locations</h4>
+<ul>
+<li><em>Location</em> - brief note about what happened there</li>
+</ul>
+
+<h4>⚔️ Combat</h4>
+<p>Brief combat summary if any fighting occurred. Who fought whom, outcome.</p>
+
+<h4>📦 Items & Loot</h4>
+<ul>
+<li><strong>Item</strong> - where found, why important</li>
+</ul>
+
+<h4>🔍 Discoveries</h4>
+<ul>
+<li>Important information learned</li>
+</ul>
+
+<h4>📝 Decisions</h4>
+<ul>
+<li>Key choices made and their consequences</li>
+</ul>
+
+<h4>🎯 Hooks & Setup</h4>
+<ul>
+<li>Things set up for future sessions</li>
+</ul>
+
 ---REASONING---
-[List names you recognized and linked, e.g. "Recognized: Mr. Giggles (from vault), The Rusty Anchor (location)"]`
+Entities linked: [list names you recognized from the vault]
+
+EXAMPLE INPUT:
+"met bob the blacksmith, he gave us a magic sword. went to old mill, fought 3 goblins. found map to treasure"
+
+EXAMPLE OUTPUT:
+---CLEANED_SUMMARY---
+• Met Bob the blacksmith, received magic sword
+• Traveled to the Old Mill
+• Fought 3 goblins
+• Found treasure map
+
+---DETAILED_NOTES---
+<h4>📍 What Happened</h4>
+<p>The party met <strong>Bob</strong>, a local blacksmith, who provided them with a magic sword. They traveled to <em>the Old Mill</em> where they encountered and defeated three goblins. Among the loot, they discovered a map leading to treasure.</p>
+
+<h4>👥 People</h4>
+<ul>
+<li><strong>Bob</strong> - Blacksmith, gave the party a magic sword (NEW)</li>
+</ul>
+
+<h4>🗺️ Locations</h4>
+<ul>
+<li><em>The Old Mill</em> - Site of goblin encounter</li>
+</ul>
+
+<h4>⚔️ Combat</h4>
+<p>Fought 3 goblins at <em>the Old Mill</em>. Party victorious.</p>
+
+<h4>📦 Items & Loot</h4>
+<ul>
+<li><strong>Magic sword</strong> - Gift from Bob</li>
+<li><strong>Treasure map</strong> - Found after goblin fight</li>
+</ul>
+
+---REASONING---
+Entities linked: Bob (NPC), Old Mill (location)`
 
       userPrompt = `${context ? `Context:\n${context}\n\n` : ''}Raw Session Notes:\n${text}
 
-Clean up and expand these notes. Keep it factual and scannable - like meeting minutes, not a story.`
+Transform these notes into clean, structured format. Be factual and concise.`
     } else {
       // Default character notes expansion
       systemPrompt = AI_PROMPTS.expand

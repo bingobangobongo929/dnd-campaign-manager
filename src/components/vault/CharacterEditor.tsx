@@ -712,8 +712,6 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       external_campaign: dataToSave.external_campaign || null,
       dm_name: dataToSave.dm_name || null,
       campaign_started: dataToSave.campaign_started || null,
-      quick_stats: dataToSave.quick_stats,
-      inventory: dataToSave.inventory,
       gold: dataToSave.gold,
       possessions: dataToSave.possessions.length > 0 ? dataToSave.possessions : null,
       // Physical appearance fields
