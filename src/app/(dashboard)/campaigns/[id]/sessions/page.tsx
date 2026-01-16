@@ -20,8 +20,13 @@ import { formatDate, cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
 import type { Campaign, Session, Character, Tag, CharacterTag } from '@/types/database'
 
-// Convert basic markdown to HTML for display
+// Convert basic markdown to HTML for display (or pass through if already HTML)
 function markdownToHtml(text: string): string {
+  // If already contains HTML list tags, pass through (it's already formatted)
+  if (text.includes('<ul>') || text.includes('<li>') || text.includes('<p>')) {
+    return text
+  }
+
   return text
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
@@ -312,7 +317,7 @@ export default function SessionsPage() {
                       {/* Full Summary - no line clamp */}
                       {session.summary && (
                         <div
-                          className="prose prose-invert prose-sm max-w-none [&>ul]:mt-1 [&>ul]:mb-2 [&>li]:my-0.5 [&>p]:mb-2 text-[--text-secondary] mb-4"
+                          className="prose prose-invert prose-sm max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&>ul]:mt-1 [&>ul]:mb-2 [&_li]:my-0.5 [&>p]:mb-2 text-[--text-secondary] mb-4"
                           dangerouslySetInnerHTML={{ __html: markdownToHtml(session.summary) }}
                         />
                       )}

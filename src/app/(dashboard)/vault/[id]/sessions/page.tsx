@@ -156,7 +156,7 @@ export default function CharacterSessionsPage() {
                     {/* Full Summary - no line clamp */}
                     {entry.summary && (
                       <div
-                        className="prose prose-invert prose-sm max-w-none [&>ul]:mt-1 [&>ul]:mb-2 [&>li]:my-0.5 [&>p]:mb-2 text-[--text-secondary]"
+                        className="prose prose-invert prose-sm max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&>ul]:mt-1 [&>ul]:mb-2 [&_li]:my-0.5 [&>p]:mb-2 text-[--text-secondary]"
                         dangerouslySetInnerHTML={{ __html: entry.summary }}
                       />
                     )}

@@ -342,22 +342,29 @@ export default function SessionDetailPage() {
     }
   }
 
-  // Convert bullet point text to HTML list
+  // Convert text to HTML bullet list (or pass through if already HTML)
   const formatSummaryAsHtml = (text: string): string => {
-    const lines = text.split('\n').filter(line => line.trim())
-    const bulletLines = lines.filter(line => line.trim().startsWith('•') || line.trim().startsWith('-') || line.trim().startsWith('*'))
+    // If already contains HTML list tags, pass through
+    if (text.includes('<ul>') || text.includes('<li>')) {
+      return text
+    }
 
-    if (bulletLines.length > 0) {
-      // Convert to HTML list
+    // Split into lines and clean up
+    const lines = text.split('\n').filter(line => line.trim())
+
+    // If we have multiple lines, treat each as a bullet point
+    if (lines.length > 1) {
       const listItems = lines.map(line => {
+        // Remove any existing bullet characters
         const cleanLine = line.replace(/^[\s]*[•\-\*]\s*/, '').trim()
-        return cleanLine ? `<li>${cleanLine}</li>` : ''
+        // TipTap expects <p> inside <li> for proper parsing
+        return cleanLine ? `<li><p>${cleanLine}</p></li>` : ''
       }).filter(Boolean).join('')
       return `<ul>${listItems}</ul>`
     }
 
-    // If no bullets, just convert newlines to <br/>
-    return text.replace(/\n/g, '<br/>')
+    // Single line - return as-is
+    return text
   }
 
   const acceptExpanded = () => {
@@ -644,8 +651,8 @@ export default function SessionDetailPage() {
                 <h4 className="text-sm font-medium text-[--text-secondary] mb-2">Cleaned Summary:</h4>
                 <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
                   <div
-                    className="text-sm text-[--text-primary] whitespace-pre-wrap prose prose-invert prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{ __html: pendingSummary.replace(/•/g, '&bull;').replace(/\n/g, '<br/>') }}
+                    className="prose prose-invert prose-sm max-w-none [&>ul]:mt-1 [&>ul]:mb-2 [&>li]:my-0.5 text-[--text-secondary]"
+                    dangerouslySetInnerHTML={{ __html: formatSummaryAsHtml(pendingSummary) }}
                   />
                 </div>
               </div>

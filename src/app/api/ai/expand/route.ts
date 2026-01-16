@@ -47,7 +47,8 @@ Your output should have these sections (skip any that don't apply).
 IMPORTANT: Add a blank line between each section for visual spacing.
 
 ---CLEANED_SUMMARY---
-Bullet points with grammar fixed. Keep it brief.
+Output as HTML bullet list: <ul><li><p>Point 1</p></li><li><p>Point 2</p></li></ul>
+Keep each bullet brief (one sentence). Use <strong> for names.
 
 ---DETAILED_NOTES---
 <h3>📍 What Happened</h3>
@@ -97,10 +98,7 @@ EXAMPLE INPUT:
 
 EXAMPLE OUTPUT:
 ---CLEANED_SUMMARY---
-• Met Bob the blacksmith, received magic sword
-• Traveled to the Old Mill
-• Fought 3 goblins
-• Found treasure map
+<ul><li><p>Met <strong>Bob</strong> the blacksmith, received magic sword</p></li><li><p>Traveled to <em>the Old Mill</em></p></li><li><p>Fought 3 goblins</p></li><li><p>Found treasure map</p></li></ul>
 
 ---DETAILED_NOTES---
 <h3>📍 What Happened</h3>

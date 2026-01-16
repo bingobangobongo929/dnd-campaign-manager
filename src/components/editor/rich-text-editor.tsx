@@ -157,9 +157,10 @@ export function RichTextEditor({
           // Strong/emphasis - make bold stand out more
           'prose-strong:text-white prose-strong:font-semibold',
           'prose-em:text-purple-300 prose-em:not-italic',
-          // Lists - proper spacing
+          // Lists - proper spacing and bullet markers
           'prose-ul:text-gray-300 prose-ol:text-gray-300',
-          '[&>ul]:mt-1 [&>ul]:mb-4',
+          'prose-ul:list-disc prose-ul:pl-5 prose-ol:list-decimal prose-ol:pl-5',
+          '[&>ul]:mt-1 [&>ul]:mb-4 [&_ul]:list-disc [&_ul]:pl-5',
           'prose-li:text-gray-300 prose-li:my-0.5',
           // Other elements
           'prose-blockquote:border-l-purple-500 prose-blockquote:text-gray-400',
