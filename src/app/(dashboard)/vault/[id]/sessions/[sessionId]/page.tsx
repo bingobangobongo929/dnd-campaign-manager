@@ -53,6 +53,7 @@ export default function VaultSessionEditorPage() {
   const [expanding, setExpanding] = useState(false)
   const [pendingNotes, setPendingNotes] = useState<string | null>(null)
   const [pendingSummary, setPendingSummary] = useState<string | null>(null)
+  const [pendingTitle, setPendingTitle] = useState<string | null>(null)
   const [showExpandedPreview, setShowExpandedPreview] = useState(false)
   const [aiReasoning, setAiReasoning] = useState<string>('')
   const [detailedNotesCollapsed, setDetailedNotesCollapsed] = useState(true)
@@ -115,9 +116,9 @@ export default function VaultSessionEditorPage() {
         .order('session_number', { ascending: false })
         .limit(1)
 
-      const nextNumber = entries && entries.length > 0 && entries[0].session_number
+      const nextNumber = entries && entries.length > 0 && entries[0].session_number !== null
         ? entries[0].session_number + 1
-        : 1
+        : 0
 
       setFormData({
         session_number: nextNumber.toString(),
@@ -286,7 +287,8 @@ export default function VaultSessionEditorPage() {
 
         // Parse sections from the accumulated text for real-time updates
         const summaryMatch = fullText.match(/---CLEANED_SUMMARY---\n?([\s\S]*?)(?=---DETAILED_NOTES---|$)/)
-        const notesMatch = fullText.match(/---DETAILED_NOTES---\n?([\s\S]*?)(?=---REASONING---|$)/)
+        const notesMatch = fullText.match(/---DETAILED_NOTES---\n?([\s\S]*?)(?=---TITLE---|---REASONING---|$)/)
+        const titleMatch = fullText.match(/---TITLE---\n?([\s\S]*?)(?=---REASONING---|$)/)
         const reasoningMatch = fullText.match(/---REASONING---\n?([\s\S]*)$/)
 
         if (summaryMatch) {
@@ -295,6 +297,9 @@ export default function VaultSessionEditorPage() {
         if (notesMatch) {
           setPendingNotes(notesMatch[1].trim())
         }
+        if (titleMatch) {
+          setPendingTitle(titleMatch[1].trim())
+        }
         if (reasoningMatch) {
           setAiReasoning(reasoningMatch[1].trim())
         }
@@ -302,7 +307,7 @@ export default function VaultSessionEditorPage() {
 
       // If we didn't get sectioned output, treat the whole response as notes
       const summaryMatch = fullText.match(/---CLEANED_SUMMARY---\n?([\s\S]*?)(?=---DETAILED_NOTES---|$)/)
-      const notesMatch = fullText.match(/---DETAILED_NOTES---\n?([\s\S]*?)(?=---REASONING---|$)/)
+      const notesMatch = fullText.match(/---DETAILED_NOTES---\n?([\s\S]*?)(?=---TITLE---|---REASONING---|$)/)
 
       if (!summaryMatch && !notesMatch) {
         setPendingNotes(fullText.trim())
@@ -313,6 +318,7 @@ export default function VaultSessionEditorPage() {
       setShowExpandedPreview(false)
       setPendingNotes(null)
       setPendingSummary(null)
+      setPendingTitle(null)
     } finally {
       setExpanding(false)
     }
@@ -327,9 +333,14 @@ export default function VaultSessionEditorPage() {
     if (pendingNotes) {
       setFormData(prev => ({ ...prev, notes: pendingNotes }))
     }
+    // Apply AI-generated title if no title exists
+    if (pendingTitle && !formData.title.trim()) {
+      setFormData(prev => ({ ...prev, title: pendingTitle }))
+    }
     setShowExpandedPreview(false)
     setPendingNotes(null)
     setPendingSummary(null)
+    setPendingTitle(null)
     setAiReasoning('')
   }
 
@@ -341,9 +352,13 @@ export default function VaultSessionEditorPage() {
     if (pendingNotes) {
       setFormData(prev => ({ ...prev, notes: pendingNotes }))
     }
+    if (pendingTitle && !formData.title.trim()) {
+      setFormData(prev => ({ ...prev, title: pendingTitle }))
+    }
     setShowExpandedPreview(false)
     setPendingNotes(null)
     setPendingSummary(null)
+    setPendingTitle(null)
     setAiReasoning('')
   }
 
@@ -351,6 +366,7 @@ export default function VaultSessionEditorPage() {
     setShowExpandedPreview(false)
     setPendingNotes(null)
     setPendingSummary(null)
+    setPendingTitle(null)
     setAiReasoning('')
   }
 
@@ -398,13 +414,7 @@ export default function VaultSessionEditorPage() {
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 className="text-2xl font-display font-semibold border-none bg-transparent px-0 h-auto focus:ring-0 placeholder:text-[--text-tertiary]"
-                placeholder="Session title..."
-              />
-              <Input
-                value={formData.campaign_name}
-                onChange={(e) => setFormData({ ...formData, campaign_name: e.target.value })}
-                className="text-sm text-[--text-secondary] border-none bg-transparent px-0 h-auto focus:ring-0 placeholder:text-[--text-tertiary] mt-1"
-                placeholder="Campaign name..."
+                placeholder="Session title (AI will suggest one)..."
               />
             </div>
             <div className="flex items-center gap-3">
@@ -482,7 +492,20 @@ export default function VaultSessionEditorPage() {
               <div className="mb-6">
                 <h4 className="text-sm font-medium text-[--text-secondary] mb-2">Cleaned Summary:</h4>
                 <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-                  <p className="text-sm text-[--text-primary] whitespace-pre-wrap">{pendingSummary}</p>
+                  <div
+                    className="text-sm text-[--text-primary] whitespace-pre-wrap prose prose-invert prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: pendingSummary.replace(/•/g, '&bull;').replace(/\n/g, '<br/>') }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* AI-Generated Title Preview */}
+            {pendingTitle && !formData.title.trim() && (
+              <div className="mb-6">
+                <h4 className="text-sm font-medium text-[--text-secondary] mb-2">Suggested Title:</h4>
+                <div className="p-3 rounded-lg bg-[--arcane-gold]/5 border border-[--arcane-gold]/20">
+                  <p className="text-base font-medium text-[--arcane-gold]">{pendingTitle}</p>
                 </div>
               </div>
             )}
@@ -493,7 +516,7 @@ export default function VaultSessionEditorPage() {
                 <h4 className="text-sm font-medium text-[--text-secondary] mb-2">Detailed Notes:</h4>
                 <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
                   <div
-                    className="prose prose-invert prose-sm max-w-none"
+                    className="prose prose-invert prose-sm max-w-none [&>h4]:mt-6 [&>h4:first-child]:mt-0 [&>h4]:mb-2 [&>h4]:text-base [&>h4]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4"
                     dangerouslySetInnerHTML={{ __html: pendingNotes }}
                   />
                 </div>

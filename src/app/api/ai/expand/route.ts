@@ -43,7 +43,8 @@ HTML FORMATTING RULES:
 - Use <hr> between major sections${entitiesList}
 
 OUTPUT STRUCTURE:
-Your output should have these sections (skip any that don't apply):
+Your output should have these sections (skip any that don't apply).
+IMPORTANT: Add a blank line between each section for visual spacing.
 
 ---CLEANED_SUMMARY---
 Bullet points with grammar fixed. Keep it brief.
@@ -85,6 +86,9 @@ Bullet points with grammar fixed. Keep it brief.
 <li>Things set up for future sessions</li>
 </ul>
 
+---TITLE---
+[Generate a short, descriptive title for this session, 3-6 words, e.g. "The Bomb on the Columbus" or "Infiltrating IPS-N Headquarters"]
+
 ---REASONING---
 Entities linked: [list names you recognized from the vault]
 
@@ -120,6 +124,9 @@ EXAMPLE OUTPUT:
 <li><strong>Magic sword</strong> - Gift from Bob</li>
 <li><strong>Treasure map</strong> - Found after goblin fight</li>
 </ul>
+
+---TITLE---
+The Old Mill Goblin Ambush
 
 ---REASONING---
 Entities linked: Bob (NPC), Old Mill (location)`

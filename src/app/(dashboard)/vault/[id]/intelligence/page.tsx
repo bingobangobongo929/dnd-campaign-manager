@@ -33,6 +33,8 @@ import {
   Link2,
   Eye,
   ArrowLeft,
+  Edit3,
+  Save,
 } from 'lucide-react'
 import { AI_PROVIDERS, AIProvider } from '@/lib/ai/config'
 import { useAppStore } from '@/store'
@@ -155,6 +157,11 @@ export default function CharacterIntelligencePage() {
 
   // Action state
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set())
+
+  // Summary editing state
+  const [editingSummary, setEditingSummary] = useState(false)
+  const [summaryDraft, setSummaryDraft] = useState('')
+  const [savingSummary, setSavingSummary] = useState(false)
 
   const loadData = useCallback(async () => {
     if (!characterId) return
@@ -296,6 +303,37 @@ export default function CharacterIntelligencePage() {
       else next.add(level)
       return next
     })
+  }
+
+  const handleEditSummary = () => {
+    setSummaryDraft(character?.summary || '')
+    setEditingSummary(true)
+  }
+
+  const handleSaveSummary = async () => {
+    setSavingSummary(true)
+    try {
+      const { error } = await supabase
+        .from('vault_characters')
+        .update({ summary: summaryDraft.trim() || null })
+        .eq('id', characterId)
+
+      if (error) throw error
+
+      setCharacter(prev => prev ? { ...prev, summary: summaryDraft.trim() || null } : null)
+      setEditingSummary(false)
+      toast.success('Summary updated')
+    } catch (err) {
+      console.error('Save summary error:', err)
+      toast.error('Failed to save summary')
+    } finally {
+      setSavingSummary(false)
+    }
+  }
+
+  const handleCancelSummary = () => {
+    setEditingSummary(false)
+    setSummaryDraft('')
   }
 
   // Filter suggestions
@@ -527,6 +565,68 @@ export default function CharacterIntelligencePage() {
 
           {/* Main Content */}
           <main className="flex-1 space-y-3">
+            {/* Character Summary Section */}
+            <div
+              className="rounded-xl p-4 mb-4"
+              style={{
+                backgroundColor: 'rgba(26, 26, 36, 0.6)',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+              }}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold mb-2" style={{ color: '#9ca3af' }}>
+                    Character Summary
+                  </h3>
+                  {editingSummary ? (
+                    <div className="space-y-3">
+                      <textarea
+                        value={summaryDraft}
+                        onChange={(e) => setSummaryDraft(e.target.value)}
+                        placeholder="Enter a brief summary of this character..."
+                        className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:border-[--arcane-purple]/50"
+                        style={{ color: '#f3f4f6', minHeight: '100px' }}
+                        autoFocus
+                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleSaveSummary}
+                          disabled={savingSummary}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[--arcane-purple]/20 border border-[--arcane-purple]/30 text-[--arcane-purple] hover:bg-[--arcane-purple]/30 transition-colors disabled:opacity-50"
+                        >
+                          {savingSummary ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                          Save
+                        </button>
+                        <button
+                          onClick={handleCancelSummary}
+                          disabled={savingSummary}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white/5 transition-colors"
+                          style={{ color: '#9ca3af' }}
+                        >
+                          <X className="w-3.5 h-3.5" />
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm" style={{ color: character?.summary ? '#d1d5db' : '#6b7280' }}>
+                      {character?.summary || 'No summary yet. Click edit to add one.'}
+                    </p>
+                  )}
+                </div>
+                {!editingSummary && (
+                  <button
+                    onClick={handleEditSummary}
+                    className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+                    style={{ color: '#9ca3af' }}
+                    title="Edit summary"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
             {isAnalyzing && (
               <div className="flex flex-col items-center justify-center py-20">
                 <div

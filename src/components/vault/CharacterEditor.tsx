@@ -1670,7 +1670,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                   {formData.name || (isCreateMode ? 'New Character' : 'Edit Character')}
                 </h1>
                 <p className="text-[11px] text-gray-500">
-                  {status === 'saving' ? 'Saving...' : status === 'saved' ? 'All changes saved' : 'Enter a name to start'}
+                  {status === 'saving' ? 'Saving...' : status === 'saved' ? 'All changes saved' : formData.name.trim() ? 'Ready' : 'Enter a name to start'}
                 </p>
               </div>
             </div>
