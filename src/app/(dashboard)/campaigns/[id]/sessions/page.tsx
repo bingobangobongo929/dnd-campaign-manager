@@ -18,6 +18,15 @@ import { formatDate, cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
 import type { Campaign, Session, Character, Tag, CharacterTag } from '@/types/database'
 
+// Convert basic markdown to HTML for display
+function markdownToHtml(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code>$1</code>')
+    .replace(/\n/g, '<br/>')
+}
+
 interface SessionWithAttendees extends Session {
   attendees: Character[]
 }
@@ -287,7 +296,7 @@ export default function SessionsPage() {
                       {session.summary && (
                         <div
                           className="text-sm text-[--text-secondary] line-clamp-2 leading-relaxed mb-4 prose prose-invert prose-sm max-w-none [&>*]:my-0"
-                          dangerouslySetInnerHTML={{ __html: session.summary }}
+                          dangerouslySetInnerHTML={{ __html: markdownToHtml(session.summary) }}
                         />
                       )}
 
