@@ -9,6 +9,8 @@ import {
   FileText,
   Trash2,
   Users,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import { Input, Modal, Textarea, Tooltip } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
@@ -56,6 +58,19 @@ export default function SessionsPage() {
   // Character preview modal state
   const [viewingCharacter, setViewingCharacter] = useState<Character | null>(null)
   const [characterTags, setCharacterTags] = useState<(CharacterTag & { tag: Tag; related_character?: Character | null })[]>([])
+
+  // Expanded session notes state
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+
+  const toggleExpanded = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setExpandedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   useEffect(() => {
     if (user && campaignId) {
@@ -290,14 +305,46 @@ export default function SessionsPage() {
                           {formatDate(session.date)}
                         </span>
                       </div>
-                      <h3 className="text-xl font-semibold text-[--text-primary] mb-2">
+                      <h3 className="text-xl font-semibold text-[--text-primary] mb-3">
                         {session.title || 'Untitled Session'}
                       </h3>
+
+                      {/* Full Summary - no line clamp */}
                       {session.summary && (
                         <div
-                          className="text-sm text-[--text-secondary] line-clamp-2 leading-relaxed mb-4 prose prose-invert prose-sm max-w-none [&>*]:my-0"
+                          className="prose prose-invert prose-sm max-w-none [&>ul]:mt-1 [&>ul]:mb-2 [&>li]:my-0.5 [&>p]:mb-2 text-[--text-secondary] mb-4"
                           dangerouslySetInnerHTML={{ __html: markdownToHtml(session.summary) }}
                         />
+                      )}
+
+                      {/* Detailed Notes Toggle */}
+                      {session.notes && (
+                        <button
+                          onClick={(e) => toggleExpanded(session.id, e)}
+                          className="flex items-center gap-2 mb-4 text-sm text-[--arcane-purple] hover:text-[--arcane-purple]/80 transition-colors"
+                        >
+                          {expandedIds.has(session.id) ? (
+                            <>
+                              <ChevronUp className="w-4 h-4" />
+                              Hide Detailed Notes
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="w-4 h-4" />
+                              Show Detailed Notes
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      {/* Expanded Detailed Notes */}
+                      {expandedIds.has(session.id) && session.notes && (
+                        <div className="mb-4 p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                          <div
+                            className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4"
+                            dangerouslySetInnerHTML={{ __html: session.notes }}
+                          />
+                        </div>
                       )}
 
                       {/* Attendees Avatars */}

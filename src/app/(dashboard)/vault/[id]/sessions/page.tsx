@@ -117,12 +117,10 @@ export default function CharacterSessionsPage() {
                   key={entry.id}
                   className="rounded-xl bg-white/[0.02] border border-white/[0.06] overflow-hidden"
                 >
-                  <button
-                    onClick={() => toggleExpanded(entry.id)}
-                    className="w-full p-4 flex items-start justify-between text-left hover:bg-white/[0.02] transition-colors"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
+                  {/* Session Header */}
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
                         <span className="text-xs font-bold text-[--arcane-purple] bg-[--arcane-purple]/10 px-2 py-0.5 rounded">
                           Session {entry.session_number ?? '?'}
                         </span>
@@ -132,54 +130,65 @@ export default function CharacterSessionsPage() {
                           </span>
                         )}
                       </div>
-                      <h3 className="font-medium text-[--text-primary]">
-                        {entry.title || `Session ${entry.session_number}`}
-                      </h3>
-                      {entry.summary && (
-                        <p className="text-sm text-[--text-secondary] mt-1 line-clamp-2">
-                          {entry.summary}
-                        </p>
-                      )}
-                    </div>
-                    {isExpanded ? (
-                      <ChevronUp className="w-5 h-5 text-[--text-tertiary] flex-shrink-0" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-[--text-tertiary] flex-shrink-0" />
-                    )}
-                  </button>
-
-                  {isExpanded && (
-                    <div className="px-4 pb-4 border-t border-white/[0.06]">
-                      {/* Notes */}
-                      {entry.notes && (
-                        <div className="py-4">
-                          <div
-                            className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4"
-                            dangerouslySetInnerHTML={{ __html: entry.notes }}
-                          />
-                        </div>
-                      )}
-
-                      {/* Actions */}
-                      <div className="flex gap-2 pt-4 border-t border-white/[0.06]">
+                      <div className="flex items-center gap-1">
                         <Button
-                          variant="secondary"
+                          variant="ghost"
                           size="sm"
                           onClick={() => router.push(`/vault/${characterId}/sessions/${entry.id}`)}
+                          className="text-[--text-tertiary] hover:text-white"
                         >
-                          <Edit3 className="w-4 h-4 mr-1" />
-                          Edit
+                          <Edit3 className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDelete(entry.id)}
-                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                          className="text-[--text-tertiary] hover:text-red-400"
                         >
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          Delete
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
+                    </div>
+                    <h3 className="font-medium text-[--text-primary] mb-3">
+                      {entry.title || `Session ${entry.session_number}`}
+                    </h3>
+
+                    {/* Full Summary - no line clamp */}
+                    {entry.summary && (
+                      <div
+                        className="prose prose-invert prose-sm max-w-none [&>ul]:mt-1 [&>ul]:mb-2 [&>li]:my-0.5 [&>p]:mb-2 text-[--text-secondary]"
+                        dangerouslySetInnerHTML={{ __html: entry.summary }}
+                      />
+                    )}
+
+                    {/* Detailed Notes Toggle */}
+                    {entry.notes && (
+                      <button
+                        onClick={() => toggleExpanded(entry.id)}
+                        className="flex items-center gap-2 mt-4 text-sm text-[--arcane-purple] hover:text-[--arcane-purple]/80 transition-colors"
+                      >
+                        {isExpanded ? (
+                          <>
+                            <ChevronUp className="w-4 h-4" />
+                            Hide Detailed Notes
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="w-4 h-4" />
+                            Show Detailed Notes
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Expanded Detailed Notes */}
+                  {isExpanded && entry.notes && (
+                    <div className="px-4 pb-4 pt-2 border-t border-white/[0.06]">
+                      <div
+                        className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4"
+                        dangerouslySetInnerHTML={{ __html: entry.notes }}
+                      />
                     </div>
                   )}
                 </div>
