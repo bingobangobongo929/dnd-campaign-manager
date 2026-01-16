@@ -94,8 +94,8 @@ export default function CharacterGalleryPage() {
   }
 
   // Handle adding image from UnifiedImageModal
-  const handleAddImage = async (imageUrl: string) => {
-    if (!imageUrl.trim()) {
+  const handleAddImage = async (imageUrl: string | null) => {
+    if (!imageUrl || !imageUrl.trim()) {
       toast.error('Image URL is required')
       return
     }
@@ -298,6 +298,7 @@ export default function CharacterGalleryPage() {
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
           imageType="gallery"
+          currentImageUrl={null}
           onImageChange={handleAddImage}
           onUpload={uploadGalleryImage}
           promptData={{

@@ -39,17 +39,11 @@ const ANALYSIS_PROMPT = `You are an expert D&D/TTRPG character analyst. Perform 
 - Empty sections that should have content
 - Partial information that needs expansion
 
-### 2. CONSISTENCY & LORE
+### 3. CONSISTENCY & LORE
 - Timeline contradictions (age vs events, dates that don't align)
 - Factual contradictions within the character's story
 - Lore conflicts (e.g., claiming to be from a destroyed city after it was rebuilt)
 - Relationship inconsistencies (NPC described differently in different places)
-
-### 3. GRAMMAR & WRITING
-- Spelling errors and typos
-- Grammar issues that affect readability
-- Awkward phrasing that could be improved
-- Inconsistent tense usage
 
 ### 4. FORMATTING & STYLE
 - Inconsistent bullet point styles (mixing -, *, •, etc.)
@@ -104,7 +98,6 @@ Use these exact types:
 - summary: Generate or improve the character summary
 - completeness: Missing or incomplete fields
 - consistency: Factual or timeline contradictions
-- grammar: Spelling, grammar, or phrasing fixes
 - formatting: Style and formatting unification
 - quote: Extractable memorable quotes
 - npc_detected: NPCs that should be tracked
@@ -124,15 +117,6 @@ Use these exact types:
 Return ONLY valid JSON:
 {
   "suggestions": [
-    {
-      "suggestion_type": "grammar",
-      "field_name": "backstory",
-      "current_value": "She was borned in a small village",
-      "suggested_value": "She was born in a small village",
-      "source_excerpt": "borned in a small village",
-      "ai_reasoning": "Grammar error: 'borned' should be 'born'",
-      "confidence": "high"
-    },
     {
       "suggestion_type": "formatting",
       "field_name": "personality",
@@ -157,10 +141,11 @@ Return ONLY valid JSON:
 ## IMPORTANT RULES
 1. **ALWAYS check if summary is empty first** - if empty/null/whitespace, MUST include a summary suggestion with confidence: 'high'
 2. Be thorough - check EVERY field for issues
-3. Prioritize high-impact suggestions (grammar errors, major conflicts)
+3. Prioritize high-impact suggestions (major conflicts, consistency issues)
 4. Include source_excerpt for EVERY suggestion (use "Character profile analysis" if no specific excerpt)
 5. Be specific in suggested_value - provide exact fixes
-6. If no issues found BUT summary is empty, still return the summary suggestion`
+6. If no issues found BUT summary is empty, still return the summary suggestion
+7. **DO NOT suggest grammar or spelling fixes** - focus on content, lore, and story`
 
 // POST /api/ai/analyze-character - Analyze a vault character
 export async function POST(req: NextRequest) {

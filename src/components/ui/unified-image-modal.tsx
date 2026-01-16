@@ -9,7 +9,7 @@ import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 
 // Image type configurations
-export type ImageType = 'campaign' | 'oneshot' | 'worldmap' | 'npc' | 'companion' | 'character'
+export type ImageType = 'campaign' | 'oneshot' | 'worldmap' | 'npc' | 'companion' | 'character' | 'gallery'
 
 interface ImageTypeConfig {
   aspectRatio: number
@@ -59,6 +59,13 @@ const IMAGE_CONFIGS: Record<ImageType, ImageTypeConfig> = {
     aspectRatio: 2 / 3,
     aspectLabel: '2:3 (portrait)',
     aspectRatioApi: '2:3',
+    promptEndpoint: '/api/ai/generate-avatar-prompt',
+    bucketName: 'vault-images',
+  },
+  gallery: {
+    aspectRatio: 3 / 4,
+    aspectLabel: '3:4 (portrait)',
+    aspectRatioApi: '3:4',
     promptEndpoint: '/api/ai/generate-avatar-prompt',
     bucketName: 'vault-images',
   },

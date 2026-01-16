@@ -1230,7 +1230,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   }
 
   // Handle adding a gallery image
-  const handleAddGalleryImage = async (imageUrl: string) => {
+  const handleAddGalleryImage = async (imageUrl: string | null) => {
     if (!characterId || !imageUrl) return
 
     try {
@@ -4117,6 +4117,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         isOpen={galleryImageModalOpen}
         onClose={() => setGalleryImageModalOpen(false)}
         imageType="gallery"
+        currentImageUrl={null}
         onImageChange={handleAddGalleryImage}
         onUpload={uploadGalleryImage}
         promptData={{
