@@ -73,6 +73,11 @@ import type {
 import { NPCCard } from './NPCCard'
 import { CompanionCard } from './CompanionCard'
 import { SessionNoteCard } from './SessionNoteCard'
+import {
+  BulletListDisplay,
+  QuotesDisplay,
+  LifePhaseDisplay,
+} from './display'
 import { v4 as uuidv4 } from 'uuid'
 
 // Section types for navigation
@@ -1295,9 +1300,13 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     </div>
   )
 
-  // Simple label for fields within sections
-  const FieldLabel = ({ children }: { children: React.ReactNode }) => (
-    <label className="block text-[13px] font-medium text-gray-400/90 mb-2.5 tracking-wide">{children}</label>
+  // Simple label for fields within sections - supports emoji and count
+  const FieldLabel = ({ children, emoji, count }: { children: React.ReactNode; emoji?: string; count?: number }) => (
+    <label className="block text-[13px] font-medium text-gray-400/90 mb-2.5 tracking-wide flex items-center gap-2">
+      {emoji && <span>{emoji}</span>}
+      {children}
+      {count !== undefined && count > 0 && <span className="text-gray-500 font-normal">({count})</span>}
+    </label>
   )
 
   // Form label component for sidebar
@@ -1558,7 +1567,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-[#0c0c0e] flex flex-col p-2 xl:p-3 2xl:p-4">
+      <div className="fixed top-0 right-0 bottom-0 z-50 bg-[#0c0c0e] flex flex-col p-2 xl:p-3 2xl:p-4" style={{ left: 'calc(var(--dock-width-collapsed) + 16px)' }}>
         <div className="flex-1 flex flex-col rounded-2xl border border-white/[0.06] overflow-hidden bg-[#111113]">
         {/* Header */}
         <header className="flex-shrink-0 flex items-center justify-between px-5 xl:px-6 h-14 border-b border-white/[0.06] bg-white/[0.01]">
@@ -1848,13 +1857,16 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     </div>
                   </div>
 
-                  {/* Quick Summary bullets */}
+                  {/* Quick Summary bullets (TL;DR) */}
                   <div>
-                    <ArrayFieldEditor
-                      label="Quick Summary"
+                    <FieldLabel emoji="⚡" count={formData.tldr.length}>Quick Summary (TL;DR)</FieldLabel>
+                    <BulletListDisplay
                       items={formData.tldr}
-                      placeholder="Add a quick fact about this character..."
-                      onChange={(items) => setFormData(prev => ({ ...prev, tldr: items }))}
+                      bulletColor="purple"
+                      emptyMessage="No quick summary points"
+                      placeholder="Add a quick fact..."
+                      editable
+                      onSave={(items) => setFormData(prev => ({ ...prev, tldr: items }))}
                     />
                   </div>
 
@@ -1871,91 +1883,35 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
                   {/* Backstory Life Phases */}
                   <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <label className="text-sm font-medium text-gray-400/90">Life Phases</label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormData(prev => ({
-                            ...prev,
-                            backstory_phases: [...prev.backstory_phases, { title: '', content: '' }]
-                          }))
-                        }}
-                        className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
-                      >
-                        <Plus className="w-4 h-4" />
-                        Add Life Phase
-                      </button>
-                    </div>
-
-                    {formData.backstory_phases.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
-                        <p className="text-sm text-gray-500">No life phases defined</p>
-                        <p className="text-xs text-gray-600 mt-1">Break the backstory into phases like &quot;Early Life&quot;, &quot;Student Years&quot;, etc.</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {formData.backstory_phases.map((phase: { title: string; content: string }, index: number) => (
-                          <div key={index} className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04] border-l-2 border-l-purple-500/50">
-                            <div className="flex items-center gap-3 mb-3">
-                              <input
-                                type="text"
-                                value={phase.title}
-                                onChange={(e) => {
-                                  const newPhases = [...formData.backstory_phases]
-                                  newPhases[index] = { ...phase, title: e.target.value }
-                                  setFormData(prev => ({ ...prev, backstory_phases: newPhases }))
-                                }}
-                                placeholder="Phase title (e.g. 'Early Life')"
-                                className="flex-1 py-2.5 px-3.5 text-[14px] bg-white/[0.03] border border-white/[0.06] rounded-lg text-purple-400 font-medium placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.05] focus:border-purple-500/30 transition-all duration-200"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setFormData(prev => ({
-                                    ...prev,
-                                    backstory_phases: prev.backstory_phases.filter((_: { title: string; content: string }, i: number) => i !== index)
-                                  }))
-                                }}
-                                className="p-1.5 text-gray-600 hover:text-red-400/80 transition-all duration-200"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                            <textarea
-                              value={phase.content}
-                              onChange={(e) => {
-                                const newPhases = [...formData.backstory_phases]
-                                newPhases[index] = { ...phase, content: e.target.value }
-                                setFormData(prev => ({ ...prev, backstory_phases: newPhases }))
-                              }}
-                              placeholder="Key events, bullet points, or prose for this life phase..."
-                              className="w-full min-h-[120px] py-3 px-4 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/80 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200 resize-none leading-relaxed"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <FieldLabel emoji="📅" count={formData.backstory_phases.length}>Life Phases</FieldLabel>
+                    <LifePhaseDisplay
+                      phases={formData.backstory_phases}
+                      editable
+                      onSave={(phases) => setFormData(prev => ({ ...prev, backstory_phases: phases }))}
+                    />
                   </div>
 
                   {/* Plot Hooks */}
                   <div>
-                    <ArrayFieldEditor
-                      label="Plot Hooks"
+                    <FieldLabel emoji="🎯" count={formData.plot_hooks.length}>Plot Hooks</FieldLabel>
+                    <BulletListDisplay
                       items={formData.plot_hooks}
+                      bulletColor="amber"
+                      emptyMessage="No plot hooks"
                       placeholder="Add a story hook for the DM..."
-                      onChange={(items) => setFormData(prev => ({ ...prev, plot_hooks: items }))}
+                      editable
+                      onSave={(items) => setFormData(prev => ({ ...prev, plot_hooks: items }))}
                     />
                   </div>
 
                   {/* Quotes */}
                   <div>
-                    <ArrayFieldEditor
-                      label="Memorable Quotes"
-                      items={formData.quotes}
-                      placeholder="Add a memorable quote..."
-                      onChange={(items) => setFormData(prev => ({ ...prev, quotes: items }))}
-                      bulletChar='"'
+                    <FieldLabel emoji="💬" count={formData.quotes.length}>Memorable Quotes</FieldLabel>
+                    <QuotesDisplay
+                      quotes={formData.quotes}
+                      emptyMessage="No memorable quotes"
+                      editable
+                      onSave={(quotes) => setFormData(prev => ({ ...prev, quotes: quotes }))}
                     />
                   </div>
                 </div>
@@ -2139,11 +2095,14 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
                   {/* Fears */}
                   <div>
-                    <ArrayFieldEditor
-                      label="Fears"
+                    <FieldLabel emoji="😨" count={formData.fears.length}>Fears</FieldLabel>
+                    <BulletListDisplay
                       items={formData.fears}
+                      bulletColor="orange"
+                      emptyMessage="No fears listed"
                       placeholder="Add something this character fears..."
-                      onChange={(items) => setFormData(prev => ({ ...prev, fears: items }))}
+                      editable
+                      onSave={(items) => setFormData(prev => ({ ...prev, fears: items }))}
                     />
                   </div>
 
