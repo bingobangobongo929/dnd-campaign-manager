@@ -36,6 +36,7 @@ import {
 } from 'lucide-react'
 import { AI_PROVIDERS, AIProvider } from '@/lib/ai/config'
 import { useAppStore } from '@/store'
+import { AppLayout } from '@/components/layout/app-layout'
 import type { VaultCharacter, IntelligenceSuggestion, SuggestionType, ConfidenceLevel } from '@/types/database'
 
 // Icons for each suggestion type
@@ -312,9 +313,11 @@ export default function CharacterIntelligencePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[--bg-base] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[--arcane-purple]" />
-      </div>
+      <AppLayout characterId={characterId}>
+        <div className="min-h-screen bg-[--bg-base] flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-[--arcane-purple]" />
+        </div>
+      </AppLayout>
     )
   }
 
@@ -323,7 +326,8 @@ export default function CharacterIntelligencePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[--bg-base]">
+    <AppLayout characterId={characterId}>
+      <div className="min-h-screen bg-[--bg-base]">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-[--bg-elevated] border-b border-[--border-default]">
         <div className="max-w-6xl mx-auto px-6 py-4">
@@ -720,6 +724,7 @@ export default function CharacterIntelligencePage() {
           </main>
         </div>
       </div>
-    </div>
+      </div>
+    </AppLayout>
   )
 }
