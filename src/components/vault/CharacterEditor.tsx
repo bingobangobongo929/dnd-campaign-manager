@@ -112,6 +112,69 @@ const SECTIONS: { id: SectionType; label: string; icon: React.ComponentType<{ cl
   { id: 'stats', label: 'Stats', icon: BarChart3 },
 ]
 
+// CollapsibleSection component - MUST be defined outside CharacterEditor to prevent
+// recreation on every render which causes scroll/focus loss
+interface CollapsibleSectionProps {
+  id: SectionType
+  title: string
+  icon: React.ComponentType<{ className?: string }>
+  count?: number
+  children: React.ReactNode
+  actionButton?: React.ReactNode
+  isExpanded: boolean
+  onToggle: () => void
+}
+
+function CollapsibleSection({
+  id,
+  title,
+  icon: Icon,
+  count,
+  children,
+  actionButton,
+  isExpanded,
+  onToggle
+}: CollapsibleSectionProps) {
+  return (
+    <section id={id} className="scroll-mt-8 mb-6">
+      <div className="border border-white/[0.06] rounded-xl overflow-hidden">
+        {/* Collapsible Header */}
+        <button
+          onClick={onToggle}
+          className="flex items-center gap-4 w-full p-4 bg-white/[0.02] hover:bg-white/[0.04] transition-all duration-200 text-left"
+        >
+          <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
+            <Icon className="w-5 h-5 text-purple-400" />
+          </div>
+          <h2 className="text-lg font-semibold text-white/90 tracking-wide uppercase flex-1">
+            {title}
+            {count !== undefined && count > 0 && (
+              <span className="ml-2 text-sm text-gray-500 font-normal normal-case">({count})</span>
+            )}
+          </h2>
+          {isExpanded ? (
+            <ChevronUp className="w-5 h-5 text-gray-500" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-gray-500" />
+          )}
+        </button>
+
+        {/* Section Content */}
+        {isExpanded && (
+          <div className="p-6 border-t border-white/[0.06]">
+            {actionButton && (
+              <div className="flex justify-end mb-6">
+                {actionButton}
+              </div>
+            )}
+            {children}
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
 export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   const router = useRouter()
   // Memoize supabase client to prevent recreation on each render
@@ -1445,64 +1508,6 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     </div>
   )
 
-  // Collapsible Section component - matches import preview styling
-  const CollapsibleSection = ({
-    id,
-    title,
-    icon: Icon,
-    count,
-    children,
-    actionButton
-  }: {
-    id: SectionType
-    title: string
-    icon: React.ComponentType<{ className?: string }>
-    count?: number
-    children: React.ReactNode
-    actionButton?: React.ReactNode
-  }) => {
-    const isExpanded = expandedSections[id]
-
-    return (
-      <section id={id} className="scroll-mt-8 mb-6">
-        <div className="border border-white/[0.06] rounded-xl overflow-hidden">
-          {/* Collapsible Header */}
-          <button
-            onClick={() => toggleSection(id)}
-            className="flex items-center gap-4 w-full p-4 bg-white/[0.02] hover:bg-white/[0.04] transition-all duration-200 text-left"
-          >
-            <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
-              <Icon className="w-5 h-5 text-purple-400" />
-            </div>
-            <h2 className="text-lg font-semibold text-white/90 tracking-wide uppercase flex-1">
-              {title}
-              {count !== undefined && count > 0 && (
-                <span className="ml-2 text-sm text-gray-500 font-normal normal-case">({count})</span>
-              )}
-            </h2>
-            {isExpanded ? (
-              <ChevronUp className="w-5 h-5 text-gray-500" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-gray-500" />
-            )}
-          </button>
-
-          {/* Section Content */}
-          {isExpanded && (
-            <div className="p-6 border-t border-white/[0.06]">
-              {actionButton && (
-                <div className="flex justify-end mb-6">
-                  {actionButton}
-                </div>
-              )}
-              {children}
-            </div>
-          )}
-        </div>
-      </section>
-    )
-  }
-
   // Legacy Section header for inline use (non-collapsible)
   const SectionHeader = ({ title, icon: Icon }: { title: string; icon: React.ComponentType<{ className?: string }> }) => (
     <div className="flex items-center gap-5 mb-8">
@@ -2077,7 +2082,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               )}
 
               {/* ═══════════════ BACKSTORY SECTION ═══════════════ */}
-              <CollapsibleSection id="backstory" title="Backstory" icon={BookOpen}>
+              <CollapsibleSection id="backstory" title="Backstory" icon={BookOpen} isExpanded={expandedSections.backstory} onToggle={() => toggleSection('backstory')}>
                 <div className="space-y-10">
                   {/* Summary */}
                   <div>
@@ -2151,7 +2156,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               </CollapsibleSection>
 
               {/* ═══════════════ DETAILS SECTION ═══════════════ */}
-              <CollapsibleSection id="details" title="Details" icon={FileText}>
+              <CollapsibleSection id="details" title="Details" icon={FileText} isExpanded={expandedSections.details} onToggle={() => toggleSection('details')}>
                 <div className="space-y-8">
                   {/* Appearance */}
                   <div>
@@ -2432,6 +2437,8 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 title="People"
                 icon={Users}
                 count={partyMembers.length + npcs.length + companions.length}
+                isExpanded={expandedSections.people}
+                onToggle={() => toggleSection('people')}
               >
                 <div className="space-y-10">
                   {/* Party Members Section */}
@@ -2591,6 +2598,8 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 title="Writings"
                 icon={Quote}
                 count={formData.character_writings.length}
+                isExpanded={expandedSections.writings}
+                onToggle={() => toggleSection('writings')}
               >
                 <div className="space-y-8">
                   {/* Character Writings (Letters, Stories, Poems) */}
@@ -2953,7 +2962,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               </CollapsibleSection>
 
               {/* ═══════════════ GALLERY SECTION ═══════════════ */}
-              <CollapsibleSection id="gallery" title="Gallery" icon={GalleryIcon} count={galleryImages.length}>
+              <CollapsibleSection id="gallery" title="Gallery" icon={GalleryIcon} count={galleryImages.length} isExpanded={expandedSections.gallery} onToggle={() => toggleSection('gallery')}>
                 {galleryImages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
                     <GalleryIcon className="w-10 h-10 mb-4 text-gray-600" />
@@ -3014,7 +3023,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               </CollapsibleSection>
 
               {/* ═══════════════ STATS SECTION ═══════════════ */}
-              <CollapsibleSection id="stats" title="Stats" icon={BarChart3}>
+              <CollapsibleSection id="stats" title="Stats" icon={BarChart3} isExpanded={expandedSections.stats} onToggle={() => toggleSection('stats')}>
                 <div className="space-y-8">
                   {/* Gold */}
                   <div>
