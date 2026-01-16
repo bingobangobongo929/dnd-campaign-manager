@@ -285,9 +285,10 @@ export default function SessionsPage() {
                         {session.title || 'Untitled Session'}
                       </h3>
                       {session.summary && (
-                        <p className="text-sm text-[--text-secondary] line-clamp-2 leading-relaxed mb-4">
-                          {session.summary}
-                        </p>
+                        <div
+                          className="text-sm text-[--text-secondary] line-clamp-2 leading-relaxed mb-4 prose prose-invert prose-sm max-w-none [&>*]:my-0"
+                          dangerouslySetInnerHTML={{ __html: session.summary }}
+                        />
                       )}
 
                       {/* Attendees Avatars */}

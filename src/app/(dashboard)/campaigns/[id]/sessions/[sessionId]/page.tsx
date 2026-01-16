@@ -11,11 +11,11 @@ import {
   Check,
   X,
   Pencil,
-  Brain,
   Wand2,
   ChevronDown,
   ChevronUp,
   CheckCircle2,
+  ScrollText,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input, Button } from '@/components/ui'
@@ -25,7 +25,6 @@ import { useSupabase, useUser, useAutoSave } from '@/hooks'
 import { useAppStore } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
-import { IntelligenceModal } from '@/components/intelligence'
 import type { Session, Campaign, Character } from '@/types/database'
 
 export default function SessionDetailPage() {
@@ -62,9 +61,6 @@ export default function SessionDetailPage() {
   const [showExpandedPreview, setShowExpandedPreview] = useState(false)
   const [aiReasoning, setAiReasoning] = useState<string>('')
   const [detailedNotesCollapsed, setDetailedNotesCollapsed] = useState(true)
-
-  // Intelligence Modal state
-  const [intelligenceModalOpen, setIntelligenceModalOpen] = useState(false)
 
   useEffect(() => {
     if (user && campaignId && sessionId) {
@@ -603,17 +599,11 @@ export default function SessionDetailPage() {
             )}
           </div>
 
-          <textarea
-            value={formData.summary}
-            onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-            placeholder="Write your session notes as bullet points...
-
-• Party met the mayor about the goblin threat
-• Tracked goblins to a cave system
-• Combat with 5 goblins, found a map to their camp
-• Discovered the goblins are working for someone"
-            rows={8}
-            className="w-full bg-[--bg-elevated] border border-[--border] rounded-lg px-4 py-3 text-sm resize-none focus:outline-none focus:border-[--arcane-purple]/50 placeholder:text-[--text-tertiary]"
+          <RichTextEditor
+            content={formData.summary}
+            onChange={(content) => setFormData({ ...formData, summary: content })}
+            placeholder="Write your session notes as bullet points..."
+            className="min-h-[200px]"
           />
         </div>
 
@@ -702,38 +692,6 @@ export default function SessionDetailPage() {
           </div>
         )}
 
-        {/* Campaign Intelligence Section */}
-        {!isNew && session && (
-          <div className="card p-6 mb-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Brain className="w-5 h-5 text-[--arcane-purple]" />
-                <div>
-                  <label className="text-lg font-semibold text-[--text-primary] block">
-                    Campaign Intelligence
-                  </label>
-                  <span className="text-sm text-[--text-tertiary]">
-                    Analyze session for character updates
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={() => setIntelligenceModalOpen(true)}
-                disabled={!formData.notes || formData.notes.trim().length === 0}
-                className={cn(
-                  "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                  "bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple]",
-                  "hover:bg-[--arcane-purple]/20 hover:border-[--arcane-purple]/50",
-                  "disabled:opacity-50 disabled:cursor-not-allowed"
-                )}
-              >
-                <Sparkles className="w-4 h-4" />
-                Analyze Session
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Detailed Notes Section */}
         {(formData.notes || !detailedNotesCollapsed) && (
           <div className="card p-6 mb-8">
@@ -742,7 +700,7 @@ export default function SessionDetailPage() {
               className="w-full flex items-center justify-between mb-4"
             >
               <div className="flex items-center gap-3">
-                <Brain className="w-5 h-5 text-[--arcane-purple]" />
+                <ScrollText className="w-5 h-5 text-[--arcane-purple]" />
                 <div className="text-left">
                   <label className="text-lg font-semibold text-[--text-primary] block">
                     Detailed Notes
@@ -779,18 +737,6 @@ export default function SessionDetailPage() {
           </div>
         )}
       </div>
-
-      {/* Intelligence Modal */}
-      {session && (
-        <IntelligenceModal
-          isOpen={intelligenceModalOpen}
-          onClose={() => setIntelligenceModalOpen(false)}
-          session={session}
-          campaignId={campaignId}
-          characters={characters}
-          onSuggestionsApplied={loadData}
-        />
-      )}
     </AppLayout>
   )
 }
