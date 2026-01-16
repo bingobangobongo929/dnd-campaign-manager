@@ -247,11 +247,19 @@ function CampaignCanvasInner({
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes: NodeChange[]) => {
-      // Handle position changes with smart snap
+      // Count how many nodes are being dragged simultaneously
+      const draggingChanges = changes.filter(
+        (c) => c.type === 'position' && c.dragging && c.position
+      )
+      const isMultiDrag = draggingChanges.length > 1
+
+      // Handle position changes with smart snap (only for single node drag)
       const processedChanges = changes.map((change) => {
         if (change.type === 'position' && change.position && change.dragging) {
           const node = nodes.find((n) => n.id === change.id)
-          if (node && node.type === 'character') {
+
+          // Only apply smart snap for single character drag, not multi-select
+          if (!isMultiDrag && node && node.type === 'character') {
             const nodeWidth = (node.style?.width as number) || DEFAULT_CARD_WIDTH
             const nodeHeight = (node.style?.height as number) || DEFAULT_CARD_HEIGHT
             const { newX, newY, snapX, snapY } = findSnapPositions(
@@ -280,9 +288,9 @@ function CampaignCanvasInner({
         }
       }
 
-      // Clear snap lines when not dragging
+      // Clear snap lines when not dragging or when multi-dragging
       const isDragging = changes.some((c) => c.type === 'position' && c.dragging)
-      if (!isDragging) {
+      if (!isDragging || isMultiDrag) {
         setSnapLines({})
       }
     },
