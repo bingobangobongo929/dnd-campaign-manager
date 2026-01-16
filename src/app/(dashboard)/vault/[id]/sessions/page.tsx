@@ -20,8 +20,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AppLayout } from '@/components/layout/app-layout'
-import { Button, Modal } from '@/components/ui'
-import { RichTextEditor } from '@/components/editor/rich-text-editor'
+import { Button } from '@/components/ui'
 import { createClient } from '@/lib/supabase/client'
 import { formatDate } from '@/lib/character-display'
 import type { PlayJournal, Session, Campaign } from '@/types/database'
@@ -41,26 +40,6 @@ export default function CharacterSessionsPage() {
   const [campaignSessions, setCampaignSessions] = useState<CampaignSession[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
-
-  // Journal editor state
-  const [isEditorOpen, setIsEditorOpen] = useState(false)
-  const [editingEntry, setEditingEntry] = useState<PlayJournal | null>(null)
-  const [saving, setSaving] = useState(false)
-
-  // Form state
-  const [formData, setFormData] = useState({
-    session_number: '',
-    session_date: '',
-    title: '',
-    campaign_name: '',
-    summary: '',
-    notes: '',
-    kill_count: '',
-    loot: '',
-    thoughts_for_next: '',
-    npcs_met: '',
-    locations_visited: '',
-  })
 
   useEffect(() => {
     loadData()
@@ -127,98 +106,6 @@ export default function CharacterSessionsPage() {
     setLoading(false)
   }
 
-  const openEditor = (entry?: PlayJournal) => {
-    if (entry) {
-      setEditingEntry(entry)
-      setFormData({
-        session_number: entry.session_number?.toString() || '',
-        session_date: entry.session_date || '',
-        title: entry.title || '',
-        campaign_name: entry.campaign_name || '',
-        summary: entry.summary || '',
-        notes: entry.notes || '',
-        kill_count: entry.kill_count?.toString() || '',
-        loot: entry.loot || '',
-        thoughts_for_next: entry.thoughts_for_next || '',
-        npcs_met: entry.npcs_met?.join(', ') || '',
-        locations_visited: entry.locations_visited?.join(', ') || '',
-      })
-    } else {
-      setEditingEntry(null)
-      // Set defaults for new entry
-      const nextNumber = journalEntries.length > 0
-        ? Math.max(...journalEntries.map(e => e.session_number || 0)) + 1
-        : 1
-      setFormData({
-        session_number: nextNumber.toString(),
-        session_date: new Date().toISOString().split('T')[0],
-        title: '',
-        campaign_name: journalEntries[0]?.campaign_name || '',
-        summary: '',
-        notes: '',
-        kill_count: '',
-        loot: '',
-        thoughts_for_next: '',
-        npcs_met: '',
-        locations_visited: '',
-      })
-    }
-    setIsEditorOpen(true)
-  }
-
-  const handleSave = async () => {
-    if (!formData.notes.trim()) {
-      toast.error('Notes are required')
-      return
-    }
-
-    setSaving(true)
-
-    const payload = {
-      character_id: characterId,
-      session_number: formData.session_number ? parseInt(formData.session_number) : null,
-      session_date: formData.session_date || null,
-      title: formData.title || null,
-      campaign_name: formData.campaign_name || null,
-      summary: formData.summary || null,
-      notes: formData.notes,
-      kill_count: formData.kill_count ? parseInt(formData.kill_count) : null,
-      loot: formData.loot || null,
-      thoughts_for_next: formData.thoughts_for_next || null,
-      npcs_met: formData.npcs_met ? formData.npcs_met.split(',').map(s => s.trim()).filter(Boolean) : null,
-      locations_visited: formData.locations_visited ? formData.locations_visited.split(',').map(s => s.trim()).filter(Boolean) : null,
-    }
-
-    if (editingEntry) {
-      const { error } = await supabase
-        .from('play_journal')
-        .update(payload)
-        .eq('id', editingEntry.id)
-
-      if (error) {
-        toast.error('Failed to update entry')
-      } else {
-        toast.success('Entry updated')
-        setIsEditorOpen(false)
-        loadData()
-      }
-    } else {
-      const { error } = await supabase
-        .from('play_journal')
-        .insert(payload)
-
-      if (error) {
-        toast.error('Failed to create entry')
-      } else {
-        toast.success('Entry created')
-        setIsEditorOpen(false)
-        loadData()
-      }
-    }
-
-    setSaving(false)
-  }
-
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this journal entry?')) return
 
@@ -266,7 +153,7 @@ export default function CharacterSessionsPage() {
             </p>
           </div>
           {activeTab === 'journal' && (
-            <Button onClick={() => openEditor()}>
+            <Button onClick={() => router.push(`/vault/${characterId}/sessions/new`)}>
               <Plus className="w-4 h-4 mr-2" />
               New Entry
             </Button>
@@ -309,7 +196,7 @@ export default function CharacterSessionsPage() {
                 <p className="text-sm text-[--text-secondary] mb-6">
                   Start recording your character's adventures and experiences
                 </p>
-                <Button onClick={() => openEditor()}>
+                <Button onClick={() => router.push(`/vault/${characterId}/sessions/new`)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Create First Entry
                 </Button>
@@ -412,7 +299,7 @@ export default function CharacterSessionsPage() {
                           <Button
                             variant="secondary"
                             size="sm"
-                            onClick={() => openEditor(entry)}
+                            onClick={() => router.push(`/vault/${characterId}/sessions/${entry.id}`)}
                           >
                             <Edit3 className="w-4 h-4 mr-1" />
                             Edit
@@ -492,176 +379,6 @@ export default function CharacterSessionsPage() {
           </div>
         )}
 
-        {/* Journal Editor Modal */}
-        <Modal
-          isOpen={isEditorOpen}
-          onClose={() => setIsEditorOpen(false)}
-          title={editingEntry ? 'Edit Journal Entry' : 'New Journal Entry'}
-          size="lg"
-        >
-          <div className="space-y-4">
-            {/* Basic info row */}
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-[--text-secondary] mb-1">
-                  Session #
-                </label>
-                <input
-                  type="number"
-                  value={formData.session_number}
-                  onChange={(e) => setFormData(prev => ({ ...prev, session_number: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-[--bg-elevated] border border-[--border] text-[--text-primary] focus:outline-none focus:border-[--arcane-purple]"
-                  placeholder="1"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[--text-secondary] mb-1">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.session_date}
-                  onChange={(e) => setFormData(prev => ({ ...prev, session_date: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-[--bg-elevated] border border-[--border] text-[--text-primary] focus:outline-none focus:border-[--arcane-purple]"
-                  style={{ colorScheme: 'dark' }}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[--text-secondary] mb-1">
-                  Campaign
-                </label>
-                <input
-                  type="text"
-                  value={formData.campaign_name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, campaign_name: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-[--bg-elevated] border border-[--border] text-[--text-primary] focus:outline-none focus:border-[--arcane-purple]"
-                  placeholder="Campaign name"
-                />
-              </div>
-            </div>
-
-            {/* Title */}
-            <div>
-              <label className="block text-sm font-medium text-[--text-secondary] mb-1">
-                Title
-              </label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg bg-[--bg-elevated] border border-[--border] text-[--text-primary] focus:outline-none focus:border-[--arcane-purple]"
-                placeholder="Session title"
-              />
-            </div>
-
-            {/* Summary */}
-            <div>
-              <label className="block text-sm font-medium text-[--text-secondary] mb-1">
-                Summary
-              </label>
-              <textarea
-                value={formData.summary}
-                onChange={(e) => setFormData(prev => ({ ...prev, summary: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg bg-[--bg-elevated] border border-[--border] text-[--text-primary] focus:outline-none focus:border-[--arcane-purple] resize-none"
-                rows={2}
-                placeholder="Brief summary of the session"
-              />
-            </div>
-
-            {/* Notes (Rich Text) */}
-            <div>
-              <label className="block text-sm font-medium text-[--text-secondary] mb-1">
-                Notes *
-              </label>
-              <RichTextEditor
-                content={formData.notes}
-                onChange={(content) => setFormData(prev => ({ ...prev, notes: content }))}
-                placeholder="Detailed session notes..."
-              />
-            </div>
-
-            {/* Stats row */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-[--text-secondary] mb-1">
-                  Kill Count
-                </label>
-                <input
-                  type="number"
-                  value={formData.kill_count}
-                  onChange={(e) => setFormData(prev => ({ ...prev, kill_count: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-[--bg-elevated] border border-[--border] text-[--text-primary] focus:outline-none focus:border-[--arcane-purple]"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[--text-secondary] mb-1">
-                  Loot
-                </label>
-                <input
-                  type="text"
-                  value={formData.loot}
-                  onChange={(e) => setFormData(prev => ({ ...prev, loot: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-[--bg-elevated] border border-[--border] text-[--text-primary] focus:outline-none focus:border-[--arcane-purple]"
-                  placeholder="Gold, items, etc."
-                />
-              </div>
-            </div>
-
-            {/* NPCs and Locations */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-[--text-secondary] mb-1">
-                  NPCs Met
-                </label>
-                <input
-                  type="text"
-                  value={formData.npcs_met}
-                  onChange={(e) => setFormData(prev => ({ ...prev, npcs_met: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-[--bg-elevated] border border-[--border] text-[--text-primary] focus:outline-none focus:border-[--arcane-purple]"
-                  placeholder="Comma-separated names"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[--text-secondary] mb-1">
-                  Locations Visited
-                </label>
-                <input
-                  type="text"
-                  value={formData.locations_visited}
-                  onChange={(e) => setFormData(prev => ({ ...prev, locations_visited: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-[--bg-elevated] border border-[--border] text-[--text-primary] focus:outline-none focus:border-[--arcane-purple]"
-                  placeholder="Comma-separated locations"
-                />
-              </div>
-            </div>
-
-            {/* Thoughts for next */}
-            <div>
-              <label className="block text-sm font-medium text-[--text-secondary] mb-1">
-                Thoughts for Next Session
-              </label>
-              <textarea
-                value={formData.thoughts_for_next}
-                onChange={(e) => setFormData(prev => ({ ...prev, thoughts_for_next: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg bg-[--bg-elevated] border border-[--border] text-[--text-primary] focus:outline-none focus:border-[--arcane-purple] resize-none"
-                rows={2}
-                placeholder="Ideas, plans, or questions for next time"
-              />
-            </div>
-
-            {/* Actions */}
-            <div className="flex justify-end gap-3 pt-4 border-t border-[--border]">
-              <Button variant="secondary" onClick={() => setIsEditorOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                {editingEntry ? 'Save Changes' : 'Create Entry'}
-              </Button>
-            </div>
-          </div>
-        </Modal>
       </div>
     </AppLayout>
   )
