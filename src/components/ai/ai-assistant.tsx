@@ -198,7 +198,7 @@ export function AIAssistant({ campaignContext }: AIAssistantProps) {
             <div>
               <h2 className="font-semibold text-[--text-primary]">Campaign Assistant</h2>
               <p className="text-xs text-[--text-tertiary]">
-                Powered by {aiProvider === 'google' ? 'Gemini' : 'Claude'}
+                Powered by {aiProvider === 'google' || aiProvider === 'googlePro' ? 'Gemini' : 'Claude'}
               </p>
             </div>
           </div>
