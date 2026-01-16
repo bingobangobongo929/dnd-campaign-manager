@@ -221,6 +221,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   const [links, setLinks] = useState<CharacterLink[]>([])
   const [learnedFacts, setLearnedFacts] = useState<CharacterLearnedFact[]>([])
   const [customStatuses, setCustomStatuses] = useState<CharacterStatus[]>([])
+  const [writingsLoaded, setWritingsLoaded] = useState(false)
 
   // Derived: separate NPCs from Companions
   const npcs = relationships.filter(r => !r.is_companion)
@@ -340,15 +341,30 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         { data: rels },
         { data: journal },
         { data: charLinks },
+        { data: writings },
       ] = await Promise.all([
         supabase.from('vault_character_relationships').select('*').eq('character_id', characterId).order('display_order'),
         supabase.from('play_journal').select('*').eq('character_id', characterId).order('session_number', { ascending: true }),
         supabase.from('character_links').select('*').eq('character_id', characterId).order('sort_order'),
+        supabase.from('vault_character_writings').select('*').eq('character_id', characterId).order('display_order'),
       ])
 
       if (rels) setRelationships(rels)
       if (journal) setJournalEntries(journal)
       if (charLinks) setLinks(charLinks)
+
+      // Load writings from table and sync to formData
+      if (writings && writings.length > 0) {
+        const formattedWritings = writings.map(w => ({
+          title: w.title,
+          type: w.writing_type || 'other',
+          content: w.content,
+          recipient: w.recipient || undefined,
+          in_universe_date: w.in_universe_date || undefined,
+        }))
+        setFormData(prev => ({ ...prev, character_writings: formattedWritings }))
+      }
+      setWritingsLoaded(true)
 
       // Try to load learned facts (table may not exist yet)
       try {
@@ -723,8 +739,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       voice: dataToSave.voice || null,
       distinguishing_marks: dataToSave.distinguishing_marks || null,
       typical_attire: dataToSave.typical_attire || null,
-      // New fields from migration 018
-      character_writings: dataToSave.character_writings.length > 0 ? dataToSave.character_writings : null,
+      // New fields from migration 018 (character_writings saved to separate table)
       rumors: dataToSave.rumors.length > 0 ? dataToSave.rumors : null,
       dm_qa: dataToSave.dm_qa.length > 0 ? dataToSave.dm_qa : null,
       player_discord: dataToSave.player_discord || null,
@@ -738,12 +753,15 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       updated_at: new Date().toISOString(),
     }
 
+    let savedCharId = characterId
+
     if (characterId) {
       const { error } = await supabase.from('vault_characters').update(characterData).eq('id', characterId)
       if (error) {
         console.error('Save error details:', error)
         console.error('Attempted to save:', characterData)
         toast.error(`Save failed: ${error.message || error.code || 'Unknown error'}`)
+        return
       }
     } else {
       const { data: userData } = await supabase.auth.getUser()
@@ -759,12 +777,44 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         console.error('Create error details:', error)
         console.error('Attempted to create:', characterData)
         toast.error(`Create failed: ${error.message || error.code || 'Unknown error'}`)
+        return
       } else if (data) {
+        savedCharId = data.id
         setCharacterId(data.id)
         window.history.replaceState(null, '', `/vault/${data.id}`)
       }
     }
-  }, [characterId, supabase])
+
+    // Save writings to vault_character_writings table
+    if (savedCharId && writingsLoaded) {
+      const { data: userData } = await supabase.auth.getUser()
+      if (userData.user) {
+        // Delete existing writings and insert new ones
+        await supabase.from('vault_character_writings').delete().eq('character_id', savedCharId)
+
+        if (dataToSave.character_writings.length > 0) {
+          const writingsToInsert = dataToSave.character_writings.map((w, idx) => ({
+            user_id: userData.user!.id,
+            character_id: savedCharId,
+            title: w.title,
+            writing_type: w.type || 'other',
+            content: w.content,
+            recipient: w.recipient || null,
+            in_universe_date: w.in_universe_date || null,
+            display_order: idx,
+          }))
+
+          const { error: writingsError } = await supabase
+            .from('vault_character_writings')
+            .insert(writingsToInsert)
+
+          if (writingsError) {
+            console.error('Error saving writings:', writingsError)
+          }
+        }
+      }
+    }
+  }, [characterId, supabase, writingsLoaded])
 
   const { status } = useAutoSave({
     data: formData,
