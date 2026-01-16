@@ -14,7 +14,6 @@ import {
   X,
   AlertCircle,
   Loader2,
-  ArrowLeft,
   ChevronDown,
   ChevronUp,
   Sparkles,
@@ -25,6 +24,7 @@ import {
   CheckCircle2,
   XCircle,
 } from 'lucide-react'
+import { VaultLayout } from '@/components/layout/VaultLayout'
 import { cn } from '@/lib/utils'
 
 // Types for parsed data
@@ -1019,23 +1019,16 @@ export default function VaultImportPage() {
   )
 
   return (
-    <div className="min-h-screen bg-[#0c0c0e] p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <button
-            onClick={() => router.push('/vault')}
-            className="p-2 rounded-lg hover:bg-white/[0.05] text-gray-500 hover:text-gray-300 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
+    <VaultLayout>
+      <div className="p-6">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
             <h1 className="text-2xl font-bold text-white">Import Character</h1>
             <p className="text-sm text-gray-500">
               Upload a character document to import with AI-powered extraction
             </p>
           </div>
-        </div>
 
         {/* File Upload Area */}
         {!parsedData && (
@@ -1361,7 +1354,8 @@ export default function VaultImportPage() {
             )}
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </VaultLayout>
   )
 }

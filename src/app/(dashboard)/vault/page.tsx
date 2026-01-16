@@ -6,7 +6,7 @@ import { Plus, Search, BookOpen, Trash2, Copy, Filter, X, CheckSquare, Square, C
 import { toast } from 'sonner'
 import Image from 'next/image'
 import { Modal, Dropdown } from '@/components/ui'
-import { AppLayout } from '@/components/layout/app-layout'
+import { VaultLayout } from '@/components/layout/VaultLayout'
 import { CharacterCard } from '@/components/vault/CharacterCard'
 import { useSupabase, useUser } from '@/hooks'
 import { cn, getInitials } from '@/lib/utils'
@@ -263,16 +263,16 @@ export default function VaultPage() {
 
   if (loading) {
     return (
-      <AppLayout>
+      <VaultLayout>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
         </div>
-      </AppLayout>
+      </VaultLayout>
     )
   }
 
   return (
-    <AppLayout>
+    <VaultLayout>
       <div className="max-w-7xl mx-auto">
         {/* Page Header */}
         <div className="page-header flex items-center justify-between">
@@ -767,6 +767,6 @@ export default function VaultPage() {
           </div>
         </Modal>
       </div>
-    </AppLayout>
+    </VaultLayout>
   )
 }

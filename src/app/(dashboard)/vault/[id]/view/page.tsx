@@ -2,36 +2,52 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
+import { Edit3, Loader2 } from 'lucide-react'
 import { VaultLayout } from '@/components/layout/VaultLayout'
-import { CharacterEditor } from '@/components/vault/CharacterEditor'
+import { CharacterView } from '@/components/vault/CharacterView'
 import { Button } from '@/components/ui'
 import { createClient } from '@/lib/supabase/client'
-import type { VaultCharacter } from '@/types/database'
+import type { VaultCharacter, VaultCharacterRelationship } from '@/types/database'
 
-export default function EditVaultCharacterPage() {
+export default function CharacterViewPage() {
   const params = useParams()
   const router = useRouter()
   const supabase = createClient()
   const characterId = params.id as string
 
   const [character, setCharacter] = useState<VaultCharacter | null>(null)
+  const [relationships, setRelationships] = useState<VaultCharacterRelationship[]>([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
     const loadCharacter = async () => {
-      const { data, error } = await supabase
+      // Load character
+      const { data: charData, error: charError } = await supabase
         .from('vault_characters')
         .select('*')
         .eq('id', characterId)
         .single()
 
-      if (error || !data) {
+      if (charError || !charData) {
         setNotFound(true)
-      } else {
-        setCharacter(data)
+        setLoading(false)
+        return
       }
+
+      setCharacter(charData)
+
+      // Load relationships
+      const { data: relData } = await supabase
+        .from('vault_character_relationships')
+        .select('*')
+        .eq('character_id', characterId)
+        .order('sort_order', { ascending: true })
+
+      if (relData) {
+        setRelationships(relData)
+      }
+
       setLoading(false)
     }
 
@@ -67,8 +83,27 @@ export default function EditVaultCharacterPage() {
   }
 
   return (
-    <VaultLayout characterId={characterId} hideTopBar>
-      <CharacterEditor character={character} mode="edit" />
+    <VaultLayout
+      characterId={characterId}
+      topBarActions={
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => router.push(`/vault/${characterId}`)}
+          className="gap-2"
+        >
+          <Edit3 className="w-4 h-4" />
+          Edit Character
+        </Button>
+      }
+    >
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <CharacterView
+          character={character}
+          relationships={relationships}
+          showDMNotes={false}
+        />
+      </div>
     </VaultLayout>
   )
 }
