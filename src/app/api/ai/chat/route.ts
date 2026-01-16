@@ -35,82 +35,120 @@ export async function POST(req: Request) {
     let systemPrompt = AI_PROMPTS.assistant
 
     if (campaignContext) {
-      systemPrompt += `\n\n=== CAMPAIGN CONTEXT ===\n`
-      systemPrompt += `Campaign: ${campaignContext.campaignName || 'Unnamed'}\n`
+      systemPrompt += `\n\n=== THIS IS THEIR CAMPAIGN - REFERENCE IT CONSTANTLY ===\n`
+      systemPrompt += `Campaign: "${campaignContext.campaignName || 'Unnamed'}"\n`
       systemPrompt += `System: ${campaignContext.gameSystem || 'D&D 5e'}\n`
 
-      // Characters with full details
-      if (campaignContext.characters?.length > 0) {
-        systemPrompt += `\n--- CHARACTERS ---\n`
-        campaignContext.characters.forEach((char: any) => {
-          systemPrompt += `\n[${char.type?.toUpperCase() || 'CHARACTER'}] ${char.name}`
-          if (char.status) systemPrompt += ` (${char.status})`
+      // Player Characters - THE PROTAGONISTS
+      const pcs = campaignContext.characters?.filter((c: any) => c.type === 'pc') || []
+      const npcs = campaignContext.characters?.filter((c: any) => c.type !== 'pc') || []
+
+      if (pcs.length > 0) {
+        systemPrompt += `\n=== PLAYER CHARACTERS (The Party) ===\n`
+        pcs.forEach((char: any) => {
+          systemPrompt += `\n★ ${char.name}`
+          if (char.status && char.status !== 'Active') systemPrompt += ` [STATUS: ${char.status}]`
           systemPrompt += `\n`
           if (char.race || char.class) {
-            systemPrompt += `  Race/Class: ${[char.race, char.class].filter(Boolean).join(' ')}\n`
+            systemPrompt += `  ${[char.race, char.class, char.level ? `Level ${char.level}` : ''].filter(Boolean).join(' | ')}\n`
           }
-          if (char.summary) systemPrompt += `  Summary: ${char.summary}\n`
-          if (char.background) systemPrompt += `  Background: ${char.background}\n`
-          if (char.personality) systemPrompt += `  Personality: ${char.personality}\n`
-          if (char.goals) systemPrompt += `  Goals: ${char.goals}\n`
-          if (char.secrets) systemPrompt += `  Secrets: ${char.secrets}\n`
-          if (char.notes) systemPrompt += `  Notes: ${char.notes.substring(0, 500)}${char.notes.length > 500 ? '...' : ''}\n`
-          if (char.importantPeople) {
-            systemPrompt += `  Important People: ${JSON.stringify(char.importantPeople)}\n`
+          if (char.summary) systemPrompt += `  WHO THEY ARE: ${char.summary}\n`
+          if (char.background) systemPrompt += `  BACKGROUND: ${char.background}\n`
+          if (char.personality) systemPrompt += `  PERSONALITY: ${char.personality}\n`
+          if (char.goals) systemPrompt += `  GOALS (use these for plot hooks!): ${char.goals}\n`
+          if (char.secrets) systemPrompt += `  SECRETS (dramatic potential!): ${char.secrets}\n`
+          if (char.fears) systemPrompt += `  FEARS: ${Array.isArray(char.fears) ? char.fears.join(', ') : char.fears}\n`
+          if (char.bonds) systemPrompt += `  BONDS: ${char.bonds}\n`
+          if (char.flaws) systemPrompt += `  FLAWS: ${char.flaws}\n`
+          if (char.importantPeople && char.importantPeople.length > 0) {
+            systemPrompt += `  IMPORTANT PEOPLE:\n`
+            char.importantPeople.forEach((p: any) => {
+              systemPrompt += `    - ${p.name} (${p.relationship}): ${p.notes || 'No notes'}\n`
+            })
           }
-          if (char.storyHooks) {
-            systemPrompt += `  Story Hooks: ${JSON.stringify(char.storyHooks)}\n`
+          if (char.storyHooks && char.storyHooks.length > 0) {
+            systemPrompt += `  UNRESOLVED STORY HOOKS:\n`
+            char.storyHooks.forEach((h: any) => {
+              if (!h.resolved) systemPrompt += `    - ${h.hook}\n`
+            })
           }
-          if (char.quotes && Array.isArray(char.quotes) && char.quotes.length > 0) {
-            systemPrompt += `  Quotes: ${char.quotes.slice(0, 3).map((q: string) => `"${q}"`).join(', ')}\n`
+          if (char.notes) {
+            const truncatedNotes = char.notes.substring(0, 800)
+            systemPrompt += `  DM NOTES: ${truncatedNotes}${char.notes.length > 800 ? '...' : ''}\n`
           }
         })
       }
 
-      // Sessions with notes
+      // NPCs - Supporting Cast
+      if (npcs.length > 0) {
+        systemPrompt += `\n=== KEY NPCs (Use these names, reference their motivations!) ===\n`
+        npcs.forEach((char: any) => {
+          systemPrompt += `\n• ${char.name}`
+          if (char.status && char.status !== 'Active') systemPrompt += ` [${char.status}]`
+          systemPrompt += `\n`
+          if (char.summary) systemPrompt += `  ${char.summary}\n`
+          if (char.goals) systemPrompt += `  WANTS: ${char.goals}\n`
+          if (char.secrets) systemPrompt += `  SECRET: ${char.secrets}\n`
+          if (char.personality) systemPrompt += `  PERSONALITY: ${char.personality}\n`
+          if (char.notes) {
+            const truncatedNotes = char.notes.substring(0, 400)
+            systemPrompt += `  NOTES: ${truncatedNotes}${char.notes.length > 400 ? '...' : ''}\n`
+          }
+        })
+      }
+
+      // Recent Sessions - WHAT'S BEEN HAPPENING
       if (campaignContext.sessions?.length > 0) {
-        systemPrompt += `\n--- SESSION HISTORY ---\n`
-        campaignContext.sessions.forEach((session: any) => {
-          systemPrompt += `\nSession ${session.sessionNumber}: ${session.title} (${session.date})\n`
-          if (session.summary) systemPrompt += `  Summary: ${session.summary}\n`
+        systemPrompt += `\n=== RECENT SESSION HISTORY (Reference specific events!) ===\n`
+        // Show most recent sessions first, limit to last 5 for relevance
+        const recentSessions = [...campaignContext.sessions].slice(-5)
+        recentSessions.forEach((session: any) => {
+          systemPrompt += `\nSession ${session.sessionNumber}: "${session.title}" (${session.date})\n`
+          if (session.summary) systemPrompt += `  SUMMARY: ${session.summary}\n`
           if (session.notes) {
-            // Truncate very long notes but include meaningful content
-            const truncatedNotes = session.notes.substring(0, 1000)
-            systemPrompt += `  Notes: ${truncatedNotes}${session.notes.length > 1000 ? '...' : ''}\n`
+            const truncatedNotes = session.notes.substring(0, 1200)
+            systemPrompt += `  WHAT HAPPENED: ${truncatedNotes}${session.notes.length > 1200 ? '...' : ''}\n`
           }
         })
       }
 
-      // Timeline events
+      // Major Timeline Events - THE BIG MOMENTS
       if (campaignContext.timelineEvents?.length > 0) {
-        systemPrompt += `\n--- KEY EVENTS ---\n`
-        campaignContext.timelineEvents.forEach((event: any) => {
-          const majorMarker = event.isMajor ? '[MAJOR] ' : ''
-          systemPrompt += `${majorMarker}${event.title}`
+        const majorEvents = campaignContext.timelineEvents.filter((e: any) => e.isMajor)
+        const recentEvents = campaignContext.timelineEvents.slice(-10)
+        const eventsToShow = majorEvents.length > 0 ? majorEvents : recentEvents
+
+        systemPrompt += `\n=== KEY CAMPAIGN EVENTS (Build on these!) ===\n`
+        eventsToShow.forEach((event: any) => {
+          systemPrompt += `• ${event.title}`
           if (event.date) systemPrompt += ` (${event.date})`
-          systemPrompt += `: ${event.description || 'No description'}\n`
+          systemPrompt += `\n`
+          if (event.description) systemPrompt += `  ${event.description}\n`
         })
       }
 
-      // Campaign lore
+      // World Lore - THE SETTING
       if (campaignContext.lore?.length > 0) {
-        systemPrompt += `\n--- WORLD LORE ---\n`
+        systemPrompt += `\n=== WORLD LORE & FACTIONS ===\n`
         campaignContext.lore.forEach((lore: any) => {
-          systemPrompt += `[${lore.type?.toUpperCase()}] ${lore.title}\n`
+          systemPrompt += `[${lore.type?.toUpperCase() || 'LORE'}] ${lore.title}\n`
           if (lore.content) {
             const contentStr = typeof lore.content === 'string'
               ? lore.content
               : JSON.stringify(lore.content)
-            systemPrompt += `  ${contentStr.substring(0, 500)}${contentStr.length > 500 ? '...' : ''}\n`
+            systemPrompt += `  ${contentStr.substring(0, 600)}${contentStr.length > 600 ? '...' : ''}\n`
           }
         })
       }
 
-      // Canvas groups (campaign areas)
+      // Locations
       if (campaignContext.canvasGroups?.length > 0) {
-        systemPrompt += `\n--- CAMPAIGN AREAS ---\n`
+        systemPrompt += `\n=== LOCATIONS IN PLAY ===\n`
         systemPrompt += campaignContext.canvasGroups.map((g: any) => g.name).join(', ') + '\n'
       }
+
+      systemPrompt += `\n=== END OF CAMPAIGN CONTEXT ===\n`
+      systemPrompt += `Remember: Reference this specific campaign constantly. Use character names, NPC motivations, unresolved hooks, and recent events in your responses.\n`
     }
 
     const result = await streamText({
