@@ -11,6 +11,7 @@ import TiptapImage from '@tiptap/extension-image'
 import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
 import Image from 'next/image'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { cn, getInitials } from '@/lib/utils'
 import { useAutoSave } from '@/hooks'
@@ -740,18 +741,27 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     }
 
     if (characterId) {
-      await supabase.from('vault_characters').update(characterData).eq('id', characterId)
+      const { error } = await supabase.from('vault_characters').update(characterData).eq('id', characterId)
+      if (error) {
+        console.error('Save error details:', error)
+        console.error('Attempted to save:', characterData)
+        toast.error(`Save failed: ${error.message || error.code || 'Unknown error'}`)
+      }
     } else {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) throw new Error('Not authenticated')
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('vault_characters')
         .insert({ ...characterData, user_id: userData.user.id })
         .select()
         .single()
 
-      if (data) {
+      if (error) {
+        console.error('Create error details:', error)
+        console.error('Attempted to create:', characterData)
+        toast.error(`Create failed: ${error.message || error.code || 'Unknown error'}`)
+      } else if (data) {
         setCharacterId(data.id)
         window.history.replaceState(null, '', `/vault/${data.id}`)
       }

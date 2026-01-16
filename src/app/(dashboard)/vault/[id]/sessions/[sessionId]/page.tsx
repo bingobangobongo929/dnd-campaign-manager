@@ -196,7 +196,7 @@ export default function VaultSessionEditorPage() {
     }
   }
 
-  // AI Expand Notes - cleans summary and generates detailed notes
+  // AI Expand Notes - cleans summary and generates detailed notes with vault linking
   const handleExpandNotes = async () => {
     if (!formData.summary.trim() || expanding) return
 
@@ -208,18 +208,49 @@ export default function VaultSessionEditorPage() {
     setDetailedNotesCollapsed(false)
 
     try {
-      // Fetch character context for better expansion
+      // Fetch the main character
       const { data: charContext } = await supabase
         .from('vault_characters')
-        .select('name, summary, notes, backstory, personality, goals')
+        .select('name, summary')
         .eq('id', characterId)
         .single()
 
+      // Fetch all NPCs/relationships for this character from vault
+      const { data: relationships } = await supabase
+        .from('vault_character_relationships')
+        .select('related_name, relationship_type, relationship_label, occupation, location')
+        .eq('character_id', characterId)
+
+      // Build a list of known entities for the AI to link
+      const knownEntities: string[] = []
+      if (relationships) {
+        relationships.forEach(r => {
+          if (r.related_name) {
+            knownEntities.push(r.related_name)
+          }
+          // Also add locations if they're named
+          if (r.location) {
+            knownEntities.push(r.location)
+          }
+        })
+      }
+
+      // Add the player character's name
+      if (charContext?.name) {
+        knownEntities.push(charContext.name)
+      }
+
+      // Build context for the AI
       const contextParts = []
-      if (charContext?.name) contextParts.push(`Character: ${charContext.name}`)
+      if (charContext?.name) contextParts.push(`Player Character: ${charContext.name}`)
       if (formData.campaign_name) contextParts.push(`Campaign: ${formData.campaign_name}`)
       if (formData.title) contextParts.push(`Session Title: ${formData.title}`)
-      if (charContext?.summary) contextParts.push(`Character Summary: ${charContext.summary}`)
+
+      // Add known entities list
+      if (knownEntities.length > 0) {
+        contextParts.push(`\nKnown NPCs/Characters (highlight these names with <strong> tags):\n- ${knownEntities.join('\n- ')}`)
+      }
+
       const context = contextParts.join('\n')
 
       const response = await fetch('/api/ai/expand', {
@@ -229,7 +260,8 @@ export default function VaultSessionEditorPage() {
           text: formData.summary,
           context: context,
           provider: aiProvider,
-          mode: 'session', // Tell API this is session notes expansion
+          mode: 'session',
+          knownEntities: knownEntities, // Pass list for AI to reference
         }),
       })
 
@@ -242,51 +274,38 @@ export default function VaultSessionEditorPage() {
       const reader = response.body?.getReader()
       if (!reader) throw new Error('No reader')
 
-      let notes = ''
-      let cleanedSummary = ''
+      let fullText = ''
       const decoder = new TextDecoder()
-      let inSummarySection = false
-      let inNotesSection = false
 
+      // Stream the response and collect full text
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
         const chunk = decoder.decode(value)
+        fullText += chunk
 
-        // Parse the streamed response for sections
-        if (chunk.includes('---CLEANED_SUMMARY---')) {
-          inSummarySection = true
-          inNotesSection = false
-          continue
-        }
-        if (chunk.includes('---DETAILED_NOTES---')) {
-          inSummarySection = false
-          inNotesSection = true
-          continue
-        }
-        if (chunk.includes('---REASONING---')) {
-          inSummarySection = false
-          inNotesSection = false
-          const parts = chunk.split('---REASONING---')
-          if (inNotesSection) notes += parts[0]
-          setAiReasoning(parts[1] || '')
-          continue
-        }
+        // Parse sections from the accumulated text for real-time updates
+        const summaryMatch = fullText.match(/---CLEANED_SUMMARY---\n?([\s\S]*?)(?=---DETAILED_NOTES---|$)/)
+        const notesMatch = fullText.match(/---DETAILED_NOTES---\n?([\s\S]*?)(?=---REASONING---|$)/)
+        const reasoningMatch = fullText.match(/---REASONING---\n?([\s\S]*)$/)
 
-        if (inSummarySection) {
-          cleanedSummary += chunk
-          setPendingSummary(cleanedSummary)
-        } else if (inNotesSection) {
-          notes += chunk
-          setPendingNotes(notes)
-        } else if (aiReasoning) {
-          setAiReasoning(prev => prev + chunk)
+        if (summaryMatch) {
+          setPendingSummary(summaryMatch[1].trim())
+        }
+        if (notesMatch) {
+          setPendingNotes(notesMatch[1].trim())
+        }
+        if (reasoningMatch) {
+          setAiReasoning(reasoningMatch[1].trim())
         }
       }
 
       // If we didn't get sectioned output, treat the whole response as notes
-      if (!cleanedSummary && !notes) {
-        setPendingNotes(decoder.decode())
+      const summaryMatch = fullText.match(/---CLEANED_SUMMARY---\n?([\s\S]*?)(?=---DETAILED_NOTES---|$)/)
+      const notesMatch = fullText.match(/---DETAILED_NOTES---\n?([\s\S]*?)(?=---REASONING---|$)/)
+
+      if (!summaryMatch && !notesMatch) {
+        setPendingNotes(fullText.trim())
       }
     } catch (error) {
       console.error('Expand error:', error)
