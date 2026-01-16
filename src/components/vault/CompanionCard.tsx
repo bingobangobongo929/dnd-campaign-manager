@@ -29,13 +29,25 @@ export function CompanionCard({ companion, onEdit, onDelete }: CompanionCardProp
       <div className="flex items-center gap-2">
         {/* Portrait thumbnail if available */}
         {companion.related_image_url ? (
-          <Image
-            src={companion.related_image_url}
-            alt={companion.related_name || 'Companion'}
-            width={32}
-            height={32}
-            className="rounded-lg object-cover flex-shrink-0"
-          />
+          <div className="relative group/avatar">
+            <Image
+              src={companion.related_image_url}
+              alt={companion.related_name || 'Companion'}
+              width={32}
+              height={32}
+              className="rounded-lg object-cover flex-shrink-0"
+            />
+            {/* Hover preview - larger image popup */}
+            <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
+              <Image
+                src={companion.related_image_url}
+                alt={companion.related_name || 'Companion'}
+                width={192}
+                height={192}
+                className="w-48 h-48 object-cover rounded-lg shadow-xl border border-white/10"
+              />
+            </div>
+          </div>
         ) : (
           <Heart className="w-4 h-4 text-pink-400" />
         )}

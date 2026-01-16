@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
+import Image from 'next/image'
+import { v4 as uuidv4 } from 'uuid'
 import {
   Loader2,
   Plus,
@@ -9,12 +11,12 @@ import {
   X,
   Star,
   Trash2,
-  Upload,
   ExternalLink,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AppLayout } from '@/components/layout/app-layout'
-import { Button, Modal } from '@/components/ui'
+import { Button } from '@/components/ui'
+import { UnifiedImageModal } from '@/components/ui/unified-image-modal'
 import { createClient } from '@/lib/supabase/client'
 import type { VaultCharacterImage, VaultCharacter } from '@/types/database'
 
@@ -27,11 +29,8 @@ export default function CharacterGalleryPage() {
   const [images, setImages] = useState<VaultCharacterImage[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Add image modal
+  // Add image modal (now uses UnifiedImageModal)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [imageUrl, setImageUrl] = useState('')
-  const [imageCaption, setImageCaption] = useState('')
-  const [saving, setSaving] = useState(false)
 
   // Lightbox
   const [lightboxImage, setLightboxImage] = useState<VaultCharacterImage | null>(null)
@@ -69,37 +68,67 @@ export default function CharacterGalleryPage() {
     setLoading(false)
   }
 
-  const handleAddImage = async () => {
+  // Upload image to storage
+  const uploadGalleryImage = async (blob: Blob): Promise<string> => {
+    const { data: userData } = await supabase.auth.getUser()
+    if (!userData.user) throw new Error('Not authenticated')
+
+    const timestamp = Date.now()
+    const uniqueId = uuidv4().slice(0, 8)
+    const path = `${userData.user.id}/gallery/${timestamp}-${uniqueId}.webp`
+
+    const { error } = await supabase.storage
+      .from('vault-images')
+      .upload(path, blob, {
+        contentType: 'image/webp',
+        upsert: true,
+      })
+
+    if (error) throw error
+
+    const { data: urlData } = supabase.storage
+      .from('vault-images')
+      .getPublicUrl(path)
+
+    return urlData.publicUrl
+  }
+
+  // Handle adding image from UnifiedImageModal
+  const handleAddImage = async (imageUrl: string) => {
     if (!imageUrl.trim()) {
       toast.error('Image URL is required')
       return
     }
 
-    setSaving(true)
+    const { data: userData } = await supabase.auth.getUser()
+    if (!userData.user) {
+      toast.error('Not authenticated')
+      return
+    }
 
     const maxOrder = Math.max(0, ...images.map(i => i.display_order || 0))
 
-    const { error } = await supabase
+    const { error, data } = await supabase
       .from('vault_character_images')
       .insert({
+        user_id: userData.user.id,
         character_id: characterId,
         image_url: imageUrl,
-        caption: imageCaption || null,
         is_primary: images.length === 0, // First image is primary
         display_order: maxOrder + 1,
       })
+      .select()
+      .single()
 
     if (error) {
       toast.error('Failed to add image')
     } else {
       toast.success('Image added')
       setIsAddModalOpen(false)
-      setImageUrl('')
-      setImageCaption('')
-      loadData()
+      if (data) {
+        setImages(prev => [...prev, data])
+      }
     }
-
-    setSaving(false)
   }
 
   const handleSetPrimary = async (imageId: string) => {
@@ -156,7 +185,7 @@ export default function CharacterGalleryPage() {
 
       toast.success('Image deleted')
       setLightboxImage(null)
-      loadData()
+      setImages(prev => prev.filter(i => i.id !== imageId))
     }
   }
 
@@ -215,11 +244,15 @@ export default function CharacterGalleryPage() {
                   className="relative group max-w-md cursor-pointer"
                   onClick={() => setLightboxImage(primaryImage)}
                 >
-                  <img
-                    src={primaryImage.image_url}
-                    alt={primaryImage.caption || 'Primary portrait'}
-                    className="w-full rounded-xl border border-white/[0.06] hover:border-white/[0.1] transition-colors"
-                  />
+                  <div className="relative aspect-[3/4] rounded-xl overflow-hidden border border-white/[0.06] hover:border-white/[0.1] transition-colors">
+                    <Image
+                      src={primaryImage.image_url}
+                      alt={primaryImage.caption || 'Primary portrait'}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 400px"
+                    />
+                  </div>
                   {primaryImage.caption && (
                     <p className="text-sm text-[--text-secondary] mt-2">{primaryImage.caption}</p>
                   )}
@@ -241,10 +274,12 @@ export default function CharacterGalleryPage() {
                       onClick={() => setLightboxImage(image)}
                     >
                       <div className="aspect-square rounded-xl overflow-hidden bg-[--bg-elevated] border border-white/[0.06] hover:border-white/[0.1] transition-colors">
-                        <img
+                        <Image
                           src={image.image_url}
                           alt={image.caption || 'Character image'}
-                          className="w-full h-full object-cover"
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
                         />
                       </div>
                       {image.caption && (
@@ -258,66 +293,22 @@ export default function CharacterGalleryPage() {
           </div>
         )}
 
-        {/* Add Image Modal */}
-        <Modal
+        {/* Add Image Modal - Uses UnifiedImageModal */}
+        <UnifiedImageModal
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
-          title="Add Image"
-        >
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-[--text-secondary] mb-1">
-                Image URL *
-              </label>
-              <input
-                type="url"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-[--bg-elevated] border border-[--border] text-[--text-primary] focus:outline-none focus:border-[--arcane-purple]"
-                placeholder="https://..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[--text-secondary] mb-1">
-                Caption
-              </label>
-              <input
-                type="text"
-                value={imageCaption}
-                onChange={(e) => setImageCaption(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-[--bg-elevated] border border-[--border] text-[--text-primary] focus:outline-none focus:border-[--arcane-purple]"
-                placeholder="Description or notes"
-              />
-            </div>
-
-            {imageUrl && (
-              <div>
-                <label className="block text-sm font-medium text-[--text-secondary] mb-1">
-                  Preview
-                </label>
-                <img
-                  src={imageUrl}
-                  alt="Preview"
-                  className="max-h-48 rounded-lg border border-[--border]"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none'
-                  }}
-                />
-              </div>
-            )}
-
-            <div className="flex justify-end gap-3 pt-4 border-t border-[--border]">
-              <Button variant="secondary" onClick={() => setIsAddModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddImage} disabled={saving}>
-                {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                Add Image
-              </Button>
-            </div>
-          </div>
-        </Modal>
+          imageType="gallery"
+          onImageChange={handleAddImage}
+          onUpload={uploadGalleryImage}
+          promptData={{
+            type: 'gallery',
+            name: character?.name || '',
+            race: character?.race || '',
+            class: character?.class || '',
+            appearance: character?.appearance || '',
+          }}
+          title="Add Gallery Image"
+        />
 
         {/* Lightbox */}
         {lightboxImage && (
@@ -336,11 +327,13 @@ export default function CharacterGalleryPage() {
               className="relative max-w-[90vw] max-h-[90vh] flex flex-col items-center"
               onClick={(e) => e.stopPropagation()}
             >
-              <img
-                src={lightboxImage.image_url}
-                alt={lightboxImage.caption || 'Character image'}
-                className="max-w-full max-h-[75vh] object-contain rounded-lg"
-              />
+              <div className="relative max-w-full max-h-[75vh]">
+                <img
+                  src={lightboxImage.image_url}
+                  alt={lightboxImage.caption || 'Character image'}
+                  className="max-w-full max-h-[75vh] object-contain rounded-lg"
+                />
+              </div>
 
               {lightboxImage.caption && (
                 <p className="text-white/70 text-sm mt-4 text-center">{lightboxImage.caption}</p>

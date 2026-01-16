@@ -1503,6 +1503,8 @@ export interface Database {
           companion_type: string | null
           companion_species: string | null
           companion_abilities: string | null
+          // Party member flag (migration 023)
+          is_party_member: boolean
         }
         Insert: {
           id?: string
@@ -1540,6 +1542,8 @@ export interface Database {
           companion_type?: string | null
           companion_species?: string | null
           companion_abilities?: string | null
+          // Party member flag (migration 023)
+          is_party_member?: boolean
         }
         Update: {
           id?: string
@@ -1577,6 +1581,8 @@ export interface Database {
           companion_type?: string | null
           companion_species?: string | null
           companion_abilities?: string | null
+          // Party member flag (migration 023)
+          is_party_member?: boolean
         }
       }
       vault_locations: {

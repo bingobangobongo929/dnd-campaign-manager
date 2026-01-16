@@ -48,7 +48,7 @@ const EMOJIS = {
 }
 
 export function NPCCard({ npc, onEdit, onDelete }: NPCCardProps) {
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(true)
 
   const relationshipColor = RELATIONSHIP_COLORS[npc.relationship_type] || RELATIONSHIP_COLORS.other
   // Only expand for full_notes which can be lengthy
@@ -60,13 +60,25 @@ export function NPCCard({ npc, onEdit, onDelete }: NPCCardProps) {
       <div className="flex items-center gap-2 flex-wrap">
         {/* Portrait thumbnail if available */}
         {npc.related_image_url && (
-          <Image
-            src={npc.related_image_url}
-            alt={npc.related_name || 'NPC'}
-            width={40}
-            height={40}
-            className="rounded-lg object-cover flex-shrink-0"
-          />
+          <div className="relative group/avatar">
+            <Image
+              src={npc.related_image_url}
+              alt={npc.related_name || 'NPC'}
+              width={40}
+              height={40}
+              className="rounded-lg object-cover flex-shrink-0"
+            />
+            {/* Hover preview - larger image popup */}
+            <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
+              <Image
+                src={npc.related_image_url}
+                alt={npc.related_name || 'NPC'}
+                width={192}
+                height={192}
+                className="w-48 h-48 object-cover rounded-lg shadow-xl border border-white/10"
+              />
+            </div>
+          </div>
         )}
         <span className="font-medium text-white/90">{npc.related_name}</span>
         {npc.nickname && (

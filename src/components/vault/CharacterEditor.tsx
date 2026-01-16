@@ -49,6 +49,7 @@ import {
   Target,
   Eye,
   EyeOff,
+  Upload,
   ArrowLeft,
   BarChart3,
   Image as GalleryIcon,
@@ -71,7 +72,8 @@ import type {
   CharacterLink,
   CharacterLearnedFact,
   CharacterStatus,
-  VaultCharacterRelationship
+  VaultCharacterRelationship,
+  VaultCharacterImage
 } from '@/types/database'
 import { NPCCard } from './NPCCard'
 import { CompanionCard } from './CompanionCard'
@@ -84,7 +86,7 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 
 // Section types for navigation
-type SectionType = 'backstory' | 'details' | 'people' | 'writings' | 'stats' | 'player' | 'gallery'
+type SectionType = 'backstory' | 'details' | 'people' | 'writings' | 'gallery' | 'stats'
 
 interface CharacterEditorProps {
   character?: VaultCharacter | null
@@ -106,9 +108,8 @@ const SECTIONS: { id: SectionType; label: string; icon: React.ComponentType<{ cl
   { id: 'details', label: 'Details', icon: FileText },
   { id: 'people', label: 'People', icon: Users },
   { id: 'writings', label: 'Writings', icon: Quote },
-  { id: 'stats', label: 'Stats', icon: BarChart3 },
-  { id: 'player', label: 'Player', icon: User },
   { id: 'gallery', label: 'Gallery', icon: GalleryIcon },
+  { id: 'stats', label: 'Stats', icon: BarChart3 },
 ]
 
 export function CharacterEditor({ character, mode }: CharacterEditorProps) {
@@ -206,13 +207,15 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     details: true,
     people: true,
     writings: true,
-    stats: true,
-    player: true,
     gallery: true,
+    stats: true,
   })
 
   const toggleSection = (section: SectionType) => {
+    const scrollY = window.scrollY
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
+    // Preserve scroll position after state update
+    requestAnimationFrame(() => window.scrollTo(0, scrollY))
   }
 
   // Related data
@@ -222,9 +225,11 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   const [learnedFacts, setLearnedFacts] = useState<CharacterLearnedFact[]>([])
   const [customStatuses, setCustomStatuses] = useState<CharacterStatus[]>([])
   const [writingsLoaded, setWritingsLoaded] = useState(false)
+  const [galleryImages, setGalleryImages] = useState<VaultCharacterImage[]>([])
 
-  // Derived: separate NPCs from Companions
-  const npcs = relationships.filter(r => !r.is_companion)
+  // Derived: separate Party Members, NPCs, and Companions
+  const partyMembers = relationships.filter(r => r.is_party_member && !r.is_companion)
+  const npcs = relationships.filter(r => !r.is_companion && !r.is_party_member)
   const companions = relationships.filter(r => r.is_companion)
 
   // Modals
@@ -242,10 +247,11 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   const [editingJournal, setEditingJournal] = useState<PlayJournal | null>(null)
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [duplicateModalOpen, setDuplicateModalOpen] = useState(false)
+  const [galleryImageModalOpen, setGalleryImageModalOpen] = useState(false)
 
   // Modal form state
   const [linkForm, setLinkForm] = useState({ type: 'other' as string, title: '', url: '' })
-  const [storyCharForm, setStoryCharForm] = useState({ name: '', relationship: 'friend', tagline: '', notes: '' })
+  const [storyCharForm, setStoryCharForm] = useState({ name: '', relationship: 'friend', tagline: '', notes: '', is_party_member: false })
   const [npcForm, setNpcForm] = useState({
     related_name: '',
     nickname: '',
@@ -263,6 +269,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     full_notes: '',
     relationship_status: 'active',
     related_image_url: null as string | null,
+    is_party_member: false,
   })
   const [companionForm, setCompanionForm] = useState({
     related_name: '',
@@ -305,13 +312,25 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     }
   }, [])
 
+  // Expand section and scroll to it (for clickable overview counts)
+  const expandAndScrollToSection = useCallback((sectionId: SectionType) => {
+    setExpandedSections(prev => ({ ...prev, [sectionId]: true }))
+    // Small delay to let section expand before scrolling
+    setTimeout(() => {
+      const element = document.getElementById(sectionId)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }, 50)
+  }, [])
+
   // Detect which section is in view
   useEffect(() => {
     const container = scrollContainerRef.current
     if (!container) return
 
     const handleScroll = () => {
-      const sectionIds: SectionType[] = ['backstory', 'details', 'people', 'writings', 'stats', 'player', 'gallery']
+      const sectionIds: SectionType[] = ['backstory', 'details', 'people', 'writings', 'gallery', 'stats']
       const containerRect = container.getBoundingClientRect()
 
       for (const sectionId of sectionIds) {
@@ -342,16 +361,19 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         { data: journal },
         { data: charLinks },
         { data: writings },
+        { data: images },
       ] = await Promise.all([
         supabase.from('vault_character_relationships').select('*').eq('character_id', characterId).order('display_order'),
         supabase.from('play_journal').select('*').eq('character_id', characterId).order('session_number', { ascending: true }),
         supabase.from('character_links').select('*').eq('character_id', characterId).order('sort_order'),
         supabase.from('vault_character_writings').select('*').eq('character_id', characterId).order('display_order'),
+        supabase.from('vault_character_images').select('*').eq('character_id', characterId).order('is_primary', { ascending: false }).order('display_order'),
       ])
 
       if (rels) setRelationships(rels)
       if (journal) setJournalEntries(journal)
       if (charLinks) setLinks(charLinks)
+      if (images) setGalleryImages(images)
 
       // Load writings from table and sync to formData
       if (writings && writings.length > 0) {
@@ -960,6 +982,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
           full_notes: storyCharForm.notes.trim() || null,
           display_order: relationships.length,
           is_companion: false,
+          is_party_member: storyCharForm.is_party_member,
         })
         .select()
         .single()
@@ -967,7 +990,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       if (error) throw error
       if (data) setRelationships(prev => [...prev, data])
 
-      setStoryCharForm({ name: '', relationship: 'friend', tagline: '', notes: '' })
+      setStoryCharForm({ name: '', relationship: 'friend', tagline: '', notes: '', is_party_member: false })
       setAddStoryCharacterModalOpen(false)
     } catch (error) {
       console.error('Add NPC error:', error)
@@ -1028,6 +1051,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       full_notes: npc.full_notes || '',
       relationship_status: npc.relationship_status || 'active',
       related_image_url: npc.related_image_url || null,
+      is_party_member: npc.is_party_member || false,
     })
     setEditNPCModalOpen(true)
   }
@@ -1056,6 +1080,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
           full_notes: npcForm.full_notes.trim() || null,
           relationship_status: npcForm.relationship_status,
           related_image_url: npcForm.related_image_url,
+          is_party_member: npcForm.is_party_member,
         })
         .eq('id', editingNPC.id)
         .select()
@@ -1177,6 +1202,64 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       .getPublicUrl(path)
 
     return urlData.publicUrl
+  }
+
+  // Upload gallery image
+  const uploadGalleryImage = async (blob: Blob): Promise<string> => {
+    const { data: userData } = await supabase.auth.getUser()
+    if (!userData.user) throw new Error('Not authenticated')
+
+    const timestamp = Date.now()
+    const uniqueId = uuidv4().slice(0, 8)
+    const path = `${userData.user.id}/gallery/${timestamp}-${uniqueId}.webp`
+
+    const { error } = await supabase.storage
+      .from('vault-images')
+      .upload(path, blob, {
+        contentType: 'image/webp',
+        upsert: true,
+      })
+
+    if (error) throw error
+
+    const { data: urlData } = supabase.storage
+      .from('vault-images')
+      .getPublicUrl(path)
+
+    return urlData.publicUrl
+  }
+
+  // Handle adding a gallery image
+  const handleAddGalleryImage = async (imageUrl: string) => {
+    if (!characterId || !imageUrl) return
+
+    try {
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData.user) throw new Error('Not authenticated')
+
+      const maxOrder = Math.max(0, ...galleryImages.map(i => i.display_order || 0))
+
+      const { data, error } = await supabase
+        .from('vault_character_images')
+        .insert({
+          user_id: userData.user.id,
+          character_id: characterId,
+          image_url: imageUrl,
+          is_primary: galleryImages.length === 0,
+          display_order: maxOrder + 1,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      if (data) {
+        setGalleryImages(prev => [...prev, data])
+      }
+
+      setGalleryImageModalOpen(false)
+    } catch (error) {
+      console.error('Add gallery image error:', error)
+    }
   }
 
   // Open journal edit modal
@@ -1588,9 +1671,8 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
             {/* Subtle glow behind portrait */}
             <div className="absolute -inset-1 bg-gradient-to-b from-purple-500/20 via-purple-500/5 to-transparent rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
             <div
-              className="relative w-full aspect-[3/4] overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a0c] cursor-pointer transition-all duration-300 group-hover:border-purple-500/30"
+              className="relative w-full aspect-[3/4] overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a0c] transition-all duration-300 group-hover:border-purple-500/30"
               style={{ boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)' }}
-              onClick={() => setLightboxOpen(true)}
             >
               <Image
                 src={displayUrl}
@@ -1599,31 +1681,26 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                 sizes="320px"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <span className="text-white/90 text-[13px] font-medium px-3 py-1.5 bg-black/40 backdrop-blur-sm rounded-lg">View Full Size</span>
-              </div>
-            </div>
-            <div className="absolute bottom-2.5 right-2.5 flex gap-1.5">
-              {aiEnabled && (
+              {/* Hover overlay with View and Upload icons */}
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-6">
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); handleGenerateAiPrompt() }}
-                  disabled={generatingPrompt}
-                  className="p-2 bg-black/60 backdrop-blur-sm rounded-lg text-white/80 hover:text-purple-300 hover:bg-black/80 transition-all duration-200 border border-white/[0.08]"
-                  title="Generate AI image prompt"
+                  onClick={() => setLightboxOpen(true)}
+                  className="p-3 bg-white/10 backdrop-blur-sm rounded-xl text-white hover:bg-white/20 transition-all duration-200"
+                  title="View full size"
                 >
-                  {generatingPrompt ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  <Eye className="w-6 h-6" />
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); portraitInputRef.current?.click() }}
-                disabled={isUploading}
-                className="p-2 bg-black/60 backdrop-blur-sm rounded-lg text-white/80 hover:text-white hover:bg-black/80 transition-all duration-200 border border-white/[0.08]"
-              >
-                <Camera className="w-3.5 h-3.5" />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => portraitInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="p-3 bg-white/10 backdrop-blur-sm rounded-xl text-white hover:bg-white/20 transition-all duration-200"
+                  title="Upload new image"
+                >
+                  <Upload className="w-6 h-6" />
+                </button>
+              </div>
             </div>
           </div>
         ) : (
@@ -1724,28 +1801,19 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
           <div className="flex items-center gap-1">
             {characterId && (
               <>
-                {aiEnabled && (
-                  <button
-                    onClick={() => router.push(`/vault/${characterId}/intelligence`)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-purple-500/10 transition-all duration-200 text-purple-400 hover:text-purple-300"
-                  >
-                    <Brain className="w-3.5 h-3.5" />
-                    <span className="text-[13px]">Intelligence</span>
-                  </button>
-                )}
-                <button
-                  onClick={() => setShareModalOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white/[0.05] transition-all duration-200 text-gray-500 hover:text-gray-300"
-                >
-                  <Share2 className="w-3.5 h-3.5" />
-                  <span className="text-[13px]">Share</span>
-                </button>
                 <button
                   onClick={() => setDuplicateModalOpen(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white/[0.05] transition-all duration-200 text-gray-500 hover:text-gray-300"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   <span className="text-[13px]">Duplicate</span>
+                </button>
+                <button
+                  onClick={() => setIsDeleteConfirmOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-red-500/10 transition-all duration-200 text-gray-500 hover:text-red-400"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span className="text-[13px]">Delete</span>
                 </button>
               </>
             )}
@@ -1939,18 +2007,6 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               </div>
             </div>
 
-            {/* Delete at bottom */}
-            {characterId && (
-              <div className="flex-shrink-0 px-6 py-4 border-t border-white/[0.06]">
-                <button
-                  onClick={() => setIsDeleteConfirmOpen(true)}
-                  className="flex items-center gap-2 text-[13px] text-gray-600 hover:text-red-400/80 transition-all duration-200"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete Character
-                </button>
-              </div>
-            )}
           </aside>
 
           {/* Main Content Area - Single Scrollable Page */}
@@ -1962,34 +2018,55 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               {!isCreateMode && characterId && (
                 <div className="mb-8">
                   <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-7 gap-3">
-                    <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                    <button
+                      onClick={() => expandAndScrollToSection('people')}
+                      className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-white/[0.08] transition-colors cursor-pointer"
+                    >
                       <p className="text-lg font-semibold text-white">{npcs.length}</p>
                       <p className="text-xs text-gray-500">NPCs</p>
-                    </div>
-                    <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                    </button>
+                    <button
+                      onClick={() => expandAndScrollToSection('people')}
+                      className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-white/[0.08] transition-colors cursor-pointer"
+                    >
                       <p className="text-lg font-semibold text-white">{companions.length}</p>
                       <p className="text-xs text-gray-500">Companions</p>
-                    </div>
-                    <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                    </button>
+                    <button
+                      onClick={() => expandAndScrollToSection('writings')}
+                      className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-white/[0.08] transition-colors cursor-pointer"
+                    >
                       <p className="text-lg font-semibold text-white">{formData.character_writings.length}</p>
                       <p className="text-xs text-gray-500">Writings</p>
-                    </div>
-                    <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                    </button>
+                    <button
+                      onClick={() => expandAndScrollToSection('backstory')}
+                      className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-white/[0.08] transition-colors cursor-pointer"
+                    >
                       <p className="text-lg font-semibold text-white">{formData.backstory_phases.length}</p>
                       <p className="text-xs text-gray-500">Life Phases</p>
-                    </div>
-                    <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                    </button>
+                    <button
+                      onClick={() => expandAndScrollToSection('backstory')}
+                      className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-white/[0.08] transition-colors cursor-pointer"
+                    >
                       <p className="text-lg font-semibold text-white">{formData.quotes.length}</p>
                       <p className="text-xs text-gray-500">Quotes</p>
-                    </div>
-                    <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                    </button>
+                    <button
+                      onClick={() => expandAndScrollToSection('backstory')}
+                      className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-white/[0.08] transition-colors cursor-pointer"
+                    >
                       <p className="text-lg font-semibold text-white">{formData.plot_hooks.length}</p>
                       <p className="text-xs text-gray-500">Plot Hooks</p>
-                    </div>
-                    <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                    </button>
+                    <button
+                      onClick={() => expandAndScrollToSection('backstory')}
+                      className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-white/[0.08] transition-colors cursor-pointer"
+                    >
                       <p className="text-lg font-semibold text-white">{formData.tldr.length}</p>
                       <p className="text-xs text-gray-500">TL;DR</p>
-                    </div>
+                    </button>
                   </div>
                 </div>
               )}
@@ -2094,7 +2171,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                           type="text"
                           value={formData.height}
                           onChange={(e) => setFormData(prev => ({ ...prev, height: e.target.value }))}
-                          placeholder="5'10&quot;"
+                          placeholder="175 cm"
                           className="w-full py-2.5 px-3 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
                         />
                       </div>
@@ -2104,7 +2181,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                           type="text"
                           value={formData.weight}
                           onChange={(e) => setFormData(prev => ({ ...prev, weight: e.target.value }))}
-                          placeholder="170 lbs"
+                          placeholder="70 kg"
                           className="w-full py-2.5 px-3 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
                         />
                       </div>
@@ -2349,15 +2426,61 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 id="people"
                 title="People"
                 icon={Users}
-                count={npcs.length + companions.length}
+                count={partyMembers.length + npcs.length + companions.length}
               >
                 <div className="space-y-10">
+                  {/* Party Members Section */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="text-sm font-medium text-gray-400/90">Party Members ({partyMembers.length})</label>
+                      <button
+                        onClick={() => {
+                          // Open add NPC modal with party member flag pre-set
+                          setStoryCharForm(prev => ({ ...prev, is_party_member: true }))
+                          setAddStoryCharacterModalOpen(true)
+                        }}
+                        className="flex items-center gap-2 py-2 px-4 text-sm text-indigo-400 bg-indigo-500/10 rounded-lg hover:bg-indigo-500/20 transition-all duration-200 border border-indigo-500/20"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Party Member
+                      </button>
+                    </div>
+
+                    {partyMembers.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                        <Users className="w-8 h-8 mb-3 text-gray-600" />
+                        <p className="text-sm text-gray-500">No party members yet</p>
+                        <p className="text-xs text-gray-600 mt-1">Add other PCs you play with in your campaign</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {partyMembers.map((member) => (
+                          <NPCCard
+                            key={member.id}
+                            npc={member}
+                            onEdit={() => openEditNPC(member)}
+                            onDelete={async () => {
+                              if (confirm(`Delete ${member.related_name}?`)) {
+                                await supabase.from('vault_character_relationships').delete().eq('id', member.id)
+                                setRelationships(prev => prev.filter(r => r.id !== member.id))
+                              }
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   {/* NPCs Section */}
                   <div>
                     <div className="flex items-center justify-between mb-4">
                       <label className="text-sm font-medium text-gray-400/90">NPCs & Contacts ({npcs.length})</label>
                       <button
-                        onClick={() => setAddStoryCharacterModalOpen(true)}
+                        onClick={() => {
+                          // Reset is_party_member to false for regular NPCs
+                          setStoryCharForm(prev => ({ ...prev, is_party_member: false }))
+                          setAddStoryCharacterModalOpen(true)
+                        }}
                         className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
                       >
                         <Plus className="w-4 h-4" />
@@ -2824,6 +2947,67 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 </div>
               </CollapsibleSection>
 
+              {/* ═══════════════ GALLERY SECTION ═══════════════ */}
+              <CollapsibleSection id="gallery" title="Gallery" icon={GalleryIcon} count={galleryImages.length}>
+                {galleryImages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                    <GalleryIcon className="w-10 h-10 mb-4 text-gray-600" />
+                    <p className="text-sm text-gray-500 mb-2">No images yet</p>
+                    <p className="text-xs text-gray-600 mb-4">Add portraits, art, and reference images</p>
+                    <button
+                      onClick={() => setGalleryImageModalOpen(true)}
+                      className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Image
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Mini gallery grid - show first 6 images */}
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                      {galleryImages.slice(0, 6).map((image) => (
+                        <div
+                          key={image.id}
+                          className="relative group aspect-square rounded-lg overflow-hidden bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.1] transition-colors"
+                        >
+                          <Image
+                            src={image.image_url}
+                            alt={image.caption || 'Gallery image'}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, 16vw"
+                          />
+                          {image.is_primary && (
+                            <div className="absolute top-1 right-1 p-1 bg-yellow-500/80 rounded-md">
+                              <Sparkles className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-between pt-2">
+                      <button
+                        onClick={() => router.push(`/vault/${characterId}/gallery`)}
+                        className="text-sm text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
+                      >
+                        View All ({galleryImages.length})
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setGalleryImageModalOpen(true)}
+                        className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Image
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </CollapsibleSection>
+
               {/* ═══════════════ STATS SECTION ═══════════════ */}
               <CollapsibleSection id="stats" title="Stats" icon={BarChart3}>
                 <div className="space-y-8">
@@ -3140,108 +3324,6 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                       </div>
                     )}
                   </div>
-                </div>
-              </CollapsibleSection>
-
-              {/* ═══════════════ PLAYER SECTION (OOC) ═══════════════ */}
-              <CollapsibleSection id="player" title="Player Info (OOC)" icon={User}>
-                <div className="space-y-6">
-                  {/* Basic Player Info */}
-                  <div className="grid grid-cols-3 gap-6">
-                    <div>
-                      <label className="block text-sm text-gray-500 mb-2">Discord</label>
-                      <input
-                        type="text"
-                        value={formData.player_discord}
-                        onChange={(e) => setFormData(prev => ({ ...prev, player_discord: e.target.value }))}
-                        placeholder="username#1234"
-                        className="w-full py-3 px-4 text-[15px] bg-white/[0.02] border border-white/[0.06] rounded-xl text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-500 mb-2">Timezone</label>
-                      <input
-                        type="text"
-                        value={formData.player_timezone}
-                        onChange={(e) => setFormData(prev => ({ ...prev, player_timezone: e.target.value }))}
-                        placeholder="GMT+2, EST..."
-                        className="w-full py-3 px-4 text-[15px] bg-white/[0.02] border border-white/[0.06] rounded-xl text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-500 mb-2">TTRPG Experience</label>
-                      <input
-                        type="text"
-                        value={formData.player_experience}
-                        onChange={(e) => setFormData(prev => ({ ...prev, player_experience: e.target.value }))}
-                        placeholder="5+ years, new player..."
-                        className="w-full py-3 px-4 text-[15px] bg-white/[0.02] border border-white/[0.06] rounded-xl text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Player Preferences */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400/90 mb-4">Player Preferences</label>
-                    <div className="grid grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-2">What is fun in D&D for you?</label>
-                        <textarea
-                          value={formData.player_preferences?.fun_in_dnd || ''}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            player_preferences: { ...prev.player_preferences, fun_in_dnd: e.target.value }
-                          }))}
-                          placeholder="What do you enjoy most about tabletop RPGs?"
-                          className="w-full min-h-[100px] py-3 px-4 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-xl text-white/80 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200 resize-none leading-relaxed"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-2">What annoys you?</label>
-                        <textarea
-                          value={formData.player_preferences?.annoys_me || ''}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            player_preferences: { ...prev.player_preferences, annoys_me: e.target.value }
-                          }))}
-                          placeholder="What frustrates you or breaks immersion?"
-                          className="w-full min-h-[100px] py-3 px-4 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-xl text-white/80 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200 resize-none leading-relaxed"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-2">Ideal party</label>
-                        <textarea
-                          value={formData.player_preferences?.ideal_party || ''}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            player_preferences: { ...prev.player_preferences, ideal_party: e.target.value }
-                          }))}
-                          placeholder="What makes a great group for you?"
-                          className="w-full min-h-[100px] py-3 px-4 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-xl text-white/80 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200 resize-none leading-relaxed"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-2">Ideal DM</label>
-                        <textarea
-                          value={formData.player_preferences?.ideal_dm || ''}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            player_preferences: { ...prev.player_preferences, ideal_dm: e.target.value }
-                          }))}
-                          placeholder="What DM style works best for you?"
-                          className="w-full min-h-[100px] py-3 px-4 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-xl text-white/80 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200 resize-none leading-relaxed"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CollapsibleSection>
-
-              {/* ═══════════════ GALLERY SECTION ═══════════════ */}
-              <CollapsibleSection id="gallery" title="Gallery" icon={GalleryIcon}>
-                <div className="flex flex-col items-center justify-center py-16 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
-                  <GalleryIcon className="w-10 h-10 mb-4 text-gray-600" />
-                  <p className="text-sm text-gray-500">Gallery coming soon</p>
                 </div>
               </CollapsibleSection>
 
@@ -4028,6 +4110,23 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
           }
         }}
         title="Companion Avatar"
+      />
+
+      {/* Gallery Image Upload Modal */}
+      <UnifiedImageModal
+        isOpen={galleryImageModalOpen}
+        onClose={() => setGalleryImageModalOpen(false)}
+        imageType="gallery"
+        onImageChange={handleAddGalleryImage}
+        onUpload={uploadGalleryImage}
+        promptData={{
+          type: 'gallery',
+          name: formData.name,
+          race: formData.race,
+          class: formData.class,
+          appearance: formData.appearance,
+        }}
+        title="Add Gallery Image"
       />
     </>
   )

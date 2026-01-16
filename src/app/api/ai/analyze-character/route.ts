@@ -19,11 +19,20 @@ const ANALYSIS_PROMPT = `You are an expert D&D/TTRPG character analyst. Perform 
 
 ## ANALYSIS CATEGORIES
 
-### 1. SUMMARY GENERATION/UPDATE
-- If the summary field is empty or weak, generate a compelling 1-2 sentence summary
-- If the summary exists but doesn't reflect the character well, suggest an improved version
-- The summary should capture the essence: who they are, what drives them, what makes them interesting
-- Example: "A disgraced noble paladin seeking redemption after failing to protect her sworn charge"
+### 1. SUMMARY GENERATION (REQUIRED - CHECK FIRST)
+**IMPORTANT: This is your FIRST priority. Always check the summary field.**
+
+- If the summary field is empty, null, undefined, or contains only whitespace: You MUST generate a summary suggestion with confidence: 'high'
+- If the summary field has content: Evaluate if it accurately captures the character's essence
+  - Only suggest an update if the current summary is weak, outdated, generic, or missing key character elements
+  - A good summary should be 1-2 sentences capturing: who they are, what drives them, what makes them interesting
+
+**Examples of good summaries:**
+- "A disgraced noble paladin seeking redemption after failing to protect her sworn charge"
+- "A street-smart half-elf rogue running from a debt to the Thieves' Guild while searching for her missing brother"
+- "An eccentric gnome artificer whose inventions are brilliant but dangerously unpredictable"
+
+**If summary is empty/missing, this is a HIGH CONFIDENCE suggestion. Generate one based on the available character data.**
 
 ### 2. COMPLETENESS
 - Missing important fields (appearance, personality, goals, fears, secrets)
@@ -146,11 +155,12 @@ Return ONLY valid JSON:
 }
 
 ## IMPORTANT RULES
-1. Be thorough - check EVERY field for issues
-2. Prioritize high-impact suggestions (grammar errors, major conflicts)
-3. Include source_excerpt for EVERY suggestion
-4. Be specific in suggested_value - provide exact fixes
-5. If no issues found, return {"suggestions": []}`
+1. **ALWAYS check if summary is empty first** - if empty/null/whitespace, MUST include a summary suggestion with confidence: 'high'
+2. Be thorough - check EVERY field for issues
+3. Prioritize high-impact suggestions (grammar errors, major conflicts)
+4. Include source_excerpt for EVERY suggestion (use "Character profile analysis" if no specific excerpt)
+5. Be specific in suggested_value - provide exact fixes
+6. If no issues found BUT summary is empty, still return the summary suggestion`
 
 // POST /api/ai/analyze-character - Analyze a vault character
 export async function POST(req: NextRequest) {
@@ -271,6 +281,37 @@ ${ANALYSIS_PROMPT}`
 
       const parsed = JSON.parse(jsonText)
       suggestions = parsed.suggestions || []
+
+      // Ensure summary suggestion is included if character summary is empty
+      const summaryIsEmpty = !character.summary || !character.summary.trim()
+      const hasSummarySuggestion = suggestions.some(s => s.suggestion_type === 'summary')
+
+      if (summaryIsEmpty && !hasSummarySuggestion) {
+        // Generate a basic summary based on available data
+        const name = character.name || 'This character'
+        const race = character.race || ''
+        const charClass = character.class || ''
+        const descriptor = [race, charClass].filter(Boolean).join(' ')
+
+        let generatedSummary = descriptor
+          ? `A ${descriptor.toLowerCase()}`
+          : name
+
+        // Add flavor from personality or backstory if available
+        if (character.personality_traits && character.personality_traits.length > 0) {
+          generatedSummary += ` known for being ${character.personality_traits.slice(0, 2).join(' and ')}`
+        }
+
+        suggestions.unshift({
+          suggestion_type: 'summary',
+          field_name: 'summary',
+          current_value: null,
+          suggested_value: generatedSummary + '.',
+          source_excerpt: 'Character profile analysis',
+          ai_reasoning: 'The character summary field is empty. A summary helps quickly communicate who your character is to DMs and fellow players.',
+          confidence: 'high',
+        })
+      }
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError)
       console.error('Raw response:', result.text?.slice(0, 500))
