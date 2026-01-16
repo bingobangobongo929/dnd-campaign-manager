@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Calendar, Sparkles, Loader2, Users, Check, X, Pencil, Brain } from 'lucide-react'
+import { ArrowLeft, Calendar, Sparkles, Loader2, Users, Check, X, Pencil, Brain, Wand2, ChevronDown, ChevronUp } from 'lucide-react'
 import { Input } from '@/components/ui'
 import { RichTextEditor } from '@/components/editor'
 import { AppLayout } from '@/components/layout/app-layout'
@@ -38,6 +38,13 @@ export default function SessionDetailPage() {
   // AI Summary suggestion state
   const [aiSummary, setAiSummary] = useState<string | null>(null)
   const [showAiSuggestion, setShowAiSuggestion] = useState(false)
+
+  // AI Expand Notes state
+  const [expanding, setExpanding] = useState(false)
+  const [expandedNotes, setExpandedNotes] = useState<string | null>(null)
+  const [showExpandedPreview, setShowExpandedPreview] = useState(false)
+  const [aiReasoning, setAiReasoning] = useState<string>('')
+  const [detailedNotesCollapsed, setDetailedNotesCollapsed] = useState(true)
 
   // Intelligence Modal state
   const [intelligenceModalOpen, setIntelligenceModalOpen] = useState(false)
@@ -211,6 +218,80 @@ export default function SessionDetailPage() {
   const declineSummary = () => {
     setShowAiSuggestion(false)
     setAiSummary(null)
+  }
+
+  // AI Expand Notes - takes summary and creates detailed narrative notes
+  const handleExpandNotes = async () => {
+    if (!formData.summary.trim() || expanding) return
+
+    setExpanding(true)
+    setExpandedNotes('')
+    setAiReasoning('')
+    setShowExpandedPreview(true)
+    setDetailedNotesCollapsed(false)
+
+    try {
+      const response = await fetch('/api/ai/expand', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          summary: formData.summary,
+          campaignId: campaignId,
+          sessionTitle: formData.title,
+        }),
+      })
+
+      if (!response.ok) throw new Error('Failed to expand notes')
+
+      const reader = response.body?.getReader()
+      if (!reader) throw new Error('No reader')
+
+      let notes = ''
+      const decoder = new TextDecoder()
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const chunk = decoder.decode(value)
+
+        if (chunk.includes('---REASONING---')) {
+          const parts = chunk.split('---REASONING---')
+          notes += parts[0]
+          setAiReasoning(parts[1] || '')
+        } else if (aiReasoning) {
+          setAiReasoning(prev => prev + chunk)
+        } else {
+          notes += chunk
+        }
+        setExpandedNotes(notes)
+      }
+    } catch (error) {
+      console.error('Expand error:', error)
+      setShowExpandedPreview(false)
+      setExpandedNotes(null)
+    } finally {
+      setExpanding(false)
+    }
+  }
+
+  const acceptExpanded = () => {
+    if (expandedNotes) {
+      setFormData(prev => ({ ...prev, notes: expandedNotes }))
+    }
+    setShowExpandedPreview(false)
+  }
+
+  const editExpanded = () => {
+    if (expandedNotes) {
+      setFormData(prev => ({ ...prev, notes: expandedNotes }))
+    }
+    setShowExpandedPreview(false)
+  }
+
+  const declineExpanded = () => {
+    setShowExpandedPreview(false)
+    setExpandedNotes(null)
+    setAiReasoning('')
   }
 
   // Group characters by type
@@ -410,24 +491,41 @@ export default function SessionDetailPage() {
                 Summary
               </label>
               <span className="text-sm text-[--text-tertiary]">
-                Brief overview for the timeline
+                Write bullet points, then expand with AI
               </span>
             </div>
-            {!showAiSuggestion && (
-              <button
-                onClick={handleSummarize}
-                disabled={!formData.notes || summarizing}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
-                  "bg-[--arcane-gold]/10 border border-[--arcane-gold]/30 text-[--arcane-gold]",
-                  "hover:bg-[--arcane-gold]/20 hover:border-[--arcane-gold]/50",
-                  "disabled:opacity-50 disabled:cursor-not-allowed"
-                )}
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                AI Summarize
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {!showExpandedPreview && (
+                <button
+                  onClick={handleExpandNotes}
+                  disabled={!formData.summary.trim() || expanding}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                    "bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple]",
+                    "hover:bg-[--arcane-purple]/20 hover:border-[--arcane-purple]/50",
+                    "disabled:opacity-50 disabled:cursor-not-allowed"
+                  )}
+                >
+                  <Wand2 className="w-3.5 h-3.5" />
+                  Expand Notes
+                </button>
+              )}
+              {!showAiSuggestion && (
+                <button
+                  onClick={handleSummarize}
+                  disabled={!formData.notes || summarizing}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                    "bg-[--arcane-gold]/10 border border-[--arcane-gold]/30 text-[--arcane-gold]",
+                    "hover:bg-[--arcane-gold]/20 hover:border-[--arcane-gold]/50",
+                    "disabled:opacity-50 disabled:cursor-not-allowed"
+                  )}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  AI Summarize
+                </button>
+              )}
+            </div>
           </div>
 
           {/* AI Suggestion Panel */}
@@ -473,12 +571,65 @@ export default function SessionDetailPage() {
             </div>
           )}
 
+          {/* AI Expanded Notes Preview */}
+          {showExpandedPreview && (
+            <div className="mb-4 p-4 rounded-xl bg-[--arcane-purple]/5 border border-[--arcane-purple]/30">
+              <div className="flex items-center gap-2 mb-3">
+                <Wand2 className="w-4 h-4 text-[--arcane-purple]" />
+                <span className="text-sm font-medium text-[--arcane-purple]">
+                  {expanding ? 'Expanding notes...' : 'AI Expanded Notes'}
+                </span>
+                {expanding && (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[--arcane-purple]" />
+                )}
+              </div>
+              {aiReasoning && (
+                <div className="mb-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                  <p className="text-xs text-[--text-tertiary] mb-1">AI Context Used:</p>
+                  <p className="text-sm text-[--text-secondary] whitespace-pre-wrap">{aiReasoning}</p>
+                </div>
+              )}
+              <div className="text-sm text-[--text-secondary] mb-4 whitespace-pre-wrap min-h-[3rem] prose prose-invert prose-sm max-w-none">
+                {expandedNotes || 'Analyzing your summary...'}
+              </div>
+              {!expanding && expandedNotes && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={acceptExpanded}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    Accept
+                  </button>
+                  <button
+                    onClick={editExpanded}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple] hover:bg-[--arcane-purple]/20 transition-colors"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    Accept & Edit
+                  </button>
+                  <button
+                    onClick={declineExpanded}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[--arcane-ember]/10 border border-[--arcane-ember]/30 text-[--arcane-ember] hover:bg-[--arcane-ember]/20 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Decline
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           <textarea
             value={formData.summary}
             onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-            placeholder="What happened in this session..."
+            placeholder={`Write your session summary in bullet points:
+
+* Met with the town mayor about the goblin threat
+* Tracked the goblins to a cave outside town
+* Fought and defeated 5 goblins, found a map to their main camp`}
             rows={8}
-            className="form-textarea min-h-[200px]"
+            className="form-textarea min-h-[200px] font-mono text-sm"
           />
         </div>
 
