@@ -97,19 +97,31 @@ export async function POST(req: Request) {
         })
       }
 
-      // Recent Sessions - WHAT'S BEEN HAPPENING
+      // Sessions - shown in REVERSE chronological order (most recent = current state)
       if (campaignContext.sessions?.length > 0) {
-        systemPrompt += `\n=== RECENT SESSION HISTORY (Reference specific events!) ===\n`
-        // Show most recent sessions first, limit to last 5 for relevance
-        const recentSessions = [...campaignContext.sessions].slice(-5)
-        recentSessions.forEach((session: any) => {
-          systemPrompt += `\nSession ${session.sessionNumber}: "${session.title}" (${session.date})\n`
+        systemPrompt += `\n=== SESSION HISTORY (Most recent first - later sessions supersede earlier ones!) ===\n`
+        // Sort by session number descending, take last 6 sessions
+        const sortedSessions = [...campaignContext.sessions]
+          .sort((a: any, b: any) => (b.sessionNumber || 0) - (a.sessionNumber || 0))
+          .slice(0, 6)
+
+        sortedSessions.forEach((session: any, index: number) => {
+          const isLatest = index === 0
+          const marker = isLatest ? '▶ CURRENT STATE - ' : ''
+          systemPrompt += `\n${marker}Session ${session.sessionNumber}: "${session.title}" (${session.date})\n`
           if (session.summary) systemPrompt += `  SUMMARY: ${session.summary}\n`
           if (session.notes) {
-            const truncatedNotes = session.notes.substring(0, 1200)
-            systemPrompt += `  WHAT HAPPENED: ${truncatedNotes}${session.notes.length > 1200 ? '...' : ''}\n`
+            // Give more context to recent sessions, less to older ones
+            const maxLength = isLatest ? 1500 : (index < 3 ? 1000 : 500)
+            const truncatedNotes = session.notes.substring(0, maxLength)
+            systemPrompt += `  WHAT HAPPENED: ${truncatedNotes}${session.notes.length > maxLength ? '...' : ''}\n`
           }
         })
+
+        const totalSessions = campaignContext.sessions.length
+        if (totalSessions > 6) {
+          systemPrompt += `\n(${totalSessions - 6} earlier sessions not shown - the campaign has been running for ${totalSessions} sessions total)\n`
+        }
       }
 
       // Major Timeline Events - THE BIG MOMENTS

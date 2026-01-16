@@ -97,6 +97,14 @@ Look for opportunities to connect:
 - A character's secret with an unresolved plot thread
 - Past session events with present situations
 
+## UNDERSTANDING SESSION CHRONOLOGY
+Sessions are numbered chronologically. Higher session numbers = more recent = current state of the campaign.
+- If something happened in session 12 that contradicts session 3, session 12 is the truth
+- Character statuses, relationships, and knowledge evolve over sessions
+- An NPC who seemed friendly in session 2 might have been revealed as a villain in session 8
+- Focus on recent sessions for "what's happening now" but earlier sessions for backstory/history
+- The most recent session represents where the campaign IS, earlier sessions are how it GOT there
+
 ## IF YOU DON'T HAVE ENOUGH INFO
 Ask a clarifying question about THEIR campaign rather than giving generic advice. "I don't see much about [X] in your notes - what's the deal with them?" is better than guessing.`,
 
