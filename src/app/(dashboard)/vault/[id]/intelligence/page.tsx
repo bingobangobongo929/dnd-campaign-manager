@@ -220,8 +220,12 @@ export default function CharacterIntelligencePage() {
 
       await loadData()
 
-      if (data.suggestionsGenerated > 0) {
-        toast.success(`Analysis complete: ${data.suggestionsGenerated} suggestion${data.suggestionsGenerated === 1 ? '' : 's'} found`)
+      if (data.suggestionsSaved > 0) {
+        toast.success(`Analysis complete: ${data.suggestionsSaved} suggestion${data.suggestionsSaved === 1 ? '' : 's'} saved`)
+      } else if (data.suggestionsGenerated > 0) {
+        // AI found suggestions but none were saved - likely RLS issue
+        toast.error(`Found ${data.suggestionsGenerated} suggestions but failed to save them. Please run migration 022 in Supabase.`)
+        setAnalysisError('Suggestions could not be saved to database. Run migration 022_vault_intelligence_rls.sql in your Supabase SQL Editor.')
       } else {
         toast.info('Analysis complete: No new suggestions')
       }
