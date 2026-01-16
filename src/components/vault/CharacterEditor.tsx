@@ -83,7 +83,7 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 
 // Section types for navigation
-type SectionType = 'backstory' | 'details' | 'people' | 'journal' | 'writings' | 'stats' | 'player' | 'gallery'
+type SectionType = 'backstory' | 'details' | 'people' | 'writings' | 'stats' | 'player' | 'gallery'
 
 interface CharacterEditorProps {
   character?: VaultCharacter | null
@@ -104,7 +104,6 @@ const SECTIONS: { id: SectionType; label: string; icon: React.ComponentType<{ cl
   { id: 'backstory', label: 'Backstory', icon: BookOpen },
   { id: 'details', label: 'Details', icon: FileText },
   { id: 'people', label: 'People', icon: Users },
-  { id: 'journal', label: 'Journal', icon: Scroll },
   { id: 'writings', label: 'Writings', icon: Quote },
   { id: 'stats', label: 'Stats', icon: BarChart3 },
   { id: 'player', label: 'Player', icon: User },
@@ -205,7 +204,6 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     backstory: true,
     details: true,
     people: true,
-    journal: true,
     writings: true,
     stats: true,
     player: true,
@@ -311,7 +309,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     if (!container) return
 
     const handleScroll = () => {
-      const sectionIds: SectionType[] = ['backstory', 'details', 'people', 'journal', 'writings', 'stats', 'player', 'gallery']
+      const sectionIds: SectionType[] = ['backstory', 'details', 'people', 'writings', 'stats', 'player', 'gallery']
       const containerRect = container.getBoundingClientRect()
 
       for (const sectionId of sectionIds) {
@@ -1914,7 +1912,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               {/* ═══════════════ STATS OVERVIEW GRID ═══════════════ */}
               {!isCreateMode && characterId && (
                 <div className="mb-8">
-                  <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3">
+                  <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-7 gap-3">
                     <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
                       <p className="text-lg font-semibold text-white">{npcs.length}</p>
                       <p className="text-xs text-gray-500">NPCs</p>
@@ -1922,10 +1920,6 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
                       <p className="text-lg font-semibold text-white">{companions.length}</p>
                       <p className="text-xs text-gray-500">Companions</p>
-                    </div>
-                    <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
-                      <p className="text-lg font-semibold text-white">{journalEntries.length}</p>
-                      <p className="text-xs text-gray-500">Sessions</p>
                     </div>
                     <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
                       <p className="text-lg font-semibold text-white">{formData.character_writings.length}</p>
@@ -2412,79 +2406,6 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                     )}
                   </div>
                 </div>
-              </CollapsibleSection>
-
-              {/* ═══════════════ JOURNAL SECTION ═══════════════ */}
-              <CollapsibleSection
-                id="journal"
-                title="Journal"
-                icon={Scroll}
-                count={journalEntries.length}
-                actionButton={
-                  <button
-                    onClick={() => setAddJournalModalOpen(true)}
-                    className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Entry
-                  </button>
-                }
-              >
-                {journalEntries.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
-                    <Scroll className="w-10 h-10 mb-4 text-gray-600" />
-                    <p className="text-sm text-gray-500">No journal entries yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {journalEntries.map((entry) => (
-                      <div
-                        key={entry.id}
-                        className="p-5 bg-white/[0.02] rounded-xl border border-white/[0.04] hover:border-purple-500/20 transition-all duration-200"
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            {entry.session_number && (
-                              <span className="text-xs px-2.5 py-1 bg-yellow-500/15 text-yellow-400 rounded-md font-medium border border-yellow-500/20">
-                                Session {entry.session_number}
-                              </span>
-                            )}
-                            {entry.title && <span className="text-sm font-medium text-white/90">{entry.title}</span>}
-                            {entry.campaign_name && <span className="text-xs text-gray-500">• {entry.campaign_name}</span>}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {entry.session_date && (
-                              <span className="text-xs text-gray-500">
-                                {new Date(entry.session_date).toLocaleDateString()}
-                              </span>
-                            )}
-                            <button
-                              onClick={() => openEditJournal(entry)}
-                              className="p-1.5 text-gray-500 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-all"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteJournal(entry)}
-                              className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                        {entry.summary && <p className="text-sm text-gray-300 mb-2">{entry.summary}</p>}
-                        <p className="text-sm text-gray-400 whitespace-pre-wrap leading-relaxed">{entry.notes}</p>
-                        {(entry.kill_count || entry.loot || entry.thoughts_for_next) && (
-                          <div className="mt-3 pt-3 border-t border-white/[0.04] flex flex-wrap gap-4 text-xs text-gray-500">
-                            {entry.kill_count !== null && entry.kill_count > 0 && <span>Kills: {entry.kill_count}</span>}
-                            {entry.loot && <span>Loot: {entry.loot}</span>}
-                            {entry.thoughts_for_next && <span className="text-purple-400">Next: {entry.thoughts_for_next}</span>}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </CollapsibleSection>
 
               {/* ═══════════════ WRITINGS SECTION ═══════════════ */}
@@ -3447,222 +3368,6 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         <div className="flex justify-end gap-3">
           <button className="btn btn-secondary" onClick={() => setAddStoryCharacterModalOpen(false)}>Cancel</button>
           <button className="btn btn-primary" onClick={handleAddStoryCharacter}>Add Character</button>
-        </div>
-      </Modal>
-
-      {/* Add Journal Entry Modal */}
-      <Modal
-        isOpen={addJournalModalOpen}
-        onClose={() => setAddJournalModalOpen(false)}
-        title="Add Journal Entry"
-        description="Record a new adventure or experience"
-      >
-        <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <FormLabel>Session Number</FormLabel>
-              <input
-                type="number"
-                placeholder="1, 2, 3..."
-                value={journalForm.session_number}
-                onChange={(e) => setJournalForm(prev => ({ ...prev, session_number: e.target.value }))}
-                className={inputStyles}
-              />
-            </div>
-            <div>
-              <FormLabel>Date</FormLabel>
-              <input
-                type="date"
-                value={journalForm.session_date}
-                onChange={(e) => setJournalForm(prev => ({ ...prev, session_date: e.target.value }))}
-                className={inputStyles}
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <FormLabel>Title</FormLabel>
-              <input
-                type="text"
-                placeholder="Entry title (optional)"
-                value={journalForm.title}
-                onChange={(e) => setJournalForm(prev => ({ ...prev, title: e.target.value }))}
-                className={inputStyles}
-              />
-            </div>
-            <div>
-              <FormLabel>Campaign</FormLabel>
-              <input
-                type="text"
-                placeholder="Campaign name"
-                value={journalForm.campaign_name}
-                onChange={(e) => setJournalForm(prev => ({ ...prev, campaign_name: e.target.value }))}
-                className={inputStyles}
-              />
-            </div>
-          </div>
-          <div>
-            <FormLabel>Summary</FormLabel>
-            <input
-              type="text"
-              placeholder="Brief summary of the session"
-              value={journalForm.summary}
-              onChange={(e) => setJournalForm(prev => ({ ...prev, summary: e.target.value }))}
-              className={inputStyles}
-            />
-          </div>
-          <div>
-            <FormLabel>Notes</FormLabel>
-            <textarea
-              placeholder="What happened this session?"
-              value={journalForm.notes}
-              onChange={(e) => setJournalForm(prev => ({ ...prev, notes: e.target.value }))}
-              className={cn(textareaStyles, "min-h-[120px]")}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <FormLabel>Kill Count</FormLabel>
-              <input
-                type="number"
-                placeholder="0"
-                value={journalForm.kill_count}
-                onChange={(e) => setJournalForm(prev => ({ ...prev, kill_count: e.target.value }))}
-                className={inputStyles}
-              />
-            </div>
-            <div>
-              <FormLabel>Loot</FormLabel>
-              <input
-                type="text"
-                placeholder="Items found..."
-                value={journalForm.loot}
-                onChange={(e) => setJournalForm(prev => ({ ...prev, loot: e.target.value }))}
-                className={inputStyles}
-              />
-            </div>
-          </div>
-          <div>
-            <FormLabel>Thoughts for Next Session</FormLabel>
-            <textarea
-              placeholder="Plans, questions, things to follow up on..."
-              value={journalForm.thoughts_for_next}
-              onChange={(e) => setJournalForm(prev => ({ ...prev, thoughts_for_next: e.target.value }))}
-              className={textareaStyles}
-            />
-          </div>
-        </div>
-        <div className="flex justify-end gap-3">
-          <button className="btn btn-secondary" onClick={() => setAddJournalModalOpen(false)}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleAddJournalEntry}>Add Entry</button>
-        </div>
-      </Modal>
-
-      {/* Edit Journal Entry Modal */}
-      <Modal
-        isOpen={editJournalModalOpen}
-        onClose={() => { setEditJournalModalOpen(false); setEditingJournal(null); }}
-        title="Edit Journal Entry"
-        description="Update this session entry"
-      >
-        <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <FormLabel>Session Number</FormLabel>
-              <input
-                type="number"
-                placeholder="1, 2, 3..."
-                value={journalForm.session_number}
-                onChange={(e) => setJournalForm(prev => ({ ...prev, session_number: e.target.value }))}
-                className={inputStyles}
-              />
-            </div>
-            <div>
-              <FormLabel>Date</FormLabel>
-              <input
-                type="date"
-                value={journalForm.session_date}
-                onChange={(e) => setJournalForm(prev => ({ ...prev, session_date: e.target.value }))}
-                className={inputStyles}
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <FormLabel>Title</FormLabel>
-              <input
-                type="text"
-                placeholder="Entry title (optional)"
-                value={journalForm.title}
-                onChange={(e) => setJournalForm(prev => ({ ...prev, title: e.target.value }))}
-                className={inputStyles}
-              />
-            </div>
-            <div>
-              <FormLabel>Campaign</FormLabel>
-              <input
-                type="text"
-                placeholder="Campaign name"
-                value={journalForm.campaign_name}
-                onChange={(e) => setJournalForm(prev => ({ ...prev, campaign_name: e.target.value }))}
-                className={inputStyles}
-              />
-            </div>
-          </div>
-          <div>
-            <FormLabel>Summary</FormLabel>
-            <input
-              type="text"
-              placeholder="Brief summary of the session"
-              value={journalForm.summary}
-              onChange={(e) => setJournalForm(prev => ({ ...prev, summary: e.target.value }))}
-              className={inputStyles}
-            />
-          </div>
-          <div>
-            <FormLabel>Notes</FormLabel>
-            <textarea
-              placeholder="What happened this session?"
-              value={journalForm.notes}
-              onChange={(e) => setJournalForm(prev => ({ ...prev, notes: e.target.value }))}
-              className={cn(textareaStyles, "min-h-[120px]")}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <FormLabel>Kill Count</FormLabel>
-              <input
-                type="number"
-                placeholder="0"
-                value={journalForm.kill_count}
-                onChange={(e) => setJournalForm(prev => ({ ...prev, kill_count: e.target.value }))}
-                className={inputStyles}
-              />
-            </div>
-            <div>
-              <FormLabel>Loot</FormLabel>
-              <input
-                type="text"
-                placeholder="Items found..."
-                value={journalForm.loot}
-                onChange={(e) => setJournalForm(prev => ({ ...prev, loot: e.target.value }))}
-                className={inputStyles}
-              />
-            </div>
-          </div>
-          <div>
-            <FormLabel>Thoughts for Next Session</FormLabel>
-            <textarea
-              placeholder="Plans, questions, things to follow up on..."
-              value={journalForm.thoughts_for_next}
-              onChange={(e) => setJournalForm(prev => ({ ...prev, thoughts_for_next: e.target.value }))}
-              className={textareaStyles}
-            />
-          </div>
-        </div>
-        <div className="flex justify-end gap-3">
-          <button className="btn btn-secondary" onClick={() => { setEditJournalModalOpen(false); setEditingJournal(null); }}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleSaveJournal}>Save Changes</button>
         </div>
       </Modal>
 

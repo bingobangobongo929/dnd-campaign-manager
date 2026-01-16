@@ -44,19 +44,27 @@ export function Modal({
 
   if (!isOpen) return null
 
-  const sizes = {
+  const sizeClasses = {
     sm: 'max-w-sm',
     md: 'max-w-md',
     lg: 'max-w-lg',
     xl: 'max-w-2xl',
     full: 'max-w-4xl',
-    fullscreen: 'w-[90vw] max-w-[90vw] h-[90vh] max-h-[90vh]',
+    fullscreen: '', // Use inline styles for fullscreen
   }
+
+  const fullscreenStyles = size === 'fullscreen' ? {
+    width: '90vw',
+    maxWidth: '90vw',
+    height: '90vh',
+    maxHeight: '90vh',
+  } : {}
 
   const modalContent = (
     <div className="modal-backdrop" onClick={onClose}>
       <div
-        className={cn('modal', sizes[size])}
+        className={cn('modal', sizeClasses[size])}
+        style={fullscreenStyles}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
