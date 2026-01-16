@@ -13,16 +13,32 @@ import {
   Swords,
   Network,
   Brain,
+  Edit3,
+  Eye,
+  Users,
 } from 'lucide-react'
 import { useAppStore } from '@/store'
 
 interface FloatingDockProps {
   campaignId?: string
+  characterId?: string
 }
 
-export function FloatingDock({ campaignId }: FloatingDockProps) {
+export function FloatingDock({ campaignId, characterId }: FloatingDockProps) {
   const pathname = usePathname()
   const { aiEnabled } = useAppStore()
+
+  // Character-specific links (when viewing a vault character)
+  const characterLinks = characterId
+    ? [
+        { href: `/vault/${characterId}`, label: 'Edit', icon: Edit3 },
+        { href: `/vault/${characterId}/view`, label: 'View', icon: Eye },
+        ...(aiEnabled ? [{ href: `/vault/${characterId}/intelligence`, label: 'Intelligence', icon: Brain }] : []),
+        { href: `/vault/${characterId}/relationships`, label: 'Relationships', icon: Users },
+        { href: `/vault/${characterId}/sessions`, label: 'Sessions', icon: ScrollText },
+        { href: `/vault/${characterId}/gallery`, label: 'Gallery', icon: Image },
+      ]
+    : []
 
   const campaignLinks = campaignId
     ? [
@@ -44,12 +60,15 @@ export function FloatingDock({ campaignId }: FloatingDockProps) {
 
   const isActive = (href: string) => pathname === href
 
+  // Calculate animation delay offset
+  let animationOffset = 0
+
   return (
     <nav className="floating-dock">
-      {/* Campaign-specific links */}
-      {campaignLinks.length > 0 && (
+      {/* Character-specific links (vault character context) */}
+      {characterLinks.length > 0 && (
         <>
-          {campaignLinks.map((link, index) => {
+          {characterLinks.map((link, index) => {
             const Icon = link.icon
             return (
               <Link
@@ -67,15 +86,38 @@ export function FloatingDock({ campaignId }: FloatingDockProps) {
         </>
       )}
 
+      {/* Campaign-specific links */}
+      {campaignLinks.length > 0 && (
+        <>
+          {campaignLinks.map((link, index) => {
+            const Icon = link.icon
+            const offset = characterLinks.length + (characterLinks.length > 0 ? 1 : 0)
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`dock-item ${isActive(link.href) ? 'active' : ''}`}
+                style={{ animationDelay: `${(offset + index) * 50}ms` }}
+              >
+                <Icon className="dock-item-icon" />
+                <span className="dock-item-label">{link.label}</span>
+              </Link>
+            )
+          })}
+          <div className="dock-divider" />
+        </>
+      )}
+
       {/* Global links */}
       {globalLinks.map((link, index) => {
         const Icon = link.icon
+        const offset = characterLinks.length + (characterLinks.length > 0 ? 1 : 0) + campaignLinks.length + (campaignLinks.length > 0 ? 1 : 0)
         return (
           <Link
             key={link.href}
             href={link.href}
             className={`dock-item ${isActive(link.href) ? 'active' : ''}`}
-            style={{ animationDelay: `${(campaignLinks.length + index) * 50}ms` }}
+            style={{ animationDelay: `${(offset + index) * 50}ms` }}
           >
             <Icon className="dock-item-icon" />
             <span className="dock-item-label">{link.label}</span>

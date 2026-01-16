@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
-import { VaultLayout } from '@/components/layout/VaultLayout'
+import { AppLayout } from '@/components/layout/app-layout'
 import { CharacterEditor } from '@/components/vault/CharacterEditor'
 import { Button } from '@/components/ui'
 import { createClient } from '@/lib/supabase/client'
@@ -40,17 +40,17 @@ export default function EditVaultCharacterPage() {
 
   if (loading) {
     return (
-      <VaultLayout characterId={characterId}>
+      <AppLayout characterId={characterId}>
         <div className="min-h-screen flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-[--arcane-purple]" />
         </div>
-      </VaultLayout>
+      </AppLayout>
     )
   }
 
   if (notFound || !character) {
     return (
-      <VaultLayout>
+      <AppLayout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-[--text-primary] mb-4">Character Not Found</h1>
@@ -62,13 +62,13 @@ export default function EditVaultCharacterPage() {
             </Button>
           </div>
         </div>
-      </VaultLayout>
+      </AppLayout>
     )
   }
 
   return (
-    <VaultLayout characterId={characterId} hideTopBar>
+    <AppLayout characterId={characterId} fullBleed>
       <CharacterEditor character={character} mode="edit" />
-    </VaultLayout>
+    </AppLayout>
   )
 }

@@ -11,6 +11,7 @@ import { AIAssistant } from '@/components/ai/ai-assistant'
 interface AppLayoutProps {
   children: React.ReactNode
   campaignId?: string
+  characterId?: string
   fullBleed?: boolean
   transparentTopBar?: boolean
   topBarActions?: React.ReactNode
@@ -19,6 +20,7 @@ interface AppLayoutProps {
 export function AppLayout({
   children,
   campaignId,
+  characterId,
   fullBleed = false,
   transparentTopBar = false,
   topBarActions,
@@ -134,7 +136,7 @@ export function AppLayout({
 
   return (
     <>
-      <FloatingDock campaignId={campaignId} />
+      <FloatingDock campaignId={campaignId} characterId={characterId} />
       <TopBar
         campaigns={campaigns}
         currentCampaignId={campaignId}

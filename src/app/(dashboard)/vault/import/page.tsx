@@ -24,7 +24,7 @@ import {
   CheckCircle2,
   XCircle,
 } from 'lucide-react'
-import { VaultLayout } from '@/components/layout/VaultLayout'
+import { AppLayout } from '@/components/layout/app-layout'
 import { cn } from '@/lib/utils'
 
 // Types for parsed data
@@ -1019,7 +1019,7 @@ export default function VaultImportPage() {
   )
 
   return (
-    <VaultLayout>
+    <AppLayout>
       <div className="p-6">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
@@ -1356,6 +1356,6 @@ export default function VaultImportPage() {
         )}
         </div>
       </div>
-    </VaultLayout>
+    </AppLayout>
   )
 }

@@ -19,7 +19,7 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { VaultLayout } from '@/components/layout/VaultLayout'
+import { AppLayout } from '@/components/layout/app-layout'
 import { Button, Modal } from '@/components/ui'
 import { RichTextEditor } from '@/components/editor/rich-text-editor'
 import { createClient } from '@/lib/supabase/client'
@@ -246,16 +246,16 @@ export default function CharacterSessionsPage() {
 
   if (loading) {
     return (
-      <VaultLayout characterId={characterId}>
+      <AppLayout characterId={characterId}>
         <div className="min-h-screen flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-[--arcane-purple]" />
         </div>
-      </VaultLayout>
+      </AppLayout>
     )
   }
 
   return (
-    <VaultLayout characterId={characterId}>
+    <AppLayout characterId={characterId}>
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -663,6 +663,6 @@ export default function CharacterSessionsPage() {
           </div>
         </Modal>
       </div>
-    </VaultLayout>
+    </AppLayout>
   )
 }
