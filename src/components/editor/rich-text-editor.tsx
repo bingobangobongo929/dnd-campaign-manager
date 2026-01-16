@@ -147,14 +147,21 @@ export function RichTextEditor({
     editorProps: {
       attributes: {
         class: cn(
-          'prose prose-invert max-w-none',
+          'prose prose-invert prose-sm max-w-none',
           'focus:outline-none min-h-[200px] p-4',
+          // Headings - match the preview styling
           'prose-headings:text-white prose-headings:font-semibold',
-          'prose-p:text-gray-300 prose-p:my-2',
-          'prose-strong:text-white',
-          'prose-em:text-gray-300',
+          '[&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold',
+          // Paragraphs
+          'prose-p:text-gray-300 prose-p:my-2 [&>p]:mb-4',
+          // Strong/emphasis - make bold stand out more
+          'prose-strong:text-white prose-strong:font-semibold',
+          'prose-em:text-purple-300 prose-em:not-italic',
+          // Lists - proper spacing
           'prose-ul:text-gray-300 prose-ol:text-gray-300',
-          'prose-li:text-gray-300',
+          '[&>ul]:mt-1 [&>ul]:mb-4',
+          'prose-li:text-gray-300 prose-li:my-0.5',
+          // Other elements
           'prose-blockquote:border-l-purple-500 prose-blockquote:text-gray-400',
           'prose-code:text-purple-400 prose-code:bg-white/10 prose-code:px-1 prose-code:rounded',
           'prose-img:rounded-lg prose-img:my-4',
