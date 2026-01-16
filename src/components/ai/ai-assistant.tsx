@@ -11,8 +11,46 @@ interface AIAssistantProps {
   campaignContext?: {
     campaignName: string
     gameSystem: string
-    characters: { name: string; type: string; summary?: string }[]
-    recentSessions: { title: string; summary?: string }[]
+    characters: {
+      name: string
+      type: string
+      status?: string
+      summary?: string
+      race?: string
+      class?: string
+      background?: string
+      appearance?: string
+      personality?: string
+      goals?: string
+      secrets?: string
+      notes?: string
+      importantPeople?: unknown
+      storyHooks?: unknown
+      quotes?: unknown
+    }[]
+    sessions: {
+      sessionNumber: number
+      title: string
+      date: string
+      summary?: string
+      notes?: string
+    }[]
+    timelineEvents: {
+      title: string
+      description?: string
+      eventType: string
+      date?: string
+      isMajor: boolean
+    }[]
+    lore: {
+      type: string
+      title: string
+      content: unknown
+    }[]
+    canvasGroups: {
+      name: string
+      icon?: string
+    }[]
   }
 }
 
