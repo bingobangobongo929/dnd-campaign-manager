@@ -51,7 +51,6 @@ import {
   EyeOff,
   Upload,
   ArrowLeft,
-  BarChart3,
   Image as GalleryIcon,
   Sparkles,
   Loader2,
@@ -86,7 +85,7 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 
 // Section types for navigation
-type SectionType = 'backstory' | 'details' | 'people' | 'writings' | 'gallery' | 'stats'
+type SectionType = 'backstory' | 'details' | 'people' | 'writings' | 'gallery'
 
 interface CharacterEditorProps {
   character?: VaultCharacter | null
@@ -109,7 +108,6 @@ const SECTIONS: { id: SectionType; label: string; icon: React.ComponentType<{ cl
   { id: 'people', label: 'People', icon: Users },
   { id: 'writings', label: 'Writings', icon: Quote },
   { id: 'gallery', label: 'Gallery', icon: GalleryIcon },
-  { id: 'stats', label: 'Stats', icon: BarChart3 },
 ]
 
 // CollapsibleSection component - MUST be defined outside CharacterEditor to prevent
@@ -273,7 +271,6 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     people: true,
     writings: true,
     gallery: true,
-    stats: true,
   })
 
   const toggleSection = (section: SectionType) => {
@@ -319,7 +316,6 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
   // Modal form state
   const [linkForm, setLinkForm] = useState({ type: 'other' as string, title: '', url: '' })
-  const [storyCharForm, setStoryCharForm] = useState({ name: '', relationship: 'friend', tagline: '', notes: '', is_party_member: false })
   const [npcForm, setNpcForm] = useState({
     related_name: '',
     nickname: '',
@@ -398,7 +394,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     if (!container) return
 
     const handleScroll = () => {
-      const sectionIds: SectionType[] = ['backstory', 'details', 'people', 'writings', 'gallery', 'stats']
+      const sectionIds: SectionType[] = ['backstory', 'details', 'people', 'writings', 'gallery']
       const containerRect = container.getBoundingClientRect()
 
       for (const sectionId of sectionIds) {
@@ -1032,7 +1028,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
   // Handle adding an NPC/relationship
   const handleAddStoryCharacter = async () => {
-    if (!characterId || !storyCharForm.name.trim()) return
+    if (!characterId || !npcForm.related_name.trim()) return
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -1043,14 +1039,25 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         .insert({
           user_id: user.id,
           character_id: characterId,
-          related_name: storyCharForm.name.trim(),
-          relationship_type: storyCharForm.relationship,
-          relationship_label: storyCharForm.relationship,
-          description: storyCharForm.tagline.trim() || null,
-          full_notes: storyCharForm.notes.trim() || null,
+          related_name: npcForm.related_name.trim(),
+          nickname: npcForm.nickname.trim() || null,
+          relationship_type: npcForm.relationship_type,
+          relationship_label: npcForm.relationship_label.trim() || null,
+          faction_affiliations: npcForm.faction_affiliations.length > 0 ? npcForm.faction_affiliations : null,
+          location: npcForm.location.trim() || null,
+          occupation: npcForm.occupation.trim() || null,
+          origin: npcForm.origin.trim() || null,
+          needs: npcForm.needs.trim() || null,
+          can_provide: npcForm.can_provide.trim() || null,
+          goals: npcForm.goals.trim() || null,
+          secrets: npcForm.secrets.trim() || null,
+          personality_traits: npcForm.personality_traits.length > 0 ? npcForm.personality_traits : null,
+          full_notes: npcForm.full_notes.trim() || null,
+          relationship_status: npcForm.relationship_status,
+          related_image_url: npcForm.related_image_url || null,
           display_order: relationships.length,
           is_companion: false,
-          is_party_member: storyCharForm.is_party_member,
+          is_party_member: npcForm.is_party_member,
         })
         .select()
         .single()
@@ -1058,7 +1065,26 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       if (error) throw error
       if (data) setRelationships(prev => [...prev, data])
 
-      setStoryCharForm({ name: '', relationship: 'friend', tagline: '', notes: '', is_party_member: false })
+      // Reset the form
+      setNpcForm({
+        related_name: '',
+        nickname: '',
+        relationship_type: 'friend',
+        relationship_label: '',
+        faction_affiliations: [],
+        location: '',
+        occupation: '',
+        origin: '',
+        needs: '',
+        can_provide: '',
+        goals: '',
+        secrets: '',
+        personality_traits: [],
+        full_notes: '',
+        relationship_status: 'active',
+        related_image_url: null,
+        is_party_member: false,
+      })
       setAddStoryCharacterModalOpen(false)
     } catch (error) {
       console.error('Add NPC error:', error)
@@ -2447,8 +2473,26 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                       <label className="text-sm font-medium text-gray-400/90">Party Members ({partyMembers.length})</label>
                       <button
                         onClick={() => {
-                          // Open add NPC modal with party member flag pre-set
-                          setStoryCharForm(prev => ({ ...prev, is_party_member: true }))
+                          // Reset form and set party member flag
+                          setNpcForm({
+                            related_name: '',
+                            nickname: '',
+                            relationship_type: 'party_member',
+                            relationship_label: '',
+                            faction_affiliations: [],
+                            location: '',
+                            occupation: '',
+                            origin: '',
+                            needs: '',
+                            can_provide: '',
+                            goals: '',
+                            secrets: '',
+                            personality_traits: [],
+                            full_notes: '',
+                            relationship_status: 'active',
+                            related_image_url: null,
+                            is_party_member: true,
+                          })
                           setAddStoryCharacterModalOpen(true)
                         }}
                         className="flex items-center gap-2 py-2 px-4 text-sm text-indigo-400 bg-indigo-500/10 rounded-lg hover:bg-indigo-500/20 transition-all duration-200 border border-indigo-500/20"
@@ -2489,8 +2533,26 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                       <label className="text-sm font-medium text-gray-400/90">NPCs & Contacts ({npcs.length})</label>
                       <button
                         onClick={() => {
-                          // Reset is_party_member to false for regular NPCs
-                          setStoryCharForm(prev => ({ ...prev, is_party_member: false }))
+                          // Reset form for regular NPC
+                          setNpcForm({
+                            related_name: '',
+                            nickname: '',
+                            relationship_type: 'friend',
+                            relationship_label: '',
+                            faction_affiliations: [],
+                            location: '',
+                            occupation: '',
+                            origin: '',
+                            needs: '',
+                            can_provide: '',
+                            goals: '',
+                            secrets: '',
+                            personality_traits: [],
+                            full_notes: '',
+                            relationship_status: 'active',
+                            related_image_url: null,
+                            is_party_member: false,
+                          })
                           setAddStoryCharacterModalOpen(true)
                         }}
                         className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
@@ -3022,325 +3084,6 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 )}
               </CollapsibleSection>
 
-              {/* ═══════════════ STATS SECTION ═══════════════ */}
-              <CollapsibleSection id="stats" title="Stats" icon={BarChart3} isExpanded={expandedSections.stats} onToggle={() => toggleSection('stats')}>
-                <div className="space-y-8">
-                  {/* Gold */}
-                  <div>
-                    <label className="block text-sm text-gray-500 mb-2">Gold</label>
-                    <input
-                      type="number"
-                      value={formData.gold}
-                      onChange={(e) => setFormData(prev => ({ ...prev, gold: parseInt(e.target.value) || 0 }))}
-                      className="w-40 py-3 px-4 text-lg bg-white/[0.02] border border-white/[0.06] rounded-xl text-yellow-400 font-medium focus:outline-none focus:bg-white/[0.04] focus:border-yellow-500/30 transition-all duration-200"
-                    />
-                  </div>
-
-                  {/* Combat Stats */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400/90 mb-4">Combat Statistics</label>
-                    <div className="grid grid-cols-4 gap-4">
-                      <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
-                        <label className="block text-xs text-gray-500 mb-2">Kills</label>
-                        <input
-                          type="number"
-                          value={formData.combat_stats?.kills || 0}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            combat_stats: { ...prev.combat_stats, kills: parseInt(e.target.value) || 0 }
-                          }))}
-                          className="w-full py-2 px-3 text-lg bg-transparent border border-white/[0.06] rounded-lg text-red-400 font-medium focus:outline-none focus:border-red-500/30 transition-all duration-200"
-                        />
-                      </div>
-                      <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
-                        <label className="block text-xs text-gray-500 mb-2">Deaths</label>
-                        <input
-                          type="number"
-                          value={formData.combat_stats?.deaths || 0}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            combat_stats: { ...prev.combat_stats, deaths: parseInt(e.target.value) || 0 }
-                          }))}
-                          className="w-full py-2 px-3 text-lg bg-transparent border border-white/[0.06] rounded-lg text-gray-400 font-medium focus:outline-none focus:border-gray-500/30 transition-all duration-200"
-                        />
-                      </div>
-                      <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
-                        <label className="block text-xs text-gray-500 mb-2">Unconscious</label>
-                        <input
-                          type="number"
-                          value={formData.combat_stats?.unconscious || 0}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            combat_stats: { ...prev.combat_stats, unconscious: parseInt(e.target.value) || 0 }
-                          }))}
-                          className="w-full py-2 px-3 text-lg bg-transparent border border-white/[0.06] rounded-lg text-orange-400 font-medium focus:outline-none focus:border-orange-500/30 transition-all duration-200"
-                        />
-                      </div>
-                      <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
-                        <label className="block text-xs text-gray-500 mb-2">Last Session</label>
-                        <input
-                          type="number"
-                          value={formData.combat_stats?.last_updated_session || 0}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            combat_stats: { ...prev.combat_stats, last_updated_session: parseInt(e.target.value) || 0 }
-                          }))}
-                          className="w-full py-2 px-3 text-lg bg-transparent border border-white/[0.06] rounded-lg text-purple-400 font-medium focus:outline-none focus:border-purple-500/30 transition-all duration-200"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Party Relations */}
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <label className="text-sm font-medium text-gray-400/90">Party Relations</label>
-                      <button
-                        onClick={() => {
-                          setFormData(prev => ({
-                            ...prev,
-                            party_relations: [...prev.party_relations, { name: '', notes: '', relationship: '' }]
-                          }))
-                        }}
-                        className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
-                      >
-                        <Plus className="w-4 h-4" />
-                        Add Relation
-                      </button>
-                    </div>
-
-                    {formData.party_relations.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
-                        <Users className="w-10 h-10 mb-4 text-gray-600" />
-                        <p className="text-sm text-gray-500">No party relations yet</p>
-                        <p className="text-xs text-gray-600 mt-1">Add notes about relationships with other party members</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {formData.party_relations.map((relation, index) => (
-                          <div key={index} className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
-                            <div className="flex items-center gap-4 mb-3">
-                              <input
-                                type="text"
-                                value={relation.name}
-                                onChange={(e) => {
-                                  const newRelations = [...formData.party_relations]
-                                  newRelations[index] = { ...relation, name: e.target.value }
-                                  setFormData(prev => ({ ...prev, party_relations: newRelations }))
-                                }}
-                                placeholder="Character name..."
-                                className="flex-1 py-2.5 px-3.5 text-[14px] bg-white/[0.03] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.05] focus:border-purple-500/30 transition-all duration-200"
-                              />
-                              <input
-                                type="text"
-                                value={relation.relationship || ''}
-                                onChange={(e) => {
-                                  const newRelations = [...formData.party_relations]
-                                  newRelations[index] = { ...relation, relationship: e.target.value }
-                                  setFormData(prev => ({ ...prev, party_relations: newRelations }))
-                                }}
-                                placeholder="Relationship (friend, rival...)"
-                                className="w-48 py-2.5 px-3.5 text-[14px] bg-white/[0.03] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.05] focus:border-purple-500/30 transition-all duration-200"
-                              />
-                              <button
-                                onClick={() => {
-                                  setFormData(prev => ({
-                                    ...prev,
-                                    party_relations: prev.party_relations.filter((_, i) => i !== index)
-                                  }))
-                                }}
-                                className="p-1.5 text-gray-600 hover:text-red-400/80 transition-all duration-200"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                            <textarea
-                              value={relation.notes}
-                              onChange={(e) => {
-                                const newRelations = [...formData.party_relations]
-                                newRelations[index] = { ...relation, notes: e.target.value }
-                                setFormData(prev => ({ ...prev, party_relations: newRelations }))
-                              }}
-                              placeholder="Notes about this relationship..."
-                              className="w-full min-h-[80px] py-3 px-4 text-[14px] bg-white/[0.02] border border-white/[0.06] rounded-lg text-white/80 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30 transition-all duration-200 resize-none leading-relaxed"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Gameplay Tips */}
-                  <div>
-                    <ArrayFieldEditor
-                      label="Gameplay Tips"
-                      items={formData.gameplay_tips}
-                      placeholder="Add a combat tip or mechanical reminder..."
-                      onChange={(items) => setFormData(prev => ({ ...prev, gameplay_tips: items }))}
-                      bulletChar="→"
-                    />
-                  </div>
-
-                  {/* Reference Tables */}
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <label className="text-sm font-medium text-gray-400/90">Reference Tables</label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormData(prev => ({
-                            ...prev,
-                            reference_tables: [...prev.reference_tables, { title: '', headers: ['Column 1', 'Column 2'], rows: [['', '']] }]
-                          }))
-                        }}
-                        className="flex items-center gap-2 py-2 px-4 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-all duration-200 border border-purple-500/20"
-                      >
-                        <Plus className="w-4 h-4" />
-                        Add Table
-                      </button>
-                    </div>
-
-                    {formData.reference_tables.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
-                        <BarChart3 className="w-8 h-8 mb-3 text-gray-600" />
-                        <p className="text-sm text-gray-500">No reference tables yet</p>
-                        <p className="text-xs text-gray-600 mt-1">Store potion inventories, known locations, etc.</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-6">
-                        {formData.reference_tables.map((table: { title: string; headers: string[]; rows: string[][] }, tableIndex: number) => (
-                          <div key={tableIndex} className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
-                            <div className="flex items-center gap-3 mb-4">
-                              <input
-                                type="text"
-                                value={table.title}
-                                onChange={(e) => {
-                                  const newTables = [...formData.reference_tables]
-                                  newTables[tableIndex] = { ...table, title: e.target.value }
-                                  setFormData(prev => ({ ...prev, reference_tables: newTables }))
-                                }}
-                                placeholder="Table title..."
-                                className="flex-1 py-2 px-3 text-sm font-medium bg-white/[0.03] border border-white/[0.06] rounded-lg text-white/85 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.05] focus:border-purple-500/30"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const newTables = [...formData.reference_tables]
-                                  newTables[tableIndex] = {
-                                    ...table,
-                                    headers: [...table.headers, `Column ${table.headers.length + 1}`],
-                                    rows: table.rows.map((row: string[]) => [...row, ''])
-                                  }
-                                  setFormData(prev => ({ ...prev, reference_tables: newTables }))
-                                }}
-                                className="p-2 text-gray-500 hover:text-purple-400 transition-all"
-                                title="Add column"
-                              >
-                                <Plus className="w-4 h-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setFormData(prev => ({
-                                    ...prev,
-                                    reference_tables: prev.reference_tables.filter((_: { title: string; headers: string[]; rows: string[][] }, i: number) => i !== tableIndex)
-                                  }))
-                                }}
-                                className="p-2 text-gray-600 hover:text-red-400/80 transition-all"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-
-                            <div className="overflow-x-auto">
-                              <table className="w-full text-sm">
-                                <thead>
-                                  <tr>
-                                    {table.headers.map((header: string, colIndex: number) => (
-                                      <th key={colIndex} className="p-2 text-left">
-                                        <input
-                                          type="text"
-                                          value={header}
-                                          onChange={(e) => {
-                                            const newTables = [...formData.reference_tables]
-                                            const newHeaders = [...table.headers]
-                                            newHeaders[colIndex] = e.target.value
-                                            newTables[tableIndex] = { ...table, headers: newHeaders }
-                                            setFormData(prev => ({ ...prev, reference_tables: newTables }))
-                                          }}
-                                          className="w-full py-1.5 px-2 text-xs font-medium bg-purple-500/10 border border-purple-500/20 rounded text-purple-300 placeholder:text-gray-600 focus:outline-none focus:border-purple-500/40"
-                                        />
-                                      </th>
-                                    ))}
-                                    <th className="w-8"></th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {table.rows.map((row: string[], rowIndex: number) => (
-                                    <tr key={rowIndex}>
-                                      {row.map((cell: string, cellIndex: number) => (
-                                        <td key={cellIndex} className="p-1">
-                                          <input
-                                            type="text"
-                                            value={cell}
-                                            onChange={(e) => {
-                                              const newTables = [...formData.reference_tables]
-                                              const newRows = table.rows.map((r: string[], ri: number) =>
-                                                ri === rowIndex
-                                                  ? r.map((c: string, ci: number) => ci === cellIndex ? e.target.value : c)
-                                                  : r
-                                              )
-                                              newTables[tableIndex] = { ...table, rows: newRows }
-                                              setFormData(prev => ({ ...prev, reference_tables: newTables }))
-                                            }}
-                                            className="w-full py-1.5 px-2 text-xs bg-white/[0.02] border border-white/[0.06] rounded text-white/80 placeholder:text-gray-600 focus:outline-none focus:bg-white/[0.04] focus:border-purple-500/30"
-                                          />
-                                        </td>
-                                      ))}
-                                      <td className="w-8 p-1">
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const newTables = [...formData.reference_tables]
-                                            newTables[tableIndex] = {
-                                              ...table,
-                                              rows: table.rows.filter((_: string[], i: number) => i !== rowIndex)
-                                            }
-                                            setFormData(prev => ({ ...prev, reference_tables: newTables }))
-                                          }}
-                                          className="p-1 text-gray-600 hover:text-red-400/80 transition-all"
-                                        >
-                                          <X className="w-3 h-3" />
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newTables = [...formData.reference_tables]
-                                newTables[tableIndex] = {
-                                  ...table,
-                                  rows: [...table.rows, table.headers.map(() => '')]
-                                }
-                                setFormData(prev => ({ ...prev, reference_tables: newTables }))
-                              }}
-                              className="mt-2 w-full py-1.5 text-xs text-gray-500 hover:text-purple-400 bg-white/[0.02] hover:bg-white/[0.04] border border-dashed border-white/[0.08] rounded transition-all"
-                            >
-                              + Add Row
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CollapsibleSection>
-
               </div>
 
               {/* Bottom padding */}
@@ -3450,69 +3193,264 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         </div>
       </Modal>
 
-      {/* Add Story Character Modal */}
+      {/* Add Story Character Modal - Fullscreen with all fields */}
       <Modal
         isOpen={addStoryCharacterModalOpen}
         onClose={() => setAddStoryCharacterModalOpen(false)}
-        title="Add Story Character"
-        description="Add an NPC related to this character"
+        title={npcForm.is_party_member ? "Add Party Member" : "Add NPC"}
+        description={npcForm.is_party_member ? "Add a fellow player character you adventure with" : "Add an NPC related to this character"}
+        size="fullscreen"
       >
-        <div className="space-y-4 py-4">
-          <div>
-            <FormLabel>Name</FormLabel>
-            <input
-              type="text"
-              placeholder="Character name"
-              value={storyCharForm.name}
-              onChange={(e) => setStoryCharForm(prev => ({ ...prev, name: e.target.value }))}
-              className={inputStyles}
-            />
+        <div className="flex flex-col h-full max-h-[calc(100vh-180px)]">
+          <div className="flex-1 overflow-y-auto py-6 px-2">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Left Column - Avatar & Identity */}
+              <div className="space-y-6">
+                {/* Avatar Section */}
+                <div className="bg-white/[0.02] rounded-xl p-5 border border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white/80 mb-4 flex items-center gap-2">
+                    <User className="w-4 h-4 text-purple-400" />
+                    Portrait
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setNpcImageModalOpen(true)}
+                    className="relative w-full aspect-square max-w-[200px] mx-auto rounded-xl overflow-hidden border-2 border-dashed border-white/[0.08] hover:border-purple-500/40 transition-all group bg-white/[0.02]"
+                  >
+                    {npcForm.related_image_url ? (
+                      <>
+                        <Image
+                          src={npcForm.related_image_url}
+                          alt={npcForm.related_name || 'NPC'}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Camera className="w-8 h-8 text-white" />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 group-hover:text-purple-400 transition-colors">
+                        <User className="w-12 h-12 mb-2" />
+                        <span className="text-sm">Add Portrait</span>
+                      </div>
+                    )}
+                  </button>
+                </div>
+
+                {/* Identity Section */}
+                <div className="bg-white/[0.02] rounded-xl p-5 border border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white/80 mb-4">Identity</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <FormLabel>Name *</FormLabel>
+                      <input
+                        type="text"
+                        placeholder="Character name"
+                        value={npcForm.related_name}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, related_name: e.target.value }))}
+                        className={inputStyles}
+                      />
+                    </div>
+                    <div>
+                      <FormLabel>Nickname / Alias</FormLabel>
+                      <input
+                        type="text"
+                        placeholder="'Big Al', 'The Shadow'"
+                        value={npcForm.nickname}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, nickname: e.target.value }))}
+                        className={inputStyles}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Relationship Section */}
+                <div className="bg-white/[0.02] rounded-xl p-5 border border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white/80 mb-4">Relationship</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <FormLabel>Type</FormLabel>
+                      <select
+                        value={npcForm.relationship_type}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, relationship_type: e.target.value }))}
+                        className={inputStyles}
+                      >
+                        <option value="family">Family</option>
+                        <option value="mentor">Mentor</option>
+                        <option value="friend">Friend</option>
+                        <option value="enemy">Enemy</option>
+                        <option value="patron">Patron</option>
+                        <option value="contact">Contact</option>
+                        <option value="ally">Ally</option>
+                        <option value="employer">Employer</option>
+                        <option value="love_interest">Love Interest</option>
+                        <option value="rival">Rival</option>
+                        <option value="acquaintance">Acquaintance</option>
+                        <option value="party_member">Party Member</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <FormLabel>Label</FormLabel>
+                      <input
+                        type="text"
+                        placeholder="e.g. 'Father', 'Old Friend'"
+                        value={npcForm.relationship_label}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, relationship_label: e.target.value }))}
+                        className={inputStyles}
+                      />
+                    </div>
+                    <div>
+                      <FormLabel>Status</FormLabel>
+                      <select
+                        value={npcForm.relationship_status}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, relationship_status: e.target.value }))}
+                        className={inputStyles}
+                      >
+                        <option value="active">Active</option>
+                        <option value="deceased">Deceased</option>
+                        <option value="estranged">Estranged</option>
+                        <option value="missing">Missing</option>
+                        <option value="complicated">Complicated</option>
+                        <option value="unknown">Unknown</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Middle Column - Details with Emoji Fields */}
+              <div className="space-y-6">
+                <div className="bg-white/[0.02] rounded-xl p-5 border border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white/80 mb-4">Details</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <FormLabel>💼 Occupation</FormLabel>
+                      <input
+                        type="text"
+                        placeholder="Job, role, or profession"
+                        value={npcForm.occupation}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, occupation: e.target.value }))}
+                        className={inputStyles}
+                      />
+                    </div>
+                    <div>
+                      <FormLabel>📍 Location</FormLabel>
+                      <input
+                        type="text"
+                        placeholder="Where they can be found"
+                        value={npcForm.location}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, location: e.target.value }))}
+                        className={inputStyles}
+                      />
+                    </div>
+                    <div>
+                      <FormLabel>Origin</FormLabel>
+                      <input
+                        type="text"
+                        placeholder="Where they're from"
+                        value={npcForm.origin}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, origin: e.target.value }))}
+                        className={inputStyles}
+                      />
+                    </div>
+                    <div>
+                      <FormLabel>🏛️ Faction Affiliations</FormLabel>
+                      <input
+                        type="text"
+                        placeholder="Guilds, organizations (comma-separated)"
+                        value={npcForm.faction_affiliations?.join(', ') || ''}
+                        onChange={(e) => setNpcForm(prev => ({
+                          ...prev,
+                          faction_affiliations: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                        }))}
+                        className={inputStyles}
+                      />
+                    </div>
+                    <div>
+                      <FormLabel>Personality Traits</FormLabel>
+                      <input
+                        type="text"
+                        placeholder="Brave, cunning, loyal (comma-separated)"
+                        value={npcForm.personality_traits?.join(', ') || ''}
+                        onChange={(e) => setNpcForm(prev => ({
+                          ...prev,
+                          personality_traits: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                        }))}
+                        className={inputStyles}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Motivations Section */}
+                <div className="bg-white/[0.02] rounded-xl p-5 border border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white/80 mb-4">Motivations</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <FormLabel>🎯 Needs (from PC)</FormLabel>
+                      <textarea
+                        placeholder="What they need from the character"
+                        value={npcForm.needs}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, needs: e.target.value }))}
+                        className={cn(inputStyles, "min-h-[80px] resize-none")}
+                      />
+                    </div>
+                    <div>
+                      <FormLabel>🎁 Can Provide</FormLabel>
+                      <textarea
+                        placeholder="What help or resources they can offer"
+                        value={npcForm.can_provide}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, can_provide: e.target.value }))}
+                        className={cn(inputStyles, "min-h-[80px] resize-none")}
+                      />
+                    </div>
+                    <div>
+                      <FormLabel>⭐ Goals</FormLabel>
+                      <textarea
+                        placeholder="Their personal goals and ambitions"
+                        value={npcForm.goals}
+                        onChange={(e) => setNpcForm(prev => ({ ...prev, goals: e.target.value }))}
+                        className={cn(inputStyles, "min-h-[80px] resize-none")}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - Secrets & Notes */}
+              <div className="space-y-6">
+                <div className="bg-amber-500/5 rounded-xl p-5 border border-amber-500/20">
+                  <h3 className="text-sm font-semibold text-amber-400 mb-4 flex items-center gap-2">
+                    🔒 Secrets
+                  </h3>
+                  <textarea
+                    placeholder="Hidden information, things the PC doesn't know yet..."
+                    value={npcForm.secrets}
+                    onChange={(e) => setNpcForm(prev => ({ ...prev, secrets: e.target.value }))}
+                    className={cn(inputStyles, "min-h-[120px] resize-none bg-amber-500/5 border-amber-500/20 focus:border-amber-500/40")}
+                  />
+                </div>
+
+                <div className="bg-white/[0.02] rounded-xl p-5 border border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white/80 mb-4">Full Notes</h3>
+                  <textarea
+                    placeholder="All additional details - backstory, quirks, important events, anything else..."
+                    value={npcForm.full_notes}
+                    onChange={(e) => setNpcForm(prev => ({ ...prev, full_notes: e.target.value }))}
+                    className={cn(textareaStyles, "min-h-[300px]")}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <FormLabel>Relationship</FormLabel>
-            <select
-              value={storyCharForm.relationship}
-              onChange={(e) => setStoryCharForm(prev => ({ ...prev, relationship: e.target.value }))}
-              className={inputStyles}
-            >
-              <option value="mentor">Mentor</option>
-              <option value="father">Father</option>
-              <option value="mother">Mother</option>
-              <option value="sibling">Sibling</option>
-              <option value="rival">Rival</option>
-              <option value="familiar">Familiar</option>
-              <option value="love_interest">Love Interest</option>
-              <option value="criminal_contact">Criminal Contact</option>
-              <option value="friend">Friend</option>
-              <option value="enemy">Enemy</option>
-              <option value="employer">Employer</option>
-              <option value="family">Family</option>
-              <option value="other">Other</option>
-            </select>
+
+          {/* Footer */}
+          <div className="flex-shrink-0 border-t border-white/[0.06] px-6 py-4 bg-[--bg-surface] flex justify-end gap-3">
+            <button className="btn btn-secondary" onClick={() => setAddStoryCharacterModalOpen(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleAddStoryCharacter}>Add Character</button>
           </div>
-          <div>
-            <FormLabel>Tagline</FormLabel>
-            <input
-              type="text"
-              placeholder="Brief description"
-              value={storyCharForm.tagline}
-              onChange={(e) => setStoryCharForm(prev => ({ ...prev, tagline: e.target.value }))}
-              className={inputStyles}
-            />
-          </div>
-          <div>
-            <FormLabel>Notes</FormLabel>
-            <textarea
-              placeholder="Additional notes..."
-              value={storyCharForm.notes}
-              onChange={(e) => setStoryCharForm(prev => ({ ...prev, notes: e.target.value }))}
-              className={textareaStyles}
-            />
-          </div>
-        </div>
-        <div className="flex justify-end gap-3">
-          <button className="btn btn-secondary" onClick={() => setAddStoryCharacterModalOpen(false)}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleAddStoryCharacter}>Add Character</button>
         </div>
       </Modal>
 
@@ -3524,7 +3462,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         description="Update NPC details and information"
         size="fullscreen"
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full max-h-[calc(100vh-180px)]">
           <div className="flex-1 overflow-y-auto py-6 px-2">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Left Column - Avatar & Identity */}
@@ -3785,7 +3723,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         description="Add a familiar, pet, mount, or other companion"
         size="fullscreen"
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full max-h-[calc(100vh-180px)]">
           <div className="flex-1 overflow-y-auto py-6 px-2">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
               {/* Left Column - Portrait & Basic Info */}
