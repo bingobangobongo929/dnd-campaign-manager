@@ -65,32 +65,48 @@ export async function POST(req: Request) {
     }
 
     // Build enhancement prompt based on type
-    // Important: Output should have dark/moody backgrounds suitable for a dark-themed fantasy app
+    // CRITICAL: This is meant to be a simple UPSCALE - do not change the image content
     const enhancementPrompts: Record<string, string> = {
-      upscale: `Look at this image carefully. Generate a new version of this EXACT image at higher resolution with more detail.
-Keep the EXACT same composition, subject, pose, colors, lighting, and style.
-The output should look like a higher-quality version of the input - same image, just clearer and more detailed.
-Do NOT change the subject, add new elements, or alter the artistic style.
-IMPORTANT: Ensure the background remains dark/moody (no bright white backgrounds). This will be displayed on a dark-themed fantasy website.
-Output in wide landscape format (16:9).`,
+      upscale: `UPSCALE this image to higher resolution. This is a simple upscale operation.
 
-      detail: `Analyze this image and recreate it with enhanced detail and clarity.
-Preserve the EXACT same composition, characters, colors, and artistic style.
-Add subtle detail improvements like sharper textures, clearer edges, and refined lighting.
-The enhanced version should be immediately recognizable as the same image.
-IMPORTANT: Ensure the background remains dark/moody (no bright white backgrounds). This will be displayed on a dark-themed fantasy website.
-Output in wide landscape format (16:9).`,
+STRICT REQUIREMENTS:
+- Do NOT change the subject, pose, expression, or composition AT ALL
+- Do NOT add, remove, or modify any elements in the image
+- Do NOT change the art style or reinterpret the image
+- ONLY increase resolution and sharpen existing details
+- The output must be pixel-for-pixel recognizable as the same image, just higher quality
 
-      quality: `Create a higher quality version of this exact image.
-Requirements:
-- SAME subject, pose, and composition
-- SAME color palette and lighting
-- SAME artistic style
-- Enhanced clarity and detail
-- Sharper textures and edges
-- Dark/moody background tones (NO bright white backgrounds - this is for a dark fantasy website)
-- Output in wide landscape format (16:9)
-Do not change or reinterpret the image - only enhance quality while keeping backgrounds dark and suitable for a dark-themed UI.`,
+The ONLY modification allowed: If the background is bright white, shift it to a darker tone (dark gray, dark blue, or muted color) while keeping the subject EXACTLY the same.
+
+Output in 16:9 landscape format. This is an UPSCALE, not a reimagining.`,
+
+      detail: `UPSCALE this image with enhanced sharpness. Simple upscale operation only.
+
+STRICT REQUIREMENTS:
+- Keep EVERYTHING exactly the same - subject, pose, composition, colors, style
+- Do NOT reinterpret or recreate the image
+- Do NOT add new details that weren't in the original
+- ONLY sharpen existing details and increase resolution
+
+The ONLY modification allowed: If background is pure white, darken it to a muted tone.
+
+Output in 16:9 landscape format.`,
+
+      quality: `UPSCALE this image. Do NOT change it - only improve resolution.
+
+CRITICAL - DO NOT:
+- Change the subject or pose
+- Alter the art style
+- Add or remove any elements
+- Reinterpret or reimagine the image
+- Change colors or lighting
+
+ONLY DO:
+- Increase resolution
+- Sharpen existing details
+- If background is bright white, shift to dark gray/muted tone
+
+The result must look like the EXACT same image at higher resolution. Output in 16:9 landscape.`,
     }
 
     const prompt = enhancementPrompts[enhancement_type] || enhancementPrompts.quality
