@@ -341,7 +341,7 @@ export default function HomePage() {
                   className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/[0.04] transition-colors text-sm"
                 >
                   <span className="text-gray-500">
-                    {formatDistanceToNow(item.visitedAt)}
+                    {formatDistanceToNow(new Date(item.visitedAt))}
                   </span>
                   <span className="text-gray-400">Visited</span>
                   <span className="text-white font-medium truncate">{item.name}</span>
