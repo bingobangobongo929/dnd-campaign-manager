@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   History,
   Loader2,
@@ -15,10 +15,13 @@ import {
   ChevronDown,
   ChevronUp,
   RefreshCw,
+  AlertCircle,
+  Radio,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { formatActivityAction, getActivityIcon, type ActivityAction } from '@/lib/activity-log'
+import { createClient } from '@/lib/supabase/client'
 
 interface ActivityLogEntry {
   id: string
@@ -56,13 +59,14 @@ export default function ActivityLogPage() {
   const [days, setDays] = useState(30)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [stats, setStats] = useState<{ byType: Record<string, number>; total: number } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [isLive, setIsLive] = useState(false)
 
-  useEffect(() => {
-    loadActivity()
-  }, [filter, days])
+  const supabase = createClient()
 
-  const loadActivity = async () => {
+  const loadActivity = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const params = new URLSearchParams()
       params.set('limit', '100')
@@ -74,13 +78,70 @@ export default function ActivityLogPage() {
         const data = await res.json()
         setActivities(data.activities || [])
         setStats(data.stats || null)
+      } else {
+        const errData = await res.json().catch(() => ({}))
+        setError(errData.error || 'Failed to load activity')
       }
-    } catch (error) {
-      console.error('Failed to load activity:', error)
+    } catch (err) {
+      console.error('Failed to load activity:', err)
+      setError('Failed to connect to server')
     } finally {
       setLoading(false)
     }
-  }
+  }, [filter, days])
+
+  useEffect(() => {
+    loadActivity()
+  }, [loadActivity])
+
+  // Real-time subscription for new activity
+  useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
+    const setupRealtime = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      channel = supabase
+        .channel('activity-log-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'activity_log',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            // Add new activity to the top of the list
+            const newActivity = payload.new as ActivityLogEntry
+            setActivities(prev => [newActivity, ...prev])
+            // Update stats
+            setStats(prev => {
+              if (!prev) return { total: 1, byType: { [newActivity.entity_type]: 1 } }
+              return {
+                total: prev.total + 1,
+                byType: {
+                  ...prev.byType,
+                  [newActivity.entity_type]: (prev.byType[newActivity.entity_type] || 0) + 1,
+                },
+              }
+            })
+          }
+        )
+        .subscribe((status) => {
+          setIsLive(status === 'SUBSCRIBED')
+        })
+    }
+
+    setupRealtime()
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
+    }
+  }, [supabase])
 
   // Group activities by date
   const groupedActivities: Record<string, ActivityLogEntry[]> = {}
@@ -109,15 +170,36 @@ export default function ActivityLogPage() {
             <p className="page-subtitle">Track changes across your content</p>
           </div>
         </div>
-        <button
-          onClick={loadActivity}
-          disabled={loading}
-          className="btn btn-secondary"
-        >
-          <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          {isLive && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+              <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
+              <span className="text-xs font-medium text-emerald-400">Live</span>
+            </div>
+          )}
+          <button
+            onClick={loadActivity}
+            disabled={loading}
+            className="btn btn-secondary"
+          >
+            <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
+            Refresh
+          </button>
+        </div>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-red-400">{error}</p>
+            <p className="text-xs text-red-400/70 mt-1">
+              Make sure the activity_log table exists. Run migration 025 in Supabase.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Stats Row */}
       {stats && (

@@ -120,7 +120,7 @@ export function TopBar({
         if (parts[2]) {
           const pageLabels: Record<string, string> = {
             canvas: 'Canvas',
-            sessions: 'Sessions',
+            sessions: 'Session Notes',
             timeline: 'Timeline',
             intelligence: 'Intelligence',
             lore: 'Lore',
@@ -130,7 +130,7 @@ export function TopBar({
           // Check if there's a session ID (parts[3])
           if (parts[2] === 'sessions' && parts[3]) {
             breadcrumbs.push({
-              label: 'Sessions',
+              label: 'Session Notes',
               href: `/campaigns/${parts[1]}/sessions`,
               icon: 'sessions'
             })
@@ -159,11 +159,11 @@ export function TopBar({
             view: 'View',
             intelligence: 'Intelligence',
             relationships: 'Relationships',
-            sessions: 'Sessions',
+            sessions: 'Session Notes',
             gallery: 'Gallery',
           }
           if (parts[2] === 'sessions' && parts[3]) {
-            breadcrumbs.push({ label: 'Sessions', href: `/vault/${parts[1]}/sessions`, icon: 'sessions' })
+            breadcrumbs.push({ label: 'Session Notes', href: `/vault/${parts[1]}/sessions`, icon: 'sessions' })
             breadcrumbs.push({ label: 'Session Details', icon: 'sessions' })
           } else {
             breadcrumbs.push({ label: pageLabels[parts[2]] || 'Edit', icon: parts[2] || 'edit' })

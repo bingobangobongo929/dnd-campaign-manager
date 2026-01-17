@@ -22,10 +22,9 @@ import { toast } from 'sonner'
 interface Character {
   id: string
   name: string
-  detail_image_url: string | null
-  detail_image_original_url: string | null
-  detail_image_enhanced_at: string | null
-  image_url: string | null
+  image_url: string | null // 16:9 card/feature image
+  image_original_url: string | null
+  image_enhanced_at: string | null
 }
 
 type EnhancementStep = 'select' | 'processing' | 'review' | 'complete'
@@ -61,16 +60,16 @@ export default function ImageEnhancementPage() {
 
       const { data, error } = await supabase
         .from('vault_characters')
-        .select('id, name, detail_image_url, detail_image_original_url, detail_image_enhanced_at, image_url')
+        .select('id, name, image_url, image_original_url, image_enhanced_at')
         .eq('user_id', user.id)
-        .not('detail_image_url', 'is', null)
+        .not('image_url', 'is', null)
         .order('name')
 
       if (error) throw error
       setCharacters(data || [])
 
       // Auto-select unenhanced characters
-      const unenhanced = (data || []).filter(c => !c.detail_image_enhanced_at)
+      const unenhanced = (data || []).filter(c => !c.image_enhanced_at)
       setSelected(new Set(unenhanced.map(c => c.id)))
     } catch (err) {
       console.error('Failed to load characters:', err)
@@ -80,13 +79,13 @@ export default function ImageEnhancementPage() {
     }
   }
 
-  const enhancedCount = characters.filter(c => c.detail_image_enhanced_at).length
+  const enhancedCount = characters.filter(c => c.image_enhanced_at).length
   const unenhancedCount = characters.length - enhancedCount
 
   const handleSelectModeChange = (mode: 'unenhanced' | 'all') => {
     setSelectMode(mode)
     if (mode === 'unenhanced') {
-      const unenhanced = characters.filter(c => !c.detail_image_enhanced_at)
+      const unenhanced = characters.filter(c => !c.image_enhanced_at)
       setSelected(new Set(unenhanced.map(c => c.id)))
     } else {
       setSelected(new Set(characters.map(c => c.id)))
@@ -134,7 +133,7 @@ export default function ImageEnhancementPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          image_url: char.detail_image_url,
+          image_url: char.image_url,
           character_id: char.id,
           enhancement_type: 'quality',
         }),
@@ -194,9 +193,9 @@ export default function ImageEnhancementPage() {
       const { error: updateError } = await supabase
         .from('vault_characters')
         .update({
-          detail_image_original_url: char.detail_image_original_url || char.detail_image_url,
-          detail_image_url: publicUrl,
-          detail_image_enhanced_at: new Date().toISOString(),
+          image_original_url: char.image_original_url || char.image_url,
+          image_url: publicUrl,
+          image_enhanced_at: new Date().toISOString(),
         })
         .eq('id', char.id)
 
@@ -358,7 +357,7 @@ export default function ImageEnhancementPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
           {characters.map((char) => {
             const isSelected = selected.has(char.id)
-            const isEnhanced = !!char.detail_image_enhanced_at
+            const isEnhanced = !!char.image_enhanced_at
 
             return (
               <button
@@ -373,9 +372,9 @@ export default function ImageEnhancementPage() {
               >
                 {/* Image */}
                 <div className="relative aspect-video bg-gray-900">
-                  {char.detail_image_url ? (
+                  {char.image_url ? (
                     <Image
-                      src={char.detail_image_url}
+                      src={char.image_url}
                       alt={char.name}
                       fill
                       className="object-cover"
@@ -526,9 +525,9 @@ export default function ImageEnhancementPage() {
               <span className="text-xs text-[--text-tertiary]">Current image</span>
             </div>
             <div className="relative w-full bg-black/50" style={{ aspectRatio: '16/9' }}>
-              {currentChar.detail_image_url && (
+              {currentChar.image_url && (
                 <Image
-                  src={currentChar.detail_image_url}
+                  src={currentChar.image_url}
                   alt={`${currentChar.name} - Original`}
                   fill
                   className="object-contain"

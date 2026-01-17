@@ -65,17 +65,20 @@ export async function POST(req: Request) {
     }
 
     // Build enhancement prompt based on type
+    // Important: Output should have dark/moody backgrounds suitable for a dark-themed fantasy app
     const enhancementPrompts: Record<string, string> = {
       upscale: `Look at this image carefully. Generate a new version of this EXACT image at higher resolution with more detail.
 Keep the EXACT same composition, subject, pose, colors, lighting, and style.
 The output should look like a higher-quality version of the input - same image, just clearer and more detailed.
 Do NOT change the subject, add new elements, or alter the artistic style.
+IMPORTANT: Ensure the background remains dark/moody (no bright white backgrounds). This will be displayed on a dark-themed fantasy website.
 Output in wide landscape format (16:9).`,
 
       detail: `Analyze this image and recreate it with enhanced detail and clarity.
 Preserve the EXACT same composition, characters, colors, and artistic style.
 Add subtle detail improvements like sharper textures, clearer edges, and refined lighting.
 The enhanced version should be immediately recognizable as the same image.
+IMPORTANT: Ensure the background remains dark/moody (no bright white backgrounds). This will be displayed on a dark-themed fantasy website.
 Output in wide landscape format (16:9).`,
 
       quality: `Create a higher quality version of this exact image.
@@ -85,8 +88,9 @@ Requirements:
 - SAME artistic style
 - Enhanced clarity and detail
 - Sharper textures and edges
+- Dark/moody background tones (NO bright white backgrounds - this is for a dark fantasy website)
 - Output in wide landscape format (16:9)
-Do not change or reinterpret the image - only enhance quality.`,
+Do not change or reinterpret the image - only enhance quality while keeping backgrounds dark and suitable for a dark-themed UI.`,
     }
 
     const prompt = enhancementPrompts[enhancement_type] || enhancementPrompts.quality
