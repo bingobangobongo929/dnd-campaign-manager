@@ -485,17 +485,11 @@ export default function VaultSessionEditorPage() {
               </Button>
             )}
           </div>
-          <textarea
-            value={formData.summary}
-            onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-            placeholder={`Write your session summary in bullet points:
-
-* Met with the herbalist about the missing supplies
-* Tracked the thieves to an abandoned warehouse
-* Fought off three bandits, captured their leader
-* Discovered a map leading to a hidden temple`}
-            rows={10}
-            className="form-textarea min-h-[250px] font-mono text-sm"
+          <RichTextEditor
+            content={formData.summary}
+            onChange={(content) => setFormData({ ...formData, summary: content })}
+            placeholder="Write your session summary in bullet points..."
+            className="min-h-[250px]"
           />
         </div>
 

@@ -44,67 +44,50 @@ export async function GET() {
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-    // First, get the user's owned item IDs to filter shares properly
-    const [userCharacters, userOneshots, userCampaigns] = await Promise.all([
-      supabase.from('vault_characters').select('id').eq('user_id', user.id),
-      supabase.from('oneshots').select('id').eq('user_id', user.id),
-      supabase.from('campaigns').select('id').eq('user_id', user.id),
-    ])
-
-    const characterIds = (userCharacters.data || []).map(c => c.id)
-    const oneshotIds = (userOneshots.data || []).map(o => o.id)
-    const campaignIds = (userCampaigns.data || []).map(c => c.id)
-
-    // Fetch character shares with character info
-    let characterShares: any[] = []
-    if (characterIds.length > 0) {
-      const { data } = await supabase
+    // Fetch all shares using inner joins to verify ownership
+    // This is more reliable than fetching IDs first
+    const [characterSharesResult, oneshotSharesResult, campaignSharesResult] = await Promise.all([
+      supabase
         .from('character_shares')
         .select(`
           *,
-          vault_characters (
+          vault_characters!inner (
             id,
             name,
-            portrait_url
+            portrait_url,
+            user_id
           )
         `)
-        .in('character_id', characterIds)
-      characterShares = data || []
-    }
-
-    // Fetch oneshot shares with oneshot info
-    let oneshotShares: any[] = []
-    if (oneshotIds.length > 0) {
-      const { data } = await supabase
+        .eq('vault_characters.user_id', user.id),
+      supabase
         .from('oneshot_shares')
         .select(`
           *,
-          oneshots (
+          oneshots!inner (
             id,
             title,
-            cover_image_url
+            cover_image_url,
+            user_id
           )
         `)
-        .in('oneshot_id', oneshotIds)
-      oneshotShares = data || []
-    }
-
-    // Fetch campaign shares with campaign info
-    let campaignShares: any[] = []
-    if (campaignIds.length > 0) {
-      const { data } = await supabase
+        .eq('oneshots.user_id', user.id),
+      supabase
         .from('campaign_shares')
         .select(`
           *,
-          campaigns (
+          campaigns!inner (
             id,
             name,
-            cover_image_url
+            cover_image_url,
+            user_id
           )
         `)
-        .in('campaign_id', campaignIds)
-      campaignShares = data || []
-    }
+        .eq('campaigns.user_id', user.id),
+    ])
+
+    const characterShares = characterSharesResult.data || []
+    const oneshotShares = oneshotSharesResult.data || []
+    const campaignShares = campaignSharesResult.data || []
 
     // Collect all share IDs for analytics queries
     const characterShareIds = (characterShares || []).map(s => s.id)
