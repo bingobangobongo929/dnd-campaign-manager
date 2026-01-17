@@ -12,8 +12,6 @@ import {
   Scroll,
   Share2,
   Zap,
-  ChevronDown,
-  ChevronUp,
   RefreshCw,
   AlertCircle,
   Radio,
@@ -52,53 +50,71 @@ const ENTITY_TYPE_COLORS: Record<string, string> = {
   canvas_group: 'text-cyan-400 bg-cyan-500/10',
 }
 
-// Helper to format change values for display
-function formatChangeValue(value: unknown): string {
-  if (value === null || value === undefined) return '(empty)'
-  if (typeof value === 'string') {
-    const trimmed = value.trim()
-    if (!trimmed) return '(empty)'
-    // Already normalized from diffChanges, just truncate if needed
-    return trimmed.length > 200 ? trimmed.substring(0, 200) + '...' : trimmed
+// Format a single change field into a readable string
+function formatFieldChange(field: string, change: { old?: unknown; new?: unknown }): string | null {
+  const oldVal = change.old
+  const newVal = change.new
+  const fieldName = field.replace(/_/g, ' ')
+
+  // Handle empty transitions
+  const oldEmpty = oldVal === null || oldVal === undefined || oldVal === '' || oldVal === '(empty)'
+  const newEmpty = newVal === null || newVal === undefined || newVal === '' || newVal === '(empty)'
+
+  if (oldEmpty && newEmpty) return null
+  if (oldEmpty && !newEmpty) {
+    const preview = typeof newVal === 'string' ? newVal.substring(0, 60) : JSON.stringify(newVal)
+    return `Added ${fieldName}: "${preview}${String(newVal).length > 60 ? '...' : ''}"`
   }
-  return JSON.stringify(value)
+  if (!oldEmpty && newEmpty) {
+    return `Cleared ${fieldName}`
+  }
+
+  // Both have values - show what changed
+  if (typeof oldVal === 'string' && typeof newVal === 'string') {
+    // For long text, just say it was updated
+    if (oldVal.length > 100 || newVal.length > 100) {
+      return `Updated ${fieldName}`
+    }
+    return `Changed ${fieldName}: "${oldVal.substring(0, 40)}${oldVal.length > 40 ? '...' : ''}" → "${newVal.substring(0, 40)}${newVal.length > 40 ? '...' : ''}"`
+  }
+
+  return `Updated ${fieldName}`
 }
 
-// Helper to find the actual text difference between two strings
-function getTextDifference(oldText: string, newText: string): { type: 'added' | 'removed' | 'changed', summary: string } | null {
-  const old = formatChangeValue(oldText)
-  const newVal = formatChangeValue(newText)
+// Get a summary of all changes for an activity
+function getChangeSummary(changes: Record<string, { old?: unknown; new?: unknown }> | null): string[] {
+  if (!changes) return []
 
-  // If they look the same after formatting, skip
-  if (old === newVal) return null
-
-  if (old === '(empty)') {
-    return { type: 'added', summary: `Added: "${newVal.substring(0, 100)}${newVal.length > 100 ? '...' : ''}"` }
+  const summaries: string[] = []
+  for (const [field, change] of Object.entries(changes)) {
+    const summary = formatFieldChange(field, change)
+    if (summary) summaries.push(summary)
   }
-  if (newVal === '(empty)') {
-    return { type: 'removed', summary: `Removed: "${old.substring(0, 100)}${old.length > 100 ? '...' : ''}"` }
+  return summaries
+}
+
+// Get action-specific context message
+function getActionContext(action: string, metadata: Record<string, unknown> | null): string | null {
+  if (!metadata) return null
+
+  if (action === 'share.create') {
+    const type = metadata.share_type as string
+    return `Shared ${type} with ${metadata.sections_included ? (metadata.sections_included as string[]).length : 'all'} sections`
+  }
+  if (action === 'share.revoke') {
+    return `Revoked ${metadata.share_type} share link`
+  }
+  if (action === 'data.import') {
+    return `Imported ${metadata.imported || 0} characters, updated ${metadata.updated || 0}`
+  }
+  if (action === 'character.image_change' && metadata.type === 'ai_enhancement') {
+    return 'AI-enhanced character image'
+  }
+  if (action === 'session.create' || action === 'session.delete') {
+    return metadata.campaign_name ? `Campaign: ${metadata.campaign_name}` : null
   }
 
-  // Find common prefix/suffix to highlight what actually changed
-  let prefixLen = 0
-  const minLen = Math.min(old.length, newVal.length)
-  while (prefixLen < minLen && old[prefixLen] === newVal[prefixLen]) prefixLen++
-
-  // Back up to word boundary for cleaner diff
-  while (prefixLen > 0 && old[prefixLen - 1] !== ' ') prefixLen--
-
-  const prefix = old.substring(0, Math.min(prefixLen, 30))
-  const oldDiff = old.substring(prefixLen)
-  const newDiff = newVal.substring(prefixLen)
-
-  if (oldDiff.length > 100 || newDiff.length > 100) {
-    return { type: 'changed', summary: 'Content updated' }
-  }
-
-  return {
-    type: 'changed',
-    summary: prefix ? `...${prefix}` : `"${oldDiff.substring(0, 50)}" → "${newDiff.substring(0, 50)}"`
-  }
+  return null
 }
 
 export default function ActivityLogPage() {
@@ -106,7 +122,6 @@ export default function ActivityLogPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<string | null>(null)
   const [days, setDays] = useState(30)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
   const [stats, setStats] = useState<{ byType: Record<string, number>; total: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLive, setIsLive] = useState(false)
@@ -337,12 +352,12 @@ export default function ActivityLogPage() {
           {Object.entries(groupedActivities).map(([date, items]) => (
             <div key={date}>
               <h3 className="text-sm font-semibold text-[--text-tertiary] mb-4">{date}</h3>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {items.map((activity) => {
                   const Icon = ENTITY_TYPE_ICONS[activity.entity_type] || History
                   const colorClass = ENTITY_TYPE_COLORS[activity.entity_type] || 'text-gray-400 bg-gray-500/10'
-                  const isExpanded = expandedId === activity.id
-                  const hasChanges = activity.changes && Object.keys(activity.changes).length > 0
+                  const changeSummaries = getChangeSummary(activity.changes)
+                  const actionContext = getActionContext(activity.action, activity.metadata)
 
                   return (
                     <div
@@ -351,85 +366,51 @@ export default function ActivityLogPage() {
                     >
                       <div className="flex items-start gap-4">
                         {/* Icon */}
-                        <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0', colorClass)}>
-                          <Icon className="w-5 h-5" />
+                        <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0', colorClass)}>
+                          <Icon className="w-6 h-6" />
                         </div>
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-medium text-[--text-primary]">
+                          {/* Header row: Action + Entity Name */}
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <span className="text-sm font-semibold text-[--text-primary]">
                               {formatActivityAction(activity.action)}
                             </span>
-                            {activity.entity_name && (
-                              <>
-                                <span className="text-[--text-tertiary]">·</span>
-                                <span className="text-sm text-[--arcane-purple] font-medium truncate">
-                                  {activity.entity_name}
-                                </span>
-                              </>
-                            )}
                           </div>
-                          <p className="text-xs text-[--text-tertiary] mt-1">
+
+                          {/* Entity name as main subject */}
+                          {activity.entity_name && (
+                            <p className="text-base font-medium text-[--arcane-purple] mb-1">
+                              {activity.entity_name}
+                            </p>
+                          )}
+
+                          {/* Action-specific context */}
+                          {actionContext && (
+                            <p className="text-xs text-[--text-secondary] mb-2">
+                              {actionContext}
+                            </p>
+                          )}
+
+                          {/* Change summaries - shown inline */}
+                          {changeSummaries.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {changeSummaries.map((summary, idx) => (
+                                <p key={idx} className="text-xs text-[--text-tertiary] flex items-start gap-2">
+                                  <span className="text-[--arcane-purple] mt-0.5">•</span>
+                                  <span>{summary}</span>
+                                </p>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Timestamp */}
+                          <p className="text-xs text-[--text-tertiary] mt-2">
                             {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
                           </p>
                         </div>
-
-                        {/* Expand button */}
-                        {hasChanges && (
-                          <button
-                            onClick={() => setExpandedId(isExpanded ? null : activity.id)}
-                            className="p-2 rounded-lg hover:bg-[--bg-hover] transition-colors"
-                          >
-                            {isExpanded ? (
-                              <ChevronUp className="w-4 h-4 text-[--text-tertiary]" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4 text-[--text-tertiary]" />
-                            )}
-                          </button>
-                        )}
                       </div>
-
-                      {/* Expanded Changes */}
-                      {isExpanded && hasChanges && (
-                        <div className="mt-4 pt-4 border-t border-[--border]">
-                          <p className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-3">
-                            Changes
-                          </p>
-                          <div className="space-y-3">
-                            {Object.entries(activity.changes!).map(([field, change]) => {
-                              const diff = getTextDifference(
-                                change.old as string,
-                                change.new as string
-                              )
-
-                              // Skip if no meaningful difference
-                              if (!diff) return null
-
-                              return (
-                                <div key={field} className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <span className="font-medium text-[--text-secondary] capitalize text-sm">
-                                      {field.replace(/_/g, ' ')}
-                                    </span>
-                                    <span className={cn(
-                                      'text-xs px-2 py-0.5 rounded',
-                                      diff.type === 'added' && 'bg-green-500/15 text-green-400',
-                                      diff.type === 'removed' && 'bg-red-500/15 text-red-400',
-                                      diff.type === 'changed' && 'bg-amber-500/15 text-amber-400'
-                                    )}>
-                                      {diff.type}
-                                    </span>
-                                  </div>
-                                  <p className="text-xs text-[--text-tertiary]">
-                                    {diff.summary}
-                                  </p>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )
                 })}
