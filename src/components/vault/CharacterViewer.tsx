@@ -931,34 +931,33 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
                           <FieldLabel count={partyMembers.length}>Party Members</FieldLabel>
                           <div className="grid gap-3 md:grid-cols-2">
                             {partyMembers.map((member) => (
-                              <button
+                              <div
                                 key={member.id}
+                                className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-3 hover:border-white/[0.1] transition-colors cursor-pointer"
                                 onClick={() => setDetailModal({ type: 'npc', data: member })}
-                                className="flex items-start gap-3 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06] hover:border-indigo-500/30 hover:bg-white/[0.04] transition-all text-left"
                               >
-                                {member.related_image_url ? (
-                                  <Image
-                                    src={member.related_image_url}
-                                    alt={member.related_name || ''}
-                                    width={48}
-                                    height={48}
-                                    className="rounded-lg object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-12 h-12 rounded-lg bg-indigo-500/10 flex items-center justify-center">
-                                    <User className="w-5 h-5 text-indigo-400" />
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {member.related_image_url && (
+                                    <Image
+                                      src={member.related_image_url}
+                                      alt={member.related_name || ''}
+                                      width={40}
+                                      height={40}
+                                      className="rounded-lg object-cover flex-shrink-0"
+                                    />
+                                  )}
+                                  <span className="font-medium text-white/90">{member.related_name}</span>
+                                  <span className="text-xs px-2 py-0.5 bg-indigo-500/15 text-indigo-400 rounded-md border border-indigo-500/20">Party</span>
+                                </div>
+                                {member.occupation && <p className="text-xs text-gray-500 mt-1">{EMOJIS.occupation} {member.occupation}</p>}
+                                {member.location && <p className="text-xs text-gray-500 mt-1">{EMOJIS.location} {member.location}</p>}
+                                {member.full_notes && (
+                                  <div className="mt-2 pt-2 border-t border-white/[0.06]">
+                                    <p className="text-xs text-gray-500 mb-1">Notes:</p>
+                                    <div className="text-xs text-gray-400">{renderMarkdown(member.full_notes)}</div>
                                   </div>
                                 )}
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-medium text-white/90">{member.related_name}</p>
-                                  {member.occupation && (
-                                    <p className="text-xs text-gray-500 mt-0.5">{member.occupation}</p>
-                                  )}
-                                </div>
-                                <span className="text-xs px-2 py-1 bg-indigo-500/15 text-indigo-400 rounded-lg border border-indigo-500/20">
-                                  Party
-                                </span>
-                              </button>
+                              </div>
                             ))}
                           </div>
                         </div>
@@ -972,34 +971,59 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
                             {npcs.map((npc) => {
                               const relationshipColor = RELATIONSHIP_COLORS[npc.relationship_type] || RELATIONSHIP_COLORS.other
                               return (
-                                <button
+                                <div
                                   key={npc.id}
+                                  className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-3 hover:border-white/[0.1] transition-colors cursor-pointer"
                                   onClick={() => setDetailModal({ type: 'npc', data: npc })}
-                                  className="flex items-start gap-3 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06] hover:border-purple-500/30 hover:bg-white/[0.04] transition-all text-left"
                                 >
-                                  {npc.related_image_url ? (
-                                    <Image
-                                      src={npc.related_image_url}
-                                      alt={npc.related_name || ''}
-                                      width={48}
-                                      height={48}
-                                      className="rounded-lg object-cover"
-                                    />
-                                  ) : (
-                                    <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                                      <User className="w-5 h-5 text-purple-400" />
-                                    </div>
-                                  )}
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-white/90">{npc.related_name}</p>
-                                    {npc.occupation && (
-                                      <p className="text-xs text-gray-500 mt-0.5">{npc.occupation}</p>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    {npc.related_image_url && (
+                                      <Image
+                                        src={npc.related_image_url}
+                                        alt={npc.related_name || ''}
+                                        width={40}
+                                        height={40}
+                                        className="rounded-lg object-cover flex-shrink-0"
+                                      />
+                                    )}
+                                    <span className="font-medium text-white/90">{npc.related_name}</span>
+                                    {npc.nickname && <span className="text-sm text-gray-500 italic">"{npc.nickname}"</span>}
+                                    <span className={`text-xs px-2 py-0.5 rounded-md capitalize border ${relationshipColor}`}>
+                                      {npc.relationship_label || npc.relationship_type.replace(/_/g, ' ')}
+                                    </span>
+                                    {npc.relationship_status && npc.relationship_status !== 'active' && (
+                                      <span className="text-xs px-2 py-0.5 bg-gray-500/15 text-gray-400 rounded capitalize">
+                                        {npc.relationship_status}
+                                      </span>
                                     )}
                                   </div>
-                                  <span className={`text-xs px-2 py-1 rounded-lg border capitalize ${relationshipColor}`}>
-                                    {npc.relationship_label || npc.relationship_type.replace(/_/g, ' ')}
-                                  </span>
-                                </button>
+                                  {npc.occupation && <p className="text-xs text-gray-500 mt-1">{EMOJIS.occupation} {npc.occupation}</p>}
+                                  {npc.location && <p className="text-xs text-gray-500 mt-1">{EMOJIS.location} {npc.location}</p>}
+                                  {npc.faction_affiliations && npc.faction_affiliations.length > 0 && (
+                                    <p className="text-xs text-gray-500 mt-1">{EMOJIS.faction} {npc.faction_affiliations.join(', ')}</p>
+                                  )}
+                                  {npc.needs && <p className="text-xs text-gray-500 mt-1">{EMOJIS.needs} Needs: {npc.needs}</p>}
+                                  {npc.can_provide && <p className="text-xs text-gray-500 mt-1">{EMOJIS.canProvide} Can provide: {npc.can_provide}</p>}
+                                  {npc.goals && <p className="text-xs text-gray-500 mt-1">{EMOJIS.goals} Goals: {npc.goals}</p>}
+                                  {showSecrets && npc.secrets && (
+                                    <p className="text-xs text-amber-400/70 mt-1">{EMOJIS.secrets} Secrets: {npc.secrets}</p>
+                                  )}
+                                  {npc.personality_traits && npc.personality_traits.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                      {npc.personality_traits.map((trait, i) => (
+                                        <span key={i} className="text-xs px-2 py-0.5 bg-white/[0.04] text-gray-400 rounded-md">
+                                          {trait}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {npc.full_notes && (
+                                    <div className="mt-2 pt-2 border-t border-white/[0.06]">
+                                      <p className="text-xs text-gray-500 mb-1">Full Notes:</p>
+                                      <div className="text-xs text-gray-400">{renderMarkdown(npc.full_notes)}</div>
+                                    </div>
+                                  )}
+                                </div>
                               )
                             })}
                           </div>
@@ -1014,34 +1038,38 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
                             {companions.map((companion) => {
                               const typeColor = COMPANION_TYPE_COLORS[companion.companion_type || 'pet'] || COMPANION_TYPE_COLORS.other
                               return (
-                                <button
+                                <div
                                   key={companion.id}
+                                  className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-3 hover:border-white/[0.1] transition-colors cursor-pointer"
                                   onClick={() => setDetailModal({ type: 'companion', data: companion })}
-                                  className="flex items-start gap-3 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06] hover:border-pink-500/30 hover:bg-white/[0.04] transition-all text-left"
                                 >
-                                  {companion.related_image_url ? (
-                                    <Image
-                                      src={companion.related_image_url}
-                                      alt={companion.related_name || ''}
-                                      width={48}
-                                      height={48}
-                                      className="rounded-lg object-cover"
-                                    />
-                                  ) : (
-                                    <div className="w-12 h-12 rounded-lg bg-pink-500/10 flex items-center justify-center">
-                                      <Heart className="w-5 h-5 text-pink-400" />
-                                    </div>
-                                  )}
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-white/90">{companion.related_name}</p>
+                                  <div className="flex items-center gap-2">
+                                    {companion.related_image_url ? (
+                                      <Image
+                                        src={companion.related_image_url}
+                                        alt={companion.related_name || ''}
+                                        width={32}
+                                        height={32}
+                                        className="rounded-lg object-cover flex-shrink-0"
+                                      />
+                                    ) : (
+                                      <Heart className="w-4 h-4 text-pink-400 flex-shrink-0" />
+                                    )}
+                                    <span className="font-medium text-white/90">{companion.related_name}</span>
+                                    <span className={`text-xs px-2 py-0.5 rounded-md capitalize border ${typeColor}`}>
+                                      {(companion.companion_type || 'pet').replace(/_/g, ' ')}
+                                    </span>
                                     {companion.companion_species && (
-                                      <p className="text-xs text-gray-500 mt-0.5">{companion.companion_species}</p>
+                                      <span className="text-xs text-gray-500">({companion.companion_species})</span>
                                     )}
                                   </div>
-                                  <span className={`text-xs px-2 py-1 rounded-lg border capitalize ${typeColor}`}>
-                                    {(companion.companion_type || 'pet').replace(/_/g, ' ')}
-                                  </span>
-                                </button>
+                                  {companion.description && (
+                                    <p className="text-xs text-gray-400 mt-2 whitespace-pre-wrap">{companion.description}</p>
+                                  )}
+                                  {companion.companion_abilities && (
+                                    <p className="text-xs text-purple-400/80 mt-1">✨ Abilities: {companion.companion_abilities}</p>
+                                  )}
+                                </div>
                               )
                             })}
                           </div>
