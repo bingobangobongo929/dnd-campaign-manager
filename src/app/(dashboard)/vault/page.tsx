@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, BookOpen, Trash2, Copy, Filter, X, CheckSquare, Square, CopyPlus, Check, LayoutGrid, Grid3X3, User, FileUp, PenLine, Sparkles } from 'lucide-react'
+import { Plus, Search, BookOpen, Trash2, Copy, X, CheckSquare, Square, CopyPlus, Check, LayoutGrid, Grid3X3, User, PenLine, Sparkles, ArrowUpDown, Star } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import { Modal, Dropdown } from '@/components/ui'
@@ -24,6 +24,36 @@ export default function VaultPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'pc' | 'npc'>('all')
+  const [sortBy, setSortBy] = useState<'updated' | 'name' | 'type' | 'created'>('updated')
+
+  // Pinned characters (stored in localStorage)
+  const [pinnedIds, setPinnedIds] = useState<Set<string>>(new Set())
+
+  // Load pinned from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('vault-pinned-characters')
+    if (stored) {
+      try {
+        setPinnedIds(new Set(JSON.parse(stored)))
+      } catch {
+        // Invalid stored data, ignore
+      }
+    }
+  }, [])
+
+  // Save pinned to localStorage when it changes
+  const togglePinned = (id: string) => {
+    setPinnedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      localStorage.setItem('vault-pinned-characters', JSON.stringify([...next]))
+      return next
+    })
+  }
 
   // Copy to campaign modal state
   const [isCopyModalOpen, setIsCopyModalOpen] = useState(false)
@@ -99,30 +129,59 @@ export default function VaultPage() {
     return Array.from(statuses)
   }, [vaultCharacters])
 
-  const filteredCharacters = vaultCharacters.filter((char) => {
-    // Text search
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      const matchesSearch =
-        char.name.toLowerCase().includes(query) ||
-        char.summary?.toLowerCase().includes(query) ||
-        char.race?.toLowerCase().includes(query) ||
-        char.class?.toLowerCase().includes(query)
-      if (!matchesSearch) return false
-    }
+  // Filter and sort characters
+  const filteredCharacters = useMemo(() => {
+    let filtered = vaultCharacters.filter((char) => {
+      // Text search
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase()
+        const matchesSearch =
+          char.name.toLowerCase().includes(query) ||
+          char.summary?.toLowerCase().includes(query) ||
+          char.race?.toLowerCase().includes(query) ||
+          char.class?.toLowerCase().includes(query)
+        if (!matchesSearch) return false
+      }
 
-    // Status filter
-    if (statusFilter !== 'all' && char.status !== statusFilter) {
-      return false
-    }
+      // Status filter
+      if (statusFilter !== 'all' && char.status !== statusFilter) {
+        return false
+      }
 
-    // Type filter
-    if (typeFilter !== 'all' && char.type !== typeFilter) {
-      return false
-    }
+      // Type filter
+      if (typeFilter !== 'all' && char.type !== typeFilter) {
+        return false
+      }
 
-    return true
-  })
+      return true
+    })
+
+    // Sort
+    filtered.sort((a, b) => {
+      // Pinned always first
+      const aPinned = pinnedIds.has(a.id)
+      const bPinned = pinnedIds.has(b.id)
+      if (aPinned && !bPinned) return -1
+      if (!aPinned && bPinned) return 1
+
+      // Then by selected sort
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name)
+        case 'type':
+          // PCs first, then NPCs, then alphabetically within type
+          if (a.type !== b.type) return a.type === 'pc' ? -1 : 1
+          return a.name.localeCompare(b.name)
+        case 'created':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        case 'updated':
+        default:
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      }
+    })
+
+    return filtered
+  }, [vaultCharacters, searchQuery, statusFilter, typeFilter, sortBy, pinnedIds])
 
   const hasActiveFilters = statusFilter !== 'all' || typeFilter !== 'all'
 
@@ -416,6 +475,19 @@ export default function VaultPage() {
                 ))}
               </select>
             )}
+
+            {/* Sort */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'updated' | 'name' | 'type' | 'created')}
+              className="px-4 py-2.5 bg-[--bg-elevated] border border-[--border] rounded-xl text-[--text-primary] focus:outline-none focus:border-[--arcane-purple] cursor-pointer"
+              style={{ colorScheme: 'dark' }}
+            >
+              <option value="updated" className="bg-[#1a1a24] text-white">Recently Updated</option>
+              <option value="created" className="bg-[#1a1a24] text-white">Recently Created</option>
+              <option value="name" className="bg-[#1a1a24] text-white">Name (A-Z)</option>
+              <option value="type" className="bg-[#1a1a24] text-white">Type (PCs First)</option>
+            </select>
           </div>
 
           {/* Active Filters */}
@@ -472,9 +544,10 @@ export default function VaultPage() {
           </div>
         ) : viewMode === 'cards' ? (
           /* Card View */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredCharacters.map((char, index) => {
               const isSelected = selectedIds.has(char.id)
+              const isPinned = pinnedIds.has(char.id)
               return (
                 <div
                   key={char.id}
@@ -483,12 +556,11 @@ export default function VaultPage() {
                     selectionMode && isSelected && "ring-2 ring-[--arcane-purple] ring-offset-2 ring-offset-[--bg-base] rounded-xl"
                   )}
                   style={{ animationDelay: `${index * 50}ms` }}
-                  onContextMenu={(e) => !selectionMode && handleContextMenu(e, char)}
                 >
                   {/* Selection checkbox overlay */}
                   {selectionMode && (
                     <button
-                      className="absolute top-3 left-3 z-10 w-6 h-6 rounded-md flex items-center justify-center transition-colors"
+                      className="absolute top-3 left-3 z-30 w-6 h-6 rounded-md flex items-center justify-center transition-colors"
                       style={{
                         backgroundColor: isSelected ? 'var(--arcane-purple)' : 'rgba(26, 26, 36, 0.9)',
                         border: isSelected ? 'none' : '2px solid rgba(255, 255, 255, 0.2)',
@@ -503,6 +575,7 @@ export default function VaultPage() {
                   )}
                   <CharacterCard
                     character={char}
+                    isPinned={isPinned}
                     onClick={() => {
                       if (selectionMode) {
                         toggleSelection(char.id)
@@ -510,6 +583,9 @@ export default function VaultPage() {
                         router.push(`/vault/${char.id}`)
                       }
                     }}
+                    onEdit={() => router.push(`/vault/${char.id}/edit`)}
+                    onPin={() => togglePinned(char.id)}
+                    onContextMenu={(e) => !selectionMode && handleContextMenu(e, char)}
                   />
                 </div>
               )
@@ -610,6 +686,16 @@ export default function VaultPage() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
+            <button
+              className="w-full px-4 py-2.5 text-left text-sm text-[--text-primary] hover:bg-[--bg-hover] flex items-center gap-3 transition-colors"
+              onClick={() => {
+                togglePinned(contextMenu.character.id)
+                setContextMenu(null)
+              }}
+            >
+              <Star className={cn('w-4 h-4', pinnedIds.has(contextMenu.character.id) ? 'text-amber-400 fill-amber-400' : 'text-[--text-secondary]')} />
+              {pinnedIds.has(contextMenu.character.id) ? 'Unpin from Top' : 'Pin to Top'}
+            </button>
             <button
               className="w-full px-4 py-2.5 text-left text-sm text-[--text-primary] hover:bg-[--bg-hover] flex items-center gap-3 transition-colors"
               onClick={() => openCopyModal(contextMenu.character)}
