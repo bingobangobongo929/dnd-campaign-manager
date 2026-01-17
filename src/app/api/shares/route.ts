@@ -249,12 +249,17 @@ export async function GET() {
       viewed_at: string
     }> = []
 
-    for (const event of viewEvents) {
+    // Sort viewEvents by date descending FIRST so we collect the most recent ones
+    const sortedViewEvents = [...viewEvents].sort(
+      (a, b) => new Date(b.viewed_at).getTime() - new Date(a.viewed_at).getTime()
+    )
+
+    for (const event of sortedViewEvents) {
       const viewedAt = new Date(event.viewed_at)
       if (viewedAt >= fiveMinutesAgo) viewingNow++
       if (viewedAt >= oneHourAgo) viewsLastHour++
 
-      // Collect recent activity
+      // Collect recent activity (already sorted, so first 15 are most recent)
       if (recentActivity.length < 15) {
         const share = allShares.find(s => s.id === event.share_id)
         if (share) {
@@ -267,9 +272,6 @@ export async function GET() {
         }
       }
     }
-
-    // Sort recent activity by time
-    recentActivity.sort((a, b) => new Date(b.viewed_at).getTime() - new Date(a.viewed_at).getTime())
 
     // Find trending shares (most views in last 7 days)
     const trendingShares = [...allShares]

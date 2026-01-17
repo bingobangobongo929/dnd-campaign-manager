@@ -1,7 +1,8 @@
 import { generateText } from 'ai'
-import { getAIModel, AI_PROMPTS, AIProvider } from '@/lib/ai/config'
+import { getAIModel, AI_PROMPTS, AIProvider, AI_PROVIDERS } from '@/lib/ai/config'
 import { createClient } from '@/lib/supabase/server'
 import { SuggestionType, ConfidenceLevel } from '@/types/database'
+import { recordAPIUsage } from '@/lib/api-usage'
 
 export const maxDuration = 300 // Vercel Pro plan allows up to 300 seconds
 
@@ -237,17 +238,45 @@ IMPORTANT INSTRUCTIONS:
 8. Note any revealed secrets or plot developments
 9. TIMELINE EVENTS: Suggest significant events for the timeline (battles, discoveries, deaths, alliances, quest milestones). ${timelineIsEmpty ? 'The timeline is currently EMPTY so please suggest key events from the sessions to populate it.' : 'Check existing timeline events above to avoid duplicates.'}`
 
-    const model = getAIModel(provider || 'anthropic')
+    const selectedProvider = provider || 'anthropic'
+    const model = getAIModel(selectedProvider)
 
     let result
+    const startTime = Date.now()
     try {
       result = await generateText({
         model,
         system: AI_PROMPTS.analyzeSession, // Reuse the same prompt structure
         prompt: fullContext,
       })
+
+      // Record API usage
+      const elapsed = Date.now() - startTime
+      await recordAPIUsage({
+        provider: selectedProvider,
+        model: AI_PROVIDERS[selectedProvider]?.model || 'unknown',
+        endpoint: '/api/ai/analyze-campaign',
+        operation_type: 'analyze_campaign',
+        input_tokens: result.usage?.promptTokens || 0,
+        output_tokens: result.usage?.completionTokens || 0,
+        campaign_id: campaignId,
+        response_time_ms: elapsed,
+        success: true,
+        user_id: user.id,
+      })
     } catch (aiError) {
       console.error('AI generation error:', aiError)
+      // Record failed API usage
+      await recordAPIUsage({
+        provider: selectedProvider,
+        model: AI_PROVIDERS[selectedProvider]?.model || 'unknown',
+        endpoint: '/api/ai/analyze-campaign',
+        operation_type: 'analyze_campaign',
+        response_time_ms: Date.now() - startTime,
+        success: false,
+        error_message: aiError instanceof Error ? aiError.message : 'Unknown error',
+        user_id: user.id,
+      })
       return new Response(JSON.stringify({
         error: 'AI model failed to generate response',
         details: aiError instanceof Error ? aiError.message : 'Unknown AI error'

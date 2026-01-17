@@ -1,7 +1,8 @@
 import { generateText } from 'ai'
-import { getAIModel, AIProvider } from '@/lib/ai/config'
+import { getAIModel, AIProvider, AI_PROVIDERS } from '@/lib/ai/config'
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest } from 'next/server'
+import { recordAPIUsage } from '@/lib/api-usage'
 
 export const maxDuration = 300
 
@@ -211,13 +212,40 @@ ${ANALYSIS_PROMPT}`
     const model = getAIModel(provider)
 
     let result
+    const startTime = Date.now()
     try {
       result = await generateText({
         model,
         prompt: fullPrompt,
       })
+
+      // Record API usage
+      const elapsed = Date.now() - startTime
+      await recordAPIUsage({
+        provider,
+        model: AI_PROVIDERS[provider]?.model || 'unknown',
+        endpoint: '/api/ai/analyze-character',
+        operation_type: 'analyze_character',
+        input_tokens: result.usage?.promptTokens || 0,
+        output_tokens: result.usage?.completionTokens || 0,
+        character_id: characterId,
+        response_time_ms: elapsed,
+        success: true,
+        user_id: user.id,
+      })
     } catch (aiError) {
       console.error('AI generation error:', aiError)
+      // Record failed API usage
+      await recordAPIUsage({
+        provider,
+        model: AI_PROVIDERS[provider]?.model || 'unknown',
+        endpoint: '/api/ai/analyze-character',
+        operation_type: 'analyze_character',
+        response_time_ms: Date.now() - startTime,
+        success: false,
+        error_message: aiError instanceof Error ? aiError.message : 'Unknown error',
+        user_id: user.id,
+      })
       return new Response(JSON.stringify({
         error: 'AI model failed to generate response',
         details: aiError instanceof Error ? aiError.message : 'Unknown AI error'
