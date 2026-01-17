@@ -1,19 +1,22 @@
 /**
  * AI Image Generation API
  *
- * Generates images using Google's Gemini 3 Pro Image Preview (Nano Banana Pro)
+ * Generates images using Google's Gemini 3 Pro Image Preview (gemini-3-pro-image-preview)
+ * Also known as "Nano Banana Pro"
  * Uses the generateContent method for multimodal image generation
+ * Best for: Images requiring deep reasoning, adhering to complex instructions
  * Supports text-to-image generation with feedback/regeneration flow
  */
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { recordAPIUsage } from '@/lib/api-usage'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120 // 2 minutes for image generation
 
 // Available image models
-type ImageModel = 'gemini-2.0-flash-preview-image-generation' | 'imagen-3.0-generate-002' | 'imagen-3.0-fast-generate-001'
+type ImageModel = 'gemini-3-pro-image-preview' | 'imagen-3.0-generate-002' | 'imagen-3.0-fast-generate-001'
 
 interface GenerateImageRequest {
   prompt: string
@@ -37,7 +40,7 @@ export async function POST(req: Request) {
     const body: GenerateImageRequest = await req.json()
     const {
       prompt,
-      model = 'gemini-2.0-flash-preview-image-generation',
+      model = 'gemini-3-pro-image-preview',
       aspectRatio = '1:1',
       numberOfImages = 1,
       feedback,
@@ -85,10 +88,10 @@ Avoid: ${negativePrompt}`
     const imagePrompt = `Generate an image: ${fullPrompt}. Use ${aspectRatioGuide[aspectRatio]}.`
 
     // Use Gemini model based on selection
-    const useGemini = model === 'gemini-2.0-flash-preview-image-generation'
+    const useGemini = model === 'gemini-3-pro-image-preview'
 
     if (useGemini) {
-      // Gemini 2.0 Flash with image generation capability
+      // Gemini 3 Pro Image Preview (Nano Banana Pro) with multimodal image generation
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
@@ -137,7 +140,7 @@ Avoid: ${negativePrompt}`
         if (response.status === 404) {
           return NextResponse.json({
             error: 'Image generation model not available',
-            details: 'Gemini image generation model not available. Check your API key has access to Gemini 2.0 Flash Image Generation.',
+            details: 'Gemini 3 Pro Image Preview model not available. Check your API key has access to this model.',
           }, { status: 404 })
         }
 
@@ -173,6 +176,15 @@ Avoid: ${negativePrompt}`
 
       const imageData = imagePart.inlineData.data
       const mimeType = imagePart.inlineData.mimeType || 'image/png'
+
+      // Record API usage for Google
+      await recordAPIUsage({
+        provider: 'google',
+        model,
+        endpoint: '/api/ai/generate-image',
+        operation_type: 'image_generation',
+        images_generated: 1,
+      })
 
       return NextResponse.json({
         success: true,

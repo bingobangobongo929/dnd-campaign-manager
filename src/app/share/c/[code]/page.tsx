@@ -966,7 +966,7 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
 
                     {/* Detailed Notes */}
                     {session.notes && (
-                      <div className="prose prose-invert prose-sm max-w-none text-gray-400">
+                      <div className="prose prose-invert prose-sm max-w-none text-gray-400 prose-h3:mt-6 prose-h3:mb-3 prose-h3:text-base prose-h3:font-semibold prose-h3:text-white/90 prose-p:mb-3 prose-ul:my-2 prose-li:my-1">
                         <div dangerouslySetInnerHTML={{ __html: session.notes }} />
                       </div>
                     )}

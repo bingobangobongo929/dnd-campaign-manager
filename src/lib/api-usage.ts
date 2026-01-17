@@ -16,6 +16,7 @@ const COST_PER_1K_TOKENS: Record<string, { input: number; output: number }> = {
 
 // Cost per image (in cents)
 const COST_PER_IMAGE: Record<string, number> = {
+  'gemini-3-pro-image-preview': 4, // Gemini 3 Pro image generation
   'gemini-2.0-flash-exp': 2, // $0.02 per image generation
   'imagen-3.0-generate-002': 4, // $0.04 per image (high quality)
   'imagen-3.0-fast-generate-001': 2, // $0.02 per image (fast)

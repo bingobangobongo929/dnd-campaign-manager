@@ -44,50 +44,81 @@ export async function GET() {
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-    // Fetch all shares using inner joins to verify ownership
-    // This is more reliable than fetching IDs first
-    const [characterSharesResult, oneshotSharesResult, campaignSharesResult] = await Promise.all([
-      supabase
+    // First fetch user's owned items
+    const [userCharacters, userOneshots, userCampaigns] = await Promise.all([
+      supabase.from('vault_characters').select('id').eq('user_id', user.id),
+      supabase.from('oneshots').select('id').eq('user_id', user.id),
+      supabase.from('campaigns').select('id').eq('user_id', user.id),
+    ])
+
+    const characterIds = (userCharacters.data || []).map(c => c.id)
+    const oneshotIds = (userOneshots.data || []).map(o => o.id)
+    const campaignIds = (userCampaigns.data || []).map(c => c.id)
+
+    // Fetch shares for user's items
+    let characterShares: any[] = []
+    let oneshotShares: any[] = []
+    let campaignShares: any[] = []
+
+    if (characterIds.length > 0) {
+      const { data, error } = await supabase
         .from('character_shares')
         .select(`
           *,
-          vault_characters!inner (
+          vault_characters (
             id,
             name,
-            portrait_url,
-            user_id
+            portrait_url
           )
         `)
-        .eq('vault_characters.user_id', user.id),
-      supabase
+        .in('character_id', characterIds)
+
+      if (error) {
+        console.error('Character shares error:', error)
+      } else {
+        characterShares = data || []
+      }
+    }
+
+    if (oneshotIds.length > 0) {
+      const { data, error } = await supabase
         .from('oneshot_shares')
         .select(`
           *,
-          oneshots!inner (
+          oneshots (
             id,
             title,
-            cover_image_url,
-            user_id
+            cover_image_url
           )
         `)
-        .eq('oneshots.user_id', user.id),
-      supabase
+        .in('oneshot_id', oneshotIds)
+
+      if (error) {
+        console.error('Oneshot shares error:', error)
+      } else {
+        oneshotShares = data || []
+      }
+    }
+
+    if (campaignIds.length > 0) {
+      const { data, error } = await supabase
         .from('campaign_shares')
         .select(`
           *,
-          campaigns!inner (
+          campaigns (
             id,
             name,
-            cover_image_url,
-            user_id
+            cover_image_url
           )
         `)
-        .eq('campaigns.user_id', user.id),
-    ])
+        .in('campaign_id', campaignIds)
 
-    const characterShares = characterSharesResult.data || []
-    const oneshotShares = oneshotSharesResult.data || []
-    const campaignShares = campaignSharesResult.data || []
+      if (error) {
+        console.error('Campaign shares error:', error)
+      } else {
+        campaignShares = data || []
+      }
+    }
 
     // Collect all share IDs for analytics queries
     const characterShareIds = (characterShares || []).map(s => s.id)
