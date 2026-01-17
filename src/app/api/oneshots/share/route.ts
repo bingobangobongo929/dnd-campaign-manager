@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { oneshotId, includedSections, expiresInDays } = body
+    const { oneshotId, includedSections, expiresInDays, note } = body
 
     // Verify user owns this oneshot
     const { data: oneshot } = await supabase
@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
         oneshot_id: oneshotId,
         included_sections: includedSections,
         expires_at: expiresAt?.toISOString() || null,
+        note: note || null,
       })
       .select()
       .single()

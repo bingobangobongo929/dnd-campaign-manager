@@ -20,6 +20,7 @@ import {
   Zap,
   ImageIcon,
   DollarSign,
+  Share2,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { Modal } from '@/components/ui'
@@ -27,6 +28,7 @@ import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
 import { AI_PROVIDERS, AIProvider } from '@/lib/ai/config'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { formatDate } from '@/lib/utils'
 
 export default function SettingsPage() {
@@ -373,6 +375,33 @@ export default function SettingsPage() {
               )}
             </div>
           )}
+
+          {/* Shared Links Section */}
+          <div className="card p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
+                <Share2 className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-[--text-primary]">Shared Links</h2>
+                <p className="text-sm text-[--text-tertiary]">Manage and track your shared content</p>
+              </div>
+            </div>
+
+            <Link
+              href="/settings/shares"
+              className="w-full flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <BarChart3 className="w-5 h-5 text-[--text-secondary] group-hover:text-[--arcane-purple]" />
+                <div className="text-left">
+                  <p className="font-medium text-[--text-primary]">View All Shared Links</p>
+                  <p className="text-xs text-[--text-tertiary]">Track views, manage links, see analytics</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
+            </Link>
+          </div>
 
           {/* Data & Storage Section */}
           <div className="card p-6">

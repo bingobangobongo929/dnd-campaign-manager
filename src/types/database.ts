@@ -1030,6 +1030,8 @@ export interface Database {
           included_sections: Json
           expires_at: string | null
           view_count: number
+          last_viewed_at: string | null
+          note: string | null
           created_at: string
         }
         Insert: {
@@ -1039,6 +1041,8 @@ export interface Database {
           included_sections: Json
           expires_at?: string | null
           view_count?: number
+          last_viewed_at?: string | null
+          note?: string | null
           created_at?: string
         }
         Update: {
@@ -1048,6 +1052,8 @@ export interface Database {
           included_sections?: Json
           expires_at?: string | null
           view_count?: number
+          last_viewed_at?: string | null
+          note?: string | null
           created_at?: string
         }
       }
@@ -1211,6 +1217,8 @@ export interface Database {
           included_sections: Json
           expires_at: string | null
           view_count: number
+          last_viewed_at: string | null
+          note: string | null
           created_at: string
         }
         Insert: {
@@ -1220,6 +1228,8 @@ export interface Database {
           included_sections: Json
           expires_at?: string | null
           view_count?: number
+          last_viewed_at?: string | null
+          note?: string | null
           created_at?: string
         }
         Update: {
@@ -1229,6 +1239,8 @@ export interface Database {
           included_sections?: Json
           expires_at?: string | null
           view_count?: number
+          last_viewed_at?: string | null
+          note?: string | null
           created_at?: string
         }
       }
@@ -1394,6 +1406,7 @@ export interface Database {
           expires_at: string | null
           view_count: number
           last_viewed_at: string | null
+          note: string | null
           created_at: string
         }
         Insert: {
@@ -1405,6 +1418,7 @@ export interface Database {
           expires_at?: string | null
           view_count?: number
           last_viewed_at?: string | null
+          note?: string | null
           created_at?: string
         }
         Update: {
@@ -1416,6 +1430,39 @@ export interface Database {
           expires_at?: string | null
           view_count?: number
           last_viewed_at?: string | null
+          note?: string | null
+          created_at?: string
+        }
+      }
+      share_view_events: {
+        Row: {
+          id: string
+          share_id: string
+          share_type: 'character' | 'oneshot' | 'campaign'
+          viewed_at: string
+          viewer_hash: string | null
+          referrer: string | null
+          user_agent: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          share_id: string
+          share_type: 'character' | 'oneshot' | 'campaign'
+          viewed_at?: string
+          viewer_hash?: string | null
+          referrer?: string | null
+          user_agent?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          share_id?: string
+          share_type?: 'character' | 'oneshot' | 'campaign'
+          viewed_at?: string
+          viewer_hash?: string | null
+          referrer?: string | null
+          user_agent?: string | null
           created_at?: string
         }
       }
@@ -1847,6 +1894,7 @@ export type OneshotShare = Database['public']['Tables']['oneshot_shares']['Row']
 export type CharacterRelationship = Database['public']['Tables']['character_relationships']['Row']
 export type CampaignLore = Database['public']['Tables']['campaign_lore']['Row']
 export type CampaignShare = Database['public']['Tables']['campaign_shares']['Row']
+export type ShareViewEvent = Database['public']['Tables']['share_view_events']['Row']
 export type IntelligenceSuggestion = Database['public']['Tables']['intelligence_suggestions']['Row']
 
 // New Vault table types

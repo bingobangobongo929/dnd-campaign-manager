@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
+import { headers } from 'next/headers'
 import Image from 'next/image'
 import { User, Users, Scroll, Quote, BookOpen, Heart, Eye, FileText, Image as ImageIcon } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { renderMarkdown } from '@/lib/character-display'
+import crypto from 'crypto'
 
 interface SharePageProps {
   params: Promise<{ code: string }>
@@ -63,11 +65,36 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
     )
   }
 
-  // Increment view count
+  // Get request headers for tracking
+  const headersList = await headers()
+  const referrer = headersList.get('referer') || null
+  const userAgent = headersList.get('user-agent') || null
+  const forwardedFor = headersList.get('x-forwarded-for')
+  const realIp = headersList.get('x-real-ip')
+  const ip = forwardedFor?.split(',')[0] || realIp || 'unknown'
+
+  // Create a hash of the IP for privacy-friendly unique visitor tracking
+  const viewerHash = crypto.createHash('sha256').update(ip + share.id).digest('hex').substring(0, 16)
+
+  // Update view count and last_viewed_at
   await supabase
     .from('character_shares')
-    .update({ view_count: (share.view_count || 0) + 1 })
+    .update({
+      view_count: (share.view_count || 0) + 1,
+      last_viewed_at: new Date().toISOString()
+    })
     .eq('id', share.id)
+
+  // Record view event for analytics
+  await supabase
+    .from('share_view_events')
+    .insert({
+      share_id: share.id,
+      share_type: 'character',
+      viewer_hash: viewerHash,
+      referrer: referrer?.substring(0, 500), // Limit length
+      user_agent: userAgent?.substring(0, 500),
+    })
 
   // Fetch character data
   const { data: character, error: charError } = await supabase

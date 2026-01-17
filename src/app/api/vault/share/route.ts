@@ -11,7 +11,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { characterId, includedSections, expiresInDays } = await request.json()
+    const { characterId, includedSections, expiresInDays, note } = await request.json()
 
     if (!characterId) {
       return NextResponse.json({ error: 'Character ID required' }, { status: 400 })
@@ -60,6 +60,7 @@ export async function POST(request: Request) {
         character_id: characterId,
         included_sections: sections,
         expires_at: expiresAt,
+        note: note || null,
       })
       .select()
       .single()

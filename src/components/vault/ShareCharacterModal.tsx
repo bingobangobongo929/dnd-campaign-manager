@@ -66,6 +66,7 @@ export function ShareCharacterModal({
   const supabase = useSupabase()
   const [sections, setSections] = useState<Record<string, boolean>>({})
   const [expiresInDays, setExpiresInDays] = useState<number | null>(null)
+  const [note, setNote] = useState<string>('')
   const [shareUrl, setShareUrl] = useState<string | null>(null)
   const [shareCode, setShareCode] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -110,6 +111,7 @@ export function ShareCharacterModal({
         setShareCode(data.share_code)
         setShareUrl(`${window.location.origin}/share/c/${data.share_code}`)
         setSections(data.included_sections || {})
+        setNote(data.note || '')
       }
     } catch {
       // No existing share
@@ -207,6 +209,7 @@ export function ShareCharacterModal({
           characterId,
           includedSections: sections,
           expiresInDays,
+          note: note.trim() || null,
         }),
       })
 
@@ -228,7 +231,10 @@ export function ShareCharacterModal({
     try {
       await supabase
         .from('character_shares')
-        .update({ included_sections: sections })
+        .update({
+          included_sections: sections,
+          note: note.trim() || null,
+        })
         .eq('share_code', shareCode)
     } catch (err) {
       console.error('Update error:', err)
@@ -368,6 +374,23 @@ export function ShareCharacterModal({
               </div>
             </div>
           )}
+
+          {/* Note for remembering who/why */}
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-2">
+              Note (optional):
+            </label>
+            <input
+              type="text"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="e.g., For my DM, Discord group, Reddit post..."
+              className="w-full py-3 px-4 bg-[#1a1a24] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50"
+            />
+            <p className="text-xs text-gray-600 mt-1">
+              Helps you remember who this link was shared with
+            </p>
+          </div>
 
           {/* Share URL Display */}
           {shareUrl ? (
