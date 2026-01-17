@@ -352,7 +352,7 @@ export default function VaultPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-display font-bold text-white">Character Vault</h1>
-            <p className="text-gray-400 mt-1">Store characters to reuse across campaigns</p>
+            <p className="text-gray-400 mt-1">Your characters and their stories</p>
           </div>
           <div className="flex items-center gap-3">
             {/* View mode toggle */}
