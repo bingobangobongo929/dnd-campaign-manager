@@ -77,8 +77,19 @@ function formatChanges(changes: Record<string, { old?: unknown; new?: unknown }>
     const formatValue = (val: unknown): string => {
       if (val === null || val === undefined || val === '') return ''
       if (typeof val === 'string') {
+        // Strip HTML tags and decode entities for clean display
+        let text = val
+          .replace(/<[^>]*>/g, ' ')  // Remove HTML tags
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/\s+/g, ' ')  // Collapse whitespace
+          .trim()
         // Truncate long values
-        return val.length > 150 ? val.substring(0, 150) + '...' : val
+        return text.length > 150 ? text.substring(0, 150) + '...' : text
       }
       return JSON.stringify(val)
     }
