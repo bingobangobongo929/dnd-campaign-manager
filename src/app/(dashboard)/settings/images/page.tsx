@@ -517,40 +517,42 @@ export default function ImageEnhancementPage() {
           </div>
         </div>
 
-        {/* Comparison */}
-        <div className="grid grid-cols-2 gap-6 mb-6">
+        {/* Comparison - Stacked for better viewing */}
+        <div className="space-y-6 mb-6">
           {/* Before */}
           <div className="card overflow-hidden">
-            <div className="px-4 py-3 bg-white/[0.02] border-b border-[--border]">
+            <div className="px-4 py-3 bg-white/[0.02] border-b border-[--border] flex items-center justify-between">
               <p className="text-sm font-medium text-[--text-secondary]">Before (Original)</p>
+              <span className="text-xs text-[--text-tertiary]">Current image</span>
             </div>
-            <div className="relative aspect-video">
+            <div className="relative w-full bg-black/50" style={{ aspectRatio: '16/9' }}>
               {currentChar.detail_image_url && (
                 <Image
                   src={currentChar.detail_image_url}
                   alt={`${currentChar.name} - Original`}
                   fill
-                  className="object-cover"
+                  className="object-contain"
                 />
               )}
             </div>
           </div>
 
           {/* After */}
-          <div className="card overflow-hidden border-emerald-500/30">
-            <div className="px-4 py-3 bg-emerald-500/5 border-b border-emerald-500/20">
+          <div className="card overflow-hidden border-2 border-emerald-500/30">
+            <div className="px-4 py-3 bg-emerald-500/5 border-b border-emerald-500/20 flex items-center justify-between">
               <p className="text-sm font-medium text-emerald-400 flex items-center gap-2">
                 <Sparkles className="w-4 h-4" />
                 After (Enhanced)
               </p>
+              <span className="text-xs text-emerald-400/70">AI upscaled</span>
             </div>
-            <div className="relative aspect-video">
+            <div className="relative w-full bg-black/50" style={{ aspectRatio: '16/9' }}>
               {enhancedDataUrl && (
                 <Image
                   src={enhancedDataUrl}
                   alt={`${currentChar.name} - Enhanced`}
                   fill
-                  className="object-cover"
+                  className="object-contain"
                   unoptimized
                 />
               )}
