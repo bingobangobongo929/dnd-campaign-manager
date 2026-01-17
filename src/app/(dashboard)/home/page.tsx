@@ -11,10 +11,9 @@ import {
   Plus,
   Clock,
   ChevronRight,
-  Users,
-  Calendar,
-  TrendingUp,
-  Sparkles
+  Play,
+  Sparkles,
+  ArrowRight,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
@@ -26,19 +25,12 @@ export default function HomePage() {
   const router = useRouter()
   const supabase = useSupabase()
   const { user } = useUser()
-  const { recentItems, aiEnabled } = useAppStore()
+  const { recentItems } = useAppStore()
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [characters, setCharacters] = useState<VaultCharacter[]>([])
   const [oneshots, setOneshots] = useState<Oneshot[]>([])
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({
-    campaigns: 0,
-    characters: 0,
-    vaultCharacters: 0,
-    sessions: 0,
-    oneshots: 0,
-  })
 
   useEffect(() => {
     if (user) {
@@ -49,329 +41,326 @@ export default function HomePage() {
   const loadData = async () => {
     if (!user) return
 
-    // Load recent campaigns
-    const { data: campaignsData } = await supabase
-      .from('campaigns')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('updated_at', { ascending: false })
-      .limit(4)
-
-    if (campaignsData) setCampaigns(campaignsData)
-
-    // Load recent vault characters
-    const { data: charactersData } = await supabase
-      .from('vault_characters')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('updated_at', { ascending: false })
-      .limit(4)
-
-    if (charactersData) setCharacters(charactersData)
-
-    // Load recent oneshots
-    const { data: oneshotsData } = await supabase
-      .from('oneshots')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('updated_at', { ascending: false })
-      .limit(2)
-
-    if (oneshotsData) setOneshots(oneshotsData)
-
-    // Get counts for stats
-    const [
-      { count: campaignCount },
-      { count: characterCount },
-      { count: vaultCount },
-      { count: sessionCount },
-      { count: oneshotCount },
-    ] = await Promise.all([
-      supabase.from('campaigns').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-      supabase.from('characters').select('*', { count: 'exact', head: true }).eq('campaign_id', campaigns[0]?.id || ''),
-      supabase.from('vault_characters').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-      supabase.from('sessions').select('*', { count: 'exact', head: true }).eq('campaign_id', campaigns[0]?.id || ''),
-      supabase.from('oneshots').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+    const [campaignsRes, charactersRes, oneshotsRes] = await Promise.all([
+      supabase
+        .from('campaigns')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(6),
+      supabase
+        .from('vault_characters')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(8),
+      supabase
+        .from('oneshots')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(4),
     ])
 
-    setStats({
-      campaigns: campaignCount || 0,
-      characters: characterCount || 0,
-      vaultCharacters: vaultCount || 0,
-      sessions: sessionCount || 0,
-      oneshots: oneshotCount || 0,
-    })
-
+    if (campaignsRes.data) setCampaigns(campaignsRes.data)
+    if (charactersRes.data) setCharacters(charactersRes.data)
+    if (oneshotsRes.data) setOneshots(oneshotsRes.data)
     setLoading(false)
   }
 
   function getInitials(name: string): string {
-    return name
-      .split(' ')
-      .map((word) => word[0])
-      .slice(0, 2)
-      .join('')
-      .toUpperCase()
+    return name.split(' ').map((word) => word[0]).slice(0, 2).join('').toUpperCase()
   }
+
+  const featuredCampaign = campaigns[0]
+  const otherCampaigns = campaigns.slice(1, 4)
 
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto">
-        {/* Welcome Header */}
-        <div className="page-header mb-8">
-          <h1 className="page-title">Welcome Back</h1>
-          <p className="page-subtitle">Your campaigns and characters at a glance</p>
-        </div>
+      <div className="max-w-7xl mx-auto space-y-12">
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="card p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <Swords className="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-white">{stats.campaigns}</p>
-                <p className="text-xs text-gray-500">Campaigns</p>
-              </div>
-            </div>
-          </div>
-          <div className="card p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-500/10">
-                <BookOpen className="w-5 h-5 text-purple-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-white">{stats.vaultCharacters}</p>
-                <p className="text-xs text-gray-500">Characters</p>
-              </div>
-            </div>
-          </div>
-          <div className="card p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10">
-                <Scroll className="w-5 h-5 text-amber-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-white">{stats.oneshots}</p>
-                <p className="text-xs text-gray-500">One-Shots</p>
-              </div>
-            </div>
-          </div>
-          <div className="card p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-500/10">
-                <Calendar className="w-5 h-5 text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-white">{stats.sessions}</p>
-                <p className="text-xs text-gray-500">Sessions</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Hero Section - Featured Campaign */}
+        {featuredCampaign ? (
+          <section>
+            <Link
+              href={`/campaigns/${featuredCampaign.id}/canvas`}
+              className="group relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-[--arcane-purple]/30 transition-all duration-500"
+            >
+              {/* Background Image */}
+              <div className="relative h-[320px] md:h-[400px]">
+                {featuredCampaign.image_url ? (
+                  <>
+                    <Image
+                      src={featuredCampaign.image_url}
+                      alt={featuredCampaign.name}
+                      fill
+                      className="object-cover transition-transform duration-700 group-hover:scale-105"
+                      priority
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
+                  </>
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-[--arcane-purple]/20 via-gray-900 to-gray-950" />
+                )}
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Recent Campaigns */}
-          <div className="card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Swords className="w-5 h-5 text-blue-400" />
-                <h2 className="text-lg font-semibold text-white">Campaigns</h2>
+                {/* Content Overlay */}
+                <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-10">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-full bg-[--arcane-purple] text-white">
+                      Continue Playing
+                    </span>
+                    <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300">
+                      {featuredCampaign.game_system}
+                    </span>
+                  </div>
+                  <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-2 group-hover:text-[--arcane-purple] transition-colors">
+                    {featuredCampaign.name}
+                  </h2>
+                  {featuredCampaign.description && (
+                    <p className="text-gray-400 text-sm md:text-base max-w-2xl line-clamp-2 mb-4">
+                      {featuredCampaign.description}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 text-[--arcane-purple] font-medium">
+                    <Play className="w-5 h-5" />
+                    <span>Enter Campaign</span>
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                  </div>
+                </div>
               </div>
+            </Link>
+          </section>
+        ) : (
+          /* Empty State Hero */
+          <section className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[--arcane-purple]/10 via-gray-900 to-gray-950 border border-white/[0.06] p-12 text-center">
+            <Sparkles className="w-16 h-16 mx-auto mb-6 text-[--arcane-purple]" />
+            <h2 className="text-2xl md:text-3xl font-display font-bold text-white mb-3">
+              Begin Your Adventure
+            </h2>
+            <p className="text-gray-400 mb-6 max-w-md mx-auto">
+              Create your first campaign and start building your world
+            </p>
+            <Link href="/campaigns" className="btn btn-primary">
+              <Plus className="w-5 h-5" />
+              Create Campaign
+            </Link>
+          </section>
+        )}
+
+        {/* Other Campaigns Grid */}
+        {otherCampaigns.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-white">Your Campaigns</h3>
               <Link href="/campaigns" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
                 View All <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
-
-            {campaigns.length === 0 ? (
-              <div className="text-center py-8">
-                <Swords className="w-10 h-10 mx-auto mb-3 text-gray-600" />
-                <p className="text-sm text-gray-500 mb-4">No campaigns yet</p>
-                <Link href="/campaigns" className="btn btn-primary btn-sm">
-                  <Plus className="w-4 h-4" />
-                  Create Campaign
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {campaigns.map((campaign) => (
-                  <Link
-                    key={campaign.id}
-                    href={`/campaigns/${campaign.id}/canvas`}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/[0.04] transition-colors group"
-                  >
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {otherCampaigns.map((campaign) => (
+                <Link
+                  key={campaign.id}
+                  href={`/campaigns/${campaign.id}/canvas`}
+                  className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-[--arcane-purple]/30 transition-all"
+                >
+                  <div className="relative h-40">
                     {campaign.image_url ? (
-                      <Image
-                        src={campaign.image_url}
-                        alt={campaign.name}
-                        width={48}
-                        height={48}
-                        className="w-12 h-12 rounded-lg object-cover"
-                      />
+                      <>
+                        <Image
+                          src={campaign.image_url}
+                          alt={campaign.name}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
+                      </>
                     ) : (
-                      <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                        <Swords className="w-6 h-6 text-blue-400" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 to-gray-900 flex items-center justify-center">
+                        <Swords className="w-12 h-12 text-blue-400/30" />
                       </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-white truncate">{campaign.name}</p>
-                      <p className="text-xs text-gray-500">{campaign.game_system}</p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gray-400 transition-colors" />
-                  </Link>
-                ))}
+                  </div>
+                  <div className="p-4">
+                    <h4 className="font-semibold text-white truncate group-hover:text-[--arcane-purple] transition-colors">
+                      {campaign.name}
+                    </h4>
+                    <p className="text-xs text-gray-500 mt-1">{campaign.game_system}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Character Vault - Portrait Gallery */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-500/10">
+                <BookOpen className="w-5 h-5 text-purple-400" />
               </div>
-            )}
+              <h3 className="text-xl font-semibold text-white">Character Vault</h3>
+            </div>
+            <Link href="/vault" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
+              View All <ChevronRight className="w-4 h-4" />
+            </Link>
           </div>
 
-          {/* Character Vault */}
-          <div className="card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-purple-400" />
-                <h2 className="text-lg font-semibold text-white">Character Vault</h2>
-              </div>
-              <Link href="/vault" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
-                View All <ChevronRight className="w-4 h-4" />
+          {characters.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-12 text-center">
+              <BookOpen className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+              <p className="text-gray-500 mb-4">Your character vault is empty</p>
+              <Link href="/vault/new" className="btn btn-secondary">
+                <Plus className="w-4 h-4" />
+                Create Character
               </Link>
             </div>
-
-            {characters.length === 0 ? (
-              <div className="text-center py-8">
-                <BookOpen className="w-10 h-10 mx-auto mb-3 text-gray-600" />
-                <p className="text-sm text-gray-500 mb-4">No characters yet</p>
-                <Link href="/vault/new" className="btn btn-primary btn-sm">
-                  <Plus className="w-4 h-4" />
-                  Create Character
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {characters.map((character) => (
-                  <Link
-                    key={character.id}
-                    href={`/vault/${character.id}`}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/[0.04] transition-colors group"
-                  >
-                    {character.image_url ? (
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {characters.map((character) => (
+                <Link
+                  key={character.id}
+                  href={`/vault/${character.id}`}
+                  className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/30 transition-all aspect-[3/4]"
+                >
+                  {character.detail_image_url || character.image_url ? (
+                    <>
                       <Image
-                        src={character.image_url}
+                        src={character.detail_image_url || character.image_url!}
                         alt={character.name}
-                        width={48}
-                        height={48}
-                        className="w-12 h-12 rounded-lg object-cover"
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
                       />
-                    ) : (
-                      <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400 font-bold">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                      <span className="text-4xl font-bold text-purple-400/40">
                         {getInitials(character.name)}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-white truncate">{character.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {[character.race, character.class].filter(Boolean).join(' ') || 'No details'}
-                      </p>
+                      </span>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gray-400 transition-colors" />
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <h4 className="font-semibold text-white truncate text-sm group-hover:text-purple-300 transition-colors">
+                      {character.name}
+                    </h4>
+                    <p className="text-xs text-gray-400 truncate">
+                      {[character.race, character.class].filter(Boolean).join(' ') || 'Adventurer'}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
 
-        {/* One-Shots */}
+        {/* One-Shots - Cinematic Posters */}
         {oneshots.length > 0 && (
-          <div className="mt-6 card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Scroll className="w-5 h-5 text-amber-400" />
-                <h2 className="text-lg font-semibold text-white">One-Shots</h2>
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-500/10">
+                  <Scroll className="w-5 h-5 text-amber-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">One-Shot Adventures</h3>
               </div>
               <Link href="/campaigns?tab=oneshots" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
                 View All <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {oneshots.map((oneshot) => (
                 <Link
                   key={oneshot.id}
                   href={`/oneshots/${oneshot.id}`}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/[0.04] transition-colors group"
+                  className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-amber-500/30 transition-all aspect-[2/3]"
                 >
                   {oneshot.image_url ? (
-                    <Image
-                      src={oneshot.image_url}
-                      alt={oneshot.title}
-                      width={48}
-                      height={64}
-                      className="w-12 h-16 rounded-lg object-cover"
-                    />
+                    <>
+                      <Image
+                        src={oneshot.image_url}
+                        alt={oneshot.title}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                    </>
                   ) : (
-                    <div className="w-12 h-16 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                      <Scroll className="w-6 h-6 text-amber-400" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
+                      <Scroll className="w-16 h-16 text-amber-400/30" />
                     </div>
                   )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white truncate">{oneshot.title}</p>
-                    <p className="text-xs text-gray-500">{oneshot.game_system}</p>
+                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <span className="inline-block px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-amber-500/20 text-amber-300 mb-2">
+                      {oneshot.game_system}
+                    </span>
+                    <h4 className="font-semibold text-white text-sm line-clamp-2 group-hover:text-amber-300 transition-colors">
+                      {oneshot.title}
+                    </h4>
+                    {oneshot.tagline && (
+                      <p className="text-xs text-gray-400 mt-1 line-clamp-1">{oneshot.tagline}</p>
+                    )}
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gray-400 transition-colors" />
                 </Link>
               ))}
             </div>
-          </div>
+          </section>
         )}
 
-        {/* Recent Activity */}
+        {/* Recent Activity - Subtle Footer */}
         {recentItems.length > 0 && (
-          <div className="mt-6 card p-6">
+          <section className="border-t border-white/[0.06] pt-8">
             <div className="flex items-center gap-2 mb-4">
-              <Clock className="w-5 h-5 text-gray-400" />
-              <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
+              <Clock className="w-4 h-4 text-gray-500" />
+              <h3 className="text-sm font-medium text-gray-400">Recent Activity</h3>
             </div>
-
-            <div className="space-y-2">
-              {recentItems.slice(0, 5).map((item) => (
+            <div className="flex flex-wrap gap-2">
+              {recentItems.slice(0, 6).map((item) => (
                 <Link
                   key={`${item.type}-${item.id}`}
                   href={item.href}
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/[0.04] transition-colors text-sm"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition-colors text-sm"
                 >
-                  <span className="text-gray-500">
+                  {item.imageUrl ? (
+                    <Image
+                      src={item.imageUrl}
+                      alt={item.name}
+                      width={20}
+                      height={20}
+                      className="w-5 h-5 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="w-5 h-5 rounded-full bg-[--arcane-purple]/20 flex items-center justify-center text-[10px] font-bold text-[--arcane-purple]">
+                      {item.name.charAt(0)}
+                    </span>
+                  )}
+                  <span className="text-gray-300 truncate max-w-[120px]">{item.name}</span>
+                  <span className="text-gray-600 text-xs">
                     {formatDistanceToNow(new Date(item.visitedAt))}
-                  </span>
-                  <span className="text-gray-400">Visited</span>
-                  <span className="text-white font-medium truncate">{item.name}</span>
-                  <span className="text-xs px-2 py-0.5 rounded bg-white/5 text-gray-500 capitalize">
-                    {item.type}
                   </span>
                 </Link>
               ))}
             </div>
-          </div>
+          </section>
         )}
 
-        {/* Quick Actions */}
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="/campaigns" className="btn btn-secondary">
+        {/* Quick Actions Footer */}
+        <section className="flex flex-wrap justify-center gap-3 pt-4 pb-8">
+          <Link href="/campaigns" className="btn btn-ghost text-sm">
             <Swords className="w-4 h-4" />
-            View Campaigns
+            All Campaigns
           </Link>
-          <Link href="/vault" className="btn btn-secondary">
+          <Link href="/vault" className="btn btn-ghost text-sm">
             <BookOpen className="w-4 h-4" />
             Character Vault
           </Link>
-          <Link href="/campaigns?tab=oneshots" className="btn btn-secondary">
+          <Link href="/campaigns?tab=oneshots" className="btn btn-ghost text-sm">
             <Scroll className="w-4 h-4" />
             One-Shots
           </Link>
-          <Link href="/settings" className="btn btn-ghost">
-            Settings
-          </Link>
-        </div>
+        </section>
       </div>
     </AppLayout>
   )
