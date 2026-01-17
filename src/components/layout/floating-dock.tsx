@@ -54,7 +54,7 @@ export function FloatingDock({ campaignId, characterId }: FloatingDockProps) {
 
   const globalLinks = [
     { href: '/campaigns', label: 'Campaigns', icon: Swords },
-    { href: '/vault', label: 'Vault', icon: BookOpen },
+    { href: '/vault', label: 'Character Vault', icon: BookOpen },
     { href: '/settings', label: 'Settings', icon: Settings },
   ]
 
