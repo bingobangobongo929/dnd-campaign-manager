@@ -296,9 +296,9 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
         return { success: false, error: error.message }
       }
 
-      // Log activity
+      // Log activity only if there are actual changes from original
       const changes = diffChanges(originalData as any, characterData, ['name', 'summary', 'notes', 'type'])
-      if (changes) {
+      if (changes && Object.keys(changes).length > 0) {
         logActivity(supabase, userData.user.id, {
           action: 'character.edit',
           entity_type: 'character',
@@ -306,6 +306,10 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
           entity_name: data.name.trim(),
           changes,
         })
+        // Update originalData so we don't log the same changes again
+        if (originalData) {
+          setOriginalData({ ...originalData, ...characterData } as typeof originalData)
+        }
       }
 
       setCharacterVersion(newVersion)

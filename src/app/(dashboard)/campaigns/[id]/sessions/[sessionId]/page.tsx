@@ -236,10 +236,10 @@ export default function SessionDetailPage() {
       return { success: false, error: error.message }
     }
 
-    // Log activity
+    // Log activity only if there are actual changes from original
     if (user) {
       const changes = diffChanges(originalData, payload, ['title', 'summary', 'notes'])
-      if (changes) {
+      if (changes && Object.keys(changes).length > 0) {
         logActivity(supabase, user.id, {
           action: 'session.edit',
           entity_type: 'session',
@@ -247,6 +247,8 @@ export default function SessionDetailPage() {
           entity_name: data.title || `Session ${data.session_number}`,
           changes,
         })
+        // Update originalData so we don't log the same changes again
+        setOriginalData({ ...originalData, ...payload })
       }
     }
 
