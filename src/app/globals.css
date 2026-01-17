@@ -1157,6 +1157,22 @@
     0 25px 50px -12px rgba(0, 0, 0, 0.8);
 }
 
+/* Wide variant of character view modal for canvas preview */
+.character-view-modal-wide {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  width: 95vw;
+  max-width: 900px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: scaleIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow:
+    0 0 0 1px rgba(139, 92, 246, 0.1),
+    0 25px 50px -12px rgba(0, 0, 0, 0.8);
+}
+
 .character-view-header {
   display: flex;
   align-items: flex-start;

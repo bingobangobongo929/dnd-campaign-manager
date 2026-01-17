@@ -117,7 +117,7 @@ export async function GET() {
           campaigns (
             id,
             name,
-            cover_image_url
+            image_url
           )
         `)
         .in('campaign_id', campaignIds)
@@ -209,7 +209,7 @@ export async function GET() {
       type: 'campaign' as const,
       item_id: share.campaign_id,
       item_name: share.campaigns?.name || 'Unknown Campaign',
-      item_image: share.campaigns?.cover_image_url || null,
+      item_image: share.campaigns?.image_url || null,
       included_sections: share.included_sections || {},
       expires_at: share.expires_at,
       view_count: share.view_count || 0,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import {
   Users,
@@ -217,6 +217,65 @@ export function CampaignShareClient({
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [timelineView, setTimelineView] = useState<'feed' | 'journal'>('feed')
   const [heroLightbox, setHeroLightbox] = useState(false)
+  const [castGroupBy, setCastGroupBy] = useState<'none' | 'faction' | 'status'>('none')
+  const [castFilter, setCastFilter] = useState<string>('all')
+
+  // Extract factions from character tags
+  type TagInfo = { name: string; color: string; count: number }
+  const { factionTags, statusTags } = useMemo(() => {
+    const factions: Record<string, TagInfo> = {}
+    const statuses: Record<string, TagInfo> = {}
+
+    npcs.forEach(npc => {
+      const tags = characterTags[npc.id] || []
+      tags.forEach((t: any) => {
+        if (t.tag?.category === 'faction' || t.tag?.name?.toLowerCase().includes('faction')) {
+          const existing = factions[t.tag.name] || { name: t.tag.name, color: t.tag.color, count: 0 }
+          factions[t.tag.name] = { ...existing, count: existing.count + 1 }
+        }
+        if (t.tag?.category === 'status') {
+          const existing = statuses[t.tag.name] || { name: t.tag.name, color: t.tag.color, count: 0 }
+          statuses[t.tag.name] = { ...existing, count: existing.count + 1 }
+        }
+      })
+    })
+
+    return { factionTags: factions, statusTags: statuses }
+  }, [npcs, characterTags])
+
+  // Group NPCs by faction or status
+  const groupedNpcs = castGroupBy === 'none'
+    ? { 'All NPCs': npcs }
+    : castGroupBy === 'faction'
+      ? npcs.reduce((acc, npc) => {
+          const tags = characterTags[npc.id] || []
+          const factionTag = tags.find((t: any) => t.tag?.category === 'faction' || t.tag?.name?.toLowerCase().includes('faction'))
+          const group = factionTag?.tag?.name || 'Unaffiliated'
+          if (!acc[group]) acc[group] = []
+          acc[group].push(npc)
+          return acc
+        }, {} as Record<string, any[]>)
+      : npcs.reduce((acc, npc) => {
+          const tags = characterTags[npc.id] || []
+          const statusTag = tags.find((t: any) => t.tag?.category === 'status')
+          const group = statusTag?.tag?.name || 'Unknown Status'
+          if (!acc[group]) acc[group] = []
+          acc[group].push(npc)
+          return acc
+        }, {} as Record<string, any[]>)
+
+  // Filter NPCs if a specific filter is applied
+  const filteredGroupedNpcs = castFilter === 'all'
+    ? groupedNpcs
+    : Object.fromEntries(
+        Object.entries(groupedNpcs).map(([group, chars]) => [
+          group,
+          (chars as any[]).filter(npc => {
+            const tags = characterTags[npc.id] || []
+            return tags.some((t: any) => t.tag?.name === castFilter)
+          })
+        ]).filter(([_, chars]) => (chars as any[]).length > 0)
+      )
 
   const toggleCharacter = (id: string) => {
     setExpandedCharacters(prev => {
@@ -248,10 +307,10 @@ export function CampaignShareClient({
       {/* Hero Section with Campaign Image */}
       <div className="relative">
         {/* Background Image with Overlay */}
-        {campaign.cover_image_url && (
+        {campaign.image_url && (
           <div className="absolute inset-0 h-[400px] sm:h-[500px]">
             <Image
-              src={campaign.cover_image_url}
+              src={campaign.image_url}
               alt={campaign.name}
               fill
               className="object-cover"
@@ -265,13 +324,13 @@ export function CampaignShareClient({
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-20 pb-8">
           <div className="flex flex-col lg:flex-row gap-8 items-start">
             {/* Campaign Image - Clickable */}
-            {campaign.cover_image_url && (
+            {campaign.image_url && (
               <button
                 onClick={() => setHeroLightbox(true)}
                 className="relative w-48 sm:w-64 lg:w-80 aspect-[3/4] rounded-2xl overflow-hidden border-2 border-white/[0.1] shadow-2xl flex-shrink-0 group cursor-pointer mx-auto lg:mx-0"
               >
                 <Image
-                  src={campaign.cover_image_url}
+                  src={campaign.image_url}
                   alt={campaign.name}
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -533,47 +592,169 @@ export function CampaignShareClient({
 
         {/* Cast Tab */}
         {activeTab === 'cast' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {npcs.map(npc => (
-              <div
-                key={npc.id}
-                className="bg-white/[0.02] rounded-xl border border-white/[0.06] overflow-hidden hover:border-purple-500/30 transition-colors"
-              >
-                <div className="p-4 flex items-start gap-4">
-                  <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-white/[0.08]">
-                    {npc.image_url ? (
-                      <Image src={npc.image_url} alt={npc.name} fill className="object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-gray-500/20 to-transparent flex items-center justify-center">
-                        <span className="text-lg font-bold text-gray-400">{getInitials(npc.name)}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-semibold text-white truncate">{npc.name}</h3>
-                    {npc.role && (
-                      <p className="text-sm text-gray-500 truncate">{npc.role}</p>
-                    )}
-                    {npc.status && (
-                      <span className="inline-block mt-2 text-xs px-2 py-0.5 bg-gray-500/15 text-gray-400 rounded">{npc.status}</span>
-                    )}
-                  </div>
+          <div className="space-y-6">
+            {/* Grouping and Filter Controls */}
+            <div className="flex flex-wrap items-center gap-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">Group by:</span>
+                <select
+                  value={castGroupBy}
+                  onChange={(e) => setCastGroupBy(e.target.value as 'none' | 'faction' | 'status')}
+                  className="px-3 py-1.5 text-sm bg-[#1a1a24] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500/50"
+                >
+                  <option value="none">None</option>
+                  {Object.keys(factionTags).length > 0 && <option value="faction">Faction</option>}
+                  {Object.keys(statusTags).length > 0 && <option value="status">Status</option>}
+                </select>
+              </div>
+
+              {/* Tag Filters */}
+              {(Object.keys(factionTags).length > 0 || Object.keys(statusTags).length > 0) && (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setCastFilter('all')}
+                    className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
+                      castFilter === 'all'
+                        ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+                        : 'bg-white/[0.02] text-gray-400 border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    All ({npcs.length})
+                  </button>
+                  {Object.entries(factionTags).map(([name, { color, count }]) => (
+                    <button
+                      key={name}
+                      onClick={() => setCastFilter(name)}
+                      className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
+                        castFilter === name
+                          ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+                          : 'hover:border-white/20'
+                      }`}
+                      style={{
+                        backgroundColor: castFilter === name ? undefined : `${color}15`,
+                        color: castFilter === name ? undefined : color,
+                        borderColor: castFilter === name ? undefined : `${color}30`,
+                      }}
+                    >
+                      {name} ({count})
+                    </button>
+                  ))}
                 </div>
-                {sections.npcDetails && (npc.description || npc.personality) && (
-                  <div className="px-4 pb-4 space-y-2">
-                    {npc.description && (
-                      <p className="text-sm text-gray-400">{npc.description}</p>
-                    )}
-                    {npc.personality && (
-                      <p className="text-sm text-gray-500 italic">{npc.personality}</p>
-                    )}
-                  </div>
+              )}
+
+              <span className="ml-auto text-xs text-gray-500">
+                {npcs.length} NPC{npcs.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+
+            {/* NPC Cards grouped */}
+            {Object.entries(filteredGroupedNpcs).map(([groupName, groupNpcs]) => (
+              <div key={groupName}>
+                {castGroupBy !== 'none' && (
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    {groupName}
+                    <span className="text-sm text-gray-500 font-normal">({(groupNpcs as any[]).length})</span>
+                  </h3>
                 )}
-                {sections.npcSecrets && npc.secrets && (
-                  <div className="mx-4 mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                    <p className="text-xs text-gray-300">{npc.secrets}</p>
-                  </div>
-                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {(groupNpcs as any[]).map(npc => {
+                    const npcTags = characterTags[npc.id] || []
+                    const statusTag = npcTags.find((t: any) => t.tag?.category === 'status')
+
+                    return (
+                      <div
+                        key={npc.id}
+                        className="bg-white/[0.02] rounded-xl border border-white/[0.06] overflow-hidden hover:border-purple-500/30 transition-colors"
+                      >
+                        <div className="p-4 flex items-start gap-4">
+                          <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-white/[0.08]">
+                            {npc.image_url ? (
+                              <Image src={npc.image_url} alt={npc.name} fill className="object-cover" />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-gray-500/20 to-transparent flex items-center justify-center">
+                                <span className="text-lg font-bold text-gray-400">{getInitials(npc.name)}</span>
+                              </div>
+                            )}
+                            {/* Status Badge on Image */}
+                            {statusTag && (
+                              <div
+                                className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-[10px] font-medium"
+                                style={{
+                                  backgroundColor: `${statusTag.tag.color}30`,
+                                  color: statusTag.tag.color,
+                                }}
+                              >
+                                {statusTag.tag.name}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-base font-semibold text-white truncate">{npc.name}</h3>
+                              <span className="px-1.5 py-0.5 text-[10px] font-medium bg-gray-500/20 text-gray-400 rounded">
+                                NPC
+                              </span>
+                            </div>
+                            {npc.role && (
+                              <p className="text-sm text-gray-500 truncate">{npc.role}</p>
+                            )}
+                            {(npc.race || npc.class) && (
+                              <p className="text-xs text-gray-600 truncate mt-0.5">
+                                {npc.race}{npc.race && npc.class ? ' ' : ''}{npc.class}
+                              </p>
+                            )}
+                            {/* Tags with proper styling */}
+                            {npcTags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {npcTags
+                                  .filter((t: any) => t.tag?.category !== 'status')
+                                  .slice(0, 4)
+                                  .map((t: any) => (
+                                    <span
+                                      key={t.id}
+                                      className="px-1.5 py-0.5 text-[10px] rounded"
+                                      style={{
+                                        backgroundColor: `${t.tag?.color || '#888'}15`,
+                                        color: t.tag?.color || '#888',
+                                      }}
+                                    >
+                                      {t.tag?.name}
+                                    </span>
+                                  ))}
+                                {npcTags.filter((t: any) => t.tag?.category !== 'status').length > 4 && (
+                                  <span className="px-1.5 py-0.5 text-[10px] text-gray-500">
+                                    +{npcTags.filter((t: any) => t.tag?.category !== 'status').length - 4}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {sections.npcDetails && (npc.description || npc.personality || npc.backstory) && (
+                          <div className="px-4 pb-4 space-y-2">
+                            {npc.description && (
+                              <p className="text-sm text-gray-400">{npc.description}</p>
+                            )}
+                            {npc.personality && (
+                              <p className="text-sm text-gray-500 italic">{npc.personality}</p>
+                            )}
+                            {npc.backstory && (
+                              <div className="prose prose-invert prose-sm max-w-none text-gray-400" dangerouslySetInnerHTML={{ __html: markdownToHtml(npc.backstory) }} />
+                            )}
+                          </div>
+                        )}
+                        {sections.npcSecrets && npc.secrets && (
+                          <div className="mx-4 mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                            <div className="flex items-center gap-1.5 text-xs text-red-400 mb-1">
+                              <span>🔒</span> Secret
+                            </div>
+                            <p className="text-xs text-gray-300">{npc.secrets}</p>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             ))}
           </div>
@@ -921,7 +1102,7 @@ export function CampaignShareClient({
       </main>
 
       {/* Hero Image Lightbox */}
-      {heroLightbox && campaign.cover_image_url && (
+      {heroLightbox && campaign.image_url && (
         <div
           className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-8"
           onClick={() => setHeroLightbox(false)}
@@ -933,7 +1114,7 @@ export function CampaignShareClient({
             <X className="w-6 h-6 text-white" />
           </button>
           <img
-            src={campaign.cover_image_url}
+            src={campaign.image_url}
             alt={campaign.name}
             className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
             onClick={(e) => e.stopPropagation()}
