@@ -140,7 +140,6 @@ export default function CampaignsPage() {
   }
 
   const featuredCampaign = campaigns[0]
-  const otherCampaigns = campaigns.slice(1)
 
   return (
     <AppLayout>
@@ -257,11 +256,11 @@ export default function CampaignsPage() {
             )}
 
             {/* Campaign Grid */}
-            {otherCampaigns.length > 0 && (
+            {campaigns.length > 1 && (
               <section>
                 <h3 className="text-xl font-semibold text-white mb-6">All Campaigns</h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {otherCampaigns.map((campaign) => (
+                  {campaigns.map((campaign) => (
                     <div key={campaign.id} className="group relative">
                       <Link
                         href={`/campaigns/${campaign.id}/canvas`}
