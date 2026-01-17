@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Modal } from '@/components/ui'
-import { Check, Copy, Link2, Trash2, Loader2, ExternalLink } from 'lucide-react'
+import { Check, Copy, Link2, Trash2, Loader2, ExternalLink, AlertCircle } from 'lucide-react'
 import { useSupabase } from '@/hooks'
+import { createClient } from '@/lib/supabase/client'
+import type { VaultCharacter, VaultCharacterRelationship } from '@/types/database'
 
 interface ShareCharacterModalProps {
   isOpen: boolean
@@ -22,22 +24,31 @@ interface SectionToggle {
 
 const SECTION_TOGGLES: SectionToggle[] = [
   // Backstory
+  { key: 'summary', label: 'Summary', group: 'BACKSTORY', defaultOn: true },
+  { key: 'tldr', label: 'Quick Summary (TL;DR)', group: 'BACKSTORY', defaultOn: true },
   { key: 'backstory', label: 'Full Backstory', group: 'BACKSTORY', defaultOn: true },
-  { key: 'summary', label: 'Summary / TLDR', group: 'BACKSTORY', defaultOn: true },
+  { key: 'lifePhases', label: 'Life Phases', group: 'BACKSTORY', defaultOn: true },
   { key: 'plotHooks', label: 'Plot Hooks', group: 'BACKSTORY', defaultOn: true },
-  { key: 'quotes', label: 'Quotes', group: 'BACKSTORY', defaultOn: true },
+  { key: 'quotes', label: 'Memorable Quotes', group: 'BACKSTORY', defaultOn: true },
   // Details
   { key: 'appearance', label: 'Appearance', group: 'DETAILS', defaultOn: true },
+  { key: 'physicalDetails', label: 'Physical Details', group: 'DETAILS', defaultOn: true },
   { key: 'personality', label: 'Personality', group: 'DETAILS', defaultOn: true },
-  { key: 'goals', label: 'Goals & Motivations', group: 'DETAILS', defaultOn: false },
+  { key: 'goals', label: 'Goals & Motivations', group: 'DETAILS', defaultOn: true },
   { key: 'secrets', label: 'Secrets', group: 'DETAILS', defaultOn: false, warning: 'careful!' },
+  { key: 'weaknesses', label: 'Weaknesses', group: 'DETAILS', defaultOn: true },
+  { key: 'fears', label: 'Fears', group: 'DETAILS', defaultOn: true },
   // People
-  { key: 'storyCharacters', label: 'Story Characters (NPCs)', group: 'PEOPLE', defaultOn: true },
-  { key: 'learnedFacts', label: "What I've Learned", group: 'PEOPLE', defaultOn: false },
-  // Other
-  { key: 'journal', label: 'Play Journal', group: 'OTHER', defaultOn: false },
-  { key: 'quickStats', label: 'Quick Stats', group: 'OTHER', defaultOn: true },
-  { key: 'links', label: 'Links', group: 'OTHER', defaultOn: true },
+  { key: 'partyMembers', label: 'Party Members', group: 'PEOPLE', defaultOn: true },
+  { key: 'npcs', label: 'NPCs & Contacts', group: 'PEOPLE', defaultOn: true },
+  { key: 'companions', label: 'Companions', group: 'PEOPLE', defaultOn: true },
+  // Writings
+  { key: 'writings', label: 'Letters, Stories & Poems', group: 'WRITINGS', defaultOn: true },
+  { key: 'rumors', label: 'Rumors', group: 'WRITINGS', defaultOn: false },
+  { key: 'dmQa', label: 'DM Q&A', group: 'WRITINGS', defaultOn: false },
+  { key: 'openQuestions', label: 'Open Questions', group: 'WRITINGS', defaultOn: false },
+  // Gallery
+  { key: 'gallery', label: 'Gallery Images', group: 'GALLERY', defaultOn: true },
 ]
 
 const EXPIRATION_OPTIONS = [
@@ -62,6 +73,10 @@ export function ShareCharacterModal({
   const [existingShare, setExistingShare] = useState<any>(null)
   const [checkingExisting, setCheckingExisting] = useState(true)
 
+  // Track which sections have content
+  const [sectionContent, setSectionContent] = useState<Record<string, boolean>>({})
+  const [loadingContent, setLoadingContent] = useState(true)
+
   // Initialize with defaults
   useEffect(() => {
     const defaults: Record<string, boolean> = {}
@@ -71,10 +86,11 @@ export function ShareCharacterModal({
     setSections(defaults)
   }, [])
 
-  // Check for existing share when modal opens
+  // Check for existing share and load content availability when modal opens
   useEffect(() => {
     if (isOpen && characterId) {
       checkExistingShare()
+      loadSectionContent()
     }
   }, [isOpen, characterId])
 
@@ -99,6 +115,82 @@ export function ShareCharacterModal({
       // No existing share
     }
     setCheckingExisting(false)
+  }
+
+  const loadSectionContent = async () => {
+    setLoadingContent(true)
+    const client = createClient()
+
+    try {
+      // Load character data
+      const { data: character } = await client
+        .from('vault_characters')
+        .select('*')
+        .eq('id', characterId)
+        .single()
+
+      // Load relationships
+      const { data: relationships } = await client
+        .from('vault_character_relationships')
+        .select('*')
+        .eq('character_id', characterId)
+
+      // Load writings
+      const { data: writings } = await client
+        .from('vault_character_writings')
+        .select('id')
+        .eq('character_id', characterId)
+
+      // Load gallery
+      const { data: images } = await client
+        .from('vault_character_images')
+        .select('id')
+        .eq('character_id', characterId)
+
+      if (character) {
+        const rels = relationships || []
+        const partyMembers = rels.filter(r => r.is_party_member && !r.is_companion)
+        const npcs = rels.filter(r => !r.is_companion && !r.is_party_member)
+        const companions = rels.filter(r => r.is_companion)
+
+        const tldr = (character.tldr as string[]) || []
+        const quotes = (character.quotes as string[]) || []
+        const plotHooks = (character.plot_hooks as string[]) || []
+        const fears = ((character as any).fears as string[]) || []
+        const weaknesses = (character.weaknesses as string[]) || []
+        const backstoryPhases = ((character as any).backstory_phases as any[]) || []
+        const dmQa = (character.dm_qa as any[]) || []
+        const rumors = (character.rumors as any[]) || []
+        const openQuestions = ((character as any).open_questions as string[]) || []
+
+        setSectionContent({
+          summary: !!character.summary,
+          tldr: tldr.length > 0,
+          backstory: !!character.notes,
+          lifePhases: backstoryPhases.length > 0,
+          plotHooks: plotHooks.length > 0,
+          quotes: quotes.length > 0,
+          appearance: !!character.appearance,
+          physicalDetails: !!(character as any).height || !!(character as any).weight || !!(character as any).hair || !!(character as any).eyes,
+          personality: !!character.personality,
+          goals: !!character.goals,
+          secrets: !!character.secrets,
+          weaknesses: weaknesses.length > 0,
+          fears: fears.length > 0,
+          partyMembers: partyMembers.length > 0,
+          npcs: npcs.length > 0,
+          companions: companions.length > 0,
+          writings: (writings?.length || 0) > 0,
+          rumors: rumors.length > 0,
+          dmQa: dmQa.length > 0,
+          openQuestions: openQuestions.length > 0,
+          gallery: (images?.length || 0) > 0,
+        })
+      }
+    } catch (err) {
+      console.error('Error loading section content:', err)
+    }
+    setLoadingContent(false)
   }
 
   const toggleSection = (key: string) => {
@@ -130,6 +222,20 @@ export function ShareCharacterModal({
     setLoading(false)
   }
 
+  const updateShare = async () => {
+    if (!shareCode) return
+    setLoading(true)
+    try {
+      await supabase
+        .from('character_shares')
+        .update({ included_sections: sections })
+        .eq('share_code', shareCode)
+    } catch (err) {
+      console.error('Update error:', err)
+    }
+    setLoading(false)
+  }
+
   const revokeShare = async () => {
     if (!shareCode) return
     setLoading(true)
@@ -152,7 +258,7 @@ export function ShareCharacterModal({
   }
 
   // Group sections
-  const groups = ['BACKSTORY', 'DETAILS', 'PEOPLE', 'OTHER']
+  const groups = ['BACKSTORY', 'DETAILS', 'PEOPLE', 'WRITINGS', 'GALLERY']
 
   return (
     <Modal
@@ -162,51 +268,70 @@ export function ShareCharacterModal({
       description="Create a shareable link with selective visibility"
       size="lg"
     >
-      {checkingExisting ? (
+      {checkingExisting || loadingContent ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-6 max-h-[calc(100vh-300px)] overflow-y-auto">
           {/* Section Toggles */}
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-3">
               Select what to include:
             </label>
             <div className="border border-white/10 rounded-xl overflow-hidden divide-y divide-white/10">
-              {groups.map((group) => (
-                <div key={group} className="p-4">
-                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                    {group}
-                  </h4>
-                  <div className="space-y-2">
-                    {SECTION_TOGGLES.filter((t) => t.group === group).map((toggle) => (
-                      <label
-                        key={toggle.key}
-                        className="flex items-center gap-3 cursor-pointer group"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => toggleSection(toggle.key)}
-                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                            sections[toggle.key]
-                              ? 'bg-purple-600 border-purple-600'
-                              : 'border-white/20 hover:border-white/40'
-                          }`}
-                        >
-                          {sections[toggle.key] && <Check className="w-3 h-3 text-white" />}
-                        </button>
-                        <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                          {toggle.label}
-                        </span>
-                        {toggle.warning && (
-                          <span className="text-xs text-amber-500">({toggle.warning})</span>
-                        )}
-                      </label>
-                    ))}
+              {groups.map((group) => {
+                const groupToggles = SECTION_TOGGLES.filter((t) => t.group === group)
+                const hasAnyContent = groupToggles.some(t => sectionContent[t.key])
+
+                return (
+                  <div key={group} className="p-4">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      {group}
+                      {!hasAnyContent && (
+                        <span className="text-xs font-normal normal-case text-gray-600">(no content)</span>
+                      )}
+                    </h4>
+                    <div className="space-y-2">
+                      {groupToggles.map((toggle) => {
+                        const hasContent = sectionContent[toggle.key]
+                        const isEnabled = sections[toggle.key]
+
+                        return (
+                          <label
+                            key={toggle.key}
+                            className={`flex items-center gap-3 cursor-pointer group ${!hasContent ? 'opacity-50' : ''}`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => toggleSection(toggle.key)}
+                              disabled={!hasContent}
+                              className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                                isEnabled && hasContent
+                                  ? 'bg-purple-600 border-purple-600'
+                                  : 'border-white/20 hover:border-white/40'
+                              } ${!hasContent ? 'cursor-not-allowed' : ''}`}
+                            >
+                              {isEnabled && hasContent && <Check className="w-3 h-3 text-white" />}
+                            </button>
+                            <span className={`text-sm transition-colors ${
+                              hasContent ? 'text-gray-300 group-hover:text-white' : 'text-gray-600'
+                            }`}>
+                              {toggle.label}
+                            </span>
+                            {toggle.warning && hasContent && (
+                              <span className="text-xs text-amber-500">({toggle.warning})</span>
+                            )}
+                            {!hasContent && (
+                              <span className="text-xs text-gray-600 italic">empty</span>
+                            )}
+                          </label>
+                        )
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
 
@@ -289,6 +414,19 @@ export function ShareCharacterModal({
                   </span>
                 )}
               </div>
+
+              {/* Update button for existing shares */}
+              <button
+                onClick={updateShare}
+                disabled={loading}
+                className="w-full py-2.5 px-4 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  'Update Share Settings'
+                )}
+              </button>
             </div>
           ) : (
             <button
