@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   Share2,
   Eye,
@@ -24,6 +24,17 @@ import {
   AlertCircle,
   ArrowLeft,
   StickyNote,
+  Activity,
+  Zap,
+  Monitor,
+  Smartphone,
+  Globe,
+  RefreshCw,
+  Flame,
+  Crown,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { Modal } from '@/components/ui'
@@ -59,11 +70,59 @@ interface ShareSummary {
   total_unique_viewers: number
   views_last_7_days: number
   views_last_30_days: number
+  viewing_now: number
+  views_last_hour: number
   by_type: {
     character: number
     oneshot: number
     campaign: number
   }
+}
+
+interface DailyView {
+  date: string
+  views: number
+}
+
+interface TrendingShare {
+  id: string
+  item_name: string
+  type: 'character' | 'oneshot' | 'campaign'
+  views_last_7_days: number
+  item_image: string | null
+}
+
+interface PopularShare {
+  id: string
+  item_name: string
+  type: 'character' | 'oneshot' | 'campaign'
+  view_count: number
+  item_image: string | null
+}
+
+interface RecentActivity {
+  share_id: string
+  share_type: string
+  item_name: string
+  viewed_at: string
+}
+
+interface ViewHistory {
+  total_views: number
+  unique_viewers: number
+  viewing_now: number
+  views_last_hour: number
+  views_last_24_hours: number
+  week_over_week_change: number
+  this_week_views: number
+  last_week_views: number
+  chart_data: Array<{ date: string; views: number; unique_viewers: number }>
+  hourly_views: number[]
+  peak_hour: string
+  top_referrers: Array<{ domain: string; count: number }>
+  device_stats: Array<{ device: string; count: number }>
+  browser_stats: Array<{ browser: string; count: number }>
+  recent_views: Array<{ time: string; device: string; referrer: string | null }>
 }
 
 const TYPE_ICONS = {
@@ -84,9 +143,144 @@ const TYPE_LABELS = {
   campaign: 'Campaign',
 }
 
+const DEVICE_ICONS: Record<string, React.ElementType> = {
+  Desktop: Monitor,
+  Mobile: Smartphone,
+  Tablet: Smartphone,
+  Bot: Globe,
+  Unknown: Globe,
+}
+
+// Mini bar chart component (CSS-based)
+function MiniBarChart({ data, height = 60 }: { data: DailyView[]; height?: number }) {
+  const maxViews = Math.max(...data.map(d => d.views), 1)
+
+  return (
+    <div className="flex items-end gap-[2px]" style={{ height }}>
+      {data.map((day, i) => {
+        const barHeight = (day.views / maxViews) * 100
+        const isToday = i === data.length - 1
+        return (
+          <div
+            key={day.date}
+            className="group relative flex-1 min-w-[4px]"
+            style={{ height: '100%' }}
+          >
+            <div
+              className={`absolute bottom-0 left-0 right-0 rounded-t transition-all ${
+                isToday ? 'bg-purple-500' : 'bg-purple-500/40 group-hover:bg-purple-500/60'
+              }`}
+              style={{ height: `${Math.max(barHeight, 2)}%` }}
+            />
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-[#1a1a1f] border border-white/10 rounded text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+              {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}: {day.views} views
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// Larger chart for modal
+function ViewsChart({ data, height = 120 }: { data: Array<{ date: string; views: number; unique_viewers: number }>; height?: number }) {
+  const maxViews = Math.max(...data.map(d => d.views), 1)
+
+  return (
+    <div className="flex items-end gap-1" style={{ height }}>
+      {data.map((day, i) => {
+        const barHeight = (day.views / maxViews) * 100
+        const uniqueHeight = (day.unique_viewers / maxViews) * 100
+        return (
+          <div
+            key={day.date}
+            className="group relative flex-1 min-w-[8px]"
+            style={{ height: '100%' }}
+          >
+            {/* Total views bar */}
+            <div
+              className="absolute bottom-0 left-0 right-0 bg-purple-500/30 rounded-t transition-all"
+              style={{ height: `${Math.max(barHeight, 1)}%` }}
+            />
+            {/* Unique viewers bar */}
+            <div
+              className="absolute bottom-0 left-0 right-0 bg-purple-500 rounded-t transition-all"
+              style={{ height: `${Math.max(uniqueHeight, 1)}%` }}
+            />
+            {/* Tooltip */}
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1.5 bg-[#1a1a1f] border border-white/10 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+              <div className="text-white font-medium">
+                {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </div>
+              <div className="text-gray-400">{day.views} views</div>
+              <div className="text-purple-400">{day.unique_viewers} unique</div>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// Hourly heatmap component
+function HourlyHeatmap({ data }: { data: number[] }) {
+  const maxViews = Math.max(...data, 1)
+
+  return (
+    <div className="grid grid-cols-12 gap-1">
+      {data.map((views, hour) => {
+        const intensity = views / maxViews
+        const isAM = hour < 12
+        const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
+        return (
+          <div
+            key={hour}
+            className="group relative aspect-square rounded"
+            style={{
+              backgroundColor: intensity > 0
+                ? `rgba(168, 85, 247, ${0.1 + intensity * 0.8})`
+                : 'rgba(255,255,255,0.02)',
+            }}
+          >
+            <div className="absolute inset-0 flex items-center justify-center text-[9px] text-gray-500">
+              {displayHour}{isAM ? 'a' : 'p'}
+            </div>
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-[#1a1a1f] border border-white/10 rounded text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+              {displayHour}:00 {isAM ? 'AM' : 'PM'}: {views} views
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// Progress bar for stats
+function StatBar({ value, max, color = 'purple' }: { value: number; max: number; color?: string }) {
+  const percentage = max > 0 ? (value / max) * 100 : 0
+  const colors: Record<string, string> = {
+    purple: 'bg-purple-500',
+    blue: 'bg-blue-500',
+    green: 'bg-green-500',
+    amber: 'bg-amber-500',
+  }
+  return (
+    <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+      <div
+        className={`h-full ${colors[color]} rounded-full transition-all duration-500`}
+        style={{ width: `${percentage}%` }}
+      />
+    </div>
+  )
+}
+
 export default function SharesPage() {
   const [shares, setShares] = useState<ShareData[]>([])
   const [summary, setSummary] = useState<ShareSummary | null>(null)
+  const [dailyViews, setDailyViews] = useState<DailyView[]>([])
+  const [trendingShares, setTrendingShares] = useState<TrendingShare[]>([])
+  const [popularShares, setPopularShares] = useState<PopularShare[]>([])
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -104,15 +298,16 @@ export default function SharesPage() {
 
   // View history modal
   const [viewHistoryShare, setViewHistoryShare] = useState<ShareData | null>(null)
-  const [viewHistory, setViewHistory] = useState<any>(null)
+  const [viewHistory, setViewHistory] = useState<ViewHistory | null>(null)
   const [loadingHistory, setLoadingHistory] = useState(false)
 
-  useEffect(() => {
-    loadShares()
-  }, [])
+  // Auto-refresh
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
-  const loadShares = async () => {
-    setLoading(true)
+  const loadShares = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
+    setIsRefreshing(true)
     setError(null)
     try {
       const res = await fetch('/api/shares')
@@ -120,12 +315,26 @@ export default function SharesPage() {
       const data = await res.json()
       setShares(data.shares || [])
       setSummary(data.summary || null)
+      setDailyViews(data.daily_views || [])
+      setTrendingShares(data.trending_shares || [])
+      setPopularShares(data.popular_shares || [])
+      setRecentActivity(data.recent_activity || [])
+      setLastRefresh(new Date())
     } catch (err) {
       setError('Failed to load shares. Please try again.')
       console.error('Load shares error:', err)
     }
-    setLoading(false)
-  }
+    if (!silent) setLoading(false)
+    setIsRefreshing(false)
+  }, [])
+
+  useEffect(() => {
+    loadShares()
+
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(() => loadShares(true), 30000)
+    return () => clearInterval(interval)
+  }, [loadShares])
 
   const loadViewHistory = async (share: ShareData) => {
     setViewHistoryShare(share)
@@ -195,7 +404,7 @@ export default function SharesPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="page-header">
           <div className="flex items-center gap-4">
@@ -205,13 +414,21 @@ export default function SharesPage() {
             >
               <ArrowLeft className="w-5 h-5 text-gray-400" />
             </Link>
-            <div>
+            <div className="flex-1">
               <h1 className="page-title flex items-center gap-3">
                 <Share2 className="w-8 h-8 text-purple-400" />
-                Shared Links
+                Share Analytics
               </h1>
-              <p className="page-subtitle">Manage and track all your shared content</p>
+              <p className="page-subtitle">Track views and engagement on your shared content</p>
             </div>
+            <button
+              onClick={() => loadShares(true)}
+              disabled={isRefreshing}
+              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-50"
+              title="Refresh data"
+            >
+              <RefreshCw className={`w-5 h-5 text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
           </div>
         </div>
 
@@ -223,19 +440,34 @@ export default function SharesPage() {
           <div className="card p-8 text-center">
             <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
             <p className="text-red-400 mb-4">{error}</p>
-            <button onClick={loadShares} className="btn btn-primary">
+            <button onClick={() => loadShares()} className="btn btn-primary">
               Try Again
             </button>
           </div>
         ) : (
           <>
-            {/* Summary Stats */}
+            {/* Real-time Activity Banner */}
+            {summary && summary.viewing_now > 0 && (
+              <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="w-3 h-3 rounded-full bg-green-500" />
+                    <div className="absolute inset-0 w-3 h-3 rounded-full bg-green-500 animate-ping" />
+                  </div>
+                  <span className="text-green-400 font-medium">
+                    {summary.viewing_now} {summary.viewing_now === 1 ? 'person' : 'people'} viewing your content right now
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Summary Stats Grid */}
             {summary && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
                 <div className="card p-4">
                   <Share2 className="w-5 h-5 text-purple-400 mb-2" />
-                  <p className="text-2xl font-bold text-white">{summary.total_shares}</p>
-                  <p className="text-xs text-gray-500">Total Links</p>
+                  <p className="text-2xl font-bold text-white">{summary.active_shares}</p>
+                  <p className="text-xs text-gray-500">Active Links</p>
                 </div>
                 <div className="card p-4">
                   <Eye className="w-5 h-5 text-blue-400 mb-2" />
@@ -248,10 +480,163 @@ export default function SharesPage() {
                   <p className="text-xs text-gray-500">Unique Viewers</p>
                 </div>
                 <div className="card p-4">
-                  <TrendingUp className="w-5 h-5 text-amber-400 mb-2" />
-                  <p className="text-2xl font-bold text-white">{summary.views_last_7_days}</p>
-                  <p className="text-xs text-gray-500">Views (7 days)</p>
+                  <Activity className="w-5 h-5 text-amber-400 mb-2" />
+                  <p className="text-2xl font-bold text-white">{summary.views_last_hour}</p>
+                  <p className="text-xs text-gray-500">Last Hour</p>
                 </div>
+                <div className="card p-4">
+                  <TrendingUp className="w-5 h-5 text-cyan-400 mb-2" />
+                  <p className="text-2xl font-bold text-white">{summary.views_last_7_days}</p>
+                  <p className="text-xs text-gray-500">This Week</p>
+                </div>
+                <div className="card p-4">
+                  <Calendar className="w-5 h-5 text-pink-400 mb-2" />
+                  <p className="text-2xl font-bold text-white">{summary.views_last_30_days}</p>
+                  <p className="text-xs text-gray-500">This Month</p>
+                </div>
+              </div>
+            )}
+
+            {/* Views Chart & Activity Section */}
+            <div className="grid lg:grid-cols-3 gap-6 mb-8">
+              {/* Views Over Time Chart */}
+              <div className="lg:col-span-2 card p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-medium text-white flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-purple-400" />
+                    Views (Last 14 Days)
+                  </h3>
+                  <span className="text-xs text-gray-500">
+                    Updated {formatDistanceToNow(lastRefresh)}
+                  </span>
+                </div>
+                {dailyViews.length > 0 ? (
+                  <MiniBarChart data={dailyViews} height={80} />
+                ) : (
+                  <div className="h-20 flex items-center justify-center text-gray-500 text-sm">
+                    No view data yet
+                  </div>
+                )}
+              </div>
+
+              {/* Recent Activity Feed */}
+              <div className="card p-5">
+                <h3 className="font-medium text-white flex items-center gap-2 mb-4">
+                  <Zap className="w-4 h-4 text-amber-400" />
+                  Live Activity
+                </h3>
+                {recentActivity.length > 0 ? (
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                    {recentActivity.slice(0, 8).map((activity, i) => (
+                      <div
+                        key={`${activity.share_id}-${activity.viewed_at}-${i}`}
+                        className="flex items-center gap-2 text-sm p-2 rounded-lg bg-white/[0.02]"
+                      >
+                        <div className={`w-6 h-6 rounded flex items-center justify-center ${TYPE_COLORS[activity.share_type as keyof typeof TYPE_COLORS]}`}>
+                          {(() => {
+                            const Icon = TYPE_ICONS[activity.share_type as keyof typeof TYPE_ICONS]
+                            return <Icon className="w-3 h-3" />
+                          })()}
+                        </div>
+                        <span className="flex-1 truncate text-gray-400">
+                          {activity.item_name}
+                        </span>
+                        <span className="text-xs text-gray-600">
+                          {formatDistanceToNow(activity.viewed_at)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="h-32 flex items-center justify-center text-gray-500 text-sm">
+                    No recent activity
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Trending & Popular */}
+            {(trendingShares.length > 0 || popularShares.length > 0) && (
+              <div className="grid md:grid-cols-2 gap-6 mb-8">
+                {/* Trending */}
+                {trendingShares.length > 0 && (
+                  <div className="card p-5">
+                    <h3 className="font-medium text-white flex items-center gap-2 mb-4">
+                      <Flame className="w-4 h-4 text-orange-400" />
+                      Trending This Week
+                    </h3>
+                    <div className="space-y-2">
+                      {trendingShares.map((share, i) => (
+                        <div
+                          key={share.id}
+                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/[0.02] transition-colors"
+                        >
+                          <span className="w-5 text-sm font-bold text-gray-500">#{i + 1}</span>
+                          {share.item_image ? (
+                            <Image
+                              src={share.item_image}
+                              alt=""
+                              width={32}
+                              height={32}
+                              className="w-8 h-8 rounded object-cover"
+                            />
+                          ) : (
+                            <div className={`w-8 h-8 rounded flex items-center justify-center ${TYPE_COLORS[share.type]}`}>
+                              {(() => {
+                                const Icon = TYPE_ICONS[share.type]
+                                return <Icon className="w-4 h-4" />
+                              })()}
+                            </div>
+                          )}
+                          <span className="flex-1 truncate text-gray-300">{share.item_name}</span>
+                          <span className="text-sm text-purple-400 font-medium">
+                            {share.views_last_7_days} views
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Most Popular */}
+                {popularShares.length > 0 && (
+                  <div className="card p-5">
+                    <h3 className="font-medium text-white flex items-center gap-2 mb-4">
+                      <Crown className="w-4 h-4 text-yellow-400" />
+                      Most Popular
+                    </h3>
+                    <div className="space-y-2">
+                      {popularShares.map((share, i) => (
+                        <div
+                          key={share.id}
+                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/[0.02] transition-colors"
+                        >
+                          <span className="w-5 text-sm font-bold text-gray-500">#{i + 1}</span>
+                          {share.item_image ? (
+                            <Image
+                              src={share.item_image}
+                              alt=""
+                              width={32}
+                              height={32}
+                              className="w-8 h-8 rounded object-cover"
+                            />
+                          ) : (
+                            <div className={`w-8 h-8 rounded flex items-center justify-center ${TYPE_COLORS[share.type]}`}>
+                              {(() => {
+                                const Icon = TYPE_ICONS[share.type]
+                                return <Icon className="w-4 h-4" />
+                              })()}
+                            </div>
+                          )}
+                          <span className="flex-1 truncate text-gray-300">{share.item_name}</span>
+                          <span className="text-sm text-blue-400 font-medium">
+                            {share.view_count} total
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -265,7 +650,7 @@ export default function SharesPage() {
               {/* Type Filter */}
               <select
                 value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value as any)}
+                onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}
                 className="px-3 py-1.5 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500/50"
               >
                 <option value="all">All Types</option>
@@ -277,7 +662,7 @@ export default function SharesPage() {
               {/* Status Filter */}
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
+                onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
                 className="px-3 py-1.5 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500/50"
               >
                 <option value="all">All Status</option>
@@ -397,6 +782,13 @@ export default function SharesPage() {
                             <ExternalLink className="w-4 h-4 text-gray-400" />
                           </a>
                           <button
+                            onClick={() => loadViewHistory(share)}
+                            className="p-2 rounded-lg bg-white/5 hover:bg-purple-500/20 transition-colors"
+                            title="View analytics"
+                          >
+                            <BarChart3 className="w-4 h-4 text-gray-400 hover:text-purple-400" />
+                          </button>
+                          <button
                             onClick={() => setDeleteTarget(share)}
                             className="p-2 rounded-lg bg-white/5 hover:bg-red-500/20 transition-colors"
                             title="Revoke link"
@@ -476,15 +868,6 @@ export default function SharesPage() {
                               </div>
                             </div>
                           )}
-
-                          {/* View History Button */}
-                          <button
-                            onClick={() => loadViewHistory(share)}
-                            className="mt-4 flex items-center gap-2 px-4 py-2 text-sm font-medium text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-colors"
-                          >
-                            <BarChart3 className="w-4 h-4" />
-                            View Analytics
-                          </button>
                         </div>
                       )}
                     </div>
@@ -536,7 +919,7 @@ export default function SharesPage() {
         </div>
       </Modal>
 
-      {/* View History Modal */}
+      {/* Detailed Analytics Modal */}
       <Modal
         isOpen={!!viewHistoryShare}
         onClose={() => {
@@ -544,7 +927,7 @@ export default function SharesPage() {
           setViewHistory(null)
         }}
         title={`Analytics: ${viewHistoryShare?.item_name}`}
-        description="View history and traffic sources"
+        description="Detailed view statistics and insights"
         size="lg"
       >
         {loadingHistory ? (
@@ -552,48 +935,159 @@ export default function SharesPage() {
             <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
           </div>
         ) : viewHistory ? (
-          <div className="space-y-6">
-            {/* Summary */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-white/5">
-                <p className="text-2xl font-bold text-white">{viewHistory.total_views}</p>
-                <p className="text-xs text-gray-500">Total Views (tracked)</p>
+          <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
+            {/* Real-time Stats */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20">
+                <div className="flex items-center gap-2 mb-1">
+                  {viewHistory.viewing_now > 0 && (
+                    <div className="relative">
+                      <div className="w-2 h-2 rounded-full bg-green-500" />
+                      <div className="absolute inset-0 w-2 h-2 rounded-full bg-green-500 animate-ping" />
+                    </div>
+                  )}
+                  <p className="text-xs text-green-400">Right Now</p>
+                </div>
+                <p className="text-2xl font-bold text-white">{viewHistory.viewing_now}</p>
               </div>
               <div className="p-4 rounded-xl bg-white/5">
-                <p className="text-2xl font-bold text-white">{viewHistory.unique_viewers}</p>
-                <p className="text-xs text-gray-500">Unique Viewers</p>
+                <p className="text-xs text-gray-500 mb-1">Last Hour</p>
+                <p className="text-2xl font-bold text-white">{viewHistory.views_last_hour}</p>
+              </div>
+              <div className="p-4 rounded-xl bg-white/5">
+                <p className="text-xs text-gray-500 mb-1">Last 24h</p>
+                <p className="text-2xl font-bold text-white">{viewHistory.views_last_24_hours}</p>
               </div>
             </div>
 
-            {/* Chart Data (simplified list view) */}
-            {viewHistory.chart_data?.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-400 mb-3">Views by Day</h4>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {viewHistory.chart_data.slice(-14).reverse().map((day: any) => (
-                    <div key={day.date} className="flex items-center justify-between p-2 rounded-lg bg-white/5">
-                      <span className="text-sm text-gray-400">{formatDate(day.date)}</span>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm text-white">{day.views} views</span>
-                        <span className="text-sm text-gray-500">{day.unique_viewers} unique</span>
-                      </div>
-                    </div>
-                  ))}
+            {/* Summary with Trend */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl bg-white/5">
+                <p className="text-2xl font-bold text-white">{viewHistory.total_views}</p>
+                <p className="text-xs text-gray-500">Total Views</p>
+              </div>
+              <div className="p-4 rounded-xl bg-white/5">
+                <div className="flex items-center gap-2">
+                  <p className="text-2xl font-bold text-white">{viewHistory.this_week_views}</p>
+                  {viewHistory.week_over_week_change !== 0 && (
+                    <span className={`flex items-center text-xs font-medium ${
+                      viewHistory.week_over_week_change > 0 ? 'text-green-400' : 'text-red-400'
+                    }`}>
+                      {viewHistory.week_over_week_change > 0 ? (
+                        <ArrowUpRight className="w-3 h-3" />
+                      ) : (
+                        <ArrowDownRight className="w-3 h-3" />
+                      )}
+                      {Math.abs(viewHistory.week_over_week_change)}%
+                    </span>
+                  )}
                 </div>
+                <p className="text-xs text-gray-500">This Week vs Last</p>
+              </div>
+            </div>
+
+            {/* Views Chart */}
+            {viewHistory.chart_data.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-medium text-gray-400">Views Over Time (30 Days)</h4>
+                  <div className="flex items-center gap-4 text-xs">
+                    <span className="flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full bg-purple-500" />
+                      Unique
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full bg-purple-500/30" />
+                      Total
+                    </span>
+                  </div>
+                </div>
+                <ViewsChart data={viewHistory.chart_data} height={100} />
               </div>
             )}
 
-            {/* Top Referrers */}
-            {viewHistory.top_referrers?.length > 0 && (
+            {/* Hourly Activity Heatmap */}
+            {viewHistory.hourly_views.some(v => v > 0) && (
               <div>
-                <h4 className="text-sm font-medium text-gray-400 mb-3">Traffic Sources</h4>
-                <div className="space-y-2">
-                  {viewHistory.top_referrers.map((ref: any) => (
-                    <div key={ref.domain} className="flex items-center justify-between p-2 rounded-lg bg-white/5">
-                      <span className="text-sm text-gray-400">{ref.domain}</span>
-                      <span className="text-sm text-white">{ref.count} visits</span>
-                    </div>
-                  ))}
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-medium text-gray-400">Activity by Hour</h4>
+                  <span className="text-xs text-gray-500">Peak: {viewHistory.peak_hour}</span>
+                </div>
+                <HourlyHeatmap data={viewHistory.hourly_views} />
+              </div>
+            )}
+
+            {/* Device & Browser Stats */}
+            <div className="grid md:grid-cols-2 gap-4">
+              {/* Device Stats */}
+              {viewHistory.device_stats.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-400 mb-3">Devices</h4>
+                  <div className="space-y-2">
+                    {viewHistory.device_stats.map(({ device, count }) => {
+                      const Icon = DEVICE_ICONS[device] || Globe
+                      const maxCount = viewHistory.device_stats[0]?.count || 1
+                      return (
+                        <div key={device}>
+                          <div className="flex items-center justify-between text-sm mb-1">
+                            <span className="flex items-center gap-2 text-gray-400">
+                              <Icon className="w-4 h-4" />
+                              {device}
+                            </span>
+                            <span className="text-white">{count}</span>
+                          </div>
+                          <StatBar value={count} max={maxCount} color="purple" />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Traffic Sources */}
+              {viewHistory.top_referrers.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-400 mb-3">Traffic Sources</h4>
+                  <div className="space-y-2">
+                    {viewHistory.top_referrers.slice(0, 5).map(({ domain, count }) => {
+                      const maxCount = viewHistory.top_referrers[0]?.count || 1
+                      return (
+                        <div key={domain}>
+                          <div className="flex items-center justify-between text-sm mb-1">
+                            <span className="text-gray-400 truncate">{domain}</span>
+                            <span className="text-white">{count}</span>
+                          </div>
+                          <StatBar value={count} max={maxCount} color="blue" />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Recent Activity Feed */}
+            {viewHistory.recent_views.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-400 mb-3">Recent Activity</h4>
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {viewHistory.recent_views.map((view, i) => {
+                    const Icon = DEVICE_ICONS[view.device] || Globe
+                    return (
+                      <div
+                        key={`${view.time}-${i}`}
+                        className="flex items-center gap-3 p-2 rounded-lg bg-white/[0.02] text-sm"
+                      >
+                        <Icon className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-gray-400 flex-1">
+                          {view.referrer || 'Direct'}
+                        </span>
+                        <span className="text-xs text-gray-600">
+                          {formatDistanceToNow(view.time)}
+                        </span>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}

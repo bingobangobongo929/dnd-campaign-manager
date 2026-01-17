@@ -234,6 +234,80 @@ export async function GET() {
     const viewsLast7Days = allShares.reduce((sum, s) => sum + (s.views_last_7_days || 0), 0)
     const viewsLast30Days = allShares.reduce((sum, s) => sum + (s.views_last_30_days || 0), 0)
 
+    // Get real-time activity (last 5 minutes, last hour)
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000)
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
+
+    let viewingNow = 0
+    let viewsLastHour = 0
+    const recentActivity: Array<{
+      share_id: string
+      share_type: string
+      item_name: string
+      viewed_at: string
+    }> = []
+
+    for (const event of viewEvents) {
+      const viewedAt = new Date(event.viewed_at)
+      if (viewedAt >= fiveMinutesAgo) viewingNow++
+      if (viewedAt >= oneHourAgo) viewsLastHour++
+
+      // Collect recent activity
+      if (recentActivity.length < 15) {
+        const share = allShares.find(s => s.id === event.share_id)
+        if (share) {
+          recentActivity.push({
+            share_id: event.share_id,
+            share_type: event.share_type,
+            item_name: share.item_name,
+            viewed_at: event.viewed_at,
+          })
+        }
+      }
+    }
+
+    // Sort recent activity by time
+    recentActivity.sort((a, b) => new Date(b.viewed_at).getTime() - new Date(a.viewed_at).getTime())
+
+    // Find trending shares (most views in last 7 days)
+    const trendingShares = [...allShares]
+      .filter(s => !s.is_expired && (s.views_last_7_days || 0) > 0)
+      .sort((a, b) => (b.views_last_7_days || 0) - (a.views_last_7_days || 0))
+      .slice(0, 5)
+      .map(s => ({
+        id: s.id,
+        item_name: s.item_name,
+        type: s.type,
+        views_last_7_days: s.views_last_7_days || 0,
+        item_image: s.item_image,
+      }))
+
+    // Find most popular all-time
+    const popularShares = [...allShares]
+      .filter(s => !s.is_expired)
+      .sort((a, b) => b.view_count - a.view_count)
+      .slice(0, 5)
+      .map(s => ({
+        id: s.id,
+        item_name: s.item_name,
+        type: s.type,
+        view_count: s.view_count,
+        item_image: s.item_image,
+      }))
+
+    // Calculate daily views for last 14 days for chart
+    const dailyViews: Array<{ date: string; views: number }> = []
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(now)
+      d.setDate(d.getDate() - i)
+      const dateStr = d.toISOString().split('T')[0]
+      const dayViews = viewEvents.filter(e => {
+        const eventDate = new Date(e.viewed_at).toISOString().split('T')[0]
+        return eventDate === dateStr
+      }).length
+      dailyViews.push({ date: dateStr, views: dayViews })
+    }
+
     return NextResponse.json({
       shares: allShares,
       summary: {
@@ -244,12 +318,18 @@ export async function GET() {
         total_unique_viewers: totalUniqueViewers,
         views_last_7_days: viewsLast7Days,
         views_last_30_days: viewsLast30Days,
+        viewing_now: viewingNow,
+        views_last_hour: viewsLastHour,
         by_type: {
           character: transformedCharacterShares.length,
           oneshot: transformedOneshotShares.length,
           campaign: transformedCampaignShares.length,
         },
       },
+      daily_views: dailyViews,
+      trending_shares: trendingShares,
+      popular_shares: popularShares,
+      recent_activity: recentActivity,
     })
   } catch (error) {
     console.error('Shares API error:', error)
