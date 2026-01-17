@@ -837,6 +837,10 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       party_relations: dataToSave.party_relations.length > 0 ? dataToSave.party_relations : null,
       combat_stats: dataToSave.combat_stats,
       open_questions: dataToSave.open_questions.length > 0 ? dataToSave.open_questions : null,
+      secondary_characters: dataToSave.secondary_characters.length > 0 ? dataToSave.secondary_characters : null,
+      reference_tables: dataToSave.reference_tables.length > 0 ? dataToSave.reference_tables : null,
+      pre_session_hook: dataToSave.pre_session_hook || null,
+      external_links: dataToSave.external_links.length > 0 ? dataToSave.external_links : null,
       updated_at: new Date().toISOString(),
     }
 

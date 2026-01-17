@@ -239,6 +239,7 @@ export async function POST(req: Request) {
     if (data.npcs && data.npcs.length > 0) {
       for (let i = 0; i < data.npcs.length; i++) {
         const npc = data.npcs[i]
+        const isPartyMember = npc.relationship_type === 'party_member'
         const npcInsert = {
           user_id: user.id,
           character_id: characterId,
@@ -259,6 +260,7 @@ export async function POST(req: Request) {
           full_notes: npc.full_notes || null,
           relationship_status: npc.relationship_status || 'active',
           is_companion: false,
+          is_party_member: isPartyMember,
           display_order: i,
         }
 
@@ -374,7 +376,10 @@ export async function POST(req: Request) {
       {
         error: 'Failed to import character data',
         details: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
+        // Only include stack in development for security
+        ...(process.env.NODE_ENV === 'development' && {
+          stack: error instanceof Error ? error.stack : undefined
+        })
       },
       { status: 500 }
     )

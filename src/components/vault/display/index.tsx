@@ -107,7 +107,11 @@ export function BulletListDisplay({
   }
 
   const handleSave = () => {
-    onSave?.(editItems.filter(item => item.trim()))
+    // Include newItem if user typed something but didn't click Plus
+    const itemsToSave = newItem.trim()
+      ? [...editItems, newItem.trim()]
+      : editItems
+    onSave?.(itemsToSave.filter(item => item.trim()))
     setIsEditing(false)
     setNewItem('')
   }
@@ -236,7 +240,11 @@ export function QuotesDisplay({
   }
 
   const handleSave = () => {
-    onSave?.(editQuotes.filter(q => q.trim()))
+    // Include newQuote if user typed something but didn't click Plus
+    const quotesToSave = newQuote.trim()
+      ? [...editQuotes, newQuote.trim()]
+      : editQuotes
+    onSave?.(quotesToSave.filter(q => q.trim()))
     setIsEditing(false)
     setNewQuote('')
   }
@@ -399,7 +407,7 @@ export function LifePhaseDisplay({
           Add Life Phase
         </button>
         <div className="flex justify-end gap-2 pt-2">
-          <button onClick={() => setIsEditing(false)} className="px-3 py-1.5 text-xs text-gray-400 hover:text-white">
+          <button onClick={() => { setIsEditing(false); setEditPhases([]) }} className="px-3 py-1.5 text-xs text-gray-400 hover:text-white">
             Cancel
           </button>
           <button onClick={handleSave} className="px-3 py-1.5 text-xs bg-purple-500/20 text-purple-400 rounded hover:bg-purple-500/30">
@@ -682,7 +690,7 @@ export function DmQADisplay({
           Add Q&A Entry
         </button>
         <div className="flex justify-end gap-2 pt-2">
-          <button onClick={() => setIsEditing(false)} className="px-3 py-1.5 text-xs text-gray-400 hover:text-white">
+          <button onClick={() => { setIsEditing(false); setEditItems([]) }} className="px-3 py-1.5 text-xs text-gray-400 hover:text-white">
             Cancel
           </button>
           <button onClick={handleSave} className="px-3 py-1.5 text-xs bg-purple-500/20 text-purple-400 rounded hover:bg-purple-500/30">
@@ -799,7 +807,7 @@ export function RumorsDisplay({
           Add Rumor
         </button>
         <div className="flex justify-end gap-2 pt-2">
-          <button onClick={() => setIsEditing(false)} className="px-3 py-1.5 text-xs text-gray-400 hover:text-white">
+          <button onClick={() => { setIsEditing(false); setEditRumors([]) }} className="px-3 py-1.5 text-xs text-gray-400 hover:text-white">
             Cancel
           </button>
           <button onClick={handleSave} className="px-3 py-1.5 text-xs bg-purple-500/20 text-purple-400 rounded hover:bg-purple-500/30">

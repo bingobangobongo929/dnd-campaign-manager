@@ -1,10 +1,18 @@
 import { streamText } from 'ai'
 import { getAIModel, AI_PROMPTS, AIProvider } from '@/lib/ai/config'
+import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'edge'
 
 export async function POST(req: Request) {
   try {
+    // Auth check
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return new Response('Unauthorized', { status: 401 })
+    }
+
     const { text, sessionTitle, provider } = await req.json()
 
     if (!text) {
