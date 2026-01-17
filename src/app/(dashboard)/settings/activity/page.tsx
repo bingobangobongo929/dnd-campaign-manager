@@ -50,47 +50,62 @@ const ENTITY_TYPE_COLORS: Record<string, string> = {
   canvas_group: 'text-cyan-400 bg-cyan-500/10',
 }
 
-// Format a single change field into a readable string
-function formatFieldChange(field: string, change: { old?: unknown; new?: unknown }): string | null {
-  const oldVal = change.old
-  const newVal = change.new
-  const fieldName = field.replace(/_/g, ' ')
-
-  // Handle empty transitions
-  const oldEmpty = oldVal === null || oldVal === undefined || oldVal === '' || oldVal === '(empty)'
-  const newEmpty = newVal === null || newVal === undefined || newVal === '' || newVal === '(empty)'
-
-  if (oldEmpty && newEmpty) return null
-  if (oldEmpty && !newEmpty) {
-    const preview = typeof newVal === 'string' ? newVal.substring(0, 60) : JSON.stringify(newVal)
-    return `Added ${fieldName}: "${preview}${String(newVal).length > 60 ? '...' : ''}"`
-  }
-  if (!oldEmpty && newEmpty) {
-    return `Cleared ${fieldName}`
-  }
-
-  // Both have values - show what changed
-  if (typeof oldVal === 'string' && typeof newVal === 'string') {
-    // For long text, just say it was updated
-    if (oldVal.length > 100 || newVal.length > 100) {
-      return `Updated ${fieldName}`
-    }
-    return `Changed ${fieldName}: "${oldVal.substring(0, 40)}${oldVal.length > 40 ? '...' : ''}" → "${newVal.substring(0, 40)}${newVal.length > 40 ? '...' : ''}"`
-  }
-
-  return `Updated ${fieldName}`
+// Format change for display with before/after
+interface FormattedChange {
+  field: string
+  type: 'added' | 'removed' | 'changed'
+  oldValue?: string
+  newValue?: string
 }
 
-// Get a summary of all changes for an activity
-function getChangeSummary(changes: Record<string, { old?: unknown; new?: unknown }> | null): string[] {
+function formatChanges(changes: Record<string, { old?: unknown; new?: unknown }> | null): FormattedChange[] {
   if (!changes) return []
 
-  const summaries: string[] = []
+  const formatted: FormattedChange[] = []
+
   for (const [field, change] of Object.entries(changes)) {
-    const summary = formatFieldChange(field, change)
-    if (summary) summaries.push(summary)
+    const oldVal = change.old
+    const newVal = change.new
+    const fieldName = field.replace(/_/g, ' ')
+
+    // Handle empty transitions
+    const oldEmpty = oldVal === null || oldVal === undefined || oldVal === ''
+    const newEmpty = newVal === null || newVal === undefined || newVal === ''
+
+    if (oldEmpty && newEmpty) continue
+
+    const formatValue = (val: unknown): string => {
+      if (val === null || val === undefined || val === '') return ''
+      if (typeof val === 'string') {
+        // Truncate long values
+        return val.length > 150 ? val.substring(0, 150) + '...' : val
+      }
+      return JSON.stringify(val)
+    }
+
+    if (oldEmpty && !newEmpty) {
+      formatted.push({
+        field: fieldName,
+        type: 'added',
+        newValue: formatValue(newVal),
+      })
+    } else if (!oldEmpty && newEmpty) {
+      formatted.push({
+        field: fieldName,
+        type: 'removed',
+        oldValue: formatValue(oldVal),
+      })
+    } else {
+      formatted.push({
+        field: fieldName,
+        type: 'changed',
+        oldValue: formatValue(oldVal),
+        newValue: formatValue(newVal),
+      })
+    }
   }
-  return summaries
+
+  return formatted
 }
 
 // Get action-specific context message
@@ -356,7 +371,7 @@ export default function ActivityLogPage() {
                 {items.map((activity) => {
                   const Icon = ENTITY_TYPE_ICONS[activity.entity_type] || History
                   const colorClass = ENTITY_TYPE_COLORS[activity.entity_type] || 'text-gray-400 bg-gray-500/10'
-                  const changeSummaries = getChangeSummary(activity.changes)
+                  const formattedChanges = formatChanges(activity.changes)
                   const actionContext = getActionContext(activity.action, activity.metadata)
 
                   return (
@@ -393,20 +408,51 @@ export default function ActivityLogPage() {
                             </p>
                           )}
 
-                          {/* Change summaries - shown inline */}
-                          {changeSummaries.length > 0 && (
-                            <div className="mt-2 space-y-1">
-                              {changeSummaries.map((summary, idx) => (
-                                <p key={idx} className="text-xs text-[--text-tertiary] flex items-start gap-2">
-                                  <span className="text-[--arcane-purple] mt-0.5">•</span>
-                                  <span>{summary}</span>
-                                </p>
+                          {/* Changes with before/after */}
+                          {formattedChanges.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                              {formattedChanges.map((change, idx) => (
+                                <div key={idx} className="text-xs">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-medium text-[--text-secondary] capitalize">{change.field}</span>
+                                    <span className={cn(
+                                      'px-1.5 py-0.5 rounded text-[10px] font-medium',
+                                      change.type === 'added' && 'bg-green-500/20 text-green-400',
+                                      change.type === 'removed' && 'bg-red-500/20 text-red-400',
+                                      change.type === 'changed' && 'bg-amber-500/20 text-amber-400'
+                                    )}>
+                                      {change.type}
+                                    </span>
+                                  </div>
+                                  {change.type === 'changed' && (
+                                    <div className="pl-2 border-l-2 border-white/10 space-y-1">
+                                      <p className="text-red-400/70">
+                                        <span className="text-red-400/50 mr-1">−</span>
+                                        {change.oldValue}
+                                      </p>
+                                      <p className="text-green-400/70">
+                                        <span className="text-green-400/50 mr-1">+</span>
+                                        {change.newValue}
+                                      </p>
+                                    </div>
+                                  )}
+                                  {change.type === 'added' && (
+                                    <p className="pl-2 border-l-2 border-green-500/30 text-green-400/70">
+                                      {change.newValue}
+                                    </p>
+                                  )}
+                                  {change.type === 'removed' && (
+                                    <p className="pl-2 border-l-2 border-red-500/30 text-red-400/70 line-through">
+                                      {change.oldValue}
+                                    </p>
+                                  )}
+                                </div>
                               ))}
                             </div>
                           )}
 
                           {/* Timestamp */}
-                          <p className="text-xs text-[--text-tertiary] mt-2">
+                          <p className="text-xs text-[--text-tertiary] mt-3">
                             {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
                           </p>
                         </div>
