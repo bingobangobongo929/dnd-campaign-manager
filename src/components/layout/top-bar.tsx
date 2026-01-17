@@ -183,6 +183,8 @@ export function TopBar({
         const settingsLabels: Record<string, string> = {
           import: 'Import',
           shares: 'Share Analytics',
+          activity: 'Activity Log',
+          images: 'Image Enhancement',
         }
         breadcrumbs.push({ label: settingsLabels[parts[1]] || parts[1] })
       }

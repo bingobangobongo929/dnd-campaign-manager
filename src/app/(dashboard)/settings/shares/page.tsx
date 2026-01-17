@@ -642,7 +642,8 @@ export default function SharesPage() {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}
-                className="px-3 py-1.5 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500/50"
+                className="px-3 py-1.5 text-sm bg-[#1a1a24] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500/50"
+                style={{ colorScheme: 'dark' }}
               >
                 <option value="all">All Types</option>
                 <option value="character">Characters</option>
@@ -654,7 +655,8 @@ export default function SharesPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                className="px-3 py-1.5 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500/50"
+                className="px-3 py-1.5 text-sm bg-[#1a1a24] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500/50"
+                style={{ colorScheme: 'dark' }}
               >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>

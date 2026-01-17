@@ -867,6 +867,16 @@
   min-height: 100px;
 }
 
+/* Global select dark mode - prevents white dropdown backgrounds */
+select {
+  color-scheme: dark;
+}
+
+select option {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    AVATAR
    ═══════════════════════════════════════════════════════════════════════════ */

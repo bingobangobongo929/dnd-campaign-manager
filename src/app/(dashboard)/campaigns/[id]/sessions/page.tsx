@@ -17,6 +17,7 @@ import { AppLayout } from '@/components/layout/app-layout'
 import { CharacterViewModal } from '@/components/character'
 import { useSupabase, useUser } from '@/hooks'
 import { formatDate, cn, getInitials } from '@/lib/utils'
+import { logActivity } from '@/lib/activity-log'
 import Image from 'next/image'
 import type { Campaign, Session, Character, Tag, CharacterTag } from '@/types/database'
 
@@ -154,7 +155,7 @@ export default function SessionsPage() {
   })
 
   const handleCreate = async () => {
-    if (!formData.title.trim()) return
+    if (!formData.title.trim() || !user) return
 
     setSaving(true)
     const { data } = await supabase
@@ -170,6 +171,19 @@ export default function SessionsPage() {
       .single()
 
     if (data) {
+      // Log activity
+      await logActivity(supabase, user.id, {
+        action: 'session.create',
+        entity_type: 'session',
+        entity_id: data.id,
+        entity_name: `Session ${data.session_number}: ${data.title}`,
+        metadata: {
+          campaign_id: campaignId,
+          campaign_name: campaign?.name,
+          session_number: data.session_number,
+        },
+      })
+
       setIsCreateModalOpen(false)
       setFormData({
         title: '',
@@ -186,8 +200,24 @@ export default function SessionsPage() {
     e.stopPropagation()
     if (!confirm('Are you sure you want to delete this session? This cannot be undone.')) return
 
+    const sessionToDelete = sessions.find(s => s.id === id)
     await supabase.from('sessions').delete().eq('id', id)
     setSessions(sessions.filter((s) => s.id !== id))
+
+    // Log activity
+    if (user && sessionToDelete) {
+      await logActivity(supabase, user.id, {
+        action: 'session.delete',
+        entity_type: 'session',
+        entity_id: id,
+        entity_name: `Session ${sessionToDelete.session_number}: ${sessionToDelete.title || 'Untitled'}`,
+        metadata: {
+          campaign_id: campaignId,
+          campaign_name: campaign?.name,
+          session_number: sessionToDelete.session_number,
+        },
+      })
+    }
   }
 
   const handleSessionClick = (session: SessionWithAttendees) => {

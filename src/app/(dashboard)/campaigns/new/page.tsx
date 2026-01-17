@@ -28,6 +28,7 @@ import { Modal } from '@/components/ui'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
+import { logActivity } from '@/lib/activity-log'
 import { v4 as uuidv4 } from 'uuid'
 
 // Helper to create centered crop with aspect ratio
@@ -277,6 +278,19 @@ export default function NewCampaignPage() {
         .single()
 
       if (error) throw error
+
+      // Log activity
+      await logActivity(supabase, user.id, {
+        action: 'campaign.create',
+        entity_type: 'campaign',
+        entity_id: data.id,
+        entity_name: data.name,
+        metadata: {
+          game_system: formData.game_system,
+          status: formData.status,
+        },
+      })
+
       router.push(`/campaigns/${data.id}/canvas`)
     } catch (err) {
       console.error('Save error:', err)

@@ -21,8 +21,9 @@ import {
   Castle,
   Swords,
 } from 'lucide-react'
-import { useSupabase } from '@/hooks'
+import { useSupabase, useUser } from '@/hooks'
 import { createClient } from '@/lib/supabase/client'
+import { logActivity } from '@/lib/activity-log'
 import Image from 'next/image'
 import { getInitials } from '@/lib/utils'
 
@@ -124,6 +125,7 @@ export function ShareCampaignModal({
   campaignName,
 }: ShareCampaignModalProps) {
   const supabase = useSupabase()
+  const { user } = useUser()
   const [sections, setSections] = useState<Record<string, boolean>>({})
   const [expiresInDays, setExpiresInDays] = useState<number | null>(null)
   const [note, setNote] = useState<string>('')
@@ -443,6 +445,25 @@ export function ShareCampaignModal({
       setSelectedShareId(newShare.id)
       setExistingShares(prev => [newShare, ...prev])
       setShowNewLinkForm(false)
+
+      // Log activity
+      if (user) {
+        await logActivity(supabase, user.id, {
+          action: 'share.create',
+          entity_type: 'share',
+          entity_id: data.shareId,
+          entity_name: campaignName,
+          metadata: {
+            share_type: 'campaign',
+            share_code: data.shareCode,
+            sections_included: Object.keys(sections).filter(k => sections[k]),
+            characters_count: selectedCharacterIds.size,
+            sessions_count: selectedSessionIds.size,
+            expires_in_days: expiresInDays,
+            note: note.trim() || null,
+          },
+        })
+      }
     } catch (err) {
       console.error('Share creation error:', err)
     }
@@ -475,6 +496,7 @@ export function ShareCampaignModal({
 
   const revokeShare = async () => {
     if (!shareCode) return
+    const revokedCode = shareCode // Capture before clearing
     setLoading(true)
     try {
       await fetch(`/api/campaigns/share?code=${shareCode}`, { method: 'DELETE' })
@@ -484,6 +506,19 @@ export function ShareCampaignModal({
       setSelectedShareId(null)
       if (existingShares.length <= 1) {
         setShowNewLinkForm(true)
+      }
+
+      // Log activity
+      if (user) {
+        await logActivity(supabase, user.id, {
+          action: 'share.revoke',
+          entity_type: 'share',
+          entity_name: campaignName,
+          metadata: {
+            share_type: 'campaign',
+            share_code: revokedCode,
+          },
+        })
       }
     } catch (err) {
       console.error('Revoke error:', err)

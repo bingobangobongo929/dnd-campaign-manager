@@ -18,6 +18,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { logActivity } from '@/lib/activity-log'
 
 interface Character {
   id: string
@@ -200,6 +201,19 @@ export default function ImageEnhancementPage() {
         .eq('id', char.id)
 
       if (updateError) throw updateError
+
+      // Log activity
+      await logActivity(supabase, user.id, {
+        action: 'character.image_change',
+        entity_type: 'character',
+        entity_id: char.id,
+        entity_name: char.name,
+        metadata: {
+          type: 'ai_enhancement',
+          original_url: char.image_original_url || char.image_url,
+          enhanced_url: publicUrl,
+        },
+      })
 
       setAccepted(prev => new Set(prev).add(char.id))
       toast.success(`Enhanced ${char.name}`)
@@ -403,10 +417,10 @@ export default function ImageEnhancementPage() {
 
                   {/* Status badge */}
                   <div className={cn(
-                    'absolute top-2 right-2 px-2 py-1 rounded-md text-xs font-medium flex items-center gap-1',
+                    'absolute top-2 right-2 px-2 py-1 rounded-md text-xs font-medium flex items-center gap-1 backdrop-blur-sm',
                     isEnhanced
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                      : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                      ? 'bg-emerald-900/90 text-emerald-300 border border-emerald-500/50'
+                      : 'bg-gray-900/90 text-gray-200 border border-gray-500/50'
                   )}>
                     {isEnhanced ? (
                       <>

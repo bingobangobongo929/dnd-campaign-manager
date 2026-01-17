@@ -250,7 +250,8 @@ export default function ActivityLogPage() {
           <select
             value={days}
             onChange={(e) => setDays(parseInt(e.target.value))}
-            className="bg-[--bg-elevated] border border-[--border] rounded-lg px-3 py-2 text-sm text-[--text-primary] focus:outline-none focus:border-[--arcane-purple]"
+            className="bg-[#1a1a24] border border-white/10 rounded-lg px-3 py-2 text-sm text-[--text-primary] focus:outline-none focus:border-[--arcane-purple]"
+            style={{ colorScheme: 'dark' }}
           >
             <option value={7}>Last 7 days</option>
             <option value={30}>Last 30 days</option>

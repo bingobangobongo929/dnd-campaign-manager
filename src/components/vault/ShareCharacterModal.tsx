@@ -3,8 +3,9 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Modal } from '@/components/ui'
 import { Check, Copy, Link2, Trash2, Loader2, ExternalLink, AlertCircle } from 'lucide-react'
-import { useSupabase } from '@/hooks'
+import { useSupabase, useUser } from '@/hooks'
 import { createClient } from '@/lib/supabase/client'
+import { logActivity } from '@/lib/activity-log'
 import type { VaultCharacter, VaultCharacterRelationship } from '@/types/database'
 
 interface ShareCharacterModalProps {
@@ -66,6 +67,7 @@ export function ShareCharacterModal({
   characterName,
 }: ShareCharacterModalProps) {
   const supabase = useSupabase()
+  const { user } = useUser()
   const [sections, setSections] = useState<Record<string, boolean>>({})
   const [expiresInDays, setExpiresInDays] = useState<number | null>(null)
   const [note, setNote] = useState<string>('')
@@ -263,6 +265,23 @@ export function ShareCharacterModal({
       setSelectedShareId(newShare.id)
       setExistingShares(prev => [newShare, ...prev])
       setShowNewLinkForm(false)
+
+      // Log activity
+      if (user) {
+        await logActivity(supabase, user.id, {
+          action: 'share.create',
+          entity_type: 'share',
+          entity_id: data.shareId,
+          entity_name: characterName,
+          metadata: {
+            share_type: 'character',
+            share_code: data.shareCode,
+            sections_included: Object.keys(sections).filter(k => sections[k]),
+            expires_in_days: expiresInDays,
+            note: note.trim() || null,
+          },
+        })
+      }
     } catch (err) {
       console.error('Share creation error:', err)
     }
@@ -288,6 +307,7 @@ export function ShareCharacterModal({
 
   const revokeShare = async () => {
     if (!shareCode) return
+    const revokedCode = shareCode // Capture before clearing
     setLoading(true)
     try {
       await fetch(`/api/vault/share?code=${shareCode}`, { method: 'DELETE' })
@@ -299,6 +319,19 @@ export function ShareCharacterModal({
       // If no shares left, show new link form
       if (existingShares.length <= 1) {
         setShowNewLinkForm(true)
+      }
+
+      // Log activity
+      if (user) {
+        await logActivity(supabase, user.id, {
+          action: 'share.revoke',
+          entity_type: 'share',
+          entity_name: characterName,
+          metadata: {
+            share_type: 'character',
+            share_code: revokedCode,
+          },
+        })
       }
     } catch (err) {
       console.error('Revoke error:', err)

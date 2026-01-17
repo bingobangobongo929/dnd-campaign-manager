@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { logActivity } from '@/lib/activity-log'
 import { NextRequest } from 'next/server'
 
 // Comprehensive interface for imported characters with ALL new fields
@@ -494,6 +495,21 @@ export async function POST(req: NextRequest) {
         console.error(`Import error for ${char.name}:`, charError)
       }
     }
+
+    // Log activity
+    await logActivity(supabase, user.id, {
+      action: 'data.import',
+      entity_type: 'character',
+      entity_name: `${results.imported} characters imported`,
+      metadata: {
+        total_submitted: characters.length,
+        imported: results.imported,
+        updated: results.updated,
+        relationships_created: results.relationships_created,
+        images_created: results.images_created,
+        errors_count: results.errors.length,
+      },
+    })
 
     return new Response(JSON.stringify({
       success: true,

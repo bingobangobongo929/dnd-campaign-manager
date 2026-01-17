@@ -14,6 +14,7 @@ import Image from 'next/image'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { cn, getInitials } from '@/lib/utils'
+import { logActivity } from '@/lib/activity-log'
 import { useAutoSave } from '@/hooks'
 import {
   X,
@@ -868,6 +869,19 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         savedCharId = data.id
         setCharacterId(data.id)
         window.history.replaceState(null, '', `/vault/${data.id}`)
+
+        // Log activity for new character creation
+        await logActivity(supabase, userData.user.id, {
+          action: 'character.create',
+          entity_type: 'character',
+          entity_id: data.id,
+          entity_name: data.name,
+          metadata: {
+            type: data.type,
+            race: data.race,
+            class: data.class,
+          },
+        })
       }
     }
 
