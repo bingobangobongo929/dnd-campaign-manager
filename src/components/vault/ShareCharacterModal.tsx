@@ -71,8 +71,10 @@ export function ShareCharacterModal({
   const [shareCode, setShareCode] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [existingShare, setExistingShare] = useState<any>(null)
+  const [existingShares, setExistingShares] = useState<any[]>([])
+  const [selectedShareId, setSelectedShareId] = useState<string | null>(null)
   const [checkingExisting, setCheckingExisting] = useState(true)
+  const [showNewLinkForm, setShowNewLinkForm] = useState(false)
 
   // Track which sections have content
   const [sectionContent, setSectionContent] = useState<Record<string, boolean>>({})
@@ -103,20 +105,43 @@ export function ShareCharacterModal({
         .select('*')
         .eq('character_id', characterId)
         .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
 
-      if (data) {
-        setExistingShare(data)
-        setShareCode(data.share_code)
-        setShareUrl(`${window.location.origin}/share/c/${data.share_code}`)
-        setSections(data.included_sections || {})
-        setNote(data.note || '')
+      if (data && data.length > 0) {
+        setExistingShares(data)
+        // Don't auto-select, let user choose or create new
       }
     } catch {
-      // No existing share
+      // No existing shares
     }
     setCheckingExisting(false)
+  }
+
+  const selectShare = (share: any) => {
+    setSelectedShareId(share.id)
+    setShareCode(share.share_code)
+    setShareUrl(`${window.location.origin}/share/c/${share.share_code}`)
+    // Merge with defaults so missing keys default to true
+    const defaults: Record<string, boolean> = {}
+    SECTION_TOGGLES.forEach((t) => {
+      defaults[t.key] = t.defaultOn
+    })
+    setSections({ ...defaults, ...(share.included_sections || {}) })
+    setNote(share.note || '')
+    setShowNewLinkForm(false)
+  }
+
+  const startNewLink = () => {
+    setSelectedShareId(null)
+    setShareCode(null)
+    setShareUrl(null)
+    setShowNewLinkForm(true)
+    // Reset to defaults
+    const defaults: Record<string, boolean> = {}
+    SECTION_TOGGLES.forEach((t) => {
+      defaults[t.key] = t.defaultOn
+    })
+    setSections(defaults)
+    setNote('')
   }
 
   const loadSectionContent = async () => {
@@ -216,9 +241,19 @@ export function ShareCharacterModal({
       if (!res.ok) throw new Error('Failed to create share')
 
       const data = await res.json()
+      const newShare = {
+        id: data.shareId || Date.now().toString(),
+        share_code: data.shareCode,
+        included_sections: sections,
+        note: note.trim() || null,
+        created_at: new Date().toISOString(),
+        view_count: 0,
+      }
       setShareCode(data.shareCode)
       setShareUrl(`${window.location.origin}${data.shareUrl}`)
-      setExistingShare({ share_code: data.shareCode })
+      setSelectedShareId(newShare.id)
+      setExistingShares(prev => [newShare, ...prev])
+      setShowNewLinkForm(false)
     } catch (err) {
       console.error('Share creation error:', err)
     }
@@ -247,9 +282,15 @@ export function ShareCharacterModal({
     setLoading(true)
     try {
       await fetch(`/api/vault/share?code=${shareCode}`, { method: 'DELETE' })
+      setExistingShares(prev => prev.filter(s => s.share_code !== shareCode))
       setShareUrl(null)
       setShareCode(null)
-      setExistingShare(null)
+      setSelectedShareId(null)
+      // If there are other shares, don't show new link form
+      // If no shares left, show new link form
+      if (existingShares.length <= 1) {
+        setShowNewLinkForm(true)
+      }
     } catch (err) {
       console.error('Revoke error:', err)
     }
@@ -280,218 +321,292 @@ export function ShareCharacterModal({
         </div>
       ) : (
         <div className="space-y-6 max-h-[calc(100vh-300px)] overflow-y-auto">
-          {/* Section Toggles */}
-          <div>
-            <label className="block text-sm font-medium text-gray-400 mb-3">
-              Select what to include:
-            </label>
-            <div className="border border-white/10 rounded-xl overflow-hidden divide-y divide-white/10">
-              {groups.map((group) => {
-                const groupToggles = SECTION_TOGGLES.filter((t) => t.group === group)
-                const hasAnyContent = groupToggles.some(t => sectionContent[t.key])
-
-                return (
-                  <div key={group} className="p-4">
-                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-                      {group}
-                      {!hasAnyContent && (
-                        <span className="text-xs font-normal normal-case text-gray-600">(no content)</span>
-                      )}
-                    </h4>
-                    <div className="space-y-2">
-                      {groupToggles.map((toggle) => {
-                        const hasContent = sectionContent[toggle.key]
-                        const isEnabled = sections[toggle.key]
-
-                        return (
-                          <label
-                            key={toggle.key}
-                            className={`flex items-center gap-3 cursor-pointer group ${!hasContent ? 'opacity-50' : ''}`}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => toggleSection(toggle.key)}
-                              disabled={!hasContent}
-                              className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                                isEnabled && hasContent
-                                  ? 'bg-purple-600 border-purple-600'
-                                  : 'border-white/20 hover:border-white/40'
-                              } ${!hasContent ? 'cursor-not-allowed' : ''}`}
-                            >
-                              {isEnabled && hasContent && <Check className="w-3 h-3 text-white" />}
-                            </button>
-                            <span className={`text-sm transition-colors ${
-                              hasContent ? 'text-gray-300 group-hover:text-white' : 'text-gray-600'
-                            }`}>
-                              {toggle.label}
-                            </span>
-                            {toggle.warning && hasContent && (
-                              <span className="text-xs text-amber-500">({toggle.warning})</span>
-                            )}
-                            {!hasContent && (
-                              <span className="text-xs text-gray-600 italic">empty</span>
-                            )}
-                          </label>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Expiration */}
-          {!existingShare && (
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                Link expires:
-              </label>
-              <div className="relative">
-                <select
-                  value={expiresInDays === null ? '' : expiresInDays}
-                  onChange={(e) =>
-                    setExpiresInDays(e.target.value === '' ? null : parseInt(e.target.value))
-                  }
-                  className="w-full py-3 px-4 bg-[#1a1a24] border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50 appearance-none cursor-pointer"
-                  style={{ colorScheme: 'dark' }}
+          {/* Existing Shares List */}
+          {existingShares.length > 0 && !selectedShareId && !showNewLinkForm && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-400">
+                  Existing share links ({existingShares.length}):
+                </label>
+                <button
+                  onClick={startNewLink}
+                  className="flex items-center gap-1.5 text-sm text-purple-400 hover:text-purple-300 transition-colors"
                 >
-                  {EXPIRATION_OPTIONS.map((opt) => (
-                    <option
-                      key={opt.label}
-                      value={opt.value === null ? '' : opt.value}
-                      className="bg-[#1a1a24] text-white"
-                    >
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
+                  <Link2 className="w-4 h-4" />
+                  Create New Link
+                </button>
+              </div>
+              <div className="space-y-2">
+                {existingShares.map((share) => (
+                  <button
+                    key={share.id}
+                    onClick={() => selectShare(share)}
+                    className="w-full p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-left transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-mono text-purple-400 truncate">
+                            /share/c/{share.share_code}
+                          </span>
+                          {share.view_count > 0 && (
+                            <span className="text-xs text-gray-500">{share.view_count} views</span>
+                          )}
+                        </div>
+                        {share.note && (
+                          <p className="text-xs text-gray-500 mt-1 truncate">{share.note}</p>
+                        )}
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-gray-500 flex-shrink-0 ml-2" />
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
           )}
 
-          {/* Note for remembering who/why */}
-          <div>
-            <label className="block text-sm font-medium text-gray-400 mb-2">
-              Note (optional):
-            </label>
-            <input
-              type="text"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="e.g., For my DM, Discord group, Reddit post..."
-              className="w-full py-3 px-4 bg-[#1a1a24] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50"
-            />
-            <p className="text-xs text-gray-600 mt-1">
-              Helps you remember who this link was shared with
-            </p>
-          </div>
+          {/* Show form when creating new or editing existing */}
+          {(showNewLinkForm || selectedShareId || existingShares.length === 0) && (
+            <>
+              {/* Back button when editing */}
+              {existingShares.length > 0 && (selectedShareId || showNewLinkForm) && (
+                <button
+                  onClick={() => {
+                    setSelectedShareId(null)
+                    setShareUrl(null)
+                    setShareCode(null)
+                    setShowNewLinkForm(false)
+                  }}
+                  className="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors mb-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back to all links
+                </button>
+              )}
 
-          {/* Share URL Display */}
-          {shareUrl ? (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 p-4 bg-white/5 border border-white/10 rounded-xl">
-                <Link2 className="w-5 h-5 text-purple-400 flex-shrink-0" />
+              {/* Section Toggles */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-3">
+                  Select what to include:
+                </label>
+                <div className="border border-white/10 rounded-xl overflow-hidden divide-y divide-white/10">
+                  {groups.map((group) => {
+                    const groupToggles = SECTION_TOGGLES.filter((t) => t.group === group)
+                    const hasAnyContent = groupToggles.some(t => sectionContent[t.key])
+
+                    return (
+                      <div key={group} className="p-4">
+                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                          {group}
+                          {!hasAnyContent && (
+                            <span className="text-xs font-normal normal-case text-gray-600">(no content)</span>
+                          )}
+                        </h4>
+                        <div className="space-y-2">
+                          {groupToggles.map((toggle) => {
+                            const hasContent = sectionContent[toggle.key]
+                            const isEnabled = sections[toggle.key]
+
+                            return (
+                              <label
+                                key={toggle.key}
+                                className={`flex items-center gap-3 cursor-pointer group ${!hasContent ? 'opacity-50' : ''}`}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => toggleSection(toggle.key)}
+                                  disabled={!hasContent}
+                                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                                    isEnabled && hasContent
+                                      ? 'bg-purple-600 border-purple-600'
+                                      : 'border-white/20 hover:border-white/40'
+                                  } ${!hasContent ? 'cursor-not-allowed' : ''}`}
+                                >
+                                  {isEnabled && hasContent && <Check className="w-3 h-3 text-white" />}
+                                </button>
+                                <span className={`text-sm transition-colors ${
+                                  hasContent ? 'text-gray-300 group-hover:text-white' : 'text-gray-600'
+                                }`}>
+                                  {toggle.label}
+                                </span>
+                                {toggle.warning && hasContent && (
+                                  <span className="text-xs text-amber-500">({toggle.warning})</span>
+                                )}
+                                {!hasContent && (
+                                  <span className="text-xs text-gray-600 italic">empty</span>
+                                )}
+                              </label>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Expiration - only for new links */}
+              {showNewLinkForm && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Link expires:
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={expiresInDays === null ? '' : expiresInDays}
+                      onChange={(e) =>
+                        setExpiresInDays(e.target.value === '' ? null : parseInt(e.target.value))
+                      }
+                      className="w-full py-3 px-4 bg-[#1a1a24] border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50 appearance-none cursor-pointer"
+                      style={{ colorScheme: 'dark' }}
+                    >
+                      {EXPIRATION_OPTIONS.map((opt) => (
+                        <option
+                          key={opt.label}
+                          value={opt.value === null ? '' : opt.value}
+                          className="bg-[#1a1a24] text-white"
+                        >
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Note for remembering who/why */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Note (optional):
+                </label>
                 <input
                   type="text"
-                  value={shareUrl}
-                  readOnly
-                  className="flex-1 bg-transparent text-sm text-gray-300 outline-none truncate"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="e.g., For my DM, Discord group, Reddit post..."
+                  className="w-full py-3 px-4 bg-[#1a1a24] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50"
                 />
+                <p className="text-xs text-gray-600 mt-1">
+                  Helps you remember who this link was shared with
+                </p>
+              </div>
+
+              {/* Share URL Display for selected share */}
+              {shareUrl ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 p-4 bg-white/5 border border-white/10 rounded-xl">
+                    <Link2 className="w-5 h-5 text-purple-400 flex-shrink-0" />
+                    <input
+                      type="text"
+                      value={shareUrl}
+                      readOnly
+                      className="flex-1 bg-transparent text-sm text-gray-300 outline-none truncate"
+                    />
+                    <button
+                      onClick={copyToClipboard}
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-colors"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4" />
+                          Copy
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <a
+                      href={shareUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-gray-400 hover:text-purple-400 transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Preview link
+                    </a>
+                  </div>
+
+                  {/* Update button for existing shares */}
+                  <button
+                    onClick={updateShare}
+                    disabled={loading}
+                    className="w-full py-2.5 px-4 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      'Update Share Settings'
+                    )}
+                  </button>
+                </div>
+              ) : (
                 <button
-                  onClick={copyToClipboard}
-                  className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-colors"
+                  onClick={createShare}
+                  disabled={loading}
+                  className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {copied ? (
+                  {loading ? (
                     <>
-                      <Check className="w-4 h-4" />
-                      Copied!
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Creating...
                     </>
                   ) : (
                     <>
-                      <Copy className="w-4 h-4" />
-                      Copy
+                      <Link2 className="w-4 h-4" />
+                      Create Share Link
                     </>
                   )}
                 </button>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <a
-                  href={shareUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-gray-400 hover:text-purple-400 transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Preview link
-                </a>
-                {existingShare && (
-                  <span className="text-xs text-gray-500">
-                    {existingShare.view_count || 0} views
-                  </span>
-                )}
-              </div>
-
-              {/* Update button for existing shares */}
-              <button
-                onClick={updateShare}
-                disabled={loading}
-                className="w-full py-2.5 px-4 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  'Update Share Settings'
-                )}
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={createShare}
-              disabled={loading}
-              className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <Link2 className="w-4 h-4" />
-                  Create Share Link
-                </>
               )}
-            </button>
+
+              {/* Actions */}
+              <div className="flex justify-between pt-4 border-t border-white/10">
+                {shareUrl ? (
+                  <button
+                    onClick={revokeShare}
+                    disabled={loading}
+                    className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Revoke Link
+                  </button>
+                ) : (
+                  <div />
+                )}
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            </>
           )}
 
-          {/* Actions */}
-          <div className="flex justify-between pt-4 border-t border-white/10">
-            {shareUrl ? (
+          {/* Done button when viewing list */}
+          {existingShares.length > 0 && !selectedShareId && !showNewLinkForm && (
+            <div className="flex justify-end pt-4 border-t border-white/10">
               <button
-                onClick={revokeShare}
-                disabled={loading}
-                className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 transition-colors"
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"
               >
-                <Trash2 className="w-4 h-4" />
-                Revoke Link
+                Done
               </button>
-            ) : (
-              <div />
-            )}
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"
-            >
-              Done
-            </button>
-          </div>
+            </div>
+          )}
         </div>
       )}
     </Modal>

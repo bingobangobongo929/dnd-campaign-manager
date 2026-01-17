@@ -111,7 +111,32 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
     notFound()
   }
 
-  const sections = share.included_sections as Record<string, boolean>
+  // Default sections to true if not explicitly set to false
+  // This ensures old shares with incomplete section data still show content
+  const rawSections = share.included_sections as Record<string, boolean> || {}
+  const sections = {
+    summary: rawSections.summary !== false,
+    tldr: rawSections.tldr !== false,
+    backstory: rawSections.backstory !== false,
+    lifePhases: rawSections.lifePhases !== false,
+    plotHooks: rawSections.plotHooks !== false,
+    quotes: rawSections.quotes !== false,
+    appearance: rawSections.appearance !== false,
+    physicalDetails: rawSections.physicalDetails !== false,
+    personality: rawSections.personality !== false,
+    goals: rawSections.goals !== false,
+    secrets: rawSections.secrets === true, // Default OFF for sensitive content
+    weaknesses: rawSections.weaknesses !== false,
+    fears: rawSections.fears !== false,
+    partyMembers: rawSections.partyMembers !== false,
+    npcs: rawSections.npcs !== false,
+    companions: rawSections.companions !== false,
+    writings: rawSections.writings !== false,
+    rumors: rawSections.rumors === true, // Default OFF
+    dmQa: rawSections.dmQa === true, // Default OFF
+    openQuestions: rawSections.openQuestions === true, // Default OFF
+    gallery: rawSections.gallery !== false,
+  }
 
   // Fetch relationships if any people sections are enabled
   let relationships: any[] = []
