@@ -797,7 +797,13 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
                           <div key={npc.id} className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-3 hover:border-white/[0.1] transition-colors">
                             <div className="flex items-center gap-2 flex-wrap">
                               {npc.related_image_url && (
-                                <Image src={npc.related_image_url} alt={npc.related_name || ''} width={40} height={40} className="rounded-lg object-cover flex-shrink-0" />
+                                <div className="relative group/avatar flex-shrink-0">
+                                  <Image src={npc.related_image_url} alt={npc.related_name || ''} width={40} height={40} className="w-10 h-10 rounded-lg object-cover" />
+                                  {/* Hover preview */}
+                                  <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-200 z-[100] pointer-events-none" style={{ width: '200px', height: '200px' }}>
+                                    <Image src={npc.related_image_url} alt={npc.related_name || ''} width={200} height={200} className="w-[200px] h-[200px] object-cover rounded-lg shadow-xl border border-white/10 bg-[#1a1a1f]" />
+                                  </div>
+                                </div>
                               )}
                               <span className="font-medium text-white/90">{npc.related_name}</span>
                               {npc.nickname && <span className="text-sm text-gray-500 italic">"{npc.nickname}"</span>}
@@ -830,7 +836,13 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
                           <div key={companion.id} className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-3 hover:border-white/[0.1] transition-colors">
                             <div className="flex items-center gap-2">
                               {companion.related_image_url ? (
-                                <Image src={companion.related_image_url} alt={companion.related_name || ''} width={32} height={32} className="rounded-lg object-cover flex-shrink-0" />
+                                <div className="relative group/avatar flex-shrink-0">
+                                  <Image src={companion.related_image_url} alt={companion.related_name || ''} width={32} height={32} className="w-8 h-8 rounded-lg object-cover" />
+                                  {/* Hover preview */}
+                                  <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-200 z-[100] pointer-events-none" style={{ width: '200px', height: '200px' }}>
+                                    <Image src={companion.related_image_url} alt={companion.related_name || ''} width={200} height={200} className="w-[200px] h-[200px] object-cover rounded-lg shadow-xl border border-white/10 bg-[#1a1a1f]" />
+                                  </div>
+                                </div>
                               ) : (
                                 <Heart className="w-4 h-4 text-pink-400 flex-shrink-0" />
                               )}

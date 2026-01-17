@@ -938,13 +938,25 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
                               >
                                 <div className="flex items-center gap-2 flex-wrap">
                                   {member.related_image_url && (
-                                    <Image
-                                      src={member.related_image_url}
-                                      alt={member.related_name || ''}
-                                      width={40}
-                                      height={40}
-                                      className="rounded-lg object-cover flex-shrink-0"
-                                    />
+                                    <div className="relative group/avatar flex-shrink-0">
+                                      <Image
+                                        src={member.related_image_url}
+                                        alt={member.related_name || ''}
+                                        width={40}
+                                        height={40}
+                                        className="w-10 h-10 rounded-lg object-cover"
+                                      />
+                                      {/* Hover preview */}
+                                      <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-200 z-[100] pointer-events-none" style={{ width: '200px', height: '200px' }}>
+                                        <Image
+                                          src={member.related_image_url}
+                                          alt={member.related_name || ''}
+                                          width={200}
+                                          height={200}
+                                          className="w-[200px] h-[200px] object-cover rounded-lg shadow-xl border border-white/10 bg-[#1a1a1f]"
+                                        />
+                                      </div>
+                                    </div>
                                   )}
                                   <span className="font-medium text-white/90">{member.related_name}</span>
                                   <span className="text-xs px-2 py-0.5 bg-indigo-500/15 text-indigo-400 rounded-md border border-indigo-500/20">Party</span>
@@ -978,13 +990,25 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
                                 >
                                   <div className="flex items-center gap-2 flex-wrap">
                                     {npc.related_image_url && (
-                                      <Image
-                                        src={npc.related_image_url}
-                                        alt={npc.related_name || ''}
-                                        width={40}
-                                        height={40}
-                                        className="rounded-lg object-cover flex-shrink-0"
-                                      />
+                                      <div className="relative group/avatar flex-shrink-0">
+                                        <Image
+                                          src={npc.related_image_url}
+                                          alt={npc.related_name || ''}
+                                          width={40}
+                                          height={40}
+                                          className="w-10 h-10 rounded-lg object-cover"
+                                        />
+                                        {/* Hover preview */}
+                                        <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-200 z-[100] pointer-events-none" style={{ width: '200px', height: '200px' }}>
+                                          <Image
+                                            src={npc.related_image_url}
+                                            alt={npc.related_name || ''}
+                                            width={200}
+                                            height={200}
+                                            className="w-[200px] h-[200px] object-cover rounded-lg shadow-xl border border-white/10 bg-[#1a1a1f]"
+                                          />
+                                        </div>
+                                      </div>
                                     )}
                                     <span className="font-medium text-white/90">{npc.related_name}</span>
                                     {npc.nickname && <span className="text-sm text-gray-500 italic">"{npc.nickname}"</span>}
