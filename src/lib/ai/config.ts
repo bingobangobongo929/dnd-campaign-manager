@@ -3,25 +3,83 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google'
 
 export type AIProvider = 'anthropic' | 'google' | 'googlePro'
 
-export const AI_PROVIDERS = {
+export interface AIProviderInfo {
+  name: string
+  model: string
+  modelDisplay: string
+  description: string
+  strengths: string[]
+  considerations: string[]
+  speed: 'fast' | 'medium' | 'slow'
+  quality: 'good' | 'great' | 'excellent'
+  costTier: 'low' | 'medium' | 'high'
+  icon: 'sparkles' | 'zap' | 'crown'
+}
+
+export const AI_PROVIDERS: Record<AIProvider, AIProviderInfo> = {
   anthropic: {
-    name: 'Claude (Anthropic)',
+    name: 'Claude Sonnet',
     model: 'claude-sonnet-4-5-20250929',
-    description: 'Excellent at creative writing and nuanced understanding',
+    modelDisplay: 'Claude Sonnet 4.5',
+    description: 'Excellent creative writing and nuanced understanding',
+    strengths: [
+      'Best-in-class creative writing',
+      'Nuanced character development',
+      'Deep contextual understanding',
+    ],
+    considerations: [
+      'Requires separate API key',
+      'Higher cost per request',
+    ],
+    speed: 'medium',
+    quality: 'excellent',
+    costTier: 'high',
+    icon: 'sparkles',
   },
   google: {
-    name: 'Gemini (Google)',
+    name: 'Gemini Flash',
     model: 'gemini-2.0-flash',
-    description: 'Fast responses with good general performance',
+    modelDisplay: 'Gemini 2.0 Flash',
+    description: 'Fast responses for quick tasks',
+    strengths: [
+      'Very fast response times',
+      'Good for simple queries',
+      'Lower cost per request',
+    ],
+    considerations: [
+      'Less nuanced than Pro models',
+      'Better for straightforward tasks',
+    ],
+    speed: 'fast',
+    quality: 'good',
+    costTier: 'low',
+    icon: 'zap',
   },
   googlePro: {
-    name: 'Gemini 3 Pro (Google)',
+    name: 'Gemini 3 Pro',
     model: 'gemini-3-pro-preview',
-    description: 'Best quality for complex document parsing',
+    modelDisplay: 'Gemini 3 Pro Preview',
+    description: 'Best quality for complex analysis and document parsing',
+    strengths: [
+      'Excellent document parsing',
+      'Strong analytical reasoning',
+      'Great balance of speed and quality',
+    ],
+    considerations: [
+      'Preview model (may have updates)',
+      'Medium cost per request',
+    ],
+    speed: 'medium',
+    quality: 'great',
+    costTier: 'medium',
+    icon: 'crown',
   },
 } as const
 
-export function getAIModel(provider: AIProvider = 'anthropic') {
+// Default provider for new users
+export const DEFAULT_AI_PROVIDER: AIProvider = 'googlePro'
+
+export function getAIModel(provider: AIProvider = DEFAULT_AI_PROVIDER) {
   if (provider === 'google') {
     const google = createGoogleGenerativeAI({
       apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,

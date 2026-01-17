@@ -195,9 +195,14 @@ export async function GET(req: Request) {
         created_at: r.created_at,
       }))
 
-    // Convert USD cents to GBP (approximate rate: 0.80 GBP per USD)
-    const USD_TO_GBP = 0.80
-    const totalCostPounds = ((totalCostCents / 100) * USD_TO_GBP).toFixed(2)
+    // Currency conversion rates from USD
+    const CURRENCY_RATES = {
+      USD: 1.00,
+      GBP: 0.80,
+      EUR: 0.92,
+    }
+
+    const totalCostUSD = totalCostCents / 100
 
     return NextResponse.json({
       period,
@@ -207,8 +212,15 @@ export async function GET(req: Request) {
         totalTokens,
         totalImages,
         totalCostCents,
-        totalCostDollars: (totalCostCents / 100).toFixed(2),
-        totalCostPounds,
+        // All currencies
+        costs: {
+          USD: totalCostUSD.toFixed(2),
+          GBP: (totalCostUSD * CURRENCY_RATES.GBP).toFixed(2),
+          EUR: (totalCostUSD * CURRENCY_RATES.EUR).toFixed(2),
+        },
+        // Legacy fields for backwards compatibility
+        totalCostDollars: totalCostUSD.toFixed(2),
+        totalCostPounds: (totalCostUSD * CURRENCY_RATES.GBP).toFixed(2),
       },
       byProvider,
       byOperation,

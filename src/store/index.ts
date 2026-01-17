@@ -2,6 +2,16 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Campaign, Character, Tag, Session, UserSettings, CanvasGroup } from '@/types/database'
 import type { AIProvider } from '@/lib/ai/config'
+import { DEFAULT_AI_PROVIDER } from '@/lib/ai/config'
+
+// Currency options
+export type Currency = 'GBP' | 'USD' | 'EUR'
+
+export const CURRENCY_CONFIG: Record<Currency, { symbol: string; name: string; rate: number }> = {
+  GBP: { symbol: '£', name: 'British Pound', rate: 0.80 },
+  USD: { symbol: '$', name: 'US Dollar', rate: 1.00 },
+  EUR: { symbol: '€', name: 'Euro', rate: 0.92 },
+}
 
 // Recent item for quick navigation
 export interface RecentItem {
@@ -18,6 +28,7 @@ export interface RecentItem {
 interface PersistedSettings {
   aiEnabled: boolean
   aiProvider: AIProvider
+  currency: Currency
   recentItems: RecentItem[]
 }
 
@@ -79,6 +90,10 @@ interface AppState extends PersistedSettings {
   setAIEnabled: (enabled: boolean) => void
   aiProvider: AIProvider
   setAIProvider: (provider: AIProvider) => void
+
+  // Currency
+  currency: Currency
+  setCurrency: (currency: Currency) => void
 
   // Recent Items
   recentItems: RecentItem[]
@@ -159,8 +174,12 @@ export const useAppStore = create<AppState>()(
       // AI Settings (persisted)
       aiEnabled: true, // Default to enabled
       setAIEnabled: (enabled) => set({ aiEnabled: enabled }),
-      aiProvider: 'anthropic',
+      aiProvider: DEFAULT_AI_PROVIDER,
       setAIProvider: (provider) => set({ aiProvider: provider }),
+
+      // Currency (persisted)
+      currency: 'GBP' as Currency,
+      setCurrency: (currency) => set({ currency }),
 
       // Recent Items (persisted)
       recentItems: [],
@@ -179,10 +198,11 @@ export const useAppStore = create<AppState>()(
     {
       name: 'dnd-campaign-manager-settings',
       storage: createJSONStorage(() => localStorage),
-      // Persist AI settings and recent items
+      // Persist AI settings, currency, and recent items
       partialize: (state) => ({
         aiEnabled: state.aiEnabled,
         aiProvider: state.aiProvider,
+        currency: state.currency,
         recentItems: state.recentItems,
       }),
     }
