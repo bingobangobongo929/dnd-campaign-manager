@@ -32,6 +32,11 @@ export function CharacterCard({
 }: CharacterCardProps) {
   const [imageError, setImageError] = useState(false)
 
+  // Strip HTML and limit summary length
+  const summaryText = character.summary
+    ? character.summary.replace(/<[^>]*>/g, '').substring(0, 300)
+    : null
+
   return (
     <div
       className={cn(
@@ -43,10 +48,14 @@ export function CharacterCard({
       )}
       onContextMenu={onContextMenu}
     >
-      {/* Pinned indicator */}
+      {/* Pinned ribbon - top left corner */}
       {isPinned && (
-        <div className="absolute top-3 left-3 z-20">
-          <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
+        <div className="absolute top-0 left-0 z-20">
+          <div className="w-12 h-12 overflow-hidden">
+            <div className="absolute top-[6px] left-[-20px] w-[60px] bg-amber-500 text-center transform -rotate-45 shadow-sm">
+              <Star className="w-3 h-3 text-white fill-white mx-auto" />
+            </div>
+          </div>
         </div>
       )}
 
@@ -120,43 +129,29 @@ export function CharacterCard({
                 onError={() => setImageError(true)}
                 unoptimized={character.image_url.includes('.svg') || character.image_url.includes('dicebear')}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
+              {/* Subtle vignette overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
             </>
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-900/30 to-gray-900">
-              <span className="text-5xl font-bold text-purple-400/30 select-none">
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-900/40 to-gray-900">
+              <span className="text-6xl font-bold text-purple-400/40 select-none">
                 {getInitials(character.name)}
               </span>
             </div>
           )}
 
-          {/* Type badge - top left of image */}
-          <div className="absolute top-3 left-3">
-            <span
-              className={cn(
-                'px-2.5 py-1 text-xs font-semibold rounded-lg backdrop-blur-sm border',
-                character.type === 'pc'
-                  ? 'bg-black/60 text-purple-300 border-purple-500/30'
-                  : 'bg-black/60 text-gray-300 border-gray-500/30'
-              )}
-            >
-              {character.type === 'pc' ? 'Player Character' : 'NPC'}
-            </span>
-          </div>
-
           {/* Status badge - bottom right of image */}
           {character.status && (
             <div className="absolute bottom-3 right-3">
               <span
-                className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-medium backdrop-blur-sm"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium backdrop-blur-sm shadow-lg"
                 style={{
-                  backgroundColor: `${character.status_color || '#8B5CF6'}40`,
-                  color: character.status_color || '#8B5CF6',
+                  backgroundColor: `${character.status_color || '#8B5CF6'}90`,
+                  color: 'white',
                 }}
               >
                 <span
-                  className="w-1.5 h-1.5 rounded-full"
-                  style={{ backgroundColor: character.status_color || '#8B5CF6' }}
+                  className="w-2 h-2 rounded-full bg-white/80"
                 />
                 {character.status}
               </span>
@@ -165,28 +160,28 @@ export function CharacterCard({
         </div>
 
         {/* Content */}
-        <div className="p-5">
-          {/* Name */}
-          <h4 className="font-display font-semibold text-lg text-white truncate group-hover:text-purple-400 transition-colors">
-            {character.name}
-          </h4>
+        <div className="p-4">
+          {/* Name and Race/Class */}
+          <div className="mb-2">
+            <h4 className="font-display font-semibold text-lg text-white group-hover:text-purple-400 transition-colors leading-tight">
+              {character.name}
+            </h4>
+            {(character.race || character.class) && (
+              <p className="text-xs text-purple-400/70 mt-0.5 font-medium">
+                {[character.race, character.class].filter(Boolean).join(' • ')}
+              </p>
+            )}
+          </div>
 
-          {/* Race/Class info if available */}
-          {(character.race || character.class) && (
-            <p className="text-sm text-gray-400 mt-1">
-              {[character.race, character.class].filter(Boolean).join(' • ')}
+          {/* Summary - more room, 3 lines */}
+          {summaryText && (
+            <p className="text-sm text-gray-400 line-clamp-3 leading-relaxed">
+              {summaryText}
             </p>
           )}
 
-          {/* Summary */}
-          {character.summary && (
-            <p className="text-sm text-gray-400 mt-2 line-clamp-2">
-              {character.summary.replace(/<[^>]*>/g, '').substring(0, 100)}
-            </p>
-          )}
-
-          {/* Date */}
-          <p className="text-xs text-gray-500 mt-3">
+          {/* Date - more subtle */}
+          <p className="text-[11px] text-gray-600 mt-3">
             Updated {formatDistanceToNow(new Date(character.updated_at), { addSuffix: true })}
           </p>
         </div>

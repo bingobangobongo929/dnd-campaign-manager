@@ -609,20 +609,32 @@ export default function VaultPage() {
             })}
           </div>
         ) : (
-          /* Gallery View - Movie Poster Style like Oneshots */
+          /* Gallery View - Movie Poster Style */
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
             {filteredCharacters.map((char) => {
               const isSelected = selectedIds.has(char.id)
+              const isPinned = pinnedIds.has(char.id)
               const imageUrl = (char as any).detail_image_url || char.image_url
               return (
                 <div
                   key={char.id}
                   className={cn(
                     "relative group",
-                    selectionMode && isSelected && "ring-2 ring-purple-500 ring-offset-2 ring-offset-gray-950 rounded-xl"
+                    selectionMode && isSelected && "ring-2 ring-purple-500 ring-offset-2 ring-offset-gray-950 rounded-xl",
+                    isPinned && !selectionMode && "ring-2 ring-amber-500/50 rounded-xl"
                   )}
                   onContextMenu={(e) => !selectionMode && handleContextMenu(e, char)}
                 >
+                  {/* Pinned ribbon */}
+                  {isPinned && !selectionMode && (
+                    <div className="absolute top-0 left-0 z-10">
+                      <div className="w-8 h-8 overflow-hidden">
+                        <div className="absolute top-[4px] left-[-14px] w-[40px] bg-amber-500 text-center transform -rotate-45 shadow-sm">
+                          <Star className="w-2 h-2 text-white fill-white mx-auto" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   {/* Selection checkbox overlay */}
                   {selectionMode && (
                     <button
@@ -666,20 +678,6 @@ export default function VaultPage() {
                         </span>
                       </div>
                     )}
-
-                    {/* Type badge at top */}
-                    <div className="absolute top-3 left-3">
-                      <span
-                        className={cn(
-                          "px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded",
-                          char.type === 'pc'
-                            ? "bg-purple-500/40 text-purple-300"
-                            : "bg-gray-500/40 text-gray-300"
-                        )}
-                      >
-                        {char.type}
-                      </span>
-                    </div>
 
                     {/* Content at bottom */}
                     <div className="absolute bottom-0 left-0 right-0 p-4">
