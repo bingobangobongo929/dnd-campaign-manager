@@ -12,9 +12,11 @@ import {
   Music,
   ExternalLink,
   Image as GalleryIcon,
+  ChevronUp,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { renderMarkdown } from '@/lib/character-display'
+import { InteractivePortrait, BackToTopButton } from './client'
 import crypto from 'crypto'
 
 interface SharePageProps {
@@ -64,7 +66,7 @@ function FieldLabel({ children, emoji, count }: { children: React.ReactNode; emo
 function HtmlContent({ html, className = '' }: { html: string; className?: string }) {
   return (
     <div
-      className={`prose prose-invert max-w-none text-gray-300 ${className}`}
+      className={`prose prose-invert max-w-none text-gray-300 prose-p:mb-4 prose-p:leading-relaxed prose-ul:my-4 prose-li:my-1 ${className}`}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   )
@@ -294,16 +296,7 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
           {/* Portrait */}
           <div className="mb-6">
             {displayUrl ? (
-              <div className="relative w-48 sm:w-56 lg:w-full mx-auto aspect-[3/4] rounded-2xl overflow-hidden border-2 border-white/[0.08]">
-                <Image
-                  src={displayUrl}
-                  alt={character.name}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 224px, 360px"
-                  priority
-                />
-              </div>
+              <InteractivePortrait src={displayUrl} alt={character.name} />
             ) : (
               <div className="w-48 sm:w-56 lg:w-full mx-auto aspect-[3/4] rounded-2xl bg-gradient-to-br from-purple-500/5 to-transparent border-2 border-dashed border-white/[0.08] flex items-center justify-center">
                 <span className="text-5xl font-semibold text-gray-600">
@@ -359,8 +352,8 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
                     </div>
                   )}
                   {character.background && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Background</span>
+                    <div className="text-sm">
+                      <span className="text-gray-500 block mb-0.5">Background</span>
                       <span className="text-white/80">{character.background}</span>
                     </div>
                   )}
@@ -486,44 +479,44 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto bg-[#0d0d0f]">
         <div className="w-full max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 py-8 lg:py-10">
-          {/* Stats Grid */}
+          {/* Stats Grid - Clickable to navigate */}
           <div className="mb-8">
             <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
               {npcs.length > 0 && (
-                <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                <a href="#people" className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-purple-500/20 transition-all cursor-pointer">
                   <p className="text-lg font-semibold text-white">{npcs.length}</p>
                   <p className="text-xs text-gray-500">NPCs</p>
-                </div>
+                </a>
               )}
               {companions.length > 0 && (
-                <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                <a href="#people" className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-purple-500/20 transition-all cursor-pointer">
                   <p className="text-lg font-semibold text-white">{companions.length}</p>
                   <p className="text-xs text-gray-500">Companions</p>
-                </div>
+                </a>
               )}
               {writings.length > 0 && (
-                <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                <a href="#writings" className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-purple-500/20 transition-all cursor-pointer">
                   <p className="text-lg font-semibold text-white">{writings.length}</p>
                   <p className="text-xs text-gray-500">Writings</p>
-                </div>
+                </a>
               )}
               {backstoryPhases.length > 0 && (
-                <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                <a href="#backstory" className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-purple-500/20 transition-all cursor-pointer">
                   <p className="text-lg font-semibold text-white">{backstoryPhases.length}</p>
                   <p className="text-xs text-gray-500">Life Phases</p>
-                </div>
+                </a>
               )}
               {quotes.length > 0 && (
-                <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                <a href="#backstory" className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-purple-500/20 transition-all cursor-pointer">
                   <p className="text-lg font-semibold text-white">{quotes.length}</p>
                   <p className="text-xs text-gray-500">Quotes</p>
-                </div>
+                </a>
               )}
               {galleryImages.length > 0 && (
-                <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                <a href="#gallery" className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-purple-500/20 transition-all cursor-pointer">
                   <p className="text-lg font-semibold text-white">{galleryImages.length}</p>
                   <p className="text-xs text-gray-500">Images</p>
-                </div>
+                </a>
               )}
             </div>
           </div>
@@ -1041,6 +1034,9 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
           </div>
         </div>
       </main>
+
+      {/* Back to Top Button */}
+      <BackToTopButton />
     </div>
   )
 }

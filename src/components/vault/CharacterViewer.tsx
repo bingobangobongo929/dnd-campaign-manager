@@ -723,50 +723,50 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
             {/* Main Content Area */}
             <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-[#0d0d0f]">
               <div className="w-full max-w-[1400px] mx-auto px-10 xl:px-16 2xl:px-20 py-10 xl:py-12">
-                {/* Stats Overview Grid */}
+                {/* Stats Overview Grid - Clickable to navigate */}
                 <div className="mb-8">
                   <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-7 gap-3">
                     {npcs.length > 0 && (
-                      <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                      <button onClick={() => scrollToSection('people')} className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-purple-500/20 transition-all cursor-pointer">
                         <p className="text-lg font-semibold text-white">{npcs.length}</p>
                         <p className="text-xs text-gray-500">NPCs</p>
-                      </div>
+                      </button>
                     )}
                     {companions.length > 0 && (
-                      <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                      <button onClick={() => scrollToSection('people')} className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-purple-500/20 transition-all cursor-pointer">
                         <p className="text-lg font-semibold text-white">{companions.length}</p>
                         <p className="text-xs text-gray-500">Companions</p>
-                      </div>
+                      </button>
                     )}
                     {writings.length > 0 && (
-                      <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                      <button onClick={() => scrollToSection('writings')} className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-purple-500/20 transition-all cursor-pointer">
                         <p className="text-lg font-semibold text-white">{writings.length}</p>
                         <p className="text-xs text-gray-500">Writings</p>
-                      </div>
+                      </button>
                     )}
                     {backstoryPhases.length > 0 && (
-                      <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                      <button onClick={() => scrollToSection('backstory')} className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-purple-500/20 transition-all cursor-pointer">
                         <p className="text-lg font-semibold text-white">{backstoryPhases.length}</p>
                         <p className="text-xs text-gray-500">Life Phases</p>
-                      </div>
+                      </button>
                     )}
                     {quotes.length > 0 && (
-                      <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                      <button onClick={() => scrollToSection('backstory')} className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-purple-500/20 transition-all cursor-pointer">
                         <p className="text-lg font-semibold text-white">{quotes.length}</p>
                         <p className="text-xs text-gray-500">Quotes</p>
-                      </div>
+                      </button>
                     )}
                     {plotHooks.length > 0 && (
-                      <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                      <button onClick={() => scrollToSection('backstory')} className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-purple-500/20 transition-all cursor-pointer">
                         <p className="text-lg font-semibold text-white">{plotHooks.length}</p>
                         <p className="text-xs text-gray-500">Plot Hooks</p>
-                      </div>
+                      </button>
                     )}
                     {galleryImages.length > 0 && (
-                      <div className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04]">
+                      <button onClick={() => scrollToSection('gallery')} className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-purple-500/20 transition-all cursor-pointer">
                         <p className="text-lg font-semibold text-white">{galleryImages.length}</p>
                         <p className="text-xs text-gray-500">Images</p>
-                      </div>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -779,7 +779,7 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
                       {character.summary && (
                         <div>
                           <FieldLabel>Summary</FieldLabel>
-                          <div className="prose prose-invert max-w-none text-gray-300" dangerouslySetInnerHTML={{ __html: character.summary }} />
+                          <div className="prose prose-invert max-w-none text-gray-300 prose-p:mb-4 prose-p:leading-relaxed prose-ul:my-4 prose-li:my-1" dangerouslySetInnerHTML={{ __html: character.summary }} />
                         </div>
                       )}
 
@@ -795,7 +795,7 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
                       {character.notes && (
                         <div>
                           <FieldLabel>Full Backstory</FieldLabel>
-                          <div className="prose prose-invert prose-lg max-w-none text-gray-300" dangerouslySetInnerHTML={{ __html: character.notes }} />
+                          <div className="prose prose-invert prose-lg max-w-none text-gray-300 prose-p:mb-4 prose-p:leading-relaxed prose-ul:my-4 prose-li:my-1" dangerouslySetInnerHTML={{ __html: character.notes }} />
                         </div>
                       )}
 

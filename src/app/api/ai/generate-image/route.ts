@@ -1,7 +1,8 @@
 /**
  * AI Image Generation API
  *
- * Generates images using Google's Imagen 3 (Nano Banana 2)
+ * Generates images using Google's Gemini 3 Pro Image Preview (Nano Banana Pro)
+ * Uses the generateContent method for multimodal image generation
  * Supports text-to-image generation with feedback/regeneration flow
  */
 
@@ -12,12 +13,12 @@ export const runtime = 'nodejs'
 export const maxDuration = 120 // 2 minutes for image generation
 
 // Available image models
-type ImageModel = 'imagen-3.0-generate-002' | 'imagen-3.0-fast-generate-001'
+type ImageModel = 'gemini-2.0-flash-preview-image-generation' | 'imagen-3.0-generate-002' | 'imagen-3.0-fast-generate-001'
 
 interface GenerateImageRequest {
   prompt: string
   model?: ImageModel
-  aspectRatio?: '1:1' | '3:4' | '4:3' | '9:16' | '16:9'
+  aspectRatio?: '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '9:16' | '16:9'
   numberOfImages?: number
   feedback?: string // User feedback for regeneration
   previousPrompt?: string // For regeneration context
@@ -36,7 +37,7 @@ export async function POST(req: Request) {
     const body: GenerateImageRequest = await req.json()
     const {
       prompt,
-      model = 'imagen-3.0-generate-002',
+      model = 'gemini-2.0-flash-preview-image-generation',
       aspectRatio = '1:1',
       numberOfImages = 1,
       feedback,
@@ -63,109 +64,231 @@ User feedback for improvement: ${feedback}
 Updated prompt: ${prompt}`
     }
 
-    // Imagen 3 uses the predict endpoint with a different request format
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          instances: [
-            {
-              prompt: fullPrompt,
-            },
-          ],
-          parameters: {
-            sampleCount: numberOfImages,
-            aspectRatio: aspectRatio,
-            personGeneration: 'allow_adult',
-            ...(negativePrompt && { negativePrompt }),
+    // Add negative prompt if provided
+    if (negativePrompt) {
+      fullPrompt = `${fullPrompt}
+
+Avoid: ${negativePrompt}`
+    }
+
+    // Add aspect ratio guidance to prompt
+    const aspectRatioGuide: Record<string, string> = {
+      '1:1': 'square format',
+      '2:3': 'portrait format (2:3 vertical)',
+      '3:2': 'landscape format (3:2 horizontal)',
+      '3:4': 'portrait format (3:4)',
+      '4:3': 'landscape format (4:3)',
+      '9:16': 'tall portrait format (9:16)',
+      '16:9': 'wide landscape format (16:9)'
+    }
+
+    const imagePrompt = `Generate an image: ${fullPrompt}. Use ${aspectRatioGuide[aspectRatio]}.`
+
+    // Use Gemini model based on selection
+    const useGemini = model === 'gemini-2.0-flash-preview-image-generation'
+
+    if (useGemini) {
+      // Gemini 2.0 Flash with image generation capability
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-        }),
-      }
-    )
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      console.error('Imagen API error:', response.status, errorData)
-
-      // Handle specific error cases
-      if (response.status === 400) {
-        const errorMessage = errorData.error?.message || ''
-        if (errorMessage.includes('safety') || errorMessage.includes('blocked')) {
-          return NextResponse.json({
-            error: 'Image generation blocked',
-            details: 'The prompt was blocked by content safety filters. Please modify your prompt.',
-          }, { status: 422 })
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: imagePrompt
+              }]
+            }],
+            generationConfig: {
+              responseModalities: ['TEXT', 'IMAGE'],
+            },
+          }),
         }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Gemini API error:', response.status, errorData)
+
+        if (response.status === 400) {
+          const errorMessage = errorData.error?.message || ''
+          if (errorMessage.includes('safety') || errorMessage.includes('blocked')) {
+            return NextResponse.json({
+              error: 'Image generation blocked',
+              details: 'The prompt was blocked by content safety filters. Please modify your prompt.',
+            }, { status: 422 })
+          }
+          return NextResponse.json({
+            error: 'Invalid request to image generation API',
+            details: errorMessage || 'The prompt may have been rejected',
+          }, { status: 400 })
+        }
+
+        if (response.status === 429) {
+          return NextResponse.json({
+            error: 'Rate limit exceeded',
+            details: 'Too many image generation requests. Please try again in a few minutes.',
+          }, { status: 429 })
+        }
+
+        if (response.status === 404) {
+          return NextResponse.json({
+            error: 'Image generation model not available',
+            details: 'Gemini image generation model not available. Check your API key has access to Gemini 2.0 Flash Image Generation.',
+          }, { status: 404 })
+        }
+
         return NextResponse.json({
-          error: 'Invalid request to image generation API',
-          details: errorMessage || 'The prompt may have been rejected',
-        }, { status: 400 })
+          error: 'Image generation failed',
+          details: errorData.error?.message || `API returned status ${response.status}`,
+        }, { status: 500 })
       }
 
-      if (response.status === 429) {
+      const data = await response.json()
+
+      // Gemini returns candidates with parts that may contain images
+      const candidates = data.candidates || []
+      if (candidates.length === 0) {
         return NextResponse.json({
-          error: 'Rate limit exceeded',
-          details: 'Too many image generation requests. Please try again in a few minutes.',
-        }, { status: 429 })
+          error: 'No response generated',
+          details: 'The model did not return any content. Try a different prompt.',
+        }, { status: 422 })
       }
 
-      if (response.status === 404) {
+      // Look for image parts in the response
+      const parts = candidates[0]?.content?.parts || []
+      const imagePart = parts.find((p: { inlineData?: { mimeType: string; data: string } }) => p.inlineData?.mimeType?.startsWith('image/'))
+
+      if (!imagePart?.inlineData) {
+        // Model may have returned text instead of image
+        const textPart = parts.find((p: { text?: string }) => p.text)
         return NextResponse.json({
-          error: 'Image generation model not available',
-          details: 'Imagen 3 model not available. Check your API key has access to Imagen.',
-        }, { status: 404 })
+          error: 'No image generated',
+          details: textPart?.text || 'The model did not return an image. Try rephrasing your prompt to be more visual.',
+        }, { status: 422 })
+      }
+
+      const imageData = imagePart.inlineData.data
+      const mimeType = imagePart.inlineData.mimeType || 'image/png'
+
+      return NextResponse.json({
+        success: true,
+        image: {
+          data: imageData,
+          mimeType,
+          dataUrl: `data:${mimeType};base64,${imageData}`,
+        },
+        model,
+        prompt: fullPrompt,
+        allImages: [{
+          data: imageData,
+          mimeType,
+          dataUrl: `data:${mimeType};base64,${imageData}`,
+        }],
+      })
+    } else {
+      // Fallback to Imagen 3 for older model selections
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            instances: [
+              {
+                prompt: fullPrompt,
+              },
+            ],
+            parameters: {
+              sampleCount: numberOfImages,
+              aspectRatio: aspectRatio,
+              personGeneration: 'allow_adult',
+              ...(negativePrompt && { negativePrompt }),
+            },
+          }),
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Imagen API error:', response.status, errorData)
+
+        if (response.status === 400) {
+          const errorMessage = errorData.error?.message || ''
+          if (errorMessage.includes('safety') || errorMessage.includes('blocked')) {
+            return NextResponse.json({
+              error: 'Image generation blocked',
+              details: 'The prompt was blocked by content safety filters. Please modify your prompt.',
+            }, { status: 422 })
+          }
+          return NextResponse.json({
+            error: 'Invalid request to image generation API',
+            details: errorMessage || 'The prompt may have been rejected',
+          }, { status: 400 })
+        }
+
+        if (response.status === 429) {
+          return NextResponse.json({
+            error: 'Rate limit exceeded',
+            details: 'Too many image generation requests. Please try again in a few minutes.',
+          }, { status: 429 })
+        }
+
+        if (response.status === 404) {
+          return NextResponse.json({
+            error: 'Image generation model not available',
+            details: 'Imagen 3 model not available. The API may need Gemini image generation access.',
+          }, { status: 404 })
+        }
+
+        return NextResponse.json({
+          error: 'Image generation failed',
+          details: errorData.error?.message || `API returned status ${response.status}`,
+        }, { status: 500 })
+      }
+
+      const data = await response.json()
+
+      const predictions = data.predictions || []
+      if (predictions.length === 0) {
+        return NextResponse.json({
+          error: 'No image generated',
+          details: 'The model did not return any images. Try a different prompt.',
+        }, { status: 422 })
+      }
+
+      const prediction = predictions[0]
+      const imageData = prediction.bytesBase64Encoded
+      const mimeType = prediction.mimeType || 'image/png'
+
+      if (!imageData) {
+        return NextResponse.json({
+          error: 'No image data',
+          details: 'The model response did not contain image data.',
+        }, { status: 422 })
       }
 
       return NextResponse.json({
-        error: 'Image generation failed',
-        details: errorData.error?.message || `API returned status ${response.status}`,
-      }, { status: 500 })
+        success: true,
+        image: {
+          data: imageData,
+          mimeType,
+          dataUrl: `data:${mimeType};base64,${imageData}`,
+        },
+        model,
+        prompt: fullPrompt,
+        allImages: predictions.map((p: { bytesBase64Encoded: string; mimeType?: string }) => ({
+          data: p.bytesBase64Encoded,
+          mimeType: p.mimeType || 'image/png',
+          dataUrl: `data:${p.mimeType || 'image/png'};base64,${p.bytesBase64Encoded}`,
+        })),
+      })
     }
-
-    const data = await response.json()
-
-    // Imagen 3 returns predictions array with bytesBase64Encoded images
-    const predictions = data.predictions || []
-    if (predictions.length === 0) {
-      return NextResponse.json({
-        error: 'No image generated',
-        details: 'The model did not return any images. Try a different prompt.',
-      }, { status: 422 })
-    }
-
-    // Get the first generated image
-    const prediction = predictions[0]
-    const imageData = prediction.bytesBase64Encoded
-    const mimeType = prediction.mimeType || 'image/png'
-
-    if (!imageData) {
-      return NextResponse.json({
-        error: 'No image data',
-        details: 'The model response did not contain image data.',
-      }, { status: 422 })
-    }
-
-    // Return the base64 image data
-    return NextResponse.json({
-      success: true,
-      image: {
-        data: imageData,
-        mimeType,
-        dataUrl: `data:${mimeType};base64,${imageData}`,
-      },
-      model,
-      prompt: fullPrompt,
-      // Include all images if multiple were generated
-      allImages: predictions.map((p: { bytesBase64Encoded: string; mimeType?: string }) => ({
-        data: p.bytesBase64Encoded,
-        mimeType: p.mimeType || 'image/png',
-        dataUrl: `data:${p.mimeType || 'image/png'};base64,${p.bytesBase64Encoded}`,
-      })),
-    })
   } catch (error) {
     console.error('Image generation error:', error)
     return NextResponse.json({

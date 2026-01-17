@@ -52,22 +52,22 @@ export function NPCCard({ npc, onEdit, onDelete }: NPCCardProps) {
       <div className="flex items-center gap-2 flex-wrap">
         {/* Portrait thumbnail if available */}
         {npc.related_image_url && (
-          <div className="relative group/avatar">
+          <div className="relative group/avatar flex-shrink-0">
             <Image
               src={npc.related_image_url}
               alt={npc.related_name || 'NPC'}
               width={40}
               height={40}
-              className="rounded-lg object-cover flex-shrink-0"
+              className="w-10 h-10 rounded-lg object-cover"
             />
             {/* Hover preview - larger image popup */}
-            <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
+            <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-200 z-[100] pointer-events-none" style={{ width: '200px', height: '200px' }}>
               <Image
                 src={npc.related_image_url}
                 alt={npc.related_name || 'NPC'}
-                width={192}
-                height={192}
-                className="w-48 h-48 object-cover rounded-lg shadow-xl border border-white/10"
+                width={200}
+                height={200}
+                className="w-[200px] h-[200px] object-cover rounded-lg shadow-xl border border-white/10 bg-[#1a1a1f]"
               />
             </div>
           </div>
