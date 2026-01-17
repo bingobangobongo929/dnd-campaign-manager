@@ -158,13 +158,28 @@ export default function VaultPage() {
 
     // Sort
     filtered.sort((a, b) => {
-      // Pinned always first
+      // 1. Pinned always first
       const aPinned = pinnedIds.has(a.id)
       const bPinned = pinnedIds.has(b.id)
       if (aPinned && !bPinned) return -1
       if (!aPinned && bPinned) return 1
 
-      // Then by selected sort
+      // 2. Active status before Retired (case-insensitive)
+      const aStatus = (a.status || '').toLowerCase()
+      const bStatus = (b.status || '').toLowerCase()
+      const aIsActive = aStatus === 'active'
+      const bIsActive = bStatus === 'active'
+      const aIsRetired = aStatus === 'retired'
+      const bIsRetired = bStatus === 'retired'
+
+      // Active comes first
+      if (aIsActive && !bIsActive) return -1
+      if (!aIsActive && bIsActive) return 1
+      // Retired comes last (after everything else)
+      if (aIsRetired && !bIsRetired) return 1
+      if (!aIsRetired && bIsRetired) return -1
+
+      // 3. Then by selected sort
       switch (sortBy) {
         case 'name':
           return a.name.localeCompare(b.name)
