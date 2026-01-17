@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, Trash2, Copy, X, CheckSquare, Square, CopyPlus, Check, LayoutGrid, Grid3X3, PenLine, Sparkles, Star } from 'lucide-react'
+import { Plus, Search, Trash2, Copy, X, CheckSquare, Square, CopyPlus, Check, LayoutGrid, Grid3X3, PenLine, Sparkles, Star, Play, ChevronRight, User, Eye, BookOpen } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import { Modal, Dropdown } from '@/components/ui'
@@ -534,6 +534,109 @@ export default function VaultPage() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Featured Character (Hero) */}
+        {filteredCharacters.length > 0 && !searchQuery && !selectionMode && (() => {
+          const featuredChar = filteredCharacters[0]
+          const heroImageUrl = featuredChar.image_url // Use 16:9 card image for hero
+          const summaryText = featuredChar.summary?.replace(/<[^>]*>/g, '') || ''
+
+          return (
+            <section className="group relative">
+              <button
+                onClick={() => router.push(`/vault/${featuredChar.id}`)}
+                className="relative block w-full text-left rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-purple-500/30 transition-all duration-500"
+              >
+                <div className="relative h-[300px] md:h-[400px]">
+                  {heroImageUrl ? (
+                    <>
+                      <Image
+                        src={heroImageUrl}
+                        alt={featuredChar.name}
+                        fill
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                        priority
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-gray-900 to-gray-950 flex items-center justify-center">
+                      <User className="w-32 h-32 text-purple-400/20" />
+                    </div>
+                  )}
+
+                  {/* Content Overlay */}
+                  <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-12">
+                    {/* Badges */}
+                    <div className="flex flex-wrap items-center gap-2 mb-4">
+                      {featuredChar.status && (
+                        <span
+                          className="px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-full"
+                          style={{
+                            backgroundColor: featuredChar.status_color || '#8B5CF6',
+                            color: 'white',
+                          }}
+                        >
+                          {featuredChar.status}
+                        </span>
+                      )}
+                      {(featuredChar.race || featuredChar.class) && (
+                        <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300">
+                          {[featuredChar.race, featuredChar.class].filter(Boolean).join(' • ')}
+                        </span>
+                      )}
+                    </div>
+
+                    <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-3 group-hover:text-purple-400 transition-colors">
+                      {featuredChar.name}
+                    </h2>
+
+                    {summaryText && (
+                      <p className="text-gray-300 text-base md:text-lg max-w-2xl line-clamp-2 mb-4">
+                        {summaryText}
+                      </p>
+                    )}
+
+                    <div className="flex items-center gap-2 text-purple-400 font-medium">
+                      <Eye className="w-5 h-5" />
+                      <span>View Character</span>
+                      <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </div>
+                  </div>
+                </div>
+              </button>
+
+              {/* Quick action buttons */}
+              <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                <button
+                  onClick={(e) => { e.stopPropagation(); router.push(`/vault/${featuredChar.id}/sessions`) }}
+                  className="p-2.5 bg-black/70 backdrop-blur-sm rounded-lg hover:bg-purple-500 transition-colors"
+                  title="Sessions"
+                >
+                  <BookOpen className="w-4 h-4 text-white" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); togglePinned(featuredChar.id) }}
+                  className={cn(
+                    "p-2.5 backdrop-blur-sm rounded-lg transition-colors",
+                    pinnedIds.has(featuredChar.id)
+                      ? "bg-amber-500 hover:bg-amber-600"
+                      : "bg-black/70 hover:bg-purple-500"
+                  )}
+                  title={pinnedIds.has(featuredChar.id) ? "Unpin" : "Pin to top"}
+                >
+                  <Star className={cn("w-4 h-4 text-white", pinnedIds.has(featuredChar.id) && "fill-current")} />
+                </button>
+              </div>
+            </section>
+          )
+        })()}
+
+        {/* All Characters Section Header */}
+        {filteredCharacters.length > 1 && !searchQuery && !selectionMode && (
+          <h3 className="text-xl font-semibold text-white">All Characters</h3>
         )}
 
         {/* Characters Grid */}
