@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Loader2, Sparkles, Shield, BookOpen, Dices } from 'lucide-react'
 import { useSupabase } from '@/hooks'
@@ -143,18 +142,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Footer */}
-          <div className="mt-6 pt-6 border-t border-white/[0.06]">
-            <p className="text-center text-sm text-gray-400">
-              New to the realm?{' '}
-              <Link
-                href="/signup"
-                className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
-              >
-                Create your character
-              </Link>
-            </p>
-          </div>
         </div>
 
         {/* Bottom tagline */}
