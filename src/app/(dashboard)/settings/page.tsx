@@ -53,6 +53,7 @@ export default function SettingsPage() {
       totalTokens: number
       totalImages: number
       totalCostDollars: string
+      totalCostPounds: string
     }
     byProvider: Record<string, { requests: number; tokens: number; cost: number }>
     byOperation: Record<string, { requests: number; tokens: number; cost: number }>
