@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
 import Image from 'next/image'
@@ -40,7 +40,7 @@ const COMPANION_TYPE_COLORS: Record<string, string> = {
 
 export default async function ShareCharacterPage({ params }: SharePageProps) {
   const { code } = await params
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Fetch share data
   const { data: share, error: shareError } = await supabase
@@ -48,6 +48,10 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
     .select('*')
     .eq('share_code', code)
     .single()
+
+  if (shareError) {
+    console.error('Share fetch error:', shareError)
+  }
 
   if (shareError || !share) {
     notFound()
