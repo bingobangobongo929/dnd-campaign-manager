@@ -90,7 +90,6 @@ export default function OneshotsPage() {
   }
 
   const featuredOneshot = oneshots[0]
-  const otherOneshots = oneshots.slice(1)
 
   return (
     <AppLayout>
@@ -223,11 +222,11 @@ export default function OneshotsPage() {
             )}
 
             {/* One-Shot Gallery (Movie Posters) */}
-            {otherOneshots.length > 0 && (
+            {oneshots.length > 1 && (
               <section>
                 <h3 className="text-xl font-semibold text-white mb-6">All One-Shots</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                  {otherOneshots.map((oneshot) => (
+                  {oneshots.map((oneshot) => (
                     <Link
                       key={oneshot.id}
                       href={`/oneshots/${oneshot.id}`}
