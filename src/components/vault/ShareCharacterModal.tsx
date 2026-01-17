@@ -47,6 +47,8 @@ const SECTION_TOGGLES: SectionToggle[] = [
   { key: 'rumors', label: 'Rumors', group: 'WRITINGS', defaultOn: false },
   { key: 'dmQa', label: 'DM Q&A', group: 'WRITINGS', defaultOn: false },
   { key: 'openQuestions', label: 'Open Questions', group: 'WRITINGS', defaultOn: false },
+  // Sessions
+  { key: 'sessions', label: 'Session Notes', group: 'SESSIONS', defaultOn: false },
   // Gallery
   { key: 'gallery', label: 'Gallery Images', group: 'GALLERY', defaultOn: true },
 ]
@@ -174,6 +176,12 @@ export function ShareCharacterModal({
         .select('id')
         .eq('character_id', characterId)
 
+      // Load sessions
+      const { data: sessions } = await client
+        .from('play_journal')
+        .select('id')
+        .eq('character_id', characterId)
+
       if (character) {
         const rels = relationships || []
         const partyMembers = rels.filter(r => r.is_party_member && !r.is_companion)
@@ -211,6 +219,7 @@ export function ShareCharacterModal({
           rumors: rumors.length > 0,
           dmQa: dmQa.length > 0,
           openQuestions: openQuestions.length > 0,
+          sessions: (sessions?.length || 0) > 0,
           gallery: (images?.length || 0) > 0,
         })
       }
@@ -305,7 +314,7 @@ export function ShareCharacterModal({
   }
 
   // Group sections
-  const groups = ['BACKSTORY', 'DETAILS', 'PEOPLE', 'WRITINGS', 'GALLERY']
+  const groups = ['BACKSTORY', 'DETAILS', 'PEOPLE', 'WRITINGS', 'SESSIONS', 'GALLERY']
 
   return (
     <Modal

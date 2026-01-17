@@ -60,27 +60,20 @@ function FieldLabel({ children, emoji, count }: { children: React.ReactNode; emo
   )
 }
 
-// Helper to render HTML content with proper prose styling
+// Helper to render HTML content with proper prose styling (matching CharacterViewer)
 function HtmlContent({ html, className = '' }: { html: string; className?: string }) {
   return (
     <div
-      className={`prose prose-invert prose-sm max-w-none
-        prose-p:text-gray-300 prose-p:leading-relaxed prose-p:mb-4
-        prose-headings:text-white/90 prose-headings:mb-3
-        prose-strong:text-white/90 prose-em:text-gray-300
-        prose-ul:text-gray-300 prose-ol:text-gray-300
-        prose-li:mb-1 prose-li:text-gray-300
-        prose-a:text-purple-400 prose-a:no-underline hover:prose-a:underline
-        ${className}`}
+      className={`prose prose-invert max-w-none text-gray-300 ${className}`}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   )
 }
 
 // Section component
-function Section({ title, icon: Icon, count, children }: { title: string; icon: React.ComponentType<{ className?: string }>; count?: number; children: React.ReactNode }) {
+function Section({ title, icon: Icon, count, children, id }: { title: string; icon: React.ComponentType<{ className?: string }>; count?: number; children: React.ReactNode; id?: string }) {
   return (
-    <section className="mb-8">
+    <section id={id} className="mb-8 scroll-mt-6">
       <div className="border border-white/[0.06] rounded-xl overflow-hidden">
         <div className="flex items-center gap-4 p-4 sm:p-5 bg-white/[0.02] border-b border-white/[0.06]">
           <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
@@ -195,6 +188,7 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
     rumors: rawSections.rumors === true,
     dmQa: rawSections.dmQa === true,
     openQuestions: rawSections.openQuestions === true,
+    sessions: rawSections.sessions === true,
     gallery: rawSections.gallery !== false,
   }
 
@@ -230,6 +224,17 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
       .order('is_primary', { ascending: false })
       .order('display_order')
     galleryImages = data || []
+  }
+
+  // Fetch sessions
+  let sessions_data: any[] = []
+  if (sections.sessions) {
+    const { data } = await supabase
+      .from('play_journal')
+      .select('*')
+      .eq('character_id', character.id)
+      .order('session_number', { ascending: true })
+    sessions_data = data || []
   }
 
   // Parse data
@@ -278,6 +283,8 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
     (sections.openQuestions && openQuestions.length > 0)
 
   const hasGalleryContent = sections.gallery && galleryImages.length > 0
+
+  const hasSessionsContent = sections.sessions && sessions_data.length > 0
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
@@ -429,6 +436,50 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
               </div>
             </>
           )}
+
+          {/* Navigate */}
+          <div className="my-5 h-px bg-gradient-to-r from-white/[0.06] via-white/[0.04] to-transparent" />
+          <div>
+            <h3 className="text-[11px] font-semibold text-gray-600 uppercase tracking-wider mb-3">Navigate</h3>
+            <nav className="space-y-1">
+              {hasBackstoryContent && (
+                <a href="#backstory" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors">
+                  <BookOpen className="w-4 h-4" />
+                  Backstory
+                </a>
+              )}
+              {hasDetailsContent && (
+                <a href="#details" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors">
+                  <FileText className="w-4 h-4" />
+                  Details
+                </a>
+              )}
+              {hasPeopleContent && (
+                <a href="#people" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors">
+                  <Users className="w-4 h-4" />
+                  People
+                </a>
+              )}
+              {hasWritingsContent && (
+                <a href="#writings" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors">
+                  <Quote className="w-4 h-4" />
+                  Writings
+                </a>
+              )}
+              {hasSessionsContent && (
+                <a href="#sessions" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors">
+                  <BookOpen className="w-4 h-4" />
+                  Sessions
+                </a>
+              )}
+              {hasGalleryContent && (
+                <a href="#gallery" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors">
+                  <GalleryIcon className="w-4 h-4" />
+                  Gallery
+                </a>
+              )}
+            </nav>
+          </div>
         </div>
       </aside>
 
@@ -479,7 +530,7 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
 
           {/* BACKSTORY SECTION */}
           {hasBackstoryContent && (
-            <Section title="Backstory" icon={BookOpen}>
+            <Section title="Backstory" icon={BookOpen} id="backstory">
               <div className="space-y-10">
                 {sections.summary && character.summary && (
                   <div>
@@ -505,7 +556,7 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
                 {sections.backstory && character.notes && (
                   <div>
                     <FieldLabel>Full Backstory</FieldLabel>
-                    <HtmlContent html={character.notes} className="prose-base" />
+                    <HtmlContent html={character.notes} className="prose-lg" />
                   </div>
                 )}
 
@@ -555,7 +606,7 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
 
           {/* DETAILS SECTION */}
           {hasDetailsContent && (
-            <Section title="Details" icon={FileText}>
+            <Section title="Details" icon={FileText} id="details">
               <div className="space-y-10">
                 {sections.appearance && character.appearance && (
                   <div>
@@ -715,7 +766,7 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
 
           {/* PEOPLE SECTION */}
           {hasPeopleContent && (
-            <Section title="People" icon={Users} count={partyMembers.length + npcs.length + companions.length}>
+            <Section title="People" icon={Users} count={partyMembers.length + npcs.length + companions.length} id="people">
               <div className="space-y-10">
                 {sections.partyMembers && partyMembers.length > 0 && (
                   <div>
@@ -816,7 +867,7 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
 
           {/* WRITINGS SECTION */}
           {hasWritingsContent && (
-            <Section title="Writings" icon={Quote} count={writings.length}>
+            <Section title="Writings" icon={Quote} count={writings.length} id="writings">
               <div className="space-y-10">
                 {sections.writings && writings.length > 0 && (
                   <div className="space-y-4">
@@ -887,9 +938,80 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
             </Section>
           )}
 
+          {/* SESSIONS SECTION */}
+          {hasSessionsContent && (
+            <Section title="Session Notes" icon={BookOpen} count={sessions_data.length} id="sessions">
+              <div className="space-y-6">
+                {sessions_data.map((session) => (
+                  <div key={session.id} className="p-5 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                    {/* Session Header */}
+                    <div className="flex items-center gap-3 mb-3 flex-wrap">
+                      <span className="text-sm font-semibold text-purple-400 bg-purple-500/15 px-2.5 py-1 rounded">
+                        Session {session.session_number || '?'}
+                      </span>
+                      {session.session_date && (
+                        <span className="text-sm text-gray-500">
+                          {new Date(session.session_date).toLocaleDateString()}
+                        </span>
+                      )}
+                      {session.campaign_name && (
+                        <span className="text-xs text-gray-600">{session.campaign_name}</span>
+                      )}
+                    </div>
+
+                    {/* Title */}
+                    {session.title && (
+                      <h4 className="text-base font-semibold text-white/90 mb-3">{session.title}</h4>
+                    )}
+
+                    {/* Summary */}
+                    {session.summary && (
+                      <div className="mb-4">
+                        <HtmlContent html={session.summary} />
+                      </div>
+                    )}
+
+                    {/* Detailed Notes */}
+                    {session.notes && (
+                      <div className="prose prose-invert prose-sm max-w-none text-gray-400">
+                        <div dangerouslySetInnerHTML={{ __html: session.notes }} />
+                      </div>
+                    )}
+
+                    {/* Quick Stats */}
+                    {(session.kill_count > 0 || session.loot || session.npcs_met?.length > 0 || session.locations_visited?.length > 0) && (
+                      <div className="mt-4 pt-3 border-t border-white/[0.06] flex flex-wrap gap-4 text-xs">
+                        {session.kill_count > 0 && (
+                          <span className="text-gray-500">
+                            <span className="text-red-400">⚔️</span> {session.kill_count} kill{session.kill_count !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                        {session.loot && (
+                          <span className="text-gray-500">
+                            <span className="text-yellow-400">💰</span> {session.loot}
+                          </span>
+                        )}
+                        {session.npcs_met?.length > 0 && (
+                          <span className="text-gray-500">
+                            <span className="text-purple-400">👥</span> Met: {session.npcs_met.join(', ')}
+                          </span>
+                        )}
+                        {session.locations_visited?.length > 0 && (
+                          <span className="text-gray-500">
+                            <span className="text-amber-400">📍</span> Visited: {session.locations_visited.join(', ')}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
+
           {/* GALLERY SECTION */}
           {hasGalleryContent && (
-            <Section title="Gallery" icon={GalleryIcon} count={galleryImages.length}>
+            <Section title="Gallery" icon={GalleryIcon} count={galleryImages.length} id="gallery">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {galleryImages.map((image) => (
                   <div key={image.id} className="relative aspect-square rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06]">
