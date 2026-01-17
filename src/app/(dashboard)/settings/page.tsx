@@ -337,7 +337,7 @@ export default function SettingsPage() {
               <button
                 onClick={() => setAIEnabled(!aiEnabled)}
                 className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 ml-4 ${
-                  aiEnabled ? 'bg-[--arcane-purple]' : 'bg-[--bg-surface] border border-[--border]'
+                  aiEnabled ? 'bg-[--arcane-purple]' : 'bg-gray-600'
                 }`}
               >
                 <div
@@ -500,7 +500,7 @@ export default function SettingsPage() {
                         <div className="p-3 rounded-lg bg-[--bg-elevated] text-center">
                           <BarChart3 className="w-4 h-4 text-cyan-500 mx-auto mb-1" />
                           <p className="text-lg font-bold text-[--text-primary]">
-                            {apiUsage.summary.costs?.[currency] || formatCost(apiUsage.summary.totalCostCents)}
+                            {getCurrencySymbol()}{apiUsage.summary.costs?.[currency] || formatCost(apiUsage.summary.totalCostCents).slice(1)}
                           </p>
                           <p className="text-[10px] text-[--text-tertiary]">Est. Cost</p>
                         </div>
@@ -679,7 +679,7 @@ export default function SettingsPage() {
               </div>
 
               <p className="text-xs text-[--text-tertiary] border-t border-[--border] pt-3">
-                Built with Next.js, Supabase, and AI. Made with love for dungeon masters everywhere.
+                Built with Next.js, Supabase, and AI.
               </p>
             </div>
 
