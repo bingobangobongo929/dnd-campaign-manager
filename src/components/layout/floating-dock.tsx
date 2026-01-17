@@ -31,13 +31,14 @@ export function FloatingDock({ campaignId, characterId }: FloatingDockProps) {
   const { aiEnabled } = useAppStore()
 
   // Character-specific links (when viewing a vault character)
+  // Order matches campaign dock: Edit/View are like Canvas, then Sessions, then other features
   const characterLinks = characterId
     ? [
         { href: `/vault/${characterId}`, label: 'Edit', icon: Edit3 },
         { href: `/vault/${characterId}/view`, label: 'View', icon: Eye },
+        { href: `/vault/${characterId}/sessions`, label: 'Sessions', icon: ScrollText },
         ...(aiEnabled ? [{ href: `/vault/${characterId}/intelligence`, label: 'Intelligence', icon: Brain }] : []),
         { href: `/vault/${characterId}/relationships`, label: 'Relationships', icon: Users },
-        { href: `/vault/${characterId}/sessions`, label: 'Sessions', icon: ScrollText },
         { href: `/vault/${characterId}/gallery`, label: 'Gallery', icon: Image },
       ]
     : []
@@ -57,21 +58,21 @@ export function FloatingDock({ campaignId, characterId }: FloatingDockProps) {
   const globalLinks = [
     { href: '/home', label: 'Home', icon: Home },
     { href: '/campaigns', label: 'Campaigns', icon: Swords },
-    { href: '/campaigns?tab=oneshots', label: 'One-Shots', icon: Scroll },
+    { href: '/oneshots', label: 'One-Shots', icon: Scroll },
     { href: '/vault', label: 'Character Vault', icon: BookOpen },
     { href: '/settings', label: 'Settings', icon: Settings },
   ]
 
   const isActive = (href: string) => {
-    // Handle special case for oneshots tab
-    if (href === '/campaigns?tab=oneshots') {
-      return pathname === '/campaigns' && typeof window !== 'undefined' && window.location.search.includes('tab=oneshots')
+    // Handle oneshots - match /oneshots or /oneshots/*
+    if (href === '/oneshots') {
+      return pathname === '/oneshots' || pathname.startsWith('/oneshots/')
     }
-    // For campaigns, only match if no oneshots tab
+    // Handle campaigns - match /campaigns or /campaigns/*
     if (href === '/campaigns') {
-      return pathname === '/campaigns' && (typeof window === 'undefined' || !window.location.search.includes('tab=oneshots'))
+      return pathname === '/campaigns' || (pathname.startsWith('/campaigns/') && !pathname.startsWith('/oneshots'))
     }
-    return pathname === href
+    return pathname === href || pathname.startsWith(href + '/')
   }
 
   // Calculate animation delay offset

@@ -73,7 +73,8 @@ export default function HomePage() {
   }
 
   const featuredCampaign = campaigns[0]
-  const otherCampaigns = campaigns.slice(1, 4)
+  // Show all campaigns in the grid (including featured) - slice to limit display
+  const displayCampaigns = campaigns.slice(0, 6)
 
   return (
     <AppLayout>
@@ -148,8 +149,8 @@ export default function HomePage() {
           </section>
         )}
 
-        {/* Other Campaigns Grid */}
-        {otherCampaigns.length > 0 && (
+        {/* All Campaigns Grid */}
+        {displayCampaigns.length > 0 && (
           <section>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-white">Your Campaigns</h3>
@@ -158,7 +159,7 @@ export default function HomePage() {
               </Link>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {otherCampaigns.map((campaign) => (
+              {displayCampaigns.map((campaign) => (
                 <Link
                   key={campaign.id}
                   href={`/campaigns/${campaign.id}/canvas`}
@@ -265,7 +266,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl font-semibold text-white">One-Shot Adventures</h3>
               </div>
-              <Link href="/campaigns?tab=oneshots" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
+              <Link href="/oneshots" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
                 View All <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
@@ -356,7 +357,7 @@ export default function HomePage() {
             <BookOpen className="w-4 h-4" />
             Character Vault
           </Link>
-          <Link href="/campaigns?tab=oneshots" className="btn btn-ghost text-sm">
+          <Link href="/oneshots" className="btn btn-ghost text-sm">
             <Scroll className="w-4 h-4" />
             One-Shots
           </Link>

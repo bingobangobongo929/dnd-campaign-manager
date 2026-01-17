@@ -340,7 +340,7 @@ export default function OneshotEditorPage() {
 
     const { error } = await supabase.from('oneshots').delete().eq('id', oneshotId)
     if (!error) {
-      router.push('/campaigns')
+      router.push('/oneshots')
     }
     setDeleteModalOpen(false)
   }
@@ -395,7 +395,7 @@ export default function OneshotEditorPage() {
         <header className="sticky top-0 z-50 bg-[--bg-base]/80 backdrop-blur-xl border-b border-white/[0.06]">
           <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
             <button
-              onClick={() => router.push('/campaigns')}
+              onClick={() => router.push('/oneshots')}
               className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -639,7 +639,7 @@ export default function OneshotEditorPage() {
                     placeholder="The narrative introduction to read to your players. Set the scene, establish the world, and hook them into the story..."
                     className={cn(textareaStyles, "min-h-[250px]")}
                   />
-                  <AIHelper section="introduction" />
+                  <AIHelper section="introduction" enabled={aiEnabled} />
                 </CollapsibleSection>
 
                 {/* Setting Notes */}
@@ -685,7 +685,7 @@ export default function OneshotEditorPage() {
                     placeholder="The structure of your session. Acts, key beats, encounters, decision points..."
                     className={cn(textareaStyles, "min-h-[300px]")}
                   />
-                  <AIHelper section="session_plan" />
+                  <AIHelper section="session_plan" enabled={aiEnabled} />
                 </CollapsibleSection>
 
                 {/* Twists & Secrets */}
@@ -740,7 +740,7 @@ export default function OneshotEditorPage() {
                     placeholder="In-world documents, rules handouts, maps, or other props for the players..."
                     className={textareaStyles}
                   />
-                  <AIHelper section="handouts" />
+                  <AIHelper section="handouts" enabled={aiEnabled} />
                 </CollapsibleSection>
               </div>
             </div>
@@ -967,8 +967,10 @@ function CollapsibleSection({
   )
 }
 
-// AI Helper Button
-function AIHelper({ section }: { section: string }) {
+// AI Helper Button - only renders when AI is enabled
+function AIHelper({ section, enabled }: { section: string; enabled: boolean }) {
+  if (!enabled) return null
+
   return (
     <button className="flex items-center gap-2 text-xs text-purple-400 hover:text-purple-300 transition-colors mt-2">
       <Sparkles className="w-3 h-3" />

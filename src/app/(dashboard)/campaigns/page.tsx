@@ -1,18 +1,26 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Plus, Gamepad2, Camera, Loader2, X, ChevronDown, ChevronUp, Scroll, Grid, List, Star, Edit, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Image from 'next/image'
+import Link from 'next/link'
+import {
+  Plus,
+  Swords,
+  Camera,
+  Loader2,
+  Play,
+  ChevronRight,
+  Edit,
+  Trash2,
+  Sparkles,
+} from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import { Modal, Input, Textarea, Dropdown, UnifiedImageModal } from '@/components/ui'
-import { CampaignCard } from '@/components/ui/campaign-card'
-import { OneshotCard } from '@/components/ui/oneshot-card'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
 import { v4 as uuidv4 } from 'uuid'
-import Image from 'next/image'
-import { cn } from '@/lib/utils'
-import type { Campaign, Oneshot, OneshotGenreTag, OneshotRun } from '@/types/database'
+import type { Campaign } from '@/types/database'
 
 const GAME_SYSTEMS = [
   { value: 'D&D 5e', label: 'D&D 5e' },
@@ -24,20 +32,13 @@ const GAME_SYSTEMS = [
   { value: 'Custom', label: 'Custom System' },
 ]
 
-type ViewMode = 'grid' | 'list' | 'featured'
-
 export default function CampaignsPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = useSupabase()
   const { user, loading: userLoading } = useUser()
-  const oneshotsSectionRef = useRef<HTMLDivElement>(null)
+
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
-  const [oneshots, setOneshots] = useState<Oneshot[]>([])
-  const [genreTags, setGenreTags] = useState<OneshotGenreTag[]>([])
-  const [oneshotRuns, setOneshotRuns] = useState<Record<string, OneshotRun[]>>({})
   const [loading, setLoading] = useState(true)
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null)
   const [formData, setFormData] = useState({
     name: '',
@@ -47,12 +48,6 @@ export default function CampaignsPage() {
   })
   const [saving, setSaving] = useState(false)
   const [imageModalOpen, setImageModalOpen] = useState(false)
-  const [imageModalContext, setImageModalContext] = useState<'create' | 'edit'>('create')
-
-  // View mode and one-shots expanded state
-  const [viewMode, setViewMode] = useState<ViewMode>('grid')
-  const [oneshotsExpanded, setOneshotsExpanded] = useState(true)
-  const [showCreateChoice, setShowCreateChoice] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -60,20 +55,7 @@ export default function CampaignsPage() {
     }
   }, [user])
 
-  // Handle tab query param for direct navigation to oneshots
-  useEffect(() => {
-    const tab = searchParams.get('tab')
-    if (tab === 'oneshots' && !loading) {
-      setOneshotsExpanded(true)
-      // Small delay to let the section render before scrolling
-      setTimeout(() => {
-        oneshotsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 100)
-    }
-  }, [searchParams, loading])
-
   const loadData = async () => {
-    // Load campaigns
     const { data: campaignsData } = await supabase
       .from('campaigns')
       .select('*')
@@ -83,48 +65,9 @@ export default function CampaignsPage() {
     if (campaignsData) {
       setCampaigns(campaignsData)
     }
-
-    // Load one-shots
-    const { data: oneshotsData } = await supabase
-      .from('oneshots')
-      .select('*')
-      .eq('user_id', user!.id)
-      .order('updated_at', { ascending: false })
-
-    if (oneshotsData) {
-      setOneshots(oneshotsData)
-
-      // Load runs for each oneshot
-      const runsMap: Record<string, OneshotRun[]> = {}
-      for (const oneshot of oneshotsData) {
-        const { data: runsData } = await supabase
-          .from('oneshot_runs')
-          .select('*')
-          .eq('oneshot_id', oneshot.id)
-          .order('run_date', { ascending: false })
-
-        if (runsData) {
-          runsMap[oneshot.id] = runsData
-        }
-      }
-      setOneshotRuns(runsMap)
-    }
-
-    // Load genre tags
-    const { data: tagsData } = await supabase
-      .from('oneshot_genre_tags')
-      .select('*')
-      .eq('user_id', user!.id)
-      .order('sort_order')
-
-    if (tagsData) {
-      setGenreTags(tagsData)
-    }
-
     setLoading(false)
   }
 
-  // Handle image upload from UnifiedImageModal
   const handleImageUpload = async (blob: Blob): Promise<string> => {
     const uniqueId = uuidv4()
     const path = `campaigns/${uniqueId}.webp`
@@ -140,36 +83,6 @@ export default function CampaignsPage() {
       .getPublicUrl(path)
 
     return urlData.publicUrl
-  }
-
-  const openImageModal = (context: 'create' | 'edit') => {
-    setImageModalContext(context)
-    setImageModalOpen(true)
-  }
-
-  const handleCreate = async () => {
-    if (!formData.name.trim() || !user) return
-
-    setSaving(true)
-    const { data } = await supabase
-      .from('campaigns')
-      .insert({
-        user_id: user.id,
-        name: formData.name,
-        game_system: formData.game_system,
-        description: formData.description || null,
-        image_url: formData.image_url,
-      })
-      .select()
-      .single()
-
-    if (data) {
-      setCampaigns([data, ...campaigns])
-      setIsCreateModalOpen(false)
-      setFormData({ name: '', game_system: 'D&D 5e', description: '', image_url: null })
-      router.push(`/campaigns/${data.id}/canvas`)
-    }
-    setSaving(false)
   }
 
   const handleUpdate = async () => {
@@ -206,16 +119,6 @@ export default function CampaignsPage() {
     }
   }
 
-  const handleDeleteOneshot = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this one-shot? This cannot be undone.')) return
-
-    const { error } = await supabase.from('oneshots').delete().eq('id', id)
-
-    if (!error) {
-      setOneshots(oneshots.filter((o) => o.id !== id))
-    }
-  }
-
   const openEditModal = (campaign: Campaign) => {
     setFormData({
       name: campaign.name,
@@ -230,306 +133,234 @@ export default function CampaignsPage() {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-[60vh]">
-          <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
+          <Loader2 className="w-10 h-10 animate-spin text-purple-400" />
         </div>
       </AppLayout>
     )
   }
 
-  const isEmpty = campaigns.length === 0 && oneshots.length === 0
+  const featuredCampaign = campaigns[0]
+  const otherCampaigns = campaigns.slice(1)
 
   return (
     <AppLayout>
-      {/* Page Header */}
-      <div className="page-header flex items-start justify-between">
-        <div>
-          <h1 className="page-title">Your Campaigns</h1>
-          <p className="page-subtitle">Manage your tabletop adventures</p>
+      <div className="max-w-7xl mx-auto space-y-12">
+        {/* Page Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-display font-bold text-white">Your Campaigns</h1>
+            <p className="text-gray-400 mt-1">Epic adventures await</p>
+          </div>
+          <Link
+            href="/campaigns/new"
+            className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-xl transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            New Campaign
+          </Link>
         </div>
 
-        {/* View Mode Toggle */}
-        {campaigns.length > 0 && (
-          <div className="flex items-center gap-1 bg-white/[0.03] rounded-lg p-1 border border-white/[0.06]">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={cn(
-                "p-2 rounded-md transition-colors",
-                viewMode === 'grid' ? "bg-purple-500/20 text-purple-400" : "text-gray-500 hover:text-gray-300"
-              )}
-              title="Grid View"
+        {campaigns.length === 0 ? (
+          /* Empty State */
+          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-purple-900/20 via-gray-900 to-gray-950 border border-white/[0.06] p-16 text-center">
+            <Sparkles className="w-20 h-20 mx-auto mb-6 text-purple-400/50" />
+            <h2 className="text-2xl font-display font-bold text-white mb-3">
+              Begin Your Adventure
+            </h2>
+            <p className="text-gray-400 mb-8 max-w-md mx-auto">
+              Create your first campaign and start building an unforgettable story with your players.
+            </p>
+            <Link
+              href="/campaigns/new"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-xl transition-colors"
             >
-              <Grid className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={cn(
-                "p-2 rounded-md transition-colors",
-                viewMode === 'list' ? "bg-purple-500/20 text-purple-400" : "text-gray-500 hover:text-gray-300"
-              )}
-              title="List View"
-            >
-              <List className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('featured')}
-              className={cn(
-                "p-2 rounded-md transition-colors",
-                viewMode === 'featured' ? "bg-purple-500/20 text-purple-400" : "text-gray-500 hover:text-gray-300"
-              )}
-              title="Featured View"
-            >
-              <Star className="w-4 h-4" />
-            </button>
+              <Swords className="w-5 h-5" />
+              Create Your First Campaign
+            </Link>
           </div>
-        )}
-      </div>
+        ) : (
+          <>
+            {/* Featured Campaign (Hero) */}
+            {featuredCampaign && (
+              <section className="group relative">
+                <Link
+                  href={`/campaigns/${featuredCampaign.id}/canvas`}
+                  className="relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-purple-500/30 transition-all duration-500"
+                >
+                  <div className="relative h-[350px] md:h-[450px]">
+                    {featuredCampaign.image_url ? (
+                      <>
+                        <Image
+                          src={featuredCampaign.image_url}
+                          alt={featuredCampaign.name}
+                          fill
+                          className="object-cover transition-transform duration-700 group-hover:scale-105"
+                          priority
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-gray-900 to-gray-950 flex items-center justify-center">
+                        <Swords className="w-32 h-32 text-purple-400/20" />
+                      </div>
+                    )}
 
-      {isEmpty ? (
-        /* Empty State */
-        <div className="empty-state">
-          <Gamepad2 className="empty-state-icon" />
-          <h2 className="empty-state-title">No adventures yet</h2>
-          <p className="empty-state-description">
-            Create your first campaign or one-shot to start organizing your world, characters, and stories.
-          </p>
-          <div className="flex flex-col gap-3 w-full max-w-xs">
-            <button
-              className="btn btn-primary w-full justify-center"
-              onClick={() => router.push('/campaigns/new')}
-            >
-              <Gamepad2 className="w-5 h-5" />
-              Create Campaign
-            </button>
-            <button
-              className="btn btn-secondary w-full justify-center"
-              onClick={() => router.push('/oneshots/new')}
-            >
-              <Scroll className="w-5 h-5" />
-              Create One-Shot
-            </button>
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Campaign Grid/List/Featured */}
-          {campaigns.length > 0 && (
-            <div className={cn(
-              viewMode === 'grid' && "campaign-grid",
-              viewMode === 'list' && "space-y-3",
-              viewMode === 'featured' && "grid grid-cols-1 md:grid-cols-2 gap-6"
-            )}>
-              {campaigns.map((campaign, index) => (
-                viewMode === 'list' ? (
-                  <CampaignListItem
-                    key={campaign.id}
-                    campaign={campaign}
-                    onClick={() => router.push(`/campaigns/${campaign.id}/canvas`)}
-                    onEdit={() => openEditModal(campaign)}
-                    onDelete={() => handleDelete(campaign.id)}
-                  />
-                ) : viewMode === 'featured' ? (
-                  <FeaturedCampaignCard
-                    key={campaign.id}
-                    campaign={campaign}
-                    onClick={() => router.push(`/campaigns/${campaign.id}/canvas`)}
-                    onEdit={() => openEditModal(campaign)}
-                    onDelete={() => handleDelete(campaign.id)}
-                  />
-                ) : (
-                  <CampaignCard
-                    key={campaign.id}
-                    campaign={campaign}
-                    onClick={() => router.push(`/campaigns/${campaign.id}/canvas`)}
-                    onEdit={() => openEditModal(campaign)}
-                    onDelete={() => handleDelete(campaign.id)}
-                    animationDelay={index * 50}
-                  />
-                )
-              ))}
-            </div>
-          )}
+                    {/* Content Overlay */}
+                    <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-12">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-full bg-purple-600 text-white">
+                          Continue Playing
+                        </span>
+                        <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300">
+                          {featuredCampaign.game_system}
+                        </span>
+                      </div>
 
-          {/* One-Shots Section */}
-          <div className="mt-12" ref={oneshotsSectionRef}>
-            <button
-              onClick={() => setOneshotsExpanded(!oneshotsExpanded)}
-              className="w-full flex items-center justify-between py-4 px-1 group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                  <Scroll className="w-5 h-5 text-purple-400" />
-                </div>
-                <div className="text-left">
-                  <h2 className="text-lg font-semibold text-white/90">One-Shots</h2>
-                  <p className="text-sm text-gray-500">{oneshots.length} adventure{oneshots.length !== 1 ? 's' : ''} ready to run</p>
-                </div>
-              </div>
-              {oneshotsExpanded ? (
-                <ChevronUp className="w-5 h-5 text-gray-500 group-hover:text-gray-300 transition-colors" />
-              ) : (
-                <ChevronDown className="w-5 h-5 text-gray-500 group-hover:text-gray-300 transition-colors" />
-              )}
-            </button>
+                      <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-3 group-hover:text-purple-400 transition-colors">
+                        {featuredCampaign.name}
+                      </h2>
 
-            {oneshotsExpanded && (
-              <div className="mt-4">
-                {oneshots.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
-                    <Scroll className="w-10 h-10 mb-4 text-gray-600" />
-                    <p className="text-sm text-gray-500">No one-shots yet. Use the + button to create one.</p>
+                      {featuredCampaign.description && (
+                        <p className="text-gray-300 text-base md:text-lg max-w-2xl line-clamp-2 mb-4">
+                          {featuredCampaign.description}
+                        </p>
+                      )}
+
+                      <div className="flex items-center gap-2 text-purple-400 font-medium">
+                        <Play className="w-5 h-5" />
+                        <span>Enter Campaign</span>
+                        <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      </div>
+                    </div>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {oneshots.map((oneshot, index) => (
-                      <OneshotCard
-                        key={oneshot.id}
-                        oneshot={oneshot}
-                        genreTags={genreTags}
-                        runs={oneshotRuns[oneshot.id] || []}
-                        onClick={() => router.push(`/oneshots/${oneshot.id}`)}
-                        onEdit={() => router.push(`/oneshots/${oneshot.id}`)}
-                        onDelete={() => handleDeleteOneshot(oneshot.id)}
-                        animationDelay={index * 50}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
+                </Link>
+
+                {/* Edit/Delete buttons - positioned outside the link */}
+                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditModal(featuredCampaign) }}
+                    className="p-2.5 bg-black/70 backdrop-blur-sm rounded-lg hover:bg-purple-500 transition-colors"
+                    title="Edit"
+                  >
+                    <Edit className="w-4 h-4 text-white" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(featuredCampaign.id) }}
+                    className="p-2.5 bg-black/70 backdrop-blur-sm rounded-lg hover:bg-red-500 transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4 text-white" />
+                  </button>
+                </div>
+              </section>
             )}
-          </div>
-        </>
-      )}
 
-      {/* Floating Action Button with Choice Menu */}
-      <div className="fixed bottom-8 right-8 z-50">
-        {showCreateChoice && (
-          <div className="absolute bottom-16 right-0 mb-2 flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <button
-              onClick={() => {
-                setShowCreateChoice(false)
-                router.push('/campaigns/new')
-              }}
-              className="flex items-center gap-3 px-5 py-3 bg-[--bg-surface] border border-[--border] rounded-xl shadow-xl hover:border-purple-500/50 hover:bg-[--bg-elevated] transition-all whitespace-nowrap"
-            >
-              <Gamepad2 className="w-5 h-5 text-purple-400" />
-              <span className="font-medium text-white">New Campaign</span>
-            </button>
-            <button
-              onClick={() => {
-                setShowCreateChoice(false)
-                router.push('/oneshots/new')
-              }}
-              className="flex items-center gap-3 px-5 py-3 bg-[--bg-surface] border border-[--border] rounded-xl shadow-xl hover:border-purple-500/50 hover:bg-[--bg-elevated] transition-all whitespace-nowrap"
-            >
-              <Scroll className="w-5 h-5 text-purple-400" />
-              <span className="font-medium text-white">New One-Shot</span>
-            </button>
-          </div>
-        )}
-        <button
-          className={cn("fab", showCreateChoice && "rotate-45")}
-          onClick={() => setShowCreateChoice(!showCreateChoice)}
-          aria-label="Create new"
-        >
-          <Plus className="fab-icon" />
-        </button>
-        {/* Backdrop to close menu */}
-        {showCreateChoice && (
-          <div
-            className="fixed inset-0 -z-10"
-            onClick={() => setShowCreateChoice(false)}
-          />
+            {/* Campaign Grid */}
+            {otherCampaigns.length > 0 && (
+              <section>
+                <h3 className="text-xl font-semibold text-white mb-6">All Campaigns</h3>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {otherCampaigns.map((campaign) => (
+                    <div key={campaign.id} className="group relative">
+                      <Link
+                        href={`/campaigns/${campaign.id}/canvas`}
+                        className="relative block rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/40 transition-all"
+                      >
+                        {/* Large Image */}
+                        <div className="relative h-48 sm:h-56">
+                          {campaign.image_url ? (
+                            <>
+                              <Image
+                                src={campaign.image_url}
+                                alt={campaign.name}
+                                fill
+                                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
+                            </>
+                          ) : (
+                            <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                              <Swords className="w-16 h-16 text-purple-400/30" />
+                            </div>
+                          )}
+
+                          {/* Game system badge */}
+                          <div className="absolute top-3 left-3">
+                            <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-black/60 backdrop-blur-sm text-purple-300 border border-purple-500/30">
+                              {campaign.game_system}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-5">
+                          <h4 className="font-display font-semibold text-lg text-white truncate group-hover:text-purple-400 transition-colors">
+                            {campaign.name}
+                          </h4>
+                          {campaign.description && (
+                            <p className="text-sm text-gray-400 mt-2 line-clamp-2">
+                              {campaign.description}
+                            </p>
+                          )}
+                          <p className="text-xs text-gray-500 mt-3">
+                            Updated {formatDate(campaign.updated_at)}
+                          </p>
+                        </div>
+                      </Link>
+
+                      {/* Edit/Delete buttons */}
+                      <div className="absolute top-3 right-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditModal(campaign) }}
+                          className="p-2 bg-black/70 backdrop-blur-sm rounded-lg hover:bg-purple-500 transition-colors"
+                          title="Edit"
+                        >
+                          <Edit className="w-3.5 h-3.5 text-white" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(campaign.id) }}
+                          className="p-2 bg-black/70 backdrop-blur-sm rounded-lg hover:bg-red-500 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-white" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Create New Card */}
+                  <Link
+                    href="/campaigns/new"
+                    className="group relative rounded-xl overflow-hidden bg-gradient-to-br from-purple-900/10 to-gray-900/50 border-2 border-dashed border-purple-500/20 hover:border-purple-500/50 transition-all flex flex-col items-center justify-center gap-4 min-h-[280px]"
+                  >
+                    <div className="p-4 rounded-full bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
+                      <Plus className="w-8 h-8 text-purple-400" />
+                    </div>
+                    <span className="text-sm font-medium text-purple-400">Create New Campaign</span>
+                  </Link>
+                </div>
+              </section>
+            )}
+
+            {/* Single campaign - show create prompt */}
+            {campaigns.length === 1 && (
+              <section>
+                <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                  <p className="text-gray-400 mb-4">Great start! Add more campaigns to your collection.</p>
+                  <Link
+                    href="/campaigns/new"
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-600/80 hover:bg-purple-500 text-white font-medium rounded-lg transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create Another Campaign
+                  </Link>
+                </div>
+              </section>
+            )}
+          </>
         )}
       </div>
-
-      {/* Create Modal */}
-      <Modal
-        isOpen={isCreateModalOpen}
-        onClose={() => {
-          setIsCreateModalOpen(false)
-          setFormData({ name: '', game_system: 'D&D 5e', description: '', image_url: null })
-        }}
-        title="Create Campaign"
-        description="Start a new campaign for your players"
-        size="lg"
-      >
-        <div className="space-y-5">
-          {/* Campaign Image */}
-          <div className="form-group">
-            <label className="form-label">Campaign Image</label>
-            <button
-              type="button"
-              onClick={() => openImageModal('create')}
-              className="relative w-full aspect-video rounded-xl overflow-hidden transition-all group"
-              style={{
-                backgroundColor: formData.image_url ? 'transparent' : '#1a1a24',
-                border: formData.image_url ? '2px solid #2a2a3a' : '2px dashed #606070',
-              }}
-            >
-              {formData.image_url ? (
-                <>
-                  <Image
-                    src={formData.image_url}
-                    alt="Campaign"
-                    fill
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Camera className="w-8 h-8 text-white" />
-                  </div>
-                </>
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                  <Camera className="w-8 h-8 text-[#606070] group-hover:text-[#8B5CF6] transition-colors" />
-                  <span className="text-sm text-[#606070] group-hover:text-[#8B5CF6] transition-colors">Click to add image</span>
-                </div>
-              )}
-            </button>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Campaign Name</label>
-            <Input
-              className="form-input"
-              placeholder="e.g., Curse of Strahd"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Game System</label>
-            <Dropdown
-              options={GAME_SYSTEMS}
-              value={formData.game_system}
-              onChange={(value) => setFormData({ ...formData, game_system: value })}
-            />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Description (optional)</label>
-            <Textarea
-              className="form-textarea"
-              placeholder="Brief description of your campaign..."
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            />
-          </div>
-          <div className="flex justify-end gap-3 pt-4">
-            <button
-              className="btn btn-secondary"
-              onClick={() => setIsCreateModalOpen(false)}
-            >
-              Cancel
-            </button>
-            <button
-              className="btn btn-primary"
-              onClick={handleCreate}
-              disabled={!formData.name.trim() || saving}
-            >
-              {saving ? 'Creating...' : 'Create Campaign'}
-            </button>
-          </div>
-        </div>
-      </Modal>
 
       {/* Edit Modal */}
       <Modal
@@ -547,7 +378,7 @@ export default function CampaignsPage() {
             <label className="form-label">Campaign Image</label>
             <button
               type="button"
-              onClick={() => openImageModal('edit')}
+              onClick={() => setImageModalOpen(true)}
               className="relative w-full aspect-video rounded-xl overflow-hidden transition-all group"
               style={{
                 backgroundColor: formData.image_url ? 'transparent' : '#1a1a24',
@@ -635,140 +466,5 @@ export default function CampaignsPage() {
         title="Campaign"
       />
     </AppLayout>
-  )
-}
-
-// List View Item Component
-function CampaignListItem({
-  campaign,
-  onClick,
-  onEdit,
-  onDelete,
-}: {
-  campaign: Campaign
-  onClick: () => void
-  onEdit: () => void
-  onDelete: () => void
-}) {
-  return (
-    <div
-      onClick={onClick}
-      className="flex items-center gap-4 p-4 bg-[--bg-elevated] rounded-xl border border-white/[0.06] hover:border-purple-500/30 cursor-pointer transition-all group"
-    >
-      {/* Image */}
-      <div className="relative w-20 h-14 rounded-lg overflow-hidden bg-[--bg-surface] flex-shrink-0">
-        {campaign.image_url ? (
-          <Image src={campaign.image_url} alt={campaign.name} fill className="object-cover" />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Gamepad2 className="w-6 h-6 text-gray-600" />
-          </div>
-        )}
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <h3 className="font-display font-semibold text-white/90 truncate">{campaign.name}</h3>
-        <div className="flex items-center gap-3 mt-1">
-          <span className="text-xs text-purple-400 bg-purple-500/15 px-2 py-0.5 rounded">{campaign.game_system}</span>
-          {campaign.description && (
-            <span className="text-xs text-gray-500 truncate">{campaign.description}</span>
-          )}
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={(e) => { e.stopPropagation(); onEdit() }}
-          className="p-2 text-gray-400 hover:text-purple-400 transition-colors"
-        >
-          Edit
-        </button>
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete() }}
-          className="p-2 text-gray-400 hover:text-red-400 transition-colors"
-        >
-          Delete
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// Featured Card Component - Expanded for longer summaries
-function FeaturedCampaignCard({
-  campaign,
-  onClick,
-  onEdit,
-  onDelete,
-}: {
-  campaign: Campaign
-  onClick: () => void
-  onEdit: () => void
-  onDelete: () => void
-}) {
-  return (
-    <div
-      onClick={onClick}
-      className="card group cursor-pointer"
-    >
-      {/* 16:9 Image Container */}
-      <div className="relative aspect-video overflow-hidden rounded-t-xl">
-        {campaign.image_url ? (
-          <Image
-            src={campaign.image_url}
-            alt={campaign.name}
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-indigo-900/30" />
-        )}
-
-        {/* Gradient Overlay - stronger at bottom for text */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-
-        {/* Hover Actions - Icons only */}
-        <div className="absolute top-3 left-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-          <button
-            onClick={(e) => { e.stopPropagation(); onEdit() }}
-            className="p-2 bg-black/60 backdrop-blur-sm rounded-lg hover:bg-purple-500/80 transition-colors"
-            title="Edit"
-          >
-            <Edit className="w-4 h-4 text-white" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete() }}
-            className="p-2 bg-black/60 backdrop-blur-sm rounded-lg hover:bg-red-500/80 transition-colors"
-            title="Delete"
-          >
-            <Trash2 className="w-4 h-4 text-white" />
-          </button>
-        </div>
-
-        {/* Title and system at bottom of image */}
-        <div className="absolute bottom-0 left-0 right-0 p-5">
-          <span className="inline-block text-xs text-purple-400 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-md border border-purple-500/30 mb-2">
-            {campaign.game_system}
-          </span>
-          <h3 className="font-display text-2xl font-bold text-white drop-shadow-lg">{campaign.name}</h3>
-        </div>
-      </div>
-
-      {/* Content area below image - consistent with grid cards */}
-      <div className="p-5 bg-[--bg-elevated] rounded-b-xl border-t border-white/[0.04]">
-        {campaign.description ? (
-          <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">
-            {campaign.description}
-          </p>
-        ) : (
-          <p className="text-sm text-gray-500 italic">No description yet</p>
-        )}
-        <p className="text-xs text-gray-500 mt-4">
-          Updated {formatDate(campaign.updated_at)}
-        </p>
-      </div>
-    </div>
   )
 }

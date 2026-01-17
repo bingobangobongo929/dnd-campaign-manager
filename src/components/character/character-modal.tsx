@@ -718,20 +718,39 @@ export function CharacterModal({
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="form-group">
-                      <label className="form-label">Type</label>
-                      <Dropdown
-                        options={[
-                          { value: 'pc', label: 'PC' },
-                          { value: 'npc', label: 'NPC' },
-                        ]}
-                        value={formData.type}
-                        onChange={(value) => setFormData({ ...formData, type: value as 'pc' | 'npc' })}
-                      />
+                  {/* PC / NPC Toggle - Prominent */}
+                  <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+                    <label className="form-label mb-2">Character Type</label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setFormData({ ...formData, type: 'pc' })}
+                        className={cn(
+                          "flex-1 flex flex-col items-center gap-1 py-2 px-3 rounded-lg font-medium transition-all",
+                          formData.type === 'pc'
+                            ? "bg-purple-500/20 text-purple-300 border-2 border-purple-500/50"
+                            : "bg-white/[0.02] text-gray-400 border border-white/[0.08] hover:bg-white/[0.05]"
+                        )}
+                      >
+                        <User className="w-4 h-4" />
+                        <span className="text-xs">PC</span>
+                      </button>
+                      <button
+                        onClick={() => setFormData({ ...formData, type: 'npc' })}
+                        className={cn(
+                          "flex-1 flex flex-col items-center gap-1 py-2 px-3 rounded-lg font-medium transition-all",
+                          formData.type === 'npc'
+                            ? "bg-amber-500/20 text-amber-300 border-2 border-amber-500/50"
+                            : "bg-white/[0.02] text-gray-400 border border-white/[0.08] hover:bg-white/[0.05]"
+                        )}
+                      >
+                        <Users className="w-4 h-4" />
+                        <span className="text-xs">NPC</span>
+                      </button>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Status</label>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Status</label>
                       <div className="relative">
                         <button
                           onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
@@ -870,18 +889,44 @@ export function CharacterModal({
                         className="form-input text-lg font-semibold"
                       />
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="form-group">
-                        <label className="form-label">Type</label>
-                        <Dropdown
-                          options={[
-                            { value: 'pc', label: 'PC' },
-                            { value: 'npc', label: 'NPC' },
-                          ]}
-                          value={formData.type}
-                          onChange={(value) => setFormData({ ...formData, type: value as 'pc' | 'npc' })}
-                        />
-                      </div>
+                    {/* PC / NPC Toggle - Prominent */}
+                  <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+                    <label className="form-label mb-2">Character Type</label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setFormData({ ...formData, type: 'pc' })}
+                        className={cn(
+                          "flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium transition-all",
+                          formData.type === 'pc'
+                            ? "bg-purple-500/20 text-purple-300 border-2 border-purple-500/50 ring-2 ring-purple-500/20"
+                            : "bg-white/[0.02] text-gray-400 border border-white/[0.08] hover:bg-white/[0.05] hover:text-gray-300"
+                        )}
+                      >
+                        <User className="w-5 h-5" />
+                        <div className="text-left">
+                          <div className="text-sm font-semibold">Player Character</div>
+                          <div className="text-[10px] opacity-70">A hero in the party</div>
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => setFormData({ ...formData, type: 'npc' })}
+                        className={cn(
+                          "flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium transition-all",
+                          formData.type === 'npc'
+                            ? "bg-amber-500/20 text-amber-300 border-2 border-amber-500/50 ring-2 ring-amber-500/20"
+                            : "bg-white/[0.02] text-gray-400 border border-white/[0.08] hover:bg-white/[0.05] hover:text-gray-300"
+                        )}
+                      >
+                        <Users className="w-5 h-5" />
+                        <div className="text-left">
+                          <div className="text-sm font-semibold">Non-Player Character</div>
+                          <div className="text-[10px] opacity-70">NPC in your world</div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
                       <div className="form-group">
                         <label className="form-label">Status</label>
                         <div className="relative">

@@ -25,6 +25,8 @@ import {
   ZoomIn,
   Eye,
   FileText,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react'
 import { getInitials, formatDate } from '@/lib/utils'
 import { ReadOnlyCanvas } from './read-only-canvas'
@@ -219,6 +221,18 @@ export function CampaignShareClient({
   const [heroLightbox, setHeroLightbox] = useState(false)
   const [castGroupBy, setCastGroupBy] = useState<'none' | 'faction' | 'status'>('none')
   const [castFilter, setCastFilter] = useState<string>('all')
+  const [canvasFullscreen, setCanvasFullscreen] = useState(false)
+
+  // Handle ESC key to close fullscreen canvas
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && canvasFullscreen) {
+        setCanvasFullscreen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [canvasFullscreen])
 
   // Extract factions from character tags
   type TagInfo = { name: string; color: string; count: number }
@@ -1064,9 +1078,18 @@ export function CampaignShareClient({
         {/* Canvas Tab */}
         {activeTab === 'canvas' && (
           <div className="space-y-4">
-            <p className="text-sm text-gray-400">
-              Use mouse wheel to zoom, drag to pan. Use controls in bottom-left to zoom +/- or fit view.
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-400">
+                Use mouse wheel to zoom, drag to pan. Use controls in bottom-left to zoom +/- or fit view.
+              </p>
+              <button
+                onClick={() => setCanvasFullscreen(true)}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 rounded-lg transition-colors"
+              >
+                <Maximize2 className="w-4 h-4" />
+                Fullscreen
+              </button>
+            </div>
             <div className="h-[600px] sm:h-[700px] lg:h-[800px] bg-white/[0.02] rounded-2xl border border-white/[0.06] overflow-hidden">
               <ReadOnlyCanvas
                 characters={characters}
@@ -1140,6 +1163,35 @@ export function CampaignShareClient({
             className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           />
+        </div>
+      )}
+
+      {/* Fullscreen Canvas */}
+      {canvasFullscreen && (
+        <div className="fixed inset-0 z-[200] bg-[#0a0a0c]">
+          {/* Header */}
+          <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-6 py-4 bg-gradient-to-b from-black/80 to-transparent">
+            <h2 className="text-lg font-semibold text-white">{campaign.name} - Canvas</h2>
+            <button
+              onClick={() => setCanvasFullscreen(false)}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+            >
+              <Minimize2 className="w-4 h-4" />
+              Exit Fullscreen
+            </button>
+          </div>
+          {/* Canvas */}
+          <div className="absolute inset-0 pt-16">
+            <ReadOnlyCanvas
+              characters={characters}
+              characterTags={characterTags}
+              groups={canvasGroups}
+            />
+          </div>
+          {/* Help text */}
+          <div className="absolute bottom-4 left-4 text-xs text-gray-500">
+            Scroll to zoom • Drag to pan • Press ESC or click "Exit Fullscreen" to close
+          </div>
         </div>
       )}
 

@@ -31,6 +31,7 @@ export function AppLayout({
   const { setUserId, setSettings, setCurrentCampaign, isAIAssistantOpen, aiEnabled } = useAppStore()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [characters, setCharacters] = useState<Character[]>([])
+  const [vaultCharacters, setVaultCharacters] = useState<{ id: string; name: string; image_url?: string | null; race?: string | null; class?: string | null }[]>([])
   const [sessions, setSessions] = useState<Session[]>([])
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
   const [lore, setLore] = useState<CampaignLore[]>([])
@@ -88,6 +89,17 @@ export function AppLayout({
 
     if (campaignsData) {
       setCampaigns(campaignsData)
+    }
+
+    // Load vault characters for the character switcher
+    const { data: vaultData } = await supabase
+      .from('characters_vault')
+      .select('id, name, image_url, race, class')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false })
+
+    if (vaultData) {
+      setVaultCharacters(vaultData)
     }
   }
 
@@ -204,6 +216,8 @@ export function AppLayout({
       <TopBar
         campaigns={campaigns}
         currentCampaignId={campaignId}
+        characters={vaultCharacters}
+        currentCharacterId={characterId}
         transparent={transparentTopBar}
         actions={topBarActions}
       />

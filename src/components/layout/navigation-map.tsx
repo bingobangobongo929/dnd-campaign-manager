@@ -86,7 +86,7 @@ const NAVIGATION_TREE: NavigationNode[] = [
   {
     label: 'One-Shots',
     icon: Scroll,
-    href: '/campaigns?tab=oneshots',
+    href: '/oneshots',
     description: 'Standalone adventures ready to run',
   },
   {

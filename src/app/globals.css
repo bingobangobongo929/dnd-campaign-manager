@@ -1758,6 +1758,37 @@
    MOBILE RESPONSIVE STYLES
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* ─── Touch Device Hover Fix ─── */
+/* Prevent hover states from sticking on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .dock-item:hover {
+    background: transparent;
+    color: var(--text-secondary);
+  }
+
+  .dock-item.active:hover {
+    background: rgba(139, 92, 246, 0.15);
+    color: var(--arcane-purple);
+  }
+
+  .btn-primary:hover {
+    transform: none;
+    box-shadow: 0 0 20px var(--arcane-purple-glow);
+  }
+
+  .btn-gold:hover {
+    transform: none;
+  }
+
+  .card:hover {
+    transform: none;
+  }
+
+  .fab:hover {
+    transform: none;
+  }
+}
+
 /* Mobile bottom navigation */
 @media (max-width: 768px) {
   :root {
@@ -1799,8 +1830,9 @@
   .dock-item {
     flex-direction: column;
     gap: 2px;
-    padding: 8px 10px;
-    min-width: 56px;
+    padding: 10px 12px; /* Increased touch target */
+    min-width: 60px; /* Larger minimum touch target */
+    min-height: 56px; /* Ensure 44px+ touch target */
     flex-shrink: 0;
   }
 
@@ -1809,6 +1841,7 @@
     height: 22px;
   }
 
+  /* Hide dock labels on very small screens, show on larger mobile */
   .dock-item-label {
     opacity: 1;
     max-width: none;
@@ -1830,19 +1863,21 @@
     padding-left: 16px;
     padding-right: 16px;
     padding-top: calc(var(--topbar-height) + 16px);
-    padding-bottom: calc(72px + 24px); /* Account for bottom nav */
+    padding-bottom: calc(72px + 24px + env(safe-area-inset-bottom, 0px)); /* Account for bottom nav + safe area */
     max-width: 100%;
   }
 
   .main-content.full-bleed {
     padding-left: 0;
-    padding-bottom: 72px;
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
   }
 
   /* Adjust topbar */
   .topbar {
     left: 0;
     padding: 0 12px;
+    padding-left: calc(12px + env(safe-area-inset-left, 0px));
+    padding-right: calc(12px + env(safe-area-inset-right, 0px));
     gap: 8px;
   }
 
@@ -1890,12 +1925,28 @@
   }
 
   .ai-trigger {
-    padding: 8px;
+    padding: 10px; /* Minimum 44px touch target */
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* All buttons need minimum touch targets */
+  .btn,
+  .btn-ghost,
+  .btn-icon {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .btn-icon {
+    width: 44px;
+    height: 44px;
   }
 
   /* Modal adjustments */
   .modal-backdrop {
     padding: 16px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   }
 
   .modal {
@@ -1918,6 +1969,10 @@
     border-left: none;
   }
 
+  .ai-assistant-input {
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+
   /* Character modal full screen on mobile */
   .character-modal {
     max-width: 100%;
@@ -1931,12 +1986,46 @@
 
   .character-modal-footer {
     border-radius: 0;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   }
 
   .character-modal-top {
     flex-direction: column;
     align-items: center;
     text-align: center;
+    gap: 16px;
+  }
+
+  /* Character modal fullscreen layout for mobile */
+  .character-modal-fullscreen .character-modal-body-fullscreen {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .character-modal-fullscreen .character-modal-left {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding-right: 0;
+    padding-bottom: 16px;
+    overflow-y: visible;
+  }
+
+  .character-modal-fullscreen .character-modal-center {
+    flex: none;
+    width: 100%;
+  }
+
+  .character-modal-fullscreen .character-modal-right {
+    width: 100%;
+    flex-direction: column;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding-left: 0;
+    padding-top: 16px;
+    overflow-y: visible;
   }
 
   /* Campaign grid */
@@ -1956,8 +2045,28 @@
 
   /* FAB positioning */
   .fab {
-    bottom: calc(72px + 16px); /* Above bottom nav */
-    right: 16px;
+    bottom: calc(72px + 16px + env(safe-area-inset-bottom, 0px)); /* Above bottom nav */
+    right: calc(16px + env(safe-area-inset-right, 0px));
+  }
+
+  /* Form elements - larger touch targets */
+  .form-input,
+  .form-textarea,
+  .form-select {
+    padding: 14px 16px;
+    font-size: 16px; /* Prevents iOS zoom on focus */
+  }
+}
+
+/* Very small screens - hide dock labels */
+@media (max-width: 380px) {
+  .dock-item-label {
+    display: none;
+  }
+
+  .dock-item {
+    min-width: 48px;
+    padding: 12px;
   }
 }
 
