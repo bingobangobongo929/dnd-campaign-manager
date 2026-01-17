@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Plus, FolderPlus, Scaling, Trash2, Brain } from 'lucide-react'
+import { Plus, FolderPlus, Scaling, Trash2, Brain, Share2 } from 'lucide-react'
 import { Modal, Input, ColorPicker, IconPicker, getGroupIcon } from '@/components/ui'
 import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
+import { ShareCampaignModal } from '@/components/campaigns'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
@@ -39,6 +40,7 @@ export default function CampaignCanvasPage() {
   const [isCreateCharacterModalOpen, setIsCreateCharacterModalOpen] = useState(false)
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false)
   const [isResizeToolbarOpen, setIsResizeToolbarOpen] = useState(false)
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [viewingCharacterId, setViewingCharacterId] = useState<string | null>(null)
   const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null)
   const [groupForm, setGroupForm] = useState({ name: '', color: '#8B5CF6', icon: 'users' })
@@ -481,6 +483,14 @@ export default function CampaignCanvasPage() {
   // Canvas toolbar actions for the top bar
   const canvasActions = (
     <>
+      <button
+        className="btn btn-secondary btn-sm"
+        onClick={() => setIsShareModalOpen(true)}
+        title="Share Campaign"
+      >
+        <Share2 className="w-4 h-4" />
+        <span className="hidden sm:inline ml-1.5">Share</span>
+      </button>
       {aiEnabled && (
         <button
           className="btn btn-secondary btn-sm"
@@ -811,6 +821,16 @@ export default function CampaignCanvasPage() {
           </button>
         </div>
       </Modal>
+
+      {/* Share Campaign Modal */}
+      {campaign && (
+        <ShareCampaignModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          campaignId={campaignId}
+          campaignName={campaign.name}
+        />
+      )}
 
     </AppLayout>
   )
