@@ -66,7 +66,7 @@ function FieldLabel({ children, emoji, count }: { children: React.ReactNode; emo
 function HtmlContent({ html, className = '' }: { html: string; className?: string }) {
   return (
     <div
-      className={`prose prose-invert max-w-none text-gray-300 prose-p:mb-4 prose-p:leading-relaxed prose-ul:my-4 prose-li:my-1 ${className}`}
+      className={`prose prose-invert max-w-none text-gray-300 prose-p:mb-6 prose-p:leading-relaxed prose-ul:my-4 prose-li:my-1 ${className}`}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   )
@@ -952,7 +952,7 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
                     {/* Session Header */}
                     <div className="flex items-center gap-3 mb-3 flex-wrap">
                       <span className="text-sm font-semibold text-purple-400 bg-purple-500/15 px-2.5 py-1 rounded">
-                        Session {session.session_number || '?'}
+                        Session {session.session_number ?? '?'}
                       </span>
                       {session.session_date && (
                         <span className="text-sm text-gray-500">

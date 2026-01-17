@@ -55,6 +55,13 @@ export async function GET() {
     const oneshotIds = (userOneshots.data || []).map(o => o.id)
     const campaignIds = (userCampaigns.data || []).map(c => c.id)
 
+    console.log('Shares API - User items:', {
+      userId: user.id,
+      characterIds: characterIds.length,
+      oneshotIds: oneshotIds.length,
+      campaignIds: campaignIds.length,
+    })
+
     // Fetch shares for user's items
     let characterShares: any[] = []
     let oneshotShares: any[] = []
@@ -68,7 +75,8 @@ export async function GET() {
           vault_characters (
             id,
             name,
-            portrait_url
+            image_url,
+            detail_image_url
           )
         `)
         .in('character_id', characterIds)
@@ -77,6 +85,7 @@ export async function GET() {
         console.error('Character shares error:', error)
       } else {
         characterShares = data || []
+        console.log('Shares API - Character shares found:', characterShares.length)
       }
     }
 
@@ -163,8 +172,8 @@ export async function GET() {
       share_code: share.share_code,
       type: 'character' as const,
       item_id: share.character_id,
-      item_name: share.vault_characters.name,
-      item_image: share.vault_characters.portrait_url,
+      item_name: share.vault_characters?.name || 'Unknown Character',
+      item_image: share.vault_characters?.detail_image_url || share.vault_characters?.image_url || null,
       included_sections: share.included_sections || {},
       expires_at: share.expires_at,
       view_count: share.view_count || 0,
@@ -181,8 +190,8 @@ export async function GET() {
       share_code: share.share_code,
       type: 'oneshot' as const,
       item_id: share.oneshot_id,
-      item_name: share.oneshots.title,
-      item_image: share.oneshots.cover_image_url,
+      item_name: share.oneshots?.title || 'Unknown Oneshot',
+      item_image: share.oneshots?.cover_image_url || null,
       included_sections: share.included_sections || {},
       expires_at: share.expires_at,
       view_count: share.view_count || 0,
@@ -199,8 +208,8 @@ export async function GET() {
       share_code: share.share_code,
       type: 'campaign' as const,
       item_id: share.campaign_id,
-      item_name: share.campaigns.name,
-      item_image: share.campaigns.cover_image_url,
+      item_name: share.campaigns?.name || 'Unknown Campaign',
+      item_image: share.campaigns?.cover_image_url || null,
       included_sections: share.included_sections || {},
       expires_at: share.expires_at,
       view_count: share.view_count || 0,

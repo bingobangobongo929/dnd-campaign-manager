@@ -35,6 +35,7 @@ export interface UsageRecordParams {
   response_time_ms?: number
   success?: boolean
   error_message?: string
+  user_id?: string // Optional - pass to avoid re-authenticating
 }
 
 /**
@@ -44,9 +45,15 @@ export interface UsageRecordParams {
 export async function recordAPIUsage(params: UsageRecordParams): Promise<void> {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) {
+    // Use provided user_id or get from auth
+    let userId = params.user_id
+    if (!userId) {
+      const { data: { user } } = await supabase.auth.getUser()
+      userId = user?.id
+    }
+
+    if (!userId) {
       console.warn('Cannot record API usage: no authenticated user')
       return
     }
@@ -81,7 +88,7 @@ export async function recordAPIUsage(params: UsageRecordParams): Promise<void> {
     }
 
     const { error } = await supabase.from('api_usage').insert({
-      user_id: user.id,
+      user_id: userId,
       provider,
       model,
       endpoint,
@@ -99,7 +106,9 @@ export async function recordAPIUsage(params: UsageRecordParams): Promise<void> {
     })
 
     if (error) {
-      console.error('Failed to record API usage:', error.message)
+      console.error('Failed to record API usage:', error.message, error)
+    } else {
+      console.log('API usage recorded:', { provider, model, operation_type, userId })
     }
   } catch (error) {
     console.error('API usage tracking error:', error)

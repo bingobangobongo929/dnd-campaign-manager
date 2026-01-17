@@ -184,6 +184,7 @@ Avoid: ${negativePrompt}`
         endpoint: '/api/ai/generate-image',
         operation_type: 'image_generation',
         images_generated: 1,
+        user_id: user.id,
       })
 
       return NextResponse.json({

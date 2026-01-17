@@ -779,7 +779,7 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
                       {character.summary && (
                         <div>
                           <FieldLabel>Summary</FieldLabel>
-                          <div className="prose prose-invert max-w-none text-gray-300 prose-p:mb-4 prose-p:leading-relaxed prose-ul:my-4 prose-li:my-1" dangerouslySetInnerHTML={{ __html: character.summary }} />
+                          <div className="prose prose-invert max-w-none text-gray-300 prose-p:mb-6 prose-p:leading-relaxed prose-ul:my-4 prose-li:my-1" dangerouslySetInnerHTML={{ __html: character.summary }} />
                         </div>
                       )}
 
@@ -795,7 +795,7 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
                       {character.notes && (
                         <div>
                           <FieldLabel>Full Backstory</FieldLabel>
-                          <div className="prose prose-invert prose-lg max-w-none text-gray-300 prose-p:mb-4 prose-p:leading-relaxed prose-ul:my-4 prose-li:my-1" dangerouslySetInnerHTML={{ __html: character.notes }} />
+                          <div className="prose prose-invert prose-lg max-w-none text-gray-300 prose-p:mb-6 prose-p:leading-relaxed prose-ul:my-4 prose-li:my-1" dangerouslySetInnerHTML={{ __html: character.notes }} />
                         </div>
                       )}
 

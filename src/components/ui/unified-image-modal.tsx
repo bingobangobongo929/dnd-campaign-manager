@@ -425,7 +425,7 @@ export function UnifiedImageModal({
                   <div>
                     <p className="font-medium text-[--text-primary]">Generate with AI</p>
                     <p className="text-sm text-[--text-tertiary]">
-                      Create an image using Google Imagen
+                      Create an image with AI
                     </p>
                   </div>
                 </button>
@@ -641,7 +641,7 @@ export function UnifiedImageModal({
             Generating Image
           </p>
           <p className="text-sm text-[--text-tertiary] text-center max-w-md">
-            Using Google Imagen to create your image. This may take up to a minute...
+            Creating your image with AI. This may take up to a minute...
           </p>
         </div>
       )}

@@ -11,7 +11,7 @@ export default function ShareLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="fixed inset-0 overflow-y-auto overflow-x-hidden bg-[--bg-base]">
+    <div className="min-h-screen overflow-x-hidden bg-[--bg-base]">
       {children}
     </div>
   )
