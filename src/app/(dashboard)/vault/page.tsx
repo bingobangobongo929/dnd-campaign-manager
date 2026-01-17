@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, BookOpen, Trash2, Copy, X, CheckSquare, Square, CopyPlus, Check, LayoutGrid, Grid3X3, User, PenLine, Sparkles, ArrowUpDown, Star } from 'lucide-react'
+import { Plus, Search, Trash2, Copy, X, CheckSquare, Square, CopyPlus, Check, LayoutGrid, Grid3X3, PenLine, Sparkles, Star } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import { Modal, Dropdown } from '@/components/ui'
@@ -332,22 +332,22 @@ export default function VaultPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto space-y-12">
         {/* Page Header */}
-        <div className="page-header flex items-center justify-between">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="page-title">Character Vault</h1>
-            <p className="page-subtitle">Store characters to reuse across campaigns</p>
+            <h1 className="text-3xl font-display font-bold text-white">Character Vault</h1>
+            <p className="text-gray-400 mt-1">Store characters to reuse across campaigns</p>
           </div>
           <div className="flex items-center gap-3">
             {/* View mode toggle */}
             {vaultCharacters.length > 0 && (
-              <div className="flex items-center gap-1 p-1 bg-[--bg-elevated] rounded-lg border border-[--border]">
+              <div className="flex items-center gap-1 p-1 bg-gray-900/50 rounded-lg border border-white/[0.06]">
                 <button
                   onClick={() => setViewMode('cards')}
                   className={cn(
                     'p-2 rounded transition-colors',
-                    viewMode === 'cards' ? 'bg-[--arcane-purple] text-white' : 'text-[--text-secondary] hover:text-[--text-primary]'
+                    viewMode === 'cards' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
                   )}
                   title="Card view"
                 >
@@ -357,7 +357,7 @@ export default function VaultPage() {
                   onClick={() => setViewMode('gallery')}
                   className={cn(
                     'p-2 rounded transition-colors',
-                    viewMode === 'gallery' ? 'bg-[--arcane-purple] text-white' : 'text-[--text-secondary] hover:text-[--text-primary]'
+                    viewMode === 'gallery' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
                   )}
                   title="Gallery view"
                 >
@@ -368,8 +368,8 @@ export default function VaultPage() {
             {vaultCharacters.length > 0 && (
               <button
                 className={cn(
-                  "btn btn-secondary",
-                  selectionMode && "ring-2 ring-[--arcane-purple] ring-offset-2 ring-offset-[--bg-base]"
+                  "flex items-center gap-2 px-4 py-2.5 bg-gray-900/50 border border-white/[0.06] text-gray-300 font-medium rounded-xl hover:border-purple-500/30 transition-colors",
+                  selectionMode && "border-purple-500/50 text-purple-300"
                 )}
                 onClick={() => {
                   if (selectionMode) {
@@ -384,10 +384,10 @@ export default function VaultPage() {
               </button>
             )}
             <button
-              className="btn btn-primary"
+              className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-xl transition-colors"
               onClick={() => setIsAddModalOpen(true)}
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-5 h-5" />
               Add Character
             </button>
           </div>
@@ -395,27 +395,27 @@ export default function VaultPage() {
 
         {/* Bulk Actions Bar */}
         {selectionMode && selectedIds.size > 0 && (
-          <div className="mb-6 p-4 rounded-xl bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 flex items-center justify-between">
+          <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <span className="font-medium text-[--arcane-purple]">
+              <span className="font-medium text-purple-400">
                 {selectedIds.size} selected
               </span>
               <button
                 onClick={selectAll}
-                className="text-sm text-[--text-secondary] hover:text-[--text-primary] underline"
+                className="text-sm text-gray-400 hover:text-white underline"
               >
                 Select all ({filteredCharacters.length})
               </button>
               <button
                 onClick={() => setSelectedIds(new Set())}
-                className="text-sm text-[--text-secondary] hover:text-[--text-primary] underline"
+                className="text-sm text-gray-400 hover:text-white underline"
               >
                 Clear selection
               </button>
             </div>
             <div className="flex items-center gap-2">
               <button
-                className="btn btn-secondary flex items-center gap-2"
+                className="flex items-center gap-2 px-4 py-2 bg-gray-900/50 border border-white/[0.06] text-gray-300 font-medium rounded-lg hover:border-purple-500/30 transition-colors"
                 onClick={handleBulkDuplicate}
                 disabled={saving}
               >
@@ -423,7 +423,7 @@ export default function VaultPage() {
                 Duplicate
               </button>
               <button
-                className="btn bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 flex items-center gap-2"
+                className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-400 font-medium rounded-lg hover:bg-red-500/20 transition-colors"
                 onClick={handleBulkDelete}
               >
                 <Trash2 className="w-4 h-4" />
@@ -434,112 +434,130 @@ export default function VaultPage() {
         )}
 
         {/* Search and Filters */}
-        <div className="flex flex-col gap-4 mb-10">
-          <div className="flex gap-4">
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[--text-tertiary] pointer-events-none" />
-              <input
-                type="text"
-                className="form-input w-full"
-                style={{ paddingLeft: '48px' }}
-                placeholder="Search by name, race, class..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+        {vaultCharacters.length > 0 && (
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-4">
+              {/* Search */}
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" />
+                <input
+                  type="text"
+                  className="w-full pl-12 pr-4 py-2.5 bg-gray-900/50 border border-white/[0.06] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition-colors"
+                  placeholder="Search by name, race, class..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
 
-            {/* Type Filter */}
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as 'all' | 'pc' | 'npc')}
-              className="px-4 py-2.5 bg-[--bg-elevated] border border-[--border] rounded-xl text-[--text-primary] focus:outline-none focus:border-[--arcane-purple] cursor-pointer"
-              style={{ colorScheme: 'dark' }}
-            >
-              <option value="all" className="bg-[#1a1a24] text-white">All Types</option>
-              <option value="pc" className="bg-[#1a1a24] text-white">Player Characters</option>
-              <option value="npc" className="bg-[#1a1a24] text-white">NPCs</option>
-            </select>
-
-            {/* Status Filter */}
-            {availableStatuses.length > 0 && (
+              {/* Type Filter */}
               <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2.5 bg-[--bg-elevated] border border-[--border] rounded-xl text-[--text-primary] focus:outline-none focus:border-[--arcane-purple] cursor-pointer"
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value as 'all' | 'pc' | 'npc')}
+                className="px-4 py-2.5 bg-gray-900/50 border border-white/[0.06] rounded-xl text-gray-300 focus:outline-none focus:border-purple-500/50 cursor-pointer transition-colors"
                 style={{ colorScheme: 'dark' }}
               >
-                <option value="all" className="bg-[#1a1a24] text-white">All Statuses</option>
-                {availableStatuses.map(status => (
-                  <option key={status} value={status} className="bg-[#1a1a24] text-white">{status}</option>
-                ))}
+                <option value="all" className="bg-gray-900 text-white">All Types</option>
+                <option value="pc" className="bg-gray-900 text-white">Player Characters</option>
+                <option value="npc" className="bg-gray-900 text-white">NPCs</option>
               </select>
-            )}
 
-            {/* Sort */}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as 'updated' | 'name' | 'type' | 'created')}
-              className="px-4 py-2.5 bg-[--bg-elevated] border border-[--border] rounded-xl text-[--text-primary] focus:outline-none focus:border-[--arcane-purple] cursor-pointer"
-              style={{ colorScheme: 'dark' }}
-            >
-              <option value="updated" className="bg-[#1a1a24] text-white">Recently Updated</option>
-              <option value="created" className="bg-[#1a1a24] text-white">Recently Created</option>
-              <option value="name" className="bg-[#1a1a24] text-white">Name (A-Z)</option>
-              <option value="type" className="bg-[#1a1a24] text-white">Type (PCs First)</option>
-            </select>
-          </div>
+              {/* Status Filter */}
+              {availableStatuses.length > 0 && (
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-4 py-2.5 bg-gray-900/50 border border-white/[0.06] rounded-xl text-gray-300 focus:outline-none focus:border-purple-500/50 cursor-pointer transition-colors"
+                  style={{ colorScheme: 'dark' }}
+                >
+                  <option value="all" className="bg-gray-900 text-white">All Statuses</option>
+                  {availableStatuses.map(status => (
+                    <option key={status} value={status} className="bg-gray-900 text-white">{status}</option>
+                  ))}
+                </select>
+              )}
 
-          {/* Active Filters */}
-          {hasActiveFilters && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-[--text-tertiary]">Filters:</span>
-              {typeFilter !== 'all' && (
-                <span className="flex items-center gap-1 px-2 py-1 bg-[--arcane-purple]/20 text-[--arcane-purple] rounded-lg text-sm">
-                  {typeFilter === 'pc' ? 'Player Characters' : 'NPCs'}
-                  <button onClick={() => setTypeFilter('all')} className="hover:text-white">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-              {statusFilter !== 'all' && (
-                <span className="flex items-center gap-1 px-2 py-1 bg-[--arcane-purple]/20 text-[--arcane-purple] rounded-lg text-sm">
-                  {statusFilter}
-                  <button onClick={() => setStatusFilter('all')} className="hover:text-white">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-              <button
-                onClick={clearFilters}
-                className="text-sm text-[--text-tertiary] hover:text-[--text-secondary] underline"
+              {/* Sort */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'updated' | 'name' | 'type' | 'created')}
+                className="px-4 py-2.5 bg-gray-900/50 border border-white/[0.06] rounded-xl text-gray-300 focus:outline-none focus:border-purple-500/50 cursor-pointer transition-colors"
+                style={{ colorScheme: 'dark' }}
               >
-                Clear all
-              </button>
+                <option value="updated" className="bg-gray-900 text-white">Recently Updated</option>
+                <option value="created" className="bg-gray-900 text-white">Recently Created</option>
+                <option value="name" className="bg-gray-900 text-white">Name (A-Z)</option>
+                <option value="type" className="bg-gray-900 text-white">Type (PCs First)</option>
+              </select>
             </div>
-          )}
-        </div>
+
+            {/* Active Filters */}
+            {hasActiveFilters && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">Filters:</span>
+                {typeFilter !== 'all' && (
+                  <span className="flex items-center gap-1 px-2 py-1 bg-purple-500/20 text-purple-300 rounded-lg text-sm">
+                    {typeFilter === 'pc' ? 'Player Characters' : 'NPCs'}
+                    <button onClick={() => setTypeFilter('all')} className="hover:text-white">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {statusFilter !== 'all' && (
+                  <span className="flex items-center gap-1 px-2 py-1 bg-purple-500/20 text-purple-300 rounded-lg text-sm">
+                    {statusFilter}
+                    <button onClick={() => setStatusFilter('all')} className="hover:text-white">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                <button
+                  onClick={clearFilters}
+                  className="text-sm text-gray-500 hover:text-gray-300 underline"
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Characters Grid */}
         {filteredCharacters.length === 0 ? (
-          <div className="empty-state">
-            <BookOpen className="empty-state-icon" />
-            <h2 className="empty-state-title">
-              {searchQuery ? 'No matching characters' : 'Your vault is empty'}
-            </h2>
-            <p className="empty-state-description">
-              {searchQuery
-                ? 'Try a different search term'
-                : 'Add characters to your vault to reuse them across campaigns'}
-            </p>
-            {!searchQuery && (
-              <button
-                className="btn btn-primary"
-                onClick={() => setIsAddModalOpen(true)}
-              >
-                <Plus className="w-5 h-5" />
-                Add Character
-              </button>
+          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-purple-900/20 via-gray-900 to-gray-950 border border-white/[0.06] p-16 text-center">
+            {searchQuery ? (
+              <>
+                <Search className="w-20 h-20 mx-auto mb-6 text-purple-400/50" />
+                <h2 className="text-2xl font-display font-bold text-white mb-3">
+                  No matching characters
+                </h2>
+                <p className="text-gray-400 mb-8 max-w-md mx-auto">
+                  Try a different search term or adjust your filters.
+                </p>
+                <button
+                  onClick={() => { setSearchQuery(''); clearFilters(); }}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white font-medium rounded-xl transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                  Clear Search
+                </button>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-20 h-20 mx-auto mb-6 text-purple-400/50" />
+                <h2 className="text-2xl font-display font-bold text-white mb-3">
+                  Your Vault Awaits
+                </h2>
+                <p className="text-gray-400 mb-8 max-w-md mx-auto">
+                  Create characters once and reuse them across all your campaigns. Import from documents or build from scratch.
+                </p>
+                <button
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-xl transition-colors"
+                >
+                  <Plus className="w-5 h-5" />
+                  Add Your First Character
+                </button>
+              </>
             )}
           </div>
         ) : viewMode === 'cards' ? (
@@ -552,19 +570,17 @@ export default function VaultPage() {
                 <div
                   key={char.id}
                   className={cn(
-                    "animate-slide-in-up relative",
-                    selectionMode && isSelected && "ring-2 ring-[--arcane-purple] ring-offset-2 ring-offset-[--bg-base] rounded-xl"
+                    "relative",
+                    selectionMode && isSelected && "ring-2 ring-purple-500 ring-offset-2 ring-offset-gray-950 rounded-xl"
                   )}
-                  style={{ animationDelay: `${index * 50}ms` }}
                 >
                   {/* Selection checkbox overlay */}
                   {selectionMode && (
                     <button
-                      className="absolute top-3 left-3 z-30 w-6 h-6 rounded-md flex items-center justify-center transition-colors"
-                      style={{
-                        backgroundColor: isSelected ? 'var(--arcane-purple)' : 'rgba(26, 26, 36, 0.9)',
-                        border: isSelected ? 'none' : '2px solid rgba(255, 255, 255, 0.2)',
-                      }}
+                      className={cn(
+                        "absolute top-3 left-3 z-30 w-6 h-6 rounded-md flex items-center justify-center transition-colors",
+                        isSelected ? "bg-purple-500" : "bg-black/70 border-2 border-white/20"
+                      )}
                       onClick={(e) => {
                         e.stopPropagation()
                         toggleSelection(char.id)
@@ -593,29 +609,27 @@ export default function VaultPage() {
             })}
           </div>
         ) : (
-          /* Gallery View */
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {filteredCharacters.map((char, index) => {
+          /* Gallery View - Movie Poster Style like Oneshots */
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+            {filteredCharacters.map((char) => {
               const isSelected = selectedIds.has(char.id)
               const imageUrl = (char as any).detail_image_url || char.image_url
               return (
                 <div
                   key={char.id}
                   className={cn(
-                    "animate-slide-in-up relative group",
-                    selectionMode && isSelected && "ring-2 ring-[--arcane-purple] ring-offset-2 ring-offset-[--bg-base] rounded-xl"
+                    "relative group",
+                    selectionMode && isSelected && "ring-2 ring-purple-500 ring-offset-2 ring-offset-gray-950 rounded-xl"
                   )}
-                  style={{ animationDelay: `${index * 30}ms` }}
                   onContextMenu={(e) => !selectionMode && handleContextMenu(e, char)}
                 >
                   {/* Selection checkbox overlay */}
                   {selectionMode && (
                     <button
-                      className="absolute top-2 left-2 z-10 w-5 h-5 rounded flex items-center justify-center transition-colors"
-                      style={{
-                        backgroundColor: isSelected ? 'var(--arcane-purple)' : 'rgba(26, 26, 36, 0.9)',
-                        border: isSelected ? 'none' : '2px solid rgba(255, 255, 255, 0.2)',
-                      }}
+                      className={cn(
+                        "absolute top-2 left-2 z-10 w-5 h-5 rounded flex items-center justify-center transition-colors",
+                        isSelected ? "bg-purple-500" : "bg-black/70 border-2 border-white/20"
+                      )}
                       onClick={(e) => {
                         e.stopPropagation()
                         toggleSelection(char.id)
@@ -625,7 +639,7 @@ export default function VaultPage() {
                     </button>
                   )}
                   <div
-                    className="aspect-[2/3] rounded-xl overflow-hidden bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 transition-all cursor-pointer"
+                    className="aspect-[2/3] rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/40 transition-all cursor-pointer"
                     onClick={() => {
                       if (selectionMode) {
                         toggleSelection(char.id)
@@ -635,27 +649,48 @@ export default function VaultPage() {
                     }}
                   >
                     {imageUrl ? (
-                      <Image
-                        src={imageUrl}
-                        alt={char.name}
-                        fill
-                        className="object-cover transition-transform group-hover:scale-105"
-                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
-                      />
+                      <>
+                        <Image
+                          src={imageUrl}
+                          alt={char.name}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                      </>
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-[--bg-hover]">
-                        <User className="w-12 h-12 text-[--text-tertiary] mb-2" />
-                        <span className="text-2xl font-bold text-[--text-tertiary]">
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/30 to-gray-900">
+                        <span className="text-4xl font-bold text-purple-400/30">
                           {getInitials(char.name)}
                         </span>
                       </div>
                     )}
-                    {/* Hover overlay with name */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="absolute bottom-0 left-0 right-0 p-3">
-                        <p className="text-white text-sm font-medium truncate">{char.name}</p>
-                        <p className="text-white/70 text-xs">{char.type === 'pc' ? 'PC' : 'NPC'}</p>
-                      </div>
+
+                    {/* Type badge at top */}
+                    <div className="absolute top-3 left-3">
+                      <span
+                        className={cn(
+                          "px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded",
+                          char.type === 'pc'
+                            ? "bg-purple-500/40 text-purple-300"
+                            : "bg-gray-500/40 text-gray-300"
+                        )}
+                      >
+                        {char.type}
+                      </span>
+                    </div>
+
+                    {/* Content at bottom */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                      <h4 className="font-semibold text-white text-sm line-clamp-2 group-hover:text-purple-300 transition-colors">
+                        {char.name}
+                      </h4>
+                      {(char.race || char.class) && (
+                        <p className="text-[11px] text-gray-400 mt-1 line-clamp-1">
+                          {[char.race, char.class].filter(Boolean).join(' • ')}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -664,47 +699,34 @@ export default function VaultPage() {
           </div>
         )}
 
-        {/* FAB */}
-        {filteredCharacters.length > 0 && (
-          <button
-            className="fab"
-            onClick={() => setIsAddModalOpen(true)}
-            aria-label="Add character"
-          >
-            <Plus className="fab-icon" />
-          </button>
-        )}
-
         {/* Context Menu */}
         {contextMenu && (
           <div
-            className="fixed z-50 py-2 min-w-[180px] rounded-xl shadow-xl"
+            className="fixed z-50 py-2 min-w-[180px] rounded-xl shadow-xl bg-gray-900 border border-white/10"
             style={{
               left: contextMenu.x,
               top: contextMenu.y,
-              backgroundColor: '#1a1a24',
-              border: '1px solid rgba(255,255,255,0.1)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              className="w-full px-4 py-2.5 text-left text-sm text-[--text-primary] hover:bg-[--bg-hover] flex items-center gap-3 transition-colors"
+              className="w-full px-4 py-2.5 text-left text-sm text-gray-200 hover:bg-white/5 flex items-center gap-3 transition-colors"
               onClick={() => {
                 togglePinned(contextMenu.character.id)
                 setContextMenu(null)
               }}
             >
-              <Star className={cn('w-4 h-4', pinnedIds.has(contextMenu.character.id) ? 'text-amber-400 fill-amber-400' : 'text-[--text-secondary]')} />
+              <Star className={cn('w-4 h-4', pinnedIds.has(contextMenu.character.id) ? 'text-amber-400 fill-amber-400' : 'text-gray-500')} />
               {pinnedIds.has(contextMenu.character.id) ? 'Unpin from Top' : 'Pin to Top'}
             </button>
             <button
-              className="w-full px-4 py-2.5 text-left text-sm text-[--text-primary] hover:bg-[--bg-hover] flex items-center gap-3 transition-colors"
+              className="w-full px-4 py-2.5 text-left text-sm text-gray-200 hover:bg-white/5 flex items-center gap-3 transition-colors"
               onClick={() => openCopyModal(contextMenu.character)}
             >
-              <Copy className="w-4 h-4 text-[--text-secondary]" />
+              <Copy className="w-4 h-4 text-gray-500" />
               Copy to Campaign
             </button>
-            <div className="my-1 border-t border-[--border]" />
+            <div className="my-1 border-t border-white/[0.06]" />
             <button
               className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-3 transition-colors"
               onClick={() => handleDelete(contextMenu.character.id)}
@@ -760,12 +782,12 @@ export default function VaultPage() {
         {/* Gallery Lightbox */}
         {lightboxCharacter && (
           <div
-            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
             onClick={() => setLightboxCharacter(null)}
           >
             <button
               onClick={() => setLightboxCharacter(null)}
-              className="absolute top-4 right-4 p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors"
+              className="absolute top-4 right-4 p-2.5 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors"
             >
               <X className="w-6 h-6" />
             </button>
@@ -778,20 +800,19 @@ export default function VaultPage() {
                   <img
                     src={(lightboxCharacter as any).detail_image_url || lightboxCharacter.image_url}
                     alt={lightboxCharacter.name}
-                    className="max-w-full max-h-[75vh] object-contain rounded-lg"
+                    className="max-w-full max-h-[75vh] object-contain rounded-xl"
                   />
                 ) : (
-                  <div className="w-64 h-96 bg-[--bg-elevated] rounded-lg flex flex-col items-center justify-center">
-                    <User className="w-24 h-24 text-[--text-tertiary] mb-4" />
-                    <span className="text-4xl font-bold text-[--text-tertiary]">
+                  <div className="w-64 h-96 bg-gradient-to-br from-purple-900/30 to-gray-900 rounded-xl flex flex-col items-center justify-center">
+                    <span className="text-6xl font-bold text-purple-400/30">
                       {getInitials(lightboxCharacter.name)}
                     </span>
                   </div>
                 )}
               </div>
-              <div className="mt-4 text-center">
-                <h3 className="text-xl font-semibold text-white">{lightboxCharacter.name}</h3>
-                <p className="text-white/70 text-sm mt-1">
+              <div className="mt-6 text-center">
+                <h3 className="text-2xl font-display font-bold text-white">{lightboxCharacter.name}</h3>
+                <p className="text-gray-400 text-sm mt-2">
                   {lightboxCharacter.type === 'pc' ? 'Player Character' : 'NPC'}
                   {lightboxCharacter.race && ` • ${lightboxCharacter.race}`}
                   {lightboxCharacter.class && ` • ${lightboxCharacter.class}`}
@@ -801,7 +822,7 @@ export default function VaultPage() {
                     setLightboxCharacter(null)
                     router.push(`/vault/${lightboxCharacter.id}`)
                   }}
-                  className="mt-4 btn btn-primary"
+                  className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-xl transition-colors"
                 >
                   View Details
                 </button>
@@ -824,13 +845,13 @@ export default function VaultPage() {
                 setIsAddModalOpen(false)
                 router.push('/vault/import')
               }}
-              className="group p-6 rounded-xl border border-[--border] bg-[--bg-elevated] hover:border-[--arcane-purple]/50 hover:bg-[--arcane-purple]/5 transition-all text-left"
+              className="group p-6 rounded-xl border border-white/[0.06] bg-gray-900/50 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all text-left"
             >
-              <div className="w-12 h-12 rounded-xl bg-[--arcane-purple]/20 flex items-center justify-center mb-4 group-hover:bg-[--arcane-purple]/30 transition-colors">
-                <Sparkles className="w-6 h-6 text-[--arcane-purple]" />
+              <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center mb-4 group-hover:bg-purple-500/30 transition-colors">
+                <Sparkles className="w-6 h-6 text-purple-400" />
               </div>
-              <h3 className="font-semibold text-[--text-primary] mb-1">Import with AI</h3>
-              <p className="text-sm text-[--text-secondary]">
+              <h3 className="font-semibold text-white mb-1">Import with AI</h3>
+              <p className="text-sm text-gray-400">
                 Upload a document (.docx, .pdf, image) and let AI extract your character data
               </p>
             </button>
@@ -841,13 +862,13 @@ export default function VaultPage() {
                 setIsAddModalOpen(false)
                 router.push('/vault/new')
               }}
-              className="group p-6 rounded-xl border border-[--border] bg-[--bg-elevated] hover:border-[--arcane-purple]/50 hover:bg-[--arcane-purple]/5 transition-all text-left"
+              className="group p-6 rounded-xl border border-white/[0.06] bg-gray-900/50 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all text-left"
             >
               <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-4 group-hover:bg-emerald-500/30 transition-colors">
                 <PenLine className="w-6 h-6 text-emerald-400" />
               </div>
-              <h3 className="font-semibold text-[--text-primary] mb-1">Create from Scratch</h3>
-              <p className="text-sm text-[--text-secondary]">
+              <h3 className="font-semibold text-white mb-1">Create from Scratch</h3>
+              <p className="text-sm text-gray-400">
                 Start with a blank editor and build your character manually
               </p>
             </button>
