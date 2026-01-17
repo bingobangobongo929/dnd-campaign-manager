@@ -10,12 +10,9 @@ import {
   Download,
   Trash2,
   AlertTriangle,
-  HardDrive,
   Keyboard,
   Shield,
   ChevronRight,
-  ChevronDown,
-  ExternalLink,
   BarChart3,
   Loader2,
   Zap,
@@ -26,7 +23,6 @@ import {
   Info,
   Github,
   MessageSquare,
-  Eye,
   Scroll,
   Map,
   BookOpen,
@@ -66,10 +62,9 @@ export default function SettingsPage() {
   // Stats state
   const [stats, setStats] = useState({
     campaigns: 0,
-    characters: 0,
+    characters: 0, // Vault characters (user's main characters)
     sessions: 0,
     oneshots: 0,
-    vaultCharacters: 0,
   })
   const [loadingStats, setLoadingStats] = useState(true)
 
@@ -117,12 +112,11 @@ export default function SettingsPage() {
 
   const loadStats = async () => {
     setLoadingStats(true)
-    const [campaignsRes, charsRes, sessionsRes, oneshotsRes, vaultRes] = await Promise.all([
+    const [campaignsRes, charsRes, sessionsRes, oneshotsRes] = await Promise.all([
       supabase.from('campaigns').select('id', { count: 'exact', head: true }).eq('user_id', user!.id),
-      supabase.from('characters').select('id', { count: 'exact', head: true }),
+      supabase.from('vault_characters').select('id', { count: 'exact', head: true }).eq('user_id', user!.id),
       supabase.from('sessions').select('id', { count: 'exact', head: true }),
       supabase.from('oneshots').select('id', { count: 'exact', head: true }).eq('user_id', user!.id),
-      supabase.from('vault_characters').select('id', { count: 'exact', head: true }).eq('user_id', user!.id),
     ])
 
     setStats({
@@ -130,7 +124,6 @@ export default function SettingsPage() {
       characters: charsRes.count || 0,
       sessions: sessionsRes.count || 0,
       oneshots: oneshotsRes.count || 0,
-      vaultCharacters: vaultRes.count || 0,
     })
     setLoadingStats(false)
   }
@@ -547,13 +540,12 @@ export default function SettingsPage() {
 
           <div className="card p-5 space-y-5">
             {/* Content Stats */}
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
                 { label: 'Campaigns', value: stats.campaigns, icon: Map },
                 { label: 'Characters', value: stats.characters, icon: User },
                 { label: 'Sessions', value: stats.sessions, icon: BookOpen },
                 { label: 'One-Shots', value: stats.oneshots, icon: Scroll },
-                { label: 'Vault', value: stats.vaultCharacters, icon: HardDrive },
               ].map((stat) => (
                 <div key={stat.label} className="p-3 rounded-lg bg-[--bg-elevated] text-center">
                   <stat.icon className="w-4 h-4 mx-auto mb-1 text-[--text-tertiary]" />
@@ -778,10 +770,10 @@ export default function SettingsPage() {
               This will permanently delete:
             </p>
             <ul className="text-sm text-red-400/80 space-y-1">
-              <li>• {stats.campaigns} campaigns and their characters</li>
+              <li>• {stats.campaigns} campaigns and their NPCs</li>
+              <li>• {stats.characters} characters</li>
               <li>• {stats.sessions} session notes</li>
               <li>• {stats.oneshots} one-shots</li>
-              <li>• {stats.vaultCharacters} vault characters</li>
             </ul>
           </div>
 
