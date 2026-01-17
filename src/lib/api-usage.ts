@@ -87,7 +87,7 @@ export async function recordAPIUsage(params: UsageRecordParams): Promise<void> {
       estimated_cost_cents += images_generated * imageCost
     }
 
-    const { error } = await supabase.from('api_usage').insert({
+    const insertData = {
       user_id: userId,
       provider,
       model,
@@ -98,17 +98,26 @@ export async function recordAPIUsage(params: UsageRecordParams): Promise<void> {
       total_tokens: input_tokens + output_tokens,
       images_generated,
       estimated_cost_cents,
-      campaign_id,
-      character_id,
-      response_time_ms,
+      campaign_id: campaign_id || null,
+      character_id: character_id || null,
+      response_time_ms: response_time_ms || null,
       success,
-      error_message,
-    })
+      error_message: error_message || null,
+    }
+
+    console.log('Attempting to record API usage:', insertData)
+
+    const { data, error } = await supabase.from('api_usage').insert(insertData).select()
 
     if (error) {
-      console.error('Failed to record API usage:', error.message, error)
+      console.error('Failed to record API usage:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      })
     } else {
-      console.log('API usage recorded:', { provider, model, operation_type, userId })
+      console.log('API usage recorded successfully:', data)
     }
   } catch (error) {
     console.error('API usage tracking error:', error)

@@ -286,6 +286,16 @@ Avoid: ${negativePrompt}`
         }, { status: 422 })
       }
 
+      // Record API usage for Imagen
+      await recordAPIUsage({
+        provider: 'google',
+        model,
+        endpoint: '/api/ai/generate-image',
+        operation_type: 'image_generation',
+        images_generated: predictions.length,
+        user_id: user.id,
+      })
+
       return NextResponse.json({
         success: true,
         image: {
