@@ -2,12 +2,13 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Settings, Share2 } from 'lucide-react'
+import { Settings, Share2, History } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 
 const SETTINGS_TABS = [
   { href: '/settings', label: 'General', icon: Settings, exact: true },
   { href: '/settings/shares', label: 'Share Analytics', icon: Share2 },
+  { href: '/settings/activity', label: 'Activity Log', icon: History },
 ]
 
 export default function SettingsLayout({

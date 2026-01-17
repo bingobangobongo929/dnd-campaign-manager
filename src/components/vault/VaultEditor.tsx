@@ -13,7 +13,9 @@ import TextAlign from '@tiptap/extension-text-align'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { cn, getInitials } from '@/lib/utils'
-import { useAutoSave } from '@/hooks'
+import { useVersionedAutoSave } from '@/hooks/useAutoSave'
+import { logActivity, diffChanges } from '@/lib/activity-log'
+import { AlertTriangle, RefreshCw } from 'lucide-react'
 import {
   X,
   User,
@@ -65,9 +67,11 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
   })
 
   const [characterId, setCharacterId] = useState<string | null>(character?.id || null)
+  const [characterVersion, setCharacterVersion] = useState((character as any)?.version || 1)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [originalData, setOriginalData] = useState(character) // For diff tracking
 
   // Crop modal state
   const [cropModalOpen, setCropModalOpen] = useState(false)
@@ -247,41 +251,99 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
     setPendingImageSrc(null)
   }, [pendingImageSrc])
 
-  // Auto-save
-  const saveCharacter = useCallback(async () => {
-    if (!formData.name.trim()) return
+  // Auto-save with version checking
+  const saveCharacter = useCallback(async (data: typeof formData, expectedVersion: number): Promise<{ success: boolean; conflict?: boolean; newVersion?: number; error?: string }> => {
+    if (!data.name.trim()) return { success: false, error: 'Name required' }
+
+    const { data: userData } = await supabase.auth.getUser()
+    if (!userData.user) return { success: false, error: 'Not authenticated' }
 
     const characterData = {
-      name: formData.name.trim(),
-      summary: formData.summary.trim() || null,
-      type: formData.type,
-      image_url: formData.image_url,
-      detail_image_url: formData.detail_image_url,
-      notes: formData.notes,
+      name: data.name.trim(),
+      summary: data.summary.trim() || null,
+      type: data.type,
+      image_url: data.image_url,
+      detail_image_url: data.detail_image_url,
+      notes: data.notes,
       updated_at: new Date().toISOString(),
     }
 
     if (characterId) {
-      await supabase.from('vault_characters').update(characterData).eq('id', characterId)
-    } else {
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData.user) throw new Error('Not authenticated')
-
-      const { data } = await supabase
+      // Check version before update
+      const { data: current } = await supabase
         .from('vault_characters')
-        .insert({ ...characterData, user_id: userData.user.id })
+        .select('version')
+        .eq('id', characterId)
+        .single()
+
+      if (current && current.version !== expectedVersion) {
+        return {
+          success: false,
+          conflict: true,
+          newVersion: current.version,
+          error: `This character was edited elsewhere. Your version: ${expectedVersion}, Server version: ${current.version}`,
+        }
+      }
+
+      const newVersion = expectedVersion + 1
+      const { error } = await supabase
+        .from('vault_characters')
+        .update({ ...characterData, version: newVersion })
+        .eq('id', characterId)
+        .eq('version', expectedVersion) // Ensure version matches
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      // Log activity
+      const changes = diffChanges(originalData as any, characterData, ['name', 'summary', 'notes', 'type'])
+      if (changes) {
+        logActivity(supabase, userData.user.id, {
+          action: 'character.edit',
+          entity_type: 'character',
+          entity_id: characterId,
+          entity_name: data.name.trim(),
+          changes,
+        })
+      }
+
+      setCharacterVersion(newVersion)
+      return { success: true, newVersion }
+    } else {
+      // Create new character
+      const { data: newChar, error } = await supabase
+        .from('vault_characters')
+        .insert({ ...characterData, user_id: userData.user.id, version: 1 })
         .select()
         .single()
 
-      if (data) {
-        setCharacterId(data.id)
-        window.history.replaceState(null, '', `/vault/${data.id}`)
+      if (error) {
+        return { success: false, error: error.message }
       }
-    }
-  }, [formData, characterId, supabase])
 
-  const { status } = useAutoSave({
+      if (newChar) {
+        setCharacterId(newChar.id)
+        setCharacterVersion(1)
+        setOriginalData(newChar)
+        window.history.replaceState(null, '', `/vault/${newChar.id}`)
+
+        // Log activity
+        logActivity(supabase, userData.user.id, {
+          action: 'character.create',
+          entity_type: 'character',
+          entity_id: newChar.id,
+          entity_name: data.name.trim(),
+        })
+      }
+
+      return { success: true, newVersion: 1 }
+    }
+  }, [characterId, supabase, originalData])
+
+  const { status, hasConflict, conflictInfo } = useVersionedAutoSave({
     data: formData,
+    version: characterVersion,
     onSave: saveCharacter,
     delay: 1500,
     enabled: !!formData.name.trim(),
@@ -604,7 +666,9 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
                   {formData.name || (isCreateMode ? 'New Character' : 'Edit Character')}
                 </h2>
                 <p className="text-xs text-[--text-tertiary]">
-                  {status === 'saving' ? 'Saving...' : status === 'saved' ? 'All changes saved' : isCreateMode && !characterId ? 'Enter a name to start' : ''}
+                  {status === 'conflict' ? (
+                    <span className="text-amber-400">Conflict detected - reload required</span>
+                  ) : status === 'saving' ? 'Saving...' : status === 'saved' ? 'All changes saved' : isCreateMode && !characterId ? 'Enter a name to start' : ''}
                 </p>
               </div>
             </div>
@@ -624,6 +688,26 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
               </button>
             </div>
           </div>
+
+          {/* Conflict Warning Banner */}
+          {hasConflict && (
+            <div className="px-6 py-3 bg-amber-500/10 border-b border-amber-500/30 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-400" />
+                <div>
+                  <p className="text-sm font-medium text-amber-400">This character was modified elsewhere</p>
+                  <p className="text-xs text-amber-400/70">Your changes may conflict with the latest version. Reload to see updates.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => window.location.reload()}
+                className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-black font-medium rounded-lg hover:bg-amber-400 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Reload
+              </button>
+            </div>
+          )}
 
           {/* Body - Different layouts for normal vs fullscreen */}
           {isFullscreen ? (

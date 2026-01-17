@@ -14,13 +14,16 @@ import {
   ChevronDown,
   ChevronUp,
   Wand2,
+  AlertTriangle,
+  RefreshCw,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AppLayout } from '@/components/layout/app-layout'
 import { Button, Input } from '@/components/ui'
 import { RichTextEditor } from '@/components/editor'
 import { createClient } from '@/lib/supabase/client'
-import { useAutoSave } from '@/hooks'
+import { useVersionedAutoSave } from '@/hooks/useAutoSave'
+import { logActivity, diffChanges } from '@/lib/activity-log'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 import type { PlayJournal, VaultCharacter } from '@/types/database'
@@ -37,6 +40,8 @@ export default function VaultSessionEditorPage() {
 
   const [character, setCharacter] = useState<VaultCharacter | null>(null)
   const [session, setSession] = useState<PlayJournal | null>(null)
+  const [sessionVersion, setSessionVersion] = useState(1)
+  const [originalData, setOriginalData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
 
@@ -94,6 +99,8 @@ export default function VaultSessionEditorPage() {
       }
 
       setSession(sessionData)
+      setSessionVersion((sessionData as any).version || 1)
+      setOriginalData(sessionData)
       setFormData({
         session_number: sessionData.session_number?.toString() || '',
         session_date: sessionData.session_date || '',
@@ -134,33 +141,73 @@ export default function VaultSessionEditorPage() {
     setHasLoadedOnce(true)
   }
 
-  // Auto-save functionality
-  const saveSession = useCallback(async () => {
-    if (isNew) return // Don't auto-save new entries
+  // Auto-save functionality with version checking
+  const saveSession = useCallback(async (data: typeof formData, expectedVersion: number): Promise<{ success: boolean; conflict?: boolean; newVersion?: number; error?: string }> => {
+    if (isNew) return { success: false, error: 'Cannot auto-save new entries' }
 
+    const { data: userData } = await supabase.auth.getUser()
+    if (!userData.user) return { success: false, error: 'Not authenticated' }
+
+    // Check version before update
+    const { data: current } = await supabase
+      .from('play_journal')
+      .select('version')
+      .eq('id', sessionId)
+      .single()
+
+    if (current && current.version !== expectedVersion) {
+      return {
+        success: false,
+        conflict: true,
+        newVersion: current.version,
+        error: `This session was edited elsewhere. Your version: ${expectedVersion}, Server version: ${current.version}`,
+      }
+    }
+
+    const newVersion = expectedVersion + 1
     const payload = {
-      session_number: formData.session_number ? parseInt(formData.session_number) : null,
-      session_date: formData.session_date || null,
-      title: formData.title || null,
-      campaign_name: formData.campaign_name || null,
-      summary: formData.summary || null,
-      notes: formData.notes || '',
+      session_number: data.session_number ? parseInt(data.session_number) : null,
+      session_date: data.session_date || null,
+      title: data.title || null,
+      campaign_name: data.campaign_name || null,
+      summary: data.summary || null,
+      notes: data.notes || '',
+      version: newVersion,
+      updated_at: new Date().toISOString(),
     }
 
     const { error } = await supabase
       .from('play_journal')
       .update(payload)
       .eq('id', sessionId)
+      .eq('version', expectedVersion)
 
     if (error) {
-      console.error('Save error:', error)
+      return { success: false, error: error.message }
     }
-  }, [formData, sessionId, isNew, supabase])
 
-  const { status } = useAutoSave({
+    // Log activity
+    const changes = diffChanges(originalData, payload, ['title', 'summary', 'notes'])
+    if (changes) {
+      logActivity(supabase, userData.user.id, {
+        action: 'session.edit',
+        entity_type: 'session',
+        entity_id: sessionId,
+        entity_name: data.title || `Session ${data.session_number}`,
+        changes,
+      })
+    }
+
+    setSessionVersion(newVersion)
+    return { success: true, newVersion }
+  }, [formData, sessionId, isNew, supabase, originalData])
+
+  const { status, hasConflict } = useVersionedAutoSave({
     data: formData,
+    version: sessionVersion,
     onSave: saveSession,
     delay: 1500,
+    enabled: !isNew,
     showToast: !isNew,
     toastMessage: 'Session saved',
   })
@@ -407,6 +454,26 @@ export default function VaultSessionEditorPage() {
 
   return (
     <AppLayout characterId={characterId}>
+      {/* Conflict Warning Banner */}
+      {hasConflict && (
+        <div className="bg-amber-500/10 border-b border-amber-500/30 px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400" />
+            <div>
+              <p className="text-sm font-medium text-amber-400">This session was modified elsewhere</p>
+              <p className="text-xs text-amber-400/70">Your changes may conflict with the latest version. Reload to see updates.</p>
+            </div>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-black font-medium rounded-lg hover:bg-amber-400 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Reload
+          </button>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-10">
@@ -455,8 +522,9 @@ export default function VaultSessionEditorPage() {
               {!isNew && (
                 <span className={cn(
                   "text-sm transition-opacity",
-                  status === 'saving' ? 'text-[--text-tertiary]' : 'text-[--text-tertiary] opacity-60'
+                  status === 'conflict' ? 'text-amber-400' : status === 'saving' ? 'text-[--text-tertiary]' : 'text-[--text-tertiary] opacity-60'
                 )}>
+                  {status === 'conflict' && 'Conflict detected'}
                   {status === 'saving' && 'Saving...'}
                   {status === 'saved' && 'Saved'}
                   {status === 'idle' && 'All changes saved'}
