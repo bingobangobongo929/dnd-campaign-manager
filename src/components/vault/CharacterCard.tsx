@@ -32,9 +32,12 @@ export function CharacterCard({
 }: CharacterCardProps) {
   const [imageError, setImageError] = useState(false)
 
-  // Strip HTML and limit summary length
+  // Use detail_image_url (2:3) if available, fallback to image_url
+  const imageUrl = (character as any).detail_image_url || character.image_url
+
+  // Strip HTML - no char limit since we use line-clamp
   const summaryText = character.summary
-    ? character.summary.replace(/<[^>]*>/g, '').substring(0, 300)
+    ? character.summary.replace(/<[^>]*>/g, '')
     : null
 
   return (
@@ -116,18 +119,18 @@ export function CharacterCard({
         onClick={onClick}
         className="w-full text-left focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-inset"
       >
-        {/* Portrait - 4:3 aspect ratio */}
-        <div className="relative w-full aspect-[4/3]">
-          {character.image_url && !imageError ? (
+        {/* Portrait - 2:3 aspect ratio (800x1200) */}
+        <div className="relative w-full aspect-[2/3]">
+          {imageUrl && !imageError ? (
             <>
               <Image
-                src={character.image_url}
+                src={imageUrl}
                 alt={character.name}
                 fill
                 className="object-cover transition-transform duration-500 group-hover:scale-105"
                 sizes="(max-width: 768px) 100vw, 33vw"
                 onError={() => setImageError(true)}
-                unoptimized={character.image_url.includes('.svg') || character.image_url.includes('dicebear')}
+                unoptimized={imageUrl.includes('.svg') || imageUrl.includes('dicebear')}
               />
               {/* Subtle vignette overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
@@ -173,9 +176,9 @@ export function CharacterCard({
             )}
           </div>
 
-          {/* Summary - more room, 3 lines */}
+          {/* Summary - 4 lines to fit full descriptions */}
           {summaryText && (
-            <p className="text-sm text-gray-400 line-clamp-3 leading-relaxed">
+            <p className="text-sm text-gray-400 line-clamp-4 leading-relaxed">
               {summaryText}
             </p>
           )}

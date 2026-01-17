@@ -201,8 +201,8 @@ export function VaultImageCropModal({
                 : 'text-[--text-secondary] hover:bg-[--bg-hover]'
             )}
           >
-            <div className="w-4 h-3 border-2 border-current rounded-sm" />
-            Detail (4:3)
+            <div className="w-3 h-4 border-2 border-current rounded-sm" />
+            Detail (2:3)
             {completedDetailCrop && <Check className="w-3 h-3 text-green-400" />}
           </button>
         </div>
