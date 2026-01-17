@@ -84,7 +84,7 @@ export function FloatingDock({ campaignId, characterId }: FloatingDockProps) {
       <Link
         href="/home"
         className="dock-item dock-logo"
-        title="Realm"
+        title="Name TBD"
       >
         <svg
           className="dock-item-icon dock-logo-icon"
@@ -101,7 +101,7 @@ export function FloatingDock({ campaignId, characterId }: FloatingDockProps) {
           <path d="M3 5h4" />
           <path d="M17 19h4" />
         </svg>
-        <span className="dock-item-label">Realm</span>
+        <span className="dock-item-label">Name TBD</span>
       </Link>
       <div className="dock-divider" />
 
