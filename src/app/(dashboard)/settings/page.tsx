@@ -19,7 +19,7 @@ import {
   Loader2,
   Zap,
   ImageIcon,
-  DollarSign,
+  PoundSterling,
   Share2,
 } from 'lucide-react'
 // AppLayout is provided by settings/layout.tsx
@@ -344,9 +344,9 @@ export default function SettingsPage() {
                       <p className="text-xs text-[--text-tertiary]">Images</p>
                     </div>
                     <div className="p-4 rounded-xl bg-[--bg-elevated] border border-[--border]">
-                      <DollarSign className="w-5 h-5 text-cyan-500 mb-2" />
+                      <PoundSterling className="w-5 h-5 text-cyan-500 mb-2" />
                       <p className="text-2xl font-bold text-[--text-primary]">
-                        ${apiUsage.summary.totalCostDollars}
+                        £{apiUsage.summary.totalCostPounds}
                       </p>
                       <p className="text-xs text-[--text-tertiary]">Est. Cost</p>
                     </div>
@@ -614,7 +614,7 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-4 text-sm">
                       <span className="text-[--text-tertiary]">{data.requests} requests</span>
                       <span className="text-[--text-tertiary]">{(data.tokens / 1000).toFixed(1)}K tokens</span>
-                      <span className="text-emerald-400 font-medium">${(data.cost / 100).toFixed(2)}</span>
+                      <span className="text-emerald-400 font-medium">£{((data.cost / 100) * 0.80).toFixed(2)}</span>
                     </div>
                   </div>
                 ))}
@@ -642,7 +642,7 @@ export default function SettingsPage() {
                       <span className="text-[--text-primary]">{opLabels[operation] || operation}</span>
                       <div className="flex items-center gap-4 text-sm">
                         <span className="text-[--text-tertiary]">{data.requests} requests</span>
-                        <span className="text-emerald-400 font-medium">${(data.cost / 100).toFixed(2)}</span>
+                        <span className="text-emerald-400 font-medium">£{((data.cost / 100) * 0.80).toFixed(2)}</span>
                       </div>
                     </div>
                   )
@@ -652,8 +652,8 @@ export default function SettingsPage() {
 
             {/* Note about estimates */}
             <p className="text-xs text-[--text-tertiary] text-center pt-2 border-t border-[--border]">
-              Cost estimates are approximate and based on published API pricing.
-              Actual costs may vary based on your billing arrangements.
+              Cost estimates are approximate, converted from USD at £0.80/$1.
+              Actual costs may vary based on exchange rates and billing arrangements.
             </p>
           </div>
         )}

@@ -195,6 +195,10 @@ export async function GET(req: Request) {
         created_at: r.created_at,
       }))
 
+    // Convert USD cents to GBP (approximate rate: 0.80 GBP per USD)
+    const USD_TO_GBP = 0.80
+    const totalCostPounds = ((totalCostCents / 100) * USD_TO_GBP).toFixed(2)
+
     return NextResponse.json({
       period,
       startDate: startDate.toISOString(),
@@ -204,6 +208,7 @@ export async function GET(req: Request) {
         totalImages,
         totalCostCents,
         totalCostDollars: (totalCostCents / 100).toFixed(2),
+        totalCostPounds,
       },
       byProvider,
       byOperation,
