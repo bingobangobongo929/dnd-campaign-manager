@@ -186,7 +186,7 @@ export default function CampaignsPage() {
                   href={`/campaigns/${featuredCampaign.id}/canvas`}
                   className="relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-purple-500/30 transition-all duration-500"
                 >
-                  <div className="relative h-[350px] md:h-[450px]">
+                  <div className="relative h-[350px] md:h-[450px] overflow-hidden">
                     {featuredCampaign.image_url ? (
                       <>
                         <Image
@@ -267,7 +267,7 @@ export default function CampaignsPage() {
                         className="relative block rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/40 transition-all"
                       >
                         {/* Large Image */}
-                        <div className="relative h-48 sm:h-56">
+                        <div className="relative h-48 sm:h-56 overflow-hidden">
                           {campaign.image_url ? (
                             <>
                               <Image

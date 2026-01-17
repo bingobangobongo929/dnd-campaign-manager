@@ -120,7 +120,7 @@ export function CharacterCard({
         className="w-full text-left focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-inset"
       >
         {/* Portrait - 2:3 aspect ratio (800x1200) */}
-        <div className="relative w-full aspect-[2/3]">
+        <div className="relative w-full aspect-[2/3] overflow-hidden">
           {imageUrl && !imageError ? (
             <>
               <Image

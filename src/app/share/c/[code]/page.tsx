@@ -56,12 +56,13 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
   const imageUrl = character.detail_image_url || character.image_url
 
   return {
-    title: `${title} | Character Profile`,
+    title,
     description,
     openGraph: {
       title,
       description,
       type: 'profile',
+      siteName: 'Campaign Manager',
       images: imageUrl ? [{ url: imageUrl, width: 400, height: 600, alt: character.name }] : [],
     },
     twitter: {

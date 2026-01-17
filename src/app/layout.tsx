@@ -15,8 +15,32 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Campaign Manager",
-  description: "AI-powered campaign management for TTRPGs",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://campaign-manager.vercel.app'),
+  title: {
+    default: "Campaign Manager",
+    template: "%s | Campaign Manager",
+  },
+  description: "Your tabletop adventures, organized. Track campaigns, build characters, and chronicle your epic journeys.",
+  keywords: ["D&D", "Dungeons & Dragons", "TTRPG", "campaign manager", "character tracker", "tabletop RPG"],
+  authors: [{ name: "Campaign Manager" }],
+  openGraph: {
+    title: "Campaign Manager",
+    description: "Your tabletop adventures, organized. Track campaigns, build characters, and chronicle your epic journeys.",
+    type: "website",
+    siteName: "Campaign Manager",
+    locale: "en_US",
+    // OG image is auto-generated from opengraph-image.tsx
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Campaign Manager",
+    description: "Your tabletop adventures, organized. Track campaigns, build characters, and chronicle your epic journeys.",
+    // Twitter image is auto-generated from opengraph-image.tsx
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 }
 
 export default function RootLayout({

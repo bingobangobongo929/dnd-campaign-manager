@@ -1,8 +1,11 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Shared Content - Campaign Manager',
-  description: 'View shared character, oneshot, or campaign content',
+  title: {
+    default: 'Shared Content',
+    template: '%s | Campaign Manager',
+  },
+  description: 'View shared tabletop RPG content - characters, campaigns, and adventures.',
 }
 
 export default function ShareLayout({

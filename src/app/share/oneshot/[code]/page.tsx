@@ -53,12 +53,13 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
   const imageUrl = oneshot.image_url
 
   return {
-    title: `${title} | One-Shot Adventure`,
+    title,
     description,
     openGraph: {
       title,
       description,
       type: 'website',
+      siteName: 'Campaign Manager',
       images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630, alt: oneshot.title }] : [],
     },
     twitter: {
