@@ -775,7 +775,6 @@ export function CharacterModal({
                           </div>
                         )}
                       </div>
-                    </div>
                   </div>
 
                   {/* Factions & Tags */}
