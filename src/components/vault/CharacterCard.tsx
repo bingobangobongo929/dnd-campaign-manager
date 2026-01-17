@@ -3,14 +3,15 @@
 import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import Image from 'next/image'
-import { Edit3, Share2, Star, MoreHorizontal } from 'lucide-react'
+import { Eye, Share2, Star, MoreHorizontal, BookOpen } from 'lucide-react'
 import { cn, getInitials } from '@/lib/utils'
 import type { VaultCharacter } from '@/types/database'
 
 interface CharacterCardProps {
   character: VaultCharacter
   onClick: () => void
-  onEdit?: () => void
+  onView?: () => void
+  onSessions?: () => void
   onShare?: () => void
   onPin?: () => void
   onContextMenu?: (e: React.MouseEvent) => void
@@ -21,7 +22,8 @@ interface CharacterCardProps {
 export function CharacterCard({
   character,
   onClick,
-  onEdit,
+  onView,
+  onSessions,
   onShare,
   onPin,
   onContextMenu,
@@ -64,13 +66,22 @@ export function CharacterCard({
             <Star className={cn('w-4 h-4', isPinned && 'fill-current')} />
           </button>
         )}
-        {onEdit && (
+        {onView && (
           <button
-            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            onClick={(e) => { e.stopPropagation(); onView(); }}
             className="p-2 rounded-lg bg-black/60 text-white/80 hover:bg-black/80 hover:text-white backdrop-blur-sm transition-colors"
-            title="Edit"
+            title="View"
           >
-            <Edit3 className="w-4 h-4" />
+            <Eye className="w-4 h-4" />
+          </button>
+        )}
+        {onSessions && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onSessions(); }}
+            className="p-2 rounded-lg bg-black/60 text-white/80 hover:bg-black/80 hover:text-white backdrop-blur-sm transition-colors"
+            title="Sessions"
+          >
+            <BookOpen className="w-4 h-4" />
           </button>
         )}
         {onShare && (
@@ -96,8 +107,8 @@ export function CharacterCard({
         onClick={onClick}
         className="w-full text-left focus:outline-none focus:ring-2 focus:ring-[--arcane-purple] focus:ring-inset"
       >
-        {/* Portrait - 2:3 aspect ratio for portrait orientation */}
-        <div className="relative w-full aspect-[2/3] bg-[--bg-hover]">
+        {/* Portrait - 4:3 aspect ratio */}
+        <div className="relative w-full aspect-[4/3] bg-[--bg-hover]">
           {character.image_url && !imageError ? (
             <Image
               src={character.image_url}

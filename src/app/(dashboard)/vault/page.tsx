@@ -583,7 +583,8 @@ export default function VaultPage() {
                         router.push(`/vault/${char.id}`)
                       }
                     }}
-                    onEdit={() => router.push(`/vault/${char.id}/edit`)}
+                    onView={() => router.push(`/vault/${char.id}`)}
+                    onSessions={() => router.push(`/vault/${char.id}/sessions`)}
                     onPin={() => togglePinned(char.id)}
                     onContextMenu={(e) => !selectionMode && handleContextMenu(e, char)}
                   />
