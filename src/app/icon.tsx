@@ -13,29 +13,26 @@ export default function Icon() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
-          borderRadius: '6px',
+          background: 'linear-gradient(135deg, #9333EA 0%, #6366F1 100%)',
+          borderRadius: '8px',
         }}
       >
-        {/* D20-inspired design */}
+        {/* Sparkles icon */}
         <svg
-          width="24"
-          height="24"
+          width="20"
+          height="20"
           viewBox="0 0 24 24"
           fill="none"
-          style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+          stroke="white"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         >
-          {/* Hexagonal D20 shape */}
-          <path
-            d="M12 2L21 7V17L12 22L3 17V7L12 2Z"
-            fill="rgba(255,255,255,0.15)"
-            stroke="white"
-            strokeWidth="1.5"
-          />
-          {/* Inner facet lines */}
-          <path d="M12 2L12 12M3 7L12 12M21 7L12 12M12 22L12 12M3 17L12 12M21 17L12 12" stroke="rgba(255,255,255,0.4)" strokeWidth="0.75" />
-          {/* Center dot */}
-          <circle cx="12" cy="12" r="2" fill="white" />
+          <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+          <path d="M5 3v4" />
+          <path d="M19 17v4" />
+          <path d="M3 5h4" />
+          <path d="M17 19h4" />
         </svg>
       </div>
     ),
