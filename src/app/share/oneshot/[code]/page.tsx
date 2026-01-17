@@ -112,25 +112,39 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
   // Create a hash of the IP for privacy-friendly unique visitor tracking
   const viewerHash = crypto.createHash('sha256').update(ip + share.id).digest('hex').substring(0, 16)
 
-  // Update view count and last_viewed_at
-  await supabase
-    .from('oneshot_shares')
-    .update({
-      view_count: (share.view_count || 0) + 1,
-      last_viewed_at: new Date().toISOString()
-    })
-    .eq('id', share.id)
-
-  // Record view event for analytics
-  await supabase
+  // Abuse protection: Check if this viewer viewed this share in the last 15 minutes
+  const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString()
+  const { data: recentView } = await supabase
     .from('share_view_events')
-    .insert({
-      share_id: share.id,
-      share_type: 'oneshot',
-      viewer_hash: viewerHash,
-      referrer: referrer?.substring(0, 500),
-      user_agent: userAgent?.substring(0, 500),
-    })
+    .select('id')
+    .eq('share_id', share.id)
+    .eq('viewer_hash', viewerHash)
+    .gte('viewed_at', fifteenMinutesAgo)
+    .limit(1)
+    .single()
+
+  // Only record view if no recent view from this viewer
+  if (!recentView) {
+    // Update view count and last_viewed_at
+    await supabase
+      .from('oneshot_shares')
+      .update({
+        view_count: (share.view_count || 0) + 1,
+        last_viewed_at: new Date().toISOString()
+      })
+      .eq('id', share.id)
+
+    // Record view event for analytics
+    await supabase
+      .from('share_view_events')
+      .insert({
+        share_id: share.id,
+        share_type: 'oneshot',
+        viewer_hash: viewerHash,
+        referrer: referrer?.substring(0, 500),
+        user_agent: userAgent?.substring(0, 500),
+      })
+  }
 
   // Fetch oneshot data
   const { data: oneshot, error: oneshotError } = await supabase
