@@ -52,6 +52,55 @@ const ENTITY_TYPE_COLORS: Record<string, string> = {
   canvas_group: 'text-cyan-400 bg-cyan-500/10',
 }
 
+// Helper to format change values for display
+function formatChangeValue(value: unknown): string {
+  if (value === null || value === undefined) return '(empty)'
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) return '(empty)'
+    // Already normalized from diffChanges, just truncate if needed
+    return trimmed.length > 200 ? trimmed.substring(0, 200) + '...' : trimmed
+  }
+  return JSON.stringify(value)
+}
+
+// Helper to find the actual text difference between two strings
+function getTextDifference(oldText: string, newText: string): { type: 'added' | 'removed' | 'changed', summary: string } | null {
+  const old = formatChangeValue(oldText)
+  const newVal = formatChangeValue(newText)
+
+  // If they look the same after formatting, skip
+  if (old === newVal) return null
+
+  if (old === '(empty)') {
+    return { type: 'added', summary: `Added: "${newVal.substring(0, 100)}${newVal.length > 100 ? '...' : ''}"` }
+  }
+  if (newVal === '(empty)') {
+    return { type: 'removed', summary: `Removed: "${old.substring(0, 100)}${old.length > 100 ? '...' : ''}"` }
+  }
+
+  // Find common prefix/suffix to highlight what actually changed
+  let prefixLen = 0
+  const minLen = Math.min(old.length, newVal.length)
+  while (prefixLen < minLen && old[prefixLen] === newVal[prefixLen]) prefixLen++
+
+  // Back up to word boundary for cleaner diff
+  while (prefixLen > 0 && old[prefixLen - 1] !== ' ') prefixLen--
+
+  const prefix = old.substring(0, Math.min(prefixLen, 30))
+  const oldDiff = old.substring(prefixLen)
+  const newDiff = newVal.substring(prefixLen)
+
+  if (oldDiff.length > 100 || newDiff.length > 100) {
+    return { type: 'changed', summary: 'Content updated' }
+  }
+
+  return {
+    type: 'changed',
+    summary: prefix ? `...${prefix}` : `"${oldDiff.substring(0, 50)}" → "${newDiff.substring(0, 50)}"`
+  }
+}
+
 export default function ActivityLogPage() {
   const [activities, setActivities] = useState<ActivityLogEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -347,36 +396,37 @@ export default function ActivityLogPage() {
                           <p className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-3">
                             Changes
                           </p>
-                          <div className="space-y-2">
-                            {Object.entries(activity.changes!).map(([field, change]) => (
-                              <div key={field} className="text-sm">
-                                <span className="font-medium text-[--text-secondary] capitalize">
-                                  {field.replace(/_/g, ' ')}:
-                                </span>
-                                <div className="mt-1 grid grid-cols-2 gap-2">
-                                  {change.old !== undefined && (
-                                    <div className="p-2 rounded-lg bg-red-500/5 border border-red-500/20">
-                                      <p className="text-xs text-red-400 mb-1">Before</p>
-                                      <p className="text-xs text-[--text-secondary] line-clamp-2">
-                                        {typeof change.old === 'string'
-                                          ? change.old.replace(/<[^>]*>/g, '').substring(0, 100) || '(empty)'
-                                          : JSON.stringify(change.old)}
-                                      </p>
-                                    </div>
-                                  )}
-                                  {change.new !== undefined && (
-                                    <div className="p-2 rounded-lg bg-green-500/5 border border-green-500/20">
-                                      <p className="text-xs text-green-400 mb-1">After</p>
-                                      <p className="text-xs text-[--text-secondary] line-clamp-2">
-                                        {typeof change.new === 'string'
-                                          ? change.new.replace(/<[^>]*>/g, '').substring(0, 100) || '(empty)'
-                                          : JSON.stringify(change.new)}
-                                      </p>
-                                    </div>
-                                  )}
+                          <div className="space-y-3">
+                            {Object.entries(activity.changes!).map(([field, change]) => {
+                              const diff = getTextDifference(
+                                change.old as string,
+                                change.new as string
+                              )
+
+                              // Skip if no meaningful difference
+                              if (!diff) return null
+
+                              return (
+                                <div key={field} className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="font-medium text-[--text-secondary] capitalize text-sm">
+                                      {field.replace(/_/g, ' ')}
+                                    </span>
+                                    <span className={cn(
+                                      'text-xs px-2 py-0.5 rounded',
+                                      diff.type === 'added' && 'bg-green-500/15 text-green-400',
+                                      diff.type === 'removed' && 'bg-red-500/15 text-red-400',
+                                      diff.type === 'changed' && 'bg-amber-500/15 text-amber-400'
+                                    )}>
+                                      {diff.type}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-[--text-tertiary]">
+                                    {diff.summary}
+                                  </p>
                                 </div>
-                              </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         </div>
                       )}

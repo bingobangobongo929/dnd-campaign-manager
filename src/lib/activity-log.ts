@@ -78,7 +78,28 @@ export async function logActivity(
 }
 
 /**
+ * Normalize text for comparison - strips HTML, normalizes whitespace
+ */
+function normalizeForComparison(value: unknown): string {
+  if (value == null) return ''
+  if (typeof value !== 'string') return JSON.stringify(value)
+
+  // Strip HTML tags
+  let text = value.replace(/<[^>]*>/g, ' ')
+  // Decode common HTML entities
+  text = text.replace(/&nbsp;/g, ' ')
+  text = text.replace(/&amp;/g, '&')
+  text = text.replace(/&lt;/g, '<')
+  text = text.replace(/&gt;/g, '>')
+  text = text.replace(/&quot;/g, '"')
+  // Normalize whitespace (collapse multiple spaces, trim)
+  text = text.replace(/\s+/g, ' ').trim()
+  return text
+}
+
+/**
  * Create a changes object by comparing old and new data
+ * Only logs meaningful differences (ignores HTML/whitespace-only changes)
  */
 export function diffChanges<T extends Record<string, unknown>>(
   oldData: T | null,
@@ -94,15 +115,30 @@ export function diffChanges<T extends Record<string, unknown>>(
     const oldVal = oldData[field]
     const newVal = newData[field]
 
-    // Skip if both undefined/null
-    if (oldVal == null && newVal == null) continue
+    // Skip if both undefined/null/empty
+    if ((oldVal == null || oldVal === '') && (newVal == null || newVal === '')) continue
 
-    // Compare as JSON for objects/arrays
-    const oldStr = JSON.stringify(oldVal)
-    const newStr = JSON.stringify(newVal)
+    // For strings (likely HTML content), normalize before comparing
+    if (typeof oldVal === 'string' || typeof newVal === 'string') {
+      const oldNormalized = normalizeForComparison(oldVal)
+      const newNormalized = normalizeForComparison(newVal)
 
-    if (oldStr !== newStr) {
-      changes[field as string] = { old: oldVal, new: newVal }
+      // Skip if normalized versions are the same (whitespace/HTML-only changes)
+      if (oldNormalized === newNormalized) continue
+
+      // Store the normalized versions for cleaner display
+      changes[field as string] = {
+        old: oldNormalized || undefined,
+        new: newNormalized || undefined
+      }
+    } else {
+      // Compare as JSON for objects/arrays
+      const oldStr = JSON.stringify(oldVal)
+      const newStr = JSON.stringify(newVal)
+
+      if (oldStr !== newStr) {
+        changes[field as string] = { old: oldVal, new: newVal }
+      }
     }
   }
 
