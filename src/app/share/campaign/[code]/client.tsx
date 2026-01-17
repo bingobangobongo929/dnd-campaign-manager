@@ -731,15 +731,15 @@ export function CampaignShareClient({
                           </div>
                         </div>
                         {sections.npcDetails && (npc.description || npc.personality || npc.backstory) && (
-                          <div className="px-4 pb-4 space-y-2">
+                          <div className="px-4 pb-4 space-y-3">
                             {npc.description && (
-                              <p className="text-sm text-gray-400">{npc.description}</p>
+                              <div className="prose prose-invert prose-sm max-w-none text-gray-400 prose-p:my-2" dangerouslySetInnerHTML={{ __html: markdownToHtml(npc.description) }} />
                             )}
                             {npc.personality && (
-                              <p className="text-sm text-gray-500 italic">{npc.personality}</p>
+                              <div className="prose prose-invert prose-sm max-w-none text-gray-500 italic prose-p:my-2" dangerouslySetInnerHTML={{ __html: markdownToHtml(npc.personality) }} />
                             )}
                             {npc.backstory && (
-                              <div className="prose prose-invert prose-sm max-w-none text-gray-400" dangerouslySetInnerHTML={{ __html: markdownToHtml(npc.backstory) }} />
+                              <div className="prose prose-invert prose-sm max-w-none text-gray-400 prose-p:my-2 prose-h3:text-base prose-h3:font-semibold prose-h3:mt-4 prose-h3:mb-2" dangerouslySetInnerHTML={{ __html: markdownToHtml(npc.backstory) }} />
                             )}
                           </div>
                         )}

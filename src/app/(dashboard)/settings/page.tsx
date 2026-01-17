@@ -22,7 +22,7 @@ import {
   DollarSign,
   Share2,
 } from 'lucide-react'
-import { AppLayout } from '@/components/layout/app-layout'
+// AppLayout is provided by settings/layout.tsx
 import { Modal } from '@/components/ui'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
@@ -156,8 +156,7 @@ export default function SettingsPage() {
   ]
 
   return (
-    <AppLayout>
-      <div className="max-w-3xl mx-auto">
+    <>
         {/* Page Header */}
         <div className="page-header">
           <h1 className="page-title">Settings</h1>
@@ -517,7 +516,6 @@ export default function SettingsPage() {
             </button>
           </div>
         </div>
-      </div>
 
       {/* Keyboard Shortcuts Modal */}
       <Modal
@@ -660,6 +658,6 @@ export default function SettingsPage() {
           </div>
         )}
       </Modal>
-    </AppLayout>
+    </>
   )
 }

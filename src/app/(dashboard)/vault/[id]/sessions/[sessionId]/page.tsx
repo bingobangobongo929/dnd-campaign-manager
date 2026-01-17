@@ -412,11 +412,20 @@ export default function VaultSessionEditorPage() {
         <div className="mb-10">
           <button
             onClick={() => router.push(`/vault/${characterId}/sessions`)}
-            className="btn btn-ghost mb-6 -ml-2"
+            className="btn btn-ghost mb-4 -ml-2"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Sessions
           </button>
+
+          {/* Character Context */}
+          {character && (
+            <p className="text-xs text-[--text-tertiary] mb-4">
+              <span className="text-[--arcane-purple]">{character.name}</span>
+              <span className="mx-2">/</span>
+              <span>Play Journal</span>
+            </p>
+          )}
 
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">

@@ -3,10 +3,22 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Campaign, Character, Tag, Session, UserSettings, CanvasGroup } from '@/types/database'
 import type { AIProvider } from '@/lib/ai/config'
 
+// Recent item for quick navigation
+export interface RecentItem {
+  id: string
+  type: 'campaign' | 'character' | 'oneshot' | 'session'
+  name: string
+  href: string
+  imageUrl?: string | null
+  parentName?: string // Campaign name for sessions
+  visitedAt: number
+}
+
 // Persisted settings (saved to localStorage)
 interface PersistedSettings {
   aiEnabled: boolean
   aiProvider: AIProvider
+  recentItems: RecentItem[]
 }
 
 interface AppState extends PersistedSettings {
@@ -67,6 +79,11 @@ interface AppState extends PersistedSettings {
   setAIEnabled: (enabled: boolean) => void
   aiProvider: AIProvider
   setAIProvider: (provider: AIProvider) => void
+
+  // Recent Items
+  recentItems: RecentItem[]
+  trackRecentItem: (item: Omit<RecentItem, 'visitedAt'>) => void
+  clearRecentItems: () => void
 }
 
 export const useAppStore = create<AppState>()(
@@ -144,14 +161,29 @@ export const useAppStore = create<AppState>()(
       setAIEnabled: (enabled) => set({ aiEnabled: enabled }),
       aiProvider: 'anthropic',
       setAIProvider: (provider) => set({ aiProvider: provider }),
+
+      // Recent Items (persisted)
+      recentItems: [],
+      trackRecentItem: (item) =>
+        set((state) => {
+          const MAX_RECENT_ITEMS = 10
+          const now = Date.now()
+          // Remove existing entry for same item if present
+          const filtered = state.recentItems.filter((r) => r.id !== item.id || r.type !== item.type)
+          // Add new item at the front
+          const newItems = [{ ...item, visitedAt: now }, ...filtered].slice(0, MAX_RECENT_ITEMS)
+          return { recentItems: newItems }
+        }),
+      clearRecentItems: () => set({ recentItems: [] }),
     }),
     {
       name: 'dnd-campaign-manager-settings',
       storage: createJSONStorage(() => localStorage),
-      // Only persist AI settings
+      // Persist AI settings and recent items
       partialize: (state) => ({
         aiEnabled: state.aiEnabled,
         aiProvider: state.aiProvider,
+        recentItems: state.recentItems,
       }),
     }
   )

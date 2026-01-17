@@ -46,12 +46,13 @@ export default function ImportPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[--bg-base] p-8">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold text-[--text-primary] mb-2">Import Vault Characters</h1>
-        <p className="text-[--text-secondary] mb-8">
+    <>
+      <div className="page-header">
+        <h1 className="page-title">Import Vault Characters</h1>
+        <p className="page-subtitle">
           Upload a JSON file containing character data to bulk import into your vault.
         </p>
+      </div>
 
         <div className="bg-[--bg-surface] border border-[--border] rounded-xl p-8">
           <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-[--border] rounded-xl cursor-pointer hover:border-[--arcane-purple] hover:bg-[--bg-hover] transition-all">
@@ -115,13 +116,12 @@ export default function ImportPage() {
           </div>
         )}
 
-        <div className="mt-8 p-4 bg-[--bg-elevated] rounded-lg border border-[--border]">
-          <p className="text-sm text-[--text-tertiary]">
-            <strong className="text-[--text-secondary]">File location:</strong><br />
-            C:\Users\edbar\Downloads\Character\vault_characters_import.json
-          </p>
-        </div>
+      <div className="mt-8 p-4 bg-[--bg-elevated] rounded-lg border border-[--border]">
+        <p className="text-sm text-[--text-tertiary]">
+          <strong className="text-[--text-secondary]">File location:</strong><br />
+          C:\Users\edbar\Downloads\Character\vault_characters_import.json
+        </p>
       </div>
-    </div>
+    </>
   )
 }

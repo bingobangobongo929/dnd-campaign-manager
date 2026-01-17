@@ -25,7 +25,7 @@ export default function CampaignCanvasPage() {
   const router = useRouter()
   const supabase = useSupabase()
   const { user } = useUser()
-  const { selectedCharacterId, setSelectedCharacterId, aiEnabled } = useAppStore()
+  const { selectedCharacterId, setSelectedCharacterId, aiEnabled, trackRecentItem } = useAppStore()
 
   const campaignId = params.id as string
 
@@ -84,6 +84,15 @@ export default function CampaignCanvasPage() {
       return
     }
     setCampaign(campaignData)
+
+    // Track recent visit
+    trackRecentItem({
+      id: campaignData.id,
+      type: 'campaign',
+      name: campaignData.name,
+      href: `/campaigns/${campaignData.id}/canvas`,
+      imageUrl: campaignData.image_url,
+    })
 
     // Load characters
     const { data: charactersData } = await supabase

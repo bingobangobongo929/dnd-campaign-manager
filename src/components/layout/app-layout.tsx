@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { FloatingDock } from './floating-dock'
 import { TopBar } from './top-bar'
+import { CampaignContextBanner } from './campaign-context-banner'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
 import type { Campaign, Character, Session, TimelineEvent, CampaignLore, CanvasGroup } from '@/types/database'
@@ -206,6 +207,9 @@ export function AppLayout({
         transparent={transparentTopBar}
         actions={topBarActions}
       />
+
+      {/* Campaign context banner for non-campaign pages */}
+      <CampaignContextBanner />
 
       <main className={`main-content ${fullBleed ? 'full-bleed' : ''}`}>
         {children}

@@ -432,11 +432,20 @@ export default function SessionDetailPage() {
         <div className="mb-8">
           <button
             onClick={() => router.push(`/campaigns/${campaignId}/sessions`)}
-            className="flex items-center gap-2 text-sm text-[--text-secondary] hover:text-[--text-primary] transition-colors mb-6"
+            className="flex items-center gap-2 text-sm text-[--text-secondary] hover:text-[--text-primary] transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Sessions
           </button>
+
+          {/* Campaign Context */}
+          {campaign && (
+            <p className="text-xs text-[--text-tertiary] mb-4">
+              <span className="text-[--arcane-purple]">{campaign.name}</span>
+              <span className="mx-2">/</span>
+              <span>Session Log</span>
+            </p>
+          )}
 
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">

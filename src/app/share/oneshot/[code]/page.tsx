@@ -4,9 +4,70 @@ import { headers } from 'next/headers'
 import Image from 'next/image'
 import { Users, Clock, Scroll, BookOpen, Target, Eye } from 'lucide-react'
 import crypto from 'crypto'
+import type { Metadata } from 'next'
 
 interface SharePageProps {
   params: Promise<{ code: string }>
+}
+
+// Generate rich OpenGraph metadata for Discord/social sharing
+export async function generateMetadata({ params }: SharePageProps): Promise<Metadata> {
+  const { code } = await params
+  const supabase = createAdminClient()
+
+  // Fetch share and oneshot data
+  const { data: share } = await supabase
+    .from('oneshot_shares')
+    .select('oneshot_id')
+    .eq('share_code', code)
+    .single()
+
+  if (!share) {
+    return { title: 'One-Shot Not Found' }
+  }
+
+  const { data: oneshot } = await supabase
+    .from('oneshots')
+    .select('title, tagline, introduction, image_url, min_players, max_players, estimated_duration')
+    .eq('id', share.oneshot_id)
+    .single()
+
+  if (!oneshot) {
+    return { title: 'One-Shot Not Found' }
+  }
+
+  const title = oneshot.title
+  const playerInfo = oneshot.min_players && oneshot.max_players
+    ? `${oneshot.min_players}-${oneshot.max_players} players`
+    : null
+  const durationInfo = oneshot.estimated_duration
+    ? `${oneshot.estimated_duration}`
+    : null
+  const meta = [playerInfo, durationInfo].filter(Boolean).join(' • ')
+
+  const description = oneshot.tagline
+    ? oneshot.tagline
+    : oneshot.introduction
+    ? oneshot.introduction.substring(0, 200) + (oneshot.introduction.length > 200 ? '...' : '')
+    : meta || 'A D&D one-shot adventure'
+  const imageUrl = oneshot.image_url
+
+  return {
+    title: `${title} | One-Shot Adventure`,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630, alt: oneshot.title }] : [],
+    },
+    twitter: {
+      card: imageUrl ? 'summary_large_image' : 'summary',
+      title,
+      description,
+      images: imageUrl ? [imageUrl] : [],
+    },
+  }
 }
 
 export default async function ShareOneshotPage({ params }: SharePageProps) {
@@ -96,13 +157,6 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
 
   return (
     <div className="min-h-screen bg-[--bg-base]">
-      {/* Header */}
-      <div className="bg-[--bg-surface] border-b border-white/10">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <p className="text-sm text-[--text-tertiary]">Shared One-Shot</p>
-        </div>
-      </div>
-
       {/* Hero Section */}
       <div className="relative">
         {oneshot.image_url ? (

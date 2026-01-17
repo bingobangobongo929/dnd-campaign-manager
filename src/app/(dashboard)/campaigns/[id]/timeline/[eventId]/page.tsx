@@ -172,6 +172,14 @@ export default function TimelineEventDetailPage() {
               {status === 'idle' && 'All changes saved'}
             </span>
           </div>
+          {/* Campaign Context */}
+          {campaign && (
+            <p className="text-xs text-[--text-tertiary] mt-4">
+              <span className="text-[--arcane-purple]">{campaign.name}</span>
+              <span className="mx-2">/</span>
+              <span>Timeline Event</span>
+            </p>
+          )}
         </div>
 
         {/* Editor */}

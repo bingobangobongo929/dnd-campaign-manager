@@ -80,7 +80,7 @@ const SECTION_TOGGLES: SectionToggle[] = [
 
   // THE STORY
   { key: 'sessionRecaps', label: 'Session Recaps', group: 'THE STORY', defaultOn: true, description: 'Summary of each session' },
-  { key: 'sessionNotes', label: 'Full Session Notes', group: 'THE STORY', defaultOn: false, description: 'Detailed notes from sessions' },
+  { key: 'sessionNotes', label: 'Full Session Notes', group: 'THE STORY', defaultOn: true, description: 'Detailed notes from sessions' },
   { key: 'timeline', label: 'Timeline', group: 'THE STORY', defaultOn: true, description: 'Interactive timeline of events' },
 
   // THE WORLD

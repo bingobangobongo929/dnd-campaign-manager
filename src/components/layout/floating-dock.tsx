@@ -16,6 +16,8 @@ import {
   Edit3,
   Eye,
   Users,
+  Scroll,
+  Home,
 } from 'lucide-react'
 import { useAppStore } from '@/store'
 
@@ -53,12 +55,24 @@ export function FloatingDock({ campaignId, characterId }: FloatingDockProps) {
     : []
 
   const globalLinks = [
+    { href: '/home', label: 'Home', icon: Home },
     { href: '/campaigns', label: 'Campaigns', icon: Swords },
+    { href: '/campaigns?tab=oneshots', label: 'One-Shots', icon: Scroll },
     { href: '/vault', label: 'Character Vault', icon: BookOpen },
     { href: '/settings', label: 'Settings', icon: Settings },
   ]
 
-  const isActive = (href: string) => pathname === href
+  const isActive = (href: string) => {
+    // Handle special case for oneshots tab
+    if (href === '/campaigns?tab=oneshots') {
+      return pathname === '/campaigns' && typeof window !== 'undefined' && window.location.search.includes('tab=oneshots')
+    }
+    // For campaigns, only match if no oneshots tab
+    if (href === '/campaigns') {
+      return pathname === '/campaigns' && (typeof window === 'undefined' || !window.location.search.includes('tab=oneshots'))
+    }
+    return pathname === href
+  }
 
   // Calculate animation delay offset
   let animationOffset = 0

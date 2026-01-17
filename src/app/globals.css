@@ -1765,19 +1765,31 @@
     --topbar-height: 56px;
   }
 
-  /* Convert floating dock to bottom nav */
+  /* Convert floating dock to bottom nav with horizontal scroll */
   .floating-dock {
     top: auto;
     bottom: 0;
     left: 0;
     right: 0;
     width: 100%;
-    height: 72px;
+    height: auto;
+    min-height: 72px;
     flex-direction: row;
-    justify-content: space-around;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
     border-radius: 20px 20px 0 0;
-    padding: 8px 16px;
+    padding: 8px 12px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
     transform: none;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+
+  .floating-dock::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
   }
 
   .floating-dock:hover {
@@ -1786,9 +1798,15 @@
 
   .dock-item {
     flex-direction: column;
-    gap: 4px;
-    padding: 8px 12px;
-    min-width: auto;
+    gap: 2px;
+    padding: 8px 10px;
+    min-width: 56px;
+    flex-shrink: 0;
+  }
+
+  .dock-item-icon {
+    width: 22px;
+    height: 22px;
   }
 
   .dock-item-label {
@@ -1796,12 +1814,15 @@
     max-width: none;
     font-size: 10px;
     margin-left: 0;
+    text-align: center;
+    line-height: 1.2;
   }
 
   .dock-divider {
     width: 1px;
-    height: 32px;
-    margin: 0 8px;
+    height: 28px;
+    margin: 0 6px;
+    flex-shrink: 0;
   }
 
   /* Adjust main content */
@@ -1821,11 +1842,55 @@
   /* Adjust topbar */
   .topbar {
     left: 0;
-    padding: 0 16px;
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .topbar-left {
+    flex: 1;
+    min-width: 0; /* Allow shrinking */
+    overflow: hidden;
+  }
+
+  .topbar-right {
+    flex-shrink: 0;
+    gap: 8px;
   }
 
   .topbar-center {
     display: none;
+  }
+
+  /* Mobile breadcrumb improvements */
+  .breadcrumb {
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .breadcrumb-item {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .breadcrumb-item.current {
+    max-width: 140px;
+  }
+
+  .breadcrumb-separator {
+    flex-shrink: 0;
+  }
+
+  /* Mobile AI trigger - icon only */
+  .ai-trigger span {
+    display: none;
+  }
+
+  .ai-trigger {
+    padding: 8px;
   }
 
   /* Modal adjustments */

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Image from 'next/image'
 import { toast } from 'sonner'
@@ -26,39 +26,14 @@ import {
   ChevronUp,
   Copy,
   Check,
-  RotateCcw,
-  Upload,
 } from 'lucide-react'
-import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop'
-import 'react-image-crop/dist/ReactCrop.css'
-import { Modal } from '@/components/ui'
+import { Modal, UnifiedImageModal } from '@/components/ui'
 import { ShareOneshotModal } from '@/components/oneshots/ShareOneshotModal'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 import { v4 as uuidv4 } from 'uuid'
 import type { Oneshot, OneshotGenreTag, OneshotRun } from '@/types/database'
-
-// Helper to create centered crop with aspect ratio
-function centerAspectCrop(
-  mediaWidth: number,
-  mediaHeight: number,
-  aspect: number
-): Crop {
-  return centerCrop(
-    makeAspectCrop(
-      {
-        unit: '%',
-        width: 80,
-      },
-      aspect,
-      mediaWidth,
-      mediaHeight
-    ),
-    mediaWidth,
-    mediaHeight
-  )
-}
 
 // Default genre tags
 const DEFAULT_GENRE_TAGS = [
@@ -90,7 +65,6 @@ export default function OneshotEditorPage() {
   const params = useParams()
   const supabase = useSupabase()
   const { user } = useUser()
-  const imageInputRef = useRef<HTMLInputElement>(null)
 
   const isNew = params.id === 'new'
   const oneshotId = isNew ? null : (params.id as string)
@@ -130,18 +104,13 @@ export default function OneshotEditorPage() {
   const [promptModalOpen, setPromptModalOpen] = useState(false)
   const [generatedPrompt, setGeneratedPrompt] = useState({ prompt: '', shortPrompt: '' })
   const [promptCopied, setPromptCopied] = useState(false)
-  // Image cropping state
-  const [cropModalOpen, setCropModalOpen] = useState(false)
-  const [pendingImage, setPendingImage] = useState<string | null>(null)
-  const [crop, setCrop] = useState<Crop>()
-  const [completedCrop, setCompletedCrop] = useState<PixelCrop>()
-  const cropImgRef = useRef<HTMLImageElement>(null)
+  // Image modal state
+  const [imageModalOpen, setImageModalOpen] = useState(false)
   const [newTagName, setNewTagName] = useState('')
   const [newTagColor, setNewTagColor] = useState('#8B5CF6')
-  const [imageOptionsModalOpen, setImageOptionsModalOpen] = useState(false)
 
-  // AI settings from store
-  const { aiEnabled } = useAppStore()
+  // Settings from store
+  const { aiEnabled, trackRecentItem } = useAppStore()
 
   // Collapsible sections
   const [expandedSections, setExpandedSections] = useState({
@@ -223,6 +192,15 @@ export default function OneshotEditorPage() {
         handouts: oneshot.handouts || '',
         status: oneshot.status,
       })
+
+      // Track recent visit
+      trackRecentItem({
+        id: oneshot.id,
+        type: 'oneshot',
+        name: oneshot.title,
+        href: `/oneshots/${oneshot.id}`,
+        imageUrl: oneshot.image_url,
+      })
     }
 
     // Load runs
@@ -239,118 +217,22 @@ export default function OneshotEditorPage() {
     setLoading(false)
   }
 
-  // Handle file selection - opens crop modal
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  // Handle image upload from UnifiedImageModal
+  const handleImageUpload = async (blob: Blob): Promise<string> => {
+    const uniqueId = uuidv4()
+    const path = `oneshots/${uniqueId}.webp`
 
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file')
-      return
-    }
+    const { error: uploadError } = await supabase.storage
+      .from('oneshot-images')
+      .upload(path, blob, { contentType: 'image/webp' })
 
-    if (file.size > 10 * 1024 * 1024) {
-      alert('Image must be less than 10MB')
-      return
-    }
+    if (uploadError) throw uploadError
 
-    // Read file as data URL and open crop modal
-    const reader = new FileReader()
-    reader.onload = () => {
-      setPendingImage(reader.result as string)
-      setCropModalOpen(true)
-    }
-    reader.readAsDataURL(file)
+    const { data: urlData } = supabase.storage
+      .from('oneshot-images')
+      .getPublicUrl(path)
 
-    if (imageInputRef.current) imageInputRef.current.value = ''
-  }
-
-  // Handle crop image load - initialize crop area
-  const onCropImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    const { width, height } = e.currentTarget
-    setCrop(centerAspectCrop(width, height, 2 / 3)) // 2:3 aspect ratio for posters
-  }, [])
-
-  // Apply crop and upload
-  const handleCropComplete = async () => {
-    if (!completedCrop || !cropImgRef.current) return
-
-    setUploadingImage(true)
-    setCropModalOpen(false)
-
-    try {
-      const image = cropImgRef.current
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
-
-      if (!ctx) throw new Error('No 2d context')
-
-      // Calculate scale from displayed to natural size
-      const scaleX = image.naturalWidth / image.width
-      const scaleY = image.naturalHeight / image.height
-
-      // Calculate crop at natural resolution (keeps full quality - 3x or more)
-      const cropX = completedCrop.x * scaleX
-      const cropY = completedCrop.y * scaleY
-      const cropWidth = completedCrop.width * scaleX
-      const cropHeight = completedCrop.height * scaleY
-
-      // Set canvas to full cropped resolution
-      canvas.width = cropWidth
-      canvas.height = cropHeight
-
-      // High quality rendering
-      ctx.imageSmoothingEnabled = true
-      ctx.imageSmoothingQuality = 'high'
-
-      // Draw cropped portion at full resolution
-      ctx.drawImage(
-        image,
-        cropX, cropY, cropWidth, cropHeight,
-        0, 0, cropWidth, cropHeight
-      )
-
-      // Convert to blob
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob(
-          (b) => b ? resolve(b) : reject(new Error('Canvas is empty')),
-          'image/webp',
-          0.92
-        )
-      })
-
-      // Upload to Supabase
-      const uniqueId = uuidv4()
-      const path = `oneshots/${uniqueId}.webp`
-
-      const { error: uploadError } = await supabase.storage
-        .from('oneshot-images')
-        .upload(path, blob, { contentType: 'image/webp' })
-
-      if (uploadError) throw uploadError
-
-      const { data: urlData } = supabase.storage
-        .from('oneshot-images')
-        .getPublicUrl(path)
-
-      setFormData(prev => ({ ...prev, image_url: urlData.publicUrl }))
-    } catch (err) {
-      console.error('Upload error:', err)
-      alert('Failed to upload image')
-    } finally {
-      setUploadingImage(false)
-      setPendingImage(null)
-      setCompletedCrop(undefined)
-      setCrop(undefined)
-    }
-  }
-
-  // Cancel crop
-  const handleCropCancel = () => {
-    setCropModalOpen(false)
-    setPendingImage(null)
-    setCompletedCrop(undefined)
-    setCrop(undefined)
+    return urlData.publicUrl
   }
 
   const handleGeneratePrompt = async () => {
@@ -559,23 +441,14 @@ export default function OneshotEditorPage() {
           </div>
         </header>
 
-        {/* Hidden file input */}
-        <input
-          ref={imageInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleImageSelect}
-        />
-
         {/* Main Content */}
         <main className="max-w-5xl mx-auto px-6 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8">
             {/* Left Sidebar - Poster Image & Meta */}
             <div className="space-y-6">
-              {/* Movie Poster Image - Click to open options modal */}
+              {/* Movie Poster Image - Click to open image modal */}
               <div
-                onClick={() => setImageOptionsModalOpen(true)}
+                onClick={() => setImageModalOpen(true)}
                 className={cn(
                   "relative aspect-[2/3] rounded-2xl overflow-hidden cursor-pointer group border-2 transition-all",
                   formData.image_url
@@ -903,83 +776,25 @@ export default function OneshotEditorPage() {
         />
       )}
 
-      {/* Image Options Modal */}
-      <Modal
-        isOpen={imageOptionsModalOpen}
-        onClose={() => setImageOptionsModalOpen(false)}
+      {/* Unified Image Modal */}
+      <UnifiedImageModal
+        isOpen={imageModalOpen}
+        onClose={() => setImageModalOpen(false)}
+        imageType="oneshot"
+        currentImageUrl={formData.image_url}
+        onImageChange={(url) => setFormData(prev => ({ ...prev, image_url: url }))}
+        onUpload={handleImageUpload}
+        promptData={{
+          title: formData.title,
+          tagline: formData.tagline,
+          introduction: formData.introduction,
+          setting: formData.setting_notes,
+          genres: genreTags
+            .filter(tag => formData.genre_tag_ids.includes(tag.id))
+            .map(tag => tag.name),
+        }}
         title="Poster Image"
-        description="Upload an image or generate an AI prompt"
-      >
-        <div className="space-y-3 py-4">
-          {/* Upload Option */}
-          <button
-            onClick={() => {
-              setImageOptionsModalOpen(false)
-              imageInputRef.current?.click()
-            }}
-            className="w-full flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] rounded-xl transition-colors text-left"
-          >
-            <div className="p-3 bg-purple-500/20 rounded-lg">
-              <Upload className="w-5 h-5 text-purple-400" />
-            </div>
-            <div>
-              <p className="font-medium text-white">Upload Image</p>
-              <p className="text-sm text-gray-500">Choose an image from your device</p>
-            </div>
-          </button>
-
-          {/* AI Prompt Option - only show if AI is enabled */}
-          {aiEnabled && (
-            <button
-              onClick={() => {
-                setImageOptionsModalOpen(false)
-                handleGeneratePrompt()
-              }}
-              disabled={generatingImage || !formData.title.trim()}
-              className="w-full flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] rounded-xl transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <div className="p-3 bg-purple-500/20 rounded-lg">
-                {generatingImage ? (
-                  <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
-                ) : (
-                  <Sparkles className="w-5 h-5 text-purple-400" />
-                )}
-              </div>
-              <div>
-                <p className="font-medium text-white">Generate AI Prompt</p>
-                <p className="text-sm text-gray-500">Get a prompt for Midjourney, DALL-E, etc.</p>
-              </div>
-            </button>
-          )}
-
-          {/* Delete Option - only show if image exists */}
-          {formData.image_url && (
-            <button
-              onClick={() => {
-                setFormData(prev => ({ ...prev, image_url: null }))
-                setImageOptionsModalOpen(false)
-              }}
-              className="w-full flex items-center gap-4 p-4 bg-white/[0.03] hover:bg-red-500/10 border border-white/[0.08] hover:border-red-500/30 rounded-xl transition-colors text-left"
-            >
-              <div className="p-3 bg-red-500/20 rounded-lg">
-                <Trash2 className="w-5 h-5 text-red-400" />
-              </div>
-              <div>
-                <p className="font-medium text-red-400">Remove Image</p>
-                <p className="text-sm text-gray-500">Delete the current poster image</p>
-              </div>
-            </button>
-          )}
-        </div>
-        <div className="flex justify-end pt-2">
-          <button
-            onClick={() => setImageOptionsModalOpen(false)}
-            className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      </Modal>
+      />
 
       {/* Add Tag Modal */}
       <Modal
@@ -1094,72 +909,6 @@ export default function OneshotEditorPage() {
         </div>
       </Modal>
 
-      {/* Image Crop Modal */}
-      <Modal
-        isOpen={cropModalOpen}
-        onClose={handleCropCancel}
-        title="Crop Image"
-        description="Adjust the crop area to fit the 2:3 poster aspect ratio. Full resolution is preserved."
-        size="xl"
-      >
-        <div className="space-y-4 py-4">
-          {pendingImage && (
-            <div className="flex justify-center bg-black/30 rounded-xl p-4 max-h-[60vh] overflow-auto">
-              <ReactCrop
-                crop={crop}
-                onChange={(_, percentCrop) => setCrop(percentCrop)}
-                onComplete={(c) => setCompletedCrop(c)}
-                aspect={2 / 3}
-                className="max-w-full"
-              >
-                <img
-                  ref={cropImgRef}
-                  src={pendingImage}
-                  alt="Crop preview"
-                  onLoad={onCropImageLoad}
-                  className="max-h-[50vh] w-auto"
-                />
-              </ReactCrop>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <span>Aspect ratio: 2:3 (portrait poster)</span>
-            <span>Full resolution will be preserved</span>
-          </div>
-        </div>
-
-        <div className="flex justify-between pt-4 border-t border-white/10">
-          <button
-            onClick={() => {
-              if (cropImgRef.current) {
-                const { width, height } = cropImgRef.current
-                setCrop(centerAspectCrop(width, height, 2 / 3))
-              }
-            }}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
-          >
-            <RotateCcw className="w-4 h-4" />
-            Reset
-          </button>
-          <div className="flex gap-3">
-            <button
-              onClick={handleCropCancel}
-              className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleCropComplete}
-              disabled={!completedCrop}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              <Check className="w-4 h-4" />
-              Apply Crop
-            </button>
-          </div>
-        </div>
-      </Modal>
     </>
   )
 }

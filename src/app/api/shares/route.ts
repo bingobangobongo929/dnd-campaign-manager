@@ -97,7 +97,7 @@ export async function GET() {
           oneshots (
             id,
             title,
-            cover_image_url
+            image_url
           )
         `)
         .in('oneshot_id', oneshotIds)
@@ -106,6 +106,7 @@ export async function GET() {
         console.error('Oneshot shares error:', error)
       } else {
         oneshotShares = data || []
+        console.log('Shares API - Oneshot shares found:', oneshotShares.length)
       }
     }
 
@@ -126,6 +127,7 @@ export async function GET() {
         console.error('Campaign shares error:', error)
       } else {
         campaignShares = data || []
+        console.log('Shares API - Campaign shares found:', campaignShares.length)
       }
     }
 
@@ -191,7 +193,7 @@ export async function GET() {
       type: 'oneshot' as const,
       item_id: share.oneshot_id,
       item_name: share.oneshots?.title || 'Unknown Oneshot',
-      item_image: share.oneshots?.cover_image_url || null,
+      item_image: share.oneshots?.image_url || null,
       included_sections: share.included_sections || {},
       expires_at: share.expires_at,
       view_count: share.view_count || 0,

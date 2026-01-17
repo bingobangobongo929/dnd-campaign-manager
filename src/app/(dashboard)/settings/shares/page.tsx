@@ -22,7 +22,6 @@ import {
   Calendar,
   BarChart3,
   AlertCircle,
-  ArrowLeft,
   StickyNote,
   Activity,
   Zap,
@@ -36,10 +35,9 @@ import {
   ArrowDownRight,
   Minus,
 } from 'lucide-react'
-import { AppLayout } from '@/components/layout/app-layout'
+// AppLayout is provided by settings/layout.tsx
 import { Modal } from '@/components/ui'
 import { formatDate, formatDistanceToNow } from '@/lib/utils'
-import Link from 'next/link'
 import Image from 'next/image'
 import { getInitials } from '@/lib/utils'
 
@@ -403,34 +401,27 @@ export default function SharesPage() {
   }
 
   return (
-    <AppLayout>
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="page-header">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/settings"
-              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-400" />
-            </Link>
-            <div className="flex-1">
-              <h1 className="page-title flex items-center gap-3">
-                <Share2 className="w-8 h-8 text-purple-400" />
-                Share Analytics
-              </h1>
-              <p className="page-subtitle">Track views and engagement on your shared content</p>
-            </div>
-            <button
-              onClick={() => loadShares(true)}
-              disabled={isRefreshing}
-              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-50"
-              title="Refresh data"
-            >
-              <RefreshCw className={`w-5 h-5 text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
-            </button>
+    <>
+      {/* Header */}
+      <div className="page-header">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="page-title flex items-center gap-3">
+              <Share2 className="w-8 h-8 text-purple-400" />
+              Share Analytics
+            </h1>
+            <p className="page-subtitle">Track views and engagement on your shared content</p>
           </div>
+          <button
+            onClick={() => loadShares(true)}
+            disabled={isRefreshing}
+            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-50"
+            title="Refresh data"
+          >
+            <RefreshCw className={`w-5 h-5 text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </button>
         </div>
+      </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -877,7 +868,6 @@ export default function SharesPage() {
             )}
           </>
         )}
-      </div>
 
       {/* Delete Confirmation Modal */}
       <Modal
@@ -1096,6 +1086,6 @@ export default function SharesPage() {
           <p className="text-gray-500 text-center py-8">No view history available yet.</p>
         )}
       </Modal>
-    </AppLayout>
+    </>
   )
 }

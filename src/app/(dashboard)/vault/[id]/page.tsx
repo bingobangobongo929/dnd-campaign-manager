@@ -7,6 +7,7 @@ import { AppLayout } from '@/components/layout/app-layout'
 import { CharacterEditor } from '@/components/vault/CharacterEditor'
 import { Button } from '@/components/ui'
 import { createClient } from '@/lib/supabase/client'
+import { useAppStore } from '@/store'
 import type { VaultCharacter } from '@/types/database'
 
 export default function EditVaultCharacterPage() {
@@ -14,6 +15,7 @@ export default function EditVaultCharacterPage() {
   const router = useRouter()
   // Memoize supabase client to prevent recreation on each render
   const supabase = useMemo(() => createClient(), [])
+  const { trackRecentItem } = useAppStore()
   const characterId = params.id as string
 
   const [character, setCharacter] = useState<VaultCharacter | null>(null)
@@ -32,12 +34,20 @@ export default function EditVaultCharacterPage() {
         setNotFound(true)
       } else {
         setCharacter(data)
+        // Track recent visit
+        trackRecentItem({
+          id: data.id,
+          type: 'character',
+          name: data.name,
+          href: `/vault/${data.id}`,
+          imageUrl: data.image_url || data.detail_image_url,
+        })
       }
       setLoading(false)
     }
 
     loadCharacter()
-  }, [characterId, supabase])
+  }, [characterId, supabase, trackRecentItem])
 
   if (loading) {
     return (

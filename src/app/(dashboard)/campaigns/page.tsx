@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Plus, Gamepad2, Camera, Loader2, X, ChevronDown, ChevronUp, Scroll, Grid, List, Star, Edit, Trash2 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import { Modal, Input, Textarea, Dropdown, UnifiedImageModal } from '@/components/ui'
@@ -28,8 +28,10 @@ type ViewMode = 'grid' | 'list' | 'featured'
 
 export default function CampaignsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = useSupabase()
   const { user, loading: userLoading } = useUser()
+  const oneshotsSectionRef = useRef<HTMLDivElement>(null)
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [oneshots, setOneshots] = useState<Oneshot[]>([])
   const [genreTags, setGenreTags] = useState<OneshotGenreTag[]>([])
@@ -57,6 +59,18 @@ export default function CampaignsPage() {
       loadData()
     }
   }, [user])
+
+  // Handle tab query param for direct navigation to oneshots
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab === 'oneshots' && !loading) {
+      setOneshotsExpanded(true)
+      // Small delay to let the section render before scrolling
+      setTimeout(() => {
+        oneshotsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 100)
+    }
+  }, [searchParams, loading])
 
   const loadData = async () => {
     // Load campaigns
@@ -336,7 +350,7 @@ export default function CampaignsPage() {
           )}
 
           {/* One-Shots Section */}
-          <div className="mt-12">
+          <div className="mt-12" ref={oneshotsSectionRef}>
             <button
               onClick={() => setOneshotsExpanded(!oneshotsExpanded)}
               className="w-full flex items-center justify-between py-4 px-1 group"

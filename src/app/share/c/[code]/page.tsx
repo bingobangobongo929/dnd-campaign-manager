@@ -18,9 +18,60 @@ import { getInitials } from '@/lib/utils'
 import { renderMarkdown } from '@/lib/character-display'
 import { InteractivePortrait, BackToTopButton } from './client'
 import crypto from 'crypto'
+import type { Metadata } from 'next'
 
 interface SharePageProps {
   params: Promise<{ code: string }>
+}
+
+// Generate rich OpenGraph metadata for Discord/social sharing
+export async function generateMetadata({ params }: SharePageProps): Promise<Metadata> {
+  const { code } = await params
+  const supabase = createAdminClient()
+
+  // Fetch share and character data
+  const { data: share } = await supabase
+    .from('character_shares')
+    .select('character_id')
+    .eq('share_code', code)
+    .single()
+
+  if (!share) {
+    return { title: 'Character Not Found' }
+  }
+
+  const { data: character } = await supabase
+    .from('vault_characters')
+    .select('name, race, class, summary, image_url, detail_image_url')
+    .eq('id', share.character_id)
+    .single()
+
+  if (!character) {
+    return { title: 'Character Not Found' }
+  }
+
+  const title = character.name
+  const description = character.summary
+    ? character.summary.replace(/<[^>]*>/g, '').substring(0, 200) + '...'
+    : `${character.race || ''} ${character.class || ''}`.trim() || 'A D&D character'
+  const imageUrl = character.detail_image_url || character.image_url
+
+  return {
+    title: `${title} | Character Profile`,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'profile',
+      images: imageUrl ? [{ url: imageUrl, width: 400, height: 600, alt: character.name }] : [],
+    },
+    twitter: {
+      card: imageUrl ? 'summary_large_image' : 'summary',
+      title,
+      description,
+      images: imageUrl ? [imageUrl] : [],
+    },
+  }
 }
 
 // Relationship type colors

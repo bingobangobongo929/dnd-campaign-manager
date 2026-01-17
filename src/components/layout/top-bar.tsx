@@ -2,11 +2,34 @@
 
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronDown, Sparkles, LogOut, ChevronRight } from 'lucide-react'
+import { ChevronDown, Sparkles, LogOut, ChevronRight, Swords, BookOpen, Settings, LayoutGrid, ScrollText, Clock, Brain, Network, Map, Image, Edit3, Eye, Users, Scroll } from 'lucide-react'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
 import { useState, useRef, useEffect } from 'react'
 import type { Campaign } from '@/types/database'
+import { RecentItems } from './recent-items'
+import { NavigationMapButton } from './navigation-map'
+
+import { Home } from 'lucide-react'
+
+// Page icons for "You are here" indicator
+const PAGE_ICONS: Record<string, any> = {
+  home: Home,
+  campaigns: Swords,
+  vault: BookOpen,
+  settings: Settings,
+  canvas: LayoutGrid,
+  sessions: ScrollText,
+  timeline: Clock,
+  intelligence: Brain,
+  lore: Network,
+  map: Map,
+  gallery: Image,
+  edit: Edit3,
+  view: Eye,
+  relationships: Users,
+  oneshots: Scroll,
+}
 
 interface TopBarProps {
   campaigns?: Campaign[]
@@ -51,12 +74,14 @@ export function TopBar({ campaigns = [], currentCampaignId, transparent = false,
   // Build breadcrumb from pathname
   const getBreadcrumbs = () => {
     const parts = pathname.split('/').filter(Boolean)
-    const breadcrumbs: { label: string; href?: string }[] = []
+    const breadcrumbs: { label: string; href?: string; icon?: string }[] = []
 
-    if (parts[0] === 'campaigns') {
-      breadcrumbs.push({ label: 'Campaigns', href: '/campaigns' })
+    if (parts[0] === 'home') {
+      breadcrumbs.push({ label: 'Home', icon: 'home' })
+    } else if (parts[0] === 'campaigns') {
+      breadcrumbs.push({ label: 'Campaigns', href: '/campaigns', icon: 'campaigns' })
 
-      if (parts[1] && currentCampaign) {
+      if (parts[1] && parts[1] !== 'new' && currentCampaign) {
         breadcrumbs.push({
           label: currentCampaign.name,
           href: `/campaigns/${parts[1]}/canvas`
@@ -72,13 +97,70 @@ export function TopBar({ campaigns = [], currentCampaignId, transparent = false,
             map: 'World Map',
             gallery: 'Gallery',
           }
-          breadcrumbs.push({ label: pageLabels[parts[2]] || parts[2] })
+          // Check if there's a session ID (parts[3])
+          if (parts[2] === 'sessions' && parts[3]) {
+            breadcrumbs.push({
+              label: 'Sessions',
+              href: `/campaigns/${parts[1]}/sessions`,
+              icon: 'sessions'
+            })
+            breadcrumbs.push({ label: `Session Details`, icon: 'sessions' })
+          } else if (parts[2] === 'timeline' && parts[3]) {
+            breadcrumbs.push({
+              label: 'Timeline',
+              href: `/campaigns/${parts[1]}/timeline`,
+              icon: 'timeline'
+            })
+            breadcrumbs.push({ label: 'Event Details', icon: 'timeline' })
+          } else {
+            breadcrumbs.push({ label: pageLabels[parts[2]] || parts[2], icon: parts[2] })
+          }
         }
+      } else if (parts[1] === 'new') {
+        breadcrumbs.push({ label: 'New Campaign' })
       }
     } else if (parts[0] === 'vault') {
-      breadcrumbs.push({ label: 'Character Vault' })
+      breadcrumbs.push({ label: 'Character Vault', href: '/vault', icon: 'vault' })
+
+      if (parts[1] && parts[1] !== 'new' && parts[1] !== 'import') {
+        // Character detail page
+        if (parts[2]) {
+          const pageLabels: Record<string, string> = {
+            view: 'View',
+            intelligence: 'Intelligence',
+            relationships: 'Relationships',
+            sessions: 'Sessions',
+            gallery: 'Gallery',
+          }
+          if (parts[2] === 'sessions' && parts[3]) {
+            breadcrumbs.push({ label: 'Sessions', href: `/vault/${parts[1]}/sessions`, icon: 'sessions' })
+            breadcrumbs.push({ label: 'Session Details', icon: 'sessions' })
+          } else {
+            breadcrumbs.push({ label: pageLabels[parts[2]] || 'Edit', icon: parts[2] || 'edit' })
+          }
+        } else {
+          breadcrumbs.push({ label: 'Edit Character', icon: 'edit' })
+        }
+      } else if (parts[1] === 'new') {
+        breadcrumbs.push({ label: 'New Character' })
+      } else if (parts[1] === 'import') {
+        breadcrumbs.push({ label: 'Import Character' })
+      }
     } else if (parts[0] === 'settings') {
-      breadcrumbs.push({ label: 'Settings' })
+      breadcrumbs.push({ label: 'Settings', href: '/settings', icon: 'settings' })
+
+      if (parts[1]) {
+        const settingsLabels: Record<string, string> = {
+          import: 'Import',
+          shares: 'Share Analytics',
+        }
+        breadcrumbs.push({ label: settingsLabels[parts[1]] || parts[1] })
+      }
+    } else if (parts[0] === 'oneshots') {
+      breadcrumbs.push({ label: 'One-Shots', href: '/campaigns', icon: 'oneshots' })
+      if (parts[1] && parts[1] !== 'new') {
+        breadcrumbs.push({ label: 'Edit One-Shot', icon: 'edit' })
+      }
     }
 
     return breadcrumbs
@@ -88,23 +170,31 @@ export function TopBar({ campaigns = [], currentCampaignId, transparent = false,
 
   return (
     <header className={`topbar ${transparent ? 'transparent' : ''}`}>
-      {/* Left: Breadcrumbs */}
+      {/* Left: Breadcrumbs with "You are here" indicator */}
       <div className="topbar-left">
         <nav className="breadcrumb">
-          {breadcrumbs.map((crumb, index) => (
-            <span key={index} className="flex items-center gap-2">
-              {index > 0 && (
-                <ChevronRight className="breadcrumb-separator w-4 h-4" />
-              )}
-              {crumb.href && index < breadcrumbs.length - 1 ? (
-                <Link href={crumb.href} className="breadcrumb-item">
-                  {crumb.label}
-                </Link>
-              ) : (
-                <span className="breadcrumb-item current">{crumb.label}</span>
-              )}
-            </span>
-          ))}
+          {breadcrumbs.map((crumb, index) => {
+            const Icon = crumb.icon ? PAGE_ICONS[crumb.icon] : null
+            const isLast = index === breadcrumbs.length - 1
+            return (
+              <span key={index} className="flex items-center gap-2">
+                {index > 0 && (
+                  <ChevronRight className="breadcrumb-separator w-4 h-4" />
+                )}
+                {crumb.href && !isLast ? (
+                  <Link href={crumb.href} className="breadcrumb-item flex items-center gap-1.5">
+                    {index === 0 && Icon && <Icon className="w-4 h-4" />}
+                    {crumb.label}
+                  </Link>
+                ) : (
+                  <span className="breadcrumb-item current flex items-center gap-1.5">
+                    {isLast && Icon && <Icon className="w-4 h-4 text-purple-400" />}
+                    {crumb.label}
+                  </span>
+                )}
+              </span>
+            )
+          })}
         </nav>
       </div>
 
@@ -146,7 +236,7 @@ export function TopBar({ campaigns = [], currentCampaignId, transparent = false,
         </div>
       )}
 
-      {/* Right: Page Actions + AI Assistant + User */}
+      {/* Right: Page Actions + Recent + AI Assistant + User */}
       <div className="topbar-right">
         {/* Page-specific actions */}
         {actions && (
@@ -154,6 +244,10 @@ export function TopBar({ campaigns = [], currentCampaignId, transparent = false,
             {actions}
           </div>
         )}
+
+        {/* Navigation & Recent Items */}
+        <NavigationMapButton />
+        <RecentItems />
 
         {currentCampaignId && aiEnabled && (
           <button

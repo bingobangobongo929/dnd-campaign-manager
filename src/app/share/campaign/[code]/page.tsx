@@ -3,9 +3,62 @@ import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
 import crypto from 'crypto'
 import { CampaignShareClient } from './client'
+import type { Metadata } from 'next'
 
 interface SharePageProps {
   params: Promise<{ code: string }>
+}
+
+// Generate rich OpenGraph metadata for Discord/social sharing
+export async function generateMetadata({ params }: SharePageProps): Promise<Metadata> {
+  const { code } = await params
+  const supabase = createAdminClient()
+
+  // Fetch share and campaign data
+  const { data: share } = await supabase
+    .from('campaign_shares')
+    .select('campaign_id')
+    .eq('share_code', code)
+    .single()
+
+  if (!share) {
+    return { title: 'Campaign Not Found' }
+  }
+
+  const { data: campaign } = await supabase
+    .from('campaigns')
+    .select('name, description, setting, image_url')
+    .eq('id', share.campaign_id)
+    .single()
+
+  if (!campaign) {
+    return { title: 'Campaign Not Found' }
+  }
+
+  const title = campaign.name
+  const description = campaign.description
+    ? campaign.description.substring(0, 200) + (campaign.description.length > 200 ? '...' : '')
+    : campaign.setting
+    ? `A campaign set in ${campaign.setting}`
+    : 'A D&D campaign'
+  const imageUrl = campaign.image_url
+
+  return {
+    title: `${title} | Campaign`,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630, alt: campaign.name }] : [],
+    },
+    twitter: {
+      card: imageUrl ? 'summary_large_image' : 'summary',
+      title,
+      description,
+      images: imageUrl ? [imageUrl] : [],
+    },
+  }
 }
 
 export default async function ShareCampaignPage({ params }: SharePageProps) {
@@ -86,7 +139,7 @@ export default async function ShareCampaignPage({ params }: SharePageProps) {
     npcDetails: rawSections.npcDetails !== false,
     npcSecrets: rawSections.npcSecrets === true,
     sessionRecaps: rawSections.sessionRecaps !== false,
-    sessionNotes: rawSections.sessionNotes === true,
+    sessionNotes: rawSections.sessionNotes !== false,
     timeline: rawSections.timeline !== false,
     worldMaps: rawSections.worldMaps !== false,
     locations: rawSections.locations !== false,
