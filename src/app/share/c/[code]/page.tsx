@@ -50,13 +50,30 @@ const COMPANION_TYPE_COLORS: Record<string, string> = {
 // Field label component
 function FieldLabel({ children, emoji, count }: { children: React.ReactNode; emoji?: string; count?: number }) {
   return (
-    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
       {emoji && <span>{emoji}</span>}
       {children}
       {count !== undefined && count > 0 && (
         <span className="text-gray-600">({count})</span>
       )}
     </h4>
+  )
+}
+
+// Helper to render HTML content with proper prose styling
+function HtmlContent({ html, className = '' }: { html: string; className?: string }) {
+  return (
+    <div
+      className={`prose prose-invert prose-sm max-w-none
+        prose-p:text-gray-300 prose-p:leading-relaxed prose-p:mb-4
+        prose-headings:text-white/90 prose-headings:mb-3
+        prose-strong:text-white/90 prose-em:text-gray-300
+        prose-ul:text-gray-300 prose-ol:text-gray-300
+        prose-li:mb-1 prose-li:text-gray-300
+        prose-a:text-purple-400 prose-a:no-underline hover:prose-a:underline
+        ${className}`}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   )
 }
 
@@ -265,8 +282,8 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Sidebar */}
-      <aside className="w-full lg:w-[320px] xl:w-[360px] flex-shrink-0 bg-[#0f0f11] border-b lg:border-b-0 lg:border-r border-white/[0.06]">
-        <div className="p-4 sm:p-6 lg:p-8">
+      <aside className="w-full lg:w-[320px] xl:w-[380px] flex-shrink-0 bg-[#0f0f11] border-b lg:border-b-0 lg:border-r border-white/[0.06]">
+        <div className="px-5 sm:px-6 lg:px-8 py-6 lg:py-8">
           {/* Portrait */}
           <div className="mb-6">
             {displayUrl ? (
@@ -416,8 +433,8 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 sm:p-6 lg:p-10 xl:p-12">
-        <div className="max-w-[1200px] mx-auto">
+      <main className="flex-1 overflow-y-auto bg-[#0d0d0f]">
+        <div className="w-full max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 py-8 lg:py-10">
           {/* Stats Grid */}
           <div className="mb-8">
             <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
@@ -463,21 +480,21 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
           {/* BACKSTORY SECTION */}
           {hasBackstoryContent && (
             <Section title="Backstory" icon={BookOpen}>
-              <div className="space-y-8">
+              <div className="space-y-10">
                 {sections.summary && character.summary && (
                   <div>
                     <FieldLabel>Summary</FieldLabel>
-                    <div className="prose prose-invert max-w-none text-gray-300" dangerouslySetInnerHTML={{ __html: character.summary }} />
+                    <HtmlContent html={character.summary} />
                   </div>
                 )}
 
                 {sections.tldr && tldr.length > 0 && (
                   <div>
                     <FieldLabel emoji="⚡" count={tldr.length}>Quick Summary (TL;DR)</FieldLabel>
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-1">
                       {tldr.map((item, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
-                          <span className="text-purple-400 mt-0.5">•</span>
+                        <li key={i} className="text-sm text-gray-400 flex items-start gap-2">
+                          <span className="text-purple-400 flex-shrink-0">•</span>
                           <span>{item}</span>
                         </li>
                       ))}
@@ -488,17 +505,17 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
                 {sections.backstory && character.notes && (
                   <div>
                     <FieldLabel>Full Backstory</FieldLabel>
-                    <div className="prose prose-invert prose-lg max-w-none text-gray-300" dangerouslySetInnerHTML={{ __html: character.notes }} />
+                    <HtmlContent html={character.notes} className="prose-base" />
                   </div>
                 )}
 
                 {sections.lifePhases && backstoryPhases.length > 0 && (
                   <div>
                     <FieldLabel emoji="📅" count={backstoryPhases.length}>Life Phases</FieldLabel>
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {backstoryPhases.map((phase, i) => (
-                        <div key={i} className="bg-white/[0.02] rounded-xl p-4 border-l-2 border-purple-500">
-                          <h4 className="font-medium text-purple-400 mb-2">{phase.title}</h4>
+                        <div key={i} className="bg-white/[0.02] rounded-lg p-4 border-l-2 border-purple-500/50">
+                          <h5 className="text-sm font-medium text-purple-400 mb-2">{phase.title}</h5>
                           <div className="text-sm text-gray-400">
                             {renderMarkdown(phase.content)}
                           </div>
@@ -511,10 +528,10 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
                 {sections.plotHooks && plotHooks.length > 0 && (
                   <div>
                     <FieldLabel emoji="🎯" count={plotHooks.length}>Plot Hooks</FieldLabel>
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-1">
                       {plotHooks.map((hook, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
-                          <span className="text-amber-400 mt-0.5">•</span>
+                        <li key={i} className="text-sm text-gray-400 flex items-start gap-2">
+                          <span className="text-amber-400 flex-shrink-0">•</span>
                           <span>{hook}</span>
                         </li>
                       ))}
@@ -525,11 +542,9 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
                 {sections.quotes && quotes.length > 0 && (
                   <div>
                     <FieldLabel emoji="💬" count={quotes.length}>Memorable Quotes</FieldLabel>
-                    <div className="space-y-3">
+                    <div className="space-y-1">
                       {quotes.map((quote, i) => (
-                        <blockquote key={i} className="pl-4 border-l-2 border-amber-500/50 text-gray-400 italic">
-                          "{quote}"
-                        </blockquote>
+                        <p key={i} className="text-sm text-gray-400 italic">"{quote}"</p>
                       ))}
                     </div>
                   </div>
@@ -541,7 +556,7 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
           {/* DETAILS SECTION */}
           {hasDetailsContent && (
             <Section title="Details" icon={FileText}>
-              <div className="space-y-8">
+              <div className="space-y-10">
                 {sections.appearance && character.appearance && (
                   <div>
                     <FieldLabel>Appearance</FieldLabel>
@@ -652,24 +667,21 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
                 {commonPhrases.length > 0 && (
                   <div>
                     <FieldLabel emoji="🗣️" count={commonPhrases.length}>Common Phrases</FieldLabel>
-                    <ul className="space-y-1.5">
+                    <div className="space-y-1">
                       {commonPhrases.map((phrase, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
-                          <span className="text-purple-400 mt-0.5">•</span>
-                          <span>"{phrase}"</span>
-                        </li>
+                        <p key={i} className="text-sm text-gray-400 italic">"{phrase}"</p>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 )}
 
                 {sections.weaknesses && weaknesses.length > 0 && (
                   <div>
                     <FieldLabel emoji="💔" count={weaknesses.length}>Weaknesses</FieldLabel>
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-1">
                       {weaknesses.map((item, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
-                          <span className="text-orange-400 mt-0.5">•</span>
+                        <li key={i} className="text-sm text-gray-400 flex items-start gap-2">
+                          <span className="text-orange-400 flex-shrink-0">•</span>
                           <span>{item}</span>
                         </li>
                       ))}
@@ -680,10 +692,10 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
                 {sections.fears && fears.length > 0 && (
                   <div>
                     <FieldLabel emoji="😨" count={fears.length}>Fears</FieldLabel>
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-1">
                       {fears.map((item, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
-                          <span className="text-orange-400 mt-0.5">•</span>
+                        <li key={i} className="text-sm text-gray-400 flex items-start gap-2">
+                          <span className="text-orange-400 flex-shrink-0">•</span>
                           <span>{item}</span>
                         </li>
                       ))}
@@ -704,28 +716,27 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
           {/* PEOPLE SECTION */}
           {hasPeopleContent && (
             <Section title="People" icon={Users} count={partyMembers.length + npcs.length + companions.length}>
-              <div className="space-y-8">
+              <div className="space-y-10">
                 {sections.partyMembers && partyMembers.length > 0 && (
                   <div>
                     <FieldLabel count={partyMembers.length}>Party Members</FieldLabel>
                     <div className="grid gap-3 md:grid-cols-2">
                       {partyMembers.map((member) => (
-                        <div key={member.id} className="flex items-start gap-3 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
-                          {member.related_image_url ? (
-                            <Image src={member.related_image_url} alt={member.related_name || ''} width={48} height={48} className="rounded-lg object-cover" />
-                          ) : (
-                            <div className="w-12 h-12 rounded-lg bg-indigo-500/10 flex items-center justify-center">
-                              <User className="w-5 h-5 text-indigo-400" />
+                        <div key={member.id} className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-3 hover:border-white/[0.1] transition-colors">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {member.related_image_url && (
+                              <Image src={member.related_image_url} alt={member.related_name || ''} width={40} height={40} className="rounded-lg object-cover flex-shrink-0" />
+                            )}
+                            <span className="font-medium text-white/90">{member.related_name}</span>
+                            <span className="text-xs px-2 py-0.5 bg-indigo-500/15 text-indigo-400 rounded-md border border-indigo-500/20">Party</span>
+                          </div>
+                          {member.occupation && <p className="text-xs text-gray-500 mt-1">💼 {member.occupation}</p>}
+                          {member.full_notes && (
+                            <div className="mt-2 pt-2 border-t border-white/[0.06]">
+                              <p className="text-xs text-gray-500 mb-1">Notes:</p>
+                              <div className="text-xs text-gray-400">{renderMarkdown(member.full_notes)}</div>
                             </div>
                           )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="font-medium text-white/90">{member.related_name}</p>
-                              <span className="text-xs px-2 py-0.5 bg-indigo-500/15 text-indigo-400 rounded-lg border border-indigo-500/20">Party</span>
-                            </div>
-                            {member.occupation && <p className="text-sm text-gray-500 mt-0.5">{member.occupation}</p>}
-                            {member.full_notes && <p className="text-sm text-gray-400 mt-2">{member.full_notes}</p>}
-                          </div>
                         </div>
                       ))}
                     </div>
@@ -739,25 +750,25 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
                       {npcs.map((npc) => {
                         const relationshipColor = RELATIONSHIP_COLORS[npc.relationship_type] || RELATIONSHIP_COLORS.other
                         return (
-                          <div key={npc.id} className="flex items-start gap-3 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
-                            {npc.related_image_url ? (
-                              <Image src={npc.related_image_url} alt={npc.related_name || ''} width={48} height={48} className="rounded-lg object-cover" />
-                            ) : (
-                              <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                                <User className="w-5 h-5 text-purple-400" />
+                          <div key={npc.id} className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-3 hover:border-white/[0.1] transition-colors">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {npc.related_image_url && (
+                                <Image src={npc.related_image_url} alt={npc.related_name || ''} width={40} height={40} className="rounded-lg object-cover flex-shrink-0" />
+                              )}
+                              <span className="font-medium text-white/90">{npc.related_name}</span>
+                              {npc.nickname && <span className="text-sm text-gray-500 italic">"{npc.nickname}"</span>}
+                              <span className={`text-xs px-2 py-0.5 rounded-md capitalize border ${relationshipColor}`}>
+                                {npc.relationship_label || npc.relationship_type.replace(/_/g, ' ')}
+                              </span>
+                            </div>
+                            {npc.occupation && <p className="text-xs text-gray-500 mt-1">💼 {npc.occupation}</p>}
+                            {npc.location && <p className="text-xs text-gray-500 mt-1">📍 {npc.location}</p>}
+                            {npc.full_notes && (
+                              <div className="mt-2 pt-2 border-t border-white/[0.06]">
+                                <p className="text-xs text-gray-500 mb-1">Full Notes:</p>
+                                <div className="text-xs text-gray-400">{renderMarkdown(npc.full_notes)}</div>
                               </div>
                             )}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <p className="font-medium text-white/90">{npc.related_name}</p>
-                                <span className={`text-xs px-2 py-0.5 rounded-lg border capitalize ${relationshipColor}`}>
-                                  {npc.relationship_label || npc.relationship_type.replace(/_/g, ' ')}
-                                </span>
-                              </div>
-                              {npc.occupation && <p className="text-sm text-gray-500 mt-0.5">{npc.occupation}</p>}
-                              {npc.location && <p className="text-xs text-gray-600 mt-0.5">📍 {npc.location}</p>}
-                              {npc.full_notes && <p className="text-sm text-gray-400 mt-2">{npc.full_notes}</p>}
-                            </div>
                           </div>
                         )
                       })}
@@ -772,27 +783,27 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
                       {companions.map((companion) => {
                         const typeColor = COMPANION_TYPE_COLORS[companion.companion_type || 'pet'] || COMPANION_TYPE_COLORS.other
                         return (
-                          <div key={companion.id} className="flex items-start gap-3 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
-                            {companion.related_image_url ? (
-                              <Image src={companion.related_image_url} alt={companion.related_name || ''} width={48} height={48} className="rounded-lg object-cover" />
-                            ) : (
-                              <div className="w-12 h-12 rounded-lg bg-pink-500/10 flex items-center justify-center">
-                                <Heart className="w-5 h-5 text-pink-400" />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <p className="font-medium text-white/90">{companion.related_name}</p>
-                                <span className={`text-xs px-2 py-0.5 rounded-lg border capitalize ${typeColor}`}>
-                                  {(companion.companion_type || 'pet').replace(/_/g, ' ')}
-                                </span>
-                              </div>
-                              {companion.companion_species && <p className="text-sm text-gray-500 mt-0.5">{companion.companion_species}</p>}
-                              {companion.description && <p className="text-sm text-gray-400 mt-2">{companion.description}</p>}
-                              {companion.companion_abilities && (
-                                <p className="text-sm text-purple-400/70 mt-2">✨ {companion.companion_abilities}</p>
+                          <div key={companion.id} className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-3 hover:border-white/[0.1] transition-colors">
+                            <div className="flex items-center gap-2">
+                              {companion.related_image_url ? (
+                                <Image src={companion.related_image_url} alt={companion.related_name || ''} width={32} height={32} className="rounded-lg object-cover flex-shrink-0" />
+                              ) : (
+                                <Heart className="w-4 h-4 text-pink-400 flex-shrink-0" />
+                              )}
+                              <span className="font-medium text-white/90">{companion.related_name}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-md capitalize border ${typeColor}`}>
+                                {(companion.companion_type || 'pet').replace(/_/g, ' ')}
+                              </span>
+                              {companion.companion_species && (
+                                <span className="text-xs text-gray-500">({companion.companion_species})</span>
                               )}
                             </div>
+                            {companion.description && (
+                              <p className="text-xs text-gray-400 mt-2 whitespace-pre-wrap">{companion.description}</p>
+                            )}
+                            {companion.companion_abilities && (
+                              <p className="text-xs text-purple-400/80 mt-1">✨ Abilities: {companion.companion_abilities}</p>
+                            )}
                           </div>
                         )
                       })}
@@ -806,7 +817,7 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
           {/* WRITINGS SECTION */}
           {hasWritingsContent && (
             <Section title="Writings" icon={Quote} count={writings.length}>
-              <div className="space-y-8">
+              <div className="space-y-10">
                 {sections.writings && writings.length > 0 && (
                   <div className="space-y-4">
                     {writings.map((writing) => (
