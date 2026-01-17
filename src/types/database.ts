@@ -1032,6 +1032,7 @@ export interface Database {
           view_count: number
           last_viewed_at: string | null
           note: string | null
+          status: 'active' | 'deleted'
           created_at: string
         }
         Insert: {
@@ -1043,6 +1044,7 @@ export interface Database {
           view_count?: number
           last_viewed_at?: string | null
           note?: string | null
+          status?: 'active' | 'deleted'
           created_at?: string
         }
         Update: {
@@ -1054,6 +1056,7 @@ export interface Database {
           view_count?: number
           last_viewed_at?: string | null
           note?: string | null
+          status?: 'active' | 'deleted'
           created_at?: string
         }
       }
@@ -1219,6 +1222,7 @@ export interface Database {
           view_count: number
           last_viewed_at: string | null
           note: string | null
+          status: 'active' | 'deleted'
           created_at: string
         }
         Insert: {
@@ -1230,6 +1234,7 @@ export interface Database {
           view_count?: number
           last_viewed_at?: string | null
           note?: string | null
+          status?: 'active' | 'deleted'
           created_at?: string
         }
         Update: {
@@ -1241,6 +1246,7 @@ export interface Database {
           view_count?: number
           last_viewed_at?: string | null
           note?: string | null
+          status?: 'active' | 'deleted'
           created_at?: string
         }
       }
@@ -1407,6 +1413,7 @@ export interface Database {
           view_count: number
           last_viewed_at: string | null
           note: string | null
+          status: 'active' | 'deleted'
           created_at: string
         }
         Insert: {
@@ -1419,6 +1426,7 @@ export interface Database {
           view_count?: number
           last_viewed_at?: string | null
           note?: string | null
+          status?: 'active' | 'deleted'
           created_at?: string
         }
         Update: {
@@ -1431,6 +1439,7 @@ export interface Database {
           view_count?: number
           last_viewed_at?: string | null
           note?: string | null
+          status?: 'active' | 'deleted'
           created_at?: string
         }
       }

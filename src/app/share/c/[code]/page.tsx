@@ -1,5 +1,4 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
 import Image from 'next/image'
 import {
@@ -147,6 +146,24 @@ function Section({ title, icon: Icon, count, children, id }: { title: string; ic
   )
 }
 
+// Friendly unavailable page component
+function UnavailablePage({ title, message }: { title: string; message: string }) {
+  return (
+    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">
+      <div className="text-center max-w-md">
+        <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-purple-500/10 flex items-center justify-center">
+          <User className="w-8 h-8 text-purple-400" />
+        </div>
+        <h1 className="text-2xl font-bold text-white mb-3">{title}</h1>
+        <p className="text-gray-400 mb-6">{message}</p>
+        <p className="text-sm text-gray-600">
+          If you believe this is an error, please contact the person who shared this link.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export default async function ShareCharacterPage({ params }: SharePageProps) {
   const { code } = await params
   const supabase = createAdminClient()
@@ -162,19 +179,33 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
     console.error('Share fetch error:', shareError)
   }
 
+  // Share not found
   if (shareError || !share) {
-    notFound()
+    return (
+      <UnavailablePage
+        title="Link Not Found"
+        message="This share link doesn't exist or may have been removed."
+      />
+    )
+  }
+
+  // Share has been deleted (soft delete)
+  if (share.status === 'deleted') {
+    return (
+      <UnavailablePage
+        title="Link No Longer Available"
+        message="The owner has removed this share link. The content is no longer publicly accessible."
+      />
+    )
   }
 
   // Check expiration
   if (share.expires_at && new Date(share.expires_at) < new Date()) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Link Expired</h1>
-          <p className="text-gray-400">This share link has expired.</p>
-        </div>
-      </div>
+      <UnavailablePage
+        title="Link Expired"
+        message="This share link has expired and is no longer accessible."
+      />
     )
   }
 
@@ -229,7 +260,12 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
     .single()
 
   if (charError || !character) {
-    notFound()
+    return (
+      <UnavailablePage
+        title="Character Not Found"
+        message="The character associated with this share link could not be found."
+      />
+    )
   }
 
   // Section visibility - default to showing if not explicitly false

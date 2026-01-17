@@ -80,6 +80,7 @@ export async function GET() {
           )
         `)
         .in('character_id', characterIds)
+        .or('status.is.null,status.neq.deleted') // Include active and legacy (null status) shares
 
       if (error) {
         console.error('Character shares error:', error)
@@ -101,6 +102,7 @@ export async function GET() {
           )
         `)
         .in('oneshot_id', oneshotIds)
+        .or('status.is.null,status.neq.deleted') // Include active and legacy (null status) shares
 
       if (error) {
         console.error('Oneshot shares error:', error)
@@ -122,6 +124,7 @@ export async function GET() {
           )
         `)
         .in('campaign_id', campaignIds)
+        .or('status.is.null,status.neq.deleted') // Include active and legacy (null status) shares
 
       if (error) {
         console.error('Campaign shares error:', error)
@@ -341,7 +344,7 @@ export async function GET() {
   }
 }
 
-// DELETE - Revoke a share
+// DELETE - Soft delete a share (preserves analytics data)
 export async function DELETE(req: Request) {
   try {
     const supabase = await createClient()
@@ -371,23 +374,19 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'Invalid share type' }, { status: 400 })
     }
 
-    // Delete the share (RLS will ensure ownership)
+    // Soft delete: set status to 'deleted' instead of actually deleting
+    // This preserves all analytics data while making the link inaccessible
     const { error } = await supabase
       .from(table)
-      .delete()
+      .update({ status: 'deleted' })
       .eq('id', shareId)
 
     if (error) {
-      console.error('Delete share error:', error)
+      console.error('Soft delete share error:', error)
       return NextResponse.json({ error: 'Failed to delete share' }, { status: 500 })
     }
 
-    // Also delete associated view events
-    await supabase
-      .from('share_view_events')
-      .delete()
-      .eq('share_id', shareId)
-      .eq('share_type', shareType)
+    // Note: We no longer delete view events - they're preserved for analytics
 
     return NextResponse.json({ success: true })
   } catch (error) {
