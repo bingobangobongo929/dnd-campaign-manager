@@ -1,11 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import Image from 'next/image'
 import {
-  User,
-  ChevronDown,
-  ChevronUp,
   Sparkles,
   Edit2,
   Trash2,
@@ -48,11 +44,7 @@ const EMOJIS = {
 }
 
 export function NPCCard({ npc, onEdit, onDelete }: NPCCardProps) {
-  const [expanded, setExpanded] = useState(true)
-
   const relationshipColor = RELATIONSHIP_COLORS[npc.relationship_type] || RELATIONSHIP_COLORS.other
-  // Only expand for full_notes which can be lengthy
-  const hasExpandableContent = npc.full_notes
 
   return (
     <div className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-3 hover:border-white/[0.1] transition-colors group">
@@ -143,28 +135,17 @@ export function NPCCard({ npc, onEdit, onDelete }: NPCCardProps) {
         </div>
       )}
 
-      {/* Full notes - expandable if lengthy */}
-      {hasExpandableContent && (
-        <>
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="flex items-center gap-1.5 mt-2 text-xs text-gray-500 hover:text-purple-400 transition-colors"
-          >
-            {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-            {expanded ? 'Hide Notes' : 'Show Notes'}
-          </button>
-          {expanded && npc.full_notes && (
-            <div className="mt-2 pt-2 border-t border-white/[0.06]">
-              <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                Full Notes:
-              </p>
-              <div className="text-xs text-gray-400">
-                {renderMarkdown(npc.full_notes)}
-              </div>
-            </div>
-          )}
-        </>
+      {/* Full notes - always visible */}
+      {npc.full_notes && (
+        <div className="mt-2 pt-2 border-t border-white/[0.06]">
+          <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+            <Sparkles className="w-3 h-3" />
+            Full Notes:
+          </p>
+          <div className="text-xs text-gray-400">
+            {renderMarkdown(npc.full_notes)}
+          </div>
+        </div>
       )}
     </div>
   )
