@@ -74,6 +74,7 @@ export default function HomePage() {
 
   const featuredCampaign = campaigns[0]
   const featuredCharacter = characters[0]
+  const featuredOneshot = oneshots[0]
   // Show all campaigns in the grid (including featured) - slice to limit display
   const displayCampaigns = campaigns.slice(0, 6)
 
@@ -329,6 +330,56 @@ export default function HomePage() {
                 View All <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
+
+            {/* Featured One-Shot Hero */}
+            {featuredOneshot && (
+              <Link
+                href={`/oneshots/${featuredOneshot.id}`}
+                className="group relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-amber-500/30 transition-all duration-500 mb-6"
+              >
+                <div className="relative h-[280px] md:h-[360px]">
+                  {featuredOneshot.image_url ? (
+                    <>
+                      <Image
+                        src={featuredOneshot.image_url}
+                        alt={featuredOneshot.title}
+                        fill
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-900/20 via-gray-900 to-gray-950" />
+                  )}
+
+                  {/* Content Overlay */}
+                  <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-10">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-300">
+                        Continue Adventure
+                      </span>
+                      <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300">
+                        {featuredOneshot.game_system}
+                      </span>
+                    </div>
+                    <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-2 group-hover:text-amber-400 transition-colors">
+                      {featuredOneshot.title}
+                    </h2>
+                    {featuredOneshot.tagline && (
+                      <p className="text-gray-400 text-sm md:text-base mb-4">
+                        {featuredOneshot.tagline}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-2 text-amber-400 font-medium">
+                      <Scroll className="w-5 h-5" />
+                      <span>Open Adventure</span>
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            )}
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {oneshots.map((oneshot) => (
