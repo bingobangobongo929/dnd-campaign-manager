@@ -33,14 +33,18 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Protected routes - redirect to login if not authenticated
-  // Public routes: /, /login, /signup, /share/*
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/signup') &&
-    !request.nextUrl.pathname.startsWith('/share') &&
-    request.nextUrl.pathname !== '/'
-  ) {
+  // Public routes: /, /login, /signup, /share/*, opengraph-image, twitter-image, icon
+  const isPublicRoute =
+    request.nextUrl.pathname === '/' ||
+    request.nextUrl.pathname.startsWith('/login') ||
+    request.nextUrl.pathname.startsWith('/signup') ||
+    request.nextUrl.pathname.startsWith('/share') ||
+    request.nextUrl.pathname.includes('opengraph-image') ||
+    request.nextUrl.pathname.includes('twitter-image') ||
+    request.nextUrl.pathname.endsWith('/icon') ||
+    request.nextUrl.pathname.endsWith('/icon.svg')
+
+  if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
