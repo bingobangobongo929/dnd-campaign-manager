@@ -73,6 +73,7 @@ export default function HomePage() {
   }
 
   const featuredCampaign = campaigns[0]
+  const featuredCharacter = characters[0]
   // Show all campaigns in the grid (including featured) - slice to limit display
   const displayCampaigns = campaigns.slice(0, 6)
 
@@ -191,6 +192,61 @@ export default function HomePage() {
                 </Link>
               ))}
             </div>
+          </section>
+        )}
+
+        {/* Featured Character Hero */}
+        {featuredCharacter && (
+          <section>
+            <Link
+              href={`/vault/${featuredCharacter.id}`}
+              className="group relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-purple-500/30 transition-all duration-500"
+            >
+              <div className="relative h-[280px] md:h-[360px]">
+                {featuredCharacter.detail_image_url || featuredCharacter.image_url ? (
+                  <>
+                    <Image
+                      src={featuredCharacter.detail_image_url || featuredCharacter.image_url!}
+                      alt={featuredCharacter.name}
+                      fill
+                      className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
+                  </>
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-gray-900 to-gray-950" />
+                )}
+
+                {/* Content Overlay */}
+                <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-10">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-full bg-purple-500 text-white">
+                      Continue Your Story
+                    </span>
+                    {featuredCharacter.status && (
+                      <span
+                        className="px-3 py-1 text-xs font-medium rounded-full text-white"
+                        style={{ backgroundColor: featuredCharacter.status_color || 'rgba(255,255,255,0.1)' }}
+                      >
+                        {featuredCharacter.status}
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-2 group-hover:text-purple-400 transition-colors">
+                    {featuredCharacter.name}
+                  </h2>
+                  <p className="text-gray-400 text-sm md:text-base mb-4">
+                    {[featuredCharacter.race, featuredCharacter.class].filter(Boolean).join(' ') || 'Adventurer'}
+                  </p>
+                  <div className="flex items-center gap-2 text-purple-400 font-medium">
+                    <BookOpen className="w-5 h-5" />
+                    <span>Open Character</span>
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                  </div>
+                </div>
+              </div>
+            </Link>
           </section>
         )}
 
