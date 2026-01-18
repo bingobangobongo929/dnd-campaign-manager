@@ -29,6 +29,7 @@ import {
   Minimize2,
 } from 'lucide-react'
 import { getInitials, formatDate } from '@/lib/utils'
+import { sanitizeHtml } from '@/components/ui/safe-html'
 import { ReadOnlyCanvas } from './read-only-canvas'
 import { RelationshipGraph } from './relationship-graph'
 
@@ -119,14 +120,15 @@ const LORE_TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }
 
 function markdownToHtml(text: string): string {
   if (!text) return ''
-  if (text.includes('<ul>') || text.includes('<li>') || text.includes('<p>')) {
-    return text
+  let html = text
+  if (!text.includes('<ul>') && !text.includes('<li>') && !text.includes('<p>')) {
+    html = text
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`(.+?)`/g, '<code>$1</code>')
+      .replace(/\n/g, '<br/>')
   }
-  return text
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code>$1</code>')
-    .replace(/\n/g, '<br/>')
+  return sanitizeHtml(html)
 }
 
 // Section component matching character share page
@@ -863,7 +865,7 @@ export function CampaignShareClient({
                       {sections.sessionNotes && session.notes && (
                         <div className="p-5 sm:p-6 bg-white/[0.01]">
                           <FieldLabel emoji="📝">Detailed Notes</FieldLabel>
-                          <div className="prose prose-invert max-w-none text-gray-300 [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4" dangerouslySetInnerHTML={{ __html: session.notes }} />
+                          <div className="prose prose-invert max-w-none text-gray-300 [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4" dangerouslySetInnerHTML={{ __html: sanitizeHtml(session.notes) }} />
                         </div>
                       )}
 

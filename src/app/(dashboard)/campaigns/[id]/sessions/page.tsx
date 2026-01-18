@@ -12,7 +12,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react'
-import { Input, Modal, Textarea, Tooltip } from '@/components/ui'
+import { Input, Modal, Textarea, Tooltip, sanitizeHtml } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { CharacterViewModal } from '@/components/character'
@@ -25,15 +25,15 @@ import type { Campaign, Session, Character, Tag, CharacterTag } from '@/types/da
 // Convert basic markdown to HTML for display (or pass through if already HTML)
 function markdownToHtml(text: string): string {
   // If already contains HTML list tags, pass through (it's already formatted)
-  if (text.includes('<ul>') || text.includes('<li>') || text.includes('<p>')) {
-    return text
+  let html = text
+  if (!text.includes('<ul>') && !text.includes('<li>') && !text.includes('<p>')) {
+    html = text
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`(.+?)`/g, '<code>$1</code>')
+      .replace(/\n/g, '<br/>')
   }
-
-  return text
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code>$1</code>')
-    .replace(/\n/g, '<br/>')
+  return sanitizeHtml(html)
 }
 
 interface SessionWithAttendees extends Session {
@@ -378,7 +378,7 @@ export default function SessionsPage() {
                         <div className="mb-4 p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
                           <div
                             className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4"
-                            dangerouslySetInnerHTML={{ __html: session.notes }}
+                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(session.notes) }}
                           />
                         </div>
                       )}

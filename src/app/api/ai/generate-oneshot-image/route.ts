@@ -6,6 +6,7 @@
  */
 
 import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'edge'
 
@@ -126,6 +127,13 @@ function getColorPalette(genres: string[], text: string): string {
 
 export async function POST(req: Request) {
   try {
+    // Auth check
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { title, tagline, genreTags, introduction, settingNotes }: GenerateOneshotPromptRequest = await req.json()
 
     if (!title) {

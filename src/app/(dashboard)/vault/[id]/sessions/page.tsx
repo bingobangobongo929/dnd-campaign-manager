@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AppLayout } from '@/components/layout/app-layout'
-import { Button } from '@/components/ui'
+import { Button, SafeHtml } from '@/components/ui'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { createClient } from '@/lib/supabase/client'
 import { formatDate } from '@/lib/character-display'
@@ -156,9 +156,9 @@ export default function CharacterSessionsPage() {
 
                     {/* Full Summary - no line clamp */}
                     {entry.summary && (
-                      <div
+                      <SafeHtml
+                        html={entry.summary}
                         className="prose prose-invert prose-sm max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&>ul]:mt-1 [&>ul]:mb-2 [&_li]:my-0.5 [&>p]:mb-2 text-[--text-secondary]"
-                        dangerouslySetInnerHTML={{ __html: entry.summary }}
                       />
                     )}
 
@@ -186,9 +186,9 @@ export default function CharacterSessionsPage() {
                   {/* Expanded Detailed Notes */}
                   {isExpanded && entry.notes && (
                     <div className="px-4 pb-4 pt-2 border-t border-white/[0.06]">
-                      <div
+                      <SafeHtml
+                        html={entry.notes}
                         className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4"
-                        dangerouslySetInnerHTML={{ __html: entry.notes }}
                       />
                     </div>
                   )}

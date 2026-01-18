@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { renderMarkdown } from '@/lib/character-display'
+import { sanitizeHtml } from '@/components/ui/safe-html'
 import { InteractivePortrait, BackToTopButton } from './client'
 import crypto from 'crypto'
 import type { Metadata } from 'next'
@@ -118,7 +119,7 @@ function HtmlContent({ html, className = '' }: { html: string; className?: strin
   return (
     <div
       className={`prose prose-invert max-w-none text-gray-300 prose-p:mb-6 prose-p:leading-relaxed prose-ul:my-4 prose-li:my-1 ${className}`}
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
     />
   )
 }
@@ -1081,7 +1082,7 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
                     {/* Detailed Notes */}
                     {session.notes && (
                       <div className="prose prose-invert prose-sm max-w-none text-gray-400 prose-h3:mt-6 prose-h3:mb-3 prose-h3:text-base prose-h3:font-semibold prose-h3:text-white/90 prose-p:mb-3 prose-ul:my-2 prose-li:my-1">
-                        <div dangerouslySetInnerHTML={{ __html: session.notes }} />
+                        <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(session.notes) }} />
                       </div>
                     )}
 

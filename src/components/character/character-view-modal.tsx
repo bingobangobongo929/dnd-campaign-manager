@@ -2,7 +2,7 @@
 
 import { X, Pencil, User, Scroll, Target, Eye, Lock, Quote, Users } from 'lucide-react'
 import { cn, getInitials } from '@/lib/utils'
-import { TagBadge } from '@/components/ui'
+import { TagBadge, sanitizeHtml } from '@/components/ui'
 import Image from 'next/image'
 import type { Character, Tag, CharacterTag } from '@/types/database'
 
@@ -259,7 +259,7 @@ export function CharacterViewModal({
               <h3 className="character-view-section-title">Notes</h3>
               <div
                 className="character-view-notes"
-                dangerouslySetInnerHTML={{ __html: character.notes! }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(character.notes!) }}
               />
             </div>
           )}

@@ -25,7 +25,7 @@ import {
   X,
   Heart,
 } from 'lucide-react'
-import { Modal } from '@/components/ui'
+import { Modal, SafeHtml } from '@/components/ui'
 import { ShareCharacterModal } from './ShareCharacterModal'
 import type {
   VaultCharacter,
@@ -779,7 +779,7 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
                       {character.summary && (
                         <div>
                           <FieldLabel>Summary</FieldLabel>
-                          <div className="prose prose-invert max-w-none text-gray-300 prose-p:mb-6 prose-p:leading-relaxed prose-ul:my-4 prose-li:my-1" dangerouslySetInnerHTML={{ __html: character.summary }} />
+                          <SafeHtml html={character.summary} className="prose prose-invert max-w-none text-gray-300 prose-p:mb-6 prose-p:leading-relaxed prose-ul:my-4 prose-li:my-1" />
                         </div>
                       )}
 
@@ -795,10 +795,7 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
                       {character.notes && (
                         <div>
                           <FieldLabel>Full Backstory</FieldLabel>
-                          <div
-                            className="prose prose-invert prose-lg max-w-none text-gray-300"
-                            dangerouslySetInnerHTML={{ __html: character.notes }}
-                          />
+                          <SafeHtml html={character.notes} className="prose prose-invert prose-lg max-w-none text-gray-300" />
                         </div>
                       )}
 

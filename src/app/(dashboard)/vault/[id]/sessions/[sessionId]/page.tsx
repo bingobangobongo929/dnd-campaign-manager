@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AppLayout } from '@/components/layout/app-layout'
-import { Button, Input } from '@/components/ui'
+import { Button, Input, sanitizeHtml } from '@/components/ui'
 import { RichTextEditor } from '@/components/editor'
 import { createClient } from '@/lib/supabase/client'
 import { useVersionedAutoSave } from '@/hooks/useAutoSave'
@@ -592,7 +592,7 @@ export default function VaultSessionEditorPage() {
                 <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
                   <div
                     className="prose prose-invert prose-sm max-w-none [&>ul]:mt-1 [&>ul]:mb-2 [&>li]:my-0.5 text-[--text-secondary]"
-                    dangerouslySetInnerHTML={{ __html: formatSummaryAsHtml(pendingSummary) }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatSummaryAsHtml(pendingSummary)) }}
                   />
                 </div>
               </div>
@@ -615,7 +615,7 @@ export default function VaultSessionEditorPage() {
                 <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
                   <div
                     className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4"
-                    dangerouslySetInnerHTML={{ __html: pendingNotes }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(pendingNotes) }}
                   />
                 </div>
               </div>

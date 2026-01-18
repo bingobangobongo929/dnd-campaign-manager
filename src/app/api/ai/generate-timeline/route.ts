@@ -1,5 +1,6 @@
 import { generateText } from 'ai'
 import { getAIModel, AI_PROMPTS, AIProvider } from '@/lib/ai/config'
+import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'edge'
 
@@ -21,6 +22,13 @@ interface GeneratedEvent {
 
 export async function POST(req: Request) {
   try {
+    // Auth check
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+    }
+
     const { sessions, characters, provider } = await req.json() as {
       sessions: SessionData[]
       characters: { id: string; name: string }[]

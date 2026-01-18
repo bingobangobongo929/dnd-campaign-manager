@@ -6,6 +6,7 @@
  */
 
 import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'edge'
 
@@ -20,6 +21,13 @@ interface GenerateCampaignPromptRequest {
 
 export async function POST(req: Request) {
   try {
+    // Auth check
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { title, summary, setting, game_system, character_names, themes }: GenerateCampaignPromptRequest = await req.json()
 
     if (!title) {

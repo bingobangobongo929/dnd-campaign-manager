@@ -2,6 +2,7 @@
 
 import { X, Pencil, Calendar, Users } from 'lucide-react'
 import { formatDate, getInitials } from '@/lib/utils'
+import { sanitizeHtml } from '@/components/ui'
 import Image from 'next/image'
 import type { Session, Character } from '@/types/database'
 
@@ -160,7 +161,7 @@ export function SessionViewModal({
                   color: '#d1d5db',
                   lineHeight: '1.8',
                 }}
-                dangerouslySetInnerHTML={{ __html: session.notes }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(session.notes) }}
               />
             </div>
           ) : (
