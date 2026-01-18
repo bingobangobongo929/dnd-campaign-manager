@@ -154,7 +154,12 @@ export default function HomePage() {
         {displayCampaigns.length > 0 && (
           <section>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-white">Your Campaigns</h3>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-500/10">
+                  <Swords className="w-5 h-5 text-blue-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">Your Campaigns</h3>
+              </div>
               <Link href="/campaigns" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
                 View All <ChevronRight className="w-4 h-4" />
               </Link>
@@ -195,12 +200,25 @@ export default function HomePage() {
           </section>
         )}
 
-        {/* Featured Character Hero */}
-        {featuredCharacter && (
-          <section>
+        {/* Character Vault - Portrait Gallery */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-500/10">
+                <BookOpen className="w-5 h-5 text-purple-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">Character Vault</h3>
+            </div>
+            <Link href="/vault" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
+              View All <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* Featured Character Hero */}
+          {featuredCharacter && (
             <Link
               href={`/vault/${featuredCharacter.id}`}
-              className="group relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-purple-500/30 transition-all duration-500"
+              className="group relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-purple-500/30 transition-all duration-500 mb-6"
             >
               <div className="relative h-[280px] md:h-[360px]">
                 {featuredCharacter.image_url ? (
@@ -221,7 +239,7 @@ export default function HomePage() {
                 {/* Content Overlay */}
                 <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-10">
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-full bg-purple-500 text-white">
+                    <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-purple-300">
                       Continue Your Story
                     </span>
                     {featuredCharacter.status && (
@@ -247,22 +265,7 @@ export default function HomePage() {
                 </div>
               </div>
             </Link>
-          </section>
-        )}
-
-        {/* Character Vault - Portrait Gallery */}
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-500/10">
-                <BookOpen className="w-5 h-5 text-purple-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-white">Character Vault</h3>
-            </div>
-            <Link href="/vault" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
-              View All <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
+          )}
 
           {characters.length === 0 ? (
             <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-12 text-center">
