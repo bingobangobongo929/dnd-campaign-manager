@@ -27,7 +27,8 @@ import {
   Check,
 } from 'lucide-react'
 import { Modal } from '@/components/ui'
-import { useSupabase, useUser } from '@/hooks'
+import { MobileLayout, MobileBottomSheet } from '@/components/mobile'
+import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { cn } from '@/lib/utils'
 import type { Oneshot, OneshotRun } from '@/types/database'
 
@@ -52,8 +53,12 @@ export default function OneshotRunPage() {
   const params = useParams()
   const supabase = useSupabase()
   const { user } = useUser()
+  const isMobile = useIsMobile()
 
   const oneshotId = params.id as string
+
+  // Mobile-specific state
+  const [mobileTab, setMobileTab] = useState<'initiative' | 'notes' | 'reference'>('notes')
 
   // Core state
   const [oneshot, setOneshot] = useState<Oneshot | null>(null)
@@ -221,6 +226,572 @@ export default function OneshotRunPage() {
     }
   }
 
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    if (loading) {
+      return (
+        <MobileLayout title="Run Mode" showBackButton backHref={`/oneshots/${oneshotId}`}>
+          <div className="flex items-center justify-center h-[60vh]">
+            <div className="w-10 h-10 border-2 border-purple-500 border-t-transparent rounded-full spinner" />
+          </div>
+        </MobileLayout>
+      )
+    }
+
+    if (!oneshot) return null
+
+    return (
+      <>
+        <div className="min-h-screen bg-[#0a0a0c] flex flex-col">
+          {/* Mobile Header with Timer */}
+          <header className="sticky top-0 z-50 bg-[#0d0d0f]/95 backdrop-blur-xl border-b border-white/[0.06] safe-area-top">
+            <div className="px-4 py-3">
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  onClick={() => router.push(`/oneshots/${oneshotId}`)}
+                  className="flex items-center gap-2 text-gray-400 active:text-white transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+
+                <div className="text-center flex-1 px-4">
+                  <h1 className="text-sm font-semibold text-white truncate">{oneshot.title}</h1>
+                </div>
+
+                <button
+                  onClick={() => setEndSessionOpen(true)}
+                  className="px-3 py-1.5 bg-red-500/80 active:bg-red-500 text-white text-xs font-medium rounded-lg transition-colors"
+                >
+                  End
+                </button>
+              </div>
+
+              {/* Timer */}
+              <div className="flex items-center justify-center gap-3 bg-white/[0.03] rounded-xl px-4 py-2">
+                <Clock className="w-4 h-4 text-gray-500" />
+                <span className="font-mono text-xl font-semibold text-white tabular-nums">
+                  {formatTime(timerSeconds)}
+                </span>
+                <div className="flex items-center gap-1 ml-2">
+                  <button
+                    onClick={() => setTimerRunning(!timerRunning)}
+                    className={cn(
+                      "p-2 rounded-lg transition-colors",
+                      timerRunning
+                        ? "bg-amber-500/20 text-amber-400 active:bg-amber-500/30"
+                        : "bg-emerald-500/20 text-emerald-400 active:bg-emerald-500/30"
+                    )}
+                  >
+                    {timerRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                  </button>
+                  <button
+                    onClick={() => { setTimerSeconds(0); setTimerRunning(false) }}
+                    className="p-2 rounded-lg text-gray-400 active:text-white active:bg-white/[0.05] transition-colors"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Tab Navigation */}
+            <div className="flex border-t border-white/[0.06]">
+              <button
+                onClick={() => setMobileTab('initiative')}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors",
+                  mobileTab === 'initiative'
+                    ? "text-purple-400 bg-purple-500/10 border-b-2 border-purple-500"
+                    : "text-gray-500"
+                )}
+              >
+                <Swords className="w-4 h-4" />
+                Initiative
+              </button>
+              <button
+                onClick={() => setMobileTab('notes')}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors",
+                  mobileTab === 'notes'
+                    ? "text-purple-400 bg-purple-500/10 border-b-2 border-purple-500"
+                    : "text-gray-500"
+                )}
+              >
+                <BookOpen className="w-4 h-4" />
+                Notes
+              </button>
+              <button
+                onClick={() => setMobileTab('reference')}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors",
+                  mobileTab === 'reference'
+                    ? "text-purple-400 bg-purple-500/10 border-b-2 border-purple-500"
+                    : "text-gray-500"
+                )}
+              >
+                <Target className="w-4 h-4" />
+                Reference
+              </button>
+            </div>
+          </header>
+
+          {/* Tab Content */}
+          <div className="flex-1 overflow-y-auto pb-24">
+            {/* Initiative Tab */}
+            {mobileTab === 'initiative' && (
+              <div className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-semibold text-white">Combat Tracker</h2>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setAddCombatantOpen(true)}
+                      className="p-2 rounded-lg bg-purple-500/20 text-purple-400 active:bg-purple-500/30 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                    {initiative.length > 0 && (
+                      <button
+                        onClick={clearInitiative}
+                        className="p-2 rounded-lg text-red-400 active:bg-red-500/10 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Turn Navigation */}
+                {initiative.length > 0 && (
+                  <div className="flex items-center justify-between bg-white/[0.03] rounded-lg p-3">
+                    <button
+                      onClick={prevTurn}
+                      className="p-2 rounded-lg active:bg-white/[0.05] transition-colors"
+                    >
+                      <ChevronUp className="w-5 h-5 text-gray-400" />
+                    </button>
+                    <span className="text-sm text-gray-400">
+                      Round {Math.floor(currentTurn / initiative.length) + 1}
+                    </span>
+                    <button
+                      onClick={nextTurn}
+                      className="p-2 rounded-lg active:bg-white/[0.05] transition-colors"
+                    >
+                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Initiative List */}
+                {initiative.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <Swords className="w-12 h-12 text-gray-600 mb-3" />
+                    <p className="text-sm text-gray-500 mb-4">No combatants yet</p>
+                    <button
+                      onClick={() => setAddCombatantOpen(true)}
+                      className="px-4 py-2 bg-purple-600 active:bg-purple-500 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      Add Combatant
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {initiative.map((entry, index) => (
+                      <div
+                        key={entry.id}
+                        className={cn(
+                          "p-3 rounded-xl transition-all",
+                          index === currentTurn
+                            ? "bg-purple-500/20 border border-purple-500/30"
+                            : "bg-white/[0.02] border border-transparent",
+                          entry.hp === 0 && "opacity-50"
+                        )}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-sm font-mono font-semibold text-white">
+                              {entry.initiative}
+                            </span>
+                            <div>
+                              <span className={cn(
+                                "font-medium text-sm",
+                                entry.isPlayer ? "text-emerald-400" : "text-white"
+                              )}>
+                                {entry.name}
+                              </span>
+                              {entry.ac && (
+                                <span className="text-xs text-gray-500 ml-2">AC {entry.ac}</span>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => removeCombatant(entry.id)}
+                            className="p-2 rounded-lg text-gray-500 active:text-red-400 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* HP Bar */}
+                        {entry.hp !== undefined && entry.maxHp !== undefined && (
+                          <div className="mt-3 flex items-center gap-2">
+                            <button
+                              onClick={() => updateHp(entry.id, -1)}
+                              className="w-8 h-8 rounded-lg bg-red-500/20 text-red-400 active:bg-red-500/30 flex items-center justify-center text-sm font-bold"
+                            >
+                              -
+                            </button>
+                            <div className="flex-1 h-3 bg-white/10 rounded-full overflow-hidden">
+                              <div
+                                className={cn(
+                                  "h-full transition-all",
+                                  entry.hp > entry.maxHp * 0.5 ? "bg-emerald-500" :
+                                  entry.hp > entry.maxHp * 0.25 ? "bg-amber-500" : "bg-red-500"
+                                )}
+                                style={{ width: `${(entry.hp / entry.maxHp) * 100}%` }}
+                              />
+                            </div>
+                            <button
+                              onClick={() => updateHp(entry.id, 1)}
+                              className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 active:bg-emerald-500/30 flex items-center justify-center text-sm font-bold"
+                            >
+                              +
+                            </button>
+                            <span className="text-xs font-mono text-gray-400 w-14 text-right">
+                              {entry.hp}/{entry.maxHp}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Notes Tab */}
+            {mobileTab === 'notes' && (
+              <div className="p-4 flex flex-col h-full">
+                <div className="flex items-center gap-2 mb-3">
+                  <BookOpen className="w-4 h-4 text-gray-500" />
+                  <h3 className="text-sm font-medium text-gray-400">Session Notes</h3>
+                </div>
+                <textarea
+                  value={sessionNotes}
+                  onChange={e => setSessionNotes(e.target.value)}
+                  placeholder="Take notes during the session..."
+                  className="flex-1 min-h-[300px] w-full p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl text-gray-300 placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30 resize-none text-sm"
+                />
+
+                {/* Session Info */}
+                <div className="mt-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06] space-y-3">
+                  <h3 className="text-xs text-gray-500 uppercase tracking-wider">Session Info</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Group Name</label>
+                      <input
+                        type="text"
+                        value={groupName}
+                        onChange={e => setGroupName(e.target.value)}
+                        placeholder="Tuesday Crew"
+                        className="w-full py-2 px-3 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white placeholder:text-gray-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Players</label>
+                      <input
+                        type="number"
+                        value={playerCount}
+                        onChange={e => setPlayerCount(parseInt(e.target.value) || 0)}
+                        min={1}
+                        max={10}
+                        className="w-full py-2 px-3 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Reference Tab */}
+            {mobileTab === 'reference' && (
+              <div className="p-4 space-y-4">
+                {/* Quick Stats */}
+                <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+                  <h3 className="text-xs text-gray-500 uppercase tracking-wider mb-3">One-Shot Info</h3>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Level</span>
+                      <span className="text-white">{oneshot.level}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Players</span>
+                      <span className="text-white">{oneshot.player_count_min}-{oneshot.player_count_max}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Duration</span>
+                      <span className="text-white">{oneshot.estimated_duration || '-'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">System</span>
+                      <span className="text-white">{oneshot.game_system}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reference Panels */}
+                <div className="space-y-3">
+                  {/* Session Plan */}
+                  <div className="bg-white/[0.02] rounded-xl border border-white/[0.06] overflow-hidden">
+                    <button
+                      onClick={() => setActivePanel(activePanel === 'session' ? null : 'session')}
+                      className="w-full flex items-center justify-between p-3 active:bg-white/[0.04] transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Target className="w-4 h-4 text-purple-400" />
+                        <span className="font-medium text-sm text-white">Session Plan</span>
+                      </div>
+                      {activePanel === 'session' ? (
+                        <ChevronUp className="w-4 h-4 text-gray-500" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-gray-500" />
+                      )}
+                    </button>
+                    {activePanel === 'session' && (
+                      <div className="px-3 pb-3">
+                        <pre className="whitespace-pre-wrap text-xs text-gray-400 max-h-[200px] overflow-y-auto">
+                          {oneshot.session_plan || 'No session plan added.'}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* NPCs */}
+                  <div className="bg-white/[0.02] rounded-xl border border-white/[0.06] overflow-hidden">
+                    <button
+                      onClick={() => setActivePanel(activePanel === 'npcs' ? null : 'npcs')}
+                      className="w-full flex items-center justify-between p-3 active:bg-white/[0.04] transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-purple-400" />
+                        <span className="font-medium text-sm text-white">Key NPCs</span>
+                      </div>
+                      {activePanel === 'npcs' ? (
+                        <ChevronUp className="w-4 h-4 text-gray-500" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-gray-500" />
+                      )}
+                    </button>
+                    {activePanel === 'npcs' && (
+                      <div className="px-3 pb-3">
+                        <pre className="whitespace-pre-wrap text-xs text-gray-400 max-h-[200px] overflow-y-auto">
+                          {oneshot.key_npcs || 'No NPCs added.'}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Twists */}
+                  <div className="bg-white/[0.02] rounded-xl border border-red-500/20 overflow-hidden">
+                    <button
+                      onClick={() => setActivePanel(activePanel === 'twists' ? null : 'twists')}
+                      className="w-full flex items-center justify-between p-3 active:bg-white/[0.04] transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-red-400" />
+                        <span className="font-medium text-sm text-red-400">Secrets & Twists</span>
+                      </div>
+                      {activePanel === 'twists' ? (
+                        <ChevronUp className="w-4 h-4 text-gray-500" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-gray-500" />
+                      )}
+                    </button>
+                    {activePanel === 'twists' && (
+                      <div className="px-3 pb-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs text-gray-500">DM Eyes Only</span>
+                          <button
+                            onClick={() => setShowTwists(!showTwists)}
+                            className="p-1.5 rounded-lg text-gray-400 active:text-white transition-colors"
+                          >
+                            {showTwists ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                        {showTwists ? (
+                          <pre className="whitespace-pre-wrap text-xs text-gray-400 max-h-[200px] overflow-y-auto">
+                            {oneshot.twists || 'No twists added.'}
+                          </pre>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-6">
+                            <EyeOff className="w-6 h-6 text-gray-600 mb-2" />
+                            <p className="text-xs text-gray-500">Tap eye to reveal</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Introduction */}
+                  {oneshot.introduction && (
+                    <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+                      <h3 className="text-xs text-gray-500 uppercase tracking-wider mb-2">Introduction</h3>
+                      <p className="text-xs text-gray-400 line-clamp-6">
+                        {oneshot.introduction}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Add Combatant Bottom Sheet */}
+        <MobileBottomSheet
+          isOpen={addCombatantOpen}
+          onClose={() => setAddCombatantOpen(false)}
+          title="Add Combatant"
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Name</label>
+              <input
+                type="text"
+                value={newCombatant.name}
+                onChange={e => setNewCombatant(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Goblin, Player Name, etc."
+                className="w-full py-3 px-4 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white placeholder:text-gray-600"
+                autoFocus
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Initiative</label>
+                <input
+                  type="number"
+                  value={newCombatant.initiative}
+                  onChange={e => setNewCombatant(prev => ({ ...prev, initiative: parseInt(e.target.value) || 0 }))}
+                  className="w-full py-2 px-3 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">HP</label>
+                <input
+                  type="number"
+                  value={newCombatant.hp}
+                  onChange={e => setNewCombatant(prev => ({ ...prev, hp: parseInt(e.target.value) || 0 }))}
+                  placeholder="0"
+                  className="w-full py-2 px-3 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white placeholder:text-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">AC</label>
+                <input
+                  type="number"
+                  value={newCombatant.ac}
+                  onChange={e => setNewCombatant(prev => ({ ...prev, ac: parseInt(e.target.value) || 10 }))}
+                  className="w-full py-2 px-3 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white"
+                />
+              </div>
+            </div>
+
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={newCombatant.isPlayer}
+                onChange={e => setNewCombatant(prev => ({ ...prev, isPlayer: e.target.checked }))}
+                className="w-5 h-5 rounded border-gray-600 text-purple-500"
+              />
+              <span className="text-sm text-gray-300">Player character</span>
+            </label>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                className="flex-1 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-gray-300"
+                onClick={() => setAddCombatantOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="flex-1 py-3 bg-purple-600 active:bg-purple-500 rounded-xl text-white font-medium disabled:opacity-50"
+                onClick={addCombatant}
+                disabled={!newCombatant.name.trim()}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </MobileBottomSheet>
+
+        {/* End Session Bottom Sheet */}
+        <MobileBottomSheet
+          isOpen={endSessionOpen}
+          onClose={() => setEndSessionOpen(false)}
+          title="End Session"
+        >
+          <div className="space-y-4">
+            <div className="text-center">
+              <p className="text-xs text-gray-500 mb-1">Session Duration</p>
+              <p className="text-3xl font-mono font-semibold text-white">{formatTime(timerSeconds)}</p>
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-400 mb-2 text-center">Rating</label>
+              <div className="flex justify-center gap-2">
+                {[1, 2, 3, 4, 5].map(rating => (
+                  <button
+                    key={rating}
+                    onClick={() => setSessionRating(rating)}
+                    className={cn(
+                      "w-12 h-12 rounded-xl text-lg font-semibold transition-colors",
+                      sessionRating >= rating
+                        ? "bg-purple-500/30 text-purple-300 border border-purple-500/50"
+                        : "bg-white/[0.02] text-gray-500 border border-white/[0.06]"
+                    )}
+                  >
+                    {rating}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {sessionNotes && (
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Notes Preview</label>
+                <p className="text-sm text-gray-400 line-clamp-3">{sessionNotes}</p>
+              </div>
+            )}
+
+            <div className="space-y-2 pt-2">
+              <button
+                className="w-full flex items-center justify-center gap-2 py-3 bg-purple-600 active:bg-purple-500 rounded-xl text-white font-medium disabled:opacity-50"
+                onClick={handleEndSession}
+                disabled={saving}
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Save & Exit
+              </button>
+              <button
+                className="w-full py-3 text-gray-400 text-sm"
+                onClick={() => router.push(`/oneshots/${oneshotId}`)}
+              >
+                Exit Without Saving
+              </button>
+              <button
+                className="w-full py-2 text-gray-500 text-sm"
+                onClick={() => setEndSessionOpen(false)}
+              >
+                Continue Playing
+              </button>
+            </div>
+          </div>
+        </MobileBottomSheet>
+      </>
+    )
+  }
+
+  // ============ DESKTOP LAYOUT ============
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0c] flex items-center justify-center">

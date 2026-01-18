@@ -9,8 +9,8 @@ import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT 
 import { CharacterModal, CharacterViewModal } from '@/components/character'
 import { ShareCampaignModal } from '@/components/campaigns'
 import { AppLayout } from '@/components/layout/app-layout'
-import { MobileLayout, MobileSectionHeader, MobileFAB, MobileBottomSheet } from '@/components/mobile'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { CampaignCanvasPageMobile } from './page.mobile'
 import { useAppStore } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
 import type { Campaign, Character, Tag, CharacterTag, CanvasGroup } from '@/types/database'
@@ -561,246 +561,43 @@ export default function CampaignCanvasPage() {
     )
   }
 
-  // Mobile Kanban View
+  // ============ MOBILE LAYOUT ============
   if (isMobile) {
     return (
-      <AppLayout campaignId={campaignId}>
-        <MobileLayout title={campaign?.name || 'Campaign'} showBackButton={true}>
-          {/* Campaign Navigation */}
-          <div className="px-4 mb-4 flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
-            <button
-              className="flex-shrink-0 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-full"
-            >
-              Characters
-            </button>
-            <button
-              onClick={() => router.push(`/campaigns/${campaignId}/sessions`)}
-              className="flex-shrink-0 px-4 py-2 bg-gray-800 text-gray-300 text-sm font-medium rounded-full"
-            >
-              Sessions
-            </button>
-            <button
-              onClick={() => router.push(`/campaigns/${campaignId}/timeline`)}
-              className="flex-shrink-0 px-4 py-2 bg-gray-800 text-gray-300 text-sm font-medium rounded-full"
-            >
-              Timeline
-            </button>
-            <button
-              onClick={() => router.push(`/campaigns/${campaignId}/lore`)}
-              className="flex-shrink-0 px-4 py-2 bg-gray-800 text-gray-300 text-sm font-medium rounded-full"
-            >
-              Lore
-            </button>
-          </div>
-
-          {/* Kanban Columns */}
-          {characters.length === 0 ? (
-            <div className="mobile-empty-state">
-              <Users className="mobile-empty-icon" />
-              <h3 className="mobile-empty-title">No Characters Yet</h3>
-              <p className="mobile-empty-description">Add characters to bring your campaign to life</p>
-              <button
-                onClick={() => setIsCreateCharacterModalOpen(true)}
-                className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white font-medium rounded-xl"
-              >
-                <Plus className="w-5 h-5" />
-                Add Character
-              </button>
-            </div>
-          ) : (
-            <div className="mobile-kanban">
-              {kanbanColumns.map((column) => {
-                const GroupIcon = getGroupIcon(column.icon)
-                return (
-                  <div key={column.id} className="mobile-kanban-column">
-                    <div
-                      className="mobile-kanban-column-header"
-                      style={{ borderBottomColor: `${column.color}40` }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <GroupIcon className="w-4 h-4" style={{ color: column.color }} />
-                        <span className="mobile-kanban-column-title">{column.name}</span>
-                      </div>
-                      <span className="mobile-kanban-column-count">{column.characters.length}</span>
-                    </div>
-                    <div className="mobile-kanban-cards">
-                      {column.characters.map((char) => (
-                        <button
-                          key={char.id}
-                          onClick={() => {
-                            setSelectedCharacterId(char.id)
-                            setViewingCharacterId(char.id)
-                          }}
-                          className="mobile-kanban-card"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-800 flex-shrink-0">
-                              {char.image_url ? (
-                                <Image
-                                  src={char.image_url}
-                                  alt={char.name}
-                                  width={40}
-                                  height={40}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
-                                  {getInitials(char.name)}
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0 text-left">
-                              <p className="mobile-kanban-card-title truncate">{char.name}</p>
-                              <p className="mobile-kanban-card-subtitle truncate">
-                                {char.role || char.race || 'Character'}
-                              </p>
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-gray-600" />
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-          {/* FAB for adding characters */}
-          <MobileFAB
-            icon={<Plus className="w-6 h-6" />}
-            onClick={() => setMobileActionSheet(true)}
-            label="Add"
-          />
-
-          {/* Action Sheet */}
-          <MobileBottomSheet
-            isOpen={mobileActionSheet}
-            onClose={() => setMobileActionSheet(false)}
-            title="Add to Campaign"
-          >
-            <div className="space-y-2">
-              <button
-                onClick={() => {
-                  setMobileActionSheet(false)
-                  setIsCreateCharacterModalOpen(true)
-                }}
-                className="w-full flex items-center gap-4 p-4 rounded-xl bg-gray-800 active:bg-gray-700"
-              >
-                <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                  <Plus className="w-5 h-5 text-purple-400" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-white">Add Character</p>
-                  <p className="text-sm text-gray-400">Create a new NPC or player</p>
-                </div>
-              </button>
-              <button
-                onClick={() => {
-                  setMobileActionSheet(false)
-                  setIsCreateGroupOpen(true)
-                }}
-                className="w-full flex items-center gap-4 p-4 rounded-xl bg-gray-800 active:bg-gray-700"
-              >
-                <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                  <FolderPlus className="w-5 h-5 text-blue-400" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-white">Add Group</p>
-                  <p className="text-sm text-gray-400">Organize characters into groups</p>
-                </div>
-              </button>
-            </div>
-          </MobileBottomSheet>
-
-          {/* Character View Modal */}
-          {viewingCharacter && (
-            <CharacterViewModal
-              character={viewingCharacter}
-              tags={characterTags.get(viewingCharacter.id) || []}
-              onEdit={handleViewToEdit}
-              onClose={handleCloseViewModal}
-            />
-          )}
-
-          {/* Character Edit Modal */}
-          {editingCharacter && (
-            <CharacterModal
-              character={editingCharacter}
-              tags={characterTags.get(editingCharacter.id) || []}
-              allCharacters={characters}
-              campaignId={campaignId}
-              onUpdate={handleCharacterUpdate}
-              onDelete={handleCharacterDelete}
-              onClose={handleCloseEditModal}
-              onTagsChange={loadCampaignData}
-            />
-          )}
-
-          {/* Create Character Modal */}
-          {isCreateCharacterModalOpen && (
-            <CharacterModal
-              character={null}
-              tags={[]}
-              allCharacters={characters}
-              campaignId={campaignId}
-              onUpdate={handleCharacterUpdate}
-              onCreate={handleCharacterCreate}
-              onDelete={handleCharacterDelete}
-              onClose={handleCloseCreateCharacterModal}
-              onTagsChange={loadCampaignData}
-            />
-          )}
-
-          {/* Create Group Modal */}
-          <Modal
-            isOpen={isCreateGroupOpen}
-            onClose={() => {
-              setIsCreateGroupOpen(false)
-              setGroupForm({ name: '', color: '#8B5CF6', icon: 'users' })
-            }}
-            title="Add Group"
-            size="lg"
-          >
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Group Name</label>
-                <Input
-                  placeholder="e.g., The Party, Villains..."
-                  value={groupForm.name}
-                  onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Color</label>
-                <ColorPicker
-                  value={groupForm.color}
-                  onChange={(color) => setGroupForm({ ...groupForm, color })}
-                />
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button
-                  className="flex-1 py-3 bg-gray-800 text-white rounded-xl"
-                  onClick={() => setIsCreateGroupOpen(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="flex-1 py-3 bg-purple-600 text-white rounded-xl"
-                  onClick={handleCreateGroup}
-                  disabled={!groupForm.name.trim() || saving}
-                >
-                  {saving ? 'Creating...' : 'Create'}
-                </button>
-              </div>
-            </div>
-          </Modal>
-        </MobileLayout>
-      </AppLayout>
+      <CampaignCanvasPageMobile
+        campaignId={campaignId}
+        campaign={campaign}
+        characters={characters}
+        characterTags={characterTags}
+        kanbanColumns={kanbanColumns}
+        isCreateCharacterModalOpen={isCreateCharacterModalOpen}
+        setIsCreateCharacterModalOpen={setIsCreateCharacterModalOpen}
+        isCreateGroupOpen={isCreateGroupOpen}
+        setIsCreateGroupOpen={setIsCreateGroupOpen}
+        mobileActionSheet={mobileActionSheet}
+        setMobileActionSheet={setMobileActionSheet}
+        viewingCharacter={viewingCharacter || null}
+        editingCharacter={editingCharacter || null}
+        setSelectedCharacterId={setSelectedCharacterId}
+        setViewingCharacterId={setViewingCharacterId}
+        handleViewToEdit={handleViewToEdit}
+        handleCloseViewModal={handleCloseViewModal}
+        handleCloseEditModal={handleCloseEditModal}
+        handleCloseCreateCharacterModal={handleCloseCreateCharacterModal}
+        handleCharacterUpdate={handleCharacterUpdate}
+        handleCharacterDelete={handleCharacterDelete}
+        handleCharacterCreate={handleCharacterCreate}
+        loadCampaignData={loadCampaignData}
+        groupForm={groupForm}
+        setGroupForm={setGroupForm}
+        handleCreateGroup={handleCreateGroup}
+        saving={saving}
+        onNavigate={(path) => router.push(path)}
+      />
     )
   }
 
-  // Desktop Canvas View
+  // ============ DESKTOP LAYOUT ============
   return (
     <AppLayout campaignId={campaignId} fullBleed transparentTopBar topBarActions={canvasActions}>
       {/* Canvas Area */}

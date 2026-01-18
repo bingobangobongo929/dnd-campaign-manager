@@ -13,7 +13,9 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AppLayout } from '@/components/layout/app-layout'
+import { useIsMobile } from '@/hooks'
 import { Button, SafeHtml } from '@/components/ui'
+import { CharacterSessionsPageMobile } from './page.mobile'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { createClient } from '@/lib/supabase/client'
 import { formatDate } from '@/lib/character-display'
@@ -24,6 +26,7 @@ export default function CharacterSessionsPage() {
   const router = useRouter()
   const supabase = createClient()
   const characterId = params.id as string
+  const isMobile = useIsMobile()
 
   const [entries, setEntries] = useState<PlayJournal[]>([])
   const [loading, setLoading] = useState(true)
@@ -74,6 +77,22 @@ export default function CharacterSessionsPage() {
     })
   }
 
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    return (
+      <CharacterSessionsPageMobile
+        characterId={characterId}
+        entries={entries}
+        loading={loading}
+        expandedIds={expandedIds}
+        toggleExpanded={toggleExpanded}
+        handleDelete={handleDelete}
+        onNavigate={(path) => router.push(path)}
+      />
+    )
+  }
+
+  // ============ DESKTOP LAYOUT ============
   if (loading) {
     return (
       <AppLayout characterId={characterId}>

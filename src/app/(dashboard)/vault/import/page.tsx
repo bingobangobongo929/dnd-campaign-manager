@@ -25,6 +25,8 @@ import {
   XCircle,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
+import { MobileLayout } from '@/components/mobile'
+import { useIsMobile } from '@/hooks'
 import { cn } from '@/lib/utils'
 
 // Types for parsed data
@@ -293,6 +295,7 @@ function renderMarkdown(text: string): React.ReactNode {
 
 export default function VaultImportPage() {
   const router = useRouter()
+  const isMobile = useIsMobile()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const importResultRef = useRef<HTMLDivElement>(null)
 
@@ -1062,6 +1065,268 @@ export default function VaultImportPage() {
     </div>
   )
 
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    return (
+      <AppLayout>
+        <MobileLayout title="Import Character" showBackButton backHref="/vault">
+          <div className="px-4 pb-24">
+            {/* File Upload Area */}
+            {!parsedData && (
+              <div className="mb-6">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".docx,.pdf,.png,.jpg,.jpeg,.webp"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className={cn(
+                    'w-full border-2 border-dashed rounded-xl p-8 text-center transition-all active:scale-[0.98]',
+                    isDragging
+                      ? 'border-purple-500 bg-purple-500/10'
+                      : 'border-white/10 active:bg-white/[0.04]'
+                  )}
+                >
+                  <Upload className="w-10 h-10 mx-auto mb-3 text-gray-500" />
+                  <h3 className="text-base font-medium text-white mb-1">
+                    {file ? file.name : 'Tap to upload document'}
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    .docx, .pdf, .png, .jpg, .webp
+                  </p>
+                </button>
+
+                {/* Parse button */}
+                {file && (
+                  <div className="mt-4 space-y-3">
+                    <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg">
+                      <FileText className="w-5 h-5 text-purple-400 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-white font-medium truncate">{file.name}</p>
+                        <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleParseFile}
+                      disabled={parsing}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-500 text-white rounded-xl active:bg-purple-600 disabled:opacity-50 font-medium min-h-[48px]"
+                    >
+                      {parsing ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Parsing...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-5 h-5" />
+                          Parse with AI
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {/* Parse error */}
+                {parseError && (
+                  <div className="mt-4 flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400">
+                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                    <p className="text-sm">{parseError}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Stats overview - Mobile */}
+            {stats && parsedData && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-base font-semibold text-white truncate flex-1">
+                    {stats.characterName}
+                  </h2>
+                  <button
+                    onClick={() => {
+                      setParsedData(null)
+                      setStats(null)
+                      setFile(null)
+                      setImportResult(null)
+                    }}
+                    className="text-sm text-gray-500 active:text-gray-300 px-2 py-1"
+                  >
+                    Reset
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-4 gap-2 mb-3">
+                  <div className="bg-white/[0.02] rounded-lg p-2 text-center">
+                    <p className="text-sm font-semibold text-white">{stats.npcCount}</p>
+                    <p className="text-[10px] text-gray-500">NPCs</p>
+                  </div>
+                  <div className="bg-white/[0.02] rounded-lg p-2 text-center">
+                    <p className="text-sm font-semibold text-white">{stats.companionCount}</p>
+                    <p className="text-[10px] text-gray-500">Companions</p>
+                  </div>
+                  <div className="bg-white/[0.02] rounded-lg p-2 text-center">
+                    <p className="text-sm font-semibold text-white">{stats.sessionCount}</p>
+                    <p className="text-[10px] text-gray-500">Sessions</p>
+                  </div>
+                  <div className="bg-white/[0.02] rounded-lg p-2 text-center">
+                    <p className="text-sm font-semibold text-white">{stats.writingCount}</p>
+                    <p className="text-[10px] text-gray-500">Writings</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-4 gap-2 mb-4">
+                  <div className="bg-white/[0.02] rounded-lg p-2 text-center">
+                    <p className="text-sm font-semibold text-white">{stats.backstoryPhaseCount}</p>
+                    <p className="text-[10px] text-gray-500">Phases</p>
+                  </div>
+                  <div className="bg-white/[0.02] rounded-lg p-2 text-center">
+                    <p className="text-sm font-semibold text-white">{stats.quoteCount}</p>
+                    <p className="text-[10px] text-gray-500">Quotes</p>
+                  </div>
+                  <div className="bg-white/[0.02] rounded-lg p-2 text-center">
+                    <p className="text-sm font-semibold text-white">{stats.plotHookCount}</p>
+                    <p className="text-[10px] text-gray-500">Hooks</p>
+                  </div>
+                  <div className="bg-white/[0.02] rounded-lg p-2 text-center">
+                    <p className="text-sm font-semibold text-white">{Math.round(stats.backstoryLength / 1000)}k</p>
+                    <p className="text-[10px] text-gray-500">Chars</p>
+                  </div>
+                </div>
+
+                {/* Life phases preview */}
+                {stats.backstoryPhases && stats.backstoryPhases.length > 0 && (
+                  <div className="mb-3 p-2 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                    <p className="text-[10px] text-purple-400 font-medium mb-1">Life phases:</p>
+                    <p className="text-xs text-gray-400">{stats.backstoryPhases.join(' → ')}</p>
+                  </div>
+                )}
+
+                <p className="text-xs text-gray-500">
+                  Review and approve sections below.
+                </p>
+              </div>
+            )}
+
+            {/* Sections for approval - Mobile */}
+            {parsedData && (
+              <div className="space-y-3">
+                <SectionHeader title="Character" icon={User} section="character" hasContent={!!parsedData.character} />
+                <SectionHeader title="NPCs" icon={Users} count={parsedData.npcs?.length} section="npcs" hasContent={!!parsedData.npcs && parsedData.npcs.length > 0} />
+                <SectionHeader title="Companions" icon={Heart} count={parsedData.companions?.length} section="companions" hasContent={!!parsedData.companions && parsedData.companions.length > 0} />
+                <SectionHeader title="Sessions" icon={Scroll} count={parsedData.session_notes?.length} section="sessions" hasContent={!!parsedData.session_notes && parsedData.session_notes.length > 0} />
+                <SectionHeader title="Writings" icon={BookOpen} count={parsedData.writings?.length} section="writings" hasContent={!!parsedData.writings && parsedData.writings.length > 0} />
+                <SectionHeader title="Tables" icon={Table2} count={parsedData.reference_tables?.length} section="tables" hasContent={!!parsedData.reference_tables && parsedData.reference_tables.length > 0} />
+
+                {/* Unclassified content warning */}
+                {parsedData.unclassified_content && (
+                  <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+                    <div className="flex items-center gap-2 text-yellow-400 mb-1">
+                      <AlertCircle className="w-4 h-4" />
+                      <span className="text-sm font-medium">Unclassified Content</span>
+                    </div>
+                    <p className="text-xs text-gray-400 whitespace-pre-wrap line-clamp-3">
+                      {parsedData.unclassified_content}
+                    </p>
+                  </div>
+                )}
+
+                {/* Import buttons - Mobile */}
+                <div className="pt-4 border-t border-white/[0.06] space-y-3">
+                  <button
+                    type="button"
+                    onClick={approveAll}
+                    disabled={allApproved}
+                    className={cn(
+                      'w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium min-h-[48px]',
+                      allApproved
+                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                        : 'bg-white/[0.04] text-gray-300 border border-white/[0.08] active:bg-white/[0.08]'
+                    )}
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    {allApproved ? 'All Approved' : 'Approve All'}
+                  </button>
+
+                  <button
+                    onClick={handleImport}
+                    disabled={importing || !hasApprovedSections || approvals.character !== 'approved'}
+                    className="w-full flex items-center justify-center gap-2 py-3 bg-purple-500 text-white rounded-xl active:bg-purple-600 disabled:opacity-50 font-medium min-h-[48px]"
+                  >
+                    {importing ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Importing...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-5 h-5" />
+                        Import
+                      </>
+                    )}
+                  </button>
+
+                  {approvals.character !== 'approved' && (
+                    <p className="text-center text-xs text-gray-500">
+                      Approve Character section to import
+                    </p>
+                  )}
+                </div>
+
+                {/* Import result - Mobile */}
+                {importResult && (
+                  <div
+                    ref={importResultRef}
+                    className={cn(
+                      'p-3 rounded-lg border',
+                      importResult.success
+                        ? 'bg-green-500/10 border-green-500/20'
+                        : 'bg-red-500/10 border-red-500/20'
+                    )}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      {importResult.success ? (
+                        <CheckCircle2 className="w-5 h-5 text-green-400" />
+                      ) : (
+                        <XCircle className="w-5 h-5 text-red-400" />
+                      )}
+                      <span className={cn('text-sm font-medium', importResult.success ? 'text-green-400' : 'text-red-400')}>
+                        {importResult.message}
+                      </span>
+                    </div>
+
+                    {importResult.success && importResult.stats && (
+                      <div className="text-xs text-gray-400 space-y-0.5 ml-7">
+                        <p>{importResult.stats.npcsImported} NPCs</p>
+                        <p>{importResult.stats.companionsImported} Companions</p>
+                        <p>{importResult.stats.sessionsImported} Sessions</p>
+                        <p>{importResult.stats.writingsImported} Writings</p>
+                      </div>
+                    )}
+
+                    {importResult.success && importResult.characterId && (
+                      <button
+                        onClick={() => router.push(`/vault/${importResult.characterId}`)}
+                        className="mt-2 ml-7 text-sm text-purple-400 active:text-purple-300 underline"
+                      >
+                        View character →
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </MobileLayout>
+      </AppLayout>
+    )
+  }
+
+  // ============ DESKTOP LAYOUT ============
   return (
     <AppLayout>
       <div className="p-6">

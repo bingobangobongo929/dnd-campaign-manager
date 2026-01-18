@@ -37,6 +37,8 @@ import {
 import { AI_PROVIDERS, AIProvider } from '@/lib/ai/config'
 import { useAppStore } from '@/store'
 import { AppLayout } from '@/components/layout/app-layout'
+import { useIsMobile } from '@/hooks'
+import { CharacterIntelligencePageMobile } from './page.mobile'
 import type { VaultCharacter, IntelligenceSuggestion, SuggestionType, ConfidenceLevel } from '@/types/database'
 
 // Icons for each suggestion type
@@ -138,6 +140,7 @@ export default function CharacterIntelligencePage() {
   const supabase = createClient()
   const { aiEnabled, aiProvider } = useAppStore()
   const characterId = params.id as string
+  const isMobile = useIsMobile()
 
   const [character, setCharacter] = useState<VaultCharacter | null>(null)
   const [suggestions, setSuggestions] = useState<IntelligenceSuggestion[]>([])
@@ -288,6 +291,11 @@ export default function CharacterIntelligencePage() {
   }
 
   const toggleTypeFilter = (type: string) => {
+    if (type === '__clear__') {
+      setTypeFilters(new Set())
+      setConfidenceFilters(new Set())
+      return
+    }
     setTypeFilters(prev => {
       const next = new Set(prev)
       if (next.has(type)) next.delete(type)
@@ -318,6 +326,40 @@ export default function CharacterIntelligencePage() {
     return acc
   }, {} as Record<string, number>)
 
+  // State for mobile filter sheet
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false)
+
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    return (
+      <CharacterIntelligencePageMobile
+        characterId={characterId}
+        character={character}
+        suggestions={suggestions}
+        counts={counts}
+        loading={loading}
+        aiEnabled={aiEnabled}
+        isAnalyzing={isAnalyzing}
+        analysisError={analysisError}
+        selectedProvider={selectedProvider}
+        showHistory={showHistory}
+        setShowHistory={setShowHistory}
+        typeFilters={typeFilters}
+        confidenceFilters={confidenceFilters}
+        toggleTypeFilter={toggleTypeFilter}
+        toggleConfidenceFilter={toggleConfidenceFilter}
+        filteredSuggestions={filteredSuggestions}
+        suggestionCounts={suggestionCounts}
+        processingIds={processingIds}
+        isFilterSheetOpen={isFilterSheetOpen}
+        setIsFilterSheetOpen={setIsFilterSheetOpen}
+        handleAnalyze={handleAnalyze}
+        handleAction={handleAction}
+      />
+    )
+  }
+
+  // ============ DESKTOP LAYOUT ============
   if (loading) {
     return (
       <AppLayout characterId={characterId}>

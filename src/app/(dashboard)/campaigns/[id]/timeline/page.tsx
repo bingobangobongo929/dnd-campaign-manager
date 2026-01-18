@@ -34,7 +34,8 @@ import {
   VIEW_OPTIONS,
 } from '@/components/timeline'
 import type { TimelineViewType, TimelineEventWithCharacters } from '@/components/timeline'
-import { useSupabase, useUser } from '@/hooks'
+import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { CampaignTimelinePageMobile } from './page.mobile'
 import { getInitials, cn } from '@/lib/utils'
 import Image from 'next/image'
 import type { Campaign, TimelineEvent, Character, Tag, CharacterTag, Session } from '@/types/database'
@@ -61,6 +62,7 @@ export default function TimelinePage() {
   const { user } = useUser()
 
   const campaignId = params.id as string
+  const isMobile = useIsMobile()
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [events, setEvents] = useState<TimelineEventWithCharacters[]>([])
@@ -287,6 +289,38 @@ export default function TimelinePage() {
     }
   }
 
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    return (
+      <CampaignTimelinePageMobile
+        campaignId={campaignId}
+        events={events}
+        characters={characters}
+        sessions={sessions}
+        loading={loading}
+        saving={saving}
+        currentView={currentView}
+        handleViewChange={handleViewChange}
+        isCreateModalOpen={isCreateModalOpen}
+        setIsCreateModalOpen={setIsCreateModalOpen}
+        formData={formData}
+        setFormData={setFormData}
+        toggleCharacter={toggleCharacter}
+        resetForm={resetForm}
+        handleCreate={handleCreate}
+        handleEventClick={handleEventClick}
+        handleCharacterClick={handleCharacterClick}
+        viewingCharacter={viewingCharacter}
+        setViewingCharacter={setViewingCharacter}
+        characterTags={characterTags}
+        isAIGenerateModalOpen={isAIGenerateModalOpen}
+        setIsAIGenerateModalOpen={setIsAIGenerateModalOpen}
+        handleAIGeneratedEvents={handleAIGeneratedEvents}
+      />
+    )
+  }
+
+  // ============ DESKTOP LAYOUT ============
   if (loading) {
     return (
       <AppLayout campaignId={campaignId}>

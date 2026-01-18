@@ -16,7 +16,8 @@ import {
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
-import { useSupabase, useUser } from '@/hooks'
+import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { CampaignLorePageMobile } from './page.mobile'
 import { useAppStore } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
@@ -50,6 +51,7 @@ export default function LorePage() {
   const { aiEnabled } = useAppStore()
 
   const campaignId = params.id as string
+  const isMobile = useIsMobile()
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [characters, setCharacters] = useState<CharacterWithTags[]>([])
@@ -247,6 +249,32 @@ export default function LorePage() {
   const familyTree = buildFamilyTree()
   const factionGroups = charactersByFaction()
 
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    return (
+      <CampaignLorePageMobile
+        campaignId={campaignId}
+        characters={characters}
+        factionTags={factionTags}
+        loreEntries={loreEntries}
+        loading={loading}
+        aiEnabled={aiEnabled}
+        generatingLore={generatingLore}
+        error={error}
+        familyTree={familyTree}
+        factionGroups={factionGroups}
+        familyTreeExpanded={familyTreeExpanded}
+        setFamilyTreeExpanded={setFamilyTreeExpanded}
+        factionsExpanded={factionsExpanded}
+        setFactionsExpanded={setFactionsExpanded}
+        insightsExpanded={insightsExpanded}
+        setInsightsExpanded={setInsightsExpanded}
+        handleGenerateLore={handleGenerateLore}
+      />
+    )
+  }
+
+  // ============ DESKTOP LAYOUT ============
   if (loading) {
     return (
       <AppLayout campaignId={campaignId}>

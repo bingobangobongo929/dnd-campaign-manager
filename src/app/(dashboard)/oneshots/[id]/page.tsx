@@ -30,7 +30,8 @@ import {
 import { Modal, UnifiedImageModal } from '@/components/ui'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { ShareOneshotModal } from '@/components/oneshots/ShareOneshotModal'
-import { useSupabase, useUser } from '@/hooks'
+import { MobileLayout, MobileBottomSheet } from '@/components/mobile'
+import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 import { v4 as uuidv4 } from 'uuid'
@@ -66,6 +67,7 @@ export default function OneshotEditorPage() {
   const params = useParams()
   const supabase = useSupabase()
   const { user } = useUser()
+  const isMobile = useIsMobile()
 
   const isNew = params.id === 'new'
   const oneshotId = isNew ? null : (params.id as string)
@@ -381,6 +383,465 @@ export default function OneshotEditorPage() {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
   }
 
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    if (loading) {
+      return (
+        <MobileLayout title="One-Shot" showBackButton backHref="/oneshots">
+          <div className="flex items-center justify-center h-[60vh]">
+            <div className="w-10 h-10 border-2 border-purple-500 border-t-transparent rounded-full spinner" />
+          </div>
+        </MobileLayout>
+      )
+    }
+
+    return (
+      <>
+        <MobileLayout
+          title={isNew ? 'New One-Shot' : 'Edit One-Shot'}
+          showBackButton
+          backHref="/oneshots"
+          actions={
+            <div className="flex items-center gap-2">
+              {!isNew && (
+                <>
+                  <button
+                    onClick={() => router.push(`/oneshots/${oneshotId}/run`)}
+                    className="p-2 rounded-lg bg-emerald-600 active:bg-emerald-500 transition-colors"
+                  >
+                    <Play className="w-5 h-5 text-white" />
+                  </button>
+                </>
+              )}
+              <button
+                onClick={handleSave}
+                disabled={!formData.title.trim() || saving}
+                className="p-2 rounded-lg bg-purple-600 active:bg-purple-500 disabled:opacity-50 transition-colors"
+              >
+                {saving ? (
+                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+                ) : (
+                  <Save className="w-5 h-5 text-white" />
+                )}
+              </button>
+            </div>
+          }
+        >
+          <div className="px-4 pb-24 space-y-6">
+            {/* Poster Image */}
+            <div
+              onClick={() => setImageModalOpen(true)}
+              className={cn(
+                "relative aspect-[2/3] max-w-[200px] mx-auto rounded-xl overflow-hidden",
+                formData.image_url
+                  ? "border border-white/10"
+                  : "border-2 border-dashed border-white/20 bg-white/[0.02]"
+              )}
+            >
+              {uploadingImage ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                  <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+                </div>
+              ) : formData.image_url ? (
+                <>
+                  <Image
+                    src={formData.image_url}
+                    alt={formData.title || 'One-Shot'}
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                    <Camera className="w-8 h-8 text-white/70" />
+                  </div>
+                </>
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-500">
+                  <Camera className="w-10 h-10" />
+                  <span className="text-xs">Add Poster</span>
+                </div>
+              )}
+            </div>
+
+            {/* Title & Tagline */}
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={formData.title}
+                onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="One-Shot Title"
+                className="w-full text-xl font-bold bg-transparent border-none outline-none text-white placeholder:text-gray-600"
+              />
+              <input
+                type="text"
+                value={formData.tagline}
+                onChange={e => setFormData(prev => ({ ...prev, tagline: e.target.value }))}
+                placeholder="A brief tagline..."
+                className="w-full text-sm bg-transparent border-none outline-none text-gray-400 placeholder:text-gray-600"
+              />
+            </div>
+
+            {/* Quick Meta */}
+            <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.06] space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[10px] text-gray-500 uppercase mb-1">Level</label>
+                  <input
+                    type="number"
+                    value={formData.level}
+                    onChange={e => setFormData(prev => ({ ...prev, level: parseInt(e.target.value) || 1 }))}
+                    className="w-full py-2 px-3 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white"
+                    min={1}
+                    max={20}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-gray-500 uppercase mb-1">Min</label>
+                  <input
+                    type="number"
+                    value={formData.player_count_min}
+                    onChange={e => setFormData(prev => ({ ...prev, player_count_min: parseInt(e.target.value) || 1 }))}
+                    className="w-full py-2 px-3 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white"
+                    min={1}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-gray-500 uppercase mb-1">Max</label>
+                  <input
+                    type="number"
+                    value={formData.player_count_max}
+                    onChange={e => setFormData(prev => ({ ...prev, player_count_max: parseInt(e.target.value) || 1 }))}
+                    className="w-full py-2 px-3 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white"
+                    min={1}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] text-gray-500 uppercase mb-1">Duration</label>
+                  <input
+                    type="text"
+                    value={formData.estimated_duration}
+                    onChange={e => setFormData(prev => ({ ...prev, estimated_duration: e.target.value }))}
+                    placeholder="3-4 hours"
+                    className="w-full py-2 px-3 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white placeholder:text-gray-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-gray-500 uppercase mb-1">System</label>
+                  <select
+                    value={formData.game_system}
+                    onChange={e => setFormData(prev => ({ ...prev, game_system: e.target.value }))}
+                    className="w-full py-2 px-3 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white"
+                    style={{ colorScheme: 'dark' }}
+                  >
+                    {GAME_SYSTEMS.map(sys => (
+                      <option key={sys} value={sys}>{sys}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Genre Tags */}
+            <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs text-gray-500 uppercase tracking-wider">Genre Tags</span>
+                <button
+                  onClick={() => setAddTagModalOpen(true)}
+                  className="text-xs text-purple-400 flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {genreTags.map(tag => (
+                  <button
+                    key={tag.id}
+                    onClick={() => toggleTag(tag.id)}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium rounded-lg transition-all",
+                      formData.genre_tag_ids.includes(tag.id)
+                        ? "ring-2 ring-offset-1 ring-offset-[--bg-base]"
+                        : "opacity-50"
+                    )}
+                    style={{
+                      backgroundColor: `${tag.color}25`,
+                      color: tag.color,
+                      ['--tw-ring-color' as string]: formData.genre_tag_ids.includes(tag.id) ? tag.color : undefined,
+                    } as React.CSSProperties}
+                  >
+                    {tag.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Collapsible Sections */}
+            <div className="space-y-3">
+              {/* Introduction */}
+              <MobileCollapsibleSection
+                title="Introduction"
+                icon={BookOpen}
+                expanded={expandedSections.introduction}
+                onToggle={() => toggleSection('introduction')}
+              >
+                <textarea
+                  value={formData.introduction}
+                  onChange={e => setFormData(prev => ({ ...prev, introduction: e.target.value }))}
+                  placeholder="The narrative introduction to read to players..."
+                  className="w-full py-3 px-4 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white placeholder:text-gray-600 resize-none min-h-[150px]"
+                />
+              </MobileCollapsibleSection>
+
+              {/* Setting Notes */}
+              <MobileCollapsibleSection
+                title="Setting Notes"
+                icon={Scroll}
+                expanded={expandedSections.setting}
+                onToggle={() => toggleSection('setting')}
+              >
+                <textarea
+                  value={formData.setting_notes}
+                  onChange={e => setFormData(prev => ({ ...prev, setting_notes: e.target.value }))}
+                  placeholder="World details, tone guidance..."
+                  className="w-full py-3 px-4 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white placeholder:text-gray-600 resize-none min-h-[120px]"
+                />
+              </MobileCollapsibleSection>
+
+              {/* Character Creation */}
+              <MobileCollapsibleSection
+                title="Character Creation"
+                icon={Users}
+                expanded={expandedSections.characterCreation}
+                onToggle={() => toggleSection('characterCreation')}
+              >
+                <textarea
+                  value={formData.character_creation}
+                  onChange={e => setFormData(prev => ({ ...prev, character_creation: e.target.value }))}
+                  placeholder="Character creation rules..."
+                  className="w-full py-3 px-4 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white placeholder:text-gray-600 resize-none min-h-[120px]"
+                />
+              </MobileCollapsibleSection>
+
+              {/* Session Plan */}
+              <MobileCollapsibleSection
+                title="Session Plan"
+                icon={Target}
+                expanded={expandedSections.sessionPlan}
+                onToggle={() => toggleSection('sessionPlan')}
+              >
+                <textarea
+                  value={formData.session_plan}
+                  onChange={e => setFormData(prev => ({ ...prev, session_plan: e.target.value }))}
+                  placeholder="Acts, key beats, encounters..."
+                  className="w-full py-3 px-4 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white placeholder:text-gray-600 resize-none min-h-[200px]"
+                />
+              </MobileCollapsibleSection>
+
+              {/* Twists & Secrets */}
+              <MobileCollapsibleSection
+                title="Twists & Secrets"
+                icon={showTwists ? Eye : EyeOff}
+                expanded={expandedSections.twists}
+                onToggle={() => toggleSection('twists')}
+                warning="DM Only"
+                onIconClick={() => setShowTwists(!showTwists)}
+              >
+                {showTwists ? (
+                  <textarea
+                    value={formData.twists}
+                    onChange={e => setFormData(prev => ({ ...prev, twists: e.target.value }))}
+                    placeholder="Hidden information, plot twists..."
+                    className="w-full py-3 px-4 text-sm bg-white/[0.03] border border-red-500/20 rounded-lg text-white placeholder:text-gray-600 resize-none min-h-[120px]"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 bg-white/[0.015] rounded-lg border border-dashed border-white/10">
+                    <EyeOff className="w-6 h-6 text-gray-600 mb-2" />
+                    <p className="text-xs text-gray-500">Tap the eye icon to reveal</p>
+                  </div>
+                )}
+              </MobileCollapsibleSection>
+
+              {/* Key NPCs */}
+              <MobileCollapsibleSection
+                title="Key NPCs"
+                icon={Users}
+                expanded={expandedSections.npcs}
+                onToggle={() => toggleSection('npcs')}
+              >
+                <textarea
+                  value={formData.key_npcs}
+                  onChange={e => setFormData(prev => ({ ...prev, key_npcs: e.target.value }))}
+                  placeholder="Important NPCs and motivations..."
+                  className="w-full py-3 px-4 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white placeholder:text-gray-600 resize-none min-h-[120px]"
+                />
+              </MobileCollapsibleSection>
+
+              {/* Handouts */}
+              <MobileCollapsibleSection
+                title="Handouts & Props"
+                icon={Scroll}
+                expanded={expandedSections.handouts}
+                onToggle={() => toggleSection('handouts')}
+              >
+                <textarea
+                  value={formData.handouts}
+                  onChange={e => setFormData(prev => ({ ...prev, handouts: e.target.value }))}
+                  placeholder="In-world documents, maps, props..."
+                  className="w-full py-3 px-4 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white placeholder:text-gray-600 resize-none min-h-[120px]"
+                />
+              </MobileCollapsibleSection>
+            </div>
+
+            {/* Run History */}
+            {!isNew && runs.length > 0 && (
+              <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs text-gray-500 uppercase tracking-wider">Run History</span>
+                  <span className="text-xs text-purple-400">{runs.length} runs</span>
+                </div>
+                <div className="space-y-3">
+                  {runs.slice(0, 5).map(run => (
+                    <div key={run.id} className="text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/80">{run.group_name || 'Unknown Group'}</span>
+                        <span className="text-gray-500 text-xs">
+                          {new Date(run.run_date).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {run.notes && (
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{run.notes}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            {!isNew && (
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShareModalOpen(true)}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-gray-300 active:bg-white/[0.06] transition-colors"
+                >
+                  <Share2 className="w-4 h-4" />
+                  Share
+                </button>
+                <button
+                  onClick={() => setDeleteModalOpen(true)}
+                  className="flex items-center justify-center gap-2 py-3 px-5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 active:bg-red-500/20 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
+        </MobileLayout>
+
+        {/* Modals */}
+        <Modal
+          isOpen={deleteModalOpen}
+          onClose={() => setDeleteModalOpen(false)}
+          title="Delete One-Shot"
+          description="Are you sure? This will permanently delete this one-shot and all its run history."
+        >
+          <div className="flex justify-end gap-3 pt-4">
+            <button className="btn btn-secondary" onClick={() => setDeleteModalOpen(false)}>Cancel</button>
+            <button
+              className="px-4 py-2 bg-red-500 active:bg-red-600 text-white rounded-lg transition-colors"
+              onClick={handleDelete}
+            >
+              Delete
+            </button>
+          </div>
+        </Modal>
+
+        {oneshotId && (
+          <ShareOneshotModal
+            isOpen={shareModalOpen}
+            onClose={() => setShareModalOpen(false)}
+            oneshotId={oneshotId}
+            oneshotTitle={formData.title || 'Untitled One-Shot'}
+          />
+        )}
+
+        <UnifiedImageModal
+          isOpen={imageModalOpen}
+          onClose={() => setImageModalOpen(false)}
+          imageType="oneshot"
+          currentImageUrl={formData.image_url}
+          onImageChange={(url) => setFormData(prev => ({ ...prev, image_url: url }))}
+          onUpload={handleImageUpload}
+          promptData={{
+            title: formData.title,
+            tagline: formData.tagline,
+            introduction: formData.introduction,
+            setting: formData.setting_notes,
+            genres: genreTags
+              .filter(tag => formData.genre_tag_ids.includes(tag.id))
+              .map(tag => tag.name),
+          }}
+          title="Poster Image"
+        />
+
+        <MobileBottomSheet
+          isOpen={addTagModalOpen}
+          onClose={() => setAddTagModalOpen(false)}
+          title="Add Genre Tag"
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Tag Name</label>
+              <input
+                type="text"
+                value={newTagName}
+                onChange={e => setNewTagName(e.target.value)}
+                placeholder="e.g., Noir, Heist, Romance"
+                className="w-full py-3 px-4 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white placeholder:text-gray-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Tag Color</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={newTagColor}
+                  onChange={e => setNewTagColor(e.target.value)}
+                  className="w-12 h-10 rounded cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={newTagColor}
+                  onChange={e => setNewTagColor(e.target.value)}
+                  className="flex-1 py-3 px-4 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                className="flex-1 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-gray-300"
+                onClick={() => setAddTagModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="flex-1 py-3 bg-purple-600 active:bg-purple-500 rounded-xl text-white font-medium disabled:opacity-50"
+                onClick={handleAddTag}
+                disabled={!newTagName.trim()}
+              >
+                Add Tag
+              </button>
+            </div>
+          </div>
+        </MobileBottomSheet>
+      </>
+    )
+  }
+
+  // ============ DESKTOP LAYOUT ============
   if (loading) {
     return (
       <div className="min-h-screen bg-[--bg-base] flex items-center justify-center">
@@ -978,5 +1439,59 @@ function AIHelper({ section, enabled }: { section: string; enabled: boolean }) {
       <Sparkles className="w-3 h-3" />
       AI Expand
     </button>
+  )
+}
+
+// Mobile Collapsible Section Component
+function MobileCollapsibleSection({
+  title,
+  icon: Icon,
+  expanded,
+  onToggle,
+  onIconClick,
+  warning,
+  children,
+}: {
+  title: string
+  icon: any
+  expanded: boolean
+  onToggle: () => void
+  onIconClick?: () => void
+  warning?: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="bg-white/[0.02] rounded-xl border border-white/[0.06] overflow-hidden">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between p-3 active:bg-white/[0.04] transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <div
+            className="p-1.5 bg-purple-500/10 rounded-lg"
+            onClick={e => {
+              if (onIconClick) {
+                e.stopPropagation()
+                onIconClick()
+              }
+            }}
+          >
+            <Icon className="w-4 h-4 text-purple-400" />
+          </div>
+          <span className="font-medium text-sm text-white/90">{title}</span>
+          {warning && (
+            <span className="text-[10px] px-1.5 py-0.5 bg-red-500/15 text-red-400 rounded">
+              {warning}
+            </span>
+          )}
+        </div>
+        {expanded ? (
+          <ChevronUp className="w-4 h-4 text-gray-500" />
+        ) : (
+          <ChevronDown className="w-4 h-4 text-gray-500" />
+        )}
+      </button>
+      {expanded && <div className="px-3 pb-3 pt-0">{children}</div>}
+    </div>
   )
 }

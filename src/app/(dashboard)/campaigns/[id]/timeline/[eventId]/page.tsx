@@ -5,7 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { TimelineEventEditor, type TimelineEventFormData } from '@/components/timeline'
 import { AppLayout } from '@/components/layout/app-layout'
-import { useSupabase, useUser, useAutoSave } from '@/hooks'
+import { useSupabase, useUser, useAutoSave, useIsMobile } from '@/hooks'
+import { CampaignTimelineEventPageMobile } from './page.mobile'
 import { cn } from '@/lib/utils'
 import type { Campaign, TimelineEvent, Character, Session } from '@/types/database'
 
@@ -17,6 +18,7 @@ export default function TimelineEventDetailPage() {
 
   const campaignId = params.id as string
   const eventId = params.eventId as string
+  const isMobile = useIsMobile()
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [event, setEvent] = useState<TimelineEvent | null>(null)
@@ -140,6 +142,24 @@ export default function TimelineEventDetailPage() {
     toastMessage: 'Event saved',
   })
 
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    return (
+      <CampaignTimelineEventPageMobile
+        campaignId={campaignId}
+        campaign={campaign}
+        event={event}
+        characters={characters}
+        sessions={sessions}
+        loading={loading}
+        formData={formData}
+        setFormData={setFormData}
+        status={status}
+      />
+    )
+  }
+
+  // ============ DESKTOP LAYOUT ============
   if (loading || !event) {
     return (
       <AppLayout campaignId={campaignId}>

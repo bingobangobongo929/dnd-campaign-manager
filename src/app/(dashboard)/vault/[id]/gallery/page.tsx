@@ -15,6 +15,8 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AppLayout } from '@/components/layout/app-layout'
+import { useIsMobile } from '@/hooks'
+import { CharacterGalleryPageMobile } from './page.mobile'
 import { Button } from '@/components/ui'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { UnifiedImageModal } from '@/components/ui/unified-image-modal'
@@ -25,6 +27,7 @@ export default function CharacterGalleryPage() {
   const params = useParams()
   const supabase = createClient()
   const characterId = params.id as string
+  const isMobile = useIsMobile()
 
   const [character, setCharacter] = useState<VaultCharacter | null>(null)
   const [images, setImages] = useState<VaultCharacterImage[]>([])
@@ -190,6 +193,27 @@ export default function CharacterGalleryPage() {
     }
   }
 
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    return (
+      <CharacterGalleryPageMobile
+        characterId={characterId}
+        character={character}
+        images={images}
+        loading={loading}
+        isAddModalOpen={isAddModalOpen}
+        setIsAddModalOpen={setIsAddModalOpen}
+        lightboxImage={lightboxImage}
+        setLightboxImage={setLightboxImage}
+        handleAddImage={handleAddImage}
+        uploadGalleryImage={uploadGalleryImage}
+        handleSetPrimary={handleSetPrimary}
+        handleDelete={handleDelete}
+      />
+    )
+  }
+
+  // ============ DESKTOP LAYOUT ============
   if (loading) {
     return (
       <AppLayout characterId={characterId}>

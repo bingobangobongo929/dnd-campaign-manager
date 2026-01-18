@@ -78,6 +78,7 @@ import type {
 import { NPCCard } from './NPCCard'
 import { CompanionCard } from './CompanionCard'
 import { SessionNoteCard } from './SessionNoteCard'
+import { CharacterEditorMobile } from './CharacterEditorMobile'
 import {
   BulletListDisplay,
   QuotesDisplay,
@@ -1822,10 +1823,48 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
   if (!notesEditor || !summaryEditor) return null
 
-  // =====================================================
-  // MAIN RENDER
-  // =====================================================
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    return (
+      <CharacterEditorMobile
+        mode={mode}
+        characterId={characterId}
+        formData={formData}
+        setFormData={setFormData}
+        status={status}
+        summaryEditor={summaryEditor}
+        notesEditor={notesEditor}
+        expandedSections={expandedSections}
+        toggleSection={toggleSection}
+        activeSection={activeSection}
+        scrollToSection={scrollToSection}
+        scrollContainerRef={scrollContainerRef}
+        portraitInputRef={portraitInputRef}
+        isUploading={isUploading}
+        handlePortraitSelect={handlePortraitSelect}
+        npcs={npcs}
+        companions={companions}
+        galleryImages={galleryImages}
+        links={links}
+        isDeleteConfirmOpen={isDeleteConfirmOpen}
+        setIsDeleteConfirmOpen={setIsDeleteConfirmOpen}
+        duplicateModalOpen={duplicateModalOpen}
+        setDuplicateModalOpen={setDuplicateModalOpen}
+        shareModalOpen={shareModalOpen}
+        setShareModalOpen={setShareModalOpen}
+        handleClose={handleClose}
+        handleDelete={handleDelete}
+        handleDuplicate={handleDuplicate}
+        showSecrets={showSecrets}
+        setShowSecrets={setShowSecrets}
+        aiEnabled={aiEnabled}
+        generatingPrompt={generatingPrompt}
+        handleGenerateAiPrompt={handleGenerateAiPrompt}
+      />
+    )
+  }
 
+  // ============ DESKTOP LAYOUT ============
   return (
     <>
       <div

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import {
   Brain,
   Sparkles,
@@ -41,7 +42,8 @@ import {
 import { Modal } from '@/components/ui'
 import { TimelineEventEditor, type TimelineEventFormData } from '@/components/timeline'
 import { AppLayout } from '@/components/layout/app-layout'
-import { useSupabase, useUser } from '@/hooks'
+import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { CampaignIntelligencePageMobile } from './page.mobile'
 import { useAppStore } from '@/store'
 import { AI_PROVIDERS, AIProvider } from '@/lib/ai/config'
 import type { Campaign, Character, Session, IntelligenceSuggestion, SuggestionType, ConfidenceLevel } from '@/types/database'
@@ -151,6 +153,7 @@ export default function IntelligencePage() {
   const { aiEnabled, aiProvider } = useAppStore()
 
   const campaignId = params.id as string
+  const isMobile = useIsMobile()
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [characters, setCharacters] = useState<Character[]>([])
@@ -450,6 +453,49 @@ export default function IntelligencePage() {
     return null
   }
 
+  // State for mobile filter sheet
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false)
+
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    return (
+      <CampaignIntelligencePageMobile
+        campaignId={campaignId}
+        campaign={campaign}
+        characters={characters}
+        sessions={sessions}
+        suggestions={suggestions}
+        counts={counts}
+        loading={loading}
+        aiEnabled={aiEnabled}
+        isAnalyzing={isAnalyzing}
+        analysisError={analysisError}
+        selectedProvider={selectedProvider}
+        showHistory={showHistory}
+        setShowHistory={setShowHistory}
+        typeFilters={typeFilters}
+        confidenceFilters={confidenceFilters}
+        toggleTypeFilter={toggleTypeFilter}
+        toggleConfidenceFilter={toggleConfidenceFilter}
+        filteredSuggestions={filteredSuggestions}
+        suggestionCounts={suggestionCounts}
+        processingIds={processingIds}
+        isFilterSheetOpen={isFilterSheetOpen}
+        setIsFilterSheetOpen={setIsFilterSheetOpen}
+        handleAnalyze={handleAnalyze}
+        handleAction={handleAction}
+        getCharacterForSuggestion={getCharacterForSuggestion}
+        editingSuggestion={editingSuggestion}
+        setEditingSuggestion={setEditingSuggestion}
+        editFormData={editFormData}
+        setEditFormData={setEditFormData}
+        openEditModal={openEditModal}
+        handleSaveEdit={handleSaveEdit}
+      />
+    )
+  }
+
+  // ============ DESKTOP LAYOUT ============
   if (loading) {
     return (
       <AppLayout campaignId={campaignId}>

@@ -10,7 +10,9 @@ interface MobileLayoutProps {
   title?: string
   largeTitle?: boolean
   showBackButton?: boolean
+  backHref?: string
   rightAction?: React.ReactNode
+  actions?: React.ReactNode // alias for rightAction
   className?: string
 }
 
@@ -22,7 +24,9 @@ export function MobileLayout({
   title,
   largeTitle = true,
   showBackButton = true,
+  backHref,
   rightAction,
+  actions,
   className,
 }: MobileLayoutProps) {
   const router = useRouter()
@@ -30,6 +34,9 @@ export function MobileLayout({
   const [scrolled, setScrolled] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
+
+  // Use actions as alias for rightAction
+  const actionContent = rightAction || actions
 
   // Track scroll for title collapse animation
   useEffect(() => {
@@ -44,12 +51,16 @@ export function MobileLayout({
     return () => content?.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Detect if we can go back
-  const canGoBack = typeof window !== 'undefined' && window.history.length > 1
+  // Detect if we can go back - either via history or via explicit backHref
+  const canGoBack = backHref || (typeof window !== 'undefined' && window.history.length > 1)
 
   const handleBack = () => {
     setIsNavigating(true)
-    router.back()
+    if (backHref) {
+      router.push(backHref)
+    } else {
+      router.back()
+    }
   }
 
   return (
@@ -85,7 +96,7 @@ export function MobileLayout({
 
         {/* Right side - Actions */}
         <div className="mobile-nav-right">
-          {rightAction}
+          {actionContent}
         </div>
       </header>
 

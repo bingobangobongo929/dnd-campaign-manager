@@ -28,7 +28,8 @@ import {
   BookOpen,
 } from 'lucide-react'
 import { Modal } from '@/components/ui'
-import { useSupabase, useUser } from '@/hooks'
+import { MobileLayout } from '@/components/mobile'
+import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { useAppStore, CURRENCY_CONFIG, type Currency } from '@/store'
 import { AI_PROVIDERS, AIProvider } from '@/lib/ai/config'
 import { useRouter } from 'next/navigation'
@@ -53,6 +54,7 @@ export default function SettingsPage() {
   const router = useRouter()
   const supabase = useSupabase()
   const { user } = useUser()
+  const isMobile = useIsMobile()
   const {
     aiEnabled, setAIEnabled,
     aiProvider, setAIProvider,
@@ -235,6 +237,379 @@ export default function SettingsPage() {
     return `${getCurrencySymbol()}${(usdCost * rate).toFixed(2)}`
   }
 
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    return (
+      <MobileLayout title="Settings">
+        <div className="px-4 pb-24 space-y-6">
+          {/* Profile & Account */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[--arcane-purple] to-[--arcane-purple-dim] flex items-center justify-center">
+                <User className="w-4 h-4 text-white" />
+              </div>
+              <h2 className="text-base font-semibold text-white">Profile</h2>
+            </div>
+
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-3">
+              <div>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wide">Email</label>
+                <p className="text-sm text-white">{user?.email || 'Not signed in'}</p>
+              </div>
+
+              <div>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wide">Member Since</label>
+                <p className="text-sm text-white">
+                  {user?.created_at ? formatDate(user.created_at) : 'Unknown'}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
+                <span className="text-sm text-gray-400">Currency</span>
+                <div className="flex gap-1">
+                  {(Object.keys(CURRENCY_CONFIG) as Currency[]).map((cur) => (
+                    <button
+                      key={cur}
+                      onClick={() => setCurrency(cur)}
+                      className={`px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
+                        currency === cur
+                          ? 'bg-[--arcane-purple] text-white'
+                          : 'bg-white/5 text-gray-400'
+                      }`}
+                    >
+                      {CURRENCY_CONFIG[cur].symbol}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* AI Settings */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[--arcane-purple] to-blue-600 flex items-center justify-center">
+                <Bot className="w-4 h-4 text-white" />
+              </div>
+              <h2 className="text-base font-semibold text-white">AI Features</h2>
+            </div>
+
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-4">
+              {/* Toggle */}
+              <div className="flex items-center justify-between">
+                <div className="flex-1 pr-4">
+                  <p className="text-sm font-medium text-white">Enable AI</p>
+                  <p className="text-xs text-gray-500">
+                    {aiEnabled ? 'All AI features active' : 'AI features disabled'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setAIEnabled(!aiEnabled)}
+                  className={`relative w-12 h-7 rounded-full transition-colors ${
+                    aiEnabled ? 'bg-[--arcane-purple]' : 'bg-gray-600'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${
+                      aiEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Provider Selection */}
+              {aiEnabled && (
+                <div className="pt-3 border-t border-white/[0.06] space-y-2">
+                  <p className="text-xs text-gray-500">Select AI Model</p>
+                  {(Object.keys(AI_PROVIDERS) as AIProvider[]).map((provider) => {
+                    const info = AI_PROVIDERS[provider]
+                    const isSelected = aiProvider === provider
+                    const ProviderIcon = getProviderIcon(info.icon)
+
+                    return (
+                      <button
+                        key={provider}
+                        onClick={() => setAIProvider(provider)}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
+                          isSelected
+                            ? 'bg-purple-500/15 border border-purple-500/30'
+                            : 'bg-white/[0.02] border border-transparent active:bg-white/[0.05]'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                          info.icon === 'sparkles' ? 'bg-orange-500/20' :
+                          info.icon === 'zap' ? 'bg-blue-500/20' : 'bg-purple-500/20'
+                        }`}>
+                          <ProviderIcon className={`w-4 h-4 ${
+                            info.icon === 'sparkles' ? 'text-orange-500' :
+                            info.icon === 'zap' ? 'text-blue-500' : 'text-purple-500'
+                          }`} />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <p className="text-sm font-medium text-white">{info.name}</p>
+                          <p className="text-xs text-gray-500">{info.costTier} cost</p>
+                        </div>
+                        {isSelected && (
+                          <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center">
+                            <Check className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Usage Summary */}
+              {aiEnabled && apiUsage && (
+                <div className="pt-3 border-t border-white/[0.06]">
+                  <p className="text-xs text-gray-500 mb-2">Usage ({usagePeriod === 'month' ? '30d' : usagePeriod === 'week' ? '7d' : 'All'})</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="p-2 rounded-lg bg-white/[0.03] text-center">
+                      <p className="text-sm font-bold text-white">{apiUsage.summary.totalRequests}</p>
+                      <p className="text-[10px] text-gray-500">Requests</p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-white/[0.03] text-center">
+                      <p className="text-sm font-bold text-white">{(apiUsage.summary.totalTokens / 1000).toFixed(0)}K</p>
+                      <p className="text-[10px] text-gray-500">Tokens</p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-white/[0.03] text-center">
+                      <p className="text-sm font-bold text-white">{apiUsage.summary.totalImages}</p>
+                      <p className="text-[10px] text-gray-500">Images</p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-white/[0.03] text-center">
+                      <p className="text-sm font-bold text-white">{formatCost(apiUsage.summary.totalCostCents)}</p>
+                      <p className="text-[10px] text-gray-500">Cost</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Content Stats */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center">
+                <Database className="w-4 h-4 text-white" />
+              </div>
+              <h2 className="text-base font-semibold text-white">Your Content</h2>
+            </div>
+
+            <div className="grid grid-cols-4 gap-2">
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-center">
+                <Map className="w-4 h-4 mx-auto mb-1 text-gray-500" />
+                <p className="text-lg font-bold text-white">{loadingStats ? '-' : stats.campaigns}</p>
+                <p className="text-[10px] text-gray-500">Campaigns</p>
+              </div>
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-center">
+                <User className="w-4 h-4 mx-auto mb-1 text-gray-500" />
+                <p className="text-lg font-bold text-white">{loadingStats ? '-' : stats.characters}</p>
+                <p className="text-[10px] text-gray-500">Characters</p>
+              </div>
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-center">
+                <BookOpen className="w-4 h-4 mx-auto mb-1 text-gray-500" />
+                <p className="text-lg font-bold text-white">{loadingStats ? '-' : stats.sessions}</p>
+                <p className="text-[10px] text-gray-500">Sessions</p>
+              </div>
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-center">
+                <Scroll className="w-4 h-4 mx-auto mb-1 text-gray-500" />
+                <p className="text-lg font-bold text-white">{loadingStats ? '-' : stats.oneshots}</p>
+                <p className="text-[10px] text-gray-500">One-Shots</p>
+              </div>
+            </div>
+
+            {/* Quick Links */}
+            <div className="space-y-2">
+              <Link
+                href="/settings/shares"
+                className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] active:bg-white/[0.04] transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Share2 className="w-5 h-5 text-pink-400" />
+                  <div>
+                    <p className="text-sm font-medium text-white">Shared Links</p>
+                    <p className="text-xs text-gray-500">
+                      {sharesSummary ? `${sharesSummary.active_shares} active` : 'Manage shares'}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-500" />
+              </Link>
+
+              <button
+                onClick={handleExportData}
+                disabled={exporting}
+                className="w-full flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] active:bg-white/[0.04] transition-colors text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <Download className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm font-medium text-white">Export Data</p>
+                    <p className="text-xs text-gray-500">Download as JSON</p>
+                  </div>
+                </div>
+                {exporting ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
+                ) : (
+                  <ChevronRight className="w-5 h-5 text-gray-500" />
+                )}
+              </button>
+            </div>
+          </section>
+
+          {/* App Info */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                <Info className="w-4 h-4 text-white" />
+              </div>
+              <h2 className="text-base font-semibold text-white">App Info</h2>
+            </div>
+
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-white">Quest Scribe</p>
+                  <p className="text-xs text-gray-500">Campaign Manager</p>
+                </div>
+                <span className="font-mono text-xs text-[--arcane-gold] bg-[--arcane-gold]/10 px-2 py-1 rounded">
+                  v{APP_VERSION}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setShowWhatsNew(true)}
+                  className="text-xs px-3 py-1.5 rounded-lg bg-purple-500/20 text-purple-400 active:bg-purple-500/30"
+                >
+                  What&apos;s New
+                </button>
+                <button
+                  onClick={() => setShowKeyboardShortcuts(true)}
+                  className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-white/5 text-gray-400 active:bg-white/10"
+                >
+                  <Keyboard className="w-3 h-3" />
+                  Shortcuts
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Sign Out & Danger Zone */}
+          <section className="space-y-3">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] text-red-400 active:bg-red-500/10 transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="font-medium">Sign Out</span>
+            </button>
+
+            <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="w-4 h-4 text-red-500" />
+                <span className="text-sm font-medium text-red-400">Danger Zone</span>
+              </div>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border border-red-500/30 text-red-400 active:bg-red-500/10 transition-colors text-sm"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete All Data
+              </button>
+            </div>
+          </section>
+        </div>
+
+        {/* Modals (same as desktop) */}
+        <Modal
+          isOpen={showKeyboardShortcuts}
+          onClose={() => setShowKeyboardShortcuts(false)}
+          title="Keyboard Shortcuts"
+        >
+          <div className="space-y-2">
+            {KEYBOARD_SHORTCUTS.map((shortcut, i) => (
+              <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-[--bg-elevated]">
+                <span className="text-sm text-gray-400">{shortcut.description}</span>
+                <div className="flex items-center gap-1">
+                  {shortcut.keys.map((key, j) => (
+                    <span key={j}>
+                      <kbd className="px-2 py-1 text-xs font-mono bg-white/5 border border-white/10 rounded">
+                        {key}
+                      </kbd>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Modal>
+
+        <Modal
+          isOpen={showWhatsNew}
+          onClose={() => setShowWhatsNew(false)}
+          title="What's New"
+        >
+          <div className="space-y-2">
+            {WHATS_NEW.map((item, i) => (
+              <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-[--bg-elevated]">
+                <Sparkles className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
+                <span className="text-sm text-gray-300">{item}</span>
+              </div>
+            ))}
+          </div>
+        </Modal>
+
+        <Modal
+          isOpen={showDeleteConfirm}
+          onClose={() => { setShowDeleteConfirm(false); setDeleteConfirmText('') }}
+          title="Delete All Data?"
+        >
+          <div className="space-y-4">
+            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30">
+              <p className="text-sm text-red-400 mb-2">This will permanently delete:</p>
+              <ul className="text-sm text-red-400/80 space-y-1">
+                <li>• {stats.campaigns} campaigns</li>
+                <li>• {stats.characters} characters</li>
+                <li>• {stats.sessions} sessions</li>
+                <li>• {stats.oneshots} one-shots</li>
+              </ul>
+            </div>
+            <div>
+              <label className="text-sm text-gray-400 block mb-2">
+                Type <span className="font-mono font-bold text-red-400">DELETE</span> to confirm:
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                className="w-full px-3 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white"
+                placeholder="Type DELETE"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                className="flex-1 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-gray-300"
+                onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText('') }}
+              >
+                Cancel
+              </button>
+              <button
+                className="flex-1 py-3 bg-red-500 active:bg-red-600 rounded-xl text-white font-medium disabled:opacity-50"
+                onClick={handleDeleteAll}
+                disabled={deleteConfirmText !== 'DELETE'}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </Modal>
+      </MobileLayout>
+    )
+  }
+
+  // ============ DESKTOP LAYOUT ============
   return (
     <>
       {/* Page Header */}

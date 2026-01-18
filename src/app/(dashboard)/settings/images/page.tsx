@@ -19,6 +19,8 @@ import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { logActivity } from '@/lib/activity-log'
+import { MobileLayout } from '@/components/mobile'
+import { useIsMobile } from '@/hooks'
 
 interface Character {
   id: string
@@ -31,6 +33,7 @@ interface Character {
 type EnhancementStep = 'select' | 'processing' | 'review' | 'complete'
 
 export default function ImageEnhancementPage() {
+  const isMobile = useIsMobile()
   const [characters, setCharacters] = useState<Character[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -264,6 +267,292 @@ export default function ImageEnhancementPage() {
 
   const currentChar = selectedCharacters[currentIndex]
 
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    if (loading) {
+      return (
+        <MobileLayout title="Image Enhancement" showBackButton backHref="/settings">
+          <div className="flex items-center justify-center h-[60vh]">
+            <div className="w-10 h-10 border-2 border-purple-500 border-t-transparent rounded-full spinner" />
+          </div>
+        </MobileLayout>
+      )
+    }
+
+    if (characters.length === 0) {
+      return (
+        <MobileLayout title="Image Enhancement" showBackButton backHref="/settings">
+          <div className="px-4 py-16 text-center">
+            <ImagePlus className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+            <h3 className="text-base font-semibold text-white mb-2">No feature images</h3>
+            <p className="text-sm text-gray-500">
+              Generate 16:9 feature images for your characters first.
+            </p>
+          </div>
+        </MobileLayout>
+      )
+    }
+
+    // Mobile Selection Step
+    if (step === 'select') {
+      return (
+        <MobileLayout title="Image Enhancement" showBackButton backHref="/settings">
+          <div className="px-4 pb-28">
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-center">
+                <p className="text-lg font-bold text-white">{characters.length}</p>
+                <p className="text-[10px] text-gray-500">Total</p>
+              </div>
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-center">
+                <Sparkles className="w-4 h-4 mx-auto mb-1 text-emerald-400" />
+                <p className="text-lg font-bold text-emerald-400">{enhancedCount}</p>
+                <p className="text-[10px] text-gray-500">Enhanced</p>
+              </div>
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-center">
+                <CircleDot className="w-4 h-4 mx-auto mb-1 text-gray-400" />
+                <p className="text-lg font-bold text-gray-400">{unenhancedCount}</p>
+                <p className="text-[10px] text-gray-500">Original</p>
+              </div>
+            </div>
+
+            {/* Selection Mode */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => handleSelectModeChange('unenhanced')}
+                className={cn(
+                  'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium',
+                  selectMode === 'unenhanced' ? 'bg-purple-600 text-white' : 'bg-white/[0.03] text-gray-400'
+                )}
+              >
+                <CircleDot className="w-4 h-4" />
+                Unenhanced ({unenhancedCount})
+              </button>
+              <button
+                onClick={() => handleSelectModeChange('all')}
+                className={cn(
+                  'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium',
+                  selectMode === 'all' ? 'bg-purple-600 text-white' : 'bg-white/[0.03] text-gray-400'
+                )}
+              >
+                <Check className="w-4 h-4" />
+                All ({characters.length})
+              </button>
+            </div>
+
+            {/* Character Grid */}
+            <div className="grid grid-cols-2 gap-3">
+              {characters.map((char) => {
+                const isSelected = selected.has(char.id)
+                const isEnhanced = !!char.image_enhanced_at
+
+                return (
+                  <button
+                    key={char.id}
+                    onClick={() => toggleSelect(char.id)}
+                    className={cn(
+                      'relative rounded-xl overflow-hidden border-2',
+                      isSelected ? 'border-purple-500 ring-2 ring-purple-500/30' : 'border-transparent'
+                    )}
+                  >
+                    <div className="relative aspect-video bg-gray-900">
+                      {char.image_url && (
+                        <Image src={char.image_url} alt={char.name} fill className="object-cover" />
+                      )}
+                      <div className={cn(
+                        'absolute inset-0 transition-opacity',
+                        isSelected ? 'bg-purple-500/20' : 'bg-transparent'
+                      )} />
+                      <div className={cn(
+                        'absolute top-2 left-2 w-5 h-5 rounded flex items-center justify-center',
+                        isSelected ? 'bg-purple-500 text-white' : 'bg-black/50 text-white/50'
+                      )}>
+                        {isSelected && <Check className="w-3 h-3" />}
+                      </div>
+                      <div className={cn(
+                        'absolute top-2 right-2 px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1',
+                        isEnhanced ? 'bg-emerald-900/90 text-emerald-300' : 'bg-gray-900/90 text-gray-200'
+                      )}>
+                        {isEnhanced ? <Sparkles className="w-2.5 h-2.5" /> : <CircleDot className="w-2.5 h-2.5" />}
+                      </div>
+                    </div>
+                    <div className="p-2 bg-white/[0.02]">
+                      <p className="text-xs font-medium text-white truncate">{char.name}</p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Fixed Action Bar */}
+          <div className="fixed bottom-20 left-4 right-4 p-4 bg-[#0d0d0f]/95 backdrop-blur-xl rounded-xl border border-white/[0.08] shadow-xl">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-400">
+                <span className="font-medium text-white">{selected.size}</span> selected
+              </span>
+              <button
+                onClick={startEnhancement}
+                disabled={selected.size === 0}
+                className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 active:bg-purple-500 text-white font-medium rounded-lg disabled:opacity-50"
+              >
+                <Zap className="w-4 h-4" />
+                Enhance
+              </button>
+            </div>
+          </div>
+        </MobileLayout>
+      )
+    }
+
+    // Mobile Processing Step
+    if (step === 'processing') {
+      return (
+        <MobileLayout title="Enhancing..." showBackButton={false}>
+          <div className="px-4 py-12 text-center">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center mx-auto mb-6">
+              <Loader2 className="w-7 h-7 text-white animate-spin" />
+            </div>
+            <h2 className="text-lg font-bold text-white mb-2">
+              Image {currentIndex + 1} of {selectedCharacters.length}
+            </h2>
+            <p className="text-sm text-gray-400 mb-6">{currentChar?.name}</p>
+
+            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-4">
+              <div
+                className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-500"
+                style={{ width: `${((currentIndex) / selectedCharacters.length) * 100}%` }}
+              />
+            </div>
+
+            {error && (
+              <div className="mt-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-left">
+                <p className="text-sm text-red-400 mb-3">{error}</p>
+                <button
+                  onClick={skipEnhancement}
+                  className="px-4 py-2 bg-red-500/20 active:bg-red-500/30 text-red-400 text-sm font-medium rounded-lg"
+                >
+                  Skip
+                </button>
+              </div>
+            )}
+          </div>
+        </MobileLayout>
+      )
+    }
+
+    // Mobile Review Step
+    if (step === 'review' && currentChar) {
+      const enhancedDataUrl = enhancedImages.get(currentChar.id)
+
+      return (
+        <MobileLayout title={`Review ${currentIndex + 1}/${selectedCharacters.length}`} showBackButton={false}>
+          <div className="px-4 pb-28">
+            <p className="text-center text-sm text-gray-400 mb-4">{currentChar.name}</p>
+
+            {/* Before */}
+            <div className="mb-4 rounded-xl overflow-hidden border border-white/[0.06]">
+              <div className="px-3 py-2 bg-white/[0.02] border-b border-white/[0.06]">
+                <p className="text-xs text-gray-500">Original</p>
+              </div>
+              <div className="relative aspect-video bg-black/50">
+                {currentChar.image_url && (
+                  <Image src={currentChar.image_url} alt="Original" fill className="object-contain" />
+                )}
+              </div>
+            </div>
+
+            {/* After */}
+            <div className="rounded-xl overflow-hidden border-2 border-emerald-500/30">
+              <div className="px-3 py-2 bg-emerald-500/5 border-b border-emerald-500/20 flex items-center gap-2">
+                <Sparkles className="w-3 h-3 text-emerald-400" />
+                <p className="text-xs text-emerald-400">Enhanced</p>
+              </div>
+              <div className="relative aspect-video bg-black/50">
+                {enhancedDataUrl && (
+                  <Image src={enhancedDataUrl} alt="Enhanced" fill className="object-contain" unoptimized />
+                )}
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="flex items-center justify-center gap-4 mt-4 text-xs text-gray-500">
+              <span className="flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                {accepted.size} accepted
+              </span>
+              <span className="flex items-center gap-1">
+                <X className="w-3 h-3 text-gray-400" />
+                {skipped.size} skipped
+              </span>
+            </div>
+          </div>
+
+          {/* Fixed Actions */}
+          <div className="fixed bottom-20 left-4 right-4 p-4 bg-[#0d0d0f]/95 backdrop-blur-xl rounded-xl border border-white/[0.08] shadow-xl">
+            <div className="flex gap-3">
+              <button
+                onClick={skipEnhancement}
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-gray-300"
+              >
+                <X className="w-4 h-4" />
+                Skip
+              </button>
+              <button
+                onClick={acceptEnhancement}
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-emerald-600 active:bg-emerald-500 rounded-xl text-white font-medium"
+              >
+                <Check className="w-4 h-4" />
+                Accept
+              </button>
+            </div>
+          </div>
+        </MobileLayout>
+      )
+    }
+
+    // Mobile Complete Step
+    if (step === 'complete') {
+      return (
+        <MobileLayout title="Complete" showBackButton={false}>
+          <div className="px-4 py-12 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">Enhancement Complete</h2>
+            <p className="text-sm text-gray-400 mb-8">
+              Processed {selectedCharacters.length} images
+            </p>
+
+            <div className="grid grid-cols-2 gap-3 mb-8">
+              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
+                <p className="text-2xl font-bold text-emerald-400">{accepted.size}</p>
+                <p className="text-xs text-gray-500">Accepted</p>
+              </div>
+              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                <X className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                <p className="text-2xl font-bold text-gray-400">{skipped.size}</p>
+                <p className="text-xs text-gray-500">Skipped</p>
+              </div>
+            </div>
+
+            <button
+              onClick={resetAndStartOver}
+              className="flex items-center gap-2 px-6 py-3 bg-purple-600 active:bg-purple-500 text-white font-medium rounded-xl mx-auto"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Enhance More
+            </button>
+          </div>
+        </MobileLayout>
+      )
+    }
+
+    return null
+  }
+
+  // ============ DESKTOP LAYOUT ============
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">

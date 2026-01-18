@@ -15,8 +15,9 @@ import {
 import { Input, Modal, Textarea, Tooltip, sanitizeHtml } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
+import { SessionsPageMobile } from './page.mobile'
 import { CharacterViewModal } from '@/components/character'
-import { useSupabase, useUser } from '@/hooks'
+import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { formatDate, cn, getInitials } from '@/lib/utils'
 import { logActivity } from '@/lib/activity-log'
 import Image from 'next/image'
@@ -45,6 +46,7 @@ export default function SessionsPage() {
   const router = useRouter()
   const supabase = useSupabase()
   const { user } = useUser()
+  const isMobile = useIsMobile()
 
   const campaignId = params.id as string
 
@@ -240,6 +242,35 @@ export default function SessionsPage() {
     setViewingCharacter(character)
   }
 
+  // Mobile Layout
+  if (isMobile) {
+    return (
+      <SessionsPageMobile
+        campaignId={campaignId}
+        loading={loading}
+        sessions={sessions}
+        filteredSessions={filteredSessions}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        isCreateModalOpen={isCreateModalOpen}
+        setIsCreateModalOpen={setIsCreateModalOpen}
+        formData={formData}
+        setFormData={setFormData}
+        saving={saving}
+        expandedIds={expandedIds}
+        toggleExpanded={toggleExpanded}
+        viewingCharacter={viewingCharacter}
+        setViewingCharacter={setViewingCharacter}
+        characterTags={characterTags}
+        handleSessionClick={handleSessionClick}
+        handleCharacterClick={handleCharacterClick}
+        handleDelete={handleDelete}
+        handleCreate={handleCreate}
+      />
+    )
+  }
+
+  // Desktop Layout
   if (loading) {
     return (
       <AppLayout campaignId={campaignId}>

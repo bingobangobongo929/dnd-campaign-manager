@@ -6,7 +6,8 @@ import { Image as ImageIcon, Upload, Plus, Trash2, X, Loader2, Grid, LayoutGrid 
 import { Modal, Input } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
-import { useSupabase, useUser } from '@/hooks'
+import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { CampaignGalleryPageMobile } from './page.mobile'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import { v4 as uuidv4 } from 'uuid'
@@ -20,6 +21,7 @@ export default function GalleryPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const campaignId = params.id as string
+  const isMobile = useIsMobile()
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [items, setItems] = useState<MediaItem[]>([])
@@ -162,6 +164,26 @@ export default function GalleryPage() {
     lg: 'aspect-[4/3]',
   }
 
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    return (
+      <CampaignGalleryPageMobile
+        campaignId={campaignId}
+        items={items}
+        loading={loading}
+        uploading={uploading}
+        error={error}
+        selectedItem={selectedItem}
+        setSelectedItem={setSelectedItem}
+        handleFileSelect={handleFileSelect}
+        handleDelete={handleDelete}
+        fileInputRef={fileInputRef}
+        handleFileChange={handleFileChange}
+      />
+    )
+  }
+
+  // ============ DESKTOP LAYOUT ============
   if (loading) {
     return (
       <AppLayout campaignId={campaignId}>

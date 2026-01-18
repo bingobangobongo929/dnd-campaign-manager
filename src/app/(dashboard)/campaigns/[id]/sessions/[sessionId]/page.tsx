@@ -23,7 +23,8 @@ import { toast } from 'sonner'
 import { Input, Button, sanitizeHtml } from '@/components/ui'
 import { RichTextEditor } from '@/components/editor'
 import { AppLayout } from '@/components/layout/app-layout'
-import { useSupabase, useUser } from '@/hooks'
+import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { SessionDetailMobile } from './page.mobile'
 import { useVersionedAutoSave } from '@/hooks/useAutoSave'
 import { logActivity, diffChanges } from '@/lib/activity-log'
 import { useAppStore } from '@/store'
@@ -36,6 +37,7 @@ export default function SessionDetailPage() {
   const router = useRouter()
   const supabase = useSupabase()
   const { user } = useUser()
+  const isMobile = useIsMobile()
   const { aiProvider } = useAppStore()
 
   const campaignId = params.id as string
@@ -470,6 +472,40 @@ export default function SessionDetailPage() {
   const pcCharacters = characters.filter(c => c.type === 'pc')
   const npcCharacters = characters.filter(c => c.type === 'npc')
 
+  // Mobile Layout
+  if (isMobile) {
+    return (
+      <SessionDetailMobile
+        campaignId={campaignId}
+        isNew={isNew}
+        loading={loading}
+        formData={formData}
+        setFormData={setFormData}
+        status={status}
+        hasConflict={hasConflict}
+        attendees={attendees}
+        toggleAttendee={toggleAttendee}
+        characters={characters}
+        pcCharacters={pcCharacters}
+        npcCharacters={npcCharacters}
+        showExpandedPreview={showExpandedPreview}
+        expanding={expanding}
+        pendingSummary={pendingSummary}
+        pendingTitle={pendingTitle}
+        pendingNotes={pendingNotes}
+        detailedNotesCollapsed={detailedNotesCollapsed}
+        setDetailedNotesCollapsed={setDetailedNotesCollapsed}
+        handleCreate={handleCreate}
+        handleExpandNotes={handleExpandNotes}
+        acceptExpanded={acceptExpanded}
+        editExpanded={editExpanded}
+        declineExpanded={declineExpanded}
+        formatSummaryAsHtml={formatSummaryAsHtml}
+      />
+    )
+  }
+
+  // Desktop Layout
   if (loading) {
     return (
       <AppLayout campaignId={campaignId}>

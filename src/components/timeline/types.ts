@@ -1,4 +1,5 @@
 import type { TimelineEvent, Character } from '@/types/database'
+import { LayoutGrid, BookOpen, ScrollText, PanelLeft, Film } from 'lucide-react'
 
 export interface TimelineEventWithCharacters extends TimelineEvent {
   characters: Character[]
@@ -12,10 +13,10 @@ export interface TimelineViewProps {
 
 export type TimelineViewType = 'chapters' | 'journal' | 'browser' | 'storyboard' | 'feed'
 
-export const VIEW_OPTIONS: { value: TimelineViewType; label: string; description: string }[] = [
-  { value: 'feed', label: 'Feed', description: 'Simple scrollable cards' },
-  { value: 'chapters', label: 'Chapters', description: 'Grouped by story arcs' },
-  { value: 'journal', label: 'Journal', description: 'Campaign diary style' },
-  { value: 'browser', label: 'Browser', description: 'Two-panel navigation' },
-  { value: 'storyboard', label: 'Storyboard', description: 'Horizontal filmstrip' },
+export const VIEW_OPTIONS: { value: TimelineViewType; label: string; description: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { value: 'feed', label: 'Feed', description: 'Simple scrollable cards', icon: LayoutGrid },
+  { value: 'chapters', label: 'Chapters', description: 'Grouped by story arcs', icon: BookOpen },
+  { value: 'journal', label: 'Journal', description: 'Campaign diary style', icon: ScrollText },
+  { value: 'browser', label: 'Browser', description: 'Two-panel navigation', icon: PanelLeft },
+  { value: 'storyboard', label: 'Storyboard', description: 'Horizontal filmstrip', icon: Film },
 ]

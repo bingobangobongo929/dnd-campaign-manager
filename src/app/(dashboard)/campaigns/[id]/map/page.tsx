@@ -5,7 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { Map, Upload, Plus, Trash2, X, Loader2, ZoomIn, ZoomOut } from 'lucide-react'
 import { Modal, Input } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
-import { useSupabase, useUser } from '@/hooks'
+import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { CampaignMapPageMobile } from './page.mobile'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import { v4 as uuidv4 } from 'uuid'
@@ -19,6 +20,7 @@ export default function WorldMapPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const campaignId = params.id as string
+  const isMobile = useIsMobile()
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [maps, setMaps] = useState<WorldMap[]>([])
@@ -160,6 +162,34 @@ export default function WorldMapPage() {
     }
   }
 
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    return (
+      <CampaignMapPageMobile
+        campaignId={campaignId}
+        maps={maps}
+        selectedMap={selectedMap}
+        setSelectedMap={setSelectedMap}
+        loading={loading}
+        uploading={uploading}
+        error={error}
+        zoom={zoom}
+        setZoom={setZoom}
+        isNameModalOpen={isNameModalOpen}
+        setIsNameModalOpen={setIsNameModalOpen}
+        mapName={mapName}
+        setMapName={setMapName}
+        fileInputRef={fileInputRef}
+        handleFileSelect={handleFileSelect}
+        handleFileChange={handleFileChange}
+        handleUpload={handleUpload}
+        handleDelete={handleDelete}
+        setPendingFile={setPendingFile}
+      />
+    )
+  }
+
+  // ============ DESKTOP LAYOUT ============
   if (loading) {
     return (
       <AppLayout campaignId={campaignId}>

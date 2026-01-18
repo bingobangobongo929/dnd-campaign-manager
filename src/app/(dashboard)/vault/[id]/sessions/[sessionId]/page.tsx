@@ -19,6 +19,8 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AppLayout } from '@/components/layout/app-layout'
+import { useIsMobile } from '@/hooks'
+import { VaultSessionEditorMobile } from './page.mobile'
 import { Button, Input, sanitizeHtml } from '@/components/ui'
 import { RichTextEditor } from '@/components/editor'
 import { createClient } from '@/lib/supabase/client'
@@ -37,6 +39,7 @@ export default function VaultSessionEditorPage() {
   const characterId = params.id as string
   const sessionId = params.sessionId as string
   const isNew = sessionId === 'new'
+  const isMobile = useIsMobile()
 
   const [character, setCharacter] = useState<VaultCharacter | null>(null)
   const [session, setSession] = useState<PlayJournal | null>(null)
@@ -444,6 +447,37 @@ export default function VaultSessionEditorPage() {
     setAiReasoning('')
   }
 
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    return (
+      <VaultSessionEditorMobile
+        characterId={characterId}
+        isNew={isNew}
+        character={character}
+        loading={loading}
+        formData={formData}
+        setFormData={setFormData}
+        status={status}
+        hasConflict={hasConflict}
+        expanding={expanding}
+        showExpandedPreview={showExpandedPreview}
+        pendingSummary={pendingSummary}
+        pendingTitle={pendingTitle}
+        pendingNotes={pendingNotes}
+        detailedNotesCollapsed={detailedNotesCollapsed}
+        setDetailedNotesCollapsed={setDetailedNotesCollapsed}
+        handleCreate={handleCreate}
+        handleExpandNotes={handleExpandNotes}
+        acceptExpanded={acceptExpanded}
+        editExpanded={editExpanded}
+        declineExpanded={declineExpanded}
+        formatSummaryAsHtml={formatSummaryAsHtml}
+        onNavigate={(path) => router.push(path)}
+      />
+    )
+  }
+
+  // ============ DESKTOP LAYOUT ============
   if (loading) {
     return (
       <AppLayout characterId={characterId}>

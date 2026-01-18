@@ -21,6 +21,8 @@ import { cn } from '@/lib/utils'
 import { formatActivityAction, getActivityIcon, type ActivityAction } from '@/lib/activity-log'
 import { createClient } from '@/lib/supabase/client'
 import { BackToTopButton } from '@/components/ui/back-to-top'
+import { MobileLayout, MobileBottomSheet } from '@/components/mobile'
+import { useIsMobile } from '@/hooks'
 
 interface ActivityLogEntry {
   id: string
@@ -145,6 +147,7 @@ function getActionContext(action: string, metadata: Record<string, unknown> | nu
 }
 
 export default function ActivityLogPage() {
+  const isMobile = useIsMobile()
   const [activities, setActivities] = useState<ActivityLogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<string | null>(null)
@@ -152,6 +155,7 @@ export default function ActivityLogPage() {
   const [stats, setStats] = useState<{ byType: Record<string, number>; total: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLive, setIsLive] = useState(false)
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
 
   const supabase = createClient()
 
@@ -248,6 +252,183 @@ export default function ActivityLogPage() {
     groupedActivities[date].push(activity)
   }
 
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    return (
+      <MobileLayout
+        title="Activity"
+        showBackButton
+        backHref="/settings"
+        actions={
+          <button onClick={() => setIsFilterOpen(true)} className="p-2 rounded-lg active:bg-white/10">
+            <Filter className="w-5 h-5 text-gray-400" />
+          </button>
+        }
+      >
+        <div className="px-4 pb-24">
+          {/* Live indicator */}
+          {isLive && (
+            <div className="flex items-center justify-center gap-2 py-2 mb-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+              <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
+              <span className="text-xs font-medium text-emerald-400">Live updates</span>
+            </div>
+          )}
+
+          {/* Error */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-start gap-3">
+              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-400">{error}</p>
+            </div>
+          )}
+
+          {/* Stats */}
+          {stats && (
+            <div className="grid grid-cols-3 gap-2 mb-6">
+              <button
+                onClick={() => setFilter(null)}
+                className={cn(
+                  'p-3 rounded-xl border text-center',
+                  !filter ? 'bg-purple-500/10 border-purple-500' : 'bg-white/[0.02] border-white/[0.06]'
+                )}
+              >
+                <p className="text-lg font-bold text-white">{stats.total}</p>
+                <p className="text-[10px] text-gray-500">All</p>
+              </button>
+              {Object.entries(stats.byType).slice(0, 2).map(([type, count]) => {
+                const Icon = ENTITY_TYPE_ICONS[type] || History
+                return (
+                  <button
+                    key={type}
+                    onClick={() => setFilter(filter === type ? null : type)}
+                    className={cn(
+                      'p-3 rounded-xl border text-center',
+                      filter === type ? 'bg-purple-500/10 border-purple-500' : 'bg-white/[0.02] border-white/[0.06]'
+                    )}
+                  >
+                    <Icon className="w-4 h-4 mx-auto mb-1 text-gray-500" />
+                    <p className="text-lg font-bold text-white">{count}</p>
+                    <p className="text-[10px] text-gray-500 capitalize">{type}s</p>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Activity List */}
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="w-10 h-10 border-2 border-purple-500 border-t-transparent rounded-full spinner" />
+            </div>
+          ) : activities.length === 0 ? (
+            <div className="text-center py-16">
+              <History className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+              <p className="text-sm text-gray-500">No activity yet</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {Object.entries(groupedActivities).map(([date, items]) => (
+                <div key={date}>
+                  <h3 className="text-xs font-semibold text-gray-500 mb-3">{date}</h3>
+                  <div className="space-y-2">
+                    {items.map((activity) => {
+                      const Icon = ENTITY_TYPE_ICONS[activity.entity_type] || History
+                      const colorClass = ENTITY_TYPE_COLORS[activity.entity_type] || 'text-gray-400 bg-gray-500/10'
+                      const formattedChanges = formatChanges(activity.changes)
+
+                      return (
+                        <div
+                          key={activity.id}
+                          className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0', colorClass)}>
+                              <Icon className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold text-white">
+                                {formatActivityAction(activity.action)}
+                              </p>
+                              {activity.entity_name && (
+                                <p className="text-sm font-medium text-purple-400 mt-0.5 truncate">
+                                  {activity.entity_name}
+                                </p>
+                              )}
+                              {formattedChanges.length > 0 && (
+                                <div className="mt-2 space-y-1">
+                                  {formattedChanges.slice(0, 2).map((change, idx) => (
+                                    <div key={idx} className="text-[11px]">
+                                      <span className={cn(
+                                        'px-1 py-0.5 rounded text-[9px] font-medium mr-1',
+                                        change.type === 'added' && 'bg-green-500/20 text-green-400',
+                                        change.type === 'removed' && 'bg-red-500/20 text-red-400',
+                                        change.type === 'changed' && 'bg-amber-500/20 text-amber-400'
+                                      )}>
+                                        {change.field}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              <p className="text-[10px] text-gray-600 mt-2">
+                                {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Filter Bottom Sheet */}
+        <MobileBottomSheet
+          isOpen={isFilterOpen}
+          onClose={() => setIsFilterOpen(false)}
+          title="Filters"
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs text-gray-500 mb-2 block">Time Period</label>
+              <select
+                value={days}
+                onChange={(e) => setDays(parseInt(e.target.value))}
+                className="w-full py-3 px-4 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white"
+                style={{ colorScheme: 'dark' }}
+              >
+                <option value={7}>Last 7 days</option>
+                <option value={30}>Last 30 days</option>
+                <option value={90}>Last 90 days</option>
+                <option value={365}>Last year</option>
+              </select>
+            </div>
+            {filter && (
+              <button
+                onClick={() => { setFilter(null); setIsFilterOpen(false) }}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-purple-500/10 text-purple-400 rounded-lg"
+              >
+                <Filter className="w-4 h-4" />
+                Clear filter
+              </button>
+            )}
+            <button
+              onClick={() => { loadActivity(); setIsFilterOpen(false) }}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-purple-600 active:bg-purple-500 text-white font-medium rounded-xl"
+            >
+              <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
+              Refresh
+            </button>
+          </div>
+        </MobileBottomSheet>
+      </MobileLayout>
+    )
+  }
+
+  // ============ DESKTOP LAYOUT ============
   return (
     <>
       {/* Page Header */}

@@ -14,6 +14,8 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AppLayout } from '@/components/layout/app-layout'
+import { useIsMobile } from '@/hooks'
+import { CharacterRelationshipsPageMobile } from './page.mobile'
 import { Button } from '@/components/ui'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { createClient } from '@/lib/supabase/client'
@@ -24,6 +26,7 @@ export default function CharacterRelationshipsPage() {
   const params = useParams()
   const supabase = createClient()
   const characterId = params.id as string
+  const isMobile = useIsMobile()
 
   const [activeTab, setActiveTab] = useState<'party' | 'npcs' | 'companions'>('party')
   const [relationships, setRelationships] = useState<VaultCharacterRelationship[]>([])
@@ -75,6 +78,24 @@ export default function CharacterRelationshipsPage() {
     }
   }
 
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    return (
+      <CharacterRelationshipsPageMobile
+        characterId={characterId}
+        loading={loading}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        partyMembers={partyMembers}
+        npcs={npcs}
+        companions={companions}
+        goToEditor={goToEditor}
+        handleDelete={handleDelete}
+      />
+    )
+  }
+
+  // ============ DESKTOP LAYOUT ============
   if (loading) {
     return (
       <AppLayout characterId={characterId}>

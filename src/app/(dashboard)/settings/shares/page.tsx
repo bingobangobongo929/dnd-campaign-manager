@@ -37,6 +37,8 @@ import {
 } from 'lucide-react'
 // AppLayout is provided by settings/layout.tsx
 import { Modal } from '@/components/ui'
+import { MobileLayout, MobileBottomSheet } from '@/components/mobile'
+import { useIsMobile } from '@/hooks'
 import { formatDate, formatDistanceToNow } from '@/lib/utils'
 import Image from 'next/image'
 import { getInitials } from '@/lib/utils'
@@ -273,6 +275,7 @@ function StatBar({ value, max, color = 'purple' }: { value: number; max: number;
 }
 
 export default function SharesPage() {
+  const isMobile = useIsMobile()
   const [shares, setShares] = useState<ShareData[]>([])
   const [summary, setSummary] = useState<ShareSummary | null>(null)
   const [dailyViews, setDailyViews] = useState<DailyView[]>([])
@@ -400,6 +403,343 @@ export default function SharesPage() {
     return `/share/campaign/${share.share_code}`
   }
 
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    return (
+      <MobileLayout title="Share Analytics" showBackButton backHref="/settings">
+        <div className="px-4 pb-24">
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="w-10 h-10 border-2 border-purple-500 border-t-transparent rounded-full spinner" />
+            </div>
+          ) : error ? (
+            <div className="py-12 text-center">
+              <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-4" />
+              <p className="text-red-400 mb-4">{error}</p>
+              <button onClick={() => loadShares()} className="px-4 py-2 bg-purple-600 text-white rounded-lg">
+                Try Again
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Live Activity Banner */}
+              {summary && summary.viewing_now > 0 && (
+                <div className="p-3 rounded-xl bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20">
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                      <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-green-500 animate-ping" />
+                    </div>
+                    <span className="text-sm text-green-400 font-medium">
+                      {summary.viewing_now} viewing now
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Summary Stats */}
+              {summary && (
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-center">
+                    <Share2 className="w-4 h-4 text-purple-400 mx-auto mb-1" />
+                    <p className="text-lg font-bold text-white">{summary.active_shares}</p>
+                    <p className="text-[10px] text-gray-500">Active</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-center">
+                    <Eye className="w-4 h-4 text-blue-400 mx-auto mb-1" />
+                    <p className="text-lg font-bold text-white">{summary.total_views}</p>
+                    <p className="text-[10px] text-gray-500">Views</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-center">
+                    <Users className="w-4 h-4 text-green-400 mx-auto mb-1" />
+                    <p className="text-lg font-bold text-white">{summary.total_unique_viewers}</p>
+                    <p className="text-[10px] text-gray-500">Unique</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Views Chart */}
+              {dailyViews.length > 0 && (
+                <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                  <h3 className="text-sm font-medium text-white mb-3">Views (14 Days)</h3>
+                  <MiniBarChart data={dailyViews} height={60} />
+                </div>
+              )}
+
+              {/* Recent Activity */}
+              {recentActivity.length > 0 && (
+                <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                  <h3 className="text-sm font-medium text-white flex items-center gap-2 mb-3">
+                    <Zap className="w-4 h-4 text-amber-400" />
+                    Live Activity
+                  </h3>
+                  <div className="space-y-2 max-h-[150px] overflow-y-auto">
+                    {recentActivity.slice(0, 5).map((activity, i) => (
+                      <div
+                        key={`${activity.share_id}-${activity.viewed_at}-${i}`}
+                        className="flex items-center gap-2 text-sm"
+                      >
+                        <div className={`w-6 h-6 rounded flex items-center justify-center ${TYPE_COLORS[activity.share_type as keyof typeof TYPE_COLORS]}`}>
+                          {(() => {
+                            const Icon = TYPE_ICONS[activity.share_type as keyof typeof TYPE_ICONS]
+                            return <Icon className="w-3 h-3" />
+                          })()}
+                        </div>
+                        <span className="flex-1 truncate text-gray-400 text-xs">
+                          {activity.item_name}
+                        </span>
+                        <span className="text-[10px] text-gray-600">
+                          {formatDistanceToNow(activity.viewed_at)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Filters */}
+              <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}
+                  className="px-3 py-2 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white flex-shrink-0"
+                  style={{ colorScheme: 'dark' }}
+                >
+                  <option value="all">All Types</option>
+                  <option value="character">Characters</option>
+                  <option value="oneshot">One-Shots</option>
+                  <option value="campaign">Campaigns</option>
+                </select>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                  className="px-3 py-2 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white flex-shrink-0"
+                  style={{ colorScheme: 'dark' }}
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="expired">Expired</option>
+                </select>
+                <span className="text-sm text-gray-500 self-center ml-auto">{filteredShares.length} links</span>
+              </div>
+
+              {/* Shares List */}
+              {filteredShares.length === 0 ? (
+                <div className="py-12 text-center">
+                  <Share2 className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+                  <p className="text-sm text-gray-500">
+                    {shares.length === 0 ? "No shared links yet" : "No matches"}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredShares.map((share) => {
+                    const TypeIcon = TYPE_ICONS[share.type]
+                    const isCopied = copiedId === share.id
+
+                    return (
+                      <div
+                        key={share.id}
+                        className={`p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] ${share.is_expired ? 'opacity-60' : ''}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          {/* Image/Icon */}
+                          {share.item_image ? (
+                            <Image
+                              src={share.item_image}
+                              alt={share.item_name}
+                              width={40}
+                              height={40}
+                              className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                            />
+                          ) : (
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${TYPE_COLORS[share.type]}`}>
+                              {share.type === 'character' ? (
+                                <span className="text-sm font-bold">{getInitials(share.item_name)}</span>
+                              ) : (
+                                <TypeIcon className="w-5 h-5" />
+                              )}
+                            </div>
+                          )}
+
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-medium text-white text-sm truncate">{share.item_name}</h3>
+                              {share.is_expired && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/15 text-red-400">
+                                  Expired
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 text-[11px] text-gray-500">
+                              <span className={`px-1.5 py-0.5 rounded ${TYPE_COLORS[share.type]}`}>
+                                {TYPE_LABELS[share.type]}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Eye className="w-3 h-3" />
+                                {share.view_count}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/[0.06]">
+                          <button
+                            onClick={() => copyLink(share)}
+                            className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-white/[0.03] active:bg-white/[0.06] text-sm text-gray-300"
+                          >
+                            {isCopied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                            {isCopied ? 'Copied' : 'Copy'}
+                          </button>
+                          <a
+                            href={getShareUrl(share)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 rounded-lg bg-white/[0.03] active:bg-white/[0.06]"
+                          >
+                            <ExternalLink className="w-4 h-4 text-gray-400" />
+                          </a>
+                          <button
+                            onClick={() => loadViewHistory(share)}
+                            className="p-2 rounded-lg bg-white/[0.03] active:bg-purple-500/20"
+                          >
+                            <BarChart3 className="w-4 h-4 text-gray-400" />
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget(share)}
+                            className="p-2 rounded-lg bg-white/[0.03] active:bg-red-500/20"
+                          >
+                            <Trash2 className="w-4 h-4 text-gray-400" />
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Delete Modal */}
+        <Modal
+          isOpen={!!deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          title="Revoke Link?"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-gray-400">
+              Revoke share link for <strong className="text-white">{deleteTarget?.item_name}</strong>?
+            </p>
+            <div className="flex gap-3">
+              <button
+                className="flex-1 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-gray-300"
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                className="flex-1 py-3 bg-red-500 active:bg-red-600 rounded-xl text-white font-medium"
+                onClick={deleteShare}
+                disabled={deleting}
+              >
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Revoke'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Analytics Bottom Sheet */}
+        <MobileBottomSheet
+          isOpen={!!viewHistoryShare}
+          onClose={() => { setViewHistoryShare(null); setViewHistory(null) }}
+          title={`Analytics`}
+        >
+          {loadingHistory ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+            </div>
+          ) : viewHistory ? (
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+              <p className="text-sm text-gray-400 text-center">{viewHistoryShare?.item_name}</p>
+
+              {/* Real-time Stats */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 text-center">
+                  <p className="text-xs text-green-400">Now</p>
+                  <p className="text-xl font-bold text-white">{viewHistory.viewing_now}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-white/[0.03] text-center">
+                  <p className="text-xs text-gray-500">Hour</p>
+                  <p className="text-xl font-bold text-white">{viewHistory.views_last_hour}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-white/[0.03] text-center">
+                  <p className="text-xs text-gray-500">24h</p>
+                  <p className="text-xl font-bold text-white">{viewHistory.views_last_24_hours}</p>
+                </div>
+              </div>
+
+              {/* Totals */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-3 rounded-xl bg-white/[0.03] text-center">
+                  <p className="text-lg font-bold text-white">{viewHistory.total_views}</p>
+                  <p className="text-xs text-gray-500">Total Views</p>
+                </div>
+                <div className="p-3 rounded-xl bg-white/[0.03] text-center">
+                  <p className="text-lg font-bold text-white">{viewHistory.unique_viewers}</p>
+                  <p className="text-xs text-gray-500">Unique</p>
+                </div>
+              </div>
+
+              {/* Week Trend */}
+              <div className="p-3 rounded-xl bg-white/[0.03]">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-400">This Week</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-lg font-bold text-white">{viewHistory.this_week_views}</span>
+                    {viewHistory.week_over_week_change !== 0 && (
+                      <span className={`text-xs flex items-center ${viewHistory.week_over_week_change > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {viewHistory.week_over_week_change > 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                        {Math.abs(viewHistory.week_over_week_change)}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Device Stats */}
+              {viewHistory.device_stats.length > 0 && (
+                <div>
+                  <h4 className="text-xs text-gray-500 mb-2">Devices</h4>
+                  <div className="space-y-2">
+                    {viewHistory.device_stats.map(({ device, count }) => {
+                      const Icon = DEVICE_ICONS[device] || Globe
+                      return (
+                        <div key={device} className="flex items-center justify-between text-sm">
+                          <span className="flex items-center gap-2 text-gray-400">
+                            <Icon className="w-4 h-4" />
+                            {device}
+                          </span>
+                          <span className="text-white">{count}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-8 text-sm">No data yet</p>
+          )}
+        </MobileBottomSheet>
+      </MobileLayout>
+    )
+  }
+
+  // ============ DESKTOP LAYOUT ============
   return (
     <>
       {/* Header */}

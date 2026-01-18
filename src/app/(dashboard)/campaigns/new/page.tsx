@@ -25,7 +25,8 @@ import {
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css'
 import { Modal } from '@/components/ui'
-import { useSupabase, useUser } from '@/hooks'
+import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { NewCampaignMobile } from './page.mobile'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 import { logActivity } from '@/lib/activity-log'
@@ -77,6 +78,7 @@ export default function NewCampaignPage() {
   const { user } = useUser()
   const imageInputRef = useRef<HTMLInputElement>(null)
   const { aiEnabled } = useAppStore()
+  const isMobile = useIsMobile()
 
   // Form state
   const [formData, setFormData] = useState({
@@ -304,6 +306,47 @@ export default function NewCampaignPage() {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
   }
 
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    return (
+      <NewCampaignMobile
+        formData={formData}
+        setFormData={setFormData}
+        expandedSections={expandedSections}
+        toggleSection={toggleSection}
+        saving={saving}
+        uploadingImage={uploadingImage}
+        imageInputRef={imageInputRef}
+        imageOptionsModalOpen={imageOptionsModalOpen}
+        setImageOptionsModalOpen={setImageOptionsModalOpen}
+        promptModalOpen={promptModalOpen}
+        setPromptModalOpen={setPromptModalOpen}
+        generatedPrompt={generatedPrompt}
+        promptCopied={promptCopied}
+        generatingPrompt={generatingPrompt}
+        cropModalOpen={cropModalOpen}
+        pendingImage={pendingImage}
+        crop={crop}
+        setCrop={setCrop}
+        completedCrop={completedCrop}
+        setCompletedCrop={setCompletedCrop}
+        cropImgRef={cropImgRef}
+        handleSave={handleSave}
+        handleImageSelect={handleImageSelect}
+        handleGeneratePrompt={handleGeneratePrompt}
+        copyPromptToClipboard={copyPromptToClipboard}
+        onCropImageLoad={onCropImageLoad}
+        handleCropComplete={handleCropComplete}
+        handleCropCancel={handleCropCancel}
+        centerAspectCrop={centerAspectCrop}
+        aiEnabled={aiEnabled}
+        GAME_SYSTEMS={GAME_SYSTEMS}
+        CAMPAIGN_STATUSES={CAMPAIGN_STATUSES}
+      />
+    )
+  }
+
+  // ============ DESKTOP LAYOUT ============
   return (
     <>
       <div className="min-h-screen bg-[--bg-base]">
@@ -751,3 +794,4 @@ function CollapsibleSection({
     </div>
   )
 }
+

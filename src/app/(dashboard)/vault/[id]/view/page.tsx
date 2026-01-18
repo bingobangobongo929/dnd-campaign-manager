@@ -7,7 +7,9 @@ import { AppLayout } from '@/components/layout/app-layout'
 import { Button } from '@/components/ui'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { CharacterViewer } from '@/components/vault/CharacterViewer'
+import { useIsMobile } from '@/hooks'
 import { createClient } from '@/lib/supabase/client'
+import { CharacterViewPageMobile } from './page.mobile'
 import type { VaultCharacter } from '@/types/database'
 
 export default function CharacterViewPage() {
@@ -15,6 +17,7 @@ export default function CharacterViewPage() {
   const router = useRouter()
   const supabase = createClient()
   const characterId = params.id as string
+  const isMobile = useIsMobile()
 
   const [character, setCharacter] = useState<VaultCharacter | null>(null)
   const [loading, setLoading] = useState(true)
@@ -39,6 +42,20 @@ export default function CharacterViewPage() {
     loadCharacter()
   }, [characterId, supabase])
 
+  // ============ MOBILE LAYOUT ============
+  if (isMobile) {
+    return (
+      <CharacterViewPageMobile
+        characterId={characterId}
+        character={character}
+        loading={loading}
+        notFound={notFound}
+        onNavigate={(path) => router.push(path)}
+      />
+    )
+  }
+
+  // ============ DESKTOP LAYOUT ============
   if (loading) {
     return (
       <AppLayout characterId={characterId}>
