@@ -3,7 +3,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { FloatingDock } from './floating-dock'
 import { TopBar } from './top-bar'
-import { CampaignContextBanner } from './campaign-context-banner'
 import { MobileTabBar } from '@/components/mobile'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { useAppStore } from '@/store'
@@ -227,15 +226,13 @@ export function AppLayout({
         />
       </div>
 
-      {/* Campaign context banner for non-campaign pages */}
-      <CampaignContextBanner />
 
       <main className={`main-content ${fullBleed ? 'full-bleed' : ''}`}>
         {children}
       </main>
 
-      {/* Mobile Tab Bar */}
-      {isMobile && <MobileTabBar />}
+      {/* Mobile Tab Bar - contextual based on current page */}
+      {isMobile && <MobileTabBar campaignId={campaignId} characterId={characterId} />}
 
       {/* AI Assistant Panel - with campaign context, only when AI is enabled */}
       {isAIAssistantOpen && aiEnabled && <AIAssistant campaignContext={campaignContext} />}
