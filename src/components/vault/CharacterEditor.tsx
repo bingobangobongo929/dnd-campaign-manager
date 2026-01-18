@@ -217,7 +217,6 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
     fears: (character as any)?.fears || [] as string[],
     quotes: character?.quotes || [] as string[],
     common_phrases: character?.common_phrases || [] as string[],
-    weaknesses: character?.weaknesses || [] as string[],
     plot_hooks: character?.plot_hooks || [] as string[],
     tldr: character?.tldr || [] as string[],
     pre_session_hook: (character as any)?.pre_session_hook || '',
@@ -804,7 +803,6 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
       fears: dataToSave.fears.length > 0 ? dataToSave.fears : null,
       quotes: dataToSave.quotes.length > 0 ? dataToSave.quotes : null,
       common_phrases: dataToSave.common_phrases.length > 0 ? dataToSave.common_phrases : null,
-      weaknesses: dataToSave.weaknesses.length > 0 ? dataToSave.weaknesses : null,
       plot_hooks: dataToSave.plot_hooks.length > 0 ? dataToSave.plot_hooks : null,
       tldr: dataToSave.tldr.length > 0 ? dataToSave.tldr : null,
       backstory_phases: dataToSave.backstory_phases.length > 0 ? dataToSave.backstory_phases : null,
@@ -2413,16 +2411,6 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                       items={formData.common_phrases}
                       placeholder="Add a catchphrase or common saying..."
                       onChange={(items) => setFormData(prev => ({ ...prev, common_phrases: items }))}
-                    />
-                  </div>
-
-                  {/* Weaknesses */}
-                  <div>
-                    <ArrayFieldEditor
-                      label="Weaknesses & Flaws"
-                      items={formData.weaknesses}
-                      placeholder="Add a weakness or character flaw..."
-                      onChange={(items) => setFormData(prev => ({ ...prev, weaknesses: items }))}
                     />
                   </div>
 

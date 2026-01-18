@@ -528,6 +528,33 @@ export default function VaultImportPage() {
     }
   }, [parsedData, approvals, sourceFileName, hasApprovedSections])
 
+  // Toggle NPC between party_member and their original/default relationship type
+  const toggleNpcPartyMember = useCallback((npcIndex: number) => {
+    if (!parsedData?.npcs) return
+
+    setParsedData(prev => {
+      if (!prev?.npcs) return prev
+
+      const updatedNpcs = [...prev.npcs]
+      const npc = { ...updatedNpcs[npcIndex] }
+
+      if (npc.relationship_type === 'party_member') {
+        // Switch back to a default NPC type (friend or acquaintance)
+        npc.relationship_type = 'friend'
+        // Keep the relationship_label if it was previously set, otherwise clear it
+        if (npc.relationship_label === 'Party Member') {
+          npc.relationship_label = null
+        }
+      } else {
+        // Switch to party_member
+        npc.relationship_type = 'party_member'
+      }
+
+      updatedNpcs[npcIndex] = npc
+      return { ...prev, npcs: updatedNpcs }
+    })
+  }, [parsedData])
+
   // Section header with approval controls
   const SectionHeader = ({
     title,
@@ -609,7 +636,7 @@ export default function VaultImportPage() {
               <CharacterPreview character={parsedData.character} />
             )}
             {section === 'npcs' && parsedData?.npcs && (
-              <NPCsPreview npcs={parsedData.npcs} />
+              <NPCsPreview npcs={parsedData.npcs} onTogglePartyMember={toggleNpcPartyMember} />
             )}
             {section === 'companions' && parsedData?.companions && (
               <CompanionsPreview companions={parsedData.companions} />
@@ -801,28 +828,45 @@ export default function VaultImportPage() {
   )
 
   // NPCs preview component - FULL content, no truncation
-  const NPCsPreview = ({ npcs }: { npcs: NPC[] }) => (
+  const NPCsPreview = ({ npcs, onTogglePartyMember }: { npcs: NPC[]; onTogglePartyMember: (index: number) => void }) => (
     <div className="space-y-3">
       {npcs.map((npc, i) => {
         const relationshipColor = RELATIONSHIP_COLORS[npc.relationship_type] || RELATIONSHIP_COLORS.other
+        const isPartyMember = npc.relationship_type === 'party_member'
         return (
           <div
             key={i}
             className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-3"
           >
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-medium text-white/90">{npc.name}</span>
-              {npc.nickname && (
-                <span className="text-sm text-gray-500 italic">"{npc.nickname}"</span>
-              )}
-              <span className={`text-xs px-2 py-0.5 rounded-md capitalize border ${relationshipColor}`}>
-                {npc.relationship_label || npc.relationship_type.replace(/_/g, ' ')}
-              </span>
-              {npc.relationship_status && npc.relationship_status !== 'active' && (
-                <span className="text-xs px-2 py-0.5 bg-gray-500/15 text-gray-400 rounded capitalize">
-                  {npc.relationship_status}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-wrap flex-1">
+                <span className="font-medium text-white/90">{npc.name}</span>
+                {npc.nickname && (
+                  <span className="text-sm text-gray-500 italic">"{npc.nickname}"</span>
+                )}
+                <span className={`text-xs px-2 py-0.5 rounded-md capitalize border ${relationshipColor}`}>
+                  {npc.relationship_label || npc.relationship_type.replace(/_/g, ' ')}
                 </span>
-              )}
+                {npc.relationship_status && npc.relationship_status !== 'active' && (
+                  <span className="text-xs px-2 py-0.5 bg-gray-500/15 text-gray-400 rounded capitalize">
+                    {npc.relationship_status}
+                  </span>
+                )}
+              </div>
+              {/* Toggle party member / NPC button */}
+              <button
+                onClick={() => onTogglePartyMember(i)}
+                className={cn(
+                  "flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors",
+                  isPartyMember
+                    ? "bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30"
+                    : "bg-gray-500/15 text-gray-400 hover:bg-gray-500/25"
+                )}
+                title={isPartyMember ? "Click to change to NPC" : "Click to change to Party Member"}
+              >
+                <Users className="w-3.5 h-3.5" />
+                {isPartyMember ? 'PC' : 'NPC'}
+              </button>
             </div>
             {npc.occupation && (
               <p className="text-xs text-gray-500 mt-1">💼 {npc.occupation}</p>

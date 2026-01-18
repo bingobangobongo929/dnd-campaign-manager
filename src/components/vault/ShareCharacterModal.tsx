@@ -37,7 +37,6 @@ const SECTION_TOGGLES: SectionToggle[] = [
   { key: 'personality', label: 'Personality', group: 'DETAILS', defaultOn: true },
   { key: 'goals', label: 'Goals & Motivations', group: 'DETAILS', defaultOn: true },
   { key: 'secrets', label: 'Secrets', group: 'DETAILS', defaultOn: false, warning: 'careful!' },
-  { key: 'weaknesses', label: 'Weaknesses', group: 'DETAILS', defaultOn: true },
   { key: 'fears', label: 'Fears', group: 'DETAILS', defaultOn: true },
   // People
   { key: 'partyMembers', label: 'Party Members', group: 'PEOPLE', defaultOn: true },
@@ -194,7 +193,6 @@ export function ShareCharacterModal({
         const quotes = (character.quotes as string[]) || []
         const plotHooks = (character.plot_hooks as string[]) || []
         const fears = ((character as any).fears as string[]) || []
-        const weaknesses = (character.weaknesses as string[]) || []
         const backstoryPhases = ((character as any).backstory_phases as any[]) || []
         const dmQa = (character.dm_qa as any[]) || []
         const rumors = (character.rumors as any[]) || []
@@ -212,7 +210,6 @@ export function ShareCharacterModal({
           personality: !!character.personality,
           goals: !!character.goals,
           secrets: !!character.secrets,
-          weaknesses: weaknesses.length > 0,
           fears: fears.length > 0,
           partyMembers: partyMembers.length > 0,
           npcs: npcs.length > 0,
