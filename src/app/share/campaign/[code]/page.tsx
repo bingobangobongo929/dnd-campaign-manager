@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
       title,
       description,
       type: 'website',
-      siteName: 'Campaign Manager',
+      siteName: 'Multiloop',
       images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630, alt: campaign.name }] : [],
     },
     twitter: {

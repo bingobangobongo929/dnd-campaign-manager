@@ -77,6 +77,7 @@ export default function LoginPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 mb-4 shadow-lg shadow-purple-500/25">
               <Sparkles className="w-8 h-8 text-white" />
             </div>
+            <div className="text-sm font-semibold text-purple-400 tracking-wide mb-1">MULTILOOP</div>
             <h1 className="text-2xl font-bold text-white mb-2">Welcome Back, Adventurer</h1>
             <p className="text-gray-400 text-sm">Sign in to continue your journey</p>
           </div>

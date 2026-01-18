@@ -63,7 +63,7 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
       title,
       description,
       type: 'profile',
-      siteName: 'Campaign Manager',
+      siteName: 'Multiloop',
       images: imageUrl ? [{ url: imageUrl, width: 400, height: 600, alt: character.name }] : [],
     },
     twitter: {
@@ -1144,7 +1144,7 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
           {/* Footer */}
           <div className="mt-12 pt-6 border-t border-white/10 text-center">
             <p className="text-sm text-gray-600">
-              Created with Campaign Manager
+              Created with Multiloop
             </p>
           </div>
         </div>

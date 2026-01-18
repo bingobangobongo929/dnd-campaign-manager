@@ -59,7 +59,7 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
       title,
       description,
       type: 'website',
-      siteName: 'Campaign Manager',
+      siteName: 'Multiloop',
       images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630, alt: oneshot.title }] : [],
     },
     twitter: {
@@ -393,7 +393,7 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
       {/* Footer */}
       <div className="border-t border-white/10 py-8">
         <div className="max-w-4xl mx-auto px-6 text-center text-sm text-gray-500">
-          Shared via D&D Campaign Manager
+          Shared via Multiloop
         </div>
       </div>
     </div>
