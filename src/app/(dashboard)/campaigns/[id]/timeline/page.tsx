@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { Input, Textarea, Modal, Dropdown } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
+import { BackToTopButton } from '@/components/ui/back-to-top'
 import { CharacterViewModal } from '@/components/character'
 import {
   FeedView,
@@ -626,6 +627,7 @@ export default function TimelinePage() {
           onEventsGenerated={handleAIGeneratedEvents}
         />
       </div>
+      <BackToTopButton />
     </AppLayout>
   )
 }

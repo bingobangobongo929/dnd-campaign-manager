@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { CharacterEditor } from '@/components/vault/CharacterEditor'
 import { Button } from '@/components/ui'
+import { BackToTopButton } from '@/components/ui/back-to-top'
 import { createClient } from '@/lib/supabase/client'
 import { useAppStore } from '@/store'
 import type { VaultCharacter } from '@/types/database'
@@ -80,6 +81,7 @@ export default function EditVaultCharacterPage() {
   return (
     <AppLayout characterId={characterId} fullBleed>
       <CharacterEditor character={character} mode="edit" />
+      <BackToTopButton />
     </AppLayout>
   )
 }

@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import Image from 'next/image'
 import { Modal, Dropdown } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
+import { BackToTopButton } from '@/components/ui/back-to-top'
 import { CharacterCard } from '@/components/vault/CharacterCard'
 import { useSupabase, useUser } from '@/hooks'
 import { cn, getInitials } from '@/lib/utils'
@@ -991,6 +992,7 @@ export default function VaultPage() {
           </div>
         </Modal>
       </div>
+      <BackToTopButton />
     </AppLayout>
   )
 }

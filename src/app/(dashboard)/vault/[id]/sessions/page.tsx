@@ -14,6 +14,7 @@ import {
 import { toast } from 'sonner'
 import { AppLayout } from '@/components/layout/app-layout'
 import { Button } from '@/components/ui'
+import { BackToTopButton } from '@/components/ui/back-to-top'
 import { createClient } from '@/lib/supabase/client'
 import { formatDate } from '@/lib/character-display'
 import type { PlayJournal } from '@/types/database'
@@ -197,6 +198,7 @@ export default function CharacterSessionsPage() {
           )}
         </div>
       </div>
+      <BackToTopButton />
     </AppLayout>
   )
 }

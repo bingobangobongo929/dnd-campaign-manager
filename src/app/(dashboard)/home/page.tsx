@@ -16,6 +16,7 @@ import {
   ArrowRight,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
+import { BackToTopButton } from '@/components/ui/back-to-top'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
 import { formatDistanceToNow } from '@/lib/utils'
@@ -473,6 +474,8 @@ export default function HomePage() {
           </Link>
         </section>
       </div>
+
+      <BackToTopButton />
     </AppLayout>
   )
 }

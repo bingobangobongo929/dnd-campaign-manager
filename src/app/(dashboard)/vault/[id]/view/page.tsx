@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { Button } from '@/components/ui'
+import { BackToTopButton } from '@/components/ui/back-to-top'
 import { CharacterViewer } from '@/components/vault/CharacterViewer'
 import { createClient } from '@/lib/supabase/client'
 import type { VaultCharacter } from '@/types/database'
@@ -69,6 +70,7 @@ export default function CharacterViewPage() {
   return (
     <AppLayout characterId={characterId}>
       <CharacterViewer character={character} />
+      <BackToTopButton />
     </AppLayout>
   )
 }

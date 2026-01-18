@@ -18,6 +18,7 @@ import {
 import { formatDate } from '@/lib/utils'
 import { Modal, Input, Textarea, Dropdown, UnifiedImageModal } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
+import { BackToTopButton } from '@/components/ui/back-to-top'
 import { useSupabase, useUser } from '@/hooks'
 import { v4 as uuidv4 } from 'uuid'
 import type { Campaign } from '@/types/database'
@@ -464,6 +465,7 @@ export default function CampaignsPage() {
         }}
         title="Campaign"
       />
+      <BackToTopButton />
     </AppLayout>
   )
 }

@@ -20,6 +20,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { formatActivityAction, getActivityIcon, type ActivityAction } from '@/lib/activity-log'
 import { createClient } from '@/lib/supabase/client'
+import { BackToTopButton } from '@/components/ui/back-to-top'
 
 interface ActivityLogEntry {
   id: string
@@ -476,6 +477,7 @@ export default function ActivityLogPage() {
           ))}
         </div>
       )}
+      <BackToTopButton />
     </>
   )
 }

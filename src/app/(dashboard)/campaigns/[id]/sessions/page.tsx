@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { Input, Modal, Textarea, Tooltip } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
+import { BackToTopButton } from '@/components/ui/back-to-top'
 import { CharacterViewModal } from '@/components/character'
 import { useSupabase, useUser } from '@/hooks'
 import { formatDate, cn, getInitials } from '@/lib/utils'
@@ -533,6 +534,7 @@ export default function SessionsPage() {
           />
         )}
       </div>
+      <BackToTopButton />
     </AppLayout>
   )
 }
