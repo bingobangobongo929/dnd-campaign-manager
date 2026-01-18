@@ -62,55 +62,55 @@ export function CharacterCard({
         </div>
       )}
 
-      {/* Hover action buttons */}
-      <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Action buttons - always visible on mobile, hover on desktop */}
+      <div className="absolute top-2 right-2 z-20 flex items-center gap-1 md:gap-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
         {onPin && (
           <button
             onClick={(e) => { e.stopPropagation(); onPin(); }}
             className={cn(
-              'p-2 rounded-lg backdrop-blur-sm transition-colors',
+              'p-2.5 md:p-2 rounded-lg backdrop-blur-sm transition-colors min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center',
               isPinned
-                ? 'bg-amber-500 text-white hover:bg-amber-600'
-                : 'bg-black/70 text-white hover:bg-purple-500'
+                ? 'bg-amber-500 text-white active:bg-amber-600 md:hover:bg-amber-600'
+                : 'bg-black/70 text-white active:bg-purple-500 md:hover:bg-purple-500'
             )}
             title={isPinned ? 'Unpin' : 'Pin to top'}
           >
-            <Star className={cn('w-3.5 h-3.5', isPinned && 'fill-current')} />
+            <Star className={cn('w-4 h-4 md:w-3.5 md:h-3.5', isPinned && 'fill-current')} />
           </button>
         )}
         {onView && (
           <button
             onClick={(e) => { e.stopPropagation(); onView(); }}
-            className="p-2 rounded-lg bg-black/70 backdrop-blur-sm text-white hover:bg-purple-500 transition-colors"
+            className="p-2.5 md:p-2 rounded-lg bg-black/70 backdrop-blur-sm text-white active:bg-purple-500 md:hover:bg-purple-500 transition-colors min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center"
             title="View"
           >
-            <Eye className="w-3.5 h-3.5" />
+            <Eye className="w-4 h-4 md:w-3.5 md:h-3.5" />
           </button>
         )}
         {onSessions && (
           <button
             onClick={(e) => { e.stopPropagation(); onSessions(); }}
-            className="p-2 rounded-lg bg-black/70 backdrop-blur-sm text-white hover:bg-purple-500 transition-colors"
+            className="p-2.5 md:p-2 rounded-lg bg-black/70 backdrop-blur-sm text-white active:bg-purple-500 md:hover:bg-purple-500 transition-colors min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center"
             title="Sessions"
           >
-            <BookOpen className="w-3.5 h-3.5" />
+            <BookOpen className="w-4 h-4 md:w-3.5 md:h-3.5" />
           </button>
         )}
         {onShare && (
           <button
             onClick={(e) => { e.stopPropagation(); onShare(); }}
-            className="p-2 rounded-lg bg-black/70 backdrop-blur-sm text-white hover:bg-purple-500 transition-colors"
+            className="p-2.5 md:p-2 rounded-lg bg-black/70 backdrop-blur-sm text-white active:bg-purple-500 md:hover:bg-purple-500 transition-colors min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center"
             title="Share"
           >
-            <Share2 className="w-3.5 h-3.5" />
+            <Share2 className="w-4 h-4 md:w-3.5 md:h-3.5" />
           </button>
         )}
         <button
           onClick={(e) => { e.stopPropagation(); onContextMenu?.(e); }}
-          className="p-2 rounded-lg bg-black/70 backdrop-blur-sm text-white hover:bg-purple-500 transition-colors"
+          className="p-2.5 md:p-2 rounded-lg bg-black/70 backdrop-blur-sm text-white active:bg-purple-500 md:hover:bg-purple-500 transition-colors min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center"
           title="More options"
         >
-          <MoreHorizontal className="w-3.5 h-3.5" />
+          <MoreHorizontal className="w-4 h-4 md:w-3.5 md:h-3.5" />
         </button>
       </div>
 

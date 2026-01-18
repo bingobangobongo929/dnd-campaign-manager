@@ -74,24 +74,24 @@ export function CampaignCard({
           </div>
         )}
 
-        {/* Hover action buttons - top left like oneshot cards */}
+        {/* Action buttons - always visible on mobile, hover on desktop */}
         <div
-          className="absolute top-3 left-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          className="absolute top-2 left-2 flex gap-1.5 md:gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
           onClick={(e) => e.stopPropagation()}
         >
           <button
             onClick={onEdit}
-            className="p-2 bg-black/60 backdrop-blur-sm rounded-lg hover:bg-purple-500/80 transition-colors"
+            className="p-2.5 md:p-2 bg-black/60 backdrop-blur-sm rounded-lg active:bg-purple-500/80 md:hover:bg-purple-500/80 transition-colors min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center"
             title="Edit"
           >
-            <Edit className="w-4 h-4 text-white" />
+            <Edit className="w-4.5 h-4.5 md:w-4 md:h-4 text-white" />
           </button>
           <button
             onClick={onDelete}
-            className="p-2 bg-black/60 backdrop-blur-sm rounded-lg hover:bg-red-500/80 transition-colors"
+            className="p-2.5 md:p-2 bg-black/60 backdrop-blur-sm rounded-lg active:bg-red-500/80 md:hover:bg-red-500/80 transition-colors min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center"
             title="Delete"
           >
-            <Trash2 className="w-4 h-4 text-white" />
+            <Trash2 className="w-4.5 h-4.5 md:w-4 md:h-4 text-white" />
           </button>
         </div>
       </div>

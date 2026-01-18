@@ -60,8 +60,8 @@ export function NPCCard({ npc, onEdit, onDelete }: NPCCardProps) {
               height={40}
               className="w-10 h-10 rounded-lg object-cover"
             />
-            {/* Hover preview - larger image popup */}
-            <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-200 z-[100] pointer-events-none" style={{ width: '200px', height: '200px' }}>
+            {/* Hover preview - larger image popup (desktop only) */}
+            <div className="hidden md:block absolute bottom-full left-0 mb-2 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-200 z-[100] pointer-events-none" style={{ width: '200px', height: '200px' }}>
               <Image
                 src={npc.related_image_url}
                 alt={npc.related_name || 'NPC'}
@@ -84,17 +84,23 @@ export function NPCCard({ npc, onEdit, onDelete }: NPCCardProps) {
             {npc.relationship_status}
           </span>
         )}
-        {/* Actions */}
+        {/* Actions - always visible on mobile, hover on desktop */}
         {(onEdit || onDelete) && (
-          <div className="ml-auto flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="ml-auto flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
             {onEdit && (
-              <button onClick={onEdit} className="p-1 text-gray-500 hover:text-purple-400">
-                <Edit2 className="w-3.5 h-3.5" />
+              <button
+                onClick={onEdit}
+                className="p-2.5 md:p-1.5 text-gray-500 active:text-purple-400 md:hover:text-purple-400 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg active:bg-white/5 md:hover:bg-white/5"
+              >
+                <Edit2 className="w-4 h-4 md:w-3.5 md:h-3.5" />
               </button>
             )}
             {onDelete && (
-              <button onClick={onDelete} className="p-1 text-gray-500 hover:text-red-400">
-                <Trash2 className="w-3.5 h-3.5" />
+              <button
+                onClick={onDelete}
+                className="p-2.5 md:p-1.5 text-gray-500 active:text-red-400 md:hover:text-red-400 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg active:bg-white/5 md:hover:bg-white/5"
+              >
+                <Trash2 className="w-4 h-4 md:w-3.5 md:h-3.5" />
               </button>
             )}
           </div>

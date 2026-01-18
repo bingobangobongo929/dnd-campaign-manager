@@ -53,23 +53,33 @@ export function Modal({
     fullscreen: '', // Use inline styles for fullscreen
   }
 
-  const fullscreenStyles = size === 'fullscreen' ? {
-    width: '90vw',
-    maxWidth: '90vw',
-    height: '90vh',
-    maxHeight: '90vh',
-  } : {}
+  // Mobile-friendly styles with max-height constraints
+  const getResponsiveStyles = () => {
+    if (size === 'fullscreen') {
+      return {
+        width: '90vw',
+        maxWidth: '90vw',
+        height: '90vh',
+        maxHeight: '90vh',
+      }
+    }
+    // On mobile, constrain max-height to 85vh to leave room for navigation
+    return {}
+  }
 
   const modalContent = (
     <div className="modal-backdrop" onClick={onClose}>
       <div
-        className={cn('modal', sizeClasses[size])}
-        style={fullscreenStyles}
+        className={cn(
+          'modal max-h-[85vh] md:max-h-[90vh] flex flex-col',
+          sizeClasses[size]
+        )}
+        style={getResponsiveStyles()}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* Header - sticky for scrollable modals */}
         {(title || showCloseButton) && (
-          <div className="modal-header">
+          <div className="modal-header flex-shrink-0">
             <div className="flex items-start justify-between">
               <div>
                 {title && <h2 className="modal-title">{title}</h2>}
@@ -89,8 +99,8 @@ export function Modal({
           </div>
         )}
 
-        {/* Content */}
-        <div className="modal-body">{children}</div>
+        {/* Content - scrollable on mobile */}
+        <div className="modal-body overflow-y-auto flex-1">{children}</div>
       </div>
     </div>
   )
