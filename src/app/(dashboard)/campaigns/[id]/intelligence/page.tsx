@@ -446,9 +446,9 @@ export default function IntelligencePage() {
     return acc
   }, {} as Record<SuggestionType, number>)
 
-  const getCharacterForSuggestion = (suggestion: IntelligenceSuggestion) => {
+  const getCharacterForSuggestion = (suggestion: IntelligenceSuggestion): Character | null => {
     if (suggestion.character_id) {
-      return characters.find(c => c.id === suggestion.character_id)
+      return characters.find(c => c.id === suggestion.character_id) ?? null
     }
     return null
   }

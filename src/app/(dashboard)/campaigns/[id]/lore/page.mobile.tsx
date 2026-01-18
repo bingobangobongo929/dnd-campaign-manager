@@ -15,6 +15,7 @@ import { MobileLayout } from '@/components/mobile'
 import { getInitials } from '@/lib/utils'
 import Image from 'next/image'
 import type { Tag, CampaignLore } from '@/types/database'
+import type { CharacterWithTags } from './page'
 
 interface FamilyTreeData {
   nodes: {
@@ -30,14 +31,6 @@ interface FamilyTreeData {
     relationship: string
     label?: string
   }[]
-}
-
-interface CharacterWithTags {
-  id: string
-  name: string
-  type: string
-  image_url: string | null
-  [key: string]: unknown
 }
 
 export interface CampaignLorePageMobileProps {

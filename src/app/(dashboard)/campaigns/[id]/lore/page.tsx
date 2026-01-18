@@ -23,7 +23,7 @@ import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
 import type { Campaign, Character, Tag, CharacterTag, CharacterRelationship, CampaignLore } from '@/types/database'
 
-interface CharacterWithTags extends Character {
+export interface CharacterWithTags extends Character {
   tags: (CharacterTag & { tag: Tag })[]
 }
 

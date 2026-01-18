@@ -15,7 +15,7 @@ export interface CampaignTimelineEventPageMobileProps {
   loading: boolean
   formData: TimelineEventFormData
   setFormData: (data: TimelineEventFormData) => void
-  status: 'idle' | 'saving' | 'saved'
+  status: 'idle' | 'saving' | 'saved' | 'error' | 'conflict'
 }
 
 export function CampaignTimelineEventPageMobile({
