@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Toaster } from "sonner"
 import "./globals.css"
@@ -14,6 +14,15 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 })
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover', // For iOS safe areas
+  themeColor: '#0a0a0f',
+}
+
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://multiloop.app'),
   title: {
@@ -23,6 +32,14 @@ export const metadata: Metadata = {
   description: "Your tabletop adventures, organized. Track campaigns, build characters, and chronicle your epic journeys.",
   keywords: ["D&D", "Dungeons & Dragons", "TTRPG", "campaign manager", "character tracker", "tabletop RPG", "Multiloop"],
   authors: [{ name: "Multiloop" }],
+  // iOS Web App settings
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Multiloop',
+  },
+  // App manifest
+  manifest: '/manifest.json',
   openGraph: {
     title: "Multiloop",
     description: "Your tabletop adventures, organized. Track campaigns, build characters, and chronicle your epic journeys.",
@@ -47,6 +64,12 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+  },
+  // Additional iOS icons
+  icons: {
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
 }
 
