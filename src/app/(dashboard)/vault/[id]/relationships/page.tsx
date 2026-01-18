@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import {
   Loader2,
   Plus,
@@ -22,7 +22,6 @@ import type { VaultCharacterRelationship } from '@/types/database'
 
 export default function CharacterRelationshipsPage() {
   const params = useParams()
-  const router = useRouter()
   const supabase = createClient()
   const characterId = params.id as string
 
@@ -56,7 +55,8 @@ export default function CharacterRelationshipsPage() {
 
   // Navigate to Character Editor for adding/editing
   const goToEditor = () => {
-    router.push(`/vault/${characterId}#people`)
+    // Use window.location for full navigation to properly scroll to anchor
+    window.location.href = `/vault/${characterId}#people`
   }
 
   const handleDelete = async (id: string) => {
