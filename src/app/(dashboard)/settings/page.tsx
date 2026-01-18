@@ -184,7 +184,7 @@ export default function SettingsPage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `campaign-manager-export-${new Date().toISOString().split('T')[0]}.json`
+      a.download = `multiloop-export-${new Date().toISOString().split('T')[0]}.json`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -470,8 +470,8 @@ export default function SettingsPage() {
             <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-white">Quest Scribe</p>
-                  <p className="text-xs text-gray-500">Campaign Manager</p>
+                  <p className="text-sm font-medium text-white">Multiloop</p>
+                  <p className="text-xs text-gray-500">TTRPG Campaign Manager</p>
                 </div>
                 <span className="font-mono text-xs text-[--arcane-gold] bg-[--arcane-gold]/10 px-2 py-1 rounded">
                   v{APP_VERSION}
@@ -1018,8 +1018,8 @@ export default function SettingsPage() {
             <div className="p-4 rounded-xl bg-[--bg-elevated] border border-[--border]">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="font-medium text-[--text-primary]">Quest Scribe</p>
-                  <p className="text-xs text-[--text-tertiary]">Campaign Manager for TTRPGs</p>
+                  <p className="font-medium text-[--text-primary]">Multiloop</p>
+                  <p className="text-xs text-[--text-tertiary]">TTRPG Campaign Manager</p>
                 </div>
                 <span className="font-mono text-sm text-[--arcane-gold] bg-[--arcane-gold]/10 px-2 py-1 rounded">
                   v{APP_VERSION}
