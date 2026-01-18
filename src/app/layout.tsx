@@ -29,13 +29,20 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Multiloop",
     locale: "en_US",
-    // OG image is auto-generated from opengraph-image.tsx
+    images: [
+      {
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: 'Multiloop - Track your TTRPG adventures',
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Multiloop",
     description: "Your tabletop adventures, organized. Track campaigns, build characters, and chronicle your epic journeys.",
-    // Twitter image is auto-generated from opengraph-image.tsx
+    images: ['/opengraph-image'],
   },
   robots: {
     index: true,
