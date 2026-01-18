@@ -203,13 +203,13 @@ export default function HomePage() {
               className="group relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-purple-500/30 transition-all duration-500"
             >
               <div className="relative h-[280px] md:h-[360px]">
-                {featuredCharacter.detail_image_url || featuredCharacter.image_url ? (
+                {featuredCharacter.image_url ? (
                   <>
                     <Image
-                      src={featuredCharacter.detail_image_url || featuredCharacter.image_url!}
+                      src={featuredCharacter.image_url}
                       alt={featuredCharacter.name}
                       fill
-                      className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                      className="object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
                     <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
