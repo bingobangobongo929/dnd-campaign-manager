@@ -15,7 +15,7 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { cn, getInitials } from '@/lib/utils'
 import { logActivity } from '@/lib/activity-log'
-import { useAutoSave } from '@/hooks'
+import { useAutoSave, useIsMobile } from '@/hooks'
 import {
   X,
   User,
@@ -176,6 +176,7 @@ function CollapsibleSection({
 
 export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   const router = useRouter()
+  const isMobile = useIsMobile()
   // Memoize supabase client to prevent recreation on each render
   // This is critical - without memoization, all useEffects with supabase dependency re-run every render
   const supabase = useMemo(() => createClient(), [])
@@ -184,6 +185,9 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   const portraitInputRef = useRef<HTMLInputElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const isCreateMode = mode === 'create'
+
+  // Mobile-specific state
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   // Active section for navigation highlighting
   const [activeSection, setActiveSection] = useState<SectionType>('backstory')
@@ -1824,27 +1828,48 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
   return (
     <>
-      <div className="fixed right-0 bottom-0 z-50 bg-[#0c0c0e] flex flex-col p-2 xl:p-3 2xl:p-4" style={{ top: 'var(--topbar-height)', left: 'calc(var(--dock-width-collapsed) + 16px)' }}>
-        <div className="flex-1 flex flex-col rounded-2xl border border-white/[0.06] overflow-hidden bg-[#111113]">
-        {/* Header */}
-        <header className="flex-shrink-0 flex items-center justify-between px-5 xl:px-6 h-14 border-b border-white/[0.06] bg-white/[0.01]">
+      <div
+        className={cn(
+          "z-50 bg-[#0c0c0e] flex flex-col",
+          isMobile
+            ? "fixed inset-0 p-0"
+            : "fixed right-0 bottom-0 p-2 xl:p-3 2xl:p-4"
+        )}
+        style={isMobile ? {} : { top: 'var(--topbar-height)', left: 'calc(var(--dock-width-collapsed) + 16px)' }}
+      >
+        <div className={cn(
+          "flex-1 flex flex-col overflow-hidden bg-[#111113]",
+          isMobile ? "" : "rounded-2xl border border-white/[0.06]"
+        )}>
+        {/* Header - Mobile optimized */}
+        <header className={cn(
+          "flex-shrink-0 flex items-center justify-between border-b border-white/[0.06] bg-white/[0.01]",
+          isMobile ? "px-4 h-[calc(44px+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)]" : "px-5 xl:px-6 h-14"
+        )}>
           <div className="flex items-center gap-3">
             <button
               onClick={handleClose}
-              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-white/[0.05] transition-all duration-200 text-gray-500 hover:text-gray-300"
+              className={cn(
+                "flex items-center gap-2 rounded-lg hover:bg-white/[0.05] transition-all duration-200 text-gray-500 hover:text-gray-300",
+                isMobile ? "px-2 py-2" : "px-2.5 py-1.5"
+              )}
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="text-[13px]">Back</span>
+              <ArrowLeft className={isMobile ? "w-5 h-5" : "w-4 h-4"} />
+              {!isMobile && <span className="text-[13px]">Back</span>}
             </button>
-            <div className="w-px h-5 bg-white/[0.08]" />
+            <div className={cn("w-px h-5 bg-white/[0.08]", isMobile && "hidden")} />
             <div className="flex items-center gap-2.5">
               <div className={cn(
-                "w-8 h-8 rounded-lg flex items-center justify-center",
+                "rounded-lg flex items-center justify-center",
+                isMobile ? "w-7 h-7" : "w-8 h-8",
                 formData.type === 'pc' ? "bg-purple-500/15 text-purple-400" : "bg-gray-500/15 text-gray-400"
               )}>
                 {formData.type === 'pc' ? <User className="w-4 h-4" /> : <Users className="w-4 h-4" />}
               </div>
-              <h1 className="text-[15px] font-medium text-white/90">
+              <h1 className={cn(
+                "font-medium text-white/90 truncate",
+                isMobile ? "text-[16px] max-w-[160px]" : "text-[15px]"
+              )}>
                 {status === 'saving' ? 'Saving...' : formData.name || (isCreateMode ? 'New Character' : 'Enter a name to start')}
               </h1>
             </div>
@@ -1855,27 +1880,59 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
               <>
                 <button
                   onClick={() => setDuplicateModalOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white/[0.05] transition-all duration-200 text-gray-500 hover:text-gray-300"
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg hover:bg-white/[0.05] transition-all duration-200 text-gray-500 hover:text-gray-300",
+                    isMobile ? "p-2" : "px-3 py-1.5"
+                  )}
+                  title="Duplicate"
                 >
                   <Copy className="w-3.5 h-3.5" />
-                  <span className="text-[13px]">Duplicate</span>
+                  {!isMobile && <span className="text-[13px]">Duplicate</span>}
                 </button>
                 <button
                   onClick={() => setIsDeleteConfirmOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-red-500/10 transition-all duration-200 text-gray-500 hover:text-red-400"
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg hover:bg-red-500/10 transition-all duration-200 text-gray-500 hover:text-red-400",
+                    isMobile ? "p-2" : "px-3 py-1.5"
+                  )}
+                  title="Delete"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span className="text-[13px]">Delete</span>
+                  {!isMobile && <span className="text-[13px]">Delete</span>}
                 </button>
               </>
             )}
           </div>
         </header>
 
+        {/* Mobile Section Tabs */}
+        {isMobile && (
+          <div className="mobile-section-tabs">
+            {SECTIONS.map(section => (
+              <button
+                key={section.id}
+                onClick={() => scrollToSection(section.id)}
+                className={cn(
+                  'mobile-section-tab',
+                  activeSection === section.id && 'mobile-section-tab-active'
+                )}
+              >
+                {section.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Main Content */}
-        <div className="flex-1 flex overflow-hidden min-h-0 gap-0">
-          {/* Left Sidebar */}
-          <aside className="w-[320px] xl:w-[360px] 2xl:w-[400px] flex-shrink-0 flex flex-col border-r border-white/[0.06] overflow-hidden bg-[#0f0f11]">
+        <div className={cn(
+          "flex-1 flex overflow-hidden min-h-0 gap-0",
+          isMobile && "flex-col"
+        )}>
+          {/* Left Sidebar - Desktop only */}
+          <aside className={cn(
+            "flex-shrink-0 flex flex-col border-r border-white/[0.06] overflow-hidden bg-[#0f0f11]",
+            isMobile ? "hidden" : "w-[320px] xl:w-[360px] 2xl:w-[400px]"
+          )}>
             <div className="flex-1 overflow-y-auto px-6 xl:px-8 py-6 xl:py-8">
               {/* Portrait */}
               <div className="mb-6">
@@ -2063,13 +2120,122 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
 
           {/* Main Content Area - Single Scrollable Page */}
           <main className="flex-1 overflow-y-auto bg-[#131316]" ref={scrollContainerRef}>
-            <div className="w-full max-w-[1400px] mx-auto px-10 xl:px-16 2xl:px-20 py-10 xl:py-12">
+            <div className={cn(
+              "w-full max-w-[1400px] mx-auto",
+              isMobile ? "px-4 py-4 pb-24" : "px-10 xl:px-16 2xl:px-20 py-10 xl:py-12"
+            )}>
               <div>
+
+              {/* Mobile Quick Details Card - Only visible on mobile */}
+              {isMobile && (
+                <div className="mb-6 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+                  {/* Portrait and Name Row */}
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-gradient-to-br from-purple-500/20 to-gray-900 flex-shrink-0">
+                      {formData.detail_image_url || formData.image_url ? (
+                        <Image
+                          src={formData.detail_image_url || formData.image_url!}
+                          alt={formData.name || 'Character'}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-purple-400/50">
+                          {getInitials(formData.name || 'CH')}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Character Name"
+                        className="w-full text-xl font-semibold bg-transparent text-white placeholder:text-gray-600 focus:outline-none"
+                      />
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={cn(
+                          "text-xs font-medium px-2 py-0.5 rounded",
+                          formData.type === 'pc' ? "bg-purple-500/20 text-purple-400" : "bg-gray-500/20 text-gray-400"
+                        )}>
+                          {formData.type === 'pc' ? 'PC' : 'NPC'}
+                        </span>
+                        {formData.status && (
+                          <span
+                            className="text-xs font-medium px-2 py-0.5 rounded"
+                            style={{
+                              backgroundColor: `${formData.status_color}20`,
+                              color: formData.status_color,
+                            }}
+                          >
+                            {formData.status}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Detail Fields */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] text-gray-500 mb-1 uppercase">Race</label>
+                      <input
+                        type="text"
+                        value={formData.race}
+                        onChange={(e) => setFormData(prev => ({ ...prev, race: e.target.value }))}
+                        placeholder="Race..."
+                        className="w-full py-2 px-3 text-sm bg-white/[0.03] border border-white/[0.06] rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-gray-500 mb-1 uppercase">Class</label>
+                      <input
+                        type="text"
+                        value={formData.class}
+                        onChange={(e) => setFormData(prev => ({ ...prev, class: e.target.value }))}
+                        placeholder="Class..."
+                        className="w-full py-2 px-3 text-sm bg-white/[0.03] border border-white/[0.06] rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/30"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Type Toggle */}
+                  <div className="mt-3">
+                    <div className="flex bg-white/[0.02] rounded-lg p-1 border border-white/[0.06]">
+                      <button
+                        onClick={() => setFormData(prev => ({ ...prev, type: 'pc' }))}
+                        className={cn(
+                          'flex-1 py-2 px-3 rounded text-xs font-medium transition-all',
+                          formData.type === 'pc'
+                            ? 'bg-purple-500/20 text-purple-400'
+                            : 'text-gray-500'
+                        )}
+                      >
+                        Player Character
+                      </button>
+                      <button
+                        onClick={() => setFormData(prev => ({ ...prev, type: 'npc' }))}
+                        className={cn(
+                          'flex-1 py-2 px-3 rounded text-xs font-medium transition-all',
+                          formData.type === 'npc'
+                            ? 'bg-gray-500/20 text-gray-300'
+                            : 'text-gray-500'
+                        )}
+                      >
+                        NPC
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* ═══════════════ STATS OVERVIEW GRID ═══════════════ */}
               {!isCreateMode && characterId && (
                 <div className="mb-8">
-                  <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-7 gap-3">
+                  <div className={cn(
+                    "grid gap-3",
+                    isMobile ? "grid-cols-3" : "grid-cols-4 sm:grid-cols-5 lg:grid-cols-7"
+                  )}>
                     <button
                       onClick={() => expandAndScrollToSection('people')}
                       className="bg-white/[0.02] rounded-lg p-3 text-center border border-white/[0.04] hover:bg-white/[0.04] hover:border-white/[0.08] transition-colors cursor-pointer"

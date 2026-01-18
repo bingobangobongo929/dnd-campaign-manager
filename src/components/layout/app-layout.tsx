@@ -4,7 +4,8 @@ import { useEffect, useState, useMemo } from 'react'
 import { FloatingDock } from './floating-dock'
 import { TopBar } from './top-bar'
 import { CampaignContextBanner } from './campaign-context-banner'
-import { useSupabase, useUser } from '@/hooks'
+import { MobileTabBar } from '@/components/mobile'
+import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { useAppStore } from '@/store'
 import type { Campaign, Character, Session, TimelineEvent, CampaignLore, CanvasGroup } from '@/types/database'
 import { AIAssistant } from '@/components/ai/ai-assistant'
@@ -28,6 +29,7 @@ export function AppLayout({
 }: AppLayoutProps) {
   const supabase = useSupabase()
   const { user } = useUser()
+  const isMobile = useIsMobile()
   const { setUserId, setSettings, setCurrentCampaign, isAIAssistantOpen, aiEnabled } = useAppStore()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [characters, setCharacters] = useState<Character[]>([])
@@ -212,15 +214,18 @@ export function AppLayout({
 
   return (
     <>
-      <FloatingDock campaignId={campaignId} characterId={characterId} />
-      <TopBar
-        campaigns={campaigns}
-        currentCampaignId={campaignId}
-        characters={vaultCharacters}
-        currentCharacterId={characterId}
-        transparent={transparentTopBar}
-        actions={topBarActions}
-      />
+      {/* Desktop Navigation */}
+      <div className="desktop-only">
+        <FloatingDock campaignId={campaignId} characterId={characterId} />
+        <TopBar
+          campaigns={campaigns}
+          currentCampaignId={campaignId}
+          characters={vaultCharacters}
+          currentCharacterId={characterId}
+          transparent={transparentTopBar}
+          actions={topBarActions}
+        />
+      </div>
 
       {/* Campaign context banner for non-campaign pages */}
       <CampaignContextBanner />
@@ -228,6 +233,9 @@ export function AppLayout({
       <main className={`main-content ${fullBleed ? 'full-bleed' : ''}`}>
         {children}
       </main>
+
+      {/* Mobile Tab Bar */}
+      {isMobile && <MobileTabBar />}
 
       {/* AI Assistant Panel - with campaign context, only when AI is enabled */}
       {isAIAssistantOpen && aiEnabled && <AIAssistant campaignContext={campaignContext} />}

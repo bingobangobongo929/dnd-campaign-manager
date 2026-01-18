@@ -17,15 +17,17 @@ import {
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
-import { useSupabase, useUser } from '@/hooks'
+import { MobileLayout, MobileSectionHeader, MobileSearchBar } from '@/components/mobile'
+import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { useAppStore } from '@/store'
-import { formatDistanceToNow } from '@/lib/utils'
+import { formatDistanceToNow, cn } from '@/lib/utils'
 import type { Campaign, VaultCharacter, Oneshot } from '@/types/database'
 
 export default function HomePage() {
   const router = useRouter()
   const supabase = useSupabase()
   const { user } = useUser()
+  const isMobile = useIsMobile()
   const { recentItems } = useAppStore()
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
@@ -79,6 +81,216 @@ export default function HomePage() {
   // Show all campaigns in the grid (including featured) - slice to limit display
   const displayCampaigns = campaigns.slice(0, 6)
 
+  // Mobile Home View
+  if (isMobile) {
+    return (
+      <AppLayout>
+        <MobileLayout title="Home" showBackButton={false}>
+          {/* Featured Campaign Card */}
+          {featuredCampaign && (
+            <div className="px-4 mb-6">
+              <button
+                onClick={() => router.push(`/campaigns/${featuredCampaign.id}/canvas`)}
+                className="w-full relative rounded-2xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform"
+              >
+                <div className="relative h-48">
+                  {featuredCampaign.image_url ? (
+                    <>
+                      <Image
+                        src={featuredCampaign.image_url}
+                        alt={featuredCampaign.name}
+                        fill
+                        className="object-cover"
+                        priority
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-[--arcane-purple]/20 via-gray-900 to-gray-950" />
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <span className="inline-block px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded bg-[--arcane-purple] text-white mb-2">
+                      Continue
+                    </span>
+                    <h2 className="text-xl font-display font-bold text-white">
+                      {featuredCampaign.name}
+                    </h2>
+                    <p className="text-xs text-gray-400 mt-1">{featuredCampaign.game_system}</p>
+                  </div>
+                </div>
+              </button>
+            </div>
+          )}
+
+          {/* Campaigns Section */}
+          {displayCampaigns.length > 0 && (
+            <>
+              <MobileSectionHeader
+                title="Campaigns"
+                action={
+                  <button onClick={() => router.push('/campaigns')} className="text-sm text-[--arcane-purple]">
+                    View All
+                  </button>
+                }
+              />
+              <div className="px-4 space-y-3">
+                {displayCampaigns.slice(0, 4).map((campaign) => (
+                  <button
+                    key={campaign.id}
+                    onClick={() => router.push(`/campaigns/${campaign.id}/canvas`)}
+                    className="w-full flex items-center gap-4 p-3 bg-[--bg-surface] rounded-xl border border-white/[0.06] active:bg-[--bg-hover] transition-colors"
+                  >
+                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-900 flex-shrink-0">
+                      {campaign.image_url ? (
+                        <Image
+                          src={campaign.image_url}
+                          alt={campaign.name}
+                          width={56}
+                          height={56}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-900/30 to-gray-900">
+                          <Swords className="w-6 h-6 text-blue-400/50" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <h4 className="font-semibold text-white truncate">{campaign.name}</h4>
+                      <p className="text-xs text-gray-500">{campaign.game_system}</p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-600" />
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Characters Section */}
+          <MobileSectionHeader
+            title="Recent Characters"
+            action={
+              <button onClick={() => router.push('/vault')} className="text-sm text-[--arcane-purple]">
+                View All
+              </button>
+            }
+          />
+          {characters.length === 0 ? (
+            <div className="mx-4 p-8 text-center bg-[--bg-surface] rounded-xl border border-white/[0.06]">
+              <BookOpen className="w-10 h-10 mx-auto mb-3 text-gray-600" />
+              <p className="text-gray-500 text-sm mb-4">No characters yet</p>
+              <button
+                onClick={() => router.push('/vault/new')}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg"
+              >
+                <Plus className="w-4 h-4" />
+                Create Character
+              </button>
+            </div>
+          ) : (
+            <div className="px-4 grid grid-cols-2 gap-3">
+              {characters.slice(0, 6).map((character) => (
+                <button
+                  key={character.id}
+                  onClick={() => router.push(`/vault/${character.id}`)}
+                  className="relative aspect-[3/4] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform"
+                >
+                  {character.detail_image_url || character.image_url ? (
+                    <>
+                      <Image
+                        src={character.detail_image_url || character.image_url!}
+                        alt={character.name}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                      <span className="text-2xl font-bold text-purple-400/40">
+                        {getInitials(character.name)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 p-3">
+                    <h4 className="font-semibold text-white text-sm truncate">{character.name}</h4>
+                    <p className="text-[11px] text-gray-400 truncate">
+                      {[character.race, character.class].filter(Boolean).join(' ')}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* One-Shots Section */}
+          {oneshots.length > 0 && (
+            <>
+              <MobileSectionHeader
+                title="One-Shots"
+                action={
+                  <button onClick={() => router.push('/oneshots')} className="text-sm text-[--arcane-purple]">
+                    View All
+                  </button>
+                }
+              />
+              <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
+                {oneshots.map((oneshot) => (
+                  <button
+                    key={oneshot.id}
+                    onClick={() => router.push(`/oneshots/${oneshot.id}`)}
+                    className="flex-shrink-0 w-36 aspect-[2/3] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform"
+                  >
+                    {oneshot.image_url ? (
+                      <>
+                        <Image
+                          src={oneshot.image_url}
+                          alt={oneshot.title}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
+                        <Scroll className="w-10 h-10 text-amber-400/30" />
+                      </div>
+                    )}
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <span className="inline-block px-2 py-0.5 text-[9px] font-semibold uppercase rounded bg-amber-500/20 text-amber-300 mb-1">
+                        {oneshot.game_system}
+                      </span>
+                      <h4 className="font-semibold text-white text-xs line-clamp-2">{oneshot.title}</h4>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Quick Actions */}
+          <div className="px-4 pt-6 pb-4 space-y-3">
+            <button
+              onClick={() => router.push('/vault/new')}
+              className="w-full flex items-center gap-3 p-4 bg-purple-600/10 border border-purple-500/30 rounded-xl active:bg-purple-600/20 transition-colors"
+            >
+              <Plus className="w-5 h-5 text-purple-400" />
+              <span className="text-purple-400 font-medium">Create New Character</span>
+            </button>
+            <button
+              onClick={() => router.push('/campaigns')}
+              className="w-full flex items-center gap-3 p-4 bg-[--bg-surface] border border-white/[0.06] rounded-xl active:bg-[--bg-hover] transition-colors"
+            >
+              <Swords className="w-5 h-5 text-blue-400" />
+              <span className="text-gray-300 font-medium">Start New Campaign</span>
+            </button>
+          </div>
+        </MobileLayout>
+      </AppLayout>
+    )
+  }
+
+  // Desktop Home View
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto space-y-12">

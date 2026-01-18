@@ -9,11 +9,13 @@ import { Button } from '@/components/ui'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { createClient } from '@/lib/supabase/client'
 import { useAppStore } from '@/store'
+import { useIsMobile } from '@/hooks'
 import type { VaultCharacter } from '@/types/database'
 
 export default function EditVaultCharacterPage() {
   const params = useParams()
   const router = useRouter()
+  const isMobile = useIsMobile()
   // Memoize supabase client to prevent recreation on each render
   const supabase = useMemo(() => createClient(), [])
   const { trackRecentItem } = useAppStore()

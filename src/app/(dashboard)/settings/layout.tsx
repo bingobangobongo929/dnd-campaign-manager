@@ -4,12 +4,14 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { Settings, Share2, History, ImagePlus } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
+import { MobileLayout } from '@/components/mobile'
+import { useIsMobile } from '@/hooks'
 
 const SETTINGS_TABS = [
-  { href: '/settings', label: 'General', icon: Settings, exact: true },
-  { href: '/settings/shares', label: 'Share Analytics', icon: Share2 },
-  { href: '/settings/activity', label: 'Activity Log', icon: History },
-  { href: '/settings/images', label: 'Image Enhancement', icon: ImagePlus },
+  { href: '/settings', label: 'General', shortLabel: 'General', icon: Settings, exact: true },
+  { href: '/settings/shares', label: 'Share Analytics', shortLabel: 'Shares', icon: Share2 },
+  { href: '/settings/activity', label: 'Activity Log', shortLabel: 'Activity', icon: History },
+  { href: '/settings/images', label: 'Image Enhancement', shortLabel: 'Images', icon: ImagePlus },
 ]
 
 export default function SettingsLayout({
@@ -18,12 +20,44 @@ export default function SettingsLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const isMobile = useIsMobile()
 
   const isActive = (href: string, exact?: boolean) => {
     if (exact) return pathname === href
     return pathname.startsWith(href)
   }
 
+  // Mobile Settings Layout
+  if (isMobile) {
+    return (
+      <AppLayout>
+        <MobileLayout title="Settings" showBackButton={false}>
+          {/* Mobile Tab Navigation */}
+          <div className="mobile-section-tabs mb-4">
+            {SETTINGS_TABS.map((tab) => {
+              const active = isActive(tab.href, tab.exact)
+              return (
+                <Link
+                  key={tab.href}
+                  href={tab.href}
+                  className={`mobile-section-tab ${active ? 'mobile-section-tab-active' : ''}`}
+                >
+                  {tab.shortLabel}
+                </Link>
+              )
+            })}
+          </div>
+
+          {/* Page Content */}
+          <div className="px-4 pb-20">
+            {children}
+          </div>
+        </MobileLayout>
+      </AppLayout>
+    )
+  }
+
+  // Desktop Settings Layout
   return (
     <AppLayout>
       <div className="max-w-6xl mx-auto">
