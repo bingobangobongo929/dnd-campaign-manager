@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og'
 
 export const runtime = 'edge'
 
-export const alt = 'Campaign Manager - Track your TTRPG adventures'
+export const alt = 'Multiloop - Track your TTRPG adventures'
 export const size = {
   width: 1200,
   height: 630,
@@ -82,14 +82,14 @@ export default async function Image() {
         <div
           style={{
             display: 'flex',
-            fontSize: '64px',
+            fontSize: '72px',
             fontWeight: 'bold',
             color: 'white',
             marginBottom: '16px',
-            letterSpacing: '-1px',
+            letterSpacing: '-2px',
           }}
         >
-          Campaign Manager
+          Multiloop
         </div>
 
         {/* Tagline */}

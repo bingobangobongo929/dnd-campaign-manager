@@ -15,25 +15,25 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://campaign-manager.vercel.app'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://multiloop.app'),
   title: {
-    default: "Campaign Manager",
-    template: "%s | Campaign Manager",
+    default: "Multiloop",
+    template: "%s | Multiloop",
   },
   description: "Your tabletop adventures, organized. Track campaigns, build characters, and chronicle your epic journeys.",
-  keywords: ["D&D", "Dungeons & Dragons", "TTRPG", "campaign manager", "character tracker", "tabletop RPG"],
-  authors: [{ name: "Campaign Manager" }],
+  keywords: ["D&D", "Dungeons & Dragons", "TTRPG", "campaign manager", "character tracker", "tabletop RPG", "Multiloop"],
+  authors: [{ name: "Multiloop" }],
   openGraph: {
-    title: "Campaign Manager",
+    title: "Multiloop",
     description: "Your tabletop adventures, organized. Track campaigns, build characters, and chronicle your epic journeys.",
     type: "website",
-    siteName: "Campaign Manager",
+    siteName: "Multiloop",
     locale: "en_US",
     // OG image is auto-generated from opengraph-image.tsx
   },
   twitter: {
     card: "summary_large_image",
-    title: "Campaign Manager",
+    title: "Multiloop",
     description: "Your tabletop adventures, organized. Track campaigns, build characters, and chronicle your epic journeys.",
     // Twitter image is auto-generated from opengraph-image.tsx
   },

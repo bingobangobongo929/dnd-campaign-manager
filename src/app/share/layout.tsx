@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: {
     default: 'Shared Content',
-    template: '%s | Campaign Manager',
+    template: '%s | Multiloop',
   },
   description: 'View shared tabletop RPG content - characters, campaigns, and adventures.',
 }

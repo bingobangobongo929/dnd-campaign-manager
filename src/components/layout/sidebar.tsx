@@ -77,7 +77,7 @@ export function Sidebar({ campaignId }: SidebarProps) {
       <div className="flex items-center justify-between h-14 px-4 border-b border-[--border]">
         {!collapsed && (
           <Link href="/campaigns" className="font-semibold text-[--text-primary]">
-            Campaign Manager
+            Multiloop
           </Link>
         )}
         <Button
