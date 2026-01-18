@@ -28,6 +28,7 @@ import {
   Check,
 } from 'lucide-react'
 import { Modal, UnifiedImageModal } from '@/components/ui'
+import { BackToTopButton } from '@/components/ui/back-to-top'
 import { ShareOneshotModal } from '@/components/oneshots/ShareOneshotModal'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
@@ -909,6 +910,7 @@ export default function OneshotEditorPage() {
         </div>
       </Modal>
 
+      <BackToTopButton />
     </>
   )
 }

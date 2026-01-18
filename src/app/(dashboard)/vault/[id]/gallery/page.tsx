@@ -16,6 +16,7 @@ import {
 import { toast } from 'sonner'
 import { AppLayout } from '@/components/layout/app-layout'
 import { Button } from '@/components/ui'
+import { BackToTopButton } from '@/components/ui/back-to-top'
 import { UnifiedImageModal } from '@/components/ui/unified-image-modal'
 import { createClient } from '@/lib/supabase/client'
 import type { VaultCharacterImage, VaultCharacter } from '@/types/database'
@@ -373,6 +374,7 @@ export default function CharacterGalleryPage() {
           </div>
         )}
       </div>
+      <BackToTopButton />
     </AppLayout>
   )
 }

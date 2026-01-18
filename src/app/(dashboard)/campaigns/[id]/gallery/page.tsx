@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { Image as ImageIcon, Upload, Plus, Trash2, X, Loader2, Grid, LayoutGrid } from 'lucide-react'
 import { Modal, Input } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
+import { BackToTopButton } from '@/components/ui/back-to-top'
 import { useSupabase, useUser } from '@/hooks'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
@@ -336,6 +337,7 @@ export default function GalleryPage() {
           </div>
         </div>
       )}
+      <BackToTopButton />
     </AppLayout>
   )
 }

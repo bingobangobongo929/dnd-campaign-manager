@@ -15,6 +15,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
+import { BackToTopButton } from '@/components/ui/back-to-top'
 import { useSupabase, useUser } from '@/hooks'
 import type { Oneshot, OneshotGenreTag, OneshotRun } from '@/types/database'
 
@@ -326,6 +327,7 @@ export default function OneshotsPage() {
           </>
         )}
       </div>
+      <BackToTopButton />
     </AppLayout>
   )
 }

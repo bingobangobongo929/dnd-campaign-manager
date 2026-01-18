@@ -15,6 +15,7 @@ import {
   Info,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
+import { BackToTopButton } from '@/components/ui/back-to-top'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
@@ -617,6 +618,7 @@ export default function LorePage() {
           </div>
         </section>
       </div>
+      <BackToTopButton />
     </AppLayout>
   )
 }
