@@ -137,33 +137,34 @@ export function HomePageMobile({
                 </button>
               }
             />
-            <div className="px-4 space-y-3">
-              {campaigns.slice(0, 3).map((campaign) => (
+            <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
+              {campaigns.slice(0, 5).map((campaign) => (
                 <button
                   key={campaign.id}
                   onClick={() => onNavigate(`/campaigns/${campaign.id}/canvas`)}
-                  className="w-full flex items-center gap-4 p-3 bg-[--bg-surface] rounded-xl border border-white/[0.06] active:bg-[--bg-hover] transition-colors"
+                  className="flex-shrink-0 w-52 aspect-[16/10] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative"
                 >
-                  <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-900 flex-shrink-0">
-                    {campaign.image_url ? (
+                  {campaign.image_url ? (
+                    <>
                       <Image
                         src={campaign.image_url}
                         alt={campaign.name}
-                        width={56}
-                        height={56}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
                       />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-900/30 to-gray-900">
-                        <Swords className="w-6 h-6 text-blue-400/50" />
-                      </div>
-                    )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 to-gray-900 flex items-center justify-center">
+                      <Swords className="w-10 h-10 text-blue-400/30" />
+                    </div>
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 p-3">
+                    <span className="inline-block px-2 py-0.5 text-[9px] font-semibold uppercase rounded bg-blue-500/20 text-blue-300 mb-1">
+                      {campaign.game_system}
+                    </span>
+                    <h4 className="font-semibold text-white text-sm line-clamp-1">{campaign.name}</h4>
                   </div>
-                  <div className="flex-1 min-w-0 text-left">
-                    <h4 className="font-semibold text-white truncate">{campaign.name}</h4>
-                    <p className="text-xs text-gray-500">{campaign.game_system}</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-600" />
                 </button>
               ))}
             </div>
@@ -172,7 +173,7 @@ export function HomePageMobile({
 
         {/* Characters Section */}
         <MobileSectionHeader
-          title="Recent Characters"
+          title="Characters"
           action={
             <button onClick={() => onNavigate('/vault')} className="text-sm text-[--arcane-purple]">
               View All
@@ -287,6 +288,13 @@ export function HomePageMobile({
           >
             <Swords className="w-5 h-5 text-blue-400" />
             <span className="text-gray-300 font-medium">Start New Campaign</span>
+          </button>
+          <button
+            onClick={() => onNavigate('/oneshots/new')}
+            className="w-full flex items-center gap-3 p-4 bg-[--bg-surface] border border-white/[0.06] rounded-xl active:bg-[--bg-hover] transition-colors"
+          >
+            <Scroll className="w-5 h-5 text-amber-400" />
+            <span className="text-gray-300 font-medium">Start New One-Shot</span>
           </button>
         </div>
       </MobileLayout>

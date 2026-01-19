@@ -175,13 +175,13 @@ function extractCharacterId(pathname: string): string | null {
   return null
 }
 
-// Global tabs (top level)
+// Global tabs (top level) - matches desktop floating dock order
 function getGlobalTabs() {
   return [
     { href: '/home', label: 'Home', icon: Home },
-    { href: '/vault', label: 'Vault', icon: BookOpen },
     { href: '/campaigns', label: 'Campaigns', icon: Swords },
     { href: '/oneshots', label: 'One-Shots', icon: Scroll },
+    { href: '/vault', label: 'Characters', icon: BookOpen },
     { href: '/settings', label: 'Settings', icon: Settings },
   ]
 }
