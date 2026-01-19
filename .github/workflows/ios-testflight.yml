@@ -35,6 +35,11 @@ jobs:
       - name: Sync Capacitor iOS
         run: npx cap sync ios
 
+      - name: Install CocoaPods dependencies
+        run: |
+          cd ios/App
+          pod install
+
       - name: Setup Ruby (for Fastlane)
         uses: ruby/setup-ruby@v1
         with:
@@ -90,9 +95,9 @@ jobs:
                 code_sign_identity: "Apple Distribution"
               )
 
-              # Build the app (using xcodeproj since project uses SPM, not CocoaPods)
+              # Build the app using workspace (CocoaPods creates App.xcworkspace)
               build_app(
-                project: "App.xcodeproj",
+                workspace: "App.xcworkspace",
                 scheme: "App",
                 export_method: "app-store",
                 output_directory: "./build",
