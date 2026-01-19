@@ -39,7 +39,7 @@ export interface CampaignLorePageMobileProps {
   factionTags: Tag[]
   loreEntries: CampaignLore[]
   loading: boolean
-  aiEnabled: boolean
+  canUseAI: boolean
   generatingLore: boolean
   error: string | null
   familyTree: FamilyTreeData
@@ -61,7 +61,7 @@ export function CampaignLorePageMobile({
   factionTags,
   loreEntries,
   loading,
-  aiEnabled,
+  canUseAI,
   generatingLore,
   error,
   familyTree,
@@ -93,7 +93,7 @@ export function CampaignLorePageMobile({
         showBackButton
         backHref={`/campaigns/${campaignId}/canvas`}
         actions={
-          aiEnabled && (
+          canUseAI && (
             <button
               onClick={handleGenerateLore}
               disabled={generatingLore}
@@ -325,7 +325,7 @@ export function CampaignLorePageMobile({
           </section>
 
           {/* AI Insights Section */}
-          {aiEnabled && (
+          {canUseAI && (
             <section className="mb-4">
               <button
                 onClick={() => setInsightsExpanded(!insightsExpanded)}

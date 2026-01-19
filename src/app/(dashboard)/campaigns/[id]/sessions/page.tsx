@@ -312,19 +312,21 @@ export default function SessionsPage() {
         {/* Sessions List */}
         {filteredSessions.length === 0 ? (
           <div className="empty-state">
-            <FileText className="empty-state-icon" />
+            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-purple-500/10 flex items-center justify-center">
+              <FileText className="w-8 h-8 text-purple-400" />
+            </div>
             <h2 className="empty-state-title">
-              {searchQuery ? 'No matching sessions' : 'No sessions yet'}
+              {searchQuery ? 'No matching sessions' : 'Record Your Adventures'}
             </h2>
             <p className="empty-state-description">
               {searchQuery
                 ? 'Try a different search term'
-                : 'Create your first session to start taking notes'}
+                : 'Document each session to track your campaign story. Add summaries, attendees, and detailed notes.'}
             </p>
             {!searchQuery && (
               <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
                 <Plus className="w-5 h-5" />
-                Create Session
+                Create First Session
               </button>
             )}
           </div>

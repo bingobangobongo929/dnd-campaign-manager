@@ -125,13 +125,15 @@ export function SessionsPageMobile({
 
           {/* Sessions List */}
           {filteredSessions.length === 0 ? (
-            <div className="text-center py-16">
-              <FileText className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+            <div className="text-center py-16 px-6">
+              <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-purple-500/10 flex items-center justify-center">
+                <FileText className="w-8 h-8 text-purple-400" />
+              </div>
               <h2 className="text-lg font-semibold text-white mb-2">
-                {searchQuery ? 'No matching sessions' : 'No sessions yet'}
+                {searchQuery ? 'No matching sessions' : 'Record Your Adventures'}
               </h2>
-              <p className="text-sm text-gray-500 mb-6">
-                {searchQuery ? 'Try a different search' : 'Record your first adventure'}
+              <p className="text-sm text-gray-400 mb-6 max-w-xs mx-auto">
+                {searchQuery ? 'Try a different search' : 'Document each session to track your campaign story'}
               </p>
               {!searchQuery && (
                 <button
@@ -139,7 +141,7 @@ export function SessionsPageMobile({
                   className="inline-flex items-center gap-2 px-4 py-3 bg-[--arcane-purple] text-white rounded-xl active:bg-[--arcane-purple]/80 font-medium"
                 >
                   <Plus className="w-5 h-5" />
-                  Create Session
+                  Create First Session
                 </button>
               )}
             </div>

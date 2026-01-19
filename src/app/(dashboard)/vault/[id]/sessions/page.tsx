@@ -119,14 +119,16 @@ export default function CharacterSessionsPage() {
         <div className="space-y-4">
           {entries.length === 0 ? (
             <div className="text-center py-16">
-              <ScrollText className="w-12 h-12 mx-auto mb-4 text-[--text-tertiary]" />
-              <h3 className="text-lg font-medium text-[--text-primary] mb-2">No Sessions Yet</h3>
-              <p className="text-sm text-[--text-secondary] mb-6">
-                Record your character's adventures
+              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-purple-500/10 flex items-center justify-center">
+                <ScrollText className="w-8 h-8 text-purple-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-[--text-primary] mb-3">Chronicle Your Journey</h3>
+              <p className="text-sm text-[--text-secondary] mb-6 max-w-sm mx-auto">
+                Record each session as your character's story unfolds. Track adventures, encounters, and memorable moments.
               </p>
               <Button onClick={() => router.push(`/vault/${characterId}/sessions/new`)}>
                 <Plus className="w-4 h-4 mr-2" />
-                Create First Entry
+                Record First Session
               </Button>
             </div>
           ) : (

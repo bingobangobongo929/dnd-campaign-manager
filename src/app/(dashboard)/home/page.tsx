@@ -288,12 +288,17 @@ export default function HomePage() {
           )}
 
           {characters.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-12 text-center">
-              <BookOpen className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-              <p className="text-gray-500 mb-4">Your character vault is empty</p>
-              <Link href="/vault/new" className="btn btn-secondary">
+            <div className="rounded-2xl border border-dashed border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent p-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-purple-500/10 flex items-center justify-center">
+                <BookOpen className="w-8 h-8 text-purple-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">Your Vault Awaits</h3>
+              <p className="text-gray-400 mb-6 max-w-sm mx-auto">
+                Create characters once and reuse them across campaigns. Build detailed backstories and track their journeys.
+              </p>
+              <Link href="/vault" className="btn btn-secondary">
                 <Plus className="w-4 h-4" />
-                Create Character
+                Add Your First Character
               </Link>
             </div>
           ) : (

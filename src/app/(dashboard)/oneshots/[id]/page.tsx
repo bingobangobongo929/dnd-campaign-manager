@@ -32,7 +32,7 @@ import { BackToTopButton } from '@/components/ui/back-to-top'
 import { ShareOneshotModal } from '@/components/oneshots/ShareOneshotModal'
 import { MobileLayout, MobileBottomSheet } from '@/components/mobile'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
-import { useAppStore } from '@/store'
+import { useAppStore, useCanUseAI } from '@/store'
 import { cn } from '@/lib/utils'
 import { v4 as uuidv4 } from 'uuid'
 import type { Oneshot, OneshotGenreTag, OneshotRun } from '@/types/database'
@@ -113,7 +113,8 @@ export default function OneshotEditorPage() {
   const [newTagColor, setNewTagColor] = useState('#8B5CF6')
 
   // Settings from store
-  const { aiEnabled, trackRecentItem } = useAppStore()
+  const { trackRecentItem } = useAppStore()
+  const canUseAI = useCanUseAI()
 
   // Collapsible sections
   const [expandedSections, setExpandedSections] = useState({
@@ -1101,7 +1102,7 @@ export default function OneshotEditorPage() {
                     placeholder="The narrative introduction to read to your players. Set the scene, establish the world, and hook them into the story..."
                     className={cn(textareaStyles, "min-h-[250px]")}
                   />
-                  <AIHelper section="introduction" enabled={aiEnabled} />
+                  <AIHelper section="introduction" enabled={canUseAI} />
                 </CollapsibleSection>
 
                 {/* Setting Notes */}
@@ -1147,7 +1148,7 @@ export default function OneshotEditorPage() {
                     placeholder="The structure of your session. Acts, key beats, encounters, decision points..."
                     className={cn(textareaStyles, "min-h-[300px]")}
                   />
-                  <AIHelper section="session_plan" enabled={aiEnabled} />
+                  <AIHelper section="session_plan" enabled={canUseAI} />
                 </CollapsibleSection>
 
                 {/* Twists & Secrets */}
@@ -1202,7 +1203,7 @@ export default function OneshotEditorPage() {
                     placeholder="In-world documents, rules handouts, maps, or other props for the players..."
                     className={textareaStyles}
                   />
-                  <AIHelper section="handouts" enabled={aiEnabled} />
+                  <AIHelper section="handouts" enabled={canUseAI} />
                 </CollapsibleSection>
               </div>
             </div>

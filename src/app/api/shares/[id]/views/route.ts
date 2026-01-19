@@ -53,6 +53,37 @@ export async function GET(req: Request, { params }: ViewHistoryParams) {
       return NextResponse.json({ error: 'Missing type parameter' }, { status: 400 })
     }
 
+    // SECURITY: Verify user owns this share before returning analytics
+    // Look up the share and its parent entity to confirm ownership
+    let isOwner = false
+
+    if (shareType === 'character') {
+      const { data: share } = await supabase
+        .from('character_shares')
+        .select('id, character_id, vault_characters!inner(user_id)')
+        .eq('id', shareId)
+        .single()
+      isOwner = (share?.vault_characters as any)?.user_id === user.id
+    } else if (shareType === 'oneshot') {
+      const { data: share } = await supabase
+        .from('oneshot_shares')
+        .select('id, oneshot_id, oneshots!inner(user_id)')
+        .eq('id', shareId)
+        .single()
+      isOwner = (share?.oneshots as any)?.user_id === user.id
+    } else if (shareType === 'campaign') {
+      const { data: share } = await supabase
+        .from('campaign_shares')
+        .select('id, campaign_id, campaigns!inner(user_id)')
+        .eq('id', shareId)
+        .single()
+      isOwner = (share?.campaigns as any)?.user_id === user.id
+    }
+
+    if (!isOwner) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     // Fetch view events for this share
     const { data: events, error } = await supabase
       .from('share_view_events')

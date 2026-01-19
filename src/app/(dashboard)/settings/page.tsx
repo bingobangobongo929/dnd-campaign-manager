@@ -30,7 +30,7 @@ import {
 import { Modal } from '@/components/ui'
 import { MobileLayout } from '@/components/mobile'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
-import { useAppStore, CURRENCY_CONFIG, type Currency } from '@/store'
+import { useAppStore, CURRENCY_CONFIG, type Currency, useCanUseAI } from '@/store'
 import { AI_PROVIDERS, AIProvider } from '@/lib/ai/config'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -60,6 +60,7 @@ export default function SettingsPage() {
     aiProvider, setAIProvider,
     currency, setCurrency,
   } = useAppStore()
+  const canUseAI = useCanUseAI()
 
   // Stats state
   const [stats, setStats] = useState({
@@ -285,107 +286,109 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          {/* AI Settings */}
-          <section className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[--arcane-purple] to-blue-600 flex items-center justify-center">
-                <Bot className="w-4 h-4 text-white" />
-              </div>
-              <h2 className="text-base font-semibold text-white">AI Features</h2>
-            </div>
-
-            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-4">
-              {/* Toggle */}
-              <div className="flex items-center justify-between">
-                <div className="flex-1 pr-4">
-                  <p className="text-sm font-medium text-white">Enable AI</p>
-                  <p className="text-xs text-gray-500">
-                    {aiEnabled ? 'All AI features active' : 'AI features disabled'}
-                  </p>
+          {/* AI Settings - only show for users who can access AI */}
+          {canUseAI && (
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[--arcane-purple] to-blue-600 flex items-center justify-center">
+                  <Bot className="w-4 h-4 text-white" />
                 </div>
-                <button
-                  onClick={() => setAIEnabled(!aiEnabled)}
-                  className={`relative w-12 h-7 rounded-full transition-colors ${
-                    aiEnabled ? 'bg-[--arcane-purple]' : 'bg-gray-600'
-                  }`}
-                >
-                  <div
-                    className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${
-                      aiEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                <h2 className="text-base font-semibold text-white">AI Features</h2>
+              </div>
+
+              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-4">
+                {/* Toggle */}
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 pr-4">
+                    <p className="text-sm font-medium text-white">Enable AI</p>
+                    <p className="text-xs text-gray-500">
+                      {aiEnabled ? 'All AI features active' : 'AI features disabled'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setAIEnabled(!aiEnabled)}
+                    className={`relative w-12 h-7 rounded-full transition-colors ${
+                      aiEnabled ? 'bg-[--arcane-purple]' : 'bg-gray-600'
                     }`}
-                  />
-                </button>
-              </div>
-
-              {/* Provider Selection */}
-              {aiEnabled && (
-                <div className="pt-3 border-t border-white/[0.06] space-y-2">
-                  <p className="text-xs text-gray-500">Select AI Model</p>
-                  {(Object.keys(AI_PROVIDERS) as AIProvider[]).map((provider) => {
-                    const info = AI_PROVIDERS[provider]
-                    const isSelected = aiProvider === provider
-                    const ProviderIcon = getProviderIcon(info.icon)
-
-                    return (
-                      <button
-                        key={provider}
-                        onClick={() => setAIProvider(provider)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
-                          isSelected
-                            ? 'bg-purple-500/15 border border-purple-500/30'
-                            : 'bg-white/[0.02] border border-transparent active:bg-white/[0.05]'
-                        }`}
-                      >
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                          info.icon === 'sparkles' ? 'bg-orange-500/20' :
-                          info.icon === 'zap' ? 'bg-blue-500/20' : 'bg-purple-500/20'
-                        }`}>
-                          <ProviderIcon className={`w-4 h-4 ${
-                            info.icon === 'sparkles' ? 'text-orange-500' :
-                            info.icon === 'zap' ? 'text-blue-500' : 'text-purple-500'
-                          }`} />
-                        </div>
-                        <div className="flex-1 text-left">
-                          <p className="text-sm font-medium text-white">{info.name}</p>
-                          <p className="text-xs text-gray-500">{info.costTier} cost</p>
-                        </div>
-                        {isSelected && (
-                          <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center">
-                            <Check className="w-3 h-3 text-white" />
-                          </div>
-                        )}
-                      </button>
-                    )
-                  })}
+                  >
+                    <div
+                      className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${
+                        aiEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </button>
                 </div>
-              )}
 
-              {/* Usage Summary */}
-              {aiEnabled && apiUsage && (
-                <div className="pt-3 border-t border-white/[0.06]">
-                  <p className="text-xs text-gray-500 mb-2">Usage ({usagePeriod === 'month' ? '30d' : usagePeriod === 'week' ? '7d' : 'All'})</p>
-                  <div className="grid grid-cols-4 gap-2">
-                    <div className="p-2 rounded-lg bg-white/[0.03] text-center">
-                      <p className="text-sm font-bold text-white">{apiUsage.summary.totalRequests}</p>
-                      <p className="text-[10px] text-gray-500">Requests</p>
-                    </div>
-                    <div className="p-2 rounded-lg bg-white/[0.03] text-center">
-                      <p className="text-sm font-bold text-white">{(apiUsage.summary.totalTokens / 1000).toFixed(0)}K</p>
-                      <p className="text-[10px] text-gray-500">Tokens</p>
-                    </div>
-                    <div className="p-2 rounded-lg bg-white/[0.03] text-center">
-                      <p className="text-sm font-bold text-white">{apiUsage.summary.totalImages}</p>
-                      <p className="text-[10px] text-gray-500">Images</p>
-                    </div>
-                    <div className="p-2 rounded-lg bg-white/[0.03] text-center">
-                      <p className="text-sm font-bold text-white">{formatCost(apiUsage.summary.totalCostCents)}</p>
-                      <p className="text-[10px] text-gray-500">Cost</p>
+                {/* Provider Selection */}
+                {aiEnabled && (
+                  <div className="pt-3 border-t border-white/[0.06] space-y-2">
+                    <p className="text-xs text-gray-500">Select AI Model</p>
+                    {(Object.keys(AI_PROVIDERS) as AIProvider[]).map((provider) => {
+                      const info = AI_PROVIDERS[provider]
+                      const isSelected = aiProvider === provider
+                      const ProviderIcon = getProviderIcon(info.icon)
+
+                      return (
+                        <button
+                          key={provider}
+                          onClick={() => setAIProvider(provider)}
+                          className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
+                            isSelected
+                              ? 'bg-purple-500/15 border border-purple-500/30'
+                              : 'bg-white/[0.02] border border-transparent active:bg-white/[0.05]'
+                          }`}
+                        >
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                            info.icon === 'sparkles' ? 'bg-orange-500/20' :
+                            info.icon === 'zap' ? 'bg-blue-500/20' : 'bg-purple-500/20'
+                          }`}>
+                            <ProviderIcon className={`w-4 h-4 ${
+                              info.icon === 'sparkles' ? 'text-orange-500' :
+                              info.icon === 'zap' ? 'text-blue-500' : 'text-purple-500'
+                            }`} />
+                          </div>
+                          <div className="flex-1 text-left">
+                            <p className="text-sm font-medium text-white">{info.name}</p>
+                            <p className="text-xs text-gray-500">{info.costTier} cost</p>
+                          </div>
+                          {isSelected && (
+                            <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center">
+                              <Check className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Usage Summary */}
+                {aiEnabled && apiUsage && (
+                  <div className="pt-3 border-t border-white/[0.06]">
+                    <p className="text-xs text-gray-500 mb-2">Usage ({usagePeriod === 'month' ? '30d' : usagePeriod === 'week' ? '7d' : 'All'})</p>
+                    <div className="grid grid-cols-4 gap-2">
+                      <div className="p-2 rounded-lg bg-white/[0.03] text-center">
+                        <p className="text-sm font-bold text-white">{apiUsage.summary.totalRequests}</p>
+                        <p className="text-[10px] text-gray-500">Requests</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-white/[0.03] text-center">
+                        <p className="text-sm font-bold text-white">{(apiUsage.summary.totalTokens / 1000).toFixed(0)}K</p>
+                        <p className="text-[10px] text-gray-500">Tokens</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-white/[0.03] text-center">
+                        <p className="text-sm font-bold text-white">{apiUsage.summary.totalImages}</p>
+                        <p className="text-[10px] text-gray-500">Images</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-white/[0.03] text-center">
+                        <p className="text-sm font-bold text-white">{formatCost(apiUsage.summary.totalCostCents)}</p>
+                        <p className="text-[10px] text-gray-500">Cost</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-          </section>
+                )}
+              </div>
+            </section>
+          )}
 
           {/* Content Stats */}
           <section className="space-y-3">
@@ -685,8 +688,9 @@ export default function SettingsPage() {
         </section>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            SECTION 2: AI & INTELLIGENCE
+            SECTION 2: AI & INTELLIGENCE - only show for users who can access AI
             ═══════════════════════════════════════════════════════════════════ */}
+        {canUseAI && (
         <section>
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[--arcane-purple] to-blue-600 flex items-center justify-center">
@@ -898,6 +902,7 @@ export default function SettingsPage() {
             )}
           </div>
         </section>
+        )}
 
         {/* ═══════════════════════════════════════════════════════════════════
             SECTION 3: YOUR CONTENT

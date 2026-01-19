@@ -26,7 +26,7 @@ import { RichTextEditor } from '@/components/editor'
 import { createClient } from '@/lib/supabase/client'
 import { useVersionedAutoSave } from '@/hooks/useAutoSave'
 import { logActivity, diffChanges } from '@/lib/activity-log'
-import { useAppStore } from '@/store'
+import { useAppStore, useCanUseAI } from '@/store'
 import { cn } from '@/lib/utils'
 import type { PlayJournal, VaultCharacter } from '@/types/database'
 
@@ -35,6 +35,7 @@ export default function VaultSessionEditorPage() {
   const router = useRouter()
   const supabase = createClient()
   const { aiProvider } = useAppStore()
+  const canUseAI = useCanUseAI()
 
   const characterId = params.id as string
   const sessionId = params.sessionId as string
@@ -473,6 +474,7 @@ export default function VaultSessionEditorPage() {
         declineExpanded={declineExpanded}
         formatSummaryAsHtml={formatSummaryAsHtml}
         onNavigate={(path) => router.push(path)}
+        canUseAI={canUseAI}
       />
     )
   }
@@ -586,7 +588,7 @@ export default function VaultSessionEditorPage() {
                 Write bullet points of what happened - AI will clean up and expand into detailed notes
               </span>
             </div>
-            {!showExpandedPreview && (
+            {canUseAI && !showExpandedPreview && (
               <Button
                 onClick={handleExpandNotes}
                 disabled={!formData.summary.trim() || expanding}

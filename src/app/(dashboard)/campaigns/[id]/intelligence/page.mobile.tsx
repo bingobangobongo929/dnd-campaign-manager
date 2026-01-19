@@ -122,7 +122,7 @@ export interface CampaignIntelligencePageMobileProps {
   suggestions: IntelligenceSuggestion[]
   counts: { pending: number; applied: number; rejected: number }
   loading: boolean
-  aiEnabled: boolean
+  canUseAI: boolean
   isAnalyzing: boolean
   analysisError: string | null
   selectedProvider: AIProvider
@@ -157,7 +157,7 @@ export function CampaignIntelligencePageMobile({
   suggestions,
   counts,
   loading,
-  aiEnabled,
+  canUseAI,
   isAnalyzing,
   analysisError,
   selectedProvider,
@@ -194,7 +194,7 @@ export function CampaignIntelligencePageMobile({
     )
   }
 
-  if (!aiEnabled) {
+  if (!canUseAI) {
     return null
   }
 

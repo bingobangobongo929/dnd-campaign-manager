@@ -19,7 +19,7 @@ import {
   Scroll,
   Home,
 } from 'lucide-react'
-import { useAppStore } from '@/store'
+import { useCanUseAI } from '@/store'
 
 interface FloatingDockProps {
   campaignId?: string
@@ -28,7 +28,7 @@ interface FloatingDockProps {
 
 export function FloatingDock({ campaignId, characterId }: FloatingDockProps) {
   const pathname = usePathname()
-  const { aiEnabled } = useAppStore()
+  const canUseAI = useCanUseAI()
 
   // Character-specific links (when viewing a vault character)
   // Order matches campaign dock: Edit/View are like Canvas, then Sessions, then other features
@@ -37,7 +37,7 @@ export function FloatingDock({ campaignId, characterId }: FloatingDockProps) {
         { href: `/vault/${characterId}`, label: 'Edit', icon: Edit3 },
         { href: `/vault/${characterId}/view`, label: 'View', icon: Eye },
         { href: `/vault/${characterId}/sessions`, label: 'Session Notes', icon: ScrollText },
-        ...(aiEnabled ? [{ href: `/vault/${characterId}/intelligence`, label: 'Intelligence', icon: Brain }] : []),
+        ...(canUseAI ? [{ href: `/vault/${characterId}/intelligence`, label: 'Intelligence', icon: Brain }] : []),
         { href: `/vault/${characterId}/relationships`, label: 'Relationships', icon: Users },
         { href: `/vault/${characterId}/gallery`, label: 'Gallery', icon: Image },
       ]
@@ -48,7 +48,7 @@ export function FloatingDock({ campaignId, characterId }: FloatingDockProps) {
         { href: `/campaigns/${campaignId}/canvas`, label: 'Canvas', icon: LayoutGrid },
         { href: `/campaigns/${campaignId}/sessions`, label: 'Session Notes', icon: ScrollText },
         { href: `/campaigns/${campaignId}/timeline`, label: 'Timeline', icon: Clock },
-        ...(aiEnabled ? [{ href: `/campaigns/${campaignId}/intelligence`, label: 'Intelligence', icon: Brain }] : []),
+        ...(canUseAI ? [{ href: `/campaigns/${campaignId}/intelligence`, label: 'Intelligence', icon: Brain }] : []),
         { href: `/campaigns/${campaignId}/lore`, label: 'Lore', icon: Network },
         { href: `/campaigns/${campaignId}/map`, label: 'World Map', icon: Map },
         { href: `/campaigns/${campaignId}/gallery`, label: 'Gallery', icon: Image },

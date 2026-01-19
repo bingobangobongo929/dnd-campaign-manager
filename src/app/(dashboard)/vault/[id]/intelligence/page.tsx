@@ -35,7 +35,7 @@ import {
   ArrowLeft,
 } from 'lucide-react'
 import { AI_PROVIDERS, AIProvider } from '@/lib/ai/config'
-import { useAppStore } from '@/store'
+import { useAppStore, useCanUseAI } from '@/store'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useIsMobile } from '@/hooks'
 import { CharacterIntelligencePageMobile } from './page.mobile'
@@ -138,7 +138,8 @@ export default function CharacterIntelligencePage() {
   const params = useParams()
   const router = useRouter()
   const supabase = createClient()
-  const { aiEnabled, aiProvider } = useAppStore()
+  const { aiProvider } = useAppStore()
+  const canUseAI = useCanUseAI()
   const characterId = params.id as string
   const isMobile = useIsMobile()
 
@@ -201,10 +202,10 @@ export default function CharacterIntelligencePage() {
 
   // Redirect if AI is disabled
   useEffect(() => {
-    if (!loading && !aiEnabled) {
+    if (!loading && !canUseAI) {
       router.push(`/vault/${characterId}`)
     }
-  }, [aiEnabled, loading, characterId, router])
+  }, [canUseAI, loading, characterId, router])
 
   const handleAnalyze = async () => {
     setIsAnalyzing(true)
@@ -338,7 +339,7 @@ export default function CharacterIntelligencePage() {
         suggestions={suggestions}
         counts={counts}
         loading={loading}
-        aiEnabled={aiEnabled}
+        canUseAI={canUseAI}
         isAnalyzing={isAnalyzing}
         analysisError={analysisError}
         selectedProvider={selectedProvider}
@@ -370,7 +371,7 @@ export default function CharacterIntelligencePage() {
     )
   }
 
-  if (!aiEnabled) {
+  if (!canUseAI) {
     return null
   }
 

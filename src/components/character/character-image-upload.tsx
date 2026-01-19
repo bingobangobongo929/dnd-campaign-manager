@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { ImageCropModal } from '@/components/ui/image-crop-modal'
 import { Modal } from '@/components/ui'
 import { useSupabase } from '@/hooks'
-import { useAppStore } from '@/store'
+import { useCanUseAI } from '@/store'
 import Image from 'next/image'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -53,7 +53,7 @@ export function CharacterImageUpload({
   gameSystem,
 }: CharacterImageUploadProps) {
   const supabase = useSupabase()
-  const { aiEnabled } = useAppStore()
+  const canUseAI = useCanUseAI()
   const inputRef = useRef<HTMLInputElement>(null)
 
   const [isGenerating, setIsGenerating] = useState(false)
@@ -332,8 +332,8 @@ export function CharacterImageUpload({
             </div>
           </button>
 
-          {/* AI Prompt Option - only show if AI is enabled */}
-          {aiEnabled && (
+          {/* AI Prompt Option - only show if user can use AI */}
+          {canUseAI && (
             <button
               onClick={handleGeneratePrompt}
               disabled={isGenerating}

@@ -27,7 +27,7 @@ import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { SessionDetailMobile } from './page.mobile'
 import { useVersionedAutoSave } from '@/hooks/useAutoSave'
 import { logActivity, diffChanges } from '@/lib/activity-log'
-import { useAppStore } from '@/store'
+import { useAppStore, useCanUseAI } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
 import type { Session, Campaign, Character } from '@/types/database'
@@ -39,6 +39,7 @@ export default function SessionDetailPage() {
   const { user } = useUser()
   const isMobile = useIsMobile()
   const { aiProvider } = useAppStore()
+  const canUseAI = useCanUseAI()
 
   const campaignId = params.id as string
   const sessionId = params.sessionId as string
@@ -501,6 +502,7 @@ export default function SessionDetailPage() {
         editExpanded={editExpanded}
         declineExpanded={declineExpanded}
         formatSummaryAsHtml={formatSummaryAsHtml}
+        canUseAI={canUseAI}
       />
     )
   }
@@ -724,7 +726,7 @@ export default function SessionDetailPage() {
                 Write bullet points of what happened, then expand with AI
               </span>
             </div>
-            {!showExpandedPreview && (
+            {canUseAI && !showExpandedPreview && (
               <button
                 onClick={handleExpandNotes}
                 disabled={!formData.summary.trim() || expanding}

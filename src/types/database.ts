@@ -1255,6 +1255,7 @@ export interface Database {
           user_id: string
           ai_provider: 'anthropic' | 'google'
           theme: 'dark' | 'light' | 'system'
+          tier: 'free' | 'standard' | 'premium'
           created_at: string
           updated_at: string
         }
@@ -1262,6 +1263,7 @@ export interface Database {
           user_id: string
           ai_provider?: 'anthropic' | 'google'
           theme?: 'dark' | 'light' | 'system'
+          tier?: 'free' | 'standard' | 'premium'
           created_at?: string
           updated_at?: string
         }
@@ -1269,6 +1271,7 @@ export interface Database {
           user_id?: string
           ai_provider?: 'anthropic' | 'google'
           theme?: 'dark' | 'light' | 'system'
+          tier?: 'free' | 'standard' | 'premium'
           created_at?: string
           updated_at?: string
         }
@@ -1905,6 +1908,16 @@ export type CampaignLore = Database['public']['Tables']['campaign_lore']['Row']
 export type CampaignShare = Database['public']['Tables']['campaign_shares']['Row']
 export type ShareViewEvent = Database['public']['Tables']['share_view_events']['Row']
 export type IntelligenceSuggestion = Database['public']['Tables']['intelligence_suggestions']['Row']
+
+// User tier type
+export type UserTier = 'free' | 'standard' | 'premium'
+
+// Helper to check if a tier has AI access
+export const TIER_HAS_AI: Record<UserTier, boolean> = {
+  free: false,
+  standard: true,
+  premium: true,
+}
 
 // New Vault table types
 export type VaultCharacterImage = Database['public']['Tables']['vault_character_images']['Row']

@@ -18,7 +18,7 @@ import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { CampaignLorePageMobile } from './page.mobile'
-import { useAppStore } from '@/store'
+import { useCanUseAI } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
 import type { Campaign, Character, Tag, CharacterTag, CharacterRelationship, CampaignLore } from '@/types/database'
@@ -48,7 +48,7 @@ export default function LorePage() {
   const router = useRouter()
   const supabase = useSupabase()
   const { user } = useUser()
-  const { aiEnabled } = useAppStore()
+  const canUseAI = useCanUseAI()
 
   const campaignId = params.id as string
   const isMobile = useIsMobile()
@@ -175,7 +175,7 @@ export default function LorePage() {
 
   // Generate AI lore analysis
   const handleGenerateLore = async () => {
-    if (!aiEnabled) return
+    if (!canUseAI) return
 
     setGeneratingLore(true)
     setError(null)
@@ -258,7 +258,7 @@ export default function LorePage() {
         factionTags={factionTags}
         loreEntries={loreEntries}
         loading={loading}
-        aiEnabled={aiEnabled}
+        canUseAI={canUseAI}
         generatingLore={generatingLore}
         error={error}
         familyTree={familyTree}
@@ -296,7 +296,7 @@ export default function LorePage() {
               Explore relationships, factions, and AI-generated insights
             </p>
           </div>
-          {aiEnabled && (
+          {canUseAI && (
             <button
               className="btn btn-primary"
               onClick={handleGenerateLore}
@@ -533,7 +533,7 @@ export default function LorePage() {
         </section>
 
         {/* AI Insights Section */}
-        {aiEnabled && (
+        {canUseAI && (
           <section className="mb-8">
             <button
               onClick={() => setInsightsExpanded(!insightsExpanded)}

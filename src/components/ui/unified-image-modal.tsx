@@ -5,7 +5,7 @@ import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-im
 import 'react-image-crop/dist/ReactCrop.css'
 import { Modal } from './modal'
 import { Upload, Sparkles, Trash2, Loader2, Check, Copy, RotateCcw, X, Wand2, RefreshCw, MessageSquare, Send } from 'lucide-react'
-import { useAppStore } from '@/store'
+import { useCanUseAI } from '@/store'
 import { cn } from '@/lib/utils'
 
 // Image type configurations
@@ -109,7 +109,7 @@ export function UnifiedImageModal({
   promptData,
   title = 'Image',
 }: UnifiedImageModalProps) {
-  const { aiEnabled } = useAppStore()
+  const canUseAI = useCanUseAI()
   const config = IMAGE_CONFIGS[imageType]
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cropImgRef = useRef<HTMLImageElement>(null)
@@ -407,7 +407,7 @@ export function UnifiedImageModal({
               </div>
             </button>
 
-            {aiEnabled && hasPromptSupport && (
+            {canUseAI && hasPromptSupport && (
               <>
                 {/* Generate with AI */}
                 <button

@@ -69,7 +69,7 @@ export interface NewCampaignMobileProps {
   handleCropComplete: () => void
   handleCropCancel: () => void
   centerAspectCrop: (width: number, height: number, aspect: number) => Crop
-  aiEnabled: boolean
+  canUseAI: boolean
   GAME_SYSTEMS: { value: string; label: string }[]
   CAMPAIGN_STATUSES: { value: string; label: string; color: string }[]
 }
@@ -148,7 +148,7 @@ export function NewCampaignMobile({
   handleCropComplete,
   handleCropCancel,
   centerAspectCrop,
-  aiEnabled,
+  canUseAI,
   GAME_SYSTEMS,
   CAMPAIGN_STATUSES,
 }: NewCampaignMobileProps) {
@@ -368,7 +368,7 @@ export function NewCampaignMobile({
             </div>
           </button>
 
-          {aiEnabled && (
+          {canUseAI && (
             <button
               onClick={() => {
                 setImageOptionsModalOpen(false)

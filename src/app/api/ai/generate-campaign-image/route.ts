@@ -28,6 +28,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Tier check - only standard and premium tiers can use AI
+    const { data: settings } = await supabase
+      .from('user_settings')
+      .select('tier')
+      .eq('user_id', user.id)
+      .single()
+    if ((settings?.tier || 'free') === 'free') {
+      return NextResponse.json({ error: 'AI features require a paid plan' }, { status: 403 })
+    }
+
     const { title, summary, setting, game_system, character_names, themes }: GenerateCampaignPromptRequest = await req.json()
 
     if (!title) {

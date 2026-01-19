@@ -55,6 +55,7 @@ export interface SessionDetailMobileProps {
   editExpanded: () => void
   declineExpanded: () => void
   formatSummaryAsHtml: (summary: string) => string
+  canUseAI: boolean
 }
 
 export function SessionDetailMobile({
@@ -83,6 +84,7 @@ export function SessionDetailMobile({
   editExpanded,
   declineExpanded,
   formatSummaryAsHtml,
+  canUseAI,
 }: SessionDetailMobileProps) {
   if (loading) {
     return (
@@ -245,7 +247,7 @@ export function SessionDetailMobile({
           <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-medium text-white">Summary</span>
-              {!showExpandedPreview && (
+              {canUseAI && !showExpandedPreview && (
                 <button
                   onClick={handleExpandNotes}
                   disabled={!formData.summary.trim() || expanding}

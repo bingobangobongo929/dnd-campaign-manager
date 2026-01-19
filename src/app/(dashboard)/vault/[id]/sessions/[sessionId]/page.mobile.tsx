@@ -56,6 +56,7 @@ export interface VaultSessionEditorMobileProps {
   declineExpanded: () => void
   formatSummaryAsHtml: (text: string) => string
   onNavigate: (path: string) => void
+  canUseAI: boolean
 }
 
 export function VaultSessionEditorMobile({
@@ -81,6 +82,7 @@ export function VaultSessionEditorMobile({
   declineExpanded,
   formatSummaryAsHtml,
   onNavigate,
+  canUseAI,
 }: VaultSessionEditorMobileProps) {
   if (loading) {
     return (
@@ -176,7 +178,7 @@ export function VaultSessionEditorMobile({
                 <label className="text-base font-semibold text-white block">Summary</label>
                 <span className="text-xs text-gray-500">Bullet points of what happened</span>
               </div>
-              {!showExpandedPreview && (
+              {canUseAI && !showExpandedPreview && (
                 <button
                   onClick={handleExpandNotes}
                   disabled={!formData.summary.trim() || expanding}

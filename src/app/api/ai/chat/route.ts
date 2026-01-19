@@ -13,6 +13,17 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
     }
 
+    // Tier check - only standard and premium tiers can use AI
+    const { data: settings } = await supabase
+      .from('user_settings')
+      .select('tier')
+      .eq('user_id', user.id)
+      .single()
+    const tier = settings?.tier || 'free'
+    if (tier === 'free') {
+      return new Response(JSON.stringify({ error: 'AI features require a paid plan' }), { status: 403 })
+    }
+
     const { messages, campaignContext, provider } = await req.json()
 
     if (!messages || messages.length === 0) {

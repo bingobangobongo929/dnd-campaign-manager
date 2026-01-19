@@ -85,7 +85,7 @@ export interface CharacterEditorMobileProps {
   showSecrets: boolean
   setShowSecrets: (show: boolean) => void
   // AI
-  aiEnabled: boolean
+  canUseAI: boolean
   generatingPrompt: boolean
   handleGenerateAiPrompt: () => void
 }
@@ -206,7 +206,7 @@ export function CharacterEditorMobile({
   handleDuplicate,
   showSecrets,
   setShowSecrets,
-  aiEnabled,
+  canUseAI,
   generatingPrompt,
   handleGenerateAiPrompt,
 }: CharacterEditorMobileProps) {

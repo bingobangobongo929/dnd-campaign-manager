@@ -21,7 +21,7 @@ import {
   Brain,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useAppStore } from '@/store'
+import { useCanUseAI } from '@/store'
 import { useState } from 'react'
 import { MobileBottomSheet } from './mobile-layout'
 import { hapticLight, hapticSelection } from '@/lib/haptics'
@@ -34,7 +34,7 @@ interface MobileTabBarProps {
 export function MobileTabBar({ campaignId, characterId }: MobileTabBarProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const { aiEnabled } = useAppStore()
+  const canUseAI = useCanUseAI()
   const [moreSheetOpen, setMoreSheetOpen] = useState(false)
 
   // Detect context from pathname if not provided via props
@@ -48,9 +48,9 @@ export function MobileTabBar({ campaignId, characterId }: MobileTabBarProps) {
 
   // Build tabs based on context
   const tabs = isInCharacter
-    ? getCharacterTabs(detectedCharacterId!, aiEnabled)
+    ? getCharacterTabs(detectedCharacterId!, canUseAI)
     : isInCampaign
-    ? getCampaignTabs(detectedCampaignId!, aiEnabled)
+    ? getCampaignTabs(detectedCampaignId!, canUseAI)
     : getGlobalTabs()
 
   // For campaign/character context, we show a back button + 4 main tabs + more
@@ -187,7 +187,7 @@ function getGlobalTabs() {
 }
 
 // Campaign context tabs
-function getCampaignTabs(campaignId: string, aiEnabled: boolean) {
+function getCampaignTabs(campaignId: string, canUseAI: boolean) {
   const tabs = [
     { href: `/campaigns/${campaignId}/canvas`, label: 'Characters', icon: LayoutGrid },
     { href: `/campaigns/${campaignId}/sessions`, label: 'Sessions', icon: ScrollText },
@@ -197,7 +197,7 @@ function getCampaignTabs(campaignId: string, aiEnabled: boolean) {
     { href: `/campaigns/${campaignId}/gallery`, label: 'Gallery', icon: Image },
   ]
 
-  if (aiEnabled) {
+  if (canUseAI) {
     // Insert intelligence after lore
     tabs.splice(4, 0, { href: `/campaigns/${campaignId}/intelligence`, label: 'AI', icon: Brain })
   }
@@ -206,7 +206,7 @@ function getCampaignTabs(campaignId: string, aiEnabled: boolean) {
 }
 
 // Character context tabs
-function getCharacterTabs(characterId: string, aiEnabled: boolean) {
+function getCharacterTabs(characterId: string, canUseAI: boolean) {
   const tabs = [
     { href: `/vault/${characterId}`, label: 'Edit', icon: Edit3 },
     { href: `/vault/${characterId}/view`, label: 'View', icon: Eye },
@@ -215,7 +215,7 @@ function getCharacterTabs(characterId: string, aiEnabled: boolean) {
     { href: `/vault/${characterId}/gallery`, label: 'Gallery', icon: Image },
   ]
 
-  if (aiEnabled) {
+  if (canUseAI) {
     // Insert intelligence after sessions
     tabs.splice(3, 0, { href: `/vault/${characterId}/intelligence`, label: 'AI', icon: Brain })
   }

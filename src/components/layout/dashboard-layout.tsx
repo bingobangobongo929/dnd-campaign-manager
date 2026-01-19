@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { Sidebar } from './sidebar'
 import { Header } from './header'
 import { useSupabase, useUser } from '@/hooks'
-import { useAppStore } from '@/store'
+import { useAppStore, useCanUseAI } from '@/store'
 import type { Campaign, Character, Session, TimelineEvent, CampaignLore, CanvasGroup } from '@/types/database'
 import { AIAssistant } from '@/components/ai/ai-assistant'
 
@@ -16,7 +16,8 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, campaignId }: DashboardLayoutProps) {
   const supabase = useSupabase()
   const { user } = useUser()
-  const { setUserId, setSettings, setCurrentCampaign, isAIAssistantOpen, aiEnabled } = useAppStore()
+  const { setUserId, setSettings, setCurrentCampaign, isAIAssistantOpen } = useAppStore()
+  const canUseAI = useCanUseAI()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [characters, setCharacters] = useState<Character[]>([])
   const [sessions, setSessions] = useState<Session[]>([])
@@ -202,8 +203,8 @@ export function DashboardLayout({ children, campaignId }: DashboardLayoutProps) 
         </main>
       </div>
 
-      {/* AI Assistant Panel - with campaign context, only when AI is enabled */}
-      {isAIAssistantOpen && aiEnabled && <AIAssistant campaignContext={campaignContext} />}
+      {/* AI Assistant Panel - with campaign context, only when user can use AI */}
+      {isAIAssistantOpen && canUseAI && <AIAssistant campaignContext={campaignContext} />}
     </div>
   )
 }

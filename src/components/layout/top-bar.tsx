@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ChevronDown, Sparkles, LogOut, ChevronRight, Swords, BookOpen, Settings, LayoutGrid, ScrollText, Clock, Brain, Network, Map, Image as ImageIcon, Edit3, Eye, Users, Scroll } from 'lucide-react'
 import { useSupabase, useUser } from '@/hooks'
-import { useAppStore } from '@/store'
+import { useAppStore, useCanUseAI } from '@/store'
 import { useState, useRef, useEffect } from 'react'
 import type { Campaign } from '@/types/database'
 import { RecentItems } from './recent-items'
@@ -53,7 +53,8 @@ export function TopBar({
   const pathname = usePathname()
   const supabase = useSupabase()
   const { user } = useUser()
-  const { currentCampaign, setIsAIAssistantOpen, aiEnabled } = useAppStore()
+  const { currentCampaign, setIsAIAssistantOpen } = useAppStore()
+  const canUseAI = useCanUseAI()
   const [showCampaignDropdown, setShowCampaignDropdown] = useState(false)
   const [showCharacterDropdown, setShowCharacterDropdown] = useState(false)
   const campaignDropdownRef = useRef<HTMLDivElement>(null)
@@ -384,7 +385,7 @@ export function TopBar({
         <NavigationMapButton />
         <RecentItems />
 
-        {currentCampaignId && aiEnabled && (
+        {currentCampaignId && canUseAI && (
           <button
             className="ai-trigger"
             onClick={() => setIsAIAssistantOpen(true)}

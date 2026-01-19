@@ -60,7 +60,7 @@ import {
   Edit2,
   Heart,
 } from 'lucide-react'
-import { useAppStore } from '@/store'
+import { useAppStore, useCanUseAI } from '@/store'
 import { Modal } from '@/components/ui'
 import { UnifiedImageModal } from '@/components/ui/unified-image-modal'
 import { VaultImageCropModal } from './VaultImageCropModal'
@@ -181,7 +181,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   // Memoize supabase client to prevent recreation on each render
   // This is critical - without memoization, all useEffects with supabase dependency re-run every render
   const supabase = useMemo(() => createClient(), [])
-  const { aiEnabled } = useAppStore()
+  const canUseAI = useCanUseAI()
   const imageInputRef = useRef<HTMLInputElement>(null)
   const portraitInputRef = useRef<HTMLInputElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -1778,7 +1778,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
                 Upload portrait
               </span>
             </button>
-            {aiEnabled && (
+            {canUseAI && (
               <button
                 type="button"
                 onClick={handleGenerateAiPrompt}
@@ -1857,7 +1857,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         handleDuplicate={handleDuplicate}
         showSecrets={showSecrets}
         setShowSecrets={setShowSecrets}
-        aiEnabled={aiEnabled}
+        canUseAI={canUseAI}
         generatingPrompt={generatingPrompt}
         handleGenerateAiPrompt={handleGenerateAiPrompt}
       />

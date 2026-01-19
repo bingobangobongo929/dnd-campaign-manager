@@ -44,6 +44,16 @@ export async function POST(req: Request) {
       })
     }
 
+    // Tier check - only standard and premium tiers can use AI
+    const { data: settings } = await supabase
+      .from('user_settings')
+      .select('tier')
+      .eq('user_id', user.id)
+      .single()
+    if ((settings?.tier || 'free') === 'free') {
+      return new Response(JSON.stringify({ error: 'AI features require a paid plan' }), { status: 403, headers: { 'Content-Type': 'application/json' } })
+    }
+
     // Load campaign with last intelligence run time
     const { data: campaign, error: campaignError } = await supabase
       .from('campaigns')

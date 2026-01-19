@@ -19,7 +19,7 @@ import {
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui'
 import { useState } from 'react'
-import { useAppStore } from '@/store'
+import { useAppStore, useCanUseAI } from '@/store'
 
 interface SidebarProps {
   campaignId?: string
@@ -28,14 +28,15 @@ interface SidebarProps {
 export function Sidebar({ campaignId }: SidebarProps) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
-  const { setIsAIAssistantOpen, aiEnabled } = useAppStore()
+  const { setIsAIAssistantOpen } = useAppStore()
+  const canUseAI = useCanUseAI()
 
   const campaignLinks = campaignId
     ? [
         { href: `/campaigns/${campaignId}/canvas`, label: 'Canvas', icon: LayoutGrid },
         { href: `/campaigns/${campaignId}/sessions`, label: 'Sessions', icon: ScrollText },
         { href: `/campaigns/${campaignId}/timeline`, label: 'Timeline', icon: Clock },
-        ...(aiEnabled ? [{ href: `/campaigns/${campaignId}/intelligence`, label: 'Intelligence', icon: Brain }] : []),
+        ...(canUseAI ? [{ href: `/campaigns/${campaignId}/intelligence`, label: 'Intelligence', icon: Brain }] : []),
         { href: `/campaigns/${campaignId}/map`, label: 'World Map', icon: Map },
         { href: `/campaigns/${campaignId}/gallery`, label: 'Gallery', icon: Image },
       ]
@@ -118,8 +119,8 @@ export function Sidebar({ campaignId }: SidebarProps) {
         ))}
       </nav>
 
-      {/* AI Assistant button */}
-      {campaignId && (
+      {/* AI Assistant button - only show when user can use AI */}
+      {campaignId && canUseAI && (
         <div className="p-3 border-t border-[--border]">
           <Button
             variant="secondary"

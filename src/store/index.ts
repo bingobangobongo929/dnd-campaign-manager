@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { Campaign, Character, Tag, Session, UserSettings, CanvasGroup } from '@/types/database'
+import type { Campaign, Character, Tag, Session, UserSettings, CanvasGroup, UserTier } from '@/types/database'
+import { TIER_HAS_AI } from '@/types/database'
 import type { AIProvider } from '@/lib/ai/config'
 import { DEFAULT_AI_PROVIDER } from '@/lib/ai/config'
 
@@ -208,3 +209,40 @@ export const useAppStore = create<AppState>()(
     }
   )
 )
+
+/**
+ * Hook to check if the current user can use AI features.
+ * Returns true only if:
+ * 1. User has a tier that supports AI (standard or premium)
+ * 2. User has AI enabled in their preferences
+ *
+ * For free tier users, this always returns false regardless of aiEnabled preference.
+ * This ensures AI features are completely hidden from free users.
+ */
+export function useCanUseAI(): boolean {
+  const settings = useAppStore((state) => state.settings)
+  const aiEnabled = useAppStore((state) => state.aiEnabled)
+
+  // Get user's tier from database settings, default to 'free' if not set
+  const tier: UserTier = settings?.tier || 'free'
+
+  // Check if tier allows AI AND user has AI enabled
+  return TIER_HAS_AI[tier] && aiEnabled
+}
+
+/**
+ * Hook to get the user's current tier.
+ * Defaults to 'free' if settings not loaded yet.
+ */
+export function useUserTier(): UserTier {
+  const settings = useAppStore((state) => state.settings)
+  return settings?.tier || 'free'
+}
+
+/**
+ * Check if a tier has AI access (for use in server components/API routes)
+ */
+export function tierHasAI(tier: UserTier | undefined | null): boolean {
+  if (!tier) return false
+  return TIER_HAS_AI[tier]
+}

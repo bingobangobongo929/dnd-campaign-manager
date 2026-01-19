@@ -44,7 +44,7 @@ import { TimelineEventEditor, type TimelineEventFormData } from '@/components/ti
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { CampaignIntelligencePageMobile } from './page.mobile'
-import { useAppStore } from '@/store'
+import { useAppStore, useCanUseAI } from '@/store'
 import { AI_PROVIDERS, AIProvider } from '@/lib/ai/config'
 import type { Campaign, Character, Session, IntelligenceSuggestion, SuggestionType, ConfidenceLevel } from '@/types/database'
 
@@ -150,7 +150,8 @@ export default function IntelligencePage() {
   const router = useRouter()
   const supabase = useSupabase()
   const { user } = useUser()
-  const { aiEnabled, aiProvider } = useAppStore()
+  const { aiProvider } = useAppStore()
+  const canUseAI = useCanUseAI()
 
   const campaignId = params.id as string
   const isMobile = useIsMobile()
@@ -249,10 +250,10 @@ export default function IntelligencePage() {
 
   // Redirect if AI is disabled
   useEffect(() => {
-    if (!loading && !aiEnabled) {
+    if (!loading && !canUseAI) {
       router.push(`/campaigns/${campaignId}/canvas`)
     }
-  }, [aiEnabled, loading, campaignId, router])
+  }, [canUseAI, loading, campaignId, router])
 
   const handleAnalyze = async () => {
     setIsAnalyzing(true)
@@ -467,7 +468,7 @@ export default function IntelligencePage() {
         suggestions={suggestions}
         counts={counts}
         loading={loading}
-        aiEnabled={aiEnabled}
+        canUseAI={canUseAI}
         isAnalyzing={isAnalyzing}
         analysisError={analysisError}
         selectedProvider={selectedProvider}
@@ -506,7 +507,7 @@ export default function IntelligencePage() {
     )
   }
 
-  if (!aiEnabled) {
+  if (!canUseAI) {
     return null
   }
 

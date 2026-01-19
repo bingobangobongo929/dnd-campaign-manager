@@ -5,7 +5,7 @@ import { FloatingDock } from './floating-dock'
 import { TopBar } from './top-bar'
 import { MobileTabBar } from '@/components/mobile'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
-import { useAppStore } from '@/store'
+import { useAppStore, useCanUseAI } from '@/store'
 import type { Campaign, Character, Session, TimelineEvent, CampaignLore, CanvasGroup } from '@/types/database'
 import { AIAssistant } from '@/components/ai/ai-assistant'
 
@@ -29,7 +29,8 @@ export function AppLayout({
   const supabase = useSupabase()
   const { user } = useUser()
   const isMobile = useIsMobile()
-  const { setUserId, setSettings, setCurrentCampaign, isAIAssistantOpen, aiEnabled } = useAppStore()
+  const { setUserId, setSettings, setCurrentCampaign, isAIAssistantOpen } = useAppStore()
+  const canUseAI = useCanUseAI()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [characters, setCharacters] = useState<Character[]>([])
   const [vaultCharacters, setVaultCharacters] = useState<{ id: string; name: string; image_url?: string | null; race?: string | null; class?: string | null }[]>([])
@@ -234,8 +235,8 @@ export function AppLayout({
       {/* Mobile Tab Bar - contextual based on current page */}
       {isMobile && <MobileTabBar campaignId={campaignId} characterId={characterId} />}
 
-      {/* AI Assistant Panel - with campaign context, only when AI is enabled */}
-      {isAIAssistantOpen && aiEnabled && <AIAssistant campaignContext={campaignContext} />}
+      {/* AI Assistant Panel - with campaign context, only when user can use AI */}
+      {isAIAssistantOpen && canUseAI && <AIAssistant campaignContext={campaignContext} />}
     </>
   )
 }

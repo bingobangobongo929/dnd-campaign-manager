@@ -181,15 +181,18 @@ export function HomePageMobile({
           }
         />
         {characters.length === 0 ? (
-          <div className="mx-4 p-8 text-center bg-[--bg-surface] rounded-xl border border-white/[0.06]">
-            <BookOpen className="w-10 h-10 mx-auto mb-3 text-gray-600" />
-            <p className="text-gray-500 text-sm mb-4">No characters yet</p>
+          <div className="mx-4 p-8 text-center bg-gradient-to-br from-purple-500/5 to-transparent rounded-xl border border-dashed border-purple-500/20">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-purple-500/10 flex items-center justify-center">
+              <BookOpen className="w-7 h-7 text-purple-400" />
+            </div>
+            <h3 className="text-base font-semibold text-white mb-1">Your Vault Awaits</h3>
+            <p className="text-gray-400 text-sm mb-5">Create characters to track their journeys</p>
             <button
-              onClick={() => onNavigate('/vault/new')}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg"
+              onClick={() => onNavigate('/vault')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-600 text-white text-sm font-medium rounded-xl"
             >
               <Plus className="w-4 h-4" />
-              Create Character
+              Add Your First Character
             </button>
           </div>
         ) : (

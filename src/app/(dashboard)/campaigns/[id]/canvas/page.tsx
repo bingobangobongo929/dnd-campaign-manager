@@ -11,7 +11,7 @@ import { ShareCampaignModal } from '@/components/campaigns'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { CampaignCanvasPageMobile } from './page.mobile'
-import { useAppStore } from '@/store'
+import { useAppStore, useCanUseAI } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
 import type { Campaign, Character, Tag, CharacterTag, CanvasGroup } from '@/types/database'
 
@@ -29,7 +29,8 @@ export default function CampaignCanvasPage() {
   const supabase = useSupabase()
   const { user } = useUser()
   const isMobile = useIsMobile()
-  const { selectedCharacterId, setSelectedCharacterId, aiEnabled, trackRecentItem } = useAppStore()
+  const { selectedCharacterId, setSelectedCharacterId, trackRecentItem } = useAppStore()
+  const canUseAI = useCanUseAI()
 
   const campaignId = params.id as string
 
@@ -504,7 +505,7 @@ export default function CampaignCanvasPage() {
         <Share2 className="w-4 h-4" />
         <span className="hidden sm:inline ml-1.5">Share</span>
       </button>
-      {aiEnabled && (
+      {canUseAI && (
         <button
           className="btn btn-secondary btn-sm"
           onClick={() => router.push(`/campaigns/${campaignId}/intelligence`)}

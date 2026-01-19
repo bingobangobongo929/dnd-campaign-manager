@@ -62,15 +62,17 @@ export function CharacterSessionsPageMobile({
       >
         <div className="px-4 pb-24">
           {entries.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-14 h-14 rounded-xl bg-white/5 flex items-center justify-center mb-4">
-                <ScrollText className="w-7 h-7 text-gray-500" />
+            <div className="flex flex-col items-center justify-center py-16 text-center px-6">
+              <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-5">
+                <ScrollText className="w-8 h-8 text-purple-400" />
               </div>
-              <h3 className="text-lg font-medium text-white mb-2">No Sessions Yet</h3>
-              <p className="text-sm text-gray-400 mb-6">Record your adventures</p>
+              <h3 className="text-lg font-semibold text-white mb-2">Chronicle Your Journey</h3>
+              <p className="text-sm text-gray-400 mb-6 max-w-xs">
+                Record each session as your character's story unfolds
+              </p>
               <Button onClick={() => onNavigate(`/vault/${characterId}/sessions/new`)}>
                 <Plus className="w-4 h-4 mr-2" />
-                Create First Entry
+                Record First Session
               </Button>
             </div>
           ) : (

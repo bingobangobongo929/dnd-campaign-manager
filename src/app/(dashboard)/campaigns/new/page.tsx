@@ -27,7 +27,7 @@ import 'react-image-crop/dist/ReactCrop.css'
 import { Modal } from '@/components/ui'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { NewCampaignMobile } from './page.mobile'
-import { useAppStore } from '@/store'
+import { useCanUseAI } from '@/store'
 import { cn } from '@/lib/utils'
 import { logActivity } from '@/lib/activity-log'
 import { v4 as uuidv4 } from 'uuid'
@@ -77,7 +77,7 @@ export default function NewCampaignPage() {
   const supabase = useSupabase()
   const { user } = useUser()
   const imageInputRef = useRef<HTMLInputElement>(null)
-  const { aiEnabled } = useAppStore()
+  const canUseAI = useCanUseAI()
   const isMobile = useIsMobile()
 
   // Form state
@@ -339,7 +339,7 @@ export default function NewCampaignPage() {
         handleCropComplete={handleCropComplete}
         handleCropCancel={handleCropCancel}
         centerAspectCrop={centerAspectCrop}
-        aiEnabled={aiEnabled}
+        canUseAI={canUseAI}
         GAME_SYSTEMS={GAME_SYSTEMS}
         CAMPAIGN_STATUSES={CAMPAIGN_STATUSES}
       />
@@ -562,7 +562,7 @@ export default function NewCampaignPage() {
             </div>
           </button>
 
-          {aiEnabled && (
+          {canUseAI && (
             <button
               onClick={() => {
                 setImageOptionsModalOpen(false)

@@ -167,6 +167,16 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // Tier check - only standard and premium tiers can use AI
+    const { data: settings } = await supabase
+      .from('user_settings')
+      .select('tier')
+      .eq('user_id', user.id)
+      .single()
+    if ((settings?.tier || 'free') === 'free') {
+      return new Response(JSON.stringify({ error: 'AI features require a paid plan' }), { status: 403, headers: { 'Content-Type': 'application/json' } })
+    }
+
     // Load the character
     const { data: character, error: charError } = await supabase
       .from('vault_characters')
