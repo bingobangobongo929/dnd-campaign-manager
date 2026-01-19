@@ -86,21 +86,12 @@ export function FloatingDock({ campaignId, characterId }: FloatingDockProps) {
         className="dock-item dock-logo"
         title="Multiloop"
       >
-        <svg
+        <img
+          src="/icons/icon-96x96.png"
+          alt="Multiloop"
           className="dock-item-icon dock-logo-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-          <path d="M5 3v4" />
-          <path d="M19 17v4" />
-          <path d="M3 5h4" />
-          <path d="M17 19h4" />
-        </svg>
+          style={{ width: '24px', height: '24px', borderRadius: '6px' }}
+        />
         <span className="dock-item-label">Multiloop</span>
       </Link>
       <div className="dock-divider" />

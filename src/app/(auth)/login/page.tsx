@@ -74,8 +74,8 @@ export default function LoginPage() {
           {/* Header */}
           <div className="text-center mb-8">
             {/* Logo/Icon */}
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 mb-4 shadow-lg shadow-purple-500/25">
-              <Sparkles className="w-8 h-8 text-white" />
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-4 shadow-lg shadow-purple-500/25 overflow-hidden">
+              <img src="/icons/icon-192x192.png" alt="Multiloop" className="w-full h-full object-cover" />
             </div>
             <div className="text-sm font-semibold text-purple-400 tracking-wide mb-1">MULTILOOP</div>
             <h1 className="text-2xl font-bold text-white mb-2">Welcome Back, Adventurer</h1>

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     siteName: 'Multiloop',
     images: [
       {
-        url: `${siteUrl}/login/opengraph-image`,
+        url: `${siteUrl}/login-og-image.png`,
         width: 1200,
         height: 630,
         alt: 'Sign in to Multiloop',
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Sign In | Multiloop',
     description: 'Sign in to Multiloop - Track campaigns, build characters, and chronicle your epic TTRPG journeys.',
-    images: [`${siteUrl}/login/opengraph-image`],
+    images: [`${siteUrl}/login-og-image.png`],
   },
 }
 
