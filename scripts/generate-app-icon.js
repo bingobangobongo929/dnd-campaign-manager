@@ -79,7 +79,52 @@ async function generateIcon() {
     await sharp(logoPath).resize(32, 32).png().toFile(favicon32Path);
     console.log('Favicon PNGs (16x16, 32x32) created');
 
-    console.log('\nAll app icons generated successfully!');
+    // Generate iOS Splash Screen images
+    // Dark background (#0a0a0f) with centered logo
+    const splashDir = path.join(__dirname, '..', 'ios', 'App', 'App', 'Assets.xcassets', 'Splash.imageset');
+    if (!fs.existsSync(splashDir)) {
+      fs.mkdirSync(splashDir, { recursive: true });
+    }
+
+    // Splash screen sizes for different scales
+    const splashSizes = [
+      { name: 'splash-2732x2732.png', size: 2732, logoSize: 400 },   // 3x
+      { name: 'splash-2732x2732-1.png', size: 1822, logoSize: 280 }, // 2x
+      { name: 'splash-2732x2732-2.png', size: 1366, logoSize: 200 }, // 1x
+    ];
+
+    for (const splash of splashSizes) {
+      const splashPath = path.join(splashDir, splash.name);
+
+      // Create dark background
+      const background = sharp({
+        create: {
+          width: splash.size,
+          height: splash.size,
+          channels: 3,
+          background: { r: 10, g: 10, b: 15 } // #0a0a0f
+        }
+      });
+
+      // Resize logo
+      const resizedLogo = await sharp(logoPath)
+        .resize(splash.logoSize, splash.logoSize)
+        .png()
+        .toBuffer();
+
+      // Composite logo onto background (centered)
+      await background
+        .composite([{
+          input: resizedLogo,
+          gravity: 'center'
+        }])
+        .png()
+        .toFile(splashPath);
+
+      console.log(`Splash screen (${splash.size}x${splash.size}) created at:`, splashPath);
+    }
+
+    console.log('\nAll app icons and splash screens generated successfully!');
 
   } catch (e) {
     if (e.code === 'MODULE_NOT_FOUND') {

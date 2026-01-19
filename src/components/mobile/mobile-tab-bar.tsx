@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import { useState } from 'react'
 import { MobileBottomSheet } from './mobile-layout'
+import { hapticLight, hapticSelection } from '@/lib/haptics'
 
 interface MobileTabBarProps {
   campaignId?: string
@@ -58,11 +59,17 @@ export function MobileTabBar({ campaignId, characterId }: MobileTabBarProps) {
   const moreTabs = showBackButton ? tabs.slice(4) : []
 
   const handleBack = () => {
+    hapticLight()
     if (isInCharacter) {
       router.push('/vault')
     } else if (isInCampaign) {
       router.push('/campaigns')
     }
+  }
+
+  const handleTabPress = (href: string) => {
+    hapticSelection()
+    router.push(href)
   }
 
   const isActive = (href: string) => {
@@ -97,7 +104,7 @@ export function MobileTabBar({ campaignId, characterId }: MobileTabBarProps) {
         {mainTabs.map((tab) => (
           <button
             key={tab.href}
-            onClick={() => router.push(tab.href)}
+            onClick={() => handleTabPress(tab.href)}
             className={cn(
               'mobile-tab-item',
               isActive(tab.href) && 'mobile-tab-item-active'
@@ -111,7 +118,7 @@ export function MobileTabBar({ campaignId, characterId }: MobileTabBarProps) {
         {/* More button for overflow tabs */}
         {moreTabs.length > 0 && (
           <button
-            onClick={() => setMoreSheetOpen(true)}
+            onClick={() => { hapticLight(); setMoreSheetOpen(true) }}
             className="mobile-tab-item"
           >
             <MoreHorizontal className="w-6 h-6" />
@@ -131,6 +138,7 @@ export function MobileTabBar({ campaignId, characterId }: MobileTabBarProps) {
             <button
               key={tab.href}
               onClick={() => {
+                hapticSelection()
                 router.push(tab.href)
                 setMoreSheetOpen(false)
               }}

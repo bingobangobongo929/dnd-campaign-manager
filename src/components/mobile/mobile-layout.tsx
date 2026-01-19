@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { ChevronLeft, MoreHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { hapticLight, hapticMedium } from '@/lib/haptics'
 
 interface MobileLayoutProps {
   children: React.ReactNode
@@ -55,6 +56,7 @@ export function MobileLayout({
   const canGoBack = backHref || (typeof window !== 'undefined' && window.history.length > 1)
 
   const handleBack = () => {
+    hapticLight()
     setIsNavigating(true)
     if (backHref) {
       router.push(backHref)
@@ -218,7 +220,7 @@ export function MobileListItem({
 }
 
 /**
- * Mobile bottom sheet
+ * Mobile bottom sheet with drag-to-dismiss
  */
 export function MobileBottomSheet({
   isOpen,
@@ -231,9 +233,17 @@ export function MobileBottomSheet({
   title?: string
   children: React.ReactNode
 }) {
+  const [dragY, setDragY] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+  const startY = useRef(0)
+  const lastY = useRef(0)
+  const velocity = useRef(0)
+  const sheetRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
+      setDragY(0)
     } else {
       document.body.style.overflow = ''
     }
@@ -242,15 +252,59 @@ export function MobileBottomSheet({
     }
   }, [isOpen])
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startY.current = e.touches[0].clientY
+    lastY.current = e.touches[0].clientY
+    velocity.current = 0
+    setIsDragging(true)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return
+    const currentY = e.touches[0].clientY
+    const deltaY = currentY - startY.current
+    velocity.current = currentY - lastY.current
+    lastY.current = currentY
+
+    // Only allow dragging down (positive deltaY)
+    if (deltaY > 0) {
+      setDragY(deltaY)
+    }
+  }
+
+  const handleTouchEnd = () => {
+    setIsDragging(false)
+    const sheetHeight = sheetRef.current?.offsetHeight || 400
+
+    // Close if dragged more than 30% or with high velocity
+    if (dragY > sheetHeight * 0.3 || velocity.current > 10) {
+      hapticLight()
+      onClose()
+    }
+    setDragY(0)
+  }
+
   if (!isOpen) return null
 
   return (
-    <div className="mobile-bottom-sheet-backdrop" onClick={onClose}>
+    <div
+      className="mobile-bottom-sheet-backdrop"
+      onClick={onClose}
+      style={{ opacity: Math.max(0.3, 1 - dragY / 400) }}
+    >
       <div
+        ref={sheetRef}
         className="mobile-bottom-sheet"
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          transform: `translateY(${dragY}px)`,
+          transition: isDragging ? 'none' : 'transform 300ms var(--mobile-spring)',
+        }}
       >
-        {/* Handle bar */}
+        {/* Handle bar - visual indicator for drag */}
         <div className="mobile-bottom-sheet-handle">
           <div className="mobile-bottom-sheet-handle-bar" />
         </div>
@@ -283,9 +337,14 @@ export function MobileFAB({
   label?: string
   className?: string
 }) {
+  const handleClick = () => {
+    hapticMedium()
+    onClick()
+  }
+
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       className={cn('mobile-fab', className)}
       aria-label={label}
     >
@@ -308,12 +367,19 @@ export function MobileSegmentedControl<T extends string>({
   onChange: (value: T) => void
   className?: string
 }) {
+  const handleChange = (newValue: T) => {
+    if (newValue !== value) {
+      hapticLight()
+      onChange(newValue)
+    }
+  }
+
   return (
     <div className={cn('mobile-segmented-control', className)}>
       {options.map((option) => (
         <button
           key={option.value}
-          onClick={() => onChange(option.value)}
+          onClick={() => handleChange(option.value)}
           className={cn(
             'mobile-segmented-option',
             value === option.value && 'mobile-segmented-option-active'

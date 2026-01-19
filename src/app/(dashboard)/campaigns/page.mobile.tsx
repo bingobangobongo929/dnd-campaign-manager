@@ -120,7 +120,7 @@ export function CampaignsPageMobile({
               <>
                 <MobileSectionHeader title="All Campaigns" />
                 <div className="px-4 space-y-3">
-                  {campaigns.slice(1).map((campaign) => (
+                  {campaigns.map((campaign) => (
                     <button
                       key={campaign.id}
                       onClick={() => onNavigate(`/campaigns/${campaign.id}/canvas`)}

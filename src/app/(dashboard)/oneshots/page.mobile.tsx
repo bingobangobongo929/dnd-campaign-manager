@@ -114,7 +114,7 @@ export function OneshotsPageMobile({
               <>
                 <MobileSectionHeader title="All One-Shots" />
                 <div className="px-4 grid grid-cols-2 gap-3">
-                  {oneshots.slice(1).map((oneshot) => (
+                  {oneshots.map((oneshot) => (
                     <button
                       key={oneshot.id}
                       onClick={() => onNavigate(`/oneshots/${oneshot.id}`)}
