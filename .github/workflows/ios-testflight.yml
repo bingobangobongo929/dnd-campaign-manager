@@ -12,12 +12,17 @@ on:
 
 jobs:
   build-ios:
-    runs-on: macos-15  # macOS 15 with Xcode 16 (iOS 18 SDK)
+    runs-on: macos-latest  # Use latest macOS with newest Xcode/iOS SDK
     timeout-minutes: 60
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
