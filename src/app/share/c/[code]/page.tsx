@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
   const { data: character } = await supabase
     .from('vault_characters')
     .select(`
-      name, race, class, level, summary, tagline,
+      name, race, class, level, summary, quotes,
       image_url, detail_image_url,
       campaign_id
     `)
@@ -71,9 +71,10 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
 
   // Build a compelling description
   let description: string
-  if (character.tagline) {
-    // If there's a tagline, use it - it's written to be catchy
-    description = character.tagline
+  // Try to use a memorable quote if available
+  const firstQuote = character.quotes?.[0]
+  if (firstQuote && firstQuote.length < 100) {
+    description = `"${firstQuote}"`
   } else if (character.summary) {
     // Strip HTML and get first meaningful sentence
     const plainSummary = character.summary
