@@ -146,7 +146,7 @@ export function BulletListDisplay({
             />
             <button
               onClick={() => setEditItems(editItems.filter((_, idx) => idx !== i))}
-              className="p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="p-1 text-gray-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -198,7 +198,7 @@ export function BulletListDisplay({
       {editable && (
         <button
           onClick={handleStartEdit}
-          className="absolute top-0 right-0 p-1 text-gray-500 hover:text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute top-0 right-0 p-1 text-gray-500 hover:text-purple-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
         >
           <Edit2 className="w-3.5 h-3.5" />
         </button>
@@ -267,7 +267,7 @@ export function QuotesDisplay({
             <span className="text-gray-500 flex-shrink-0 mt-1.5">"</span>
             <button
               onClick={() => setEditQuotes(editQuotes.filter((_, idx) => idx !== i))}
-              className="p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="p-1 text-gray-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -324,7 +324,7 @@ export function QuotesDisplay({
       {editable && (
         <button
           onClick={handleStartEdit}
-          className="absolute top-0 right-0 p-1 text-gray-500 hover:text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute top-0 right-0 p-1 text-gray-500 hover:text-purple-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
         >
           <Edit2 className="w-3.5 h-3.5" />
         </button>
@@ -373,7 +373,7 @@ export function LifePhaseDisplay({
           <div key={i} className="bg-white/[0.02] rounded-lg p-3 border-l-2 border-purple-500/50 group relative">
             <button
               onClick={() => setEditPhases(editPhases.filter((_, idx) => idx !== i))}
-              className="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -439,9 +439,9 @@ export function LifePhaseDisplay({
       {editable && (
         <button
           onClick={handleStartEdit}
-          className="absolute top-0 right-0 p-1 text-gray-500 hover:text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          className="absolute top-0 right-0 p-2 text-gray-500 hover:text-purple-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10 active:text-purple-400"
         >
-          <Edit2 className="w-3.5 h-3.5" />
+          <Edit2 className="w-4 h-4" />
         </button>
       )}
       <div className="space-y-3">
@@ -496,7 +496,7 @@ export function NPCPreviewCard({ npc, onEdit, onDelete }: NPCPreviewCardProps) {
           </span>
         )}
         {(onEdit || onDelete) && (
-          <div className="ml-auto flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="ml-auto flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
             {onEdit && (
               <button onClick={onEdit} className="p-1 text-gray-500 hover:text-purple-400">
                 <Edit2 className="w-3.5 h-3.5" />
@@ -593,7 +593,7 @@ export function CompanionPreviewCard({ companion, onEdit, onDelete }: CompanionP
           <span className="text-xs text-gray-500">({companion.companion_species})</span>
         )}
         {(onEdit || onDelete) && (
-          <div className="ml-auto flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="ml-auto flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
             {onEdit && (
               <button onClick={onEdit} className="p-1 text-gray-500 hover:text-purple-400">
                 <Edit2 className="w-3.5 h-3.5" />
@@ -656,7 +656,7 @@ export function DmQADisplay({
           <div key={i} className="bg-white/[0.02] rounded-lg p-3 group relative">
             <button
               onClick={() => setEditItems(editItems.filter((_, idx) => idx !== i))}
-              className="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -719,7 +719,7 @@ export function DmQADisplay({
       {editable && (
         <button
           onClick={handleStartEdit}
-          className="absolute top-0 right-0 p-1 text-gray-500 hover:text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          className="absolute top-0 right-0 p-1 text-gray-500 hover:text-purple-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
         >
           <Edit2 className="w-3.5 h-3.5" />
         </button>
@@ -793,7 +793,7 @@ export function RumorsDisplay({
             />
             <button
               onClick={() => setEditRumors(editRumors.filter((_, idx) => idx !== i))}
-              className="p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="p-1 text-gray-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -836,7 +836,7 @@ export function RumorsDisplay({
       {editable && (
         <button
           onClick={handleStartEdit}
-          className="absolute top-0 right-0 p-1 text-gray-500 hover:text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute top-0 right-0 p-1 text-gray-500 hover:text-purple-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
         >
           <Edit2 className="w-3.5 h-3.5" />
         </button>

@@ -7,9 +7,11 @@ import {
   Scroll,
   Plus,
   ChevronRight,
+  Clock,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout, MobileSectionHeader } from '@/components/mobile'
+import { formatDistanceToNow } from '@/lib/utils'
 import type { Campaign, VaultCharacter, Oneshot } from '@/types/database'
 
 function getInitials(name: string): string {
@@ -29,51 +31,103 @@ export function HomePageMobile({
   campaigns,
   characters,
   oneshots,
-  featuredCampaign,
   displayCampaigns,
   onNavigate,
 }: HomePageMobileProps) {
+  // Combine recent items for activity section
+  const recentActivity = [
+    ...campaigns.map(c => ({
+      type: 'campaign' as const,
+      id: c.id,
+      name: c.name,
+      image: c.image_url,
+      meta: c.game_system,
+      updated: c.updated_at
+    })),
+    ...characters.map(c => ({
+      type: 'character' as const,
+      id: c.id,
+      name: c.name,
+      image: c.image_url,
+      meta: [c.race, c.class].filter(Boolean).join(' ') || 'Character',
+      updated: c.updated_at
+    })),
+    ...oneshots.map(o => ({
+      type: 'oneshot' as const,
+      id: o.id,
+      name: o.title,
+      image: o.image_url,
+      meta: o.game_system,
+      updated: o.updated_at
+    })),
+  ].sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime()).slice(0, 5)
+
+  const getItemIcon = (type: 'campaign' | 'character' | 'oneshot') => {
+    switch (type) {
+      case 'campaign': return <Swords className="w-4 h-4 text-blue-400" />
+      case 'character': return <BookOpen className="w-4 h-4 text-purple-400" />
+      case 'oneshot': return <Scroll className="w-4 h-4 text-amber-400" />
+    }
+  }
+
+  const getItemPath = (type: 'campaign' | 'character' | 'oneshot', id: string) => {
+    switch (type) {
+      case 'campaign': return `/campaigns/${id}/canvas`
+      case 'character': return `/vault/${id}`
+      case 'oneshot': return `/oneshots/${id}`
+    }
+  }
+
   return (
     <AppLayout>
       <MobileLayout title="Home" showBackButton={false}>
-        {/* Featured Campaign Card */}
-        {featuredCampaign && (
-          <div className="px-4 mb-6">
-            <button
-              onClick={() => onNavigate(`/campaigns/${featuredCampaign.id}/canvas`)}
-              className="w-full relative rounded-2xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform"
-            >
-              <div className="relative h-48">
-                {featuredCampaign.image_url ? (
-                  <>
-                    <Image
-                      src={featuredCampaign.image_url}
-                      alt={featuredCampaign.name}
-                      fill
-                      className="object-cover"
-                      priority
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
-                  </>
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-[--arcane-purple]/20 via-gray-900 to-gray-950" />
-                )}
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <span className="inline-block px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded bg-[--arcane-purple] text-white mb-2">
-                    Continue
-                  </span>
-                  <h2 className="text-xl font-display font-bold text-white">
-                    {featuredCampaign.name}
-                  </h2>
-                  <p className="text-xs text-gray-400 mt-1">{featuredCampaign.game_system}</p>
-                </div>
-              </div>
-            </button>
-          </div>
+        {/* Recent Activity Section */}
+        {recentActivity.length > 0 && (
+          <>
+            <MobileSectionHeader title="Recent Activity" />
+            <div className="px-4 space-y-2 mb-4">
+              {recentActivity.map((item) => (
+                <button
+                  key={`${item.type}-${item.id}`}
+                  onClick={() => onNavigate(getItemPath(item.type, item.id))}
+                  className="w-full flex items-center gap-3 p-3 bg-[--bg-surface] rounded-xl border border-white/[0.06] active:bg-[--bg-hover] transition-colors"
+                >
+                  <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-900 flex-shrink-0">
+                    {item.image ? (
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        width={48}
+                        height={48}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+                        {getItemIcon(item.type)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-medium uppercase tracking-wider text-gray-500">
+                        {item.type}
+                      </span>
+                    </div>
+                    <h4 className="font-semibold text-white truncate text-sm">{item.name}</h4>
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <Clock className="w-3 h-3" />
+                      <span>{formatDistanceToNow(item.updated)}</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                </button>
+              ))}
+            </div>
+          </>
         )}
 
         {/* Campaigns Section */}
-        {displayCampaigns.length > 0 && (
+        {campaigns.length > 0 && (
           <>
             <MobileSectionHeader
               title="Campaigns"
@@ -84,7 +138,7 @@ export function HomePageMobile({
               }
             />
             <div className="px-4 space-y-3">
-              {displayCampaigns.slice(0, 4).map((campaign) => (
+              {campaigns.slice(0, 3).map((campaign) => (
                 <button
                   key={campaign.id}
                   onClick={() => onNavigate(`/campaigns/${campaign.id}/canvas`)}

@@ -121,14 +121,13 @@ export function VaultPageMobile({
             {/* Featured Character Hero */}
             {!searchQuery && filteredCharacters.length > 0 && (() => {
               const featuredChar = filteredCharacters[0]
-              const summaryText = featuredChar.summary?.replace(/<[^>]*>/g, '') || ''
 
               return (
                 <button
                   onClick={() => onNavigate(`/vault/${featuredChar.id}`)}
                   className="w-full mx-4 max-w-[calc(100%-32px)] relative rounded-2xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform"
                 >
-                  <div className="relative h-56">
+                  <div className="relative h-64">
                     {featuredChar.image_url ? (
                       <>
                         <Image
@@ -138,11 +137,11 @@ export function VaultPageMobile({
                           className="object-cover"
                           priority
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
                       </>
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
-                        <User className="w-16 h-16 text-purple-400/30" />
+                        <User className="w-20 h-20 text-purple-400/30" />
                       </div>
                     )}
                     <div className="absolute bottom-0 left-0 right-0 p-4">
@@ -170,10 +169,7 @@ export function VaultPageMobile({
                           </span>
                         )}
                       </div>
-                      <h2 className="text-xl font-display font-bold text-white mb-1">{featuredChar.name}</h2>
-                      {summaryText && (
-                        <p className="text-xs text-gray-400 line-clamp-2">{summaryText}</p>
-                      )}
+                      <h2 className="text-xl font-display font-bold text-white">{featuredChar.name}</h2>
                       <div className="flex items-center gap-1 mt-2 text-xs text-purple-400">
                         <Eye className="w-3 h-3" />
                         <span>View Character</span>

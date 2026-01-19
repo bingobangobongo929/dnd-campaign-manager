@@ -3054,6 +3054,8 @@ select option {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: flex-start;
+  text-align: left;
   gap: 4px;
 }
 

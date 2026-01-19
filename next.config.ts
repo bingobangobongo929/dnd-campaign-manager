@@ -15,6 +15,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Externalize jsdom and related packages to fix ESM/CJS compatibility issues
+  // These packages are used by isomorphic-dompurify for server-side HTML sanitization
+  serverExternalPackages: [
+    'jsdom',
+    'isomorphic-dompurify',
+  ],
 };
 
 export default nextConfig;
