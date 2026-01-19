@@ -36,9 +36,11 @@ async function generateIcon() {
   try {
     const sharp = require('sharp');
 
-    // Generate main iOS icon (1024x1024)
+    // Generate main iOS icon (1024x1024) - MUST be opaque (no alpha channel)
+    // Flatten onto dark background matching the logo's background color
     await sharp(logoPath)
       .resize(1024, 1024)
+      .flatten({ background: { r: 10, g: 10, b: 15 } }) // #0a0a0f - matches logo background
       .png()
       .toFile(iosIconPath);
     console.log('iOS App icon (1024x1024) created at:', iosIconPath);
