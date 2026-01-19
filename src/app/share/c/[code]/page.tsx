@@ -42,11 +42,7 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
 
   const { data: character } = await supabase
     .from('vault_characters')
-    .select(`
-      name, race, class, level, summary, quotes,
-      image_url, detail_image_url,
-      campaign_id
-    `)
+    .select('name, race, class, summary, image_url, detail_image_url')
     .eq('id', share.character_id)
     .single()
 
@@ -54,29 +50,13 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
     return { title: 'Character Not Found' }
   }
 
-  // Fetch campaign name if character is in one
-  let campaignName: string | null = null
-  if (character.campaign_id) {
-    const { data: campaign } = await supabase
-      .from('campaigns')
-      .select('name')
-      .eq('id', character.campaign_id)
-      .single()
-    campaignName = campaign?.name || null
-  }
-
   // Build a rich title: "Name | Race Class" or "Name | Class"
   const raceClass = [character.race, character.class].filter(Boolean).join(' ')
   const title = raceClass ? `${character.name} | ${raceClass}` : character.name
 
-  // Build a compelling description
+  // Build a compelling description from summary
   let description: string
-  // Try to use a memorable quote if available
-  const firstQuote = character.quotes?.[0]
-  if (firstQuote && firstQuote.length < 100) {
-    description = `"${firstQuote}"`
-  } else if (character.summary) {
-    // Strip HTML and get first meaningful sentence
+  if (character.summary) {
     const plainSummary = character.summary
       .replace(/<[^>]*>/g, ' ')
       .replace(/\s+/g, ' ')
@@ -85,16 +65,7 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
       ? plainSummary.substring(0, 157) + '...'
       : plainSummary
   } else {
-    // Fallback to class/race with level
-    const parts: string[] = []
-    if (character.level) parts.push(`Level ${character.level}`)
-    if (raceClass) parts.push(raceClass)
-    description = parts.length > 0 ? parts.join(' ') : 'A TTRPG character'
-  }
-
-  // Add campaign context if available
-  if (campaignName && !description.includes(campaignName)) {
-    description = `${description} — Playing in ${campaignName}`
+    description = raceClass || 'A TTRPG character'
   }
 
   // Use 16:9 card image for social unfurls (not portrait)
