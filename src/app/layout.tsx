@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     images: [
       {
-        url: '/opengraph-image',
+        url: '/og-image.png',
         width: 1200,
         height: 630,
         alt: 'Multiloop - Track your TTRPG adventures',
@@ -59,14 +59,18 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Multiloop",
     description: "Your tabletop adventures, organized. Track campaigns, build characters, and chronicle your epic journeys.",
-    images: ['/opengraph-image'],
+    images: ['/og-image.png'],
   },
   robots: {
     index: true,
     follow: true,
   },
-  // Additional iOS icons
+  // Icons for various platforms
   icons: {
+    icon: [
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+    ],
     apple: [
       { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
