@@ -1880,16 +1880,12 @@ select option {
 
   /* Adjust main content */
   .main-content {
-    padding-left: 16px;
-    padding-right: 16px;
-    padding-top: calc(var(--topbar-height) + 16px);
-    padding-bottom: calc(72px + 24px + env(safe-area-inset-bottom, 0px)); /* Account for bottom nav + safe area */
+    padding: 0; /* Mobile layouts handle their own padding */
     max-width: 100%;
   }
 
   .main-content.full-bleed {
-    padding-left: 0;
-    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    padding: 0;
   }
 
   /* Adjust topbar */
