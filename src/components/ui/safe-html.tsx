@@ -1,8 +1,9 @@
-import DOMPurify from 'isomorphic-dompurify'
+import sanitize from 'sanitize-html'
 
-// Configuration for DOMPurify
-const PURIFY_CONFIG = {
-  ALLOWED_TAGS: [
+// Configuration for sanitize-html
+// Works in both server and client environments without jsdom
+const SANITIZE_CONFIG: sanitize.IOptions = {
+  allowedTags: [
     // Text formatting
     'p', 'br', 'b', 'i', 'em', 'strong', 'u', 's', 'strike',
     // Headings
@@ -22,39 +23,50 @@ const PURIFY_CONFIG = {
     // Labels for task items
     'label', 'input',
   ],
-  ALLOWED_ATTR: [
-    // Links
-    'href', 'target', 'rel',
-    // Styling
-    'class', 'style',
-    // Tables
-    'colspan', 'rowspan',
-    // Images
-    'src', 'alt', 'width', 'height',
-    // TipTap task lists
-    'data-type', 'data-checked',
-    // Input (for task checkboxes)
-    'type', 'checked', 'disabled',
-  ],
-  ALLOW_DATA_ATTR: true, // Allow data-* attributes for TipTap
+  allowedAttributes: {
+    a: ['href', 'target', 'rel', 'class', 'style'],
+    img: ['src', 'alt', 'width', 'height', 'class', 'style'],
+    div: ['class', 'style', 'data-type', 'data-checked'],
+    span: ['class', 'style', 'data-type', 'data-checked'],
+    p: ['class', 'style'],
+    ul: ['class', 'style', 'data-type'],
+    ol: ['class', 'style'],
+    li: ['class', 'style', 'data-type', 'data-checked'],
+    input: ['type', 'checked', 'disabled', 'class'],
+    label: ['class', 'style'],
+    table: ['class', 'style'],
+    th: ['colspan', 'rowspan', 'class', 'style'],
+    td: ['colspan', 'rowspan', 'class', 'style'],
+    blockquote: ['class', 'style'],
+    pre: ['class', 'style'],
+    code: ['class', 'style'],
+    h1: ['class', 'style'],
+    h2: ['class', 'style'],
+    h3: ['class', 'style'],
+    h4: ['class', 'style'],
+    h5: ['class', 'style'],
+    h6: ['class', 'style'],
+  },
+  // Transform links to add security attributes
+  transformTags: {
+    a: (tagName, attribs) => ({
+      tagName,
+      attribs: {
+        ...attribs,
+        target: '_blank',
+        rel: 'noopener noreferrer',
+      },
+    }),
+  },
 }
 
 /**
  * Utility function to sanitize HTML.
- * Works in both server and client environments.
+ * Works in both server and client environments (no jsdom required).
  */
 export function sanitizeHtml(html: string | null | undefined): string {
   if (!html) return ''
-
-  let sanitized = DOMPurify.sanitize(html, PURIFY_CONFIG)
-
-  // Add security attributes to links
-  sanitized = sanitized.replace(
-    /<a\s+([^>]*href=[^>]*)>/gi,
-    '<a $1 target="_blank" rel="noopener noreferrer">'
-  )
-
-  return sanitized
+  return sanitize(html, SANITIZE_CONFIG)
 }
 
 interface SafeHtmlProps {
