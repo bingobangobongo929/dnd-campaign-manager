@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Sparkles, Shield, BookOpen, Dices } from 'lucide-react'
+import Link from 'next/link'
+import { Loader2, Sparkles, Shield, BookOpen, Dices, Check } from 'lucide-react'
 import { useSupabase } from '@/hooks'
 import { cn } from '@/lib/utils'
 
@@ -11,24 +12,86 @@ export default function LoginPage() {
   const supabase = useSupabase()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const [termsAccepted, setTermsAccepted] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    if (mode === 'signup') {
+      if (!termsAccepted) {
+        setError('You must accept the Terms of Service and Privacy Policy to create an account.')
+        return
+      }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.')
+        return
+      }
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters long.')
+        return
+      }
+    }
+
     setLoading(true)
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    if (mode === 'signin') {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    if (error) {
-      setError(error.message)
-      setLoading(false)
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+      } else {
+        // Update last_login_at
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          await supabase
+            .from('user_settings')
+            .update({ last_login_at: new Date().toISOString() })
+            .eq('user_id', user.id)
+        }
+        router.push('/home')
+      }
     } else {
-      router.push('/home')
+      // Sign up
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      })
+
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+      } else if (data.user) {
+        // Create user settings with terms acceptance
+        const now = new Date().toISOString()
+        await supabase.from('user_settings').upsert({
+          user_id: data.user.id,
+          terms_accepted_at: now,
+          privacy_accepted_at: now,
+          last_login_at: now,
+        }, { onConflict: 'user_id' })
+
+        // If email confirmation is required
+        if (!data.session) {
+          setError('')
+          setMode('signin')
+          setEmail('')
+          setPassword('')
+          setConfirmPassword('')
+          alert('Please check your email to confirm your account, then sign in.')
+          setLoading(false)
+        } else {
+          router.push('/home')
+        }
+      }
     }
   }
 
@@ -78,8 +141,40 @@ export default function LoginPage() {
               <img src="/icons/icon-192x192.png" alt="Multiloop" className="w-full h-full object-cover" />
             </div>
             <div className="text-sm font-semibold text-purple-400 tracking-wide mb-1">MULTILOOP</div>
-            <h1 className="text-2xl font-bold text-white mb-2">Welcome Back, Adventurer</h1>
-            <p className="text-gray-400 text-sm">Sign in to continue your journey</p>
+            <h1 className="text-2xl font-bold text-white mb-2">
+              {mode === 'signin' ? 'Welcome Back, Adventurer' : 'Begin Your Journey'}
+            </h1>
+            <p className="text-gray-400 text-sm">
+              {mode === 'signin' ? 'Sign in to continue your journey' : 'Create an account to start'}
+            </p>
+          </div>
+
+          {/* Mode Toggle */}
+          <div className="flex rounded-xl bg-white/[0.04] p-1 mb-6">
+            <button
+              type="button"
+              onClick={() => { setMode('signin'); setError('') }}
+              className={cn(
+                "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all",
+                mode === 'signin'
+                  ? "bg-purple-600 text-white"
+                  : "text-gray-400 hover:text-white"
+              )}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('signup'); setError('') }}
+              className={cn(
+                "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all",
+                mode === 'signup'
+                  ? "bg-purple-600 text-white"
+                  : "text-gray-400 hover:text-white"
+              )}
+            >
+              Sign Up
+            </button>
           </div>
 
           {/* Form */}
@@ -109,17 +204,66 @@ export default function LoginPage() {
               <label className="text-sm font-medium text-gray-300">Password</label>
               <input
                 type="password"
-                placeholder="Enter your password"
+                placeholder={mode === 'signin' ? 'Enter your password' : 'Create a password (8+ characters)'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={mode === 'signup' ? 8 : undefined}
                 className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
               />
             </div>
 
+            {mode === 'signup' && (
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-300">Confirm Password</label>
+                  <input
+                    type="password"
+                    placeholder="Confirm your password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                  />
+                </div>
+
+                {/* Terms Acceptance */}
+                <div className="space-y-3">
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <div className="relative mt-0.5">
+                      <input
+                        type="checkbox"
+                        checked={termsAccepted}
+                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                        className="sr-only"
+                      />
+                      <div className={cn(
+                        "w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
+                        termsAccepted
+                          ? "bg-purple-600 border-purple-600"
+                          : "border-gray-600 group-hover:border-gray-500"
+                      )}>
+                        {termsAccepted && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                    </div>
+                    <span className="text-sm text-gray-400">
+                      I am at least 16 years old and agree to the{' '}
+                      <Link href="/terms" target="_blank" className="text-purple-400 hover:text-purple-300 underline">
+                        Terms of Service
+                      </Link>
+                      {' '}and{' '}
+                      <Link href="/privacy" target="_blank" className="text-purple-400 hover:text-purple-300 underline">
+                        Privacy Policy
+                      </Link>
+                    </span>
+                  </label>
+                </div>
+              </>
+            )}
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (mode === 'signup' && !termsAccepted)}
               className={cn(
                 "w-full py-3 px-4 rounded-xl font-semibold text-white transition-all duration-200",
                 "bg-gradient-to-r from-purple-600 to-indigo-600",
@@ -132,12 +276,12 @@ export default function LoginPage() {
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Entering the Realm...
+                  {mode === 'signin' ? 'Entering the Realm...' : 'Creating Account...'}
                 </>
               ) : (
                 <>
                   <Sparkles className="w-5 h-5" />
-                  Enter the Realm
+                  {mode === 'signin' ? 'Enter the Realm' : 'Begin Adventure'}
                 </>
               )}
             </button>

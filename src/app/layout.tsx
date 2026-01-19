@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Toaster } from "sonner"
+import Script from "next/script"
 import "./globals.css"
 import { Providers } from "@/components/providers"
+import { CookieConsent } from "@/components/ui/cookie-consent"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -102,6 +104,15 @@ export default function RootLayout({
             },
           }}
         />
+        <CookieConsent />
+        {/* Umami Analytics - Privacy-focused, no cookies */}
+        {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
+          <Script
+            async
+            src={process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL || 'https://analytics.multiloop.app/script.js'}
+            data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+          />
+        )}
       </body>
     </html>
   )

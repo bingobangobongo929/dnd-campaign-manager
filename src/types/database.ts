@@ -1256,6 +1256,23 @@ export interface Database {
           ai_provider: 'anthropic' | 'google'
           theme: 'dark' | 'light' | 'system'
           tier: 'free' | 'standard' | 'premium'
+          role: 'user' | 'moderator' | 'super_admin'
+          // Account status
+          suspended_at: string | null
+          suspended_by: string | null
+          suspended_reason: string | null
+          disabled_at: string | null
+          disabled_by: string | null
+          // GDPR compliance
+          terms_accepted_at: string | null
+          privacy_accepted_at: string | null
+          marketing_consent: boolean
+          last_login_at: string | null
+          // 2FA
+          totp_secret: string | null
+          totp_enabled: boolean
+          totp_verified_at: string | null
+          backup_codes: string[] | null
           created_at: string
           updated_at: string
         }
@@ -1264,6 +1281,20 @@ export interface Database {
           ai_provider?: 'anthropic' | 'google'
           theme?: 'dark' | 'light' | 'system'
           tier?: 'free' | 'standard' | 'premium'
+          role?: 'user' | 'moderator' | 'super_admin'
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspended_reason?: string | null
+          disabled_at?: string | null
+          disabled_by?: string | null
+          terms_accepted_at?: string | null
+          privacy_accepted_at?: string | null
+          marketing_consent?: boolean
+          last_login_at?: string | null
+          totp_secret?: string | null
+          totp_enabled?: boolean
+          totp_verified_at?: string | null
+          backup_codes?: string[] | null
           created_at?: string
           updated_at?: string
         }
@@ -1272,8 +1303,86 @@ export interface Database {
           ai_provider?: 'anthropic' | 'google'
           theme?: 'dark' | 'light' | 'system'
           tier?: 'free' | 'standard' | 'premium'
+          role?: 'user' | 'moderator' | 'super_admin'
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspended_reason?: string | null
+          disabled_at?: string | null
+          disabled_by?: string | null
+          terms_accepted_at?: string | null
+          privacy_accepted_at?: string | null
+          marketing_consent?: boolean
+          last_login_at?: string | null
+          totp_secret?: string | null
+          totp_enabled?: boolean
+          totp_verified_at?: string | null
+          backup_codes?: string[] | null
           created_at?: string
           updated_at?: string
+        }
+      }
+      changelog: {
+        Row: {
+          id: string
+          version: string
+          title: string
+          content: string
+          published_at: string
+          is_major: boolean
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          version: string
+          title: string
+          content: string
+          published_at?: string
+          is_major?: boolean
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          version?: string
+          title?: string
+          content?: string
+          published_at?: string
+          is_major?: boolean
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      admin_activity_log: {
+        Row: {
+          id: string
+          admin_id: string
+          action: string
+          target_user_id: string | null
+          details: Json
+          ip_address: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          admin_id: string
+          action: string
+          target_user_id?: string | null
+          details?: Json
+          ip_address?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          admin_id?: string
+          action?: string
+          target_user_id?: string | null
+          details?: Json
+          ip_address?: string | null
+          created_at?: string
         }
       }
       character_relationships: {
@@ -1911,6 +2020,7 @@ export type IntelligenceSuggestion = Database['public']['Tables']['intelligence_
 
 // User tier type
 export type UserTier = 'free' | 'standard' | 'premium'
+export type UserRole = 'user' | 'moderator' | 'super_admin'
 
 // Helper to check if a tier has AI access
 export const TIER_HAS_AI: Record<UserTier, boolean> = {
@@ -1918,6 +2028,19 @@ export const TIER_HAS_AI: Record<UserTier, boolean> = {
   standard: true,
   premium: true,
 }
+
+// Role-based permissions
+export const ROLE_PERMISSIONS = {
+  user: [] as const,
+  moderator: ['view_users', 'suspend_users', 'view_analytics'] as const,
+  super_admin: ['view_users', 'suspend_users', 'disable_users', 'change_tiers', 'change_roles', 'view_analytics', 'manage_changelog'] as const,
+} as const
+
+export type Permission = typeof ROLE_PERMISSIONS[UserRole][number]
+
+// Type exports for new tables
+export type Changelog = Database['public']['Tables']['changelog']['Row']
+export type AdminActivityLog = Database['public']['Tables']['admin_activity_log']['Row']
 
 // New Vault table types
 export type VaultCharacterImage = Database['public']['Tables']['vault_character_images']['Row']
