@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
   const { code } = await params
   const supabase = createAdminClient()
 
-  // Fetch share and character data
+  // Fetch share and character data with campaign info
   const { data: share } = await supabase
     .from('character_shares')
     .select('character_id')
@@ -42,7 +42,11 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
 
   const { data: character } = await supabase
     .from('vault_characters')
-    .select('name, race, class, summary, image_url, detail_image_url')
+    .select(`
+      name, race, class, level, summary, tagline,
+      image_url, detail_image_url,
+      campaign_id
+    `)
     .eq('id', share.character_id)
     .single()
 
@@ -50,11 +54,50 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
     return { title: 'Character Not Found' }
   }
 
-  const title = character.name
-  const description = character.summary
-    ? character.summary.replace(/<[^>]*>/g, '').substring(0, 200) + '...'
-    : `${character.race || ''} ${character.class || ''}`.trim() || 'A D&D character'
-  const imageUrl = character.detail_image_url || character.image_url
+  // Fetch campaign name if character is in one
+  let campaignName: string | null = null
+  if (character.campaign_id) {
+    const { data: campaign } = await supabase
+      .from('campaigns')
+      .select('name')
+      .eq('id', character.campaign_id)
+      .single()
+    campaignName = campaign?.name || null
+  }
+
+  // Build a rich title: "Name | Race Class" or "Name | Class"
+  const raceClass = [character.race, character.class].filter(Boolean).join(' ')
+  const title = raceClass ? `${character.name} | ${raceClass}` : character.name
+
+  // Build a compelling description
+  let description: string
+  if (character.tagline) {
+    // If there's a tagline, use it - it's written to be catchy
+    description = character.tagline
+  } else if (character.summary) {
+    // Strip HTML and get first meaningful sentence
+    const plainSummary = character.summary
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+    description = plainSummary.length > 160
+      ? plainSummary.substring(0, 157) + '...'
+      : plainSummary
+  } else {
+    // Fallback to class/race with level
+    const parts: string[] = []
+    if (character.level) parts.push(`Level ${character.level}`)
+    if (raceClass) parts.push(raceClass)
+    description = parts.length > 0 ? parts.join(' ') : 'A TTRPG character'
+  }
+
+  // Add campaign context if available
+  if (campaignName && !description.includes(campaignName)) {
+    description = `${description} — Playing in ${campaignName}`
+  }
+
+  // Use 16:9 card image for social unfurls (not portrait)
+  const imageUrl = character.image_url || character.detail_image_url
 
   return {
     title,
@@ -64,7 +107,13 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
       description,
       type: 'profile',
       siteName: 'Multiloop',
-      images: imageUrl ? [{ url: imageUrl, width: 400, height: 600, alt: character.name }] : [],
+      // 16:9 dimensions for proper social card display
+      images: imageUrl ? [{
+        url: imageUrl,
+        width: 1200,
+        height: 675,
+        alt: `${character.name} - ${raceClass || 'Character'}`,
+      }] : [],
     },
     twitter: {
       card: imageUrl ? 'summary_large_image' : 'summary',

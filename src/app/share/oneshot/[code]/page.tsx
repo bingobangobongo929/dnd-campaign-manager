@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
 
   const { data: oneshot } = await supabase
     .from('oneshots')
-    .select('title, tagline, introduction, image_url, min_players, max_players, estimated_duration')
+    .select('title, tagline, introduction, image_url, min_players, max_players, estimated_duration, difficulty')
     .eq('id', share.oneshot_id)
     .single()
 
@@ -36,20 +36,51 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
     return { title: 'One-Shot Not Found' }
   }
 
-  const title = oneshot.title
-  const playerInfo = oneshot.min_players && oneshot.max_players
-    ? `${oneshot.min_players}-${oneshot.max_players} players`
-    : null
-  const durationInfo = oneshot.estimated_duration
-    ? `${oneshot.estimated_duration}`
-    : null
-  const meta = [playerInfo, durationInfo].filter(Boolean).join(' • ')
+  // Build specs for the title/description
+  const specs: string[] = []
+  if (oneshot.min_players && oneshot.max_players) {
+    specs.push(`${oneshot.min_players}-${oneshot.max_players} Players`)
+  } else if (oneshot.min_players) {
+    specs.push(`${oneshot.min_players}+ Players`)
+  }
+  if (oneshot.estimated_duration) {
+    specs.push(oneshot.estimated_duration)
+  }
 
-  const description = oneshot.tagline
-    ? oneshot.tagline
-    : oneshot.introduction
-    ? oneshot.introduction.substring(0, 200) + (oneshot.introduction.length > 200 ? '...' : '')
-    : meta || 'A D&D one-shot adventure'
+  // Build a title like "Title | 3-5 Players • 4 Hours"
+  const title = specs.length > 0
+    ? `${oneshot.title} | ${specs.join(' • ')}`
+    : oneshot.title
+
+  // Build a compelling description - taglines are written to hook
+  let description: string
+  if (oneshot.tagline) {
+    description = oneshot.tagline
+    // Add difficulty if it fits
+    if (oneshot.difficulty && description.length < 140) {
+      const difficultyLabel = oneshot.difficulty.charAt(0).toUpperCase() + oneshot.difficulty.slice(1)
+      description = `${description} — ${difficultyLabel} difficulty`
+    }
+  } else if (oneshot.introduction) {
+    const plainIntro = oneshot.introduction
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+    description = plainIntro.length > 150
+      ? plainIntro.substring(0, 147) + '...'
+      : plainIntro
+  } else {
+    // Build from specs
+    const parts: string[] = ['A one-shot adventure']
+    if (oneshot.min_players && oneshot.max_players) {
+      parts.push(`for ${oneshot.min_players}-${oneshot.max_players} players`)
+    }
+    if (oneshot.estimated_duration) {
+      parts.push(`(${oneshot.estimated_duration})`)
+    }
+    description = parts.join(' ')
+  }
+
   const imageUrl = oneshot.image_url
 
   return {
@@ -60,7 +91,12 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
       description,
       type: 'website',
       siteName: 'Multiloop',
-      images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630, alt: oneshot.title }] : [],
+      images: imageUrl ? [{
+        url: imageUrl,
+        width: 1200,
+        height: 675,
+        alt: oneshot.title,
+      }] : [],
     },
     twitter: {
       card: imageUrl ? 'summary_large_image' : 'summary',

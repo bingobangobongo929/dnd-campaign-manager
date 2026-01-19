@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
 
   const { data: campaign } = await supabase
     .from('campaigns')
-    .select('name, description, setting, image_url')
+    .select('id, name, description, setting, image_url')
     .eq('id', share.campaign_id)
     .single()
 
@@ -35,12 +35,50 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
     return { title: 'Campaign Not Found' }
   }
 
-  const title = campaign.name
-  const description = campaign.description
-    ? campaign.description.substring(0, 200) + (campaign.description.length > 200 ? '...' : '')
-    : campaign.setting
-    ? `A campaign set in ${campaign.setting}`
-    : 'A D&D campaign'
+  // Count sessions and characters for rich context
+  const [sessionCount, characterCount] = await Promise.all([
+    supabase
+      .from('campaign_sessions')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', campaign.id),
+    supabase
+      .from('vault_characters')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', campaign.id),
+  ])
+
+  const sessions = sessionCount.count || 0
+  const characters = characterCount.count || 0
+
+  // Build a rich title with setting if available
+  const title = campaign.setting
+    ? `${campaign.name} | ${campaign.setting}`
+    : campaign.name
+
+  // Build a compelling description with stats
+  let description: string
+  if (campaign.description) {
+    const plainDesc = campaign.description
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+    description = plainDesc.length > 120
+      ? plainDesc.substring(0, 117) + '...'
+      : plainDesc
+  } else if (campaign.setting) {
+    description = `An epic ${campaign.setting.toLowerCase()} adventure`
+  } else {
+    description = 'A tabletop RPG campaign'
+  }
+
+  // Add stats context
+  const stats: string[] = []
+  if (sessions > 0) stats.push(`${sessions} session${sessions !== 1 ? 's' : ''}`)
+  if (characters > 0) stats.push(`${characters} adventurer${characters !== 1 ? 's' : ''}`)
+  if (stats.length > 0) {
+    description = `${description} — ${stats.join(', ')}`
+  }
+
   const imageUrl = campaign.image_url
 
   return {
@@ -51,7 +89,12 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
       description,
       type: 'website',
       siteName: 'Multiloop',
-      images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630, alt: campaign.name }] : [],
+      images: imageUrl ? [{
+        url: imageUrl,
+        width: 1200,
+        height: 675,
+        alt: campaign.name,
+      }] : [],
     },
     twitter: {
       card: imageUrl ? 'summary_large_image' : 'summary',
