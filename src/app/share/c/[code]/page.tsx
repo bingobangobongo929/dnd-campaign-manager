@@ -20,6 +20,41 @@ import { InteractivePortrait, BackToTopButton } from './client'
 import crypto from 'crypto'
 import type { Metadata } from 'next'
 
+// Detect bot/crawler user agents (social media unfurl previews, search engines, etc.)
+function isBot(userAgent: string | null): boolean {
+  if (!userAgent) return false
+  const ua = userAgent.toLowerCase()
+
+  // Social media preview bots
+  if (ua.includes('discordbot')) return true
+  if (ua.includes('slackbot')) return true
+  if (ua.includes('twitterbot')) return true
+  if (ua.includes('facebookexternalhit')) return true
+  if (ua.includes('facebot')) return true
+  if (ua.includes('telegrambot')) return true
+  if (ua.includes('whatsapp')) return true
+  if (ua.includes('linkedinbot')) return true
+  if (ua.includes('pinterest')) return true
+  if (ua.includes('embedly')) return true
+
+  // Search engine bots
+  if (ua.includes('googlebot')) return true
+  if (ua.includes('bingbot')) return true
+  if (ua.includes('yandex')) return true
+  if (ua.includes('baiduspider')) return true
+  if (ua.includes('duckduckbot')) return true
+
+  // Generic bot patterns
+  if (ua.includes('bot/') || ua.includes('bot ')) return true
+  if (ua.includes('crawler')) return true
+  if (ua.includes('spider')) return true
+  if (ua.includes('preview')) return true
+  if (ua.includes('fetcher')) return true
+  if (ua.includes('scraper')) return true
+
+  return false
+}
+
 interface SharePageProps {
   params: Promise<{ code: string }>
 }
@@ -240,39 +275,43 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
   const realIp = headersList.get('x-real-ip')
   const ip = forwardedFor?.split(',')[0] || realIp || 'unknown'
 
-  const viewerHash = crypto.createHash('sha256').update(ip + share.id).digest('hex').substring(0, 16)
+  // Skip view tracking for bots (Discord unfurls, search engines, etc.)
+  // This prevents link previews from counting as views or showing as "live" viewers
+  if (!isBot(userAgent)) {
+    const viewerHash = crypto.createHash('sha256').update(ip + share.id).digest('hex').substring(0, 16)
 
-  // Abuse protection: Check if this viewer viewed this share in the last 15 minutes
-  const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString()
-  const { data: recentView } = await supabase
-    .from('share_view_events')
-    .select('id')
-    .eq('share_id', share.id)
-    .eq('viewer_hash', viewerHash)
-    .gte('viewed_at', fifteenMinutesAgo)
-    .limit(1)
-    .single()
-
-  // Only record view if no recent view from this viewer
-  if (!recentView) {
-    // Update view tracking
-    await supabase
-      .from('character_shares')
-      .update({
-        view_count: (share.view_count || 0) + 1,
-        last_viewed_at: new Date().toISOString()
-      })
-      .eq('id', share.id)
-
-    await supabase
+    // Abuse protection: Check if this viewer viewed this share in the last 15 minutes
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString()
+    const { data: recentView } = await supabase
       .from('share_view_events')
-      .insert({
-        share_id: share.id,
-        share_type: 'character',
-        viewer_hash: viewerHash,
-        referrer: referrer?.substring(0, 500),
-        user_agent: userAgent?.substring(0, 500),
-      })
+      .select('id')
+      .eq('share_id', share.id)
+      .eq('viewer_hash', viewerHash)
+      .gte('viewed_at', fifteenMinutesAgo)
+      .limit(1)
+      .single()
+
+    // Only record view if no recent view from this viewer
+    if (!recentView) {
+      // Update view tracking
+      await supabase
+        .from('character_shares')
+        .update({
+          view_count: (share.view_count || 0) + 1,
+          last_viewed_at: new Date().toISOString()
+        })
+        .eq('id', share.id)
+
+      await supabase
+        .from('share_view_events')
+        .insert({
+          share_id: share.id,
+          share_type: 'character',
+          viewer_hash: viewerHash,
+          referrer: referrer?.substring(0, 500),
+          user_agent: userAgent?.substring(0, 500),
+        })
+    }
   }
 
   // Fetch character data
