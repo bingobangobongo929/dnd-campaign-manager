@@ -168,8 +168,8 @@ Shadow refuses to enter the citadel. That worries me more than I care to admit.'
   -- ═══════════════════════════════════════════════════════════════════
 
   INSERT INTO oneshots (
-    id, user_id, title, tagline, premise, game_system, estimated_duration, player_count_min, player_count_max,
-    is_demo, created_at, updated_at
+    id, user_id, title, tagline, introduction, game_system, estimated_duration, player_count_min, player_count_max,
+    session_plan, key_npcs, is_demo, created_at, updated_at
   ) VALUES (
     demo_oneshot_id,
     NULL,
@@ -184,55 +184,62 @@ Tonight, the party must navigate treacherous bargains, compete with other desper
     '3-4 hours',
     3,
     5,
+    '## Encounter 1: Market Entrance (Easy, Social)
+The party must prove their worth to enter the Night Market. The guardian—a cloaked figure with no face—demands they each answer a riddle or pay a toll.
+
+**Riddles (DC 12 INT):**
+- "I am not alive, but I grow; I don''t have lungs, but I need air. What am I?" (Fire)
+- "The more you take, the more you leave behind. What am I?" (Footsteps)
+
+**Alternative Toll:** A secret the character has never told anyone (roleplay opportunity).
+
+---
+
+## Encounter 2: The Merchant of Memories (Medium, Social)
+Madame Vesper sells bottled memories in crystal vials. She has what the party seeks, but her price is steep: a cherished memory from each buyer.
+
+**Vesper''s Wares:**
+- Cure for any mundane disease (costs: memory of your happiest day)
+- Location of any person (costs: memory of your mother''s face)
+- Artifact location (costs: memory of why you''re adventuring)
+
+**Negotiation:** DC 18 Persuasion might reduce the price slightly, but she cannot accept gold.
+
+---
+
+## Encounter 3: The Auction (Hard, Social)
+The item the party seeks goes up for auction. They must outbid other desperate buyers using the Night Market''s strange currencies.
+
+**Other Bidders:**
+- A weeping noblewoman offering years of her life
+- A hooded figure bidding with "favors" (actually a devil)
+- A desperate wizard offering his familiar
+
+**Party Options:** Pool resources, convince other bidders to drop out, or try to steal the item (DC 20 Stealth, severe consequences if caught).
+
+---
+
+## Encounter 4: The Market''s Rules (Hard, Combat)
+The party breaks a rule (intentionally or not) and must face the consequences. The Market''s enforcers are not to be trifled with.
+
+**Market Enforcers:** Use Shadow Mastiff stats (2) + 1 Bodak for a deadly encounter
+
+**Alternative Resolution:** The party can plead their case to the Market Master (DC 20 Persuasion) or offer restitution.',
+    '**The Faceless Guardian** - Enigmatic gatekeeper who demands riddles or secrets for entry. Speaks in whispers that seem to come from everywhere at once.
+
+**Madame Vesper** - An ageless woman with silver eyes who trades in memories. Her shop smells of forgotten dreams. She is fair but utterly without sentiment.
+
+**The Market Master** - The mysterious figure who enforces the Market''s rules. No one has seen their true form. They appear as whatever the viewer fears most.',
     true,
     NOW(),
     NOW()
   ) ON CONFLICT (id) DO UPDATE SET
     title = EXCLUDED.title,
-    premise = EXCLUDED.premise,
+    introduction = EXCLUDED.introduction,
+    session_plan = EXCLUDED.session_plan,
+    key_npcs = EXCLUDED.key_npcs,
     is_demo = true,
     updated_at = NOW();
-
-  -- One-shot encounters
-  INSERT INTO oneshot_encounters (id, oneshot_id, name, description, encounter_type, difficulty, notes, order_index, created_at, updated_at)
-  VALUES
-    (gen_random_uuid(), demo_oneshot_id, 'Market Entrance',
-     'The party must prove their worth to enter the Night Market. The guardian—a cloaked figure with no face—demands they each answer a riddle or pay a toll.',
-     'social', 'easy',
-     '**Riddles (DC 12 INT):**
-- "I am not alive, but I grow; I don''t have lungs, but I need air. What am I?" (Fire)
-- "The more you take, the more you leave behind. What am I?" (Footsteps)
-
-**Alternative Toll:** A secret the character has never told anyone (roleplay opportunity).',
-     1, NOW(), NOW()),
-    (gen_random_uuid(), demo_oneshot_id, 'The Merchant of Memories',
-     'Madame Vesper sells bottled memories in crystal vials. She has what the party seeks, but her price is steep: a cherished memory from each buyer.',
-     'social', 'medium',
-     '**Vesper''s Wares:**
-- Cure for any mundane disease (costs: memory of your happiest day)
-- Location of any person (costs: memory of your mother''s face)
-- Artifact location (costs: memory of why you''re adventuring)
-
-**Negotiation:** DC 18 Persuasion might reduce the price slightly, but she cannot accept gold.',
-     2, NOW(), NOW()),
-    (gen_random_uuid(), demo_oneshot_id, 'The Auction',
-     'The item the party seeks goes up for auction. They must outbid other desperate buyers using the Night Market''s strange currencies.',
-     'social', 'hard',
-     '**Other Bidders:**
-- A weeping noblewoman offering years of her life
-- A hooded figure bidding with "favors" (actually a devil)
-- A desperate wizard offering his familiar
-
-**Party Options:** Pool resources, convince other bidders to drop out, or try to steal the item (DC 20 Stealth, severe consequences if caught).',
-     3, NOW(), NOW()),
-    (gen_random_uuid(), demo_oneshot_id, 'The Market''s Rules',
-     'The party breaks a rule (intentionally or not) and must face the consequences. The Market''s enforcers are not to be trifled with.',
-     'combat', 'hard',
-     '**Market Enforcers:** Use Shadow Mastiff stats (2) + 1 Bodak for a deadly encounter
-
-**Alternative Resolution:** The party can plead their case to the Market Master (DC 20 Persuasion) or offer restitution.',
-     4, NOW(), NOW())
-  ON CONFLICT DO NOTHING;
 
 END $$;
 
@@ -296,14 +303,6 @@ CREATE POLICY "Public can view demo play journals"
   ON play_journal FOR SELECT
   USING (
     character_id IN (SELECT id FROM vault_characters WHERE is_demo = true)
-  );
-
--- Allow public read access to demo oneshot encounters
-DROP POLICY IF EXISTS "Public can view demo oneshot encounters" ON oneshot_encounters;
-CREATE POLICY "Public can view demo oneshot encounters"
-  ON oneshot_encounters FOR SELECT
-  USING (
-    oneshot_id IN (SELECT id FROM oneshots WHERE is_demo = true)
   );
 
 -- Allow public read access to demo oneshot runs
