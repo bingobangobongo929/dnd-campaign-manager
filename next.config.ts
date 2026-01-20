@@ -29,9 +29,12 @@ export default withSentryConfig(nextConfig, {
   // Upload source maps to Sentry
   widenClientFileUpload: true,
 
-  // Hide source maps from client
-  hideSourceMaps: true,
+  // Source maps configuration
+  sourcemaps: {
+    // Don't delete source maps after upload (needed for error debugging)
+    deleteSourcemapsAfterUpload: true,
+  },
 
   // Disable Sentry telemetry
-  disableLogger: true,
+  telemetry: false,
 });
