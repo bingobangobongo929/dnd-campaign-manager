@@ -171,6 +171,14 @@ export default function CharacterGalleryPage() {
     const image = images.find(i => i.id === imageId)
     const wasPrimary = image?.is_primary
 
+    // Delete file from storage first
+    if (image?.image_url) {
+      const urlParts = image.image_url.split('/vault-images/')
+      if (urlParts.length > 1) {
+        await supabase.storage.from('vault-images').remove([urlParts[1]])
+      }
+    }
+
     const { error } = await supabase
       .from('vault_character_images')
       .delete()

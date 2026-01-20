@@ -14,7 +14,7 @@ function getResendClient(): Resend {
 }
 
 const FROM_EMAIL = 'Multiloop <noreply@multiloop.app>'
-const SUPPORT_EMAIL = 'privacy@multiloop.app'
+const SUPPORT_EMAIL = 'contact@multiloop.app'
 
 export interface SendEmailOptions {
   to: string
