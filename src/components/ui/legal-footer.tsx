@@ -6,36 +6,26 @@ interface LegalFooterProps {
 }
 
 export function LegalFooter({ className = '', showChangelog = true }: LegalFooterProps) {
+  const linkClass = "text-gray-400 hover:text-white underline underline-offset-2 decoration-gray-600 hover:decoration-gray-400 transition-colors cursor-pointer"
+
   return (
     <footer className={`text-center text-xs text-gray-500 ${className}`}>
-      <div className="flex items-center justify-center gap-2 flex-wrap">
-        <Link
-          href="/privacy"
-          className="hover:text-gray-400 transition-colors"
-        >
+      <div className="flex items-center justify-center gap-3 flex-wrap">
+        <Link href="/privacy" className={linkClass}>
           Privacy Policy
         </Link>
         <span className="text-gray-700">·</span>
-        <Link
-          href="/terms"
-          className="hover:text-gray-400 transition-colors"
-        >
+        <Link href="/terms" className={linkClass}>
           Terms of Service
         </Link>
         <span className="text-gray-700">·</span>
-        <Link
-          href="/cookies"
-          className="hover:text-gray-400 transition-colors"
-        >
+        <Link href="/cookies" className={linkClass}>
           Cookies
         </Link>
         {showChangelog && (
           <>
             <span className="text-gray-700">·</span>
-            <Link
-              href="/changelog"
-              className="hover:text-gray-400 transition-colors"
-            >
+            <Link href="/changelog" className={linkClass}>
               What's New
             </Link>
           </>

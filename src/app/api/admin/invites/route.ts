@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, inviteCodeEmail } from '@/lib/email'
+import { checkRateLimit, rateLimits } from '@/lib/rate-limit'
 
 // Generate a readable invite code
 function generateInviteCode(): string {
@@ -71,11 +72,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Use admin client for database operations (bypasses RLS)
-    const adminSupabase = createAdminClient()
-
     const body = await request.json()
     const { maxUses = 1, expiresInDays, note, sendEmail: shouldSendEmail, recipientEmail } = body
+
+    // Rate limit invite emails per admin
+    if (shouldSendEmail && recipientEmail) {
+      const rateLimit = checkRateLimit(`invite-email:${user.id}`, rateLimits.inviteEmail)
+      if (!rateLimit.success) {
+        return NextResponse.json(
+          { error: `Too many invite emails. Please wait ${Math.ceil(rateLimit.resetIn / 60)} minutes.` },
+          { status: 429 }
+        )
+      }
+    }
+
+    // Use admin client for database operations (bypasses RLS)
+    const adminSupabase = createAdminClient()
 
     // Generate unique code
     let code = generateInviteCode()
@@ -101,6 +113,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create invite using admin client
+    console.log('Attempting to insert invite code:', { code, created_by: user.id, max_uses: maxUses })
     const { data: invite, error } = await adminSupabase
       .from('invite_codes')
       .insert({
@@ -115,13 +128,19 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Failed to insert invite code:', error)
-      throw error
+      console.error('Failed to insert invite code - Full error:', JSON.stringify(error, null, 2))
+      return NextResponse.json({
+        error: 'Failed to create invite code',
+        details: error.message
+      }, { status: 500 })
     }
+
+    console.log('Invite code created successfully:', invite?.code)
 
     // Send email if requested
     if (shouldSendEmail && recipientEmail) {
       try {
+        console.log('Attempting to send invite email to:', recipientEmail)
         const { subject, html } = inviteCodeEmail(code)
         const emailResult = await sendEmail({
           to: recipientEmail,
@@ -130,6 +149,8 @@ export async function POST(request: NextRequest) {
         })
         if (!emailResult.success) {
           console.error('Failed to send invite email:', emailResult.error)
+        } else {
+          console.log('Invite email sent successfully')
         }
       } catch (emailErr) {
         console.error('Email send error:', emailErr)
@@ -137,20 +158,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Log admin action using admin client
-    try {
-      await adminSupabase.from('admin_activity_log').insert({
-        admin_id: user.id,
-        action: 'create_invite_code',
-        details: { code, max_uses: maxUses, expires_at: expiresAt, note }
-      })
-    } catch (logErr) {
-      console.error('Failed to log admin action:', logErr)
-    }
+    // Log admin action using admin client (non-blocking)
+    ;(async () => {
+      try {
+        await adminSupabase.from('admin_activity_log').insert({
+          admin_id: user.id,
+          action: 'create_invite_code',
+          details: { code, max_uses: maxUses, expires_at: expiresAt, note }
+        })
+        console.log('Admin action logged')
+      } catch (logErr) {
+        console.error('Failed to log admin action:', logErr)
+      }
+    })()
 
     return NextResponse.json({ invite })
   } catch (err) {
-    console.error('Failed to create invite:', err)
+    console.error('Failed to create invite - Exception:', err)
     return NextResponse.json({ error: 'Failed to create invite' }, { status: 500 })
   }
 }

@@ -2,10 +2,22 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, passwordResetEmail } from '@/lib/email'
 import { randomBytes } from 'crypto'
+import { checkRateLimit, getClientIP, rateLimits } from '@/lib/rate-limit'
 
 // POST - Request password reset
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit by IP address
+    const clientIP = getClientIP(request)
+    const rateLimit = checkRateLimit(`forgot-password:${clientIP}`, rateLimits.forgotPassword)
+
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: `Too many requests. Please try again in ${Math.ceil(rateLimit.resetIn / 60)} minutes.` },
+        { status: 429 }
+      )
+    }
+
     const { email } = await request.json()
 
     if (!email || typeof email !== 'string') {
