@@ -110,4 +110,16 @@ export const rateLimits = {
 
   // Invite email: 10 requests per hour per admin
   inviteEmail: { limit: 10, windowSeconds: 60 * 60 },
+
+  // 2FA validation: 5 attempts per 15 minutes per user (strict to prevent brute force)
+  twoFactorValidate: { limit: 5, windowSeconds: 15 * 60 },
+
+  // 2FA setup: 3 requests per hour per user
+  twoFactorSetup: { limit: 3, windowSeconds: 60 * 60 },
+
+  // Admin stats: 30 requests per minute per admin
+  adminStats: { limit: 30, windowSeconds: 60 },
+
+  // Admin AI usage: 10 requests per minute per admin
+  adminAiUsage: { limit: 10, windowSeconds: 60 },
 }

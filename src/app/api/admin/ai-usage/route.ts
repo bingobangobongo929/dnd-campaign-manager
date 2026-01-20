@@ -1,10 +1,17 @@
 import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { checkRateLimit, rateLimits } from '@/lib/rate-limit'
+import crypto from 'crypto'
 
 export const runtime = 'nodejs'
 
+// Hash user ID for anonymization in responses
+function anonymizeUserId(userId: string): string {
+  return crypto.createHash('sha256').update(userId).digest('hex').slice(0, 12)
+}
+
 // GET - Get all users' AI usage stats (admin only)
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient()
 
@@ -22,6 +29,15 @@ export async function GET(req: Request) {
 
     if (!settings || !['super_admin', 'moderator'].includes(settings.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    // Rate limiting for admin endpoints
+    const rateLimit = checkRateLimit(`admin-ai-usage:${user.id}`, rateLimits.adminAiUsage)
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded', retryAfter: rateLimit.resetIn },
+        { status: 429, headers: { 'Retry-After': String(rateLimit.resetIn) } }
+      )
     }
 
     const { searchParams } = new URL(req.url)
@@ -64,9 +80,9 @@ export async function GET(req: Request) {
     const totalCostCents = stats.reduce((sum, r) => sum + (r.estimated_cost_cents || 0), 0)
     const totalRequests = stats.length
 
-    // Group by user
+    // Group by user (using anonymized IDs in response)
     const byUser: Record<string, {
-      userId: string
+      anonymizedId: string
       requests: number
       tokens: number
       images: number
@@ -75,9 +91,10 @@ export async function GET(req: Request) {
     }> = {}
 
     for (const record of stats) {
+      const anonId = anonymizeUserId(record.user_id)
       if (!byUser[record.user_id]) {
         byUser[record.user_id] = {
-          userId: record.user_id,
+          anonymizedId: anonId,
           requests: 0,
           tokens: 0,
           images: 0,
@@ -134,12 +151,12 @@ export async function GET(req: Request) {
       byOperation[record.operation_type].cost += record.estimated_cost_cents || 0
     }
 
-    // Get recent requests
+    // Get recent requests (with anonymized user IDs)
     const recentRequests = stats
       .slice(0, 20)
       .map(r => ({
         id: r.id,
-        userId: r.user_id,
+        anonymizedUserId: anonymizeUserId(r.user_id),
         provider: r.provider,
         model: r.model,
         operation: r.operation_type,

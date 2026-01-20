@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
 import Image from 'next/image'
 import { Users, Clock, Scroll, BookOpen, Target, Eye } from 'lucide-react'
+import { SharePageHeader } from '@/components/share/SharePageHeader'
 import crypto from 'crypto'
 import type { Metadata } from 'next'
 
@@ -246,8 +247,10 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
   const sections = share.included_sections as Record<string, boolean>
 
   return (
-    <div className="min-h-screen bg-[--bg-base]">
-      {/* Hero Section */}
+    <>
+      <SharePageHeader contentType="oneshot" contentName={oneshot.title} />
+      <div className="min-h-screen bg-[--bg-base]">
+        {/* Hero Section */}
       <div className="relative">
         {oneshot.image_url ? (
           <div className="relative h-64 md:h-80">
@@ -465,12 +468,13 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
         )}
       </div>
 
-      {/* Footer */}
-      <div className="border-t border-white/10 py-8">
-        <div className="max-w-4xl mx-auto px-6 text-center text-sm text-gray-500">
-          Shared via Multiloop
+        {/* Footer */}
+        <div className="border-t border-white/10 py-8">
+          <div className="max-w-4xl mx-auto px-6 text-center text-sm text-gray-500">
+            Shared via Multiloop
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }

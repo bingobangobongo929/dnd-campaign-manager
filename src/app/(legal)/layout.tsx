@@ -19,9 +19,10 @@ export default function LegalLayout({
               className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
-              <span className="font-medium">Back to Multiloop</span>
+              <span className="font-medium hidden sm:inline">Back to Multiloop</span>
+              <span className="font-medium sm:hidden">Back</span>
             </Link>
-            <nav className="flex items-center gap-6 text-sm">
+            <nav className="hidden md:flex items-center gap-6 text-sm">
               <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors">
                 Privacy
               </Link>
@@ -32,6 +33,20 @@ export default function LegalLayout({
                 Cookies
               </Link>
             </nav>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Link
+                href="/login"
+                className="text-sm text-gray-400 hover:text-white transition-colors px-3 py-1.5"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/login"
+                className="text-sm font-medium px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-colors"
+              >
+                Get Started
+              </Link>
+            </div>
           </div>
         </div>
       </header>

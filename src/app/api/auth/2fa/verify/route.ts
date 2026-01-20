@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { verifyTOTPToken } from '@/lib/totp'
 import { sendEmail, twoFactorEnabledEmail } from '@/lib/email'
+import { checkRateLimit, rateLimits, getClientIP } from '@/lib/rate-limit'
+import { z } from 'zod'
+
+// Input validation schema
+const verifySchema = z.object({
+  code: z.string().length(6, 'Code must be 6 digits'),
+})
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -13,12 +20,34 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  try {
-    const { code } = await request.json()
+  // Rate limiting
+  const rateLimit = checkRateLimit(`2fa-verify:${user.id}`, rateLimits.twoFactorValidate)
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      {
+        error: 'Too many attempts. Please try again later.',
+        retryAfter: rateLimit.resetIn,
+      },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(rateLimit.resetIn) },
+      }
+    )
+  }
 
-    if (!code || code.length !== 6) {
-      return NextResponse.json({ error: 'Invalid code format' }, { status: 400 })
+  try {
+    // Validate input
+    const body = await request.json()
+    const parseResult = verifySchema.safeParse(body)
+
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { error: 'Invalid code format. Code must be 6 digits.' },
+        { status: 400 }
+      )
     }
+
+    const { code } = parseResult.data
 
     // Get the pending secret
     const { data: userSettings } = await supabase
@@ -35,10 +64,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '2FA is already enabled' }, { status: 400 })
     }
 
-    // Verify the code
+    // Verify the code (totp_secret is already encrypted, verifyTOTPToken handles decryption)
     const isValid = verifyTOTPToken(userSettings.totp_secret, code, user.email!)
 
     if (!isValid) {
+      // Log failed attempt
+      await logAuditEvent(supabase, user.id, '2fa_verify_failed', {
+        ip: getClientIP(request),
+      })
+
       return NextResponse.json({ error: 'Invalid verification code' }, { status: 401 })
     }
 
@@ -55,6 +89,11 @@ export async function POST(request: NextRequest) {
       throw updateError
     }
 
+    // Log successful enable
+    await logAuditEvent(supabase, user.id, '2fa_enabled', {
+      ip: getClientIP(request),
+    })
+
     // Send confirmation email
     if (user.email) {
       const { subject, html } = twoFactorEnabledEmail()
@@ -65,5 +104,26 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('2FA verify error:', error)
     return NextResponse.json({ error: 'Failed to verify 2FA' }, { status: 500 })
+  }
+}
+
+/**
+ * Log audit event for 2FA actions
+ */
+async function logAuditEvent(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  action: string,
+  details: Record<string, unknown>
+) {
+  try {
+    await supabase.from('admin_activity_log').insert({
+      admin_id: userId,
+      action,
+      details,
+      created_at: new Date().toISOString(),
+    })
+  } catch (error) {
+    console.error('Failed to log audit event:', error)
   }
 }

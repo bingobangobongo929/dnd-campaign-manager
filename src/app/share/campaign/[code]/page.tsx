@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
 import crypto from 'crypto'
 import { CampaignShareClient } from './client'
+import { SharePageHeader } from '@/components/share/SharePageHeader'
 import type { Metadata } from 'next'
 
 // Detect bot/crawler user agents (social media unfurl previews, search engines, etc.)
@@ -441,22 +442,25 @@ export default async function ShareCampaignPage({ params }: SharePageProps) {
   }
 
   return (
-    <CampaignShareClient
-      campaign={campaign}
-      sections={sections}
-      availableTabs={availableTabs}
-      pcs={pcs}
-      npcs={npcs}
-      sessions={sessions}
-      sessionAttendees={sessionAttendees}
-      timelineEvents={timelineEvents}
-      worldMaps={worldMaps}
-      relationships={relationships}
-      lore={lore}
-      gallery={gallery}
-      canvasGroups={canvasGroups}
-      characterTags={characterTags}
-      characters={characters}
-    />
+    <>
+      <SharePageHeader contentType="campaign" contentName={campaign.name} />
+      <CampaignShareClient
+        campaign={campaign}
+        sections={sections}
+        availableTabs={availableTabs}
+        pcs={pcs}
+        npcs={npcs}
+        sessions={sessions}
+        sessionAttendees={sessionAttendees}
+        timelineEvents={timelineEvents}
+        worldMaps={worldMaps}
+        relationships={relationships}
+        lore={lore}
+        gallery={gallery}
+        canvasGroups={canvasGroups}
+        characterTags={characterTags}
+        characters={characters}
+      />
+    </>
   )
 }

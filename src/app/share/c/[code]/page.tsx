@@ -17,6 +17,7 @@ import { getInitials } from '@/lib/utils'
 import { renderMarkdown } from '@/lib/character-display'
 import { sanitizeHtml } from '@/components/ui/safe-html'
 import { InteractivePortrait, BackToTopButton } from './client'
+import { SharePageHeader } from '@/components/share/SharePageHeader'
 import crypto from 'crypto'
 import type { Metadata } from 'next'
 
@@ -452,9 +453,11 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
   const hasSessionsContent = sections.sessions && sessions_data.length > 0
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
-      {/* Sidebar */}
-      <aside className="w-full lg:w-[320px] xl:w-[380px] flex-shrink-0 bg-[#0f0f11] border-b lg:border-b-0 lg:border-r border-white/[0.06]">
+    <>
+      <SharePageHeader contentType="character" contentName={character.name} />
+      <div className="min-h-screen flex flex-col lg:flex-row">
+        {/* Sidebar */}
+        <aside className="w-full lg:w-[320px] xl:w-[380px] flex-shrink-0 bg-[#0f0f11] border-b lg:border-b-0 lg:border-r border-white/[0.06]">
         <div className="px-5 sm:px-6 lg:px-8 py-6 lg:py-8">
           {/* Portrait */}
           <div className="mb-6">
@@ -1210,8 +1213,9 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
         </div>
       </main>
 
-      {/* Back to Top Button */}
-      <BackToTopButton />
-    </div>
+        {/* Back to Top Button */}
+        <BackToTopButton />
+      </div>
+    </>
   )
 }

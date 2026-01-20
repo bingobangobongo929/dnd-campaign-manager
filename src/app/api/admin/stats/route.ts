@@ -1,11 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { checkRateLimit, rateLimits } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 
 // GET - Get overview stats for admin dashboard (admin only)
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
 
@@ -23,6 +24,15 @@ export async function GET() {
 
     if (!settings || !['super_admin', 'moderator'].includes(settings.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    // Rate limiting for admin endpoints
+    const rateLimit = checkRateLimit(`admin-stats:${user.id}`, rateLimits.adminStats)
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded', retryAfter: rateLimit.resetIn },
+        { status: 429, headers: { 'Retry-After': String(rateLimit.resetIn) } }
+      )
     }
 
     // Use admin client to bypass RLS and get accurate counts
