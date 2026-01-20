@@ -7,7 +7,8 @@ VALUES ('demo-images', 'demo-images', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Public read access for demo images
-CREATE POLICY IF NOT EXISTS "Public can view demo images"
+DROP POLICY IF EXISTS "Public can view demo images" ON storage.objects;
+CREATE POLICY "Public can view demo images"
 ON storage.objects FOR SELECT
 USING (bucket_id = 'demo-images');
 
