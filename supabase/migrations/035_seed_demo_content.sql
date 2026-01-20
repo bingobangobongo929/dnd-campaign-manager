@@ -5,6 +5,7 @@
 ALTER TABLE campaigns ALTER COLUMN user_id DROP NOT NULL;
 ALTER TABLE vault_characters ALTER COLUMN user_id DROP NOT NULL;
 ALTER TABLE oneshots ALTER COLUMN user_id DROP NOT NULL;
+ALTER TABLE vault_character_relationships ALTER COLUMN user_id DROP NOT NULL;
 
 -- Add check constraints to ensure user_id is only null for demo content
 ALTER TABLE campaigns DROP CONSTRAINT IF EXISTS campaigns_user_id_demo_check;
@@ -127,21 +128,22 @@ Now she hunts those who prey on the innocent, moving through darkness as comfort
     updated_at = NOW();
 
   -- Character relationships (party members)
-  INSERT INTO vault_character_relationships (id, character_id, name, race, class, relationship_type, backstory, is_party_member, is_companion, created_at, updated_at)
+  -- Note: vault_character_relationships uses related_name, description, relationship_type
+  INSERT INTO vault_character_relationships (id, character_id, related_name, relationship_type, relationship_label, description, is_party_member, is_companion, created_at, updated_at)
   VALUES
-    (gen_random_uuid(), demo_character_id, 'Marcus Brightforge', 'Human', 'Paladin',
-     'Party Member', 'A devout paladin of Lathander. Met during the cult investigation. His unwavering optimism is both inspiring and occasionally exhausting.',
+    (gen_random_uuid(), demo_character_id, 'Marcus Brightforge', 'ally', 'Party Member',
+     'Human Paladin. A devout paladin of Lathander. Met during the cult investigation. His unwavering optimism is both inspiring and occasionally exhausting.',
      true, false, NOW(), NOW()),
-    (gen_random_uuid(), demo_character_id, 'Whisper', 'Tabaxi', 'Rogue',
-     'Party Member', 'A mysterious information broker who joined the group for "personal reasons" they refuse to elaborate on. Surprisingly good at making tea.',
+    (gen_random_uuid(), demo_character_id, 'Whisper', 'ally', 'Party Member',
+     'Tabaxi Rogue. A mysterious information broker who joined the group for "personal reasons" they refuse to elaborate on. Surprisingly good at making tea.',
      true, false, NOW(), NOW()),
-    (gen_random_uuid(), demo_character_id, 'Shadow', NULL, NULL,
-     'Animal Companion', 'A giant owl that found Lyra after the cult attack. Unusually intelligent and seems to understand more than a normal animal should.',
+    (gen_random_uuid(), demo_character_id, 'Shadow', 'ally', 'Animal Companion',
+     'Giant Owl. Found Lyra after the cult attack. Unusually intelligent and seems to understand more than a normal animal should.',
      false, true, NOW(), NOW())
   ON CONFLICT DO NOTHING;
 
   -- Character play journal entries
-  INSERT INTO play_journal (id, character_id, title, content, session_date, created_at, updated_at)
+  INSERT INTO play_journal (id, character_id, title, notes, session_date, created_at, updated_at)
   VALUES
     (gen_random_uuid(), demo_character_id, 'The Sunken Citadel - Part 1',
      '## Session Notes
