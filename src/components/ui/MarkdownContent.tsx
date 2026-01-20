@@ -1,6 +1,7 @@
 'use client'
 
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { cn } from '@/lib/utils'
 
 interface MarkdownContentProps {
@@ -11,6 +12,7 @@ interface MarkdownContentProps {
 /**
  * Renders markdown content with proper dark mode styling.
  * Handles headers, bold, italic, lists, tables, blockquotes, and code.
+ * Uses remark-gfm for GitHub Flavored Markdown support (tables, strikethrough, etc.)
  */
 export function MarkdownContent({ content, className }: MarkdownContentProps) {
   if (!content) return null
@@ -18,6 +20,7 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
   return (
     <div className={cn('prose prose-sm prose-invert max-w-none', className)}>
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         components={{
           // Headers
           h1: ({ children }) => (
