@@ -90,7 +90,7 @@ export function FloatingDock({ campaignId, characterId }: FloatingDockProps) {
       <Link
         href="/home"
         className="dock-item dock-logo"
-        title="Multiloop"
+        title="Multiloop Beta"
       >
         <img
           src="/icons/icon-96x96.png"
@@ -98,7 +98,10 @@ export function FloatingDock({ campaignId, characterId }: FloatingDockProps) {
           className="dock-item-icon dock-logo-icon"
           style={{ width: '24px', height: '24px', borderRadius: '6px' }}
         />
-        <span className="dock-item-label">Multiloop</span>
+        <span className="dock-item-label">
+          Multiloop
+          <span style={{ fontSize: '9px', color: '#fbbf24', marginLeft: '4px', fontWeight: 500 }}>BETA</span>
+        </span>
       </Link>
       <div className="dock-divider" />
 

@@ -163,6 +163,12 @@ export function welcomeEmail(userName: string): { subject: string; html: string 
 
     ${emailDivider()}
 
+    <div style="margin: 0 0 24px 0; padding: 16px; background: rgba(139, 92, 246, 0.1); border-radius: 12px; border: 1px solid rgba(139, 92, 246, 0.2);">
+      <p style="margin: 0; font-size: 14px; color: #d1d5db; text-align: center;">
+        <strong style="color: #a78bfa;">Important:</strong> Please confirm your email address using the separate confirmation email we sent, then you can sign in.
+      </p>
+    </div>
+
     <p style="margin: 0 0 16px 0; font-size: 15px; color: #d1d5db; line-height: 1.6;">
       You've just joined a community of dungeon masters and players who are passionate about crafting memorable tabletop adventures.
     </p>
@@ -174,15 +180,16 @@ export function welcomeEmail(userName: string): { subject: string; html: string 
     <ul style="margin: 0 0 24px 0; padding-left: 20px; color: #d1d5db; font-size: 15px; line-height: 1.8;">
       <li>Create and manage your campaigns</li>
       <li>Track characters, NPCs, and their stories</li>
-      <li>Log sessions with AI-powered summaries</li>
+      <li>Log detailed session notes</li>
       <li>Build timelines and lore for your world</li>
       <li>Import characters from D&D Beyond</li>
     </ul>
 
-    ${emailButton('Start Your First Campaign', 'https://multiloop.app/home')}
-
-    <p style="margin: 24px 0 0 0; font-size: 13px; color: #6b7280; text-align: center;">
-      Need help getting started? Check out our guide or reach out anytime.
+    <p style="margin: 0 0 8px 0; font-size: 13px; color: #fbbf24; text-align: center; font-weight: 500;">
+      Multiloop is currently in Beta
+    </p>
+    <p style="margin: 0 0 0 0; font-size: 13px; color: #6b7280; text-align: center;">
+      We're actively improving based on feedback. Found a bug or have a suggestion? Let us know!
     </p>
   `
 

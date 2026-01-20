@@ -201,14 +201,7 @@ function LoginForm() {
 
         // If email confirmation is required
         if (!data.session) {
-          setError('')
-          setMode('signin')
-          setEmail('')
-          setPassword('')
-          setConfirmPassword('')
-          setInviteCode('')
-          alert('Please check your email to confirm your account, then sign in.')
-          setLoading(false)
+          router.push('/signup/confirm')
         } else {
           router.push('/home')
         }
@@ -261,7 +254,10 @@ function LoginForm() {
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-4 shadow-lg shadow-purple-500/25 overflow-hidden">
               <img src="/icons/icon-192x192.png" alt="Multiloop" className="w-full h-full object-cover" />
             </div>
-            <div className="text-sm font-semibold text-purple-400 tracking-wide mb-1">MULTILOOP</div>
+            <div className="text-sm font-semibold tracking-wide mb-1">
+              <span className="text-purple-400">MULTILOOP</span>
+              <span className="text-amber-400 ml-1.5">BETA</span>
+            </div>
             <h1 className="text-2xl font-bold text-white mb-2">
               {mode === 'signin' ? 'Welcome Back, Adventurer' : 'Begin Your Journey'}
             </h1>

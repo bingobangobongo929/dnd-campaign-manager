@@ -8,6 +8,7 @@ import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { useAppStore, useCanUseAI } from '@/store'
 import type { Campaign, Character, Session, TimelineEvent, CampaignLore, CanvasGroup } from '@/types/database'
 import { AIAssistant } from '@/components/ai/ai-assistant'
+import { BugReportButton } from '@/components/ui/bug-report-button'
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -238,6 +239,9 @@ export function AppLayout({
 
       {/* AI Assistant Panel - with campaign context, only when user can use AI */}
       {isAIAssistantOpen && canUseAI && <AIAssistant campaignContext={campaignContext} />}
+
+      {/* Bug Report / Feedback Button */}
+      <BugReportButton />
     </>
   )
 }
