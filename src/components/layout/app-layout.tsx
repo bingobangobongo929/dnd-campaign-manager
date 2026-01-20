@@ -95,7 +95,7 @@ export function AppLayout({
 
     // Load vault characters for the character switcher
     const { data: vaultData } = await supabase
-      .from('characters_vault')
+      .from('vault_characters')
       .select('id, name, image_url, race, class')
       .eq('user_id', user.id)
       .order('updated_at', { ascending: false })
