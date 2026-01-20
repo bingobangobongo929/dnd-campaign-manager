@@ -17,6 +17,7 @@ import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout } from '@/components/mobile'
 import { Button, Input, sanitizeHtml } from '@/components/ui'
 import { RichTextEditor } from '@/components/editor'
+import { PartyMemberSelector } from '@/components/sessions'
 import type { VaultCharacter } from '@/types/database'
 
 export interface VaultSessionEditorMobileProps {
@@ -57,6 +58,9 @@ export interface VaultSessionEditorMobileProps {
   formatSummaryAsHtml: (text: string) => string
   onNavigate: (path: string) => void
   canUseAI: boolean
+  hasPartyMembers: boolean
+  selectedAttendees: string[]
+  onAttendeesChange: (ids: string[]) => void
 }
 
 export function VaultSessionEditorMobile({
@@ -83,6 +87,9 @@ export function VaultSessionEditorMobile({
   formatSummaryAsHtml,
   onNavigate,
   canUseAI,
+  hasPartyMembers,
+  selectedAttendees,
+  onAttendeesChange,
 }: VaultSessionEditorMobileProps) {
   if (loading) {
     return (
@@ -170,6 +177,18 @@ export function VaultSessionEditorMobile({
               placeholder="Session title..."
             />
           </div>
+
+          {/* Party Members Present */}
+          {hasPartyMembers && (
+            <div className="mb-6">
+              <PartyMemberSelector
+                characterId={characterId}
+                selectedIds={selectedAttendees}
+                onChange={onAttendeesChange}
+                label="Party Members Present"
+              />
+            </div>
+          )}
 
           {/* Summary Section */}
           <div className="mb-6">

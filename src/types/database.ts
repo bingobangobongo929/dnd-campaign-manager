@@ -19,6 +19,7 @@ export interface Database {
           image_url: string | null
           status: 'active' | 'completed' | 'hiatus' | 'archived'
           last_intelligence_run: string | null
+          is_demo: boolean
           created_at: string
           updated_at: string
         }
@@ -31,6 +32,7 @@ export interface Database {
           image_url?: string | null
           status?: 'active' | 'completed' | 'hiatus' | 'archived'
           last_intelligence_run?: string | null
+          is_demo?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -43,6 +45,7 @@ export interface Database {
           image_url?: string | null
           status?: 'active' | 'completed' | 'hiatus' | 'archived'
           last_intelligence_run?: string | null
+          is_demo?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -563,6 +566,7 @@ export interface Database {
           gameplay_tips: string[] | null
           party_relations: Json | null
           combat_stats: Json | null
+          is_demo: boolean
           created_at: string
           updated_at: string
         }
@@ -811,6 +815,7 @@ export interface Database {
           gameplay_tips?: string[] | null
           party_relations?: Json | null
           combat_stats?: Json | null
+          is_demo?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -1130,6 +1135,7 @@ export interface Database {
           key_npcs: string | null
           handouts: string | null
           status: string
+          is_demo: boolean
           created_at: string
           updated_at: string
         }
@@ -1153,6 +1159,7 @@ export interface Database {
           key_npcs?: string | null
           handouts?: string | null
           status?: string
+          is_demo?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -1176,6 +1183,7 @@ export interface Database {
           key_npcs?: string | null
           handouts?: string | null
           status?: string
+          is_demo?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -1274,6 +1282,11 @@ export interface Database {
           totp_enabled: boolean
           totp_verified_at: string | null
           backup_codes: string[] | null
+          // Onboarding
+          onboarding_completed: boolean
+          onboarding_completed_at: string | null
+          show_tips: boolean
+          tips_dismissed: Json
           created_at: string
           updated_at: string
         }
@@ -1297,6 +1310,10 @@ export interface Database {
           totp_enabled?: boolean
           totp_verified_at?: string | null
           backup_codes?: string[] | null
+          onboarding_completed?: boolean
+          onboarding_completed_at?: string | null
+          show_tips?: boolean
+          tips_dismissed?: Json
           created_at?: string
           updated_at?: string
         }
@@ -1320,8 +1337,32 @@ export interface Database {
           totp_enabled?: boolean
           totp_verified_at?: string | null
           backup_codes?: string[] | null
+          onboarding_completed?: boolean
+          onboarding_completed_at?: string | null
+          show_tips?: boolean
+          tips_dismissed?: Json
           created_at?: string
           updated_at?: string
+        }
+      }
+      play_journal_attendees: {
+        Row: {
+          id: string
+          play_journal_id: string
+          relationship_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          play_journal_id: string
+          relationship_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          play_journal_id?: string
+          relationship_id?: string
+          created_at?: string
         }
       }
       changelog: {
@@ -2005,6 +2046,7 @@ export type VaultCharacter = Database['public']['Tables']['vault_characters']['R
 export type UserSettings = Database['public']['Tables']['user_settings']['Row']
 export type StoryCharacter = Database['public']['Tables']['story_characters']['Row']
 export type PlayJournal = Database['public']['Tables']['play_journal']['Row']
+export type PlayJournalAttendee = Database['public']['Tables']['play_journal_attendees']['Row']
 export type CharacterLink = Database['public']['Tables']['character_links']['Row']
 export type CharacterLearnedFact = Database['public']['Tables']['character_learned_facts']['Row']
 export type CharacterMoodBoard = Database['public']['Tables']['character_mood_board']['Row']

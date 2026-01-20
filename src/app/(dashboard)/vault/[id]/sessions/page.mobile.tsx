@@ -11,12 +11,23 @@ import {
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout } from '@/components/mobile'
 import { Button, SafeHtml } from '@/components/ui'
+import { PartyMemberAvatarStack } from '@/components/sessions'
 import { formatDate } from '@/lib/character-display'
 import type { PlayJournal } from '@/types/database'
 
+interface SessionAttendee {
+  id: string
+  name: string
+  image_url?: string | null
+}
+
+interface SessionWithAttendees extends PlayJournal {
+  attendees?: SessionAttendee[]
+}
+
 export interface CharacterSessionsPageMobileProps {
   characterId: string
-  entries: PlayJournal[]
+  entries: SessionWithAttendees[]
   loading: boolean
   expandedIds: Set<string>
   toggleExpanded: (id: string) => void
@@ -116,6 +127,17 @@ export function CharacterSessionsPageMobile({
                       <h3 className="font-medium text-white mb-2 text-[15px]">
                         {entry.title || `Session ${entry.session_number}`}
                       </h3>
+
+                      {/* Party Members Present */}
+                      {entry.attendees && entry.attendees.length > 0 && (
+                        <div className="mb-2">
+                          <PartyMemberAvatarStack
+                            members={entry.attendees}
+                            max={5}
+                            size="sm"
+                          />
+                        </div>
+                      )}
 
                       {/* Summary */}
                       {entry.summary && (

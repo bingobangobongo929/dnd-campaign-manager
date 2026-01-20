@@ -17,9 +17,20 @@ import { useIsMobile } from '@/hooks'
 import { Button, SafeHtml } from '@/components/ui'
 import { CharacterSessionsPageMobile } from './page.mobile'
 import { BackToTopButton } from '@/components/ui/back-to-top'
+import { PartyMemberAvatarStack } from '@/components/sessions'
 import { createClient } from '@/lib/supabase/client'
 import { formatDate } from '@/lib/character-display'
 import type { PlayJournal } from '@/types/database'
+
+interface SessionAttendee {
+  id: string
+  name: string
+  image_url?: string | null
+}
+
+interface SessionWithAttendees extends PlayJournal {
+  attendees?: SessionAttendee[]
+}
 
 export default function CharacterSessionsPage() {
   const params = useParams()
@@ -28,7 +39,7 @@ export default function CharacterSessionsPage() {
   const characterId = params.id as string
   const isMobile = useIsMobile()
 
-  const [entries, setEntries] = useState<PlayJournal[]>([])
+  const [entries, setEntries] = useState<SessionWithAttendees[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
@@ -39,16 +50,56 @@ export default function CharacterSessionsPage() {
   const loadData = async () => {
     setLoading(true)
 
-    const { data } = await supabase
+    // Load all sessions
+    const { data: sessionsData } = await supabase
       .from('play_journal')
       .select('*')
       .eq('character_id', characterId)
       .order('session_number', { ascending: false, nullsFirst: false })
 
-    if (data) {
-      setEntries(data)
+    if (!sessionsData) {
+      setLoading(false)
+      return
     }
 
+    // Load all attendees for these sessions with relationship details
+    const sessionIds = sessionsData.map(s => s.id)
+    const { data: attendeesData } = await supabase
+      .from('play_journal_attendees')
+      .select(`
+        play_journal_id,
+        relationship:vault_character_relationships (
+          id,
+          related_name,
+          related_image_url
+        )
+      `)
+      .in('play_journal_id', sessionIds)
+
+    // Group attendees by session
+    const attendeesBySession: Record<string, SessionAttendee[]> = {}
+    if (attendeesData) {
+      attendeesData.forEach((a: any) => {
+        if (!attendeesBySession[a.play_journal_id]) {
+          attendeesBySession[a.play_journal_id] = []
+        }
+        if (a.relationship) {
+          attendeesBySession[a.play_journal_id].push({
+            id: a.relationship.id,
+            name: a.relationship.related_name || 'Unknown',
+            image_url: a.relationship.related_image_url,
+          })
+        }
+      })
+    }
+
+    // Combine sessions with attendees
+    const sessionsWithAttendees: SessionWithAttendees[] = sessionsData.map(session => ({
+      ...session,
+      attendees: attendeesBySession[session.id] || [],
+    }))
+
+    setEntries(sessionsWithAttendees)
     setLoading(false)
   }
 
@@ -174,6 +225,17 @@ export default function CharacterSessionsPage() {
                     <h3 className="font-medium text-[--text-primary] mb-3">
                       {entry.title || `Session ${entry.session_number}`}
                     </h3>
+
+                    {/* Party Members Present */}
+                    {entry.attendees && entry.attendees.length > 0 && (
+                      <div className="mb-3">
+                        <PartyMemberAvatarStack
+                          members={entry.attendees}
+                          max={6}
+                          size="sm"
+                        />
+                      </div>
+                    )}
 
                     {/* Full Summary - no line clamp */}
                     {entry.summary && (

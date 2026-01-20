@@ -26,11 +26,13 @@ import {
   BookOpen,
   Camera,
   X,
+  Lightbulb,
+  RefreshCw,
 } from 'lucide-react'
 import Image from 'next/image'
 import { v4 as uuidv4 } from 'uuid'
 import { toast } from 'sonner'
-import { Modal } from '@/components/ui'
+import { Modal, OnboardingTour, useResetTips, useToggleTips } from '@/components/ui'
 import { AvatarCropModal } from '@/components/ui/avatar-crop-modal'
 import { MobileLayout } from '@/components/mobile'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
@@ -99,13 +101,53 @@ export default function SettingsPage() {
   // Expanded sections
   const [expandedProvider, setExpandedProvider] = useState<AIProvider | null>(null)
 
+  // Onboarding/Tips state
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showTips, setShowTips] = useState(true)
+  const resetTips = useResetTips()
+  const toggleTips = useToggleTips()
+
   // Load user stats
   useEffect(() => {
     if (user) {
       loadStats()
       loadSharesSummary()
+      loadTipsSettings()
     }
   }, [user])
+
+  const loadTipsSettings = async () => {
+    if (!user) return
+    try {
+      const { data } = await supabase
+        .from('user_settings')
+        .select('show_tips')
+        .eq('user_id', user.id)
+        .single()
+
+      if (data) {
+        setShowTips(data.show_tips !== false)
+      }
+    } catch {
+      // Column might not exist yet
+    }
+  }
+
+  const handleToggleTips = async () => {
+    const newValue = !showTips
+    setShowTips(newValue)
+    await toggleTips(newValue)
+    toast.success(newValue ? 'Tips enabled' : 'Tips hidden')
+  }
+
+  const handleResetTips = async () => {
+    await resetTips()
+    toast.success('Tips reset - they will appear again as you navigate')
+  }
+
+  const handleRestartTour = () => {
+    setShowOnboarding(true)
+  }
 
   const loadStats = async () => {
     setLoadingStats(true)
@@ -945,6 +987,75 @@ export default function SettingsPage() {
         )}
 
         {/* ═══════════════════════════════════════════════════════════════════
+            SECTION: HELP & TIPS
+            ═══════════════════════════════════════════════════════════════════ */}
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center">
+              <Lightbulb className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-[--text-primary]">Help & Tips</h2>
+              <p className="text-sm text-[--text-tertiary]">Onboarding and contextual guidance</p>
+            </div>
+          </div>
+
+          <div className="card p-5 space-y-4">
+            {/* Contextual Tips Toggle */}
+            <div className="flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border]">
+              <div className="flex-1">
+                <p className="font-medium text-[--text-primary]">Show Contextual Tips</p>
+                <p className="text-xs text-[--text-tertiary] mt-0.5">
+                  Helpful hints that appear near UI elements
+                </p>
+              </div>
+              <button
+                onClick={handleToggleTips}
+                className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 ml-4 ${
+                  showTips ? 'bg-purple-600' : 'bg-gray-600'
+                }`}
+              >
+                <div
+                  className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-md transition-transform ${
+                    showTips ? 'translate-x-7' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Restart Tour Button */}
+            <button
+              onClick={handleRestartTour}
+              className="w-full flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <RefreshCw className="w-5 h-5 text-[--text-secondary] group-hover:text-[--arcane-purple]" />
+                <div className="text-left">
+                  <p className="font-medium text-[--text-primary]">Restart Welcome Tour</p>
+                  <p className="text-xs text-[--text-tertiary]">See the app introduction again</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
+            </button>
+
+            {/* Reset Tips Button */}
+            <button
+              onClick={handleResetTips}
+              className="w-full flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <Lightbulb className="w-5 h-5 text-[--text-secondary] group-hover:text-[--arcane-purple]" />
+                <div className="text-left">
+                  <p className="font-medium text-[--text-primary]">Reset All Tips</p>
+                  <p className="text-xs text-[--text-tertiary]">Show dismissed tips again</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
+            </button>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════════════
             SECTION 3: YOUR CONTENT
             ═══════════════════════════════════════════════════════════════════ */}
         <section>
@@ -1241,6 +1352,12 @@ export default function SettingsPage() {
         imageSrc={avatarCropImage || ''}
         onClose={handleAvatarCropClose}
         onSave={handleAvatarCropSave}
+      />
+
+      {/* Onboarding Tour */}
+      <OnboardingTour
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
       />
     </>
   )

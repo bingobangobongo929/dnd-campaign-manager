@@ -309,18 +309,11 @@ export function HomePageMobile({
         {/* Quick Actions */}
         <div className="px-4 pt-6 pb-4 space-y-3">
           <button
-            onClick={() => onNavigate('/vault/new')}
-            className="w-full flex items-center gap-3 p-4 bg-purple-600/10 border border-purple-500/30 rounded-xl active:bg-purple-600/20 transition-colors"
-          >
-            <Plus className="w-5 h-5 text-purple-400" />
-            <span className="text-purple-400 font-medium">Create New Character</span>
-          </button>
-          <button
             onClick={() => onNavigate('/campaigns')}
-            className="w-full flex items-center gap-3 p-4 bg-[--bg-surface] border border-white/[0.06] rounded-xl active:bg-[--bg-hover] transition-colors"
+            className="w-full flex items-center gap-3 p-4 bg-blue-600/10 border border-blue-500/30 rounded-xl active:bg-blue-600/20 transition-colors"
           >
-            <Swords className="w-5 h-5 text-blue-400" />
-            <span className="text-gray-300 font-medium">Start New Campaign</span>
+            <Plus className="w-5 h-5 text-blue-400" />
+            <span className="text-blue-400 font-medium">Start New Campaign</span>
           </button>
           <button
             onClick={() => onNavigate('/oneshots/new')}
@@ -328,6 +321,13 @@ export function HomePageMobile({
           >
             <Scroll className="w-5 h-5 text-amber-400" />
             <span className="text-gray-300 font-medium">Start New One-Shot</span>
+          </button>
+          <button
+            onClick={() => onNavigate('/vault/new')}
+            className="w-full flex items-center gap-3 p-4 bg-[--bg-surface] border border-white/[0.06] rounded-xl active:bg-[--bg-hover] transition-colors"
+          >
+            <BookOpen className="w-5 h-5 text-purple-400" />
+            <span className="text-gray-300 font-medium">Create New Character</span>
           </button>
         </div>
       </MobileLayout>

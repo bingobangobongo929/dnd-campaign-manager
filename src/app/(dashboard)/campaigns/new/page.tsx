@@ -25,6 +25,7 @@ import {
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css'
 import { Modal } from '@/components/ui'
+import { FloatingDock } from '@/components/layout'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { NewCampaignMobile } from './page.mobile'
 import { useCanUseAI } from '@/store'
@@ -451,14 +452,46 @@ export default function NewCampaignPage() {
                 </div>
               </div>
 
-              {/* Tips */}
-              <div className="p-4 bg-purple-500/5 rounded-xl border border-purple-500/20">
+              {/* Campaign Features Preview */}
+              <div className="p-4 bg-gradient-to-br from-purple-500/5 to-blue-500/5 rounded-xl border border-purple-500/20">
+                <p className="text-xs font-semibold uppercase tracking-wider text-purple-400 mb-3">What You Can Do</p>
+                <div className="space-y-3">
+                  <FeaturePreviewItem
+                    icon="🗺️"
+                    title="Infinite Canvas"
+                    description="Build your world visually with drag-and-drop cards"
+                  />
+                  <FeaturePreviewItem
+                    icon="⚔️"
+                    title="Party Management"
+                    description="Track players, NPCs, and their relationships"
+                  />
+                  <FeaturePreviewItem
+                    icon="📜"
+                    title="Session Notes"
+                    description="Record adventures with AI-assisted summaries"
+                  />
+                  <FeaturePreviewItem
+                    icon="🏰"
+                    title="Lore & Locations"
+                    description="Organize factions, places, and world lore"
+                  />
+                  <FeaturePreviewItem
+                    icon="⏳"
+                    title="Timeline View"
+                    description="Track events and campaign history"
+                  />
+                </div>
+              </div>
+
+              {/* Quick Start Tip */}
+              <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
                 <div className="flex items-start gap-3">
                   <Gamepad2 className="w-5 h-5 text-purple-400 mt-0.5" />
                   <div>
                     <p className="text-sm font-medium text-purple-300">Quick Start</p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Just add a name and game system to get started. You can add more details later from the campaign canvas.
+                      Just add a name to get started. Everything else can be added later from your campaign canvas.
                     </p>
                   </div>
                 </div>
@@ -747,6 +780,9 @@ export default function NewCampaignPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Floating Dock Navigation */}
+      <FloatingDock />
     </>
   )
 }
@@ -791,6 +827,27 @@ function CollapsibleSection({
         )}
       </button>
       {expanded && <div className="p-4 pt-0">{children}</div>}
+    </div>
+  )
+}
+
+// Feature Preview Item Component
+function FeaturePreviewItem({
+  icon,
+  title,
+  description,
+}: {
+  icon: string
+  title: string
+  description: string
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="text-lg flex-shrink-0">{icon}</span>
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-white/90">{title}</p>
+        <p className="text-xs text-gray-500">{description}</p>
+      </div>
     </div>
   )
 }

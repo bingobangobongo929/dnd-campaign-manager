@@ -21,7 +21,7 @@ import {
 import ReactCrop, { Crop, PixelCrop } from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css'
 import { Modal } from '@/components/ui'
-import { MobileLayout } from '@/components/mobile'
+import { MobileLayout, MobileTabBar } from '@/components/mobile'
 import { cn } from '@/lib/utils'
 
 // Props interface for mobile component
@@ -114,6 +114,16 @@ function MobileCollapsibleSection({
         )}
       </button>
       {expanded && <div className="px-3 pb-3 pt-0">{children}</div>}
+    </div>
+  )
+}
+
+// Mobile Feature Preview Item
+function MobileFeatureItem({ icon, title }: { icon: string; title: string }) {
+  return (
+    <div className="flex items-center gap-2 p-2 bg-white/[0.02] rounded-lg">
+      <span className="text-base">{icon}</span>
+      <span className="text-xs font-medium text-white/80">{title}</span>
     </div>
   )
 }
@@ -308,14 +318,27 @@ export function NewCampaignMobile({
             </MobileCollapsibleSection>
           </div>
 
-          {/* Tips */}
-          <div className="p-4 bg-purple-500/5 rounded-xl border border-purple-500/20">
+          {/* Campaign Features Preview */}
+          <div className="p-4 bg-gradient-to-br from-purple-500/5 to-blue-500/5 rounded-xl border border-purple-500/20">
+            <p className="text-xs font-semibold uppercase tracking-wider text-purple-400 mb-3">What You Can Do</p>
+            <div className="grid grid-cols-2 gap-3">
+              <MobileFeatureItem icon="🗺️" title="Infinite Canvas" />
+              <MobileFeatureItem icon="⚔️" title="Party Tracking" />
+              <MobileFeatureItem icon="📜" title="Session Notes" />
+              <MobileFeatureItem icon="🏰" title="Lore & Places" />
+              <MobileFeatureItem icon="⏳" title="Timeline View" />
+              <MobileFeatureItem icon="✨" title="AI-Assisted" />
+            </div>
+          </div>
+
+          {/* Quick Start Tip */}
+          <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
             <div className="flex items-start gap-3">
               <Gamepad2 className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-purple-300">Quick Start</p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Just add a name and game system to get started. Add more details later.
+                  Just add a name to get started. Add more details from your campaign canvas later.
                 </p>
               </div>
             </div>
@@ -553,6 +576,9 @@ export function NewCampaignMobile({
           </div>
         </div>
       </Modal>
+
+      {/* Mobile Tab Bar Navigation */}
+      <MobileTabBar />
     </>
   )
 }

@@ -20,7 +20,6 @@ import {
   Target,
   Eye,
   EyeOff,
-  Sparkles,
   Play,
   ChevronDown,
   ChevronUp,
@@ -1102,7 +1101,6 @@ export default function OneshotEditorPage() {
                     placeholder="The narrative introduction to read to your players. Set the scene, establish the world, and hook them into the story..."
                     className={cn(textareaStyles, "min-h-[250px]")}
                   />
-                  <AIHelper section="introduction" enabled={canUseAI} />
                 </CollapsibleSection>
 
                 {/* Setting Notes */}
@@ -1148,7 +1146,6 @@ export default function OneshotEditorPage() {
                     placeholder="The structure of your session. Acts, key beats, encounters, decision points..."
                     className={cn(textareaStyles, "min-h-[300px]")}
                   />
-                  <AIHelper section="session_plan" enabled={canUseAI} />
                 </CollapsibleSection>
 
                 {/* Twists & Secrets */}
@@ -1203,7 +1200,6 @@ export default function OneshotEditorPage() {
                     placeholder="In-world documents, rules handouts, maps, or other props for the players..."
                     className={textareaStyles}
                   />
-                  <AIHelper section="handouts" enabled={canUseAI} />
                 </CollapsibleSection>
               </div>
             </div>
@@ -1428,18 +1424,6 @@ function CollapsibleSection({
       </button>
       {expanded && <div className="p-4 pt-0 space-y-3">{children}</div>}
     </div>
-  )
-}
-
-// AI Helper Button - only renders when AI is enabled
-function AIHelper({ section, enabled }: { section: string; enabled: boolean }) {
-  if (!enabled) return null
-
-  return (
-    <button className="flex items-center gap-2 text-xs text-purple-400 hover:text-purple-300 transition-colors mt-2">
-      <Sparkles className="w-3 h-3" />
-      AI Expand
-    </button>
   )
 }
 

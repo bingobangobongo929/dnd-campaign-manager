@@ -28,6 +28,7 @@ import { useVersionedAutoSave } from '@/hooks/useAutoSave'
 import { logActivity, diffChanges } from '@/lib/activity-log'
 import { useAppStore, useCanUseAI } from '@/store'
 import { cn } from '@/lib/utils'
+import { PartyMemberSelector } from '@/components/sessions'
 import type { PlayJournal, VaultCharacter } from '@/types/database'
 
 export default function VaultSessionEditorPage() {
@@ -57,6 +58,11 @@ export default function VaultSessionEditorPage() {
     summary: '',
     notes: '',
   })
+
+  // Party member attendees
+  const [selectedAttendees, setSelectedAttendees] = useState<string[]>([])
+  const [initialAttendees, setInitialAttendees] = useState<string[]>([])
+  const [hasPartyMembers, setHasPartyMembers] = useState(false)
 
   // AI Expand Notes state
   const [expanding, setExpanding] = useState(false)
@@ -89,6 +95,16 @@ export default function VaultSessionEditorPage() {
     }
     setCharacter(charData)
 
+    // Check if character has party members
+    const { count: partyCount } = await supabase
+      .from('vault_character_relationships')
+      .select('id', { count: 'exact', head: true })
+      .eq('character_id', characterId)
+      .eq('is_party_member', true)
+      .eq('is_companion', false)
+
+    setHasPartyMembers((partyCount || 0) > 0)
+
     // Load session if not new
     if (!isNew) {
       const { data: sessionData } = await supabase
@@ -118,6 +134,16 @@ export default function VaultSessionEditorPage() {
       if (sessionData.notes && sessionData.notes.trim()) {
         setDetailedNotesCollapsed(false)
       }
+
+      // Load attendees
+      const { data: attendeesData } = await supabase
+        .from('play_journal_attendees')
+        .select('relationship_id')
+        .eq('play_journal_id', sessionId)
+
+      const attendeeIds = (attendeesData || []).map(a => a.relationship_id)
+      setSelectedAttendees(attendeeIds)
+      setInitialAttendees(attendeeIds)
     } else {
       // Get next session number for new entries
       const { data: entries } = await supabase
@@ -245,9 +271,54 @@ export default function VaultSessionEditorPage() {
       console.error('Create error:', error)
       toast.error('Failed to create session')
     } else {
+      // Save attendees if any selected
+      if (selectedAttendees.length > 0) {
+        const attendeePayload = selectedAttendees.map(relationshipId => ({
+          play_journal_id: data.id,
+          relationship_id: relationshipId,
+        }))
+        await supabase.from('play_journal_attendees').insert(attendeePayload)
+      }
+
       toast.success('Session created')
       router.push(`/vault/${characterId}/sessions/${data.id}`)
     }
+  }
+
+  // Save attendees (for existing sessions)
+  const saveAttendees = async (newAttendeeIds: string[]) => {
+    if (isNew) return
+
+    // Find what to add and remove
+    const toAdd = newAttendeeIds.filter(id => !initialAttendees.includes(id))
+    const toRemove = initialAttendees.filter(id => !newAttendeeIds.includes(id))
+
+    // Remove old attendees
+    if (toRemove.length > 0) {
+      await supabase
+        .from('play_journal_attendees')
+        .delete()
+        .eq('play_journal_id', sessionId)
+        .in('relationship_id', toRemove)
+    }
+
+    // Add new attendees
+    if (toAdd.length > 0) {
+      const payload = toAdd.map(relationshipId => ({
+        play_journal_id: sessionId,
+        relationship_id: relationshipId,
+      }))
+      await supabase.from('play_journal_attendees').insert(payload)
+    }
+
+    // Update initial to match current
+    setInitialAttendees(newAttendeeIds)
+  }
+
+  // Handle attendee selection change
+  const handleAttendeesChange = (newAttendeeIds: string[]) => {
+    setSelectedAttendees(newAttendeeIds)
+    saveAttendees(newAttendeeIds)
   }
 
   // AI Expand Notes - cleans summary and generates detailed notes with vault linking
@@ -475,6 +546,9 @@ export default function VaultSessionEditorPage() {
         formatSummaryAsHtml={formatSummaryAsHtml}
         onNavigate={(path) => router.push(path)}
         canUseAI={canUseAI}
+        hasPartyMembers={hasPartyMembers}
+        selectedAttendees={selectedAttendees}
+        onAttendeesChange={handleAttendeesChange}
       />
     )
   }
@@ -576,6 +650,18 @@ export default function VaultSessionEditorPage() {
             </div>
           </div>
         </div>
+
+        {/* Party Members Present - only show if character has party members */}
+        {hasPartyMembers && (
+          <div className="card p-6 mb-8">
+            <PartyMemberSelector
+              characterId={characterId}
+              selectedIds={selectedAttendees}
+              onChange={handleAttendeesChange}
+              label="Party Members Present"
+            />
+          </div>
+        )}
 
         {/* Summary Section - PRIMARY FOCUS */}
         <div className="card p-6 mb-8">

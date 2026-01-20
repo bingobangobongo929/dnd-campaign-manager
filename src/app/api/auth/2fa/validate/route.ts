@@ -53,10 +53,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid code' }, { status: 401 })
     }
 
-    // Update last login
+    // Update last login AND mark 2FA as verified for this session
+    const now = new Date().toISOString()
     await supabase
       .from('user_settings')
-      .update({ last_login_at: new Date().toISOString() })
+      .update({
+        last_login_at: now,
+        totp_verified_at: now,
+      })
       .eq('user_id', user.id)
 
     return NextResponse.json({ success: true })

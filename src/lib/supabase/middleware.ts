@@ -77,12 +77,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // For authenticated users, check account status
+  // For authenticated users, check account status and 2FA
   if (user && !isPublicRoute) {
     try {
       const { data: settings } = await supabase
         .from('user_settings')
-        .select('suspended_at, disabled_at, totp_enabled')
+        .select('suspended_at, disabled_at, totp_enabled, totp_verified_at')
         .eq('user_id', user.id)
         .single()
 
@@ -107,6 +107,31 @@ export async function updateSession(request: NextRequest) {
           const url = request.nextUrl.clone()
           url.pathname = '/home'
           return NextResponse.redirect(url)
+        }
+
+        // CRITICAL: Enforce 2FA verification
+        // If user has 2FA enabled, they MUST have verified it recently
+        if (settings.totp_enabled && !is2FAVerifyPage) {
+          // Get the session to check when it was created
+          const { data: { session } } = await supabase.auth.getSession()
+
+          if (session) {
+            const sessionCreatedAt = session.user?.last_sign_in_at
+              ? new Date(session.user.last_sign_in_at)
+              : new Date(0)
+
+            const totpVerifiedAt = settings.totp_verified_at
+              ? new Date(settings.totp_verified_at)
+              : new Date(0)
+
+            // If 2FA was not verified after the current login session started,
+            // redirect to 2FA verification
+            if (totpVerifiedAt < sessionCreatedAt) {
+              const url = request.nextUrl.clone()
+              url.pathname = '/login/verify'
+              return NextResponse.redirect(url)
+            }
+          }
         }
       }
     } catch {

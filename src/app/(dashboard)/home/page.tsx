@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
+import { OnboardingTour } from '@/components/ui'
 import { MobileLayout, MobileSectionHeader, MobileSearchBar } from '@/components/mobile'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { useAppStore } from '@/store'
@@ -35,12 +36,32 @@ export default function HomePage() {
   const [characters, setCharacters] = useState<VaultCharacter[]>([])
   const [oneshots, setOneshots] = useState<Oneshot[]>([])
   const [loading, setLoading] = useState(true)
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   useEffect(() => {
     if (user) {
       loadData()
+      checkOnboarding()
     }
   }, [user])
+
+  const checkOnboarding = async () => {
+    if (!user) return
+    try {
+      const { data } = await supabase
+        .from('user_settings')
+        .select('onboarding_completed')
+        .eq('user_id', user.id)
+        .single()
+
+      // Show tour if onboarding not completed (and column exists)
+      if (data && data.onboarding_completed === false) {
+        setShowOnboarding(true)
+      }
+    } catch {
+      // Column might not exist yet, ignore errors
+    }
+  }
 
   const loadData = async () => {
     if (!user) return
@@ -85,14 +106,20 @@ export default function HomePage() {
   // ============ MOBILE LAYOUT ============
   if (isMobile) {
     return (
-      <HomePageMobile
-        campaigns={campaigns}
-        characters={characters}
-        oneshots={oneshots}
-        featuredCampaign={featuredCampaign}
-        displayCampaigns={displayCampaigns}
-        onNavigate={(path) => router.push(path)}
-      />
+      <>
+        <HomePageMobile
+          campaigns={campaigns}
+          characters={characters}
+          oneshots={oneshots}
+          featuredCampaign={featuredCampaign}
+          displayCampaigns={displayCampaigns}
+          onNavigate={(path) => router.push(path)}
+        />
+        <OnboardingTour
+          isOpen={showOnboarding}
+          onClose={() => setShowOnboarding(false)}
+        />
+      </>
     )
   }
 
@@ -177,10 +204,16 @@ export default function HomePage() {
               <p className="text-gray-400 mb-6 max-w-sm mx-auto">
                 Create your first campaign and start building your world
               </p>
-              <Link href="/campaigns" className="btn btn-secondary">
-                <Plus className="w-4 h-4" />
-                Create Campaign
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link href="/campaigns" className="btn btn-secondary">
+                  <Plus className="w-4 h-4" />
+                  Create Campaign
+                </Link>
+                <Link href="/demo/campaign" className="btn btn-ghost text-sm">
+                  <Sparkles className="w-4 h-4" />
+                  Explore Demo
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -244,10 +277,16 @@ export default function HomePage() {
               <p className="text-gray-400 mb-6 max-w-sm mx-auto">
                 Create standalone one-shot adventures for quick games or convention play.
               </p>
-              <Link href="/oneshots" className="btn btn-secondary">
-                <Plus className="w-4 h-4" />
-                Create One-Shot
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link href="/oneshots" className="btn btn-secondary">
+                  <Plus className="w-4 h-4" />
+                  Create One-Shot
+                </Link>
+                <Link href="/demo/oneshot" className="btn btn-ghost text-sm">
+                  <Sparkles className="w-4 h-4" />
+                  Explore Demo
+                </Link>
+              </div>
             </div>
           ) : (
             <>
@@ -417,10 +456,16 @@ export default function HomePage() {
               <p className="text-gray-400 mb-6 max-w-sm mx-auto">
                 Create characters once and reuse them across campaigns. Build detailed backstories and track their journeys.
               </p>
-              <Link href="/vault" className="btn btn-secondary">
-                <Plus className="w-4 h-4" />
-                Add Your First Character
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link href="/vault" className="btn btn-secondary">
+                  <Plus className="w-4 h-4" />
+                  Add Your First Character
+                </Link>
+                <Link href="/demo/character" className="btn btn-ghost text-sm">
+                  <Sparkles className="w-4 h-4" />
+                  Explore Demo
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -504,18 +549,24 @@ export default function HomePage() {
             <Swords className="w-4 h-4" />
             All Campaigns
           </Link>
-          <Link href="/vault" className="btn btn-ghost text-sm">
-            <BookOpen className="w-4 h-4" />
-            Character Vault
-          </Link>
           <Link href="/oneshots" className="btn btn-ghost text-sm">
             <Scroll className="w-4 h-4" />
             One-Shots
+          </Link>
+          <Link href="/vault" className="btn btn-ghost text-sm">
+            <BookOpen className="w-4 h-4" />
+            Character Vault
           </Link>
         </section>
       </div>
 
       <BackToTopButton />
+
+      {/* Onboarding Tour */}
+      <OnboardingTour
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+      />
     </AppLayout>
   )
 }

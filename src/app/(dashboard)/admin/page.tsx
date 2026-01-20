@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Users, Swords, BookOpen, Scroll, TrendingUp, Calendar, Clock, Loader2 } from 'lucide-react'
-import { useSupabase } from '@/hooks'
 import { cn } from '@/lib/utils'
 import { getTierBadgeColor, getTierDisplayName } from '@/lib/admin'
 import { ImpersonationSelector } from '@/components/admin/ImpersonationSelector'
@@ -22,81 +21,18 @@ interface Stats {
 }
 
 export default function AdminOverviewPage() {
-  const supabase = useSupabase()
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const now = new Date()
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-
-        // Fetch all stats in parallel
-        const [
-          { count: totalUsers },
-          { count: usersThisWeek },
-          { count: usersThisMonth },
-          { data: tierData },
-          { count: totalCampaigns },
-          { count: totalCharacters },
-          { count: totalSessions },
-          { count: totalOneshots },
-          { count: activeToday },
-          { count: activeWeek },
-          { count: activeMonth },
-        ] = await Promise.all([
-          // Total users
-          supabase.from('user_settings').select('*', { count: 'exact', head: true }),
-          // Users this week
-          supabase.from('user_settings').select('*', { count: 'exact', head: true })
-            .gte('created_at', weekAgo.toISOString()),
-          // Users this month
-          supabase.from('user_settings').select('*', { count: 'exact', head: true })
-            .gte('created_at', monthAgo.toISOString()),
-          // Users by tier
-          supabase.from('user_settings').select('tier'),
-          // Total campaigns
-          supabase.from('campaigns').select('*', { count: 'exact', head: true }),
-          // Total characters (vault)
-          supabase.from('vault_characters').select('*', { count: 'exact', head: true }),
-          // Total sessions
-          supabase.from('sessions').select('*', { count: 'exact', head: true }),
-          // Total oneshots
-          supabase.from('oneshots').select('*', { count: 'exact', head: true }),
-          // Active users today
-          supabase.from('user_settings').select('*', { count: 'exact', head: true })
-            .gte('last_login_at', today.toISOString()),
-          // Active users this week
-          supabase.from('user_settings').select('*', { count: 'exact', head: true })
-            .gte('last_login_at', weekAgo.toISOString()),
-          // Active users this month
-          supabase.from('user_settings').select('*', { count: 'exact', head: true })
-            .gte('last_login_at', monthAgo.toISOString()),
-        ])
-
-        // Calculate users by tier
-        const tierCounts: Record<string, number> = {}
-        tierData?.forEach(({ tier }) => {
-          tierCounts[tier] = (tierCounts[tier] || 0) + 1
-        })
-        const usersByTier = Object.entries(tierCounts).map(([tier, count]) => ({ tier, count }))
-
-        setStats({
-          totalUsers: totalUsers || 0,
-          usersThisWeek: usersThisWeek || 0,
-          usersThisMonth: usersThisMonth || 0,
-          usersByTier,
-          totalCampaigns: totalCampaigns || 0,
-          totalCharacters: totalCharacters || 0,
-          totalSessions: totalSessions || 0,
-          totalOneshots: totalOneshots || 0,
-          activeUsersToday: activeToday || 0,
-          activeUsersWeek: activeWeek || 0,
-          activeUsersMonth: activeMonth || 0,
-        })
+        const response = await fetch('/api/admin/stats')
+        if (!response.ok) {
+          throw new Error('Failed to fetch stats')
+        }
+        const data = await response.json()
+        setStats(data)
       } catch (error) {
         console.error('Failed to fetch stats:', error)
       } finally {
@@ -105,7 +41,7 @@ export default function AdminOverviewPage() {
     }
 
     fetchStats()
-  }, [supabase])
+  }, [])
 
   if (loading) {
     return (
