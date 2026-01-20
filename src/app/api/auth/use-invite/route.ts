@@ -21,7 +21,12 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Use invite error:', error)
-      return NextResponse.json({ error: 'Failed to use invite code' }, { status: 500 })
+      return NextResponse.json({ error: 'Invalid invite code' }, { status: 400 })
+    }
+
+    // If the function returned false, the code was invalid
+    if (data === false) {
+      return NextResponse.json({ error: 'Invalid or expired invite code' }, { status: 400 })
     }
 
     // Get the invite code details to find who created it
