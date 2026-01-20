@@ -34,6 +34,7 @@ export interface VaultPageMobileProps {
   isAddModalOpen: boolean
   setIsAddModalOpen: (open: boolean) => void
   onNavigate: (path: string) => void
+  canUseAI: boolean
 }
 
 export function VaultPageMobile({
@@ -52,6 +53,7 @@ export function VaultPageMobile({
   isAddModalOpen,
   setIsAddModalOpen,
   onNavigate,
+  canUseAI,
 }: VaultPageMobileProps) {
   return (
     <AppLayout>
@@ -323,21 +325,23 @@ export function VaultPageMobile({
           description="How would you like to create your character?"
         >
           <div className="space-y-3 pt-2">
-            <button
-              onClick={() => {
-                setIsAddModalOpen(false)
-                onNavigate('/vault/import')
-              }}
-              className="w-full p-4 rounded-xl border border-white/[0.06] bg-gray-900/50 active:bg-gray-800 transition-colors text-left flex items-center gap-4"
-            >
-              <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-purple-400" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-white">Import with AI</h3>
-                <p className="text-sm text-gray-400">Upload a document and let AI extract data</p>
-              </div>
-            </button>
+            {canUseAI && (
+              <button
+                onClick={() => {
+                  setIsAddModalOpen(false)
+                  onNavigate('/vault/import')
+                }}
+                className="w-full p-4 rounded-xl border border-white/[0.06] bg-gray-900/50 active:bg-gray-800 transition-colors text-left flex items-center gap-4"
+              >
+                <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white">Import with AI</h3>
+                  <p className="text-sm text-gray-400">Upload a document and let AI extract data</p>
+                </div>
+              </button>
+            )}
             <button
               onClick={() => {
                 setIsAddModalOpen(false)

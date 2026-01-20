@@ -5,6 +5,7 @@ import { Users, Swords, BookOpen, Scroll, TrendingUp, Calendar, Clock, Loader2 }
 import { useSupabase } from '@/hooks'
 import { cn } from '@/lib/utils'
 import { getTierBadgeColor, getTierDisplayName } from '@/lib/admin'
+import { ImpersonationSelector } from '@/components/admin/ImpersonationSelector'
 
 interface Stats {
   totalUsers: number
@@ -124,6 +125,9 @@ export default function AdminOverviewPage() {
 
   return (
     <div className="space-y-6">
+      {/* View As / Impersonation */}
+      <ImpersonationSelector />
+
       {/* User Stats */}
       <section>
         <h2 className="text-lg font-semibold text-white mb-4">User Statistics</h2>

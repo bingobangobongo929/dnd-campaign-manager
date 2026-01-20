@@ -10,6 +10,7 @@ import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { CharacterCard } from '@/components/vault/CharacterCard'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { useCanUseAI } from '@/store'
 import { VaultPageMobile } from './page.mobile'
 import { cn, getInitials } from '@/lib/utils'
 import type { VaultCharacter, Campaign } from '@/types/database'
@@ -19,6 +20,7 @@ export default function VaultPage() {
   const supabase = useSupabase()
   const { user } = useUser()
   const isMobile = useIsMobile()
+  const canUseAI = useCanUseAI()
 
   const [vaultCharacters, setVaultCharacters] = useState<VaultCharacter[]>([])
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
@@ -370,6 +372,7 @@ export default function VaultPage() {
         isAddModalOpen={isAddModalOpen}
         setIsAddModalOpen={setIsAddModalOpen}
         onNavigate={(path) => router.push(path)}
+        canUseAI={canUseAI}
       />
     )
   }
@@ -984,23 +987,25 @@ export default function VaultPage() {
           title="Add Character"
           description="How would you like to create your character?"
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-            {/* Import with AI */}
-            <button
-              onClick={() => {
-                setIsAddModalOpen(false)
-                router.push('/vault/import')
-              }}
-              className="group p-6 rounded-xl border border-white/[0.06] bg-gray-900/50 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all text-left"
-            >
-              <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center mb-4 group-hover:bg-purple-500/30 transition-colors">
-                <Sparkles className="w-6 h-6 text-purple-400" />
-              </div>
-              <h3 className="font-semibold text-white mb-1">Import with AI</h3>
-              <p className="text-sm text-gray-400">
-                Upload a document (.docx, .pdf, image) and let AI extract your character data
-              </p>
-            </button>
+          <div className={cn("grid gap-4 pt-2", canUseAI ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1")}>
+            {/* Import with AI - only show if AI is enabled */}
+            {canUseAI && (
+              <button
+                onClick={() => {
+                  setIsAddModalOpen(false)
+                  router.push('/vault/import')
+                }}
+                className="group p-6 rounded-xl border border-white/[0.06] bg-gray-900/50 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all text-left"
+              >
+                <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center mb-4 group-hover:bg-purple-500/30 transition-colors">
+                  <Sparkles className="w-6 h-6 text-purple-400" />
+                </div>
+                <h3 className="font-semibold text-white mb-1">Import with AI</h3>
+                <p className="text-sm text-gray-400">
+                  Upload a document (.docx, .pdf, image) and let AI extract your character data
+                </p>
+              </button>
+            )}
 
             {/* Create from Scratch */}
             <button

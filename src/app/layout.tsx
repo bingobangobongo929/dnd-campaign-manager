@@ -5,6 +5,7 @@ import Script from "next/script"
 import "./globals.css"
 import { Providers } from "@/components/providers"
 import { CookieConsent } from "@/components/ui/cookie-consent"
+import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -91,6 +92,7 @@ export default function RootLayout({
         style={{ background: 'var(--bg-base)', color: 'var(--text-primary)' }}
       >
         <Providers>
+          <ImpersonationBanner />
           {children}
         </Providers>
         <Toaster
