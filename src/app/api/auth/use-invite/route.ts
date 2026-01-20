@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing code or userId' }, { status: 400 })
     }
 
-    const supabase = await createAdminClient()
+    const supabase = createAdminClient()
 
     // Use the database function to mark the code as used
     const { data, error } = await supabase.rpc('use_invite_code', {

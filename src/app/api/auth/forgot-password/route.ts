@@ -1,4 +1,3 @@
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, passwordResetEmail } from '@/lib/email'
@@ -13,7 +12,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
     }
 
-    const supabase = await createAdminClient()
+    const supabase = createAdminClient()
 
     // Check if user exists (using admin client)
     const { data: users } = await supabase.auth.admin.listUsers()

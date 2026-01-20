@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
     }
 
-    const supabase = await createAdminClient()
+    const supabase = createAdminClient()
 
     // Find valid token
     const { data: tokenData, error: tokenError } = await supabase

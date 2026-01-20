@@ -113,20 +113,32 @@ export async function POST(request: NextRequest) {
 
     // Send email if requested
     if (shouldSendEmail && recipientEmail) {
-      const { subject, html } = inviteCodeEmail(code)
-      await sendEmail({
-        to: recipientEmail,
-        subject,
-        html
-      })
+      try {
+        const { subject, html } = inviteCodeEmail(code)
+        const emailResult = await sendEmail({
+          to: recipientEmail,
+          subject,
+          html
+        })
+        if (!emailResult.success) {
+          console.error('Failed to send invite email:', emailResult.error)
+        }
+      } catch (emailErr) {
+        console.error('Email send error:', emailErr)
+        // Don't fail the whole request if email fails
+      }
     }
 
-    // Log admin action
-    await supabase.from('admin_activity_log').insert({
-      admin_id: user.id,
-      action: 'create_invite_code',
-      details: { code, max_uses: maxUses, expires_at: expiresAt, note }
-    })
+    // Log admin action (don't fail if this errors)
+    try {
+      await supabase.from('admin_activity_log').insert({
+        admin_id: user.id,
+        action: 'create_invite_code',
+        details: { code, max_uses: maxUses, expires_at: expiresAt, note }
+      })
+    } catch (logErr) {
+      console.error('Failed to log admin action:', logErr)
+    }
 
     return NextResponse.json({ invite })
   } catch (err) {

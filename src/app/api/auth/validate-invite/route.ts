@@ -1,10 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-// POST - Validate an invite code (public)
+// POST - Validate an invite code (public - no auth required)
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    // Use admin client since this is a public endpoint
+    const supabase = createAdminClient()
     const { code } = await request.json()
 
     if (!code || typeof code !== 'string') {
