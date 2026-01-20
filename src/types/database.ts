@@ -1257,6 +1257,7 @@ export interface Database {
           theme: 'dark' | 'light' | 'system'
           tier: 'free' | 'standard' | 'premium'
           role: 'user' | 'moderator' | 'super_admin'
+          avatar_url: string | null
           // Account status
           suspended_at: string | null
           suspended_by: string | null
@@ -1282,6 +1283,7 @@ export interface Database {
           theme?: 'dark' | 'light' | 'system'
           tier?: 'free' | 'standard' | 'premium'
           role?: 'user' | 'moderator' | 'super_admin'
+          avatar_url?: string | null
           suspended_at?: string | null
           suspended_by?: string | null
           suspended_reason?: string | null
@@ -1304,6 +1306,7 @@ export interface Database {
           theme?: 'dark' | 'light' | 'system'
           tier?: 'free' | 'standard' | 'premium'
           role?: 'user' | 'moderator' | 'super_admin'
+          avatar_url?: string | null
           suspended_at?: string | null
           suspended_by?: string | null
           suspended_reason?: string | null

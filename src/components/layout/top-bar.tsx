@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { ChevronDown, Sparkles, LogOut, ChevronRight, Swords, BookOpen, Settings, LayoutGrid, ScrollText, Clock, Brain, Network, Map, Image as ImageIcon, Edit3, Eye, Users, Scroll } from 'lucide-react'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore, useCanUseAI } from '@/store'
+import type { UserSettings } from '@/types/database'
 import { useState, useRef, useEffect } from 'react'
 import type { Campaign } from '@/types/database'
 import { RecentItems } from './recent-items'
@@ -39,6 +40,7 @@ interface TopBarProps {
   currentCharacterId?: string
   transparent?: boolean
   actions?: React.ReactNode
+  userSettings?: UserSettings | null
 }
 
 export function TopBar({
@@ -47,7 +49,8 @@ export function TopBar({
   characters = [],
   currentCharacterId,
   transparent = false,
-  actions
+  actions,
+  userSettings
 }: TopBarProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -396,9 +399,20 @@ export function TopBar({
         )}
 
         <div className="flex items-center gap-3">
-          <div className="avatar avatar-sm">
-            {user?.email?.charAt(0).toUpperCase() || 'U'}
-          </div>
+          <Link href="/settings" className="relative w-8 h-8 rounded-full overflow-hidden bg-[--bg-secondary] flex items-center justify-center hover:ring-2 hover:ring-[--arcane-purple]/50 transition-all">
+            {userSettings?.avatar_url ? (
+              <Image
+                src={userSettings.avatar_url}
+                alt="Profile"
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <span className="text-sm font-medium text-[--text-primary]">
+                {user?.email?.charAt(0).toUpperCase() || 'U'}
+              </span>
+            )}
+          </Link>
           <button className="btn-ghost btn-icon" onClick={handleLogout}>
             <LogOut className="w-5 h-5" />
           </button>

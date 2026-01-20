@@ -26,7 +26,12 @@ import {
   Scroll,
   Map,
   BookOpen,
+  Camera,
+  X,
 } from 'lucide-react'
+import Image from 'next/image'
+import { v4 as uuidv4 } from 'uuid'
+import { toast } from 'sonner'
 import { Modal } from '@/components/ui'
 import { MobileLayout } from '@/components/mobile'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
@@ -60,8 +65,12 @@ export default function SettingsPage() {
     aiEnabled, setAIEnabled,
     aiProvider, setAIProvider,
     currency, setCurrency,
+    settings, setSettings,
   } = useAppStore()
   const canUseAI = useCanUseAI()
+
+  // Avatar upload state
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   // Stats state
   const [stats, setStats] = useState({
@@ -210,6 +219,94 @@ export default function SettingsPage() {
     setShowDeleteConfirm(false)
     setDeleteConfirmText('')
     loadStats()
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user) return
+
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB')
+      return
+    }
+
+    setUploadingAvatar(true)
+    try {
+      // Delete old avatar if exists
+      if (settings?.avatar_url) {
+        const oldPath = settings.avatar_url.split('/avatars/')[1]
+        if (oldPath) {
+          await supabase.storage.from('avatars').remove([oldPath])
+        }
+      }
+
+      // Upload new avatar
+      const ext = file.name.split('.').pop()
+      const path = `${user.id}/${uuidv4()}.${ext}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { contentType: file.type })
+
+      if (uploadError) throw uploadError
+
+      // Get public URL
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
+
+      // Update user settings
+      const { error: updateError } = await supabase
+        .from('user_settings')
+        .update({ avatar_url: urlData.publicUrl })
+        .eq('user_id', user.id)
+
+      if (updateError) throw updateError
+
+      // Update local state
+      if (settings) {
+        setSettings({ ...settings, avatar_url: urlData.publicUrl })
+      }
+
+      toast.success('Avatar updated')
+    } catch (error) {
+      console.error('Avatar upload failed:', error)
+      toast.error('Failed to upload avatar')
+    } finally {
+      setUploadingAvatar(false)
+      e.target.value = ''
+    }
+  }
+
+  const handleRemoveAvatar = async () => {
+    if (!user || !settings?.avatar_url) return
+
+    setUploadingAvatar(true)
+    try {
+      // Delete from storage
+      const path = settings.avatar_url.split('/avatars/')[1]
+      if (path) {
+        await supabase.storage.from('avatars').remove([path])
+      }
+
+      // Update user settings
+      await supabase
+        .from('user_settings')
+        .update({ avatar_url: null })
+        .eq('user_id', user.id)
+
+      // Update local state
+      setSettings({ ...settings, avatar_url: null })
+      toast.success('Avatar removed')
+    } catch (error) {
+      console.error('Remove avatar failed:', error)
+      toast.error('Failed to remove avatar')
+    } finally {
+      setUploadingAvatar(false)
+    }
   }
 
   const KEYBOARD_SHORTCUTS = [
@@ -641,6 +738,58 @@ export default function SettingsPage() {
           </div>
 
           <div className="card p-5 space-y-4">
+            {/* Avatar Upload */}
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-[--bg-elevated] border border-[--border]">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-[--bg-secondary] flex items-center justify-center">
+                  {settings?.avatar_url ? (
+                    <Image
+                      src={settings.avatar_url}
+                      alt="Your avatar"
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <span className="text-2xl font-semibold text-[--text-tertiary]">
+                      {user?.email?.charAt(0).toUpperCase() || 'U'}
+                    </span>
+                  )}
+                </div>
+                {uploadingAvatar && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                    <Loader2 className="w-6 h-6 animate-spin text-white" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1">
+                <label className="text-xs text-[--text-tertiary] uppercase tracking-wide">Profile Picture</label>
+                <p className="text-sm text-[--text-secondary] mt-0.5">1:1 square image, max 5MB</p>
+                <div className="flex gap-2 mt-2">
+                  <label className="btn btn-secondary text-sm cursor-pointer">
+                    <Camera className="w-4 h-4" />
+                    {settings?.avatar_url ? 'Change' : 'Upload'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                      disabled={uploadingAvatar}
+                    />
+                  </label>
+                  {settings?.avatar_url && (
+                    <button
+                      onClick={handleRemoveAvatar}
+                      disabled={uploadingAvatar}
+                      className="btn btn-secondary text-sm text-red-400 hover:bg-red-500/10"
+                    >
+                      <X className="w-4 h-4" />
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border]">
               <div>
                 <label className="text-xs text-[--text-tertiary] uppercase tracking-wide">Email Address</label>

@@ -29,7 +29,7 @@ export function AppLayout({
   const supabase = useSupabase()
   const { user } = useUser()
   const isMobile = useIsMobile()
-  const { setUserId, setSettings, setCurrentCampaign, isAIAssistantOpen } = useAppStore()
+  const { setUserId, setSettings, setCurrentCampaign, isAIAssistantOpen, settings } = useAppStore()
   const canUseAI = useCanUseAI()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [characters, setCharacters] = useState<Character[]>([])
@@ -224,6 +224,7 @@ export function AppLayout({
           currentCharacterId={characterId}
           transparent={transparentTopBar}
           actions={topBarActions}
+          userSettings={settings}
         />
       </div>
 
