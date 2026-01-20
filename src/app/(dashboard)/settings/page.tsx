@@ -13,10 +13,8 @@ import {
   Keyboard,
   Shield,
   ChevronRight,
-  BarChart3,
   Loader2,
   Zap,
-  ImageIcon,
   Share2,
   Crown,
   Check,
@@ -83,20 +81,6 @@ export default function SettingsPage() {
   })
   const [loadingStats, setLoadingStats] = useState(true)
 
-  // API Usage state
-  const [apiUsage, setApiUsage] = useState<{
-    summary: {
-      totalRequests: number
-      totalTokens: number
-      totalImages: number
-      totalCostCents: number
-      costs: Record<string, string>
-    }
-    byProvider: Record<string, { requests: number; tokens: number; cost: number }>
-    byOperation: Record<string, { requests: number; tokens: number; cost: number }>
-  } | null>(null)
-  const [loadingUsage, setLoadingUsage] = useState(true)
-  const [usagePeriod, setUsagePeriod] = useState<'week' | 'month' | 'all'>('month')
 
   // Shares summary state
   const [sharesSummary, setSharesSummary] = useState<{
@@ -109,7 +93,6 @@ export default function SettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
-  const [showApiUsageDetails, setShowApiUsageDetails] = useState(false)
   const [showWhatsNew, setShowWhatsNew] = useState(false)
   const [exporting, setExporting] = useState(false)
 
@@ -120,10 +103,9 @@ export default function SettingsPage() {
   useEffect(() => {
     if (user) {
       loadStats()
-      loadApiUsage()
       loadSharesSummary()
     }
-  }, [user, usagePeriod])
+  }, [user])
 
   const loadStats = async () => {
     setLoadingStats(true)
@@ -141,21 +123,6 @@ export default function SettingsPage() {
       oneshots: oneshotsRes.count || 0,
     })
     setLoadingStats(false)
-  }
-
-  const loadApiUsage = async () => {
-    setLoadingUsage(true)
-    try {
-      const res = await fetch(`/api/usage?period=${usagePeriod}`)
-      if (res.ok) {
-        const data = await res.json()
-        setApiUsage(data)
-      }
-    } catch (error) {
-      console.error('Failed to load API usage:', error)
-    } finally {
-      setLoadingUsage(false)
-    }
   }
 
   const loadSharesSummary = async () => {
@@ -344,13 +311,6 @@ export default function SettingsPage() {
     }
   }
 
-  const getCurrencySymbol = () => CURRENCY_CONFIG[currency].symbol
-
-  const formatCost = (costCents: number) => {
-    const usdCost = costCents / 100
-    const rate = CURRENCY_CONFIG[currency].rate
-    return `${getCurrencySymbol()}${(usdCost * rate).toFixed(2)}`
-  }
 
   // ============ MOBILE LAYOUT ============
   if (isMobile) {
@@ -476,30 +436,6 @@ export default function SettingsPage() {
                   </div>
                 )}
 
-                {/* Usage Summary */}
-                {aiEnabled && apiUsage && (
-                  <div className="pt-3 border-t border-white/[0.06]">
-                    <p className="text-xs text-gray-500 mb-2">Usage ({usagePeriod === 'month' ? '30d' : usagePeriod === 'week' ? '7d' : 'All'})</p>
-                    <div className="grid grid-cols-4 gap-2">
-                      <div className="p-2 rounded-lg bg-white/[0.03] text-center">
-                        <p className="text-sm font-bold text-white">{apiUsage.summary.totalRequests}</p>
-                        <p className="text-[10px] text-gray-500">Requests</p>
-                      </div>
-                      <div className="p-2 rounded-lg bg-white/[0.03] text-center">
-                        <p className="text-sm font-bold text-white">{(apiUsage.summary.totalTokens / 1000).toFixed(0)}K</p>
-                        <p className="text-[10px] text-gray-500">Tokens</p>
-                      </div>
-                      <div className="p-2 rounded-lg bg-white/[0.03] text-center">
-                        <p className="text-sm font-bold text-white">{apiUsage.summary.totalImages}</p>
-                        <p className="text-[10px] text-gray-500">Images</p>
-                      </div>
-                      <div className="p-2 rounded-lg bg-white/[0.03] text-center">
-                        <p className="text-sm font-bold text-white">{formatCost(apiUsage.summary.totalCostCents)}</p>
-                        <p className="text-[10px] text-gray-500">Cost</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </section>
           )}
@@ -1002,71 +938,6 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* API Usage Summary */}
-                <div className="pt-4 border-t border-[--border]">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm font-medium text-[--text-primary]">API Usage</p>
-                    <div className="flex gap-1">
-                      {(['week', 'month', 'all'] as const).map((period) => (
-                        <button
-                          key={period}
-                          onClick={() => setUsagePeriod(period)}
-                          className={`px-2 py-1 text-xs rounded transition-colors ${
-                            usagePeriod === period
-                              ? 'bg-[--arcane-purple] text-white'
-                              : 'bg-[--bg-surface] text-[--text-tertiary] hover:text-[--text-primary]'
-                          }`}
-                        >
-                          {period === 'week' ? '7d' : period === 'month' ? '30d' : 'All'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {loadingUsage ? (
-                    <div className="flex items-center justify-center py-6">
-                      <Loader2 className="w-5 h-5 animate-spin text-[--text-tertiary]" />
-                    </div>
-                  ) : apiUsage ? (
-                    <>
-                      <div className="grid grid-cols-4 gap-2 mb-3">
-                        <div className="p-3 rounded-lg bg-[--bg-elevated] text-center">
-                          <Zap className="w-4 h-4 text-amber-500 mx-auto mb-1" />
-                          <p className="text-lg font-bold text-[--text-primary]">{apiUsage.summary.totalRequests}</p>
-                          <p className="text-[10px] text-[--text-tertiary]">Requests</p>
-                        </div>
-                        <div className="p-3 rounded-lg bg-[--bg-elevated] text-center">
-                          <Bot className="w-4 h-4 text-purple-500 mx-auto mb-1" />
-                          <p className="text-lg font-bold text-[--text-primary]">{(apiUsage.summary.totalTokens / 1000).toFixed(1)}K</p>
-                          <p className="text-[10px] text-[--text-tertiary]">Tokens</p>
-                        </div>
-                        <div className="p-3 rounded-lg bg-[--bg-elevated] text-center">
-                          <ImageIcon className="w-4 h-4 text-emerald-500 mx-auto mb-1" />
-                          <p className="text-lg font-bold text-[--text-primary]">{apiUsage.summary.totalImages}</p>
-                          <p className="text-[10px] text-[--text-tertiary]">Images</p>
-                        </div>
-                        <div className="p-3 rounded-lg bg-[--bg-elevated] text-center">
-                          <BarChart3 className="w-4 h-4 text-cyan-500 mx-auto mb-1" />
-                          <p className="text-lg font-bold text-[--text-primary]">
-                            {getCurrencySymbol()}{apiUsage.summary.costs?.[currency] || formatCost(apiUsage.summary.totalCostCents).slice(1)}
-                          </p>
-                          <p className="text-[10px] text-[--text-tertiary]">Est. Cost</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setShowApiUsageDetails(true)}
-                        className="w-full flex items-center justify-between p-3 rounded-lg bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 transition-colors group text-sm"
-                      >
-                        <span className="text-[--text-secondary] group-hover:text-[--text-primary]">View Detailed Breakdown</span>
-                        <ChevronRight className="w-4 h-4 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
-                      </button>
-                    </>
-                  ) : (
-                    <p className="text-sm text-[--text-tertiary] text-center py-4">
-                      No usage data yet. Start using AI features to track usage.
-                    </p>
-                  )}
-                </div>
               </>
             )}
           </div>
@@ -1362,91 +1233,6 @@ export default function SettingsPage() {
             </button>
           </div>
         </div>
-      </Modal>
-
-      {/* API Usage Details Modal */}
-      <Modal
-        isOpen={showApiUsageDetails}
-        onClose={() => setShowApiUsageDetails(false)}
-        title="API Usage Breakdown"
-        description={`${usagePeriod === 'week' ? 'This week' : usagePeriod === 'month' ? 'This month' : 'All time'}`}
-        size="lg"
-      >
-        {apiUsage && (
-          <div className="space-y-6">
-            {/* By Provider */}
-            <div>
-              <h3 className="text-sm font-semibold text-[--text-primary] mb-3">By Provider</h3>
-              <div className="space-y-2">
-                {Object.entries(apiUsage.byProvider).map(([provider, data]) => {
-                  const providerInfo = AI_PROVIDERS[provider as AIProvider]
-                  const ProviderIcon = providerInfo ? getProviderIcon(providerInfo.icon) : Bot
-                  return (
-                    <div
-                      key={provider}
-                      className="flex items-center justify-between p-3 rounded-lg bg-[--bg-elevated]"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                          provider === 'anthropic' ? 'bg-orange-500/20' : 'bg-blue-500/20'
-                        }`}>
-                          <ProviderIcon className={`w-4 h-4 ${
-                            provider === 'anthropic' ? 'text-orange-500' : 'text-blue-500'
-                          }`} />
-                        </div>
-                        <span className="text-[--text-primary] font-medium">
-                          {providerInfo?.name || provider}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm">
-                        <span className="text-[--text-tertiary]">{data.requests} requests</span>
-                        <span className="text-[--text-tertiary]">{(data.tokens / 1000).toFixed(1)}K tokens</span>
-                        <span className="text-emerald-400 font-medium">{formatCost(data.cost)}</span>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* By Operation */}
-            <div>
-              <h3 className="text-sm font-semibold text-[--text-primary] mb-3">By Operation</h3>
-              <div className="space-y-2">
-                {Object.entries(apiUsage.byOperation).map(([operation, data]) => {
-                  const opLabels: Record<string, string> = {
-                    'analyze': 'Campaign Analysis',
-                    'analyze_campaign': 'Campaign Analysis',
-                    'analyze_character': 'Character Analysis',
-                    'parse': 'Document Parsing',
-                    'image_generation': 'Image Generation',
-                    'generate_image': 'Image Generation',
-                    'generate_prompt': 'Prompt Generation',
-                    'generate_timeline': 'Timeline Generation',
-                  }
-                  return (
-                    <div
-                      key={operation}
-                      className="flex items-center justify-between p-3 rounded-lg bg-[--bg-elevated]"
-                    >
-                      <span className="text-[--text-primary]">{opLabels[operation] || operation}</span>
-                      <div className="flex items-center gap-4 text-sm">
-                        <span className="text-[--text-tertiary]">{data.requests} requests</span>
-                        <span className="text-emerald-400 font-medium">{formatCost(data.cost)}</span>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Note */}
-            <p className="text-xs text-[--text-tertiary] text-center pt-2 border-t border-[--border]">
-              Cost estimates are approximate, converted from USD at current rates.
-              Actual costs may vary based on your billing arrangements.
-            </p>
-          </div>
-        )}
       </Modal>
 
       {/* Avatar Crop Modal */}
