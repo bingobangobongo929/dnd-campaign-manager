@@ -6,18 +6,32 @@ import { Settings, Share2, History, ImagePlus, Shield } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout } from '@/components/mobile'
 import { useIsMobile } from '@/hooks'
+import { useCanUseAI } from '@/store'
 
-const SETTINGS_TABS = [
+interface SettingsTab {
+  href: string
+  label: string
+  shortLabel: string
+  icon: typeof Settings
+  exact?: boolean
+  requiresAI?: boolean
+}
+
+const SETTINGS_TABS: SettingsTab[] = [
   { href: '/settings', label: 'General', shortLabel: 'General', icon: Settings, exact: true },
   { href: '/settings/security', label: 'Security & Privacy', shortLabel: 'Security', icon: Shield },
   { href: '/settings/shares', label: 'Share Analytics', shortLabel: 'Shares', icon: Share2 },
   { href: '/settings/activity', label: 'Activity Log', shortLabel: 'Activity', icon: History },
-  { href: '/settings/images', label: 'Image Enhancement', shortLabel: 'Images', icon: ImagePlus },
+  { href: '/settings/images', label: 'Image Enhancement', shortLabel: 'Images', icon: ImagePlus, requiresAI: true },
 ]
 
 export function SettingsNav({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const isMobile = useIsMobile()
+  const canUseAI = useCanUseAI()
+
+  // Filter tabs based on AI availability
+  const visibleTabs = SETTINGS_TABS.filter(tab => !tab.requiresAI || canUseAI)
 
   const isActive = (href: string, exact?: boolean) => {
     if (exact) return pathname === href
@@ -31,7 +45,7 @@ export function SettingsNav({ children }: { children: React.ReactNode }) {
         <MobileLayout title="Settings" showBackButton={false}>
           {/* Mobile Tab Navigation */}
           <div className="mobile-section-tabs mb-4">
-            {SETTINGS_TABS.map((tab) => {
+            {visibleTabs.map((tab) => {
               const active = isActive(tab.href, tab.exact)
               return (
                 <Link
@@ -61,7 +75,7 @@ export function SettingsNav({ children }: { children: React.ReactNode }) {
         {/* Settings Sub-Navigation */}
         <div className="mb-6">
           <nav className="flex items-center gap-1 p-1 bg-white/[0.02] rounded-xl border border-white/[0.06]">
-            {SETTINGS_TABS.map((tab) => {
+            {visibleTabs.map((tab) => {
               const active = isActive(tab.href, tab.exact)
               return (
                 <Link

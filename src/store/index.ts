@@ -240,6 +240,16 @@ export function useUserTier(): UserTier {
 }
 
 /**
+ * Hook to check if the user's tier supports AI features.
+ * This does NOT check if AI is enabled - use for showing the AI toggle in settings.
+ */
+export function useTierHasAI(): boolean {
+  const settings = useAppStore((state) => state.settings)
+  const tier: UserTier = settings?.tier || 'free'
+  return TIER_HAS_AI[tier]
+}
+
+/**
  * Check if a tier has AI access (for use in server components/API routes)
  */
 export function tierHasAI(tier: UserTier | undefined | null): boolean {

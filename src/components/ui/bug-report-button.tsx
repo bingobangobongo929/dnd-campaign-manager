@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Bug, X, Send, ExternalLink, AlertCircle, Lightbulb, HelpCircle } from 'lucide-react'
 
-const GITHUB_REPO = 'bingobangobongo929/dnd-campaign-manager'
+const GITHUB_REPO = 'bingobangobongo929/multiloop-feedback'
 
 type FeedbackType = 'bug' | 'feature' | 'question'
 

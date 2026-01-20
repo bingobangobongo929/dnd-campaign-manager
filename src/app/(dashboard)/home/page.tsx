@@ -341,22 +341,39 @@ export default function HomePage() {
         </section>
 
         {/* One-Shots - Cinematic Posters */}
-        {oneshots.length > 0 && (
-          <section>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-amber-500/10">
-                  <Scroll className="w-5 h-5 text-amber-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-white">One-Shot Adventures</h3>
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-500/10">
+                <Scroll className="w-5 h-5 text-amber-400" />
               </div>
+              <h3 className="text-xl font-semibold text-white">One-Shot Adventures</h3>
+            </div>
+            {oneshots.length > 0 && (
               <Link href="/oneshots" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
                 View All <ChevronRight className="w-4 h-4" />
               </Link>
-            </div>
+            )}
+          </div>
 
-            {/* Featured One-Shot Hero */}
-            {featuredOneshot && (
+          {oneshots.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent p-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-amber-500/10 flex items-center justify-center">
+                <Scroll className="w-8 h-8 text-amber-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">Quick Adventures Await</h3>
+              <p className="text-gray-400 mb-6 max-w-sm mx-auto">
+                Create standalone one-shot adventures for quick games or convention play.
+              </p>
+              <Link href="/oneshots" className="btn btn-secondary">
+                <Plus className="w-4 h-4" />
+                Create One-Shot
+              </Link>
+            </div>
+          ) : (
+            <>
+              {/* Featured One-Shot Hero */}
+              {featuredOneshot && (
               <Link
                 href={`/oneshots/${featuredOneshot.id}`}
                 className="group relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-amber-500/30 transition-all duration-500 mb-6"
@@ -441,8 +458,9 @@ export default function HomePage() {
                 </Link>
               ))}
             </div>
-          </section>
-        )}
+            </>
+          )}
+        </section>
 
         {/* Recent Activity - Subtle Footer */}
         {recentItems.length > 0 && (

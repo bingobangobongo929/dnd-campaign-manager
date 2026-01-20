@@ -36,7 +36,7 @@ import { Modal } from '@/components/ui'
 import { AvatarCropModal } from '@/components/ui/avatar-crop-modal'
 import { MobileLayout } from '@/components/mobile'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
-import { useAppStore, CURRENCY_CONFIG, type Currency, useCanUseAI } from '@/store'
+import { useAppStore, CURRENCY_CONFIG, type Currency, useTierHasAI } from '@/store'
 import { AI_PROVIDERS, AIProvider } from '@/lib/ai/config'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -68,7 +68,7 @@ export default function SettingsPage() {
     currency, setCurrency,
     settings, setSettings,
   } = useAppStore()
-  const canUseAI = useCanUseAI()
+  const tierHasAI = useTierHasAI()
 
   // Avatar upload state
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
@@ -401,7 +401,7 @@ export default function SettingsPage() {
           </section>
 
           {/* AI Settings - only show for users who can access AI */}
-          {canUseAI && (
+          {tierHasAI && (
             <section className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[--arcane-purple] to-blue-600 flex items-center justify-center">
@@ -859,7 +859,7 @@ export default function SettingsPage() {
         {/* ═══════════════════════════════════════════════════════════════════
             SECTION 2: AI & INTELLIGENCE - only show for users who can access AI
             ═══════════════════════════════════════════════════════════════════ */}
-        {canUseAI && (
+        {tierHasAI && (
         <section>
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[--arcane-purple] to-blue-600 flex items-center justify-center">

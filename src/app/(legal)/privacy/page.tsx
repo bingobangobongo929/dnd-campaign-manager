@@ -33,7 +33,7 @@ export default function PrivacyPolicyPage() {
         <p>
           The data controller responsible for your personal data is the individual operator of Multiloop.
           For any privacy-related inquiries, please contact us at:{' '}
-          <a href="mailto:privacy@multiloop.app" className="text-[--arcane-purple]">privacy@multiloop.app</a>
+          <a href="mailto:contact@multiloop.app" className="text-[--arcane-purple]">contact@multiloop.app</a>
         </p>
       </section>
 
@@ -185,7 +185,7 @@ export default function PrivacyPolicyPage() {
 
         <p className="mt-6">
           To exercise any of these rights, please contact us at{' '}
-          <a href="mailto:privacy@multiloop.app" className="text-[--arcane-purple]">privacy@multiloop.app</a>
+          <a href="mailto:contact@multiloop.app" className="text-[--arcane-purple]">contact@multiloop.app</a>
           {' '}or use the relevant features in your account settings.
         </p>
       </section>
@@ -260,7 +260,7 @@ export default function PrivacyPolicyPage() {
           Multiloop is not intended for users under 16 years of age. We do not knowingly collect personal
           data from children under 16. If you believe a child under 16 has provided us with personal data,
           please contact us immediately at{' '}
-          <a href="mailto:privacy@multiloop.app" className="text-[--arcane-purple]">privacy@multiloop.app</a>.
+          <a href="mailto:contact@multiloop.app" className="text-[--arcane-purple]">contact@multiloop.app</a>.
         </p>
       </section>
 
@@ -289,7 +289,7 @@ export default function PrivacyPolicyPage() {
         </p>
         <p>
           <strong>Email:</strong>{' '}
-          <a href="mailto:privacy@multiloop.app" className="text-[--arcane-purple]">privacy@multiloop.app</a>
+          <a href="mailto:contact@multiloop.app" className="text-[--arcane-purple]">contact@multiloop.app</a>
         </p>
         <p>
           We aim to respond to all privacy-related inquiries within 30 days.

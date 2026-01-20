@@ -127,48 +127,63 @@ export function HomePageMobile({
         )}
 
         {/* Campaigns Section */}
-        {campaigns.length > 0 && (
-          <>
-            <MobileSectionHeader
-              title="Campaigns"
-              action={
-                <button onClick={() => onNavigate('/campaigns')} className="text-sm text-[--arcane-purple]">
-                  View All
-                </button>
-              }
-            />
-            <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
-              {campaigns.slice(0, 5).map((campaign) => (
-                <button
-                  key={campaign.id}
-                  onClick={() => onNavigate(`/campaigns/${campaign.id}/canvas`)}
-                  className="flex-shrink-0 w-52 aspect-[16/10] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative"
-                >
-                  {campaign.image_url ? (
-                    <>
-                      <Image
-                        src={campaign.image_url}
-                        alt={campaign.name}
-                        fill
-                        className="object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-                    </>
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 to-gray-900 flex items-center justify-center">
-                      <Swords className="w-10 h-10 text-blue-400/30" />
-                    </div>
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <span className="inline-block px-2 py-0.5 text-[9px] font-semibold uppercase rounded bg-blue-500/20 text-blue-300 mb-1">
-                      {campaign.game_system}
-                    </span>
-                    <h4 className="font-semibold text-white text-sm line-clamp-1">{campaign.name}</h4>
-                  </div>
-                </button>
-              ))}
+        <MobileSectionHeader
+          title="Campaigns"
+          action={
+            campaigns.length > 0 ? (
+              <button onClick={() => onNavigate('/campaigns')} className="text-sm text-[--arcane-purple]">
+                View All
+              </button>
+            ) : undefined
+          }
+        />
+        {campaigns.length === 0 ? (
+          <div className="mx-4 p-8 text-center bg-gradient-to-br from-blue-500/5 to-transparent rounded-xl border border-dashed border-blue-500/20">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-blue-500/10 flex items-center justify-center">
+              <Swords className="w-7 h-7 text-blue-400" />
             </div>
-          </>
+            <h3 className="text-base font-semibold text-white mb-1">Begin Your Adventure</h3>
+            <p className="text-gray-400 text-sm mb-5">Create your first campaign</p>
+            <button
+              onClick={() => onNavigate('/campaigns')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl"
+            >
+              <Plus className="w-4 h-4" />
+              Create Campaign
+            </button>
+          </div>
+        ) : (
+          <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
+            {campaigns.slice(0, 5).map((campaign) => (
+              <button
+                key={campaign.id}
+                onClick={() => onNavigate(`/campaigns/${campaign.id}/canvas`)}
+                className="flex-shrink-0 w-52 aspect-[16/10] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative"
+              >
+                {campaign.image_url ? (
+                  <>
+                    <Image
+                      src={campaign.image_url}
+                      alt={campaign.name}
+                      fill
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                  </>
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 to-gray-900 flex items-center justify-center">
+                    <Swords className="w-10 h-10 text-blue-400/30" />
+                  </div>
+                )}
+                <div className="absolute bottom-0 left-0 right-0 p-3">
+                  <span className="inline-block px-2 py-0.5 text-[9px] font-semibold uppercase rounded bg-blue-500/20 text-blue-300 mb-1">
+                    {campaign.game_system}
+                  </span>
+                  <h4 className="font-semibold text-white text-sm line-clamp-1">{campaign.name}</h4>
+                </div>
+              </button>
+            ))}
+          </div>
         )}
 
         {/* Characters Section */}
@@ -232,48 +247,63 @@ export function HomePageMobile({
         )}
 
         {/* One-Shots Section */}
-        {oneshots.length > 0 && (
-          <>
-            <MobileSectionHeader
-              title="One-Shots"
-              action={
-                <button onClick={() => onNavigate('/oneshots')} className="text-sm text-[--arcane-purple]">
-                  View All
-                </button>
-              }
-            />
-            <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
-              {oneshots.map((oneshot) => (
-                <button
-                  key={oneshot.id}
-                  onClick={() => onNavigate(`/oneshots/${oneshot.id}`)}
-                  className="flex-shrink-0 w-36 aspect-[2/3] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative"
-                >
-                  {oneshot.image_url ? (
-                    <>
-                      <Image
-                        src={oneshot.image_url}
-                        alt={oneshot.title}
-                        fill
-                        className="object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-                    </>
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
-                      <Scroll className="w-10 h-10 text-amber-400/30" />
-                    </div>
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <span className="inline-block px-2 py-0.5 text-[9px] font-semibold uppercase rounded bg-amber-500/20 text-amber-300 mb-1">
-                      {oneshot.game_system}
-                    </span>
-                    <h4 className="font-semibold text-white text-xs line-clamp-2">{oneshot.title}</h4>
-                  </div>
-                </button>
-              ))}
+        <MobileSectionHeader
+          title="One-Shots"
+          action={
+            oneshots.length > 0 ? (
+              <button onClick={() => onNavigate('/oneshots')} className="text-sm text-[--arcane-purple]">
+                View All
+              </button>
+            ) : undefined
+          }
+        />
+        {oneshots.length === 0 ? (
+          <div className="mx-4 p-8 text-center bg-gradient-to-br from-amber-500/5 to-transparent rounded-xl border border-dashed border-amber-500/20">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-amber-500/10 flex items-center justify-center">
+              <Scroll className="w-7 h-7 text-amber-400" />
             </div>
-          </>
+            <h3 className="text-base font-semibold text-white mb-1">Quick Adventures Await</h3>
+            <p className="text-gray-400 text-sm mb-5">Create standalone one-shot adventures</p>
+            <button
+              onClick={() => onNavigate('/oneshots')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-600 text-white text-sm font-medium rounded-xl"
+            >
+              <Plus className="w-4 h-4" />
+              Create One-Shot
+            </button>
+          </div>
+        ) : (
+          <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
+            {oneshots.map((oneshot) => (
+              <button
+                key={oneshot.id}
+                onClick={() => onNavigate(`/oneshots/${oneshot.id}`)}
+                className="flex-shrink-0 w-36 aspect-[2/3] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative"
+              >
+                {oneshot.image_url ? (
+                  <>
+                    <Image
+                      src={oneshot.image_url}
+                      alt={oneshot.title}
+                      fill
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                  </>
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
+                    <Scroll className="w-10 h-10 text-amber-400/30" />
+                  </div>
+                )}
+                <div className="absolute bottom-0 left-0 right-0 p-3">
+                  <span className="inline-block px-2 py-0.5 text-[9px] font-semibold uppercase rounded bg-amber-500/20 text-amber-300 mb-1">
+                    {oneshot.game_system}
+                  </span>
+                  <h4 className="font-semibold text-white text-xs line-clamp-2">{oneshot.title}</h4>
+                </div>
+              </button>
+            ))}
+          </div>
         )}
 
         {/* Quick Actions */}

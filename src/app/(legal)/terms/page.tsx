@@ -269,7 +269,7 @@ export default function TermsOfServicePage() {
         <h2>15. Dispute Resolution</h2>
         <p>
           Before initiating any formal dispute resolution, you agree to contact us at{' '}
-          <a href="mailto:privacy@multiloop.app" className="text-[--arcane-purple]">privacy@multiloop.app</a>
+          <a href="mailto:contact@multiloop.app" className="text-[--arcane-purple]">contact@multiloop.app</a>
           {' '}and attempt to resolve the dispute informally for at least 30 days.
         </p>
         <p>
@@ -314,7 +314,7 @@ export default function TermsOfServicePage() {
         </p>
         <p>
           <strong>Email:</strong>{' '}
-          <a href="mailto:privacy@multiloop.app" className="text-[--arcane-purple]">privacy@multiloop.app</a>
+          <a href="mailto:contact@multiloop.app" className="text-[--arcane-purple]">contact@multiloop.app</a>
         </p>
       </section>
     </article>

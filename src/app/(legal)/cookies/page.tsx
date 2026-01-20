@@ -197,7 +197,7 @@ export default function CookiePolicyPage() {
         </p>
         <p>
           <strong>Email:</strong>{' '}
-          <a href="mailto:privacy@multiloop.app" className="text-[--arcane-purple]">privacy@multiloop.app</a>
+          <a href="mailto:contact@multiloop.app" className="text-[--arcane-purple]">contact@multiloop.app</a>
         </p>
       </section>
 

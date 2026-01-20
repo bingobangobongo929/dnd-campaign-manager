@@ -21,6 +21,8 @@ import { toast } from 'sonner'
 import { logActivity } from '@/lib/activity-log'
 import { MobileLayout } from '@/components/mobile'
 import { useIsMobile } from '@/hooks'
+import { useCanUseAI } from '@/store'
+import { useRouter } from 'next/navigation'
 
 interface Character {
   id: string
@@ -33,9 +35,18 @@ interface Character {
 type EnhancementStep = 'select' | 'processing' | 'review' | 'complete'
 
 export default function ImageEnhancementPage() {
+  const router = useRouter()
   const isMobile = useIsMobile()
+  const canUseAI = useCanUseAI()
   const [characters, setCharacters] = useState<Character[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Redirect if AI is not available
+  useEffect(() => {
+    if (!canUseAI) {
+      router.replace('/settings')
+    }
+  }, [canUseAI, router])
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [selectMode, setSelectMode] = useState<'unenhanced' | 'all'>('unenhanced')
   const [step, setStep] = useState<EnhancementStep>('select')
