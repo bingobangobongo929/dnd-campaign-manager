@@ -81,9 +81,9 @@ BEGIN
   ON CONFLICT DO NOTHING;
 
   -- Sessions for Campaign
-  INSERT INTO sessions (id, campaign_id, title, summary, session_date, notes, created_at, updated_at)
+  INSERT INTO sessions (id, campaign_id, session_number, title, summary, date, notes, created_at, updated_at)
   VALUES
-    (gen_random_uuid(), demo_campaign_id, 'Session 1: The Call to Adventure',
+    (gen_random_uuid(), demo_campaign_id, 1, 'Session 1: The Call to Adventure',
      'The party gathered in the village of Oakhurst, drawn by rumors of treasure and missing adventurers.',
      '2024-01-15',
      '## Key Events\n- Met Kerowyn Hucrele at the Ol'' Boar Inn\n- Learned about her missing children Talgen and Sharwyn\n- Discovered the legend of the Sunken Citadel\n- Negotiated rescue reward: 250gp per child\n\n## NPCs Met\n- **Kerowyn Hucrele**: Wealthy merchant, desperate mother\n- **Garon**: Innkeeper, knows local legends\n- **Corkie**: Halfling barmaid, overheard goblin sightings\n\n## Loot\n- None yet\n\n## Next Steps\n- Travel to the ravine entrance\n- Explore the citadel depths',
