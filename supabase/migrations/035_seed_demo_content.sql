@@ -1,11 +1,27 @@
 -- Migration: Seed Demo Content
 -- Creates publicly viewable demo content for new users to explore
 
--- Use a consistent demo user ID (doesn't need to be a real auth user)
--- This content is accessible via is_demo=true flag
+-- First, make user_id nullable for demo content
+ALTER TABLE campaigns ALTER COLUMN user_id DROP NOT NULL;
+ALTER TABLE vault_characters ALTER COLUMN user_id DROP NOT NULL;
+ALTER TABLE oneshots ALTER COLUMN user_id DROP NOT NULL;
+
+-- Add check constraints to ensure user_id is only null for demo content
+ALTER TABLE campaigns DROP CONSTRAINT IF EXISTS campaigns_user_id_demo_check;
+ALTER TABLE campaigns ADD CONSTRAINT campaigns_user_id_demo_check
+  CHECK (user_id IS NOT NULL OR is_demo = true);
+
+ALTER TABLE vault_characters DROP CONSTRAINT IF EXISTS vault_characters_user_id_demo_check;
+ALTER TABLE vault_characters ADD CONSTRAINT vault_characters_user_id_demo_check
+  CHECK (user_id IS NOT NULL OR is_demo = true);
+
+ALTER TABLE oneshots DROP CONSTRAINT IF EXISTS oneshots_user_id_demo_check;
+ALTER TABLE oneshots ADD CONSTRAINT oneshots_user_id_demo_check
+  CHECK (user_id IS NOT NULL OR is_demo = true);
+
+-- Now insert demo content with NULL user_id
 DO $$
 DECLARE
-  demo_user_id UUID := '00000000-0000-0000-0000-000000000001'::UUID;
   demo_campaign_id UUID := '00000000-0000-0000-0001-000000000001'::UUID;
   demo_character_id UUID := '00000000-0000-0000-0002-000000000001'::UUID;
   demo_oneshot_id UUID := '00000000-0000-0000-0003-000000000001'::UUID;
@@ -19,7 +35,7 @@ BEGIN
     id, user_id, name, description, game_system, status, is_demo, created_at, updated_at
   ) VALUES (
     demo_campaign_id,
-    demo_user_id,
+    NULL,
     'The Sunken Citadel',
     'Deep in the Thornwood Forest lies an ancient fortress, swallowed by the earth centuries ago. Now, strange lights flicker from its depths, and the nearby village of Oakhurst sends desperate pleas for help. What treasures and terrors await in the Sunken Citadel?',
     'D&D 5e',
@@ -83,7 +99,7 @@ BEGIN
     backstory, personality, ideals, bonds, flaws, status, is_demo, created_at, updated_at
   ) VALUES (
     demo_character_id,
-    demo_user_id,
+    NULL,
     'Lyra Silvervane',
     'Half-Elf',
     'Ranger',
@@ -154,7 +170,7 @@ Shadow refuses to enter the citadel. That worries me more than I care to admit.'
     is_demo, created_at, updated_at
   ) VALUES (
     demo_oneshot_id,
-    demo_user_id,
+    NULL,
     'The Night Market',
     'Not everything for sale is meant to be bought.',
     'Once a month, when the moon is dark, the Night Market appears in the abandoned plaza of Old Town. Merchants from across the planes gather to sell impossible wares: bottled memories, shadows that whisper secrets, keys to doors that don''t exist.
