@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, FileText, Activity, BarChart3, Loader2 } from 'lucide-react'
+import { LayoutDashboard, Users, FileText, Activity, BarChart3, Loader2, Ticket } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useUserSettings } from '@/hooks'
 import { isAdmin } from '@/lib/admin'
@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils'
 const adminNavItems = [
   { href: '/admin', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/users', label: 'Users', icon: Users },
+  { href: '/admin/invites', label: 'Invites', icon: Ticket },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/admin/changelog', label: 'Changelog', icon: FileText },
   { href: '/admin/activity', label: 'Activity Log', icon: Activity },

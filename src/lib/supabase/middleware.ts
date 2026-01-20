@@ -39,6 +39,9 @@ export async function updateSession(request: NextRequest) {
     pathname === '/' ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/signup') ||
+    pathname.startsWith('/forgot-password') ||
+    pathname.startsWith('/reset-password') ||
+    pathname.startsWith('/auth/callback') ||
     pathname.startsWith('/share') ||
     pathname.startsWith('/privacy') ||
     pathname.startsWith('/terms') ||
@@ -53,7 +56,9 @@ export async function updateSession(request: NextRequest) {
   // Auth flow routes (login, signup, verify) - special handling
   const isAuthRoute =
     pathname.startsWith('/login') ||
-    pathname.startsWith('/signup')
+    pathname.startsWith('/signup') ||
+    pathname.startsWith('/forgot-password') ||
+    pathname.startsWith('/reset-password')
 
   // 2FA verify page
   const is2FAVerifyPage = pathname === '/login/verify'

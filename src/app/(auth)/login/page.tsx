@@ -1,22 +1,107 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Loader2, Sparkles, Shield, BookOpen, Dices, Check } from 'lucide-react'
+import { Loader2, Sparkles, Shield, BookOpen, Dices, Check, AlertCircle, Ticket } from 'lucide-react'
 import { useSupabase } from '@/hooks'
 import { cn } from '@/lib/utils'
 
-export default function LoginPage() {
+// Discord icon component
+function DiscordIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
+    </svg>
+  )
+}
+
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = useSupabase()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [inviteCode, setInviteCode] = useState(searchParams.get('invite') || '')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [discordLoading, setDiscordLoading] = useState(false)
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [termsAccepted, setTermsAccepted] = useState(false)
+  const [inviteValid, setInviteValid] = useState<boolean | null>(null)
+  const [inviteError, setInviteError] = useState('')
+  const [checkingInvite, setCheckingInvite] = useState(false)
+
+  // Check invite code from URL on mount
+  useEffect(() => {
+    const invite = searchParams.get('invite')
+    if (invite) {
+      setInviteCode(invite)
+      setMode('signup')
+      validateInviteCode(invite)
+    }
+  }, [searchParams])
+
+  const validateInviteCode = async (code: string) => {
+    if (!code.trim()) {
+      setInviteValid(null)
+      setInviteError('')
+      return
+    }
+
+    setCheckingInvite(true)
+    setInviteError('')
+
+    try {
+      const response = await fetch('/api/auth/validate-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code.trim() })
+      })
+
+      const data = await response.json()
+      setInviteValid(data.valid)
+      if (!data.valid) {
+        setInviteError(data.error || 'Invalid invite code')
+      }
+    } catch (err) {
+      setInviteValid(false)
+      setInviteError('Failed to validate code')
+    } finally {
+      setCheckingInvite(false)
+    }
+  }
+
+  const handleInviteChange = (value: string) => {
+    setInviteCode(value.toUpperCase())
+    setInviteValid(null)
+    setInviteError('')
+  }
+
+  const handleDiscordLogin = async () => {
+    setDiscordLoading(true)
+    setError('')
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'discord',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          scopes: 'identify email'
+        }
+      })
+
+      if (error) {
+        setError(error.message)
+        setDiscordLoading(false)
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign in with Discord')
+      setDiscordLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,6 +112,14 @@ export default function LoginPage() {
         setError('You must accept the Terms of Service and Privacy Policy to create an account.')
         return
       }
+      if (!inviteCode.trim()) {
+        setError('An invite code is required to create an account.')
+        return
+      }
+      if (inviteValid === false) {
+        setError('Please enter a valid invite code.')
+        return
+      }
       if (password !== confirmPassword) {
         setError('Passwords do not match.')
         return
@@ -34,6 +127,15 @@ export default function LoginPage() {
       if (password.length < 8) {
         setError('Password must be at least 8 characters long.')
         return
+      }
+
+      // Validate invite code one more time
+      if (inviteValid !== true) {
+        await validateInviteCode(inviteCode)
+        if (inviteValid === false) {
+          setError('Please enter a valid invite code.')
+          return
+        }
       }
     }
 
@@ -64,19 +166,36 @@ export default function LoginPage() {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            invite_code: inviteCode.trim()
+          }
+        }
       })
 
       if (error) {
         setError(error.message)
         setLoading(false)
       } else if (data.user) {
-        // Create user settings with terms acceptance
+        // Use the invite code and send welcome email
+        await fetch('/api/auth/use-invite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: inviteCode.trim(),
+            userId: data.user.id,
+            email: email
+          })
+        })
+
+        // Create user settings with terms acceptance and invite info
         const now = new Date().toISOString()
         await supabase.from('user_settings').upsert({
           user_id: data.user.id,
           terms_accepted_at: now,
           privacy_accepted_at: now,
           last_login_at: now,
+          invite_code_used: inviteCode.trim()
         }, { onConflict: 'user_id' })
 
         // If email confirmation is required
@@ -86,6 +205,7 @@ export default function LoginPage() {
           setEmail('')
           setPassword('')
           setConfirmPassword('')
+          setInviteCode('')
           alert('Please check your email to confirm your account, then sign in.')
           setLoading(false)
         } else {
@@ -145,7 +265,7 @@ export default function LoginPage() {
               {mode === 'signin' ? 'Welcome Back, Adventurer' : 'Begin Your Journey'}
             </h1>
             <p className="text-gray-400 text-sm">
-              {mode === 'signin' ? 'Sign in to continue your journey' : 'Create an account to start'}
+              {mode === 'signin' ? 'Sign in to continue your journey' : 'Create an account with your invite code'}
             </p>
           </div>
 
@@ -177,14 +297,78 @@ export default function LoginPage() {
             </button>
           </div>
 
+          {/* Discord Login - Temporarily disabled while testing email flows
+          <button
+            type="button"
+            onClick={handleDiscordLogin}
+            disabled={discordLoading}
+            className="w-full flex items-center justify-center gap-3 py-3 px-4 mb-4 bg-[#5865F2] hover:bg-[#4752C4] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors"
+          >
+            {discordLoading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <DiscordIcon className="w-5 h-5" />
+            )}
+            Continue with Discord
+          </button>
+
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1 h-px bg-white/[0.08]" />
+            <span className="text-xs text-gray-500">or</span>
+            <div className="flex-1 h-px bg-white/[0.08]" />
+          </div>
+          */}
+
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
               <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
-                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 {error}
+              </div>
+            )}
+
+            {/* Invite Code (signup only) */}
+            {mode === 'signup' && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                  <Ticket className="w-4 h-4 text-purple-400" />
+                  Invite Code
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="XXXXXXXX"
+                    value={inviteCode}
+                    onChange={(e) => handleInviteChange(e.target.value)}
+                    onBlur={() => inviteCode && validateInviteCode(inviteCode)}
+                    required
+                    maxLength={12}
+                    className={cn(
+                      "w-full px-4 py-3 bg-white/[0.04] border rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 transition-all font-mono tracking-wider uppercase",
+                      inviteValid === true
+                        ? "border-green-500/50 focus:border-green-500/50 focus:ring-green-500/20"
+                        : inviteValid === false
+                        ? "border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20"
+                        : "border-white/[0.08] focus:border-purple-500/50 focus:ring-purple-500/20"
+                    )}
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {checkingInvite ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                    ) : inviteValid === true ? (
+                      <Check className="w-5 h-5 text-green-400" />
+                    ) : inviteValid === false ? (
+                      <AlertCircle className="w-5 h-5 text-red-400" />
+                    ) : null}
+                  </div>
+                </div>
+                {inviteError && (
+                  <p className="text-xs text-red-400">{inviteError}</p>
+                )}
+                <p className="text-xs text-gray-500">
+                  Invite codes are currently handed out personally. If you know, you know.
+                </p>
               </div>
             )}
 
@@ -201,7 +385,17 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300">Password</label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-300">Password</label>
+                {mode === 'signin' && (
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                  >
+                    Forgot password?
+                  </Link>
+                )}
+              </div>
               <input
                 type="password"
                 placeholder={mode === 'signin' ? 'Enter your password' : 'Create a password (8+ characters)'}
@@ -263,7 +457,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading || (mode === 'signup' && !termsAccepted)}
+              disabled={loading || (mode === 'signup' && (!termsAccepted || !inviteCode || inviteValid === false))}
               className={cn(
                 "w-full py-3 px-4 rounded-xl font-semibold text-white transition-all duration-200",
                 "bg-gradient-to-r from-purple-600 to-indigo-600",
@@ -306,5 +500,17 @@ export default function LoginPage() {
         }
       `}</style>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }

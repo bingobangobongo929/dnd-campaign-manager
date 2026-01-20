@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { verifyTOTPToken } from '@/lib/totp'
+import { sendEmail, twoFactorEnabledEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -52,6 +53,12 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       throw updateError
+    }
+
+    // Send confirmation email
+    if (user.email) {
+      const { subject, html } = twoFactorEnabledEmail()
+      await sendEmail({ to: user.email, subject, html })
     }
 
     return NextResponse.json({ success: true, message: '2FA enabled successfully' })
