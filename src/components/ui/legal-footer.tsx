@@ -9,7 +9,7 @@ export function LegalFooter({ className = '', showChangelog = true }: LegalFoote
   const linkClass = "text-gray-400 hover:text-white underline underline-offset-2 decoration-gray-600 hover:decoration-gray-400 transition-colors cursor-pointer"
 
   return (
-    <footer className={`text-center text-xs text-gray-500 ${className}`}>
+    <footer className={`text-center text-xs text-gray-500 relative z-50 ${className}`}>
       <div className="flex items-center justify-center gap-3 flex-wrap">
         <Link href="/privacy" className={linkClass}>
           Privacy Policy
