@@ -35,6 +35,7 @@ import { AI_PROVIDERS, AIProvider } from '@/lib/ai/config'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { formatDate } from '@/lib/utils'
+import { LegalFooter } from '@/components/ui/legal-footer'
 
 // App version - using date-based versioning
 const APP_VERSION = '2025.01.17'
@@ -523,6 +524,9 @@ export default function SettingsPage() {
               </button>
             </div>
           </section>
+
+          {/* Legal Footer */}
+          <LegalFooter className="mt-8 pb-4" />
         </div>
 
         {/* Modals (same as desktop) */}
@@ -1082,6 +1086,9 @@ export default function SettingsPage() {
             </div>
           </div>
         </section>
+
+        {/* Legal Footer */}
+        <LegalFooter className="mt-12" />
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════

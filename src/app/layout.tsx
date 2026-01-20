@@ -108,8 +108,8 @@ export default function RootLayout({
         {/* Umami Analytics - Privacy-focused, no cookies */}
         {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
           <Script
-            async
-            src={process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL || 'https://analytics.multiloop.app/script.js'}
+            defer
+            src={process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL || 'https://umami-analytics-ten-gamma.vercel.app/script.js'}
             data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
           />
         )}

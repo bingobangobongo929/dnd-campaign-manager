@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Loader2, Sparkles, Shield, BookOpen, Dices, Check, AlertCircle, Ticket } from 'lucide-react'
 import { useSupabase } from '@/hooks'
 import { cn } from '@/lib/utils'
+import { LegalFooter } from '@/components/ui/legal-footer'
 
 // Discord icon component
 function DiscordIcon({ className }: { className?: string }) {
@@ -487,6 +488,9 @@ function LoginForm() {
         <p className="text-center text-xs text-gray-600 mt-6">
           Forge stories. Track adventures. Remember legends.
         </p>
+
+        {/* Legal Footer */}
+        <LegalFooter className="mt-6" />
       </div>
 
       {/* CSS for floating animation */}

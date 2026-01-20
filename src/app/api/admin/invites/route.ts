@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, inviteCodeEmail } from '@/lib/email'
 
@@ -51,6 +52,7 @@ export async function GET() {
 // POST - Create a new invite code (admin only)
 export async function POST(request: NextRequest) {
   try {
+    // Use server client for auth verification
     const supabase = await createClient()
 
     // Verify admin
@@ -69,6 +71,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    // Use admin client for database operations (bypasses RLS)
+    const adminSupabase = createAdminClient()
+
     const body = await request.json()
     const { maxUses = 1, expiresInDays, note, sendEmail: shouldSendEmail, recipientEmail } = body
 
@@ -76,7 +81,7 @@ export async function POST(request: NextRequest) {
     let code = generateInviteCode()
     let attempts = 0
     while (attempts < 10) {
-      const { data: existing } = await supabase
+      const { data: existing } = await adminSupabase
         .from('invite_codes')
         .select('id')
         .eq('code', code)
@@ -95,8 +100,8 @@ export async function POST(request: NextRequest) {
       expiresAt = expDate.toISOString()
     }
 
-    // Create invite
-    const { data: invite, error } = await supabase
+    // Create invite using admin client
+    const { data: invite, error } = await adminSupabase
       .from('invite_codes')
       .insert({
         code,
@@ -109,7 +114,10 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('Failed to insert invite code:', error)
+      throw error
+    }
 
     // Send email if requested
     if (shouldSendEmail && recipientEmail) {
@@ -129,9 +137,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Log admin action (don't fail if this errors)
+    // Log admin action using admin client
     try {
-      await supabase.from('admin_activity_log').insert({
+      await adminSupabase.from('admin_activity_log').insert({
         admin_id: user.id,
         action: 'create_invite_code',
         details: { code, max_uses: maxUses, expires_at: expiresAt, note }
