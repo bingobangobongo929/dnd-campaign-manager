@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 }
 
 export default function CookiePolicyPage() {
-  const lastUpdated = 'January 19, 2026'
+  const lastUpdated = 'January 20, 2026'
 
   return (
     <article className="prose prose-invert prose-lg max-w-none">
@@ -148,9 +148,13 @@ export default function CookiePolicyPage() {
           <li>
             <strong>Cloudflare:</strong> Security and CDN (may set security-related cookies)
           </li>
+          <li>
+            <strong>Sentry:</strong> Error tracking and performance monitoring (helps us identify and fix bugs)
+          </li>
         </ul>
         <p>
-          These services only set cookies that are strictly necessary for security and authentication.
+          These services only set cookies or use local storage that is strictly necessary for security,
+          authentication, and service reliability.
         </p>
       </section>
 

@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 }
 
 export default function PrivacyPolicyPage() {
-  const lastUpdated = 'January 19, 2026'
+  const lastUpdated = 'January 20, 2026'
 
   return (
     <article className="prose prose-invert prose-lg max-w-none">
@@ -191,8 +191,13 @@ export default function PrivacyPolicyPage() {
       </section>
 
       <section>
-        <h2>8. Data Sharing and Third Parties</h2>
-        <p>We may share your data with the following categories of third parties:</p>
+        <h2>8. Infrastructure and Service Providers</h2>
+        <p>
+          To provide the Service, we use trusted third-party infrastructure providers. These providers
+          process your data only as necessary to deliver their services to us, and are bound by
+          data processing agreements. We do not sell or share your data with third parties for
+          their own purposes.
+        </p>
 
         <h3>8.1 Infrastructure Providers</h3>
         <ul>
@@ -205,9 +210,12 @@ export default function PrivacyPolicyPage() {
           <li>
             <strong>Cloudflare:</strong> CDN and security services
           </li>
+          <li>
+            <strong>Sentry:</strong> Error tracking and performance monitoring (helps us identify and fix bugs)
+          </li>
         </ul>
 
-        <h3>8.2 AI Service Providers (Optional)</h3>
+        <h3>8.2 AI Service Providers (Optional, User-Initiated Only)</h3>
         <p>
           If you choose to use AI-powered features, your prompts and relevant content may be sent to:
         </p>
@@ -220,15 +228,16 @@ export default function PrivacyPolicyPage() {
           </li>
         </ul>
         <p>
-          AI features are optional, and you control when and if AI processes your content. We do not send
-          your data to AI providers without your explicit action.
+          AI features are entirely optional. We only send data to AI providers when you explicitly
+          use an AI feature. We do not automatically send your content to AI providers.
         </p>
 
-        <h3>8.3 We Do NOT:</h3>
+        <h3>8.3 What We Never Do</h3>
         <ul>
-          <li>Sell your personal data</li>
-          <li>Share your data with advertisers</li>
+          <li>Sell your personal data to anyone</li>
+          <li>Share your data with advertisers or marketers</li>
           <li>Use your content to train AI models</li>
+          <li>Share your data with third parties for their own marketing purposes</li>
         </ul>
       </section>
 

@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 }
 
 export default function TermsOfServicePage() {
-  const lastUpdated = 'January 19, 2026'
+  const lastUpdated = 'January 20, 2026'
 
   return (
     <article className="prose prose-invert prose-lg max-w-none">
