@@ -15,11 +15,14 @@ import {
   ChevronRight,
   Sparkles,
   Brain,
+  Shield,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui'
 import { useState } from 'react'
 import { useAppStore, useCanUseAI } from '@/store'
+import { useUserSettings } from '@/hooks'
+import { isAdmin } from '@/lib/admin'
 
 interface SidebarProps {
   campaignId?: string
@@ -30,6 +33,8 @@ export function Sidebar({ campaignId }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
   const { setIsAIAssistantOpen } = useAppStore()
   const canUseAI = useCanUseAI()
+  const { settings } = useUserSettings()
+  const showAdmin = settings?.role && isAdmin(settings.role)
 
   const campaignLinks = campaignId
     ? [
@@ -46,6 +51,7 @@ export function Sidebar({ campaignId }: SidebarProps) {
     { href: '/campaigns', label: 'Campaigns', icon: Users },
     { href: '/vault', label: 'Character Vault', icon: BookOpen },
     { href: '/settings', label: 'Settings', icon: Settings },
+    ...(showAdmin ? [{ href: '/admin', label: 'Admin', icon: Shield }] : []),
   ]
 
   const NavLink = ({ href, label, icon: Icon }: { href: string; label: string; icon: typeof LayoutGrid }) => {

@@ -18,8 +18,11 @@ import {
   Users,
   Scroll,
   Home,
+  Shield,
 } from 'lucide-react'
 import { useCanUseAI } from '@/store'
+import { useUserSettings } from '@/hooks'
+import { isAdmin } from '@/lib/admin'
 
 interface FloatingDockProps {
   campaignId?: string
@@ -29,6 +32,8 @@ interface FloatingDockProps {
 export function FloatingDock({ campaignId, characterId }: FloatingDockProps) {
   const pathname = usePathname()
   const canUseAI = useCanUseAI()
+  const { settings } = useUserSettings()
+  const showAdmin = settings?.role && isAdmin(settings.role)
 
   // Character-specific links (when viewing a vault character)
   // Order matches campaign dock: Edit/View are like Canvas, then Sessions, then other features
@@ -61,6 +66,7 @@ export function FloatingDock({ campaignId, characterId }: FloatingDockProps) {
     { href: '/oneshots', label: 'One-Shots', icon: Scroll },
     { href: '/vault', label: 'Character Vault', icon: BookOpen },
     { href: '/settings', label: 'Settings', icon: Settings },
+    ...(showAdmin ? [{ href: '/admin', label: 'Admin', icon: Shield }] : []),
   ]
 
   const isActive = (href: string) => {
