@@ -13,9 +13,9 @@ import {
   ChevronRight,
   Check,
   Loader2,
-  Star,
   Swords,
   Crown,
+  AlertCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LegalFooter } from '@/components/ui/legal-footer'
@@ -24,16 +24,35 @@ export function LandingPage() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState('')
 
   const handleWaitlist = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email) return
 
     setLoading(true)
-    // Simulate API call - in production, connect to your waitlist endpoint
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setSubmitted(true)
-    setLoading(false)
+    setError('')
+
+    try {
+      const response = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to join waitlist')
+        return
+      }
+
+      setSubmitted(true)
+    } catch {
+      setError('An error occurred. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -286,52 +305,12 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="py-20 px-4 border-t border-white/[0.06]">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Loved by{' '}
-              <span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
-                Game Masters
-              </span>
-            </h2>
-            <p className="text-gray-400">Join adventurers who have transformed their table experience.</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial, i) => (
-              <div
-                key={i}
-                className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06]"
-              >
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, j) => (
-                    <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-                <p className="text-gray-300 mb-4 italic">&quot;{testimonial.quote}&quot;</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-white font-semibold">
-                    {testimonial.name[0]}
-                  </div>
-                  <div>
-                    <p className="font-medium text-white">{testimonial.name}</p>
-                    <p className="text-sm text-gray-500">{testimonial.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Waitlist / CTA Section */}
       <section className="py-20 px-4 border-t border-white/[0.06]">
         <div className="max-w-2xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 mb-6">
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span className="text-sm text-amber-300">Currently in Beta</span>
+            <AlertCircle className="w-4 h-4 text-amber-400" />
+            <span className="text-sm text-amber-300">Closed Beta - Open Beta Q1 2026</span>
           </div>
 
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">
@@ -341,7 +320,8 @@ export function LandingPage() {
             </span>
           </h2>
           <p className="text-gray-400 mb-8">
-            Multiloop is currently invite-only during beta. Request access or sign in with your invite code.
+            We&apos;re currently in closed beta while we polish the experience. Request early access below
+            or sign in with your invite code. Open beta is planned for Q1 2026.
           </p>
 
           {submitted ? (
@@ -350,27 +330,32 @@ export function LandingPage() {
               <span>Thanks! We&apos;ll be in touch soon.</span>
             </div>
           ) : (
-            <form onSubmit={handleWaitlist} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20"
-                required
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <>Request Access</>
-                )}
-              </button>
-            </form>
+            <div className="max-w-md mx-auto">
+              <form onSubmit={handleWaitlist} className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="flex-1 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>Request Access</>
+                  )}
+                </button>
+              </form>
+              {error && (
+                <p className="mt-3 text-sm text-red-400">{error}</p>
+              )}
+            </div>
           )}
 
           <p className="text-sm text-gray-500 mt-6">
@@ -455,20 +440,3 @@ const features = [
   },
 ]
 
-const testimonials = [
-  {
-    quote: 'Finally, a campaign manager that thinks like a DM. The session notes feature alone has saved me hours of prep.',
-    name: 'Sarah K.',
-    role: 'Forever DM',
-  },
-  {
-    quote: 'The character vault is incredible. My players love being able to track their character development over campaigns.',
-    name: 'Marcus T.',
-    role: 'Game Master',
-  },
-  {
-    quote: 'Clean, intuitive, and actually designed for TTRPG players. This is what I\'ve been looking for.',
-    name: 'Alex R.',
-    role: 'D&D Player',
-  },
-]
