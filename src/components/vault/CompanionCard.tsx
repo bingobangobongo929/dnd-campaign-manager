@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import { Heart, Edit2, Trash2 } from 'lucide-react'
+import { MarkdownContent } from '@/components/ui'
 import type { VaultCharacterRelationship } from '@/types/database'
 
 interface CompanionCardProps {
@@ -83,7 +84,9 @@ export function CompanionCard({ companion, onEdit, onDelete }: CompanionCardProp
 
       {/* Description */}
       {companion.description && (
-        <p className="text-xs text-gray-400 mt-2 whitespace-pre-wrap">{companion.description}</p>
+        <div className="mt-2">
+          <MarkdownContent content={companion.description} className="text-xs [&_p]:text-gray-400" />
+        </div>
       )}
 
       {/* Abilities with emoji (matching import preview) */}

@@ -7,7 +7,8 @@ import {
   passwordResetEmail,
   twoFactorEnabledEmail,
   twoFactorDisabledEmail,
-  accountDeletedEmail
+  accountDeletedEmail,
+  waitlistConfirmationEmail
 } from '@/lib/email'
 import { checkRateLimit, rateLimits } from '@/lib/rate-limit'
 
@@ -68,6 +69,9 @@ export async function POST(request: NextRequest) {
         break
       case 'account-deleted':
         emailData = accountDeletedEmail('Test User')
+        break
+      case 'waitlist-confirmation':
+        emailData = waitlistConfirmationEmail('https://multiloop.app/api/waitlist/verify?token=test-token-123')
         break
       default:
         return NextResponse.json({ error: 'Unknown template' }, { status: 400 })

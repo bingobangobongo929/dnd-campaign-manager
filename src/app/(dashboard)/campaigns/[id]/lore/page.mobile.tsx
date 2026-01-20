@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout } from '@/components/mobile'
+import { MarkdownContent } from '@/components/ui'
 import { getInitials } from '@/lib/utils'
 import Image from 'next/image'
 import type { Tag, CampaignLore } from '@/types/database'
@@ -383,11 +384,13 @@ export function CampaignLorePageMobile({
                           <Info className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
                           <h4 className="font-medium text-white text-sm">{entry.title}</h4>
                         </div>
-                        <p className="text-xs text-gray-400 mb-2 whitespace-pre-wrap line-clamp-4">
-                          {typeof entry.content === 'string'
-                            ? entry.content
-                            : JSON.stringify(entry.content, null, 2)}
-                        </p>
+                        <div className="text-xs text-gray-400 mb-2 line-clamp-4">
+                          {typeof entry.content === 'string' ? (
+                            <MarkdownContent content={entry.content} className="text-xs [&_p]:text-gray-400" />
+                          ) : (
+                            <pre className="whitespace-pre-wrap">{JSON.stringify(entry.content, null, 2)}</pre>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-600">
                           {entry.lore_type} • {new Date(entry.created_at).toLocaleDateString()}
                         </p>

@@ -435,4 +435,53 @@ export function accountDeletedEmail(userName: string): { subject: string; html: 
   }
 }
 
+export function waitlistConfirmationEmail(verifyUrl: string): { subject: string; html: string } {
+  const content = `
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; padding: 16px; background: rgba(139, 92, 246, 0.1); border-radius: 50%;">
+        <img src="https://multiloop.app/email/mail-icon.png" alt="" width="32" height="32" style="display: block;" onerror="this.style.display='none'">
+      </div>
+    </div>
+
+    <h1 style="margin: 0 0 8px 0; font-size: 26px; font-weight: 700; color: #ffffff; text-align: center;">
+      Confirm Your Spot
+    </h1>
+    <p style="margin: 0 0 24px 0; font-size: 15px; color: #9ca3af; text-align: center;">
+      One click to join the Multiloop waitlist
+    </p>
+
+    ${emailDivider()}
+
+    <p style="margin: 0 0 16px 0; font-size: 15px; color: #d1d5db; line-height: 1.6; text-align: center;">
+      Thanks for your interest in Multiloop! Click the button below to confirm your email address and secure your spot on the waitlist.
+    </p>
+
+    ${emailButton('Confirm My Spot', verifyUrl)}
+
+    <p style="margin: 0 0 16px 0; font-size: 13px; color: #6b7280; text-align: center;">
+      This link will expire in 24 hours.
+    </p>
+
+    ${emailDivider()}
+
+    <div style="background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 12px; padding: 16px; margin: 24px 0;">
+      <p style="margin: 0 0 8px 0; font-size: 14px; color: #a78bfa; font-weight: 600; text-align: center;">
+        What happens next?
+      </p>
+      <p style="margin: 0; font-size: 13px; color: #9ca3af; text-align: center;">
+        Once confirmed, you'll receive an invite when we're ready to welcome more adventurers. We're currently in closed beta with an open beta planned for Q1 2026.
+      </p>
+    </div>
+
+    <p style="margin: 0; font-size: 12px; color: #6b7280; text-align: center;">
+      If you didn't sign up for the Multiloop waitlist, you can safely ignore this email.
+    </p>
+  `
+
+  return {
+    subject: 'Confirm your spot on the Multiloop waitlist',
+    html: emailWrapper(content, 'Please confirm your email to join the Multiloop waitlist')
+  }
+}
+
 export { SUPPORT_EMAIL }

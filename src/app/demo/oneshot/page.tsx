@@ -11,6 +11,7 @@ import {
   Sparkles,
   Target,
 } from 'lucide-react'
+import { MarkdownContent } from '@/components/ui'
 import type { Metadata } from 'next'
 
 // Demo oneshot ID from migration
@@ -146,9 +147,7 @@ export default async function DemoOneshotPage() {
               <h2 className="text-xl font-semibold text-white">Introduction</h2>
             </div>
             <div className="p-6 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-              <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">
-                {oneshot.introduction}
-              </p>
+              <MarkdownContent content={oneshot.introduction} />
             </div>
           </section>
         )}
@@ -166,9 +165,7 @@ export default async function DemoOneshotPage() {
               </span>
             </div>
             <div className="p-6 rounded-xl bg-red-500/5 border border-red-500/20">
-              <div className="text-gray-300 prose prose-invert prose-sm max-w-none whitespace-pre-wrap">
-                {oneshot.session_plan}
-              </div>
+              <MarkdownContent content={oneshot.session_plan} />
             </div>
           </section>
         )}
@@ -186,9 +183,7 @@ export default async function DemoOneshotPage() {
               </span>
             </div>
             <div className="p-6 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-              <div className="text-gray-300 prose prose-invert prose-sm max-w-none whitespace-pre-wrap">
-                {oneshot.key_npcs}
-              </div>
+              <MarkdownContent content={oneshot.key_npcs} />
             </div>
           </section>
         )}

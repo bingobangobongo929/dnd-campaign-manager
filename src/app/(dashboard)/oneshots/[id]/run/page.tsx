@@ -26,7 +26,7 @@ import {
   X,
   Check,
 } from 'lucide-react'
-import { Modal } from '@/components/ui'
+import { Modal, MarkdownContent } from '@/components/ui'
 import { MobileLayout, MobileBottomSheet } from '@/components/mobile'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { cn } from '@/lib/utils'
@@ -557,10 +557,12 @@ export default function OneshotRunPage() {
                       )}
                     </button>
                     {activePanel === 'session' && (
-                      <div className="px-3 pb-3">
-                        <pre className="whitespace-pre-wrap text-xs text-gray-400 max-h-[200px] overflow-y-auto">
-                          {oneshot.session_plan || 'No session plan added.'}
-                        </pre>
+                      <div className="px-3 pb-3 max-h-[200px] overflow-y-auto">
+                        {oneshot.session_plan ? (
+                          <MarkdownContent content={oneshot.session_plan} className="text-xs [&_p]:text-gray-400" />
+                        ) : (
+                          <p className="text-xs text-gray-400">No session plan added.</p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -582,10 +584,12 @@ export default function OneshotRunPage() {
                       )}
                     </button>
                     {activePanel === 'npcs' && (
-                      <div className="px-3 pb-3">
-                        <pre className="whitespace-pre-wrap text-xs text-gray-400 max-h-[200px] overflow-y-auto">
-                          {oneshot.key_npcs || 'No NPCs added.'}
-                        </pre>
+                      <div className="px-3 pb-3 max-h-[200px] overflow-y-auto">
+                        {oneshot.key_npcs ? (
+                          <MarkdownContent content={oneshot.key_npcs} className="text-xs [&_p]:text-gray-400" />
+                        ) : (
+                          <p className="text-xs text-gray-400">No NPCs added.</p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -618,9 +622,13 @@ export default function OneshotRunPage() {
                           </button>
                         </div>
                         {showTwists ? (
-                          <pre className="whitespace-pre-wrap text-xs text-gray-400 max-h-[200px] overflow-y-auto">
-                            {oneshot.twists || 'No twists added.'}
-                          </pre>
+                          <div className="max-h-[200px] overflow-y-auto">
+                            {oneshot.twists ? (
+                              <MarkdownContent content={oneshot.twists} className="text-xs [&_p]:text-gray-400" />
+                            ) : (
+                              <p className="text-xs text-gray-400">No twists added.</p>
+                            )}
+                          </div>
                         ) : (
                           <div className="flex flex-col items-center justify-center py-6">
                             <EyeOff className="w-6 h-6 text-gray-600 mb-2" />
@@ -1049,19 +1057,21 @@ export default function OneshotRunPage() {
                 {activePanel === 'session' && (
                   <div>
                     <h3 className="text-sm font-medium text-gray-400 mb-2">Session Plan</h3>
-                    <div className="prose prose-invert prose-sm max-w-none">
-                      <pre className="whitespace-pre-wrap text-sm text-gray-300 bg-transparent p-0">
-                        {oneshot.session_plan || 'No session plan added yet.'}
-                      </pre>
-                    </div>
+                    {oneshot.session_plan ? (
+                      <MarkdownContent content={oneshot.session_plan} className="text-sm [&_p]:text-gray-300" />
+                    ) : (
+                      <p className="text-sm text-gray-300">No session plan added yet.</p>
+                    )}
                   </div>
                 )}
                 {activePanel === 'npcs' && (
                   <div>
                     <h3 className="text-sm font-medium text-gray-400 mb-2">Key NPCs</h3>
-                    <pre className="whitespace-pre-wrap text-sm text-gray-300">
-                      {oneshot.key_npcs || 'No NPCs added yet.'}
-                    </pre>
+                    {oneshot.key_npcs ? (
+                      <MarkdownContent content={oneshot.key_npcs} className="text-sm [&_p]:text-gray-300" />
+                    ) : (
+                      <p className="text-sm text-gray-300">No NPCs added yet.</p>
+                    )}
                   </div>
                 )}
                 {activePanel === 'twists' && (
@@ -1076,9 +1086,11 @@ export default function OneshotRunPage() {
                       </button>
                     </div>
                     {showTwists ? (
-                      <pre className="whitespace-pre-wrap text-sm text-gray-300">
-                        {oneshot.twists || 'No twists added yet.'}
-                      </pre>
+                      oneshot.twists ? (
+                        <MarkdownContent content={oneshot.twists} className="text-sm [&_p]:text-gray-300" />
+                      ) : (
+                        <p className="text-sm text-gray-300">No twists added yet.</p>
+                      )
                     ) : (
                       <div className="flex flex-col items-center justify-center py-8">
                         <EyeOff className="w-8 h-8 text-gray-600 mb-2" />

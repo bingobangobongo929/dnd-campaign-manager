@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
+import { MarkdownContent } from '@/components/ui'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { CampaignLorePageMobile } from './page.mobile'
 import { useCanUseAI } from '@/store'
@@ -597,10 +598,10 @@ export default function LorePage() {
                           </div>
                           <div className="flex-1">
                             <h4 className="font-medium text-white mb-2">{entry.title}</h4>
-                            <div className="text-sm text-gray-400 whitespace-pre-wrap">
+                            <div className="text-sm">
                               {typeof entry.content === 'string'
-                                ? entry.content
-                                : JSON.stringify(entry.content, null, 2)}
+                                ? <MarkdownContent content={entry.content} className="[&_p]:text-gray-400" />
+                                : <pre className="text-gray-400 whitespace-pre-wrap">{JSON.stringify(entry.content, null, 2)}</pre>}
                             </div>
                             <p className="text-xs text-gray-600 mt-3">
                               {entry.lore_type} • Generated {new Date(entry.created_at).toLocaleDateString()}

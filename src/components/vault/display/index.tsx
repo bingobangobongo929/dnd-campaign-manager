@@ -14,6 +14,7 @@
 import React, { useState } from 'react'
 import { Edit2, X, Plus, Check, Quote, Target, AlertCircle, Heart, BookOpen, Table2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { MarkdownContent } from '@/components/ui'
 import {
   renderMarkdown,
   RELATIONSHIP_COLORS,
@@ -610,7 +611,9 @@ export function CompanionPreviewCard({ companion, onEdit, onDelete }: CompanionP
 
       {/* Description */}
       {companion.description && (
-        <p className="text-xs text-gray-400 mt-2 whitespace-pre-wrap">{companion.description}</p>
+        <div className="mt-2">
+          <MarkdownContent content={companion.description} className="text-xs [&_p]:text-gray-400" />
+        </div>
       )}
 
       {/* Abilities with emoji (matching import preview) */}

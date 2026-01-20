@@ -4,6 +4,7 @@ import { headers } from 'next/headers'
 import Image from 'next/image'
 import { Users, Clock, Scroll, BookOpen, Target, Eye } from 'lucide-react'
 import { SharePageHeader } from '@/components/share/SharePageHeader'
+import { MarkdownContent } from '@/components/ui'
 import crypto from 'crypto'
 import type { Metadata } from 'next'
 
@@ -349,9 +350,7 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
               <h2 className="text-xl font-semibold text-white">Introduction</h2>
             </div>
             <div className="prose prose-invert max-w-none">
-              <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                {oneshot.introduction}
-              </div>
+              <MarkdownContent content={oneshot.introduction} />
             </div>
           </section>
         )}
@@ -366,9 +365,7 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
               <h2 className="text-xl font-semibold text-white">Setting Notes</h2>
             </div>
             <div className="p-6 bg-white/[0.02] rounded-xl border border-white/[0.06]">
-              <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                {oneshot.setting_notes}
-              </div>
+              <MarkdownContent content={oneshot.setting_notes} />
             </div>
           </section>
         )}
@@ -383,9 +380,7 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
               <h2 className="text-xl font-semibold text-white">Character Creation</h2>
             </div>
             <div className="p-6 bg-white/[0.02] rounded-xl border border-white/[0.06]">
-              <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                {oneshot.character_creation}
-              </div>
+              <MarkdownContent content={oneshot.character_creation} />
             </div>
           </section>
         )}
@@ -400,9 +395,7 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
               <h2 className="text-xl font-semibold text-white">Handouts</h2>
             </div>
             <div className="p-6 bg-amber-500/5 rounded-xl border border-amber-500/20">
-              <div className="text-gray-300 leading-relaxed whitespace-pre-wrap font-mono text-sm">
-                {oneshot.handouts}
-              </div>
+              <MarkdownContent content={oneshot.handouts} className="font-mono text-sm" />
             </div>
           </section>
         )}
@@ -420,9 +413,7 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
               </span>
             </div>
             <div className="p-6 bg-red-500/5 rounded-xl border border-red-500/20">
-              <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                {oneshot.session_plan}
-              </div>
+              <MarkdownContent content={oneshot.session_plan} />
             </div>
           </section>
         )}
@@ -440,9 +431,7 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
               </span>
             </div>
             <div className="p-6 bg-red-500/5 rounded-xl border border-red-500/20">
-              <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                {oneshot.twists}
-              </div>
+              <MarkdownContent content={oneshot.twists} />
             </div>
           </section>
         )}
@@ -460,9 +449,7 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
               </span>
             </div>
             <div className="p-6 bg-white/[0.02] rounded-xl border border-white/[0.06]">
-              <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                {oneshot.key_npcs}
-              </div>
+              <MarkdownContent content={oneshot.key_npcs} />
             </div>
           </section>
         )}

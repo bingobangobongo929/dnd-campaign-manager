@@ -6,7 +6,8 @@ import {
   passwordResetEmail,
   twoFactorEnabledEmail,
   twoFactorDisabledEmail,
-  accountDeletedEmail
+  accountDeletedEmail,
+  waitlistConfirmationEmail
 } from '@/lib/email'
 
 // POST - Generate email preview HTML (admin only)
@@ -53,6 +54,9 @@ export async function POST(request: NextRequest) {
         break
       case 'account-deleted':
         emailData = accountDeletedEmail('Test User')
+        break
+      case 'waitlist-confirmation':
+        emailData = waitlistConfirmationEmail('https://multiloop.app/api/waitlist/verify?token=test-token-preview-123')
         break
       default:
         return NextResponse.json({ error: 'Unknown template' }, { status: 400 })

@@ -2,7 +2,7 @@
 
 import { X, Pencil, User, Scroll, Target, Eye, Lock, Quote, Users } from 'lucide-react'
 import { cn, getInitials } from '@/lib/utils'
-import { TagBadge, sanitizeHtml } from '@/components/ui'
+import { TagBadge, sanitizeHtml, MarkdownContent } from '@/components/ui'
 import Image from 'next/image'
 import type { Character, Tag, CharacterTag } from '@/types/database'
 
@@ -170,7 +170,7 @@ export function CharacterViewModal({
               {hasAppearanceInfo && (
                 <div className="p-4 rounded-xl bg-[--bg-elevated] border border-[--border]">
                   <SectionTitle icon={Eye}>Appearance</SectionTitle>
-                  <p className="text-sm text-[--text-secondary] leading-relaxed">{character.appearance}</p>
+                  <MarkdownContent content={character.appearance!} className="text-sm" />
                 </div>
               )}
 
@@ -179,7 +179,9 @@ export function CharacterViewModal({
                 <div className="p-4 rounded-xl bg-[--bg-elevated] border border-[--border]">
                   <SectionTitle icon={User}>Personality</SectionTitle>
                   {character.personality && (
-                    <p className="text-sm text-[--text-secondary] leading-relaxed mb-3">{character.personality}</p>
+                    <div className="mb-3">
+                      <MarkdownContent content={character.personality} className="text-sm" />
+                    </div>
                   )}
                   {character.goals && (
                     <div className="mt-3 pt-3 border-t border-[--border]">
@@ -187,7 +189,7 @@ export function CharacterViewModal({
                         <Target className="w-3.5 h-3.5" />
                         Goals
                       </div>
-                      <p className="text-sm text-[--text-secondary]">{character.goals}</p>
+                      <MarkdownContent content={character.goals} className="text-sm" />
                     </div>
                   )}
                 </div>
@@ -217,7 +219,7 @@ export function CharacterViewModal({
               {hasSecrets && (
                 <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20">
                   <SectionTitle icon={Lock}>Secrets</SectionTitle>
-                  <p className="text-sm text-[--text-secondary] leading-relaxed">{character.secrets}</p>
+                  <MarkdownContent content={character.secrets!} className="text-sm" />
                 </div>
               )}
 

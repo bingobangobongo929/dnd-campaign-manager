@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import {
   Sparkles,
   Shield,
@@ -16,15 +17,59 @@ import {
   Swords,
   Crown,
   AlertCircle,
+  Mail,
+  XCircle,
+  Clock,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LegalFooter } from '@/components/ui/legal-footer'
 
+// Verification status messages
+const VERIFICATION_MESSAGES: Record<string, { icon: typeof Check; color: string; message: string }> = {
+  'confirmed': {
+    icon: Check,
+    color: 'bg-green-500/10 border-green-500/30 text-green-400',
+    message: "You're on the list! We'll email you when early access opens."
+  },
+  'already-verified': {
+    icon: Check,
+    color: 'bg-blue-500/10 border-blue-500/30 text-blue-400',
+    message: "You're already on the waitlist. We'll be in touch!"
+  },
+  'invalid': {
+    icon: XCircle,
+    color: 'bg-red-500/10 border-red-500/30 text-red-400',
+    message: 'Invalid verification link. Please try signing up again.'
+  },
+  'expired': {
+    icon: Clock,
+    color: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
+    message: 'This verification link has expired. Please sign up again.'
+  },
+  'error': {
+    icon: XCircle,
+    color: 'bg-red-500/10 border-red-500/30 text-red-400',
+    message: 'Something went wrong. Please try again.'
+  },
+}
+
 export function LandingPage() {
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+  const [verificationStatus, setVerificationStatus] = useState<string | null>(null)
+
+  // Check for verification status in URL
+  useEffect(() => {
+    const status = searchParams.get('waitlist')
+    if (status && VERIFICATION_MESSAGES[status]) {
+      setVerificationStatus(status)
+      // Clean up URL without causing a navigation
+      window.history.replaceState({}, '', '/')
+    }
+  }, [searchParams])
 
   const handleWaitlist = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -324,12 +369,26 @@ export function LandingPage() {
             or sign in with your invite code. Open beta is planned for Q1 2026.
           </p>
 
-          {submitted ? (
-            <div className="inline-flex items-center gap-2 px-6 py-4 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400">
-              <Check className="w-5 h-5" />
-              <span>Thanks! We&apos;ll be in touch soon.</span>
+          {/* Show verification status from URL param */}
+          {verificationStatus && VERIFICATION_MESSAGES[verificationStatus] && (
+            <div className={cn(
+              "inline-flex items-center gap-2 px-6 py-4 rounded-xl border mb-6",
+              VERIFICATION_MESSAGES[verificationStatus].color
+            )}>
+              {(() => {
+                const Icon = VERIFICATION_MESSAGES[verificationStatus].icon
+                return <Icon className="w-5 h-5" />
+              })()}
+              <span>{VERIFICATION_MESSAGES[verificationStatus].message}</span>
             </div>
-          ) : (
+          )}
+
+          {submitted ? (
+            <div className="inline-flex items-center gap-2 px-6 py-4 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400">
+              <Mail className="w-5 h-5" />
+              <span>Check your email to confirm your spot on the waitlist!</span>
+            </div>
+          ) : verificationStatus === 'confirmed' || verificationStatus === 'already-verified' ? null : (
             <div className="max-w-md mx-auto">
               <form onSubmit={handleWaitlist} className="flex flex-col sm:flex-row gap-3">
                 <input

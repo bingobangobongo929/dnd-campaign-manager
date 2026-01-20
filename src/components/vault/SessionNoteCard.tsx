@@ -13,6 +13,7 @@ import {
   MapPin,
   Users,
 } from 'lucide-react'
+import { MarkdownContent } from '@/components/ui'
 import type { PlayJournal } from '@/types/database'
 
 interface SessionNoteCardProps {
@@ -87,11 +88,15 @@ export function SessionNoteCard({ session, onEdit, onDelete }: SessionNoteCardPr
 
             {/* Summary or truncated notes */}
             {session.summary ? (
-              <p className="text-sm text-gray-400 leading-relaxed">{session.summary}</p>
+              <MarkdownContent content={session.summary} className="text-sm [&_p]:text-gray-400" />
             ) : session.notes && (
-              <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-wrap">
-                {expanded ? session.notes : session.notes.substring(0, 200) + (session.notes.length > 200 ? '...' : '')}
-              </p>
+              <div className="text-sm text-gray-400 leading-relaxed">
+                {expanded ? (
+                  <MarkdownContent content={session.notes} className="[&_p]:text-gray-400" />
+                ) : (
+                  <p className="whitespace-pre-wrap">{session.notes.substring(0, 200) + (session.notes.length > 200 ? '...' : '')}</p>
+                )}
+              </div>
             )}
           </div>
 
@@ -145,7 +150,7 @@ export function SessionNoteCard({ session, onEdit, onDelete }: SessionNoteCardPr
                   <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
                     Full Notes
                   </h4>
-                  <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-wrap">{session.notes}</p>
+                  <MarkdownContent content={session.notes} className="text-sm [&_p]:text-gray-400" />
                 </div>
               )}
 
@@ -201,7 +206,7 @@ export function SessionNoteCard({ session, onEdit, onDelete }: SessionNoteCardPr
                     <Lightbulb className="w-3 h-3" />
                     Thoughts for Next Session
                   </h4>
-                  <p className="text-sm text-gray-400 whitespace-pre-wrap">{session.thoughts_for_next}</p>
+                  <MarkdownContent content={session.thoughts_for_next} className="text-sm [&_p]:text-gray-400" />
                 </div>
               )}
             </div>

@@ -12,6 +12,7 @@ import {
   Shield,
   Scroll,
 } from 'lucide-react'
+import { MarkdownContent } from '@/components/ui'
 import type { Metadata } from 'next'
 
 // Demo character ID from migration
@@ -162,9 +163,7 @@ export default async function DemoCharacterPage() {
                   <h2 className="text-xl font-semibold text-white">Backstory</h2>
                 </div>
                 <div className="p-6 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-                  <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">
-                    {character.backstory}
-                  </p>
+                  <MarkdownContent content={character.backstory} />
                 </div>
               </section>
             )}
@@ -179,9 +178,7 @@ export default async function DemoCharacterPage() {
                   <h2 className="text-xl font-semibold text-white">Personality</h2>
                 </div>
                 <div className="p-6 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-                  <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">
-                    {character.personality}
-                  </p>
+                  <MarkdownContent content={character.personality} />
                 </div>
               </section>
             )}
@@ -191,19 +188,19 @@ export default async function DemoCharacterPage() {
               {character.ideals && (
                 <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
                   <h3 className="text-sm font-semibold text-purple-400 mb-2">Ideals</h3>
-                  <p className="text-sm text-gray-300">{character.ideals}</p>
+                  <MarkdownContent content={character.ideals} className="text-sm" />
                 </div>
               )}
               {character.bonds && (
                 <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
                   <h3 className="text-sm font-semibold text-indigo-400 mb-2">Bonds</h3>
-                  <p className="text-sm text-gray-300">{character.bonds}</p>
+                  <MarkdownContent content={character.bonds} className="text-sm" />
                 </div>
               )}
               {character.flaws && (
                 <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
                   <h3 className="text-sm font-semibold text-amber-400 mb-2">Flaws</h3>
-                  <p className="text-sm text-gray-300">{character.flaws}</p>
+                  <MarkdownContent content={character.flaws} className="text-sm" />
                 </div>
               )}
             </div>
@@ -231,9 +228,7 @@ export default async function DemoCharacterPage() {
                           </span>
                         )}
                       </div>
-                      <div className="text-sm text-gray-300 prose prose-invert prose-sm max-w-none whitespace-pre-wrap">
-                        {entry.notes}
-                      </div>
+                      <MarkdownContent content={entry.notes} className="text-sm" />
                     </div>
                   ))}
                 </div>
@@ -270,7 +265,9 @@ export default async function DemoCharacterPage() {
                         </div>
                       </div>
                       {member.description && (
-                        <p className="text-xs text-gray-400 mt-2 line-clamp-3">{member.description}</p>
+                        <div className="mt-2">
+                          <MarkdownContent content={member.description} className="text-xs [&_p]:text-gray-400 [&_strong]:text-gray-300" />
+                        </div>
                       )}
                     </div>
                   ))}
@@ -305,7 +302,9 @@ export default async function DemoCharacterPage() {
                         </div>
                       </div>
                       {companion.description && (
-                        <p className="text-xs text-gray-400 mt-2 line-clamp-3">{companion.description}</p>
+                        <div className="mt-2">
+                          <MarkdownContent content={companion.description} className="text-xs [&_p]:text-gray-400 [&_strong]:text-gray-300" />
+                        </div>
                       )}
                     </div>
                   ))}

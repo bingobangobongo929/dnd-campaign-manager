@@ -25,7 +25,7 @@ import {
   X,
   Heart,
 } from 'lucide-react'
-import { Modal, SafeHtml } from '@/components/ui'
+import { Modal, SafeHtml, MarkdownContent } from '@/components/ui'
 import { ShareCharacterModal } from './ShareCharacterModal'
 import type {
   VaultCharacter,
@@ -461,7 +461,7 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
           {companion.description && (
             <div>
               <p className="text-xs text-gray-500 mb-2">Description</p>
-              <p className="text-sm text-gray-300 whitespace-pre-wrap">{companion.description}</p>
+              <MarkdownContent content={companion.description} className="text-sm" />
             </div>
           )}
 
@@ -834,7 +834,7 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
                       {character.appearance && (
                         <div>
                           <FieldLabel>Appearance</FieldLabel>
-                          <p className="text-gray-300 whitespace-pre-wrap">{character.appearance}</p>
+                          <MarkdownContent content={character.appearance} />
                         </div>
                       )}
 
@@ -875,7 +875,7 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
                       {character.personality && (
                         <div>
                           <FieldLabel>Personality</FieldLabel>
-                          <p className="text-gray-300 whitespace-pre-wrap">{character.personality}</p>
+                          <MarkdownContent content={character.personality} />
                         </div>
                       )}
 
@@ -883,7 +883,7 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
                       {character.goals && (
                         <div>
                           <FieldLabel>Goals & Motivations</FieldLabel>
-                          <p className="text-gray-300 whitespace-pre-wrap">{character.goals}</p>
+                          <MarkdownContent content={character.goals} />
                         </div>
                       )}
 
@@ -891,7 +891,7 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
                       {character.secrets && showSecrets && (
                         <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4">
                           <FieldLabel emoji="🔒">Secrets</FieldLabel>
-                          <p className="text-amber-200/80 whitespace-pre-wrap">{character.secrets}</p>
+                          <MarkdownContent content={character.secrets} className="[&_p]:text-amber-200/80 [&_strong]:text-amber-100" />
                         </div>
                       )}
 
@@ -1088,7 +1088,9 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
                                     )}
                                   </div>
                                   {companion.description && (
-                                    <p className="text-xs text-gray-400 mt-2 whitespace-pre-wrap">{companion.description}</p>
+                                    <div className="mt-2">
+                                      <MarkdownContent content={companion.description} className="text-xs [&_p]:text-gray-400" />
+                                    </div>
                                   )}
                                   {companion.companion_abilities && (
                                     <p className="text-xs text-purple-400/80 mt-1">✨ Abilities: {companion.companion_abilities}</p>
@@ -1131,7 +1133,7 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
                               {writing.recipient && (
                                 <p className="text-xs text-gray-500 mb-2">To: {writing.recipient}</p>
                               )}
-                              <p className="text-sm text-gray-400 whitespace-pre-wrap">{writing.content}</p>
+                              <MarkdownContent content={writing.content} className="text-sm [&_p]:text-gray-400" />
                             </div>
                           ))}
                         </div>

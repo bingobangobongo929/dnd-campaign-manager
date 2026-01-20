@@ -564,13 +564,13 @@ export function CampaignShareClient({
                         {pc.background && (
                           <div>
                             <FieldLabel>Background</FieldLabel>
-                            <p className="text-gray-300">{pc.background}</p>
+                            <div className="prose prose-invert max-w-none text-gray-300" dangerouslySetInnerHTML={{ __html: markdownToHtml(pc.background) }} />
                           </div>
                         )}
                         {pc.personality && (
                           <div>
                             <FieldLabel>Personality</FieldLabel>
-                            <p className="text-gray-300">{pc.personality}</p>
+                            <div className="prose prose-invert max-w-none text-gray-300" dangerouslySetInnerHTML={{ __html: markdownToHtml(pc.personality) }} />
                           </div>
                         )}
                         {pc.backstory && (
@@ -582,7 +582,7 @@ export function CampaignShareClient({
                         {pc.goals && (
                           <div>
                             <FieldLabel>Goals</FieldLabel>
-                            <p className="text-gray-300">{pc.goals}</p>
+                            <div className="prose prose-invert max-w-none text-gray-300" dangerouslySetInnerHTML={{ __html: markdownToHtml(pc.goals) }} />
                           </div>
                         )}
                         {pc.notes && (
@@ -596,7 +596,7 @@ export function CampaignShareClient({
                     {sections.pcSecrets && pc.secrets && (
                       <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
                         <FieldLabel emoji="🔒">Secrets</FieldLabel>
-                        <p className="text-gray-300">{pc.secrets}</p>
+                        <div className="prose prose-invert max-w-none text-gray-300" dangerouslySetInnerHTML={{ __html: markdownToHtml(pc.secrets) }} />
                       </div>
                     )}
                   </div>
@@ -764,7 +764,7 @@ export function CampaignShareClient({
                             <div className="flex items-center gap-1.5 text-xs text-red-400 mb-1">
                               <span>🔒</span> Secret
                             </div>
-                            <p className="text-xs text-gray-300">{npc.secrets}</p>
+                            <div className="prose prose-invert prose-sm max-w-none text-gray-300" dangerouslySetInnerHTML={{ __html: markdownToHtml(npc.secrets) }} />
                           </div>
                         )}
                       </div>
@@ -886,7 +886,7 @@ export function CampaignShareClient({
                                   <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-white">{event.title}</p>
                                     {event.description && (
-                                      <p className="text-sm text-gray-400 mt-1">{event.description}</p>
+                                      <div className="prose prose-invert prose-sm max-w-none text-gray-400 mt-1" dangerouslySetInnerHTML={{ __html: markdownToHtml(event.description) }} />
                                     )}
                                     {event.location && (
                                       <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
@@ -935,7 +935,7 @@ export function CampaignShareClient({
                           </div>
                           <h3 className="text-base font-semibold text-white mb-2">{event.title}</h3>
                           {event.description && (
-                            <p className="text-sm text-gray-400">{event.description}</p>
+                            <div className="prose prose-invert prose-sm max-w-none text-gray-400" dangerouslySetInnerHTML={{ __html: markdownToHtml(event.description) }} />
                           )}
                           {event.location && (
                             <p className="text-xs text-gray-500 mt-3 flex items-center gap-1">

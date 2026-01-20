@@ -13,6 +13,7 @@ import {
   Scroll,
   User,
 } from 'lucide-react'
+import { MarkdownContent } from '@/components/ui'
 import type { Metadata } from 'next'
 
 // Demo campaign ID from migration
@@ -220,9 +221,11 @@ export default async function DemoCampaignPage() {
                           {npc.race}{npc.class ? ` • ${npc.class}` : ''}
                         </p>
                       )}
-                      <p className="text-sm text-gray-400 line-clamp-2">{npc.description}</p>
+                      <div className="text-sm text-gray-400 line-clamp-2">{npc.description}</div>
                       {npc.notes && (
-                        <p className="text-xs text-purple-400 mt-2">{npc.notes}</p>
+                        <div className="mt-2">
+                          <MarkdownContent content={npc.notes} className="text-xs [&_p]:text-purple-400 [&_strong]:text-purple-300" />
+                        </div>
                       )}
                     </div>
                   </div>
@@ -262,8 +265,8 @@ export default async function DemoCampaignPage() {
                     <p className="text-sm text-gray-400 mb-3">{session.summary}</p>
                   )}
                   {session.notes && (
-                    <div className="text-sm text-gray-300 prose prose-invert prose-sm max-w-none whitespace-pre-wrap border-t border-white/[0.06] pt-3 mt-3">
-                      {session.notes}
+                    <div className="border-t border-white/[0.06] pt-3 mt-3">
+                      <MarkdownContent content={session.notes} className="text-sm" />
                     </div>
                   )}
                 </div>

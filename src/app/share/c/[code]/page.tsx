@@ -16,6 +16,7 @@ import {
 import { getInitials } from '@/lib/utils'
 import { renderMarkdown } from '@/lib/character-display'
 import { sanitizeHtml } from '@/components/ui/safe-html'
+import { MarkdownContent } from '@/components/ui'
 import { InteractivePortrait, BackToTopButton } from './client'
 import { SharePageHeader } from '@/components/share/SharePageHeader'
 import crypto from 'crypto'
@@ -770,7 +771,7 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
                 {sections.appearance && character.appearance && (
                   <div>
                     <FieldLabel>Appearance</FieldLabel>
-                    <p className="text-gray-300 whitespace-pre-wrap">{character.appearance}</p>
+                    <MarkdownContent content={character.appearance} />
                   </div>
                 )}
 
@@ -837,14 +838,14 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
                 {sections.personality && character.personality && (
                   <div>
                     <FieldLabel>Personality</FieldLabel>
-                    <p className="text-gray-300 whitespace-pre-wrap">{character.personality}</p>
+                    <MarkdownContent content={character.personality} />
                   </div>
                 )}
 
                 {sections.goals && character.goals && (
                   <div>
                     <FieldLabel>Goals & Motivations</FieldLabel>
-                    <p className="text-gray-300 whitespace-pre-wrap">{character.goals}</p>
+                    <MarkdownContent content={character.goals} />
                   </div>
                 )}
 
@@ -916,7 +917,7 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
                 {sections.secrets && character.secrets && (
                   <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4">
                     <FieldLabel emoji="🔒">Secrets</FieldLabel>
-                    <p className="text-amber-200/80 whitespace-pre-wrap">{character.secrets}</p>
+                    <MarkdownContent content={character.secrets} className="[&_p]:text-amber-200/80 [&_strong]:text-amber-100" />
                   </div>
                 )}
               </div>
@@ -1021,7 +1022,9 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
                               )}
                             </div>
                             {companion.description && (
-                              <p className="text-xs text-gray-400 mt-2 whitespace-pre-wrap">{companion.description}</p>
+                              <div className="mt-2">
+                                <MarkdownContent content={companion.description} className="text-xs [&_p]:text-gray-400" />
+                              </div>
                             )}
                             {companion.companion_abilities && (
                               <p className="text-xs text-purple-400/80 mt-1">✨ Abilities: {companion.companion_abilities}</p>
@@ -1056,7 +1059,7 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
                         {writing.recipient && (
                           <p className="text-xs text-gray-500 mb-2">To: {writing.recipient}</p>
                         )}
-                        <p className="text-sm text-gray-400 whitespace-pre-wrap">{writing.content}</p>
+                        <MarkdownContent content={writing.content} className="text-sm [&_p]:text-gray-400" />
                       </div>
                     ))}
                   </div>

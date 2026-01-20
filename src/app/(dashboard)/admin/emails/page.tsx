@@ -15,7 +15,8 @@ import {
   Shield,
   ShieldOff,
   PartyPopper,
-  Trash2
+  Trash2,
+  ClipboardList
 } from 'lucide-react'
 
 // Email template types
@@ -61,6 +62,13 @@ const EMAIL_TEMPLATES = [
     description: 'Sent when user deletes their account',
     icon: Trash2,
     color: 'text-red-400'
+  },
+  {
+    id: 'waitlist-confirmation',
+    name: 'Waitlist Confirmation',
+    description: 'Sent to verify email for waitlist signup',
+    icon: ClipboardList,
+    color: 'text-cyan-400'
   },
 ]
 

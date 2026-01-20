@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Calendar, Pencil } from 'lucide-react'
 import { formatDate, getInitials } from '@/lib/utils'
+import { MarkdownContent } from '@/components/ui'
 import Image from 'next/image'
 import type { TimelineViewProps, TimelineEventWithCharacters } from './types'
 
@@ -196,12 +197,7 @@ export function BrowserView({ events, onEventClick, onCharacterClick }: Timeline
                   Description
                 </h3>
                 {selected.description ? (
-                  <p
-                    className="text-[15px] leading-relaxed whitespace-pre-wrap"
-                    style={{ color: '#d1d5db', lineHeight: '1.8' }}
-                  >
-                    {selected.description}
-                  </p>
+                  <MarkdownContent content={selected.description} className="text-[15px] [&_p]:leading-relaxed [&_p]:text-gray-300" />
                 ) : (
                   <p style={{ color: '#4b5563' }}>
                     No description yet.{' '}

@@ -927,7 +927,7 @@ export default function VaultImportPage() {
               )}
             </div>
             {companion.description && (
-              <p className="text-xs text-gray-400 mt-2 whitespace-pre-wrap">{companion.description}</p>
+              <div className="text-xs text-gray-400 mt-2">{renderMarkdown(companion.description)}</div>
             )}
             {companion.abilities && (
               <p className="text-xs text-purple-400/80 mt-1">✨ Abilities: {companion.abilities}</p>
@@ -972,7 +972,7 @@ export default function VaultImportPage() {
           )}
           {session.notes && (
             <div className="mt-2 pt-2 border-t border-white/[0.06]">
-              <p className="text-xs text-gray-400 whitespace-pre-wrap">{session.notes}</p>
+              <div className="text-xs text-gray-400">{renderMarkdown(session.notes)}</div>
             </div>
           )}
           {session.loot && (
@@ -1014,7 +1014,7 @@ export default function VaultImportPage() {
             <p className="text-xs text-gray-500 mt-1">Date: {writing.in_universe_date}</p>
           )}
           <div className="mt-2 pt-2 border-t border-white/[0.06]">
-            <p className="text-xs text-gray-400 whitespace-pre-wrap">{writing.content}</p>
+            <div className="text-xs text-gray-400">{renderMarkdown(writing.content)}</div>
           </div>
         </div>
       ))}
