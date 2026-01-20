@@ -11,6 +11,7 @@ import {
   Sparkles,
   Clock,
   Scroll,
+  User,
 } from 'lucide-react'
 import type { Metadata } from 'next'
 
@@ -102,11 +103,34 @@ export default async function DemoCampaignPage() {
 
       {/* Hero */}
       <div className="relative">
-        <div className="h-48 md:h-64 bg-gradient-to-b from-purple-900/30 to-transparent" />
+        {campaign.image_url ? (
+          <div className="h-64 md:h-80 relative">
+            <Image
+              src={campaign.image_url}
+              alt={campaign.name}
+              fill
+              className="object-cover"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0a0f]/50 to-[#0a0a0f]" />
+          </div>
+        ) : (
+          <div className="h-48 md:h-64 bg-gradient-to-b from-purple-900/30 to-transparent" />
+        )}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24 relative z-10">
           <div className="flex items-start gap-6">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center shadow-xl">
-              <Map className="w-10 h-10 text-white" />
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center shadow-xl overflow-hidden">
+              {campaign.image_url ? (
+                <Image
+                  src={campaign.image_url}
+                  alt={campaign.name}
+                  width={80}
+                  height={80}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <Map className="w-10 h-10 text-white" />
+              )}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
@@ -176,8 +200,18 @@ export default async function DemoCampaignPage() {
                   className="p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-purple-500/30 transition-colors"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600/30 to-purple-800/30 flex items-center justify-center text-lg font-semibold text-purple-300">
-                      {npc.name[0]}
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600/30 to-purple-800/30 flex items-center justify-center text-lg font-semibold text-purple-300 overflow-hidden">
+                      {npc.image_url ? (
+                        <Image
+                          src={npc.image_url}
+                          alt={npc.name}
+                          width={48}
+                          height={48}
+                          className="object-cover w-full h-full"
+                        />
+                      ) : (
+                        npc.name[0]
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-white mb-1">{npc.name}</h3>

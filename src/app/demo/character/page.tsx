@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 import {
   Users,
@@ -96,11 +97,35 @@ export default async function DemoCharacterPage() {
 
       {/* Hero */}
       <div className="relative">
-        <div className="h-48 md:h-64 bg-gradient-to-b from-indigo-900/30 to-transparent" />
+        {character.image_url ? (
+          <div className="h-64 md:h-80 relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f] via-transparent to-[#0a0a0f]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0a0a0f]" />
+            <Image
+              src={character.image_url!}
+              alt={character.name}
+              fill
+              className="object-cover object-top opacity-60"
+              priority
+            />
+          </div>
+        ) : (
+          <div className="h-48 md:h-64 bg-gradient-to-b from-indigo-900/30 to-transparent" />
+        )}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24 relative z-10">
           <div className="flex items-start gap-6">
-            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center shadow-xl">
-              <User className="w-12 h-12 text-white" />
+            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center shadow-xl overflow-hidden border-2 border-indigo-500/30">
+              {character.image_url ? (
+                <Image
+                  src={character.image_url}
+                  alt={character.name}
+                  width={96}
+                  height={96}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <User className="w-12 h-12 text-white" />
+              )}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
