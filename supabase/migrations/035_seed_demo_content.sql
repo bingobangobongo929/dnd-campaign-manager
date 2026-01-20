@@ -49,21 +49,21 @@ BEGIN
     is_demo = true,
     updated_at = NOW();
 
-  -- Campaign Characters (NPCs)
+  -- Campaign Characters (NPCs) - Note: type can only be 'pc' or 'npc'
   INSERT INTO characters (id, campaign_id, name, type, description, race, class, notes, created_at, updated_at)
   VALUES
     (gen_random_uuid(), demo_campaign_id, 'Kerowyn Hucrele', 'npc',
      'A wealthy merchant and worried mother. Her children Talgen and Sharwyn ventured into the citadel a month ago and haven''t returned.',
-     'Human', NULL, 'Offers 250gp per rescued child. Located in Oakhurst village.', NOW(), NOW()),
-    (gen_random_uuid(), demo_campaign_id, 'Meepo', 'ally',
+     'Human', NULL, 'Quest Giver. Offers 250gp per rescued child. Located in Oakhurst village.', NOW(), NOW()),
+    (gen_random_uuid(), demo_campaign_id, 'Meepo', 'npc',
      'A pathetic kobold who lost his dragon wyrmling, Calcryx. Desperately seeks help recovering her from the goblins.',
-     'Kobold', NULL, 'Knows the citadel layout. Loyal but cowardly. Speaks broken Common.', NOW(), NOW()),
-    (gen_random_uuid(), demo_campaign_id, 'Belak the Outcast', 'villain',
+     'Kobold', NULL, 'Ally. Knows the citadel layout. Loyal but cowardly. Speaks broken Common.', NOW(), NOW()),
+    (gen_random_uuid(), demo_campaign_id, 'Belak the Outcast', 'npc',
      'A twisted druid corrupted by the Gulthias Tree. Plans to spread the tree''s dark influence across the land.',
-     'Human', 'Druid', 'Controls the twilight grove. Has dominated the missing adventurers.', NOW(), NOW()),
-    (gen_random_uuid(), demo_campaign_id, 'Calcryx', 'ally',
+     'Human', 'Druid', 'Villain. Controls the twilight grove. Has dominated the missing adventurers.', NOW(), NOW()),
+    (gen_random_uuid(), demo_campaign_id, 'Calcryx', 'npc',
      'A young white dragon, stolen by goblins and kept as a trophy. Bad-tempered but potentially valuable ally.',
-     'White Dragon Wyrmling', NULL, 'AC 16, HP 32. Breath weapon deals 2d8 cold damage.', NOW(), NOW())
+     'White Dragon Wyrmling', NULL, 'Potential Ally. AC 16, HP 32. Breath weapon deals 2d8 cold damage.', NOW(), NOW())
   ON CONFLICT DO NOTHING;
 
   -- Timeline Events
