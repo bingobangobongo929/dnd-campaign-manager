@@ -82,7 +82,7 @@ export default function EditVaultCharacterPage() {
 
   return (
     <AppLayout characterId={characterId} fullBleed>
-      <CharacterEditor character={character} mode="edit" />
+      <CharacterEditor character={character} mode="edit" standalone={false} />
       <BackToTopButton />
     </AppLayout>
   )

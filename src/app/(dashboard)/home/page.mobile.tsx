@@ -186,66 +186,6 @@ export function HomePageMobile({
           </div>
         )}
 
-        {/* Characters Section */}
-        <MobileSectionHeader
-          title="Characters"
-          action={
-            <button onClick={() => onNavigate('/vault')} className="text-sm text-[--arcane-purple]">
-              View All
-            </button>
-          }
-        />
-        {characters.length === 0 ? (
-          <div className="mx-4 p-8 text-center bg-gradient-to-br from-purple-500/5 to-transparent rounded-xl border border-dashed border-purple-500/20">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-purple-500/10 flex items-center justify-center">
-              <BookOpen className="w-7 h-7 text-purple-400" />
-            </div>
-            <h3 className="text-base font-semibold text-white mb-1">Your Vault Awaits</h3>
-            <p className="text-gray-400 text-sm mb-5">Create characters to track their journeys</p>
-            <button
-              onClick={() => onNavigate('/vault')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-600 text-white text-sm font-medium rounded-xl"
-            >
-              <Plus className="w-4 h-4" />
-              Add Your First Character
-            </button>
-          </div>
-        ) : (
-          <div className="px-4 grid grid-cols-2 gap-3">
-            {characters.slice(0, 6).map((character) => (
-              <button
-                key={character.id}
-                onClick={() => onNavigate(`/vault/${character.id}`)}
-                className="relative aspect-[3/4] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform"
-              >
-                {character.detail_image_url || character.image_url ? (
-                  <>
-                    <Image
-                      src={character.detail_image_url || character.image_url!}
-                      alt={character.name}
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                  </>
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-purple-400/40">
-                      {getInitials(character.name)}
-                    </span>
-                  </div>
-                )}
-                <div className="absolute bottom-0 left-0 right-0 p-3">
-                  <h4 className="font-semibold text-white text-sm truncate">{character.name}</h4>
-                  <p className="text-[11px] text-gray-400 truncate">
-                    {[character.race, character.class].filter(Boolean).join(' ')}
-                  </p>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-
         {/* One-Shots Section */}
         <MobileSectionHeader
           title="One-Shots"
@@ -300,6 +240,66 @@ export function HomePageMobile({
                     {oneshot.game_system}
                   </span>
                   <h4 className="font-semibold text-white text-xs line-clamp-2">{oneshot.title}</h4>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Characters Section */}
+        <MobileSectionHeader
+          title="Characters"
+          action={
+            <button onClick={() => onNavigate('/vault')} className="text-sm text-[--arcane-purple]">
+              View All
+            </button>
+          }
+        />
+        {characters.length === 0 ? (
+          <div className="mx-4 p-8 text-center bg-gradient-to-br from-purple-500/5 to-transparent rounded-xl border border-dashed border-purple-500/20">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-purple-500/10 flex items-center justify-center">
+              <BookOpen className="w-7 h-7 text-purple-400" />
+            </div>
+            <h3 className="text-base font-semibold text-white mb-1">Your Vault Awaits</h3>
+            <p className="text-gray-400 text-sm mb-5">Create characters to track their journeys</p>
+            <button
+              onClick={() => onNavigate('/vault')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-600 text-white text-sm font-medium rounded-xl"
+            >
+              <Plus className="w-4 h-4" />
+              Add Your First Character
+            </button>
+          </div>
+        ) : (
+          <div className="px-4 grid grid-cols-2 gap-3">
+            {characters.slice(0, 6).map((character) => (
+              <button
+                key={character.id}
+                onClick={() => onNavigate(`/vault/${character.id}`)}
+                className="relative aspect-[3/4] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform"
+              >
+                {character.detail_image_url || character.image_url ? (
+                  <>
+                    <Image
+                      src={character.detail_image_url || character.image_url!}
+                      alt={character.name}
+                      fill
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                  </>
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                    <span className="text-2xl font-bold text-purple-400/40">
+                      {getInitials(character.name)}
+                    </span>
+                  </div>
+                )}
+                <div className="absolute bottom-0 left-0 right-0 p-3">
+                  <h4 className="font-semibold text-white text-sm truncate">{character.name}</h4>
+                  <p className="text-[11px] text-gray-400 truncate">
+                    {[character.race, character.class].filter(Boolean).join(' ')}
+                  </p>
                 </div>
               </button>
             ))}

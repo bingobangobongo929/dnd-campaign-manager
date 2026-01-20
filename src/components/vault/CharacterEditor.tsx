@@ -65,6 +65,8 @@ import { Modal } from '@/components/ui'
 import { UnifiedImageModal } from '@/components/ui/unified-image-modal'
 import { VaultImageCropModal } from './VaultImageCropModal'
 import { ShareCharacterModal } from './ShareCharacterModal'
+import { FloatingDock } from '@/components/layout/floating-dock'
+import { MobileTabBar } from '@/components/mobile/mobile-tab-bar'
 import type {
   VaultCharacter,
   StoryCharacter,
@@ -92,6 +94,8 @@ type SectionType = 'backstory' | 'details' | 'people' | 'writings' | 'gallery'
 interface CharacterEditorProps {
   character?: VaultCharacter | null
   mode: 'create' | 'edit'
+  /** When true, renders own navigation (FloatingDock/MobileTabBar). Set to false when wrapped in AppLayout. */
+  standalone?: boolean
 }
 
 // Default statuses
@@ -175,7 +179,7 @@ function CollapsibleSection({
   )
 }
 
-export function CharacterEditor({ character, mode }: CharacterEditorProps) {
+export function CharacterEditor({ character, mode, standalone = true }: CharacterEditorProps) {
   const router = useRouter()
   const isMobile = useIsMobile()
   // Memoize supabase client to prevent recreation on each render
@@ -1826,6 +1830,7 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
   // ============ MOBILE LAYOUT ============
   if (isMobile) {
     return (
+      <>
       <CharacterEditorMobile
         mode={mode}
         characterId={characterId}
@@ -1861,6 +1866,8 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         generatingPrompt={generatingPrompt}
         handleGenerateAiPrompt={handleGenerateAiPrompt}
       />
+      {standalone && <MobileTabBar />}
+      </>
     )
   }
 
@@ -4292,6 +4299,9 @@ export function CharacterEditor({ character, mode }: CharacterEditorProps) {
         }}
         title="Add Gallery Image"
       />
+
+      {/* Floating Dock Navigation */}
+      {standalone && <FloatingDock characterId={characterId || undefined} />}
     </>
   )
 }

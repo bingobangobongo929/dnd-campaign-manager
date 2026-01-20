@@ -152,15 +152,29 @@ function LoginForm() {
         setError(error.message)
         setLoading(false)
       } else {
-        // Update last_login_at
+        // Check if user has 2FA enabled
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
-          await supabase
+          const { data: settings } = await supabase
             .from('user_settings')
-            .update({ last_login_at: new Date().toISOString() })
+            .select('totp_enabled')
             .eq('user_id', user.id)
+            .single()
+
+          if (settings?.totp_enabled) {
+            // Redirect to 2FA verification page
+            router.push('/login/verify')
+          } else {
+            // No 2FA, update last_login_at and go to home
+            await supabase
+              .from('user_settings')
+              .update({ last_login_at: new Date().toISOString() })
+              .eq('user_id', user.id)
+            router.push('/home')
+          }
+        } else {
+          router.push('/home')
         }
-        router.push('/home')
       }
     } else {
       // Sign up

@@ -189,6 +189,7 @@ export function TopBar({
           shares: 'Share Analytics',
           activity: 'Activity Log',
           images: 'Image Enhancement',
+          security: 'Security',
         }
         breadcrumbs.push({ label: settingsLabels[parts[1]] || parts[1] })
       }
@@ -399,7 +400,7 @@ export function TopBar({
         )}
 
         <div className="flex items-center gap-3">
-          <Link href="/settings" className="relative w-8 h-8 rounded-full overflow-hidden bg-[--bg-secondary] flex items-center justify-center hover:ring-2 hover:ring-[--arcane-purple]/50 transition-all">
+          <Link href="/home" className="relative w-8 h-8 rounded-full overflow-hidden bg-[--bg-secondary] flex items-center justify-center hover:ring-2 hover:ring-[--arcane-purple]/50 transition-all">
             {userSettings?.avatar_url ? (
               <Image
                 src={userSettings.avatar_url}

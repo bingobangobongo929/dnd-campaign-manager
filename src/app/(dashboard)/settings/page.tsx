@@ -422,7 +422,7 @@ export default function SettingsPage() {
                   <button
                     onClick={() => setAIEnabled(!aiEnabled)}
                     className={`relative w-12 h-7 rounded-full transition-colors ${
-                      aiEnabled ? 'bg-[--arcane-purple]' : 'bg-gray-600'
+                      aiEnabled ? 'bg-purple-600' : 'bg-gray-600'
                     }`}
                   >
                     <div
@@ -885,7 +885,7 @@ export default function SettingsPage() {
               <button
                 onClick={() => setAIEnabled(!aiEnabled)}
                 className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 ml-4 ${
-                  aiEnabled ? 'bg-[--arcane-purple]' : 'bg-gray-600'
+                  aiEnabled ? 'bg-purple-600' : 'bg-gray-600'
                 }`}
               >
                 <div

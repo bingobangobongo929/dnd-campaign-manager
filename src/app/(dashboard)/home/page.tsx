@@ -101,15 +101,29 @@ export default function HomePage() {
     <AppLayout>
       <div className="max-w-7xl mx-auto space-y-12">
 
-        {/* Hero Section - Featured Campaign */}
-        {featuredCampaign ? (
-          <section>
+        {/* Your Campaigns Section */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-500/10">
+                <Swords className="w-5 h-5 text-blue-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">Your Campaigns</h3>
+            </div>
+            {campaigns.length > 0 && (
+              <Link href="/campaigns" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
+                View All <ChevronRight className="w-4 h-4" />
+              </Link>
+            )}
+          </div>
+
+          {/* Featured Campaign Hero */}
+          {featuredCampaign && (
             <Link
               href={`/campaigns/${featuredCampaign.id}/canvas`}
-              className="group relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-[--arcane-purple]/30 transition-all duration-500"
+              className="group relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-blue-500/30 transition-all duration-500 mb-6"
             >
-              {/* Background Image */}
-              <div className="relative h-[320px] md:h-[400px]">
+              <div className="relative h-[280px] md:h-[360px]">
                 {featuredCampaign.image_url ? (
                   <>
                     <Image
@@ -123,20 +137,20 @@ export default function HomePage() {
                     <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
                   </>
                 ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-[--arcane-purple]/20 via-gray-900 to-gray-950" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-gray-900 to-gray-950" />
                 )}
 
                 {/* Content Overlay */}
                 <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-10">
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-full bg-[--arcane-purple] text-white">
+                    <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-blue-300">
                       Continue Playing
                     </span>
                     <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300">
                       {featuredCampaign.game_system}
                     </span>
                   </div>
-                  <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-2 group-hover:text-[--arcane-purple] transition-colors">
+                  <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">
                     {featuredCampaign.name}
                   </h2>
                   {featuredCampaign.description && (
@@ -144,7 +158,7 @@ export default function HomePage() {
                       {featuredCampaign.description}
                     </p>
                   )}
-                  <div className="flex items-center gap-2 text-[--arcane-purple] font-medium">
+                  <div className="flex items-center gap-2 text-blue-400 font-medium">
                     <Play className="w-5 h-5" />
                     <span>Enter Campaign</span>
                     <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
@@ -152,44 +166,29 @@ export default function HomePage() {
                 </div>
               </div>
             </Link>
-          </section>
-        ) : (
-          /* Empty State Hero */
-          <section className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[--arcane-purple]/10 via-gray-900 to-gray-950 border border-white/[0.06] p-12 text-center">
-            <Sparkles className="w-16 h-16 mx-auto mb-6 text-[--arcane-purple]" />
-            <h2 className="text-2xl md:text-3xl font-display font-bold text-white mb-3">
-              Begin Your Adventure
-            </h2>
-            <p className="text-gray-400 mb-6 max-w-md mx-auto">
-              Create your first campaign and start building your world
-            </p>
-            <Link href="/campaigns" className="btn btn-primary">
-              <Plus className="w-5 h-5" />
-              Create Campaign
-            </Link>
-          </section>
-        )}
+          )}
 
-        {/* All Campaigns Grid */}
-        {displayCampaigns.length > 0 && (
-          <section>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-500/10">
-                  <Swords className="w-5 h-5 text-blue-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-white">Your Campaigns</h3>
+          {campaigns.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-transparent p-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-blue-500/10 flex items-center justify-center">
+                <Swords className="w-8 h-8 text-blue-400" />
               </div>
-              <Link href="/campaigns" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
-                View All <ChevronRight className="w-4 h-4" />
+              <h3 className="text-lg font-semibold text-white mb-2">Begin Your Adventure</h3>
+              <p className="text-gray-400 mb-6 max-w-sm mx-auto">
+                Create your first campaign and start building your world
+              </p>
+              <Link href="/campaigns" className="btn btn-secondary">
+                <Plus className="w-4 h-4" />
+                Create Campaign
               </Link>
             </div>
+          ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {displayCampaigns.map((campaign) => (
                 <Link
                   key={campaign.id}
                   href={`/campaigns/${campaign.id}/canvas`}
-                  className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-[--arcane-purple]/30 transition-all"
+                  className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-blue-500/30 transition-all"
                 >
                   <div className="relative h-40">
                     {campaign.image_url ? (
@@ -209,130 +208,10 @@ export default function HomePage() {
                     )}
                   </div>
                   <div className="p-4">
-                    <h4 className="font-semibold text-white truncate group-hover:text-[--arcane-purple] transition-colors">
+                    <h4 className="font-semibold text-white truncate group-hover:text-blue-400 transition-colors">
                       {campaign.name}
                     </h4>
                     <p className="text-xs text-gray-500 mt-1">{campaign.game_system}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Character Vault - Portrait Gallery */}
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-500/10">
-                <BookOpen className="w-5 h-5 text-purple-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-white">Character Vault</h3>
-            </div>
-            <Link href="/vault" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
-              View All <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-
-          {/* Featured Character Hero */}
-          {featuredCharacter && (
-            <Link
-              href={`/vault/${featuredCharacter.id}`}
-              className="group relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-purple-500/30 transition-all duration-500 mb-6"
-            >
-              <div className="relative h-[280px] md:h-[360px]">
-                {featuredCharacter.image_url ? (
-                  <>
-                    <Image
-                      src={featuredCharacter.image_url}
-                      alt={featuredCharacter.name}
-                      fill
-                      className="object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
-                  </>
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-gray-900 to-gray-950" />
-                )}
-
-                {/* Content Overlay */}
-                <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-10">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-purple-300">
-                      Continue Your Story
-                    </span>
-                    {featuredCharacter.status && (
-                      <span
-                        className="px-3 py-1 text-xs font-medium rounded-full text-white"
-                        style={{ backgroundColor: featuredCharacter.status_color || 'rgba(255,255,255,0.1)' }}
-                      >
-                        {featuredCharacter.status}
-                      </span>
-                    )}
-                  </div>
-                  <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-2 group-hover:text-purple-400 transition-colors">
-                    {featuredCharacter.name}
-                  </h2>
-                  <p className="text-gray-400 text-sm md:text-base mb-4">
-                    {[featuredCharacter.race, featuredCharacter.class].filter(Boolean).join(' ') || 'Adventurer'}
-                  </p>
-                  <div className="flex items-center gap-2 text-purple-400 font-medium">
-                    <BookOpen className="w-5 h-5" />
-                    <span>Open Character</span>
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                  </div>
-                </div>
-              </div>
-            </Link>
-          )}
-
-          {characters.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent p-12 text-center">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-purple-500/10 flex items-center justify-center">
-                <BookOpen className="w-8 h-8 text-purple-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Your Vault Awaits</h3>
-              <p className="text-gray-400 mb-6 max-w-sm mx-auto">
-                Create characters once and reuse them across campaigns. Build detailed backstories and track their journeys.
-              </p>
-              <Link href="/vault" className="btn btn-secondary">
-                <Plus className="w-4 h-4" />
-                Add Your First Character
-              </Link>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {characters.map((character) => (
-                <Link
-                  key={character.id}
-                  href={`/vault/${character.id}`}
-                  className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/30 transition-all aspect-[3/4]"
-                >
-                  {character.detail_image_url || character.image_url ? (
-                    <>
-                      <Image
-                        src={character.detail_image_url || character.image_url!}
-                        alt={character.name}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                    </>
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
-                      <span className="text-4xl font-bold text-purple-400/40">
-                        {getInitials(character.name)}
-                      </span>
-                    </div>
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <h4 className="font-semibold text-white truncate text-sm group-hover:text-purple-300 transition-colors">
-                      {character.name}
-                    </h4>
-                    <p className="text-xs text-gray-400 truncate">
-                      {[character.race, character.class].filter(Boolean).join(' ') || 'Adventurer'}
-                    </p>
                   </div>
                 </Link>
               ))}
@@ -459,6 +338,126 @@ export default function HomePage() {
               ))}
             </div>
             </>
+          )}
+        </section>
+
+        {/* Character Vault - Portrait Gallery */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-500/10">
+                <BookOpen className="w-5 h-5 text-purple-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">Character Vault</h3>
+            </div>
+            <Link href="/vault" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
+              View All <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* Featured Character Hero */}
+          {featuredCharacter && (
+            <Link
+              href={`/vault/${featuredCharacter.id}`}
+              className="group relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-purple-500/30 transition-all duration-500 mb-6"
+            >
+              <div className="relative h-[280px] md:h-[360px]">
+                {featuredCharacter.image_url ? (
+                  <>
+                    <Image
+                      src={featuredCharacter.image_url}
+                      alt={featuredCharacter.name}
+                      fill
+                      className="object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
+                  </>
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-gray-900 to-gray-950" />
+                )}
+
+                {/* Content Overlay */}
+                <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-10">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-purple-300">
+                      Continue Your Story
+                    </span>
+                    {featuredCharacter.status && (
+                      <span
+                        className="px-3 py-1 text-xs font-medium rounded-full text-white"
+                        style={{ backgroundColor: featuredCharacter.status_color || 'rgba(255,255,255,0.1)' }}
+                      >
+                        {featuredCharacter.status}
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-2 group-hover:text-purple-400 transition-colors">
+                    {featuredCharacter.name}
+                  </h2>
+                  <p className="text-gray-400 text-sm md:text-base mb-4">
+                    {[featuredCharacter.race, featuredCharacter.class].filter(Boolean).join(' ') || 'Adventurer'}
+                  </p>
+                  <div className="flex items-center gap-2 text-purple-400 font-medium">
+                    <BookOpen className="w-5 h-5" />
+                    <span>Open Character</span>
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                  </div>
+                </div>
+              </div>
+            </Link>
+          )}
+
+          {characters.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent p-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-purple-500/10 flex items-center justify-center">
+                <BookOpen className="w-8 h-8 text-purple-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">Your Vault Awaits</h3>
+              <p className="text-gray-400 mb-6 max-w-sm mx-auto">
+                Create characters once and reuse them across campaigns. Build detailed backstories and track their journeys.
+              </p>
+              <Link href="/vault" className="btn btn-secondary">
+                <Plus className="w-4 h-4" />
+                Add Your First Character
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {characters.map((character) => (
+                <Link
+                  key={character.id}
+                  href={`/vault/${character.id}`}
+                  className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/30 transition-all aspect-[3/4]"
+                >
+                  {character.detail_image_url || character.image_url ? (
+                    <>
+                      <Image
+                        src={character.detail_image_url || character.image_url!}
+                        alt={character.name}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                      <span className="text-4xl font-bold text-purple-400/40">
+                        {getInitials(character.name)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <h4 className="font-semibold text-white truncate text-sm group-hover:text-purple-300 transition-colors">
+                      {character.name}
+                    </h4>
+                    <p className="text-xs text-gray-400 truncate">
+                      {[character.race, character.class].filter(Boolean).join(' ') || 'Adventurer'}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
           )}
         </section>
 
