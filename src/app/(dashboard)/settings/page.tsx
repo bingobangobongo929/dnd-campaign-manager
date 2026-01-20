@@ -33,6 +33,7 @@ import Image from 'next/image'
 import { v4 as uuidv4 } from 'uuid'
 import { toast } from 'sonner'
 import { Modal } from '@/components/ui'
+import { AvatarCropModal } from '@/components/ui/avatar-crop-modal'
 import { MobileLayout } from '@/components/mobile'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { useAppStore, CURRENCY_CONFIG, type Currency, useCanUseAI } from '@/store'
@@ -71,6 +72,7 @@ export default function SettingsPage() {
 
   // Avatar upload state
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [avatarCropImage, setAvatarCropImage] = useState<string | null>(null)
 
   // Stats state
   const [stats, setStats] = useState({
@@ -221,7 +223,7 @@ export default function SettingsPage() {
     loadStats()
   }
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !user) return
 
@@ -230,10 +232,19 @@ export default function SettingsPage() {
       toast.error('Please select an image file')
       return
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB')
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image must be less than 10MB')
       return
     }
+
+    // Create object URL and open crop modal
+    const imageUrl = URL.createObjectURL(file)
+    setAvatarCropImage(imageUrl)
+    e.target.value = ''
+  }
+
+  const handleAvatarCropSave = async (blob: Blob) => {
+    if (!user) return
 
     setUploadingAvatar(true)
     try {
@@ -245,13 +256,12 @@ export default function SettingsPage() {
         }
       }
 
-      // Upload new avatar
-      const ext = file.name.split('.').pop()
-      const path = `${user.id}/${uuidv4()}.${ext}`
+      // Upload new avatar (webp format from crop)
+      const path = `${user.id}/${uuidv4()}.webp`
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(path, file, { contentType: file.type })
+        .upload(path, blob, { contentType: 'image/webp' })
 
       if (uploadError) throw uploadError
 
@@ -277,8 +287,14 @@ export default function SettingsPage() {
       toast.error('Failed to upload avatar')
     } finally {
       setUploadingAvatar(false)
-      e.target.value = ''
     }
+  }
+
+  const handleAvatarCropClose = () => {
+    if (avatarCropImage) {
+      URL.revokeObjectURL(avatarCropImage)
+    }
+    setAvatarCropImage(null)
   }
 
   const handleRemoveAvatar = async () => {
@@ -771,7 +787,7 @@ export default function SettingsPage() {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={handleAvatarUpload}
+                      onChange={handleAvatarSelect}
                       className="hidden"
                       disabled={uploadingAvatar}
                     />
@@ -1432,6 +1448,14 @@ export default function SettingsPage() {
           </div>
         )}
       </Modal>
+
+      {/* Avatar Crop Modal */}
+      <AvatarCropModal
+        isOpen={!!avatarCropImage}
+        imageSrc={avatarCropImage || ''}
+        onClose={handleAvatarCropClose}
+        onSave={handleAvatarCropSave}
+      />
     </>
   )
 }
