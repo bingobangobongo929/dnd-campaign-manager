@@ -2,13 +2,14 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Settings, Share2, History, ImagePlus } from 'lucide-react'
+import { Settings, Share2, History, ImagePlus, Shield } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout } from '@/components/mobile'
 import { useIsMobile } from '@/hooks'
 
 const SETTINGS_TABS = [
   { href: '/settings', label: 'General', shortLabel: 'General', icon: Settings, exact: true },
+  { href: '/settings/security', label: 'Security & Privacy', shortLabel: 'Security', icon: Shield },
   { href: '/settings/shares', label: 'Share Analytics', shortLabel: 'Shares', icon: Share2 },
   { href: '/settings/activity', label: 'Activity Log', shortLabel: 'Activity', icon: History },
   { href: '/settings/images', label: 'Image Enhancement', shortLabel: 'Images', icon: ImagePlus },

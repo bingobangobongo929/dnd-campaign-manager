@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Shield, Smartphone, Key, Copy, Check, Loader2, AlertTriangle, Download, Trash2 } from 'lucide-react'
-import { AppLayout } from '@/components/layout/app-layout'
 import { Modal, Button } from '@/components/ui'
 import { useSupabase, useUser, useUserSettings } from '@/hooks'
 import { cn } from '@/lib/utils'
@@ -212,13 +211,13 @@ export default function SecuritySettingsPage() {
   }
 
   return (
-    <AppLayout>
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white">Security Settings</h1>
-          <p className="text-gray-400 mt-1">Manage your account security and privacy</p>
-        </div>
+    <>
+      <div className="page-header">
+        <h1 className="page-title">Security & Privacy</h1>
+        <p className="page-subtitle">Manage your account security and data privacy</p>
+      </div>
 
+      <div className="max-w-2xl mx-auto space-y-6">
         {/* Two-Factor Authentication */}
         <section className="mb-8">
           <div className="bg-[#1a1a24] rounded-xl border border-white/[0.06] p-6">
@@ -635,6 +634,6 @@ export default function SecuritySettingsPage() {
           </Modal>
         )}
       </div>
-    </AppLayout>
+    </>
   )
 }
