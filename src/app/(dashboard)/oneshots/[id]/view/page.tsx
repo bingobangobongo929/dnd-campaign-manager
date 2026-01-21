@@ -1,9 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Image from 'next/image'
-import Link from 'next/link'
-import { Users, Clock, Scroll, BookOpen, Target, Eye, ArrowLeft, Share2, Pencil } from 'lucide-react'
+import { Users, Clock, Scroll, BookOpen, Target, Eye } from 'lucide-react'
 import { MarkdownContent } from '@/components/ui'
+import { FloatingDock } from '@/components/layout/floating-dock'
 
 interface ViewPageProps {
   params: Promise<{ id: string }>
@@ -54,38 +54,7 @@ export default async function OneshotViewPage({ params }: ViewPageProps) {
 
   return (
     <>
-      {/* Owner Header with navigation */}
-      <div className="sticky top-0 z-50 bg-[#0a0a0c]/95 backdrop-blur-sm border-b border-white/[0.06]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-14">
-            <Link
-              href={`/oneshots/${oneshotId}`}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm font-medium">Back to Editor</span>
-            </Link>
-
-            <div className="flex items-center gap-3">
-              <Link
-                href={`/oneshots/${oneshotId}`}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors"
-              >
-                <Pencil className="w-4 h-4" />
-                Edit
-              </Link>
-              <Link
-                href={`/oneshots/${oneshotId}?share=true`}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-colors"
-              >
-                <Share2 className="w-4 h-4" />
-                Share
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
+      <FloatingDock oneshotId={oneshotId} />
       <div className="min-h-screen bg-[--bg-base]">
         {/* Hero Section */}
         <div className="relative">

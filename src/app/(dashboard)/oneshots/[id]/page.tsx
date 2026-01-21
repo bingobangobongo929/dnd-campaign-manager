@@ -30,6 +30,7 @@ import { Modal, UnifiedImageModal } from '@/components/ui'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { ShareOneshotModal } from '@/components/oneshots/ShareOneshotModal'
 import { MobileLayout, MobileBottomSheet } from '@/components/mobile'
+import { FloatingDock } from '@/components/layout/floating-dock'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { useAppStore, useCanUseAI } from '@/store'
 import { cn } from '@/lib/utils'
@@ -859,6 +860,9 @@ export default function OneshotEditorPage() {
 
   return (
     <>
+      {/* Floating Dock - only show for existing oneshots */}
+      {!isNew && oneshotId && <FloatingDock oneshotId={oneshotId} />}
+
       <div className="min-h-screen bg-[--bg-base]">
         {/* Header */}
         <header className="sticky top-0 z-50 bg-[--bg-base]/80 backdrop-blur-xl border-b border-white/[0.06]">
@@ -881,13 +885,6 @@ export default function OneshotEditorPage() {
                   >
                     <Play className="w-4 h-4" />
                     Run
-                  </button>
-                  <button
-                    onClick={() => router.push(`/oneshots/${oneshotId}/view`)}
-                    className="p-2 text-gray-400 hover:text-purple-400 transition-colors"
-                    title="View"
-                  >
-                    <Eye className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => setShareModalOpen(true)}

@@ -14,6 +14,7 @@ interface AppLayoutProps {
   children: React.ReactNode
   campaignId?: string
   characterId?: string
+  oneshotId?: string
   fullBleed?: boolean
   transparentTopBar?: boolean
   topBarActions?: React.ReactNode
@@ -23,6 +24,7 @@ export function AppLayout({
   children,
   campaignId,
   characterId,
+  oneshotId,
   fullBleed = false,
   transparentTopBar = false,
   topBarActions,
@@ -217,7 +219,7 @@ export function AppLayout({
     <>
       {/* Desktop Navigation */}
       <div className="desktop-only">
-        <FloatingDock campaignId={campaignId} characterId={characterId} />
+        <FloatingDock campaignId={campaignId} characterId={characterId} oneshotId={oneshotId} />
         <TopBar
           campaigns={campaigns}
           currentCampaignId={campaignId}

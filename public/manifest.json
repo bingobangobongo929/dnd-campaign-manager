@@ -2,7 +2,7 @@
   "name": "Multiloop",
   "short_name": "Multiloop",
   "description": "Your tabletop adventures, organized. Track campaigns, build characters, and chronicle your epic journeys.",
-  "start_url": "/",
+  "start_url": "/home",
   "display": "standalone",
   "background_color": "#0a0a0f",
   "theme_color": "#0a0a0f",

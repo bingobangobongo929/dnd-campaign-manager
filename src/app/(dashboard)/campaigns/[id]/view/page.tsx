@@ -1,8 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import { CampaignShareClient } from '@/app/share/campaign/[code]/client'
-import Link from 'next/link'
-import { ArrowLeft, Share2, Pencil } from 'lucide-react'
+import { FloatingDock } from '@/components/layout/floating-dock'
 
 interface ViewPageProps {
   params: Promise<{ id: string }>
@@ -172,38 +171,7 @@ export default async function CampaignViewPage({ params }: ViewPageProps) {
 
   return (
     <>
-      {/* Owner Header with navigation */}
-      <div className="sticky top-0 z-50 bg-[#0a0a0c]/95 backdrop-blur-sm border-b border-white/[0.06]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
-            <Link
-              href={`/campaigns/${campaignId}/canvas`}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm font-medium">Back to Canvas</span>
-            </Link>
-
-            <div className="flex items-center gap-3">
-              <Link
-                href={`/campaigns/${campaignId}/canvas`}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors"
-              >
-                <Pencil className="w-4 h-4" />
-                Edit
-              </Link>
-              <Link
-                href={`/campaigns/${campaignId}/canvas?share=true`}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-colors"
-              >
-                <Share2 className="w-4 h-4" />
-                Share
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
+      <FloatingDock campaignId={campaignId} />
       <CampaignShareClient
         campaign={campaign}
         sections={sections}

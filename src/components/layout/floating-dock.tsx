@@ -27,9 +27,10 @@ import { isAdmin } from '@/lib/admin'
 interface FloatingDockProps {
   campaignId?: string
   characterId?: string
+  oneshotId?: string
 }
 
-export function FloatingDock({ campaignId, characterId }: FloatingDockProps) {
+export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDockProps) {
   const pathname = usePathname()
   const canUseAI = useCanUseAI()
   const { settings } = useUserSettings()
@@ -40,7 +41,8 @@ export function FloatingDock({ campaignId, characterId }: FloatingDockProps) {
   const characterLinks = characterId
     ? [
         { href: `/vault/${characterId}`, label: 'Edit', icon: Edit3 },
-        { href: `/vault/${characterId}/view`, label: 'View', icon: Eye },
+        { href: `/vault/${characterId}/view`, label: 'View 1', icon: Eye },
+        { href: `/vault/${characterId}/presentation`, label: 'View 2', icon: BookOpen },
         { href: `/vault/${characterId}/sessions`, label: 'Session Notes', icon: ScrollText },
         ...(canUseAI ? [{ href: `/vault/${characterId}/intelligence`, label: 'Intelligence', icon: Brain }] : []),
         { href: `/vault/${characterId}/relationships`, label: 'Relationships', icon: Users },
@@ -51,12 +53,22 @@ export function FloatingDock({ campaignId, characterId }: FloatingDockProps) {
   const campaignLinks = campaignId
     ? [
         { href: `/campaigns/${campaignId}/canvas`, label: 'Canvas', icon: LayoutGrid },
+        { href: `/campaigns/${campaignId}/view`, label: 'View', icon: Eye },
         { href: `/campaigns/${campaignId}/sessions`, label: 'Session Notes', icon: ScrollText },
         { href: `/campaigns/${campaignId}/timeline`, label: 'Timeline', icon: Clock },
         ...(canUseAI ? [{ href: `/campaigns/${campaignId}/intelligence`, label: 'Intelligence', icon: Brain }] : []),
         { href: `/campaigns/${campaignId}/lore`, label: 'Lore', icon: Network },
         { href: `/campaigns/${campaignId}/map`, label: 'World Map', icon: Map },
         { href: `/campaigns/${campaignId}/gallery`, label: 'Gallery', icon: Image },
+      ]
+    : []
+
+  // Oneshot-specific links
+  const oneshotLinks = oneshotId
+    ? [
+        { href: `/oneshots/${oneshotId}`, label: 'Edit', icon: Edit3 },
+        { href: `/oneshots/${oneshotId}/view`, label: 'View', icon: Eye },
+        { href: `/oneshots/${oneshotId}/run`, label: 'Run Mode', icon: Scroll },
       ]
     : []
 
@@ -148,10 +160,32 @@ export function FloatingDock({ campaignId, characterId }: FloatingDockProps) {
         </>
       )}
 
+      {/* Oneshot-specific links */}
+      {oneshotLinks.length > 0 && (
+        <>
+          {oneshotLinks.map((link, index) => {
+            const Icon = link.icon
+            const offset = characterLinks.length + (characterLinks.length > 0 ? 1 : 0) + campaignLinks.length + (campaignLinks.length > 0 ? 1 : 0)
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`dock-item ${isActive(link.href) ? 'active' : ''}`}
+                style={{ animationDelay: `${(offset + index) * 50}ms` }}
+              >
+                <Icon className="dock-item-icon" />
+                <span className="dock-item-label">{link.label}</span>
+              </Link>
+            )
+          })}
+          <div className="dock-divider" />
+        </>
+      )}
+
       {/* Global links */}
       {globalLinks.map((link, index) => {
         const Icon = link.icon
-        const offset = characterLinks.length + (characterLinks.length > 0 ? 1 : 0) + campaignLinks.length + (campaignLinks.length > 0 ? 1 : 0)
+        const offset = characterLinks.length + (characterLinks.length > 0 ? 1 : 0) + campaignLinks.length + (campaignLinks.length > 0 ? 1 : 0) + oneshotLinks.length + (oneshotLinks.length > 0 ? 1 : 0)
         return (
           <Link
             key={link.href}

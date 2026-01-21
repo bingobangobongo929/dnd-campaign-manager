@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Plus, FolderPlus, Scaling, Trash2, Brain, Share2, ChevronRight, Users, Eye } from 'lucide-react'
+import { Plus, FolderPlus, Scaling, Trash2, Brain, Share2, ChevronRight, Users } from 'lucide-react'
 import { Modal, Input, ColorPicker, IconPicker, getGroupIcon } from '@/components/ui'
 import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
@@ -497,14 +497,6 @@ export default function CampaignCanvasPage() {
   // Canvas toolbar actions for the top bar
   const canvasActions = (
     <>
-      <button
-        className="btn btn-secondary btn-sm"
-        onClick={() => router.push(`/campaigns/${campaignId}/view`)}
-        title="View Campaign"
-      >
-        <Eye className="w-4 h-4" />
-        <span className="hidden sm:inline ml-1.5">View</span>
-      </button>
       <button
         className="btn btn-secondary btn-sm"
         onClick={() => setIsShareModalOpen(true)}
