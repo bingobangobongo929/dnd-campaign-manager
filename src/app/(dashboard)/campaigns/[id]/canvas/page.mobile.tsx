@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { Plus, FolderPlus, Users, ChevronRight } from 'lucide-react'
+import { Plus, FolderPlus, Users, ChevronRight, Eye } from 'lucide-react'
 import { Modal, Input, ColorPicker, getGroupIcon } from '@/components/ui'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
 import { AppLayout } from '@/components/layout/app-layout'
@@ -110,6 +110,13 @@ export function CampaignCanvasPageMobile({
             className="flex-shrink-0 px-4 py-2 bg-gray-800 text-gray-300 text-sm font-medium rounded-full"
           >
             Lore
+          </button>
+          <button
+            onClick={() => onNavigate(`/campaigns/${campaignId}/view`)}
+            className="flex-shrink-0 px-4 py-2 bg-gray-800 text-gray-300 text-sm font-medium rounded-full flex items-center gap-1.5"
+          >
+            <Eye className="w-4 h-4" />
+            View
           </button>
         </div>
 

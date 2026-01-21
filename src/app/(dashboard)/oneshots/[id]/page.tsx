@@ -724,6 +724,13 @@ export default function OneshotEditorPage() {
             {!isNew && (
               <div className="flex gap-3">
                 <button
+                  onClick={() => router.push(`/oneshots/${oneshotId}/view`)}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-gray-300 active:bg-white/[0.06] transition-colors"
+                >
+                  <Eye className="w-4 h-4" />
+                  View
+                </button>
+                <button
                   onClick={() => setShareModalOpen(true)}
                   className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-gray-300 active:bg-white/[0.06] transition-colors"
                 >
@@ -874,6 +881,13 @@ export default function OneshotEditorPage() {
                   >
                     <Play className="w-4 h-4" />
                     Run
+                  </button>
+                  <button
+                    onClick={() => router.push(`/oneshots/${oneshotId}/view`)}
+                    className="p-2 text-gray-400 hover:text-purple-400 transition-colors"
+                    title="View"
+                  >
+                    <Eye className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => setShareModalOpen(true)}

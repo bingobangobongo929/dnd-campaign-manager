@@ -272,8 +272,8 @@ export default async function ShareCampaignPage({ params }: SharePageProps) {
     characters = data || []
   }
 
-  const pcs = characters.filter(c => c.is_pc)
-  const npcs = characters.filter(c => !c.is_pc)
+  const pcs = characters.filter(c => c.type === 'pc')
+  const npcs = characters.filter(c => c.type === 'npc')
 
   // Fetch sessions
   let sessions: any[] = []
