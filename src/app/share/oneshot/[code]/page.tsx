@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import Image from 'next/image'
 import { Users, Clock, Scroll, BookOpen, Target, Eye } from 'lucide-react'
 import { SharePageHeader } from '@/components/share/SharePageHeader'
+import { PasswordGate } from '@/components/share/PasswordGate'
 import { MarkdownContent } from '@/components/ui'
 import crypto from 'crypto'
 import type { Metadata } from 'next'
@@ -290,8 +291,15 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
     }
   }
 
+  // Check if password is required
+  const requiresPassword = !!share.password_hash
+
   return (
-    <>
+    <PasswordGate
+      shareCode={code}
+      requiresPassword={requiresPassword}
+      contentName={oneshot.title}
+    >
       <SharePageHeader
         contentType="oneshot"
         contentName={oneshot.title}
@@ -512,6 +520,6 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
           </div>
         </div>
       </div>
-    </>
+    </PasswordGate>
   )
 }

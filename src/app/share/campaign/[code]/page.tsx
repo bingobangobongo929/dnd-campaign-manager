@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import crypto from 'crypto'
 import { CampaignShareClient } from './client'
 import { SharePageHeader } from '@/components/share/SharePageHeader'
+import { PasswordGate } from '@/components/share/PasswordGate'
 import type { Metadata } from 'next'
 
 // Detect bot/crawler user agents (social media unfurl previews, search engines, etc.)
@@ -484,8 +485,15 @@ export default async function ShareCampaignPage({ params }: SharePageProps) {
     availableTabs.push('gallery')
   }
 
+  // Check if password is required
+  const requiresPassword = !!share.password_hash
+
   return (
-    <>
+    <PasswordGate
+      shareCode={code}
+      requiresPassword={requiresPassword}
+      contentName={campaign.name}
+    >
       <SharePageHeader
         contentType="campaign"
         contentName={campaign.name}
@@ -511,6 +519,6 @@ export default async function ShareCampaignPage({ params }: SharePageProps) {
         characterTags={characterTags}
         characters={characters}
       />
-    </>
+    </PasswordGate>
   )
 }

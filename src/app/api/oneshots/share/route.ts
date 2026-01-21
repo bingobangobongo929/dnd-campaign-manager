@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { nanoid } from 'nanoid'
+import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { oneshotId, includedSections, expiresInDays, note } = body
+    const { oneshotId, includedSections, expiresInDays, note, password, shareType } = body
 
     // Verify user owns this oneshot
     const { data: oneshot } = await supabase
@@ -35,6 +36,12 @@ export async function POST(request: NextRequest) {
       expiresAt.setDate(expiresAt.getDate() + expiresInDays)
     }
 
+    // Hash password if provided
+    let passwordHash: string | null = null
+    if (password && password.trim()) {
+      passwordHash = await bcrypt.hash(password.trim(), 10)
+    }
+
     // Create share record
     const { data: share, error } = await supabase
       .from('oneshot_shares')
@@ -44,6 +51,8 @@ export async function POST(request: NextRequest) {
         included_sections: includedSections,
         expires_at: expiresAt?.toISOString() || null,
         note: note || null,
+        password_hash: passwordHash,
+        share_type: shareType || 'party',
       })
       .select()
       .single()
@@ -56,6 +65,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       shareCode,
       shareUrl: `/share/oneshot/${shareCode}`,
+      hasPassword: !!passwordHash,
+      shareType: shareType || 'party',
     })
   } catch (error) {
     console.error('Share error:', error)

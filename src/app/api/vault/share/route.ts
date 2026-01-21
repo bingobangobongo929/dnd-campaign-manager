@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { nanoid } from 'nanoid'
+import bcrypt from 'bcryptjs'
 
 export async function POST(request: Request) {
   try {
@@ -11,7 +12,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { characterId, includedSections, expiresInDays, note } = await request.json()
+    const { characterId, includedSections, expiresInDays, note, password, shareType } = await request.json()
 
     if (!characterId) {
       return NextResponse.json({ error: 'Character ID required' }, { status: 400 })
@@ -52,6 +53,12 @@ export async function POST(request: Request) {
       journal: false,
     }
 
+    // Hash password if provided
+    let passwordHash: string | null = null
+    if (password && password.trim()) {
+      passwordHash = await bcrypt.hash(password.trim(), 10)
+    }
+
     // Create share record
     const { data: share, error: shareError } = await supabase
       .from('character_shares')
@@ -61,6 +68,8 @@ export async function POST(request: Request) {
         included_sections: sections,
         expires_at: expiresAt,
         note: note || null,
+        password_hash: passwordHash,
+        share_type: shareType || 'party',
       })
       .select()
       .single()
@@ -74,6 +83,8 @@ export async function POST(request: Request) {
       shareCode,
       shareUrl: `/share/c/${shareCode}`,
       expiresAt,
+      hasPassword: !!passwordHash,
+      shareType: shareType || 'party',
     })
   } catch (error) {
     console.error('Share error:', error)

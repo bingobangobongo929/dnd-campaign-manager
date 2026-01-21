@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/server'
 interface DuplicateRequest {
   contentType: 'campaign' | 'character' | 'oneshot'
   contentId: string
-  newName: string
+  newName?: string
+  asTemplate?: boolean // If true, creates as template draft instead of active content
 }
 
 export async function POST(request: Request) {
@@ -18,20 +19,20 @@ export async function POST(request: Request) {
     }
 
     const body: DuplicateRequest = await request.json()
-    const { contentType, contentId, newName } = body
+    const { contentType, contentId, newName, asTemplate } = body
 
-    if (!contentType || !contentId || !newName?.trim()) {
-      return NextResponse.json({ error: 'Content type, ID, and name required' }, { status: 400 })
+    if (!contentType || !contentId) {
+      return NextResponse.json({ error: 'Content type and ID required' }, { status: 400 })
     }
 
     let newId: string | null = null
 
     if (contentType === 'campaign') {
-      newId = await duplicateCampaign(supabase, user.id, contentId, newName.trim())
+      newId = await duplicateCampaign(supabase, user.id, contentId, newName?.trim(), asTemplate)
     } else if (contentType === 'character') {
-      newId = await duplicateCharacter(supabase, user.id, contentId, newName.trim())
+      newId = await duplicateCharacter(supabase, user.id, contentId, newName?.trim(), asTemplate)
     } else if (contentType === 'oneshot') {
-      newId = await duplicateOneshot(supabase, user.id, contentId, newName.trim())
+      newId = await duplicateOneshot(supabase, user.id, contentId, newName?.trim(), asTemplate)
     }
 
     if (!newId) {
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
   }
 }
 
-async function duplicateCampaign(supabase: any, userId: string, campaignId: string, newName: string): Promise<string | null> {
+async function duplicateCampaign(supabase: any, userId: string, campaignId: string, newName?: string, asTemplate?: boolean): Promise<string | null> {
   // Get original campaign
   const { data: campaign, error: fetchError } = await supabase
     .from('campaigns')
@@ -62,12 +63,15 @@ async function duplicateCampaign(supabase: any, userId: string, campaignId: stri
     return null
   }
 
+  // Generate name if not provided
+  const finalName = newName || (asTemplate ? `${campaign.name} (Template)` : `${campaign.name} (Copy)`)
+
   // Create new campaign (reset template-related fields)
   const { data: newCampaign, error: createError } = await supabase
     .from('campaigns')
     .insert({
       user_id: userId,
-      name: newName,
+      name: finalName,
       description: campaign.description,
       image_url: campaign.image_url,
       game_system: campaign.game_system,
@@ -75,7 +79,7 @@ async function duplicateCampaign(supabase: any, userId: string, campaignId: stri
       session_frequency: campaign.session_frequency,
       current_session: 0,
       status: 'active',
-      content_mode: 'active',
+      content_mode: asTemplate ? 'template' : 'active',
       is_published: false,
       template_version: 0,
       // Don't copy template_id - this is a fresh copy
@@ -268,7 +272,7 @@ async function copyWorldMaps(supabase: any, oldCampaignId: string, newCampaignId
   }
 }
 
-async function duplicateCharacter(supabase: any, userId: string, characterId: string, newName: string): Promise<string | null> {
+async function duplicateCharacter(supabase: any, userId: string, characterId: string, newName?: string, asTemplate?: boolean): Promise<string | null> {
   // Get original character
   const { data: character, error: fetchError } = await supabase
     .from('vault_characters')
@@ -282,6 +286,9 @@ async function duplicateCharacter(supabase: any, userId: string, characterId: st
     return null
   }
 
+  // Generate name if not provided
+  const finalName = newName || (asTemplate ? `${character.name} (Template)` : `${character.name} (Copy)`)
+
   // Create new character (reset template-related fields)
   const { id: _id, created_at: _ca, updated_at: _ua, template_id: _tid, template_version: _tv, saved_template_version: _stv, published_at: _pa, is_published: _ip, ...charData } = character
 
@@ -289,8 +296,8 @@ async function duplicateCharacter(supabase: any, userId: string, characterId: st
     .from('vault_characters')
     .insert({
       ...charData,
-      name: newName,
-      content_mode: 'active',
+      name: finalName,
+      content_mode: asTemplate ? 'template' : 'active',
       is_published: false,
       template_version: 0,
     })
@@ -437,7 +444,7 @@ async function copyCharacterLocations(supabase: any, oldCharId: string, newCharI
   }
 }
 
-async function duplicateOneshot(supabase: any, userId: string, oneshotId: string, newName: string): Promise<string | null> {
+async function duplicateOneshot(supabase: any, userId: string, oneshotId: string, newName?: string, asTemplate?: boolean): Promise<string | null> {
   // Get original oneshot
   const { data: oneshot, error: fetchError } = await supabase
     .from('oneshots')
@@ -451,6 +458,9 @@ async function duplicateOneshot(supabase: any, userId: string, oneshotId: string
     return null
   }
 
+  // Generate name if not provided
+  const finalName = newName || (asTemplate ? `${oneshot.title} (Template)` : `${oneshot.title} (Copy)`)
+
   // Create new oneshot (reset template-related fields)
   const { id: _id, created_at: _ca, updated_at: _ua, template_id: _tid, template_version: _tv, saved_template_version: _stv, published_at: _pa, is_published: _ip, ...oneshotData } = oneshot
 
@@ -458,8 +468,8 @@ async function duplicateOneshot(supabase: any, userId: string, oneshotId: string
     .from('oneshots')
     .insert({
       ...oneshotData,
-      title: newName,
-      content_mode: 'active',
+      title: finalName,
+      content_mode: asTemplate ? 'template' : 'active',
       is_published: false,
       template_version: 0,
     })

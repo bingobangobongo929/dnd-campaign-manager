@@ -8,6 +8,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { nanoid } from 'nanoid'
+import bcrypt from 'bcryptjs'
 
 export const runtime = 'nodejs'
 
@@ -16,6 +17,8 @@ interface CreateShareRequest {
   includedSections: Record<string, any>
   expiresInDays: number | null
   note: string | null
+  password?: string | null
+  shareType?: 'party' | 'template'
 }
 
 // POST - Create a new share link
@@ -29,7 +32,7 @@ export async function POST(req: Request) {
     }
 
     const body: CreateShareRequest = await req.json()
-    const { campaignId, includedSections, expiresInDays, note } = body
+    const { campaignId, includedSections, expiresInDays, note, password, shareType } = body
 
     if (!campaignId) {
       return NextResponse.json({ error: 'Campaign ID is required' }, { status: 400 })
@@ -57,16 +60,23 @@ export async function POST(req: Request) {
       expiresAt = date.toISOString()
     }
 
+    // Hash password if provided
+    let passwordHash: string | null = null
+    if (password && password.trim()) {
+      passwordHash = await bcrypt.hash(password.trim(), 10)
+    }
+
     // Create the share
     const { data: share, error } = await supabase
       .from('campaign_shares')
       .insert({
         campaign_id: campaignId,
         share_code: shareCode,
-        share_type: 'full', // Can be 'full', 'players_only', 'dm_only' in the future
+        share_type: shareType || 'party',
         included_sections: includedSections,
         expires_at: expiresAt,
         note,
+        password_hash: passwordHash,
       })
       .select()
       .single()
@@ -80,6 +90,8 @@ export async function POST(req: Request) {
       shareCode,
       shareUrl: `/share/campaign/${shareCode}`,
       shareId: share.id,
+      hasPassword: !!passwordHash,
+      shareType: shareType || 'party',
     })
   } catch (error) {
     console.error('Share creation error:', error)

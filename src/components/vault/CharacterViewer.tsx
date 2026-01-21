@@ -1258,7 +1258,7 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
         contentType="character"
         contentId={character.id}
         contentName={character.name}
-        isPublished={character.is_published}
+        contentMode={character.content_mode || 'active'}
       />
     </>
   )

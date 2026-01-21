@@ -20,6 +20,7 @@ import { sanitizeHtml } from '@/components/ui/safe-html'
 import { MarkdownContent } from '@/components/ui'
 import { InteractivePortrait, BackToTopButton } from './client'
 import { SharePageHeader } from '@/components/share/SharePageHeader'
+import { PasswordGate } from '@/components/share/PasswordGate'
 import crypto from 'crypto'
 import type { Metadata } from 'next'
 
@@ -496,8 +497,15 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
 
   const hasSessionsContent = sections.sessions && sessions_data.length > 0
 
+  // Check if password is required
+  const requiresPassword = !!share.password_hash
+
   return (
-    <>
+    <PasswordGate
+      shareCode={code}
+      requiresPassword={requiresPassword}
+      contentName={character.name}
+    >
       <SharePageHeader
         contentType="character"
         contentName={character.name}
@@ -1269,6 +1277,6 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
         {/* Back to Top Button */}
         <BackToTopButton />
       </div>
-    </>
+    </PasswordGate>
   )
 }

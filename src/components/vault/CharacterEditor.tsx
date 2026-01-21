@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -66,6 +66,7 @@ import { UnifiedImageModal } from '@/components/ui/unified-image-modal'
 import { VaultImageCropModal } from './VaultImageCropModal'
 import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 import { TemplateStateBadge } from '@/components/templates/TemplateStateBadge'
+import { TemplateOnboardingModal } from '@/components/templates/TemplateOnboardingModal'
 import { FloatingDock } from '@/components/layout/floating-dock'
 import { MobileTabBar } from '@/components/mobile/mobile-tab-bar'
 import type {
@@ -184,7 +185,22 @@ function CollapsibleSection({
 
 export function CharacterEditor({ character, mode, standalone = true, fromTemplate = false }: CharacterEditorProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const isMobile = useIsMobile()
+
+  // Check for new template onboarding
+  const isNewTemplate = searchParams.get('newTemplate') === '1'
+  const [showTemplateOnboarding, setShowTemplateOnboarding] = useState(isNewTemplate)
+
+  // Clear the newTemplate query param from URL after showing modal
+  useEffect(() => {
+    if (isNewTemplate) {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('newTemplate')
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [isNewTemplate])
+
   // Memoize supabase client to prevent recreation on each render
   // This is critical - without memoization, all useEffects with supabase dependency re-run every render
   const supabase = useMemo(() => createClient(), [])
@@ -3444,10 +3460,18 @@ export function CharacterEditor({ character, mode, standalone = true, fromTempla
           contentType="character"
           contentId={characterId}
           contentName={formData.name || 'Untitled Character'}
-          isPublished={isPublished}
-          onPublished={handlePublished}
+          contentMode={character?.content_mode || 'active'}
+          onTemplateCreated={handlePublished}
         />
       )}
+
+      {/* Template Onboarding Modal */}
+      <TemplateOnboardingModal
+        isOpen={showTemplateOnboarding}
+        onClose={() => setShowTemplateOnboarding(false)}
+        onOpenShareModal={() => setShareModalOpen(true)}
+        contentName={formData.name || 'Untitled Character'}
+      />
 
       {/* Add Link Modal */}
       <Modal

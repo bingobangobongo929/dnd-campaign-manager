@@ -31,6 +31,7 @@ import { Modal, UnifiedImageModal } from '@/components/ui'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 import { TemplateStateBadge } from '@/components/templates/TemplateStateBadge'
+import { TemplateOnboardingModal } from '@/components/templates/TemplateOnboardingModal'
 import { MobileLayout, MobileBottomSheet } from '@/components/mobile'
 import { FloatingDock } from '@/components/layout/floating-dock'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
@@ -72,6 +73,19 @@ export default function OneshotEditorPage() {
   const { user } = useUser()
   const isMobile = useIsMobile()
 
+  // Check for new template onboarding
+  const isNewTemplate = searchParams.get('newTemplate') === '1'
+  const [showTemplateOnboarding, setShowTemplateOnboarding] = useState(isNewTemplate)
+
+  // Clear the newTemplate query param from URL after showing modal
+  useEffect(() => {
+    if (isNewTemplate) {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('newTemplate')
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [isNewTemplate])
+
   const isNew = params.id === 'new'
   const oneshotId = isNew ? null : (params.id as string)
   const fromTemplate = searchParams.get('fromTemplate') === 'true'
@@ -101,6 +115,7 @@ export default function OneshotEditorPage() {
   const [runs, setRuns] = useState<OneshotRun[]>([])
   const [loading, setLoading] = useState(!isNew)
   const [isPublishedState, setIsPublishedState] = useState(false)
+  const [contentModeState, setContentModeState] = useState<'active' | 'template' | 'inactive'>('active')
   const [templateVersion, setTemplateVersion] = useState(0)
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -203,6 +218,7 @@ export default function OneshotEditorPage() {
         status: oneshot.status,
       })
       setIsPublishedState(oneshot.is_published || false)
+      setContentModeState(oneshot.content_mode || 'active')
       setTemplateVersion(oneshot.template_version || 0)
 
       // Track recent visit
@@ -793,8 +809,8 @@ export default function OneshotEditorPage() {
             contentType="oneshot"
             contentId={oneshotId}
             contentName={formData.title || 'Untitled One-Shot'}
-            isPublished={isPublished}
-            onPublished={handlePublished}
+            contentMode={contentModeState}
+            onTemplateCreated={handlePublished}
           />
         )}
 
@@ -1277,8 +1293,8 @@ export default function OneshotEditorPage() {
           contentType="oneshot"
           contentId={oneshotId}
           contentName={formData.title || 'Untitled One-Shot'}
-          isPublished={isPublished}
-          onPublished={handlePublished}
+          contentMode={contentModeState}
+          onTemplateCreated={handlePublished}
         />
       )}
 
@@ -1414,6 +1430,14 @@ export default function OneshotEditorPage() {
           </button>
         </div>
       </Modal>
+
+      {/* Template Onboarding Modal */}
+      <TemplateOnboardingModal
+        isOpen={showTemplateOnboarding}
+        onClose={() => setShowTemplateOnboarding(false)}
+        onOpenShareModal={() => setShareModalOpen(true)}
+        contentName={formData.title || 'Untitled One-Shot'}
+      />
 
       <BackToTopButton />
     </>

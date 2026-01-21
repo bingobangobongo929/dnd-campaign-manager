@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Plus, FolderPlus, Scaling, Trash2, Brain, Share2, ChevronRight, Users, Sparkles, ChevronDown, Loader2 } from 'lucide-react'
 import { Modal, Input, ColorPicker, IconPicker, getGroupIcon } from '@/components/ui'
@@ -9,6 +9,7 @@ import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT 
 import { CharacterModal, CharacterViewModal } from '@/components/character'
 import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 import { TemplateStateBadge } from '@/components/templates/TemplateStateBadge'
+import { TemplateOnboardingModal } from '@/components/templates/TemplateOnboardingModal'
 import { toast } from 'sonner'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
@@ -28,6 +29,7 @@ interface UndoAction {
 export default function CampaignCanvasPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = useSupabase()
   const { user } = useUser()
   const isMobile = useIsMobile()
@@ -35,6 +37,19 @@ export default function CampaignCanvasPage() {
   const canUseAI = useCanUseAI()
 
   const campaignId = params.id as string
+
+  // Check for new template onboarding
+  const isNewTemplate = searchParams.get('newTemplate') === '1'
+  const [showTemplateOnboarding, setShowTemplateOnboarding] = useState(isNewTemplate)
+
+  // Clear the newTemplate query param from URL after showing modal
+  useEffect(() => {
+    if (isNewTemplate) {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('newTemplate')
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [isNewTemplate])
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [characters, setCharacters] = useState<Character[]>([])
@@ -926,8 +941,18 @@ export default function CampaignCanvasPage() {
           contentType="campaign"
           contentId={campaignId}
           contentName={campaign.name}
-          isPublished={campaign.is_published}
-          onPublished={handlePublished}
+          contentMode={campaign.content_mode || 'active'}
+          onTemplateCreated={handlePublished}
+        />
+      )}
+
+      {/* Template Onboarding Modal */}
+      {campaign && (
+        <TemplateOnboardingModal
+          isOpen={showTemplateOnboarding}
+          onClose={() => setShowTemplateOnboarding(false)}
+          onOpenShareModal={() => setIsShareModalOpen(true)}
+          contentName={campaign.name}
         />
       )}
 
