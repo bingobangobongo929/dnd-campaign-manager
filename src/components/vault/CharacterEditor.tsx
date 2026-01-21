@@ -64,8 +64,7 @@ import { useAppStore, useCanUseAI } from '@/store'
 import { Modal } from '@/components/ui'
 import { UnifiedImageModal } from '@/components/ui/unified-image-modal'
 import { VaultImageCropModal } from './VaultImageCropModal'
-import { ShareCharacterModal } from './ShareCharacterModal'
-import { PublishTemplateModal } from '@/components/templates/PublishTemplateModal'
+import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 import { TemplateStateBadge } from '@/components/templates/TemplateStateBadge'
 import { FloatingDock } from '@/components/layout/floating-dock'
 import { MobileTabBar } from '@/components/mobile/mobile-tab-bar'
@@ -322,10 +321,7 @@ export function CharacterEditor({ character, mode, standalone = true }: Characte
   const [editJournalModalOpen, setEditJournalModalOpen] = useState(false)
   const [editingJournal, setEditingJournal] = useState<PlayJournal | null>(null)
   const [shareModalOpen, setShareModalOpen] = useState(false)
-  const [publishModalOpen, setPublishModalOpen] = useState(false)
-  const [publishDropdownOpen, setPublishDropdownOpen] = useState(false)
-  const [unpublishing, setUnpublishing] = useState(false)
-  const [localContentMode, setLocalContentMode] = useState(character?.content_mode || 'active')
+  const [localIsPublished, setLocalIsPublished] = useState(character?.is_published || false)
   const [localTemplateVersion, setLocalTemplateVersion] = useState(character?.template_version || 0)
   const [duplicateModalOpen, setDuplicateModalOpen] = useState(false)
   const [galleryImageModalOpen, setGalleryImageModalOpen] = useState(false)
@@ -433,56 +429,19 @@ export function CharacterEditor({ character, mode, standalone = true }: Characte
   // Sync local template state when character changes
   useEffect(() => {
     if (character) {
-      setLocalContentMode(character.content_mode || 'active')
+      setLocalIsPublished(character.is_published || false)
       setLocalTemplateVersion(character.template_version || 0)
     }
-  }, [character?.content_mode, character?.template_version])
+  }, [character?.is_published, character?.template_version])
 
-  // Handle unpublish
-  const handleUnpublish = async () => {
-    if (!characterId) return
-    setUnpublishing(true)
-    setPublishDropdownOpen(false)
-
-    try {
-      const response = await fetch('/api/templates/unpublish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contentType: 'character',
-          contentId: characterId,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        if (data.details?.saveCount) {
-          toast.error(`Cannot unpublish - ${data.details.saveCount} people have saved this template`)
-        } else {
-          toast.error(data.error || 'Failed to unpublish')
-        }
-        return
-      }
-
-      setLocalContentMode('active')
-      setLocalTemplateVersion(1)
-      toast.success('Template unpublished - returned to active mode')
-    } catch (error) {
-      toast.error('Failed to unpublish')
-    } finally {
-      setUnpublishing(false)
-    }
+  // Handle successful publish from UnifiedShareModal
+  const handlePublished = () => {
+    setLocalIsPublished(true)
+    setLocalTemplateVersion(prev => prev + 1)
+    toast.success('Template published successfully')
   }
 
-  // Handle successful publish
-  const handlePublished = (version: number) => {
-    setLocalContentMode('template')
-    setLocalTemplateVersion(version)
-    toast.success(`Published as template v${version}`)
-  }
-
-  const isTemplate = localContentMode === 'template'
+  const isPublished = localIsPublished
 
   // Load related data
   useEffect(() => {
@@ -1986,82 +1945,24 @@ export function CharacterEditor({ character, mode, standalone = true }: Characte
             {characterId && (
               <>
                 {/* State Badge */}
-                {!isMobile && (
+                {!isMobile && character && (
                   <TemplateStateBadge
-                    mode={localContentMode}
-                    inactiveReason={character?.inactive_reason}
+                    mode={character.content_mode || 'active'}
+                    inactiveReason={character.inactive_reason}
                     size="sm"
                     className="mr-1"
                   />
                 )}
 
-                {/* Publish/Template Dropdown */}
-                <div className="relative">
-                  <button
-                    onClick={() => setPublishDropdownOpen(!publishDropdownOpen)}
-                    disabled={unpublishing}
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-lg transition-all duration-200",
-                      isTemplate
-                        ? "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30"
-                        : "hover:bg-purple-500/10 text-gray-500 hover:text-purple-400",
-                      isMobile ? "p-2" : "px-3 py-1.5"
-                    )}
-                    title={isTemplate ? "Template Options" : "Publish as Template"}
-                  >
-                    {unpublishing ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Sparkles className="w-3.5 h-3.5" />
-                    )}
-                    {!isMobile && <span className="text-[13px]">{isTemplate ? 'Template' : 'Publish'}</span>}
-                    <ChevronDown className="w-3 h-3" />
-                  </button>
+                {/* Published indicator */}
+                {isPublished && (
+                  <span className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-purple-400 bg-purple-500/10 rounded-full border border-purple-500/30">
+                    <Sparkles className="w-3 h-3" />
+                    Published
+                  </span>
+                )}
 
-                  {publishDropdownOpen && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-40"
-                        onClick={() => setPublishDropdownOpen(false)}
-                      />
-                      <div className="absolute right-0 top-full mt-1 z-50 w-48 bg-gray-900 border border-white/10 rounded-lg shadow-xl overflow-hidden">
-                        {isTemplate ? (
-                          <>
-                            <button
-                              onClick={() => {
-                                setPublishDropdownOpen(false)
-                                setPublishModalOpen(true)
-                              }}
-                              className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/5 flex items-center gap-2"
-                            >
-                              <Sparkles className="w-4 h-4 text-purple-400" />
-                              Publish Update (v{localTemplateVersion + 1})
-                            </button>
-                            <button
-                              onClick={handleUnpublish}
-                              className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Unpublish Template
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setPublishDropdownOpen(false)
-                              setPublishModalOpen(true)
-                            }}
-                            className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/5 flex items-center gap-2"
-                          >
-                            <Sparkles className="w-4 h-4 text-purple-400" />
-                            Publish as Template
-                          </button>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-
+                {/* Share & Manage Button */}
                 <button
                   onClick={() => setShareModalOpen(true)}
                   className={cn(
@@ -3501,26 +3402,15 @@ export function CharacterEditor({ character, mode, standalone = true }: Characte
         </div>
       </Modal>
 
-      {/* Share Modal */}
+      {/* Unified Share Modal */}
       {characterId && (
-        <ShareCharacterModal
+        <UnifiedShareModal
           isOpen={shareModalOpen}
           onClose={() => setShareModalOpen(false)}
-          characterId={characterId}
-          characterName={formData.name || 'Untitled Character'}
-        />
-      )}
-
-      {/* Publish Template Modal */}
-      {characterId && (
-        <PublishTemplateModal
-          isOpen={publishModalOpen}
-          onClose={() => setPublishModalOpen(false)}
           contentType="character"
           contentId={characterId}
           contentName={formData.name || 'Untitled Character'}
-          isUpdate={isTemplate}
-          currentVersion={localTemplateVersion}
+          isPublished={isPublished}
           onPublished={handlePublished}
         />
       )}

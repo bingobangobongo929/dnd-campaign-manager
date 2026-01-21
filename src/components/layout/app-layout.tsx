@@ -9,6 +9,7 @@ import { useAppStore, useCanUseAI } from '@/store'
 import type { Campaign, Character, Session, TimelineEvent, CampaignLore, CanvasGroup } from '@/types/database'
 import { AIAssistant } from '@/components/ai/ai-assistant'
 import { BugReportButton } from '@/components/ui/bug-report-button'
+import { UsernameSetupModal } from '@/components/auth/UsernameSetupModal'
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -41,6 +42,7 @@ export function AppLayout({
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
   const [lore, setLore] = useState<CampaignLore[]>([])
   const [canvasGroups, setCanvasGroups] = useState<CanvasGroup[]>([])
+  const [showUsernameModal, setShowUsernameModal] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -83,6 +85,10 @@ export function AppLayout({
 
     if (settings) {
       setSettings(settings)
+      // Check if user needs to set a username
+      if (!settings.username) {
+        setShowUsernameModal(true)
+      }
     }
 
     // Load campaigns
@@ -244,6 +250,18 @@ export function AppLayout({
 
       {/* Bug Report / Feedback Button */}
       <BugReportButton />
+
+      {/* Username Setup Modal - shown if user hasn't set a username */}
+      <UsernameSetupModal
+        isOpen={showUsernameModal}
+        onComplete={(username) => {
+          setShowUsernameModal(false)
+          // Update settings in store with new username
+          if (settings) {
+            setSettings({ ...settings, username, username_set_at: new Date().toISOString() })
+          }
+        }}
+      />
     </>
   )
 }

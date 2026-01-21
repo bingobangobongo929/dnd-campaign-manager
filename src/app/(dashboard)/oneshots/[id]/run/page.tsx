@@ -25,12 +25,52 @@ import {
   Loader2,
   X,
   Check,
+  Copy,
+  Share2,
+  Zap,
+  UserPlus,
+  Timer,
+  Shield,
+  ExternalLink,
 } from 'lucide-react'
 import { Modal, MarkdownContent } from '@/components/ui'
 import { MobileLayout, MobileBottomSheet } from '@/components/mobile'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { cn } from '@/lib/utils'
 import type { Oneshot, OneshotRun } from '@/types/database'
+
+// Common D&D conditions
+const CONDITIONS = [
+  { id: 'blinded', name: 'Blinded', color: 'bg-gray-500' },
+  { id: 'charmed', name: 'Charmed', color: 'bg-pink-500' },
+  { id: 'deafened', name: 'Deafened', color: 'bg-gray-400' },
+  { id: 'frightened', name: 'Frightened', color: 'bg-yellow-500' },
+  { id: 'grappled', name: 'Grappled', color: 'bg-orange-500' },
+  { id: 'incapacitated', name: 'Incapacitated', color: 'bg-red-700' },
+  { id: 'invisible', name: 'Invisible', color: 'bg-blue-300' },
+  { id: 'paralyzed', name: 'Paralyzed', color: 'bg-purple-600' },
+  { id: 'petrified', name: 'Petrified', color: 'bg-stone-500' },
+  { id: 'poisoned', name: 'Poisoned', color: 'bg-green-500' },
+  { id: 'prone', name: 'Prone', color: 'bg-amber-600' },
+  { id: 'restrained', name: 'Restrained', color: 'bg-orange-600' },
+  { id: 'stunned', name: 'Stunned', color: 'bg-yellow-600' },
+  { id: 'unconscious', name: 'Unconscious', color: 'bg-red-900' },
+  { id: 'exhaustion', name: 'Exhaustion', color: 'bg-slate-600' },
+  { id: 'concentration', name: 'Concentrating', color: 'bg-cyan-500' },
+]
+
+// Encounter preset interface
+interface EncounterPreset {
+  id: string
+  name: string
+  combatants: {
+    name: string
+    count: number
+    hp: number
+    ac: number
+    initiative?: number
+  }[]
+}
 
 // Initiative tracker entry
 interface InitiativeEntry {
@@ -43,6 +83,7 @@ interface InitiativeEntry {
   notes?: string
   isPlayer: boolean
   isActive: boolean
+  conditions: string[] // Array of condition IDs
 }
 
 // Quick reference panel type
@@ -95,6 +136,22 @@ export default function OneshotRunPage() {
   const [sessionRating, setSessionRating] = useState(4)
   const [saving, setSaving] = useState(false)
 
+  // Player view share
+  const [playerViewOpen, setPlayerViewOpen] = useState(false)
+  const [playerViewCode, setPlayerViewCode] = useState<string | null>(null)
+  const [playerViewCopied, setPlayerViewCopied] = useState(false)
+  const [creatingPlayerView, setCreatingPlayerView] = useState(false)
+
+  // Encounter presets
+  const [encounterPresets, setEncounterPresets] = useState<EncounterPreset[]>([])
+  const [presetsOpen, setPresetsOpen] = useState(false)
+
+  // Conditions management
+  const [conditionsEntryId, setConditionsEntryId] = useState<string | null>(null)
+
+  // Pacing alerts
+  const [pacingDismissed, setPacingDismissed] = useState(false)
+
   // Load oneshot data
   useEffect(() => {
     if (user && oneshotId) {
@@ -115,8 +172,58 @@ export default function OneshotRunPage() {
     }
 
     setOneshot(data)
+
+    // Load encounter presets
+    if (data.encounter_presets && Array.isArray(data.encounter_presets)) {
+      setEncounterPresets(data.encounter_presets as EncounterPreset[])
+    }
+
+    // Check for existing player view session
+    const { data: existingSession } = await supabase
+      .from('run_sessions')
+      .select('share_code')
+      .eq('oneshot_id', oneshotId)
+      .eq('user_id', user!.id)
+      .eq('is_active', true)
+      .maybeSingle()
+
+    if (existingSession) {
+      setPlayerViewCode(existingSession.share_code)
+    }
+
     setLoading(false)
   }
+
+  // Parse duration string to minutes (e.g., "3-4 hours" -> 210)
+  const parseDurationToMinutes = (duration: string | null): number | null => {
+    if (!duration) return null
+    const hourMatch = duration.match(/(\d+)(?:-(\d+))?\s*hour/i)
+    if (hourMatch) {
+      const min = parseInt(hourMatch[1])
+      const max = hourMatch[2] ? parseInt(hourMatch[2]) : min
+      return ((min + max) / 2) * 60
+    }
+    const minMatch = duration.match(/(\d+)\s*min/i)
+    if (minMatch) return parseInt(minMatch[1])
+    return null
+  }
+
+  // Get pacing status
+  const getPacingStatus = () => {
+    if (!oneshot?.estimated_duration || pacingDismissed) return null
+    const targetMinutes = parseDurationToMinutes(oneshot.estimated_duration)
+    if (!targetMinutes) return null
+
+    const currentMinutes = timerSeconds / 60
+    const percentage = (currentMinutes / targetMinutes) * 100
+
+    if (percentage >= 100) return { level: 'over', message: 'Over estimated time!', percentage }
+    if (percentage >= 85) return { level: 'warning', message: 'Approaching time limit', percentage }
+    if (percentage >= 50) return { level: 'halfway', message: 'Halfway through', percentage }
+    return null
+  }
+
+  const pacingStatus = getPacingStatus()
 
   // Timer logic
   useEffect(() => {
@@ -160,11 +267,113 @@ export default function OneshotRunPage() {
       ac: newCombatant.ac,
       isPlayer: newCombatant.isPlayer,
       isActive: false,
+      conditions: [],
     }
 
     setInitiative(prev => sortInitiative([...prev, entry]))
     setNewCombatant({ name: '', initiative: 10, hp: 0, ac: 10, isPlayer: false })
     setAddCombatantOpen(false)
+  }
+
+  // Add multiple combatants from encounter preset
+  const addFromPreset = (preset: EncounterPreset) => {
+    const newEntries: InitiativeEntry[] = []
+
+    for (const combatant of preset.combatants) {
+      for (let i = 0; i < combatant.count; i++) {
+        const entry: InitiativeEntry = {
+          id: crypto.randomUUID(),
+          name: combatant.count > 1 ? `${combatant.name} ${i + 1}` : combatant.name,
+          initiative: combatant.initiative || Math.floor(Math.random() * 20) + 1,
+          hp: combatant.hp || undefined,
+          maxHp: combatant.hp || undefined,
+          ac: combatant.ac || 10,
+          isPlayer: false,
+          isActive: false,
+          conditions: [],
+        }
+        newEntries.push(entry)
+      }
+    }
+
+    setInitiative(prev => sortInitiative([...prev, ...newEntries]))
+    setPresetsOpen(false)
+  }
+
+  // Toggle condition on a combatant
+  const toggleCondition = (entryId: string, conditionId: string) => {
+    setInitiative(prev => prev.map(entry => {
+      if (entry.id === entryId) {
+        const hasCondition = entry.conditions.includes(conditionId)
+        return {
+          ...entry,
+          conditions: hasCondition
+            ? entry.conditions.filter(c => c !== conditionId)
+            : [...entry.conditions, conditionId],
+        }
+      }
+      return entry
+    }))
+  }
+
+  // Create player view share link
+  const createPlayerView = async () => {
+    setCreatingPlayerView(true)
+    try {
+      // Generate a random share code
+      const shareCode = Array.from({ length: 8 }, () =>
+        'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]
+      ).join('')
+
+      const { error } = await supabase.from('run_sessions').insert({
+        oneshot_id: oneshotId,
+        user_id: user!.id,
+        share_code: shareCode,
+        session_state: { initiative, currentTurn, timerSeconds },
+        is_active: true,
+      })
+
+      if (error) throw error
+
+      setPlayerViewCode(shareCode)
+    } catch (err) {
+      console.error('Failed to create player view:', err)
+      alert('Failed to create player view link')
+    }
+    setCreatingPlayerView(false)
+  }
+
+  // Update session state periodically
+  useEffect(() => {
+    if (!playerViewCode || !timerRunning) return
+
+    const interval = setInterval(async () => {
+      await supabase
+        .from('run_sessions')
+        .update({ session_state: { initiative, currentTurn, timerSeconds } })
+        .eq('share_code', playerViewCode)
+    }, 5000) // Update every 5 seconds
+
+    return () => clearInterval(interval)
+  }, [playerViewCode, initiative, currentTurn, timerSeconds, timerRunning])
+
+  // Copy player view URL
+  const copyPlayerViewUrl = async () => {
+    if (!playerViewCode) return
+    const url = `${window.location.origin}/run/${playerViewCode}`
+    await navigator.clipboard.writeText(url)
+    setPlayerViewCopied(true)
+    setTimeout(() => setPlayerViewCopied(false), 2000)
+  }
+
+  // End player view session
+  const endPlayerView = async () => {
+    if (!playerViewCode) return
+    await supabase
+      .from('run_sessions')
+      .update({ is_active: false, ended_at: new Date().toISOString() })
+      .eq('share_code', playerViewCode)
+    setPlayerViewCode(null)
   }
 
   const removeCombatant = (id: string) => {
@@ -856,14 +1065,82 @@ export default function OneshotRunPage() {
             </div>
           </div>
 
-          {/* Right - End Session */}
-          <button
-            onClick={() => setEndSessionOpen(true)}
-            className="px-4 py-2 bg-red-500/80 hover:bg-red-500 text-white text-sm font-medium rounded-lg transition-colors"
-          >
-            End Session
-          </button>
+          {/* Right - Player View & End Session */}
+          <div className="flex items-center gap-2">
+            {/* Player View Share */}
+            {playerViewCode ? (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={copyPlayerViewUrl}
+                  className="flex items-center gap-2 px-3 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-sm font-medium rounded-lg transition-colors"
+                >
+                  {playerViewCopied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+                  {playerViewCopied ? 'Copied!' : 'Player View'}
+                </button>
+                <button
+                  onClick={endPlayerView}
+                  className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                  title="End player view"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={createPlayerView}
+                disabled={creatingPlayerView}
+                className="flex items-center gap-2 px-3 py-2 bg-white/[0.05] hover:bg-white/[0.08] text-gray-300 text-sm font-medium rounded-lg transition-colors"
+              >
+                {creatingPlayerView ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Share2 className="w-4 h-4" />
+                )}
+                Share Initiative
+              </button>
+            )}
+
+            <button
+              onClick={() => setEndSessionOpen(true)}
+              className="px-4 py-2 bg-red-500/80 hover:bg-red-500 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              End Session
+            </button>
+          </div>
         </div>
+
+        {/* Pacing Alert */}
+        {pacingStatus && (
+          <div className={cn(
+            "px-4 py-2 flex items-center justify-between border-t",
+            pacingStatus.level === 'over' && "bg-red-500/10 border-red-500/20",
+            pacingStatus.level === 'warning' && "bg-amber-500/10 border-amber-500/20",
+            pacingStatus.level === 'halfway' && "bg-blue-500/10 border-blue-500/20"
+          )}>
+            <div className="flex items-center gap-2">
+              <Timer className={cn(
+                "w-4 h-4",
+                pacingStatus.level === 'over' && "text-red-400",
+                pacingStatus.level === 'warning' && "text-amber-400",
+                pacingStatus.level === 'halfway' && "text-blue-400"
+              )} />
+              <span className={cn(
+                "text-sm font-medium",
+                pacingStatus.level === 'over' && "text-red-400",
+                pacingStatus.level === 'warning' && "text-amber-400",
+                pacingStatus.level === 'halfway' && "text-blue-400"
+              )}>
+                {pacingStatus.message} ({Math.round(pacingStatus.percentage)}% of estimated {oneshot.estimated_duration})
+              </span>
+            </div>
+            <button
+              onClick={() => setPacingDismissed(true)}
+              className="p-1 text-gray-500 hover:text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </header>
 
       {/* Main Content */}
@@ -877,6 +1154,15 @@ export default function OneshotRunPage() {
                 <h2 className="font-semibold text-white">Initiative</h2>
               </div>
               <div className="flex items-center gap-1">
+                {encounterPresets.length > 0 && (
+                  <button
+                    onClick={() => setPresetsOpen(true)}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
+                    title="Add from preset"
+                  >
+                    <Zap className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   onClick={() => setAddCombatantOpen(true)}
                   className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.05] transition-colors"
@@ -936,7 +1222,7 @@ export default function OneshotRunPage() {
                 <div
                   key={entry.id}
                   className={cn(
-                    "p-3 rounded-lg transition-all",
+                    "p-3 rounded-lg transition-all group",
                     index === currentTurn
                       ? "bg-purple-500/20 border border-purple-500/30"
                       : "bg-white/[0.02] border border-transparent hover:bg-white/[0.04]",
@@ -955,13 +1241,45 @@ export default function OneshotRunPage() {
                         {entry.name}
                       </span>
                     </div>
-                    <button
-                      onClick={() => removeCombatant(entry.id)}
-                      className="p-1 rounded text-gray-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setConditionsEntryId(entry.id)}
+                        className="p-1 rounded text-gray-500 hover:text-purple-400 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Manage conditions"
+                      >
+                        <Shield className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => removeCombatant(entry.id)}
+                        className="p-1 rounded text-gray-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Conditions Display */}
+                  {entry.conditions.length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {entry.conditions.map(condId => {
+                        const cond = CONDITIONS.find(c => c.id === condId)
+                        if (!cond) return null
+                        return (
+                          <button
+                            key={condId}
+                            onClick={() => toggleCondition(entry.id, condId)}
+                            className={cn(
+                              "px-1.5 py-0.5 rounded text-[10px] font-medium text-white",
+                              cond.color
+                            )}
+                            title={`Remove ${cond.name}`}
+                          >
+                            {cond.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
 
                   {/* HP Bar */}
                   {entry.hp !== undefined && entry.maxHp !== undefined && (
@@ -1328,6 +1646,100 @@ export default function OneshotRunPage() {
               Save & Exit
             </button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Conditions Picker Modal */}
+      <Modal
+        isOpen={!!conditionsEntryId}
+        onClose={() => setConditionsEntryId(null)}
+        title="Manage Conditions"
+      >
+        {conditionsEntryId && (() => {
+          const entry = initiative.find(e => e.id === conditionsEntryId)
+          if (!entry) return null
+          return (
+            <div className="py-4">
+              <p className="text-sm text-gray-400 mb-4">
+                Select conditions for <span className="text-white font-medium">{entry.name}</span>
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {CONDITIONS.map(condition => {
+                  const isActive = entry.conditions.includes(condition.id)
+                  return (
+                    <button
+                      key={condition.id}
+                      onClick={() => toggleCondition(conditionsEntryId, condition.id)}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                        isActive
+                          ? `${condition.color} text-white`
+                          : "bg-white/[0.02] text-gray-400 hover:bg-white/[0.05]"
+                      )}
+                    >
+                      {isActive && <Check className="w-3 h-3" />}
+                      {condition.name}
+                    </button>
+                  )
+                })}
+              </div>
+              <div className="flex justify-end pt-4 mt-4 border-t border-white/[0.06]">
+                <button
+                  onClick={() => setConditionsEntryId(null)}
+                  className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          )
+        })()}
+      </Modal>
+
+      {/* Encounter Presets Modal */}
+      <Modal
+        isOpen={presetsOpen}
+        onClose={() => setPresetsOpen(false)}
+        title="Add from Encounter Preset"
+      >
+        <div className="py-4 space-y-3">
+          <p className="text-sm text-gray-400 mb-4">
+            Quickly add pre-configured enemy groups to the initiative tracker.
+          </p>
+          {encounterPresets.length === 0 ? (
+            <div className="text-center py-8">
+              <Zap className="w-10 h-10 mx-auto text-gray-600 mb-3" />
+              <p className="text-sm text-gray-500">No encounter presets defined</p>
+              <p className="text-xs text-gray-600 mt-1">
+                Add encounter presets in the oneshot editor
+              </p>
+            </div>
+          ) : (
+            encounterPresets.map(preset => (
+              <button
+                key={preset.id}
+                onClick={() => addFromPreset(preset)}
+                className="w-full p-4 bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] rounded-xl text-left transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-white">{preset.name}</span>
+                  <span className="text-xs text-gray-500">
+                    {preset.combatants.reduce((sum, c) => sum + c.count, 0)} enemies
+                  </span>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {preset.combatants.map((c, i) => (
+                    <span
+                      key={i}
+                      className="px-2 py-0.5 bg-white/[0.05] rounded text-xs text-gray-400"
+                    >
+                      {c.count}x {c.name} (HP:{c.hp}, AC:{c.ac})
+                    </span>
+                  ))}
+                </div>
+              </button>
+            ))
+          )}
         </div>
       </Modal>
     </div>

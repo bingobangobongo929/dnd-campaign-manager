@@ -21,7 +21,8 @@ export interface Database {
           last_intelligence_run: string | null
           is_demo: boolean
           // Template system fields
-          content_mode: 'active' | 'inactive' | 'template'
+          content_mode: 'active' | 'inactive'
+          is_published: boolean
           template_id: string | null
           template_version: number
           saved_template_version: number | null
@@ -47,7 +48,8 @@ export interface Database {
           last_intelligence_run?: string | null
           is_demo?: boolean
           // Template system fields
-          content_mode?: 'active' | 'inactive' | 'template'
+          content_mode?: 'active' | 'inactive'
+          is_published?: boolean
           template_id?: string | null
           template_version?: number
           saved_template_version?: number | null
@@ -73,7 +75,8 @@ export interface Database {
           last_intelligence_run?: string | null
           is_demo?: boolean
           // Template system fields
-          content_mode?: 'active' | 'inactive' | 'template'
+          content_mode?: 'active' | 'inactive'
+          is_published?: boolean
           template_id?: string | null
           template_version?: number
           saved_template_version?: number | null
@@ -607,7 +610,8 @@ export interface Database {
           combat_stats: Json | null
           is_demo: boolean
           // Template system fields
-          content_mode: 'active' | 'inactive' | 'template'
+          content_mode: 'active' | 'inactive'
+          is_published: boolean
           template_id: string | null
           template_version: number
           saved_template_version: number | null
@@ -744,7 +748,8 @@ export interface Database {
           party_relations?: Json | null
           combat_stats?: Json | null
           // Template system fields
-          content_mode?: 'active' | 'inactive' | 'template'
+          content_mode?: 'active' | 'inactive'
+          is_published?: boolean
           template_id?: string | null
           template_version?: number
           saved_template_version?: number | null
@@ -882,7 +887,8 @@ export interface Database {
           combat_stats?: Json | null
           is_demo?: boolean
           // Template system fields
-          content_mode?: 'active' | 'inactive' | 'template'
+          content_mode?: 'active' | 'inactive'
+          is_published?: boolean
           template_id?: string | null
           template_version?: number
           saved_template_version?: number | null
@@ -1221,7 +1227,8 @@ export interface Database {
           status: string
           is_demo: boolean
           // Template system fields
-          content_mode: 'active' | 'inactive' | 'template'
+          content_mode: 'active' | 'inactive'
+          is_published: boolean
           template_id: string | null
           template_version: number
           saved_template_version: number | null
@@ -1233,6 +1240,8 @@ export interface Database {
           allow_save: boolean
           attribution_name: string | null
           inactive_reason: string | null
+          // Run mode fields
+          encounter_presets: Json
           created_at: string
           updated_at: string
         }
@@ -1258,7 +1267,8 @@ export interface Database {
           status?: string
           is_demo?: boolean
           // Template system fields
-          content_mode?: 'active' | 'inactive' | 'template'
+          content_mode?: 'active' | 'inactive'
+          is_published?: boolean
           template_id?: string | null
           template_version?: number
           saved_template_version?: number | null
@@ -1270,6 +1280,8 @@ export interface Database {
           allow_save?: boolean
           attribution_name?: string | null
           inactive_reason?: string | null
+          // Run mode fields
+          encounter_presets?: Json
           created_at?: string
           updated_at?: string
         }
@@ -1295,7 +1307,8 @@ export interface Database {
           status?: string
           is_demo?: boolean
           // Template system fields
-          content_mode?: 'active' | 'inactive' | 'template'
+          content_mode?: 'active' | 'inactive'
+          is_published?: boolean
           template_id?: string | null
           template_version?: number
           saved_template_version?: number | null
@@ -1307,6 +1320,8 @@ export interface Database {
           allow_save?: boolean
           attribution_name?: string | null
           inactive_reason?: string | null
+          // Run mode fields
+          encounter_presets?: Json
           created_at?: string
           updated_at?: string
         }
@@ -1390,6 +1405,8 @@ export interface Database {
       user_settings: {
         Row: {
           user_id: string
+          username: string | null
+          username_set_at: string | null
           ai_provider: 'anthropic' | 'google'
           theme: 'dark' | 'light' | 'system'
           tier: 'free' | 'standard' | 'premium'
@@ -1421,6 +1438,8 @@ export interface Database {
         }
         Insert: {
           user_id: string
+          username?: string | null
+          username_set_at?: string | null
           ai_provider?: 'anthropic' | 'google'
           theme?: 'dark' | 'light' | 'system'
           tier?: 'free' | 'standard' | 'premium'
@@ -1448,6 +1467,8 @@ export interface Database {
         }
         Update: {
           user_id?: string
+          username?: string | null
+          username_set_at?: string | null
           ai_provider?: 'anthropic' | 'google'
           theme?: 'dark' | 'light' | 'system'
           tier?: 'free' | 'standard' | 'premium'
@@ -2180,6 +2201,8 @@ export interface Database {
           template_description: string | null
           template_tags: string[] | null
           save_count: number
+          view_count: number
+          is_public: boolean
           published_at: string
           created_at: string
         }
@@ -2198,6 +2221,8 @@ export interface Database {
           template_description?: string | null
           template_tags?: string[] | null
           save_count?: number
+          view_count?: number
+          is_public?: boolean
           published_at?: string
           created_at?: string
         }
@@ -2216,6 +2241,8 @@ export interface Database {
           template_description?: string | null
           template_tags?: string[] | null
           save_count?: number
+          view_count?: number
+          is_public?: boolean
           published_at?: string
           created_at?: string
         }
@@ -2270,6 +2297,47 @@ export interface Database {
           created_at?: string
         }
       }
+      // =====================================================
+      // RUN MODE TABLES
+      // =====================================================
+      run_sessions: {
+        Row: {
+          id: string
+          oneshot_id: string
+          user_id: string
+          share_code: string
+          session_state: Json
+          is_active: boolean
+          started_at: string
+          ended_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          oneshot_id: string
+          user_id: string
+          share_code: string
+          session_state?: Json
+          is_active?: boolean
+          started_at?: string
+          ended_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          oneshot_id?: string
+          user_id?: string
+          share_code?: string
+          session_state?: Json
+          is_active?: boolean
+          started_at?: string
+          ended_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }
@@ -2301,6 +2369,7 @@ export type OneshotGenreTag = Database['public']['Tables']['oneshot_genre_tags']
 export type Oneshot = Database['public']['Tables']['oneshots']['Row']
 export type OneshotRun = Database['public']['Tables']['oneshot_runs']['Row']
 export type OneshotShare = Database['public']['Tables']['oneshot_shares']['Row']
+export type RunSession = Database['public']['Tables']['run_sessions']['Row']
 export type CharacterRelationship = Database['public']['Tables']['character_relationships']['Row']
 export type CampaignLore = Database['public']['Tables']['campaign_lore']['Row']
 export type CampaignShare = Database['public']['Tables']['campaign_shares']['Row']
@@ -2387,7 +2456,7 @@ export type TemplateSnapshot = Database['public']['Tables']['template_snapshots'
 export type ContentSave = Database['public']['Tables']['content_saves']['Row']
 
 // Content mode type for filtering
-export type ContentMode = 'active' | 'inactive' | 'template'
+export type ContentMode = 'active' | 'inactive'
 
 // Inactive reason types per content type
 export type CampaignInactiveReason = 'completed' | 'on_hiatus' | 'retired'

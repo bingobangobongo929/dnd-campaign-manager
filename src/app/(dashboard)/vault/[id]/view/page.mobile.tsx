@@ -21,7 +21,7 @@ import {
 import { AppLayout } from '@/components/layout/app-layout'
 import { Button, SafeHtml, Modal, Spinner } from '@/components/ui'
 import { MobileLayout } from '@/components/mobile'
-import { ShareCharacterModal } from '@/components/vault/ShareCharacterModal'
+import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 import { AttributionBanner } from '@/components/templates'
 import { cn, getInitials } from '@/lib/utils'
 import {
@@ -649,11 +649,13 @@ export function CharacterViewPageMobile({
         </div>
 
         {/* Share Modal */}
-        <ShareCharacterModal
+        <UnifiedShareModal
           isOpen={shareModalOpen}
           onClose={() => setShareModalOpen(false)}
-          characterId={character.id}
-          characterName={character.name}
+          contentType="character"
+          contentId={character.id}
+          contentName={character.name}
+          isPublished={character.is_published}
         />
 
         {/* Lightbox */}

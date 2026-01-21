@@ -6,8 +6,7 @@ interface PublishRequest {
   contentId: string
   versionName?: string
   versionNotes?: string
-  allowSave?: boolean
-  attributionName?: string
+  isPublic?: boolean
   templateDescription?: string
   templateTags?: string[]
 }
@@ -27,14 +26,28 @@ export async function POST(request: Request) {
       contentId,
       versionName,
       versionNotes,
-      allowSave = false,
-      attributionName,
+      isPublic = false,
       templateDescription,
       templateTags,
     } = body
 
     if (!contentType || !contentId) {
       return NextResponse.json({ error: 'Content type and ID required' }, { status: 400 })
+    }
+
+    // Get user settings for username (used as attribution)
+    const { data: userSettings } = await supabase
+      .from('user_settings')
+      .select('username')
+      .eq('user_id', user.id)
+      .single()
+
+    // Require username for public templates
+    if (isPublic && !userSettings?.username) {
+      return NextResponse.json({
+        error: 'You must set a username before publishing public templates',
+        code: 'USERNAME_REQUIRED'
+      }, { status: 400 })
     }
 
     // Verify ownership and get content based on type
@@ -55,7 +68,6 @@ export async function POST(request: Request) {
       content = data
 
       // Fetch related data for campaigns
-      // First batch: fetch characters and other independent data
       const [
         { data: characters },
         { data: tags },
@@ -74,7 +86,6 @@ export async function POST(request: Request) {
         supabase.from('campaign_lore').select('*').eq('campaign_id', contentId),
       ])
 
-      // Second batch: fetch character tags (depends on characters)
       const characterIds = (characters || []).map((c: { id: string }) => c.id)
       const { data: characterTags } = characterIds.length > 0
         ? await supabase.from('character_tags').select('*').in('character_id', characterIds)
@@ -104,7 +115,6 @@ export async function POST(request: Request) {
       }
       content = data
 
-      // Fetch related data for characters
       const [
         { data: images },
         { data: relationships },
@@ -139,7 +149,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Oneshot not found' }, { status: 404 })
       }
       content = data
-      relatedData = {} // Oneshots don't have much related data to copy
+      relatedData = {}
     }
 
     // Get the current highest version for this content
@@ -167,8 +177,9 @@ export async function POST(request: Request) {
         version_notes: versionNotes,
         snapshot_data: content,
         related_data: relatedData,
-        allow_save: allowSave,
-        attribution_name: attributionName,
+        is_public: isPublic,
+        allow_save: isPublic, // Allow save only for public templates
+        attribution_name: userSettings?.username || null,
         template_description: templateDescription,
         template_tags: templateTags,
       })
@@ -180,14 +191,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to create snapshot' }, { status: 500 })
     }
 
-    // Update the content to template mode and set published fields
+    // Update the content to mark it as published (but DON'T change content_mode!)
+    // Content stays in Active tab, snapshot goes to My Templates tab
     const updateData: any = {
-      content_mode: 'template',
+      is_published: true,
       template_version: nextVersion,
       published_at: content.published_at || new Date().toISOString(),
       is_session0_ready: true,
-      allow_save: allowSave,
-      attribution_name: attributionName,
       template_description: templateDescription,
       template_tags: templateTags,
     }
@@ -243,6 +253,7 @@ export async function POST(request: Request) {
       snapshot: {
         id: snapshot.id,
         version: snapshot.version,
+        isPublic: snapshot.is_public,
         published_at: snapshot.published_at,
       },
     })

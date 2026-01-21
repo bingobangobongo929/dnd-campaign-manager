@@ -7,8 +7,7 @@ import { Plus, FolderPlus, Scaling, Trash2, Brain, Share2, ChevronRight, Users, 
 import { Modal, Input, ColorPicker, IconPicker, getGroupIcon } from '@/components/ui'
 import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
-import { ShareCampaignModal } from '@/components/campaigns'
-import { PublishTemplateModal } from '@/components/templates/PublishTemplateModal'
+import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 import { TemplateStateBadge } from '@/components/templates/TemplateStateBadge'
 import { toast } from 'sonner'
 import { AppLayout } from '@/components/layout/app-layout'
@@ -49,9 +48,6 @@ export default function CampaignCanvasPage() {
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false)
   const [isResizeToolbarOpen, setIsResizeToolbarOpen] = useState(false)
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
-  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false)
-  const [publishDropdownOpen, setPublishDropdownOpen] = useState(false)
-  const [unpublishing, setUnpublishing] = useState(false)
   const [viewingCharacterId, setViewingCharacterId] = useState<string | null>(null)
   const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null)
   const [groupForm, setGroupForm] = useState({ name: '', color: '#8B5CF6', icon: 'users' })
@@ -500,50 +496,17 @@ export default function CampaignCanvasPage() {
     setSelectedCharacterId(null)
   }, [setSelectedCharacterId])
 
-  // Handle unpublish
-  const handleUnpublish = async () => {
-    if (!campaign) return
-    setUnpublishing(true)
-    setPublishDropdownOpen(false)
-
-    try {
-      const response = await fetch('/api/templates/unpublish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contentType: 'campaign',
-          contentId: campaignId,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        if (data.details?.saveCount) {
-          toast.error(`Cannot unpublish - ${data.details.saveCount} people have saved this template`)
-        } else {
-          toast.error(data.error || 'Failed to unpublish')
-        }
-        return
-      }
-
-      // Update local state
-      setCampaign(prev => prev ? { ...prev, content_mode: 'active', template_version: 1 } : null)
-      toast.success('Template unpublished - returned to active mode')
-    } catch (error) {
-      toast.error('Failed to unpublish')
-    } finally {
-      setUnpublishing(false)
-    }
+  // Handle successful publish/update from UnifiedShareModal
+  const handlePublished = () => {
+    setCampaign(prev => prev ? {
+      ...prev,
+      is_published: true,
+      template_version: (prev.template_version || 0) + 1
+    } : null)
+    toast.success('Template published successfully')
   }
 
-  // Handle successful publish
-  const handlePublished = (version: number) => {
-    setCampaign(prev => prev ? { ...prev, content_mode: 'template', template_version: version } : null)
-    toast.success(`Published as template v${version}`)
-  }
-
-  const isTemplate = campaign?.content_mode === 'template'
+  const isPublished = campaign?.is_published === true
 
   // Canvas toolbar actions for the top bar
   const canvasActions = (
@@ -557,73 +520,19 @@ export default function CampaignCanvasPage() {
         />
       )}
 
-      {/* Publish/Template Dropdown */}
-      <div className="relative">
-        <button
-          className={cn(
-            "btn btn-sm flex items-center gap-1.5",
-            isTemplate ? "btn-purple" : "btn-secondary"
-          )}
-          onClick={() => setPublishDropdownOpen(!publishDropdownOpen)}
-          disabled={unpublishing}
-        >
-          {unpublishing ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Sparkles className="w-4 h-4" />
-          )}
-          <span className="hidden sm:inline">{isTemplate ? 'Template' : 'Publish'}</span>
-          <ChevronDown className="w-3 h-3" />
-        </button>
+      {/* Published indicator */}
+      {isPublished && (
+        <span className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-purple-400 bg-purple-500/10 rounded-full border border-purple-500/30">
+          <Sparkles className="w-3 h-3" />
+          Published
+        </span>
+      )}
 
-        {publishDropdownOpen && (
-          <>
-            <div
-              className="fixed inset-0 z-40"
-              onClick={() => setPublishDropdownOpen(false)}
-            />
-            <div className="absolute right-0 top-full mt-1 z-50 w-48 bg-gray-900 border border-white/10 rounded-lg shadow-xl overflow-hidden">
-              {isTemplate ? (
-                <>
-                  <button
-                    onClick={() => {
-                      setPublishDropdownOpen(false)
-                      setIsPublishModalOpen(true)
-                    }}
-                    className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/5 flex items-center gap-2"
-                  >
-                    <Sparkles className="w-4 h-4 text-purple-400" />
-                    Publish Update (v{(campaign?.template_version || 0) + 1})
-                  </button>
-                  <button
-                    onClick={handleUnpublish}
-                    className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Unpublish Template
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => {
-                    setPublishDropdownOpen(false)
-                    setIsPublishModalOpen(true)
-                  }}
-                  className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/5 flex items-center gap-2"
-                >
-                  <Sparkles className="w-4 h-4 text-purple-400" />
-                  Publish as Template
-                </button>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-
+      {/* Share & Manage Button */}
       <button
         className="btn btn-secondary btn-sm"
         onClick={() => setIsShareModalOpen(true)}
-        title="Share Campaign"
+        title="Share & Manage"
       >
         <Share2 className="w-4 h-4" />
         <span className="hidden sm:inline ml-1.5">Share</span>
@@ -1009,26 +918,15 @@ export default function CampaignCanvasPage() {
         </div>
       </Modal>
 
-      {/* Share Campaign Modal */}
+      {/* Unified Share Modal */}
       {campaign && (
-        <ShareCampaignModal
+        <UnifiedShareModal
           isOpen={isShareModalOpen}
           onClose={() => setIsShareModalOpen(false)}
-          campaignId={campaignId}
-          campaignName={campaign.name}
-        />
-      )}
-
-      {/* Publish Template Modal */}
-      {campaign && (
-        <PublishTemplateModal
-          isOpen={isPublishModalOpen}
-          onClose={() => setIsPublishModalOpen(false)}
           contentType="campaign"
           contentId={campaignId}
           contentName={campaign.name}
-          isUpdate={campaign.content_mode === 'template'}
-          currentVersion={campaign.template_version || 0}
+          isPublished={campaign.is_published}
           onPublished={handlePublished}
         />
       )}

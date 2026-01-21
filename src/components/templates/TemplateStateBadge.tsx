@@ -1,7 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { Sparkles, Pause, Archive, Play } from 'lucide-react'
+import { Pause, Archive, Play } from 'lucide-react'
 import type { ContentMode } from '@/types/database'
 
 interface TemplateStateBadgeProps {
@@ -19,14 +19,6 @@ export function TemplateStateBadge({
 }: TemplateStateBadgeProps) {
   const getConfig = () => {
     switch (mode) {
-      case 'template':
-        return {
-          icon: Sparkles,
-          label: 'Template',
-          bgColor: 'bg-purple-500/15',
-          textColor: 'text-purple-400',
-          borderColor: 'border-purple-500/30',
-        }
       case 'inactive':
         const reasonLabel = getInactiveReasonLabel(inactiveReason)
         return {

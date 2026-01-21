@@ -24,6 +24,18 @@ import { formatDate } from '@/lib/utils'
 import type { Oneshot, OneshotGenreTag, OneshotRun, ContentSave } from '@/types/database'
 import { ContentModeToggle, TemplateStateBadge, type ContentModeTab } from '@/components/templates'
 
+interface TemplateSnapshot {
+  id: string
+  content_id: string
+  version: number
+  version_name?: string
+  is_public: boolean
+  published_at: string
+  save_count: number
+  view_count?: number
+  snapshot_data: any
+}
+
 export default function OneshotsPage() {
   const router = useRouter()
   const supabase = useSupabase()
@@ -32,6 +44,7 @@ export default function OneshotsPage() {
 
   const [oneshots, setOneshots] = useState<Oneshot[]>([])
   const [savedOneshots, setSavedOneshots] = useState<ContentSave[]>([])
+  const [templateSnapshots, setTemplateSnapshots] = useState<TemplateSnapshot[]>([])
   const [genreTags, setGenreTags] = useState<OneshotGenreTag[]>([])
   const [oneshotRuns, setOneshotRuns] = useState<Record<string, OneshotRun[]>>({})
   const [loading, setLoading] = useState(true)
@@ -81,6 +94,18 @@ export default function OneshotsPage() {
       setGenreTags(tagsData)
     }
 
+    // Load template snapshots (My Templates tab)
+    const { data: snapshotsData } = await supabase
+      .from('template_snapshots')
+      .select('*')
+      .eq('user_id', user!.id)
+      .eq('content_type', 'oneshot')
+      .order('published_at', { ascending: false })
+
+    if (snapshotsData) {
+      setTemplateSnapshots(snapshotsData)
+    }
+
     // Load saved oneshots from others
     const savedResponse = await fetch('/api/templates/saved?type=oneshot')
     if (savedResponse.ok) {
@@ -95,15 +120,18 @@ export default function OneshotsPage() {
   const filteredOneshots = oneshots.filter(o => {
     if (activeTab === 'active') return o.content_mode === 'active' || !o.content_mode
     if (activeTab === 'inactive') return o.content_mode === 'inactive'
-    if (activeTab === 'template') return o.content_mode === 'template'
+    // Template tab uses templateSnapshots, not filtered oneshots
     return false
   })
+
+  // Group snapshots by content_id to get unique templates
+  const uniqueTemplateContentIds = new Set(templateSnapshots.map(s => s.content_id))
 
   // Get counts for tabs
   const tabCounts = {
     active: oneshots.filter(o => o.content_mode === 'active' || !o.content_mode).length,
     inactive: oneshots.filter(o => o.content_mode === 'inactive').length,
-    template: oneshots.filter(o => o.content_mode === 'template').length,
+    templates: uniqueTemplateContentIds.size,
     saved: savedOneshots.length,
   }
 
@@ -312,10 +340,10 @@ export default function OneshotsPage() {
           </div>
         )}
 
-        {/* Templates Tab */}
-        {activeTab === 'template' && (
+        {/* Templates Tab - Shows snapshots from template_snapshots table */}
+        {activeTab === 'templates' && (
           <div className="space-y-6">
-            {filteredOneshots.length === 0 ? (
+            {templateSnapshots.length === 0 ? (
               <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
                 <Sparkles className="w-12 h-12 mx-auto mb-4 text-amber-400/50" />
                 <h3 className="text-lg font-medium text-white mb-2">No templates yet</h3>
@@ -325,45 +353,64 @@ export default function OneshotsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                {filteredOneshots.map((oneshot) => (
-                  <Link
-                    key={oneshot.id}
-                    href={`/oneshots/${oneshot.id}`}
-                    className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-amber-500/20 hover:border-amber-500/40 transition-all aspect-[2/3]"
-                  >
-                    {oneshot.image_url ? (
-                      <>
-                        <Image
-                          src={oneshot.image_url}
-                          alt={oneshot.title}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-                      </>
-                    ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
-                        <Scroll className="w-16 h-16 text-amber-400/30" />
+                {templateSnapshots.map((snapshot) => {
+                  const snapshotData = snapshot.snapshot_data || {}
+                  const oneshot = oneshots.find(o => o.id === snapshot.content_id)
+                  const imageUrl = snapshotData.image_url || oneshot?.image_url
+                  const title = snapshotData.title || oneshot?.title || 'Untitled'
+
+                  return (
+                    <Link
+                      key={snapshot.id}
+                      href={`/oneshots/${snapshot.content_id}`}
+                      className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-amber-500/20 hover:border-amber-500/40 transition-all aspect-[2/3]"
+                    >
+                      {imageUrl ? (
+                        <>
+                          <Image
+                            src={imageUrl}
+                            alt={title}
+                            fill
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
+                          <Scroll className="w-16 h-16 text-amber-400/30" />
+                        </div>
+                      )}
+                      <div className="absolute top-3 left-3 flex gap-2">
+                        {snapshot.is_public ? (
+                          <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            Public
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-gray-500/20 text-gray-300 border border-gray-500/30">
+                            Private
+                          </span>
+                        )}
                       </div>
-                    )}
-                    <div className="absolute top-3 left-3 flex gap-2">
-                      <TemplateStateBadge mode="template" size="sm" />
-                    </div>
-                    {oneshot.template_save_count > 0 && (
-                      <div className="absolute top-3 right-3 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-lg text-xs text-gray-300">
-                        {oneshot.template_save_count} saves
+                      {snapshot.save_count > 0 && (
+                        <div className="absolute top-3 right-3 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-lg text-xs text-gray-300">
+                          {snapshot.save_count} saves
+                        </div>
+                      )}
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <h4 className="font-semibold text-white text-sm line-clamp-2 group-hover:text-amber-300 transition-colors">
+                          {title}
+                        </h4>
+                        <p className="text-xs text-gray-500 mt-1">
+                          v{snapshot.version}
+                          {snapshot.version_name && ` "${snapshot.version_name}"`}
+                        </p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Published {formatDate(snapshot.published_at)}
+                        </p>
                       </div>
-                    )}
-                    <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <h4 className="font-semibold text-white text-sm line-clamp-2 group-hover:text-amber-300 transition-colors">
-                        {oneshot.title}
-                      </h4>
-                      <p className="text-xs text-gray-500 mt-1">
-                        v{oneshot.template_version || 1}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  )
+                })}
               </div>
             )}
           </div>

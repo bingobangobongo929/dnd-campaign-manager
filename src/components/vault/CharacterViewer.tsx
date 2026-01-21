@@ -26,7 +26,7 @@ import {
   Heart,
 } from 'lucide-react'
 import { Modal, SafeHtml, MarkdownContent } from '@/components/ui'
-import { ShareCharacterModal } from './ShareCharacterModal'
+import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 import type {
   VaultCharacter,
   VaultCharacterRelationship,
@@ -1252,11 +1252,13 @@ export function CharacterViewer({ character }: CharacterViewerProps) {
       <Lightbox />
       <NPCDetailModal />
       <CompanionDetailModal />
-      <ShareCharacterModal
+      <UnifiedShareModal
         isOpen={shareModalOpen}
         onClose={() => setShareModalOpen(false)}
-        characterId={character.id}
-        characterName={character.name}
+        contentType="character"
+        contentId={character.id}
+        contentName={character.name}
+        isPublished={character.is_published}
       />
     </>
   )

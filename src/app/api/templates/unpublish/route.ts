@@ -85,13 +85,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to delete snapshots' }, { status: 500 })
     }
 
-    // Update the content back to active mode
+    // Update the content to mark as unpublished (DON'T change content_mode - it stays 'active')
     const updateData = {
-      content_mode: 'active',
-      template_version: 1,
+      is_published: false,
+      template_version: 0,
       published_at: null,
       is_session0_ready: false,
-      allow_save: false,
     }
 
     let updateError: any = null

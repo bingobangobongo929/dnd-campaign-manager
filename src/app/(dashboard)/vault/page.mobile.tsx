@@ -45,7 +45,7 @@ export interface VaultPageMobileProps {
   tabCounts: {
     active: number
     inactive: number
-    template: number
+    templates: number
     saved: number
   }
   onReactivate: (characterId: string) => void
@@ -196,7 +196,7 @@ export function VaultPageMobile({
         )}
 
         {/* Templates Tab */}
-        {activeTab === 'template' && (
+        {activeTab === 'templates' && (
           filteredCharacters.length === 0 ? (
             <div className="mobile-empty-state">
               <Sparkles className="mobile-empty-icon" />
@@ -229,7 +229,10 @@ export function VaultPageMobile({
                   <div className="flex-1 min-w-0 text-left">
                     <h4 className="font-semibold text-white truncate">{character.name}</h4>
                     <div className="flex items-center gap-2 mt-1">
-                      <TemplateStateBadge mode="template" size="sm" />
+                      <span className="flex items-center gap-1 px-2 py-0.5 text-xs font-medium text-purple-400 bg-purple-500/10 rounded-full border border-purple-500/30">
+                        <Sparkles className="w-2.5 h-2.5" />
+                        Published
+                      </span>
                       {character.template_save_count > 0 && (
                         <span className="text-xs text-gray-500">{character.template_save_count} saves</span>
                       )}

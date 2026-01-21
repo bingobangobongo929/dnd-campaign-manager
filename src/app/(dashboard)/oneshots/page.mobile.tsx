@@ -29,7 +29,7 @@ export interface OneshotsPageMobileProps {
   tabCounts: {
     active: number
     inactive: number
-    template: number
+    templates: number
     saved: number
   }
   onReactivate: (oneshotId: string) => void
@@ -175,7 +175,7 @@ export function OneshotsPageMobile({
         )}
 
         {/* Templates Tab */}
-        {activeTab === 'template' && (
+        {activeTab === 'templates' && (
           oneshots.length === 0 ? (
             <div className="mobile-empty-state">
               <Sparkles className="mobile-empty-icon" />
@@ -206,7 +206,10 @@ export function OneshotsPageMobile({
                     </div>
                   )}
                   <div className="absolute top-2 left-2">
-                    <TemplateStateBadge mode="template" size="sm" />
+                    <span className="flex items-center gap-1 px-2 py-0.5 text-xs font-medium text-purple-400 bg-purple-500/10 rounded-full border border-purple-500/30">
+                      <Sparkles className="w-2.5 h-2.5" />
+                      Published
+                    </span>
                   </div>
                   {oneshot.template_save_count > 0 && (
                     <div className="absolute top-2 right-2">

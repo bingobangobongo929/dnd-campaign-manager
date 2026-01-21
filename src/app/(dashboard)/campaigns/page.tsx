@@ -28,6 +28,18 @@ import type { Campaign, ContentSave } from '@/types/database'
 import { CampaignsPageMobile } from './page.mobile'
 import { ContentModeToggle, TemplateStateBadge, type ContentModeTab } from '@/components/templates'
 
+interface TemplateSnapshot {
+  id: string
+  content_id: string
+  version: number
+  version_name?: string
+  is_public: boolean
+  published_at: string
+  save_count: number
+  view_count?: number
+  snapshot_data: any
+}
+
 const GAME_SYSTEMS = [
   { value: 'D&D 5e', label: 'D&D 5e' },
   { value: 'D&D 3.5e', label: 'D&D 3.5e' },
@@ -46,6 +58,7 @@ export default function CampaignsPage() {
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [savedCampaigns, setSavedCampaigns] = useState<ContentSave[]>([])
+  const [templateSnapshots, setTemplateSnapshots] = useState<TemplateSnapshot[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<ContentModeTab>('active')
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null)
@@ -76,6 +89,18 @@ export default function CampaignsPage() {
       setCampaigns(campaignsData)
     }
 
+    // Load template snapshots (My Templates tab)
+    const { data: snapshotsData } = await supabase
+      .from('template_snapshots')
+      .select('*')
+      .eq('user_id', user!.id)
+      .eq('content_type', 'campaign')
+      .order('published_at', { ascending: false })
+
+    if (snapshotsData) {
+      setTemplateSnapshots(snapshotsData)
+    }
+
     // Load saved campaigns from others
     const savedResponse = await fetch('/api/templates/saved?type=campaign')
     if (savedResponse.ok) {
@@ -90,15 +115,18 @@ export default function CampaignsPage() {
   const filteredCampaigns = campaigns.filter(c => {
     if (activeTab === 'active') return c.content_mode === 'active' || !c.content_mode
     if (activeTab === 'inactive') return c.content_mode === 'inactive'
-    if (activeTab === 'template') return c.content_mode === 'template'
+    // Template tab uses templateSnapshots, not filtered campaigns
     return false
   })
+
+  // Group snapshots by content_id to get unique templates
+  const uniqueTemplateContentIds = new Set(templateSnapshots.map(s => s.content_id))
 
   // Get counts for tabs
   const tabCounts = {
     active: campaigns.filter(c => c.content_mode === 'active' || !c.content_mode).length,
     inactive: campaigns.filter(c => c.content_mode === 'inactive').length,
-    template: campaigns.filter(c => c.content_mode === 'template').length,
+    templates: uniqueTemplateContentIds.size,
     saved: savedCampaigns.length,
   }
 
@@ -378,10 +406,10 @@ export default function CampaignsPage() {
           </div>
         )}
 
-        {/* Templates Tab */}
-        {activeTab === 'template' && (
+        {/* Templates Tab - Shows snapshots from template_snapshots table */}
+        {activeTab === 'templates' && (
           <div className="space-y-6">
-            {filteredCampaigns.length === 0 ? (
+            {templateSnapshots.length === 0 ? (
               <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
                 <Sparkles className="w-12 h-12 mx-auto mb-4 text-purple-400/50" />
                 <h3 className="text-lg font-medium text-white mb-2">No templates yet</h3>
@@ -391,47 +419,67 @@ export default function CampaignsPage() {
               </div>
             ) : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredCampaigns.map((campaign) => (
-                  <Link
-                    key={campaign.id}
-                    href={`/campaigns/${campaign.id}/canvas`}
-                    className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-purple-500/20 hover:border-purple-500/40 transition-all"
-                  >
-                    <div className="relative h-48 overflow-hidden">
-                      {campaign.image_url ? (
-                        <>
-                          <Image
-                            src={campaign.image_url}
-                            alt={campaign.name}
-                            fill
-                            className="object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
-                        </>
-                      ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
-                          <Swords className="w-16 h-16 text-purple-400/30" />
+                {templateSnapshots.map((snapshot) => {
+                  const snapshotData = snapshot.snapshot_data || {}
+                  const campaign = campaigns.find(c => c.id === snapshot.content_id)
+                  const imageUrl = snapshotData.image_url || campaign?.image_url
+                  const name = snapshotData.name || campaign?.name || 'Untitled'
+                  const gameSystem = snapshotData.game_system || campaign?.game_system || 'D&D 5e'
+
+                  return (
+                    <Link
+                      key={snapshot.id}
+                      href={`/campaigns/${snapshot.content_id}/canvas`}
+                      className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-purple-500/20 hover:border-purple-500/40 transition-all"
+                    >
+                      <div className="relative h-48 overflow-hidden">
+                        {imageUrl ? (
+                          <>
+                            <Image
+                              src={imageUrl}
+                              alt={name}
+                              fill
+                              className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                            <Swords className="w-16 h-16 text-purple-400/30" />
+                          </div>
+                        )}
+                        <div className="absolute top-3 left-3 flex gap-2">
+                          {snapshot.is_public ? (
+                            <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              Public
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-500/20 text-gray-300 border border-gray-500/30">
+                              Private
+                            </span>
+                          )}
                         </div>
-                      )}
-                      <div className="absolute top-3 left-3 flex gap-2">
-                        <TemplateStateBadge mode="template" size="sm" />
+                        {snapshot.save_count > 0 && (
+                          <div className="absolute top-3 right-3 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-lg text-xs text-gray-300">
+                            {snapshot.save_count} saves
+                          </div>
+                        )}
                       </div>
-                      {campaign.template_save_count > 0 && (
-                        <div className="absolute top-3 right-3 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-lg text-xs text-gray-300">
-                          {campaign.template_save_count} saves
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-5">
-                      <h4 className="font-display font-semibold text-lg text-white truncate group-hover:text-purple-400 transition-colors">
-                        {campaign.name}
-                      </h4>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {campaign.game_system} • v{campaign.template_version || 1}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
+                      <div className="p-5">
+                        <h4 className="font-display font-semibold text-lg text-white truncate group-hover:text-purple-400 transition-colors">
+                          {name}
+                        </h4>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {gameSystem} • v{snapshot.version}
+                          {snapshot.version_name && ` "${snapshot.version_name}"`}
+                        </p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Published {formatDate(snapshot.published_at)}
+                        </p>
+                      </div>
+                    </Link>
+                  )
+                })}
               </div>
             )}
           </div>

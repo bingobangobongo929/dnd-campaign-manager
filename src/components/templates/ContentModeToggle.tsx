@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils'
 import type { ContentMode } from '@/types/database'
 
-export type ContentModeTab = ContentMode | 'saved'
+export type ContentModeTab = ContentMode | 'templates' | 'saved'
 
 interface Tab {
   value: ContentModeTab
@@ -17,7 +17,7 @@ interface ContentModeToggleProps {
   counts?: {
     active?: number
     inactive?: number
-    template?: number
+    templates?: number
     saved?: number
   }
   contentType: 'campaign' | 'character' | 'oneshot'
@@ -40,7 +40,7 @@ export function ContentModeToggle({
   const tabs: Tab[] = [
     { value: 'active', label: 'Active', count: counts.active },
     { value: 'inactive', label: getInactiveLabel(), count: counts.inactive },
-    { value: 'template', label: 'My Templates', count: counts.template },
+    { value: 'templates', label: 'My Templates', count: counts.templates },
     { value: 'saved', label: 'Saved', count: counts.saved },
   ]
 
@@ -94,7 +94,7 @@ export function MobileContentModeToggle({
   const tabs: Tab[] = [
     { value: 'active', label: 'Active', count: counts.active },
     { value: 'inactive', label: getInactiveLabel(), count: counts.inactive },
-    { value: 'template', label: 'Templates', count: counts.template },
+    { value: 'templates', label: 'Templates', count: counts.templates },
     { value: 'saved', label: 'Saved', count: counts.saved },
   ]
 
