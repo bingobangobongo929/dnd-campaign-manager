@@ -47,7 +47,7 @@ interface CharacterItem {
   id: string
   name: string
   image_url?: string | null
-  is_pc: boolean
+  type: 'pc' | 'npc'
 }
 
 interface SessionItem {
@@ -203,7 +203,7 @@ export function ShareCampaignModal({
       // Load characters
       const { data: chars } = await client
         .from('characters')
-        .select('id, name, image_url, is_pc')
+        .select('id, name, image_url, type')
         .eq('campaign_id', campaignId)
         .order('name')
 
@@ -253,8 +253,8 @@ export function ShareCampaignModal({
       const characterList = chars || []
       const sessionList = sess || []
       const loreList = lore || []
-      const pcs = characterList.filter(c => c.is_pc)
-      const npcs = characterList.filter(c => !c.is_pc)
+      const pcs = characterList.filter(c => c.type === 'pc')
+      const npcs = characterList.filter(c => c.type === 'npc')
       const knownRels = (relationships || []).filter(r => r.is_known_to_party)
       const hiddenRels = (relationships || []).filter(r => !r.is_known_to_party)
 
@@ -383,7 +383,7 @@ export function ShareCampaignModal({
   }
 
   const selectAllCharacters = (pcs: boolean) => {
-    const chars = characters.filter(c => c.is_pc === pcs)
+    const chars = characters.filter(c => c.type === (pcs ? 'pc' : 'npc'))
     setSelectedCharacterIds(prev => {
       const next = new Set(prev)
       chars.forEach(c => next.add(c.id))
@@ -392,7 +392,7 @@ export function ShareCampaignModal({
   }
 
   const deselectAllCharacters = (pcs: boolean) => {
-    const chars = characters.filter(c => c.is_pc === pcs)
+    const chars = characters.filter(c => c.type === (pcs ? 'pc' : 'npc'))
     setSelectedCharacterIds(prev => {
       const next = new Set(prev)
       chars.forEach(c => next.delete(c.id))
@@ -537,8 +537,8 @@ export function ShareCampaignModal({
   const groups = ['OVERVIEW', 'THE PARTY', 'THE CAST', 'THE STORY', 'THE WORLD', 'RELATIONSHIPS', 'THE CANVAS', 'MEDIA']
 
   // Helper to get PCs and NPCs
-  const pcs = characters.filter(c => c.is_pc)
-  const npcs = characters.filter(c => !c.is_pc)
+  const pcs = characters.filter(c => c.type === 'pc')
+  const npcs = characters.filter(c => c.type === 'npc')
 
   return (
     <Modal
