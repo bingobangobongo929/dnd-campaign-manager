@@ -375,7 +375,10 @@ export default function OneshotEditorPage() {
   const handleDelete = async () => {
     if (!oneshotId) return
 
-    const { error } = await supabase.from('oneshots').delete().eq('id', oneshotId)
+    const { error } = await supabase
+      .from('oneshots')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', oneshotId)
     if (!error) {
       router.push('/oneshots')
     }

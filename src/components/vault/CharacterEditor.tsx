@@ -1049,7 +1049,10 @@ export function CharacterEditor({ character, mode, standalone = true, fromTempla
 
   const handleDelete = async () => {
     if (!characterId) return
-    await supabase.from('vault_characters').delete().eq('id', characterId)
+    await supabase
+      .from('vault_characters')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', characterId)
     router.push('/vault')
   }
 

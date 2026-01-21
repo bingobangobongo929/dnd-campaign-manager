@@ -48,49 +48,69 @@ export function TemplateOnboardingModal({
           </div>
         </div>
 
-        {/* What to do next */}
-        <div className="space-y-4">
+        {/* Step-by-step workflow */}
+        <div className="space-y-3">
           <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wider">
-            What happens next?
+            Your next steps
           </h4>
 
-          <div className="space-y-3">
-            {/* Step 1: Edit */}
-            <div className="flex gap-3 p-3 bg-white/[0.02] rounded-lg">
-              <div className="p-1.5 bg-amber-500/10 rounded-lg h-fit">
-                <FileEdit className="w-4 h-4 text-amber-400" />
-              </div>
-              <div>
-                <p className="text-white font-medium text-sm">Edit for Session 0</p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  Remove spoilers, add setup instructions, polish the content for sharing
-                </p>
-              </div>
-            </div>
+          <div className="relative">
+            {/* Vertical connector line */}
+            <div className="absolute left-[19px] top-[40px] bottom-[40px] w-[2px] bg-gradient-to-b from-amber-500/40 via-purple-500/40 to-blue-500/40" />
 
-            {/* Step 2: Publish */}
-            <div className="flex gap-3 p-3 bg-white/[0.02] rounded-lg">
-              <div className="p-1.5 bg-purple-500/10 rounded-lg h-fit">
-                <Package className="w-4 h-4 text-purple-400" />
+            <div className="space-y-0">
+              {/* Step 1: Edit */}
+              <div className="flex gap-4 p-3 relative">
+                <div className="flex flex-col items-center z-10">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/20 border-2 border-amber-500/50 flex items-center justify-center">
+                    <span className="text-amber-400 font-bold text-sm">1</span>
+                  </div>
+                </div>
+                <div className="flex-1 pt-1">
+                  <div className="flex items-center gap-2">
+                    <FileEdit className="w-4 h-4 text-amber-400" />
+                    <p className="text-white font-medium text-sm">Edit for Session 0</p>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1 ml-6">
+                    Remove spoilers, add setup instructions, polish for sharing
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-white font-medium text-sm">Publish a Version</p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  When ready, publish to lock in your edits and enable sharing
-                </p>
-              </div>
-            </div>
 
-            {/* Step 3: Share */}
-            <div className="flex gap-3 p-3 bg-white/[0.02] rounded-lg">
-              <div className="p-1.5 bg-blue-500/10 rounded-lg h-fit">
-                <Share2 className="w-4 h-4 text-blue-400" />
+              {/* Step 2: Publish */}
+              <div className="flex gap-4 p-3 relative">
+                <div className="flex flex-col items-center z-10">
+                  <div className="w-10 h-10 rounded-full bg-purple-500/20 border-2 border-purple-500/50 flex items-center justify-center">
+                    <span className="text-purple-400 font-bold text-sm">2</span>
+                  </div>
+                </div>
+                <div className="flex-1 pt-1">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-purple-400" />
+                    <p className="text-white font-medium text-sm">Publish a Version</p>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1 ml-6">
+                    Lock in your edits and enable sharing
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-white font-medium text-sm">Share with Others</p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  Create share links so others can save your template to their collection
-                </p>
+
+              {/* Step 3: Share */}
+              <div className="flex gap-4 p-3 relative">
+                <div className="flex flex-col items-center z-10">
+                  <div className="w-10 h-10 rounded-full bg-blue-500/20 border-2 border-blue-500/50 flex items-center justify-center">
+                    <span className="text-blue-400 font-bold text-sm">3</span>
+                  </div>
+                </div>
+                <div className="flex-1 pt-1">
+                  <div className="flex items-center gap-2">
+                    <Share2 className="w-4 h-4 text-blue-400" />
+                    <p className="text-white font-medium text-sm">Share with Others</p>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1 ml-6">
+                    Create links so others can save your template
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -99,17 +119,17 @@ export function TemplateOnboardingModal({
         {/* Actions */}
         <div className="flex gap-3 pt-2">
           <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white font-medium rounded-lg border border-white/[0.08] transition-colors"
+            onClick={handleOpenShare}
+            className="px-4 py-2.5 text-gray-400 hover:text-white text-sm transition-colors"
           >
-            Continue Editing
+            Already ready? Skip to publish →
           </button>
           <button
-            onClick={handleOpenShare}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-lg transition-colors"
+            onClick={onClose}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-medium rounded-lg transition-colors"
           >
-            <Share2 className="w-4 h-4" />
-            Ready to Share
+            <FileEdit className="w-4 h-4" />
+            Start Editing
           </button>
         </div>
       </div>

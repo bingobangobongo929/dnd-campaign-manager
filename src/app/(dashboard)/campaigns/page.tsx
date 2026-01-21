@@ -187,9 +187,12 @@ export default function CampaignsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this campaign? This cannot be undone.')) return
+    if (!confirm('Move this campaign to the recycle bin? You can restore it within 30 days.')) return
 
-    const { error } = await supabase.from('campaigns').delete().eq('id', id)
+    const { error } = await supabase
+      .from('campaigns')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id)
 
     if (!error) {
       setCampaigns(campaigns.filter((c) => c.id !== id))

@@ -283,9 +283,12 @@ export default function VaultPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this character from your vault?')) return
+    if (!confirm('Move this character to the recycle bin? You can restore it within 30 days.')) return
 
-    await supabase.from('vault_characters').delete().eq('id', id)
+    await supabase
+      .from('vault_characters')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id)
     setVaultCharacters(vaultCharacters.filter((c) => c.id !== id))
     setContextMenu(null)
   }
@@ -359,12 +362,15 @@ export default function VaultPage() {
     if (selectedIds.size === 0) return
 
     const count = selectedIds.size
-    if (!confirm(`Are you sure you want to delete ${count} character${count === 1 ? '' : 's'} from your vault?`)) return
+    if (!confirm(`Move ${count} character${count === 1 ? '' : 's'} to the recycle bin? You can restore them within 30 days.`)) return
 
     const ids = Array.from(selectedIds)
-    await supabase.from('vault_characters').delete().in('id', ids)
+    await supabase
+      .from('vault_characters')
+      .update({ deleted_at: new Date().toISOString() })
+      .in('id', ids)
     setVaultCharacters(prev => prev.filter(c => !selectedIds.has(c.id)))
-    toast.success(`Deleted ${count} character${count === 1 ? '' : 's'}`)
+    toast.success(`Moved ${count} character${count === 1 ? '' : 's'} to recycle bin`)
     clearSelection()
   }
 
