@@ -345,6 +345,7 @@ export function CampaignsPageMobile({
               </>
             )}
           </div>
+          )
         )}
 
         {/* FAB for new campaign */}

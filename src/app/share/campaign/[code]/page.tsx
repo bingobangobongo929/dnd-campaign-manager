@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createServerComponentClient } from '@/lib/supabase/server'
+import { createClient as createUserClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import { headers, cookies } from 'next/headers'
+import { headers } from 'next/headers'
 import crypto from 'crypto'
 import { CampaignShareClient } from './client'
 import { SharePageHeader } from '@/components/share/SharePageHeader'
@@ -440,8 +440,7 @@ export default async function ShareCampaignPage({ params }: SharePageProps) {
 
     // Check if user is logged in and has already saved
     if (snapshotId) {
-      const cookieStore = await cookies()
-      const userSupabase = createServerComponentClient(cookieStore)
+      const userSupabase = await createUserClient()
       const { data: { user } } = await userSupabase.auth.getUser()
       isLoggedIn = !!user
 

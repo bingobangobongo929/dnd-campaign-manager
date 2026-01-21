@@ -51,18 +51,23 @@ export async function GET(request: Request) {
         }
       }
 
+      // Get all snapshot IDs for this content first
+      const { data: snapshots } = await supabase
+        .from('template_snapshots')
+        .select('id')
+        .eq('content_type', contentType)
+        .eq('content_id', contentId)
+
+      const snapshotIds = (snapshots || []).map(s => s.id)
+
       // Get saves for this specific template
-      const { data: saves, error } = await supabase
-        .from('content_saves')
-        .select('id, saved_at, started_playing_at')
-        .eq('source_owner_id', user.id)
-        .in('snapshot_id',
-          supabase
-            .from('template_snapshots')
-            .select('id')
-            .eq('content_type', contentType)
-            .eq('content_id', contentId)
-        )
+      const { data: saves, error } = snapshotIds.length > 0
+        ? await supabase
+            .from('content_saves')
+            .select('id, saved_at, started_playing_at')
+            .eq('source_owner_id', user.id)
+            .in('snapshot_id', snapshotIds)
+        : { data: [], error: null }
 
       // Get version stats
       const { data: versions } = await supabase

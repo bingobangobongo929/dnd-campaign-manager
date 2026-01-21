@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createServerComponentClient } from '@/lib/supabase/server'
-import { headers, cookies } from 'next/headers'
+import { createClient as createUserClient } from '@/lib/supabase/server'
+import { headers } from 'next/headers'
 import Image from 'next/image'
 import {
   User,
@@ -431,8 +431,7 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
 
     // Check if user is logged in and has already saved
     if (snapshotId) {
-      const cookieStore = await cookies()
-      const userSupabase = createServerComponentClient(cookieStore)
+      const userSupabase = await createUserClient()
       const { data: { user } } = await userSupabase.auth.getUser()
       isLoggedIn = !!user
 

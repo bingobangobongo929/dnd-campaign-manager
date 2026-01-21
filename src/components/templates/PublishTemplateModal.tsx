@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { Sparkles, Loader2, Info } from 'lucide-react'
-import { Modal, Input, Textarea, Toggle } from '@/components/ui'
+import { Modal, Input, Textarea } from '@/components/ui'
+import { cn } from '@/lib/utils'
 
 interface PublishTemplateModalProps {
   isOpen: boolean
@@ -186,10 +187,21 @@ export function PublishTemplateModal({
               Let viewers save this template to their collection and use it for their own games.
             </p>
           </div>
-          <Toggle
-            checked={formData.allowSave}
-            onChange={(checked) => setFormData({ ...formData, allowSave: checked })}
-          />
+          <button
+            type="button"
+            onClick={() => setFormData({ ...formData, allowSave: !formData.allowSave })}
+            className={cn(
+              "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900",
+              formData.allowSave ? "bg-purple-600" : "bg-gray-700"
+            )}
+          >
+            <span
+              className={cn(
+                "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                formData.allowSave ? "translate-x-5" : "translate-x-0"
+              )}
+            />
+          </button>
         </div>
 
         {/* Error Message */}

@@ -55,10 +55,10 @@ export async function POST(request: Request) {
       content = data
 
       // Fetch related data for campaigns
+      // First batch: fetch characters and other independent data
       const [
         { data: characters },
         { data: tags },
-        { data: characterTags },
         { data: canvasGroups },
         { data: relationships },
         { data: worldMaps },
@@ -67,16 +67,18 @@ export async function POST(request: Request) {
       ] = await Promise.all([
         supabase.from('characters').select('*').eq('campaign_id', contentId),
         supabase.from('tags').select('*').eq('campaign_id', contentId),
-        supabase.from('character_tags').select('*').in(
-          'character_id',
-          characters?.map(c => c.id) || []
-        ),
         supabase.from('canvas_groups').select('*').eq('campaign_id', contentId),
         supabase.from('character_relationships').select('*').eq('campaign_id', contentId),
         supabase.from('world_maps').select('*').eq('campaign_id', contentId),
         supabase.from('media_gallery').select('*').eq('campaign_id', contentId),
         supabase.from('campaign_lore').select('*').eq('campaign_id', contentId),
       ])
+
+      // Second batch: fetch character tags (depends on characters)
+      const characterIds = (characters || []).map((c: { id: string }) => c.id)
+      const { data: characterTags } = characterIds.length > 0
+        ? await supabase.from('character_tags').select('*').in('character_id', characterIds)
+        : { data: [] }
 
       relatedData = {
         characters: characters || [],
