@@ -115,35 +115,31 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================
--- PART 5: Schedule daily purge with pg_cron
--- Runs at 3:00 AM UTC every day
--- NOTE: pg_cron must be enabled in Supabase dashboard
--- Go to Database > Extensions > Enable pg_cron
+-- PART 5: Auto-purge setup
+--
+-- IMPORTANT: The auto-purge needs to delete storage files (images),
+-- which cannot be done from SQL. Instead, use the API endpoint:
+--
+-- GET /api/recycle-bin/auto-purge
+--
+-- Set up one of these options:
+--
+-- Option A: Vercel Cron (recommended for Vercel deployments)
+-- Add to vercel.json:
+--   {
+--     "crons": [{
+--       "path": "/api/recycle-bin/auto-purge",
+--       "schedule": "0 3 * * *"
+--     }]
+--   }
+--
+-- Option B: External cron service (cron-job.org, etc.)
+-- Set up a daily GET request to your domain with header:
+--   x-cron-secret: <your CRON_SECRET env var>
+--
+-- The purge_deleted_content() SQL function is kept for manual use
+-- but does NOT clean up storage files.
 -- ============================================
-
--- This will fail gracefully if pg_cron is not enabled
-DO $$
-BEGIN
-  -- Check if pg_cron extension exists
-  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
-    -- Remove existing job if it exists
-    PERFORM cron.unschedule('purge-recycle-bin');
-
-    -- Schedule new job: run at 3 AM UTC daily
-    PERFORM cron.schedule(
-      'purge-recycle-bin',
-      '0 3 * * *',
-      'SELECT purge_deleted_content()'
-    );
-
-    RAISE NOTICE 'pg_cron job scheduled successfully';
-  ELSE
-    RAISE NOTICE 'pg_cron extension not enabled - skipping cron setup. Enable it in Supabase Dashboard > Database > Extensions';
-  END IF;
-EXCEPTION
-  WHEN OTHERS THEN
-    RAISE NOTICE 'Could not set up pg_cron: %. Enable pg_cron in Supabase Dashboard if needed.', SQLERRM;
-END $$;
 
 -- ============================================
 -- PART 6: Helper function to soft delete

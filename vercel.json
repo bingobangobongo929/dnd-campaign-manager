@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/recycle-bin/auto-purge",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}
