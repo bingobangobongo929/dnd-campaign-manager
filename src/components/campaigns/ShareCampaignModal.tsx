@@ -20,18 +20,22 @@ import {
   Scroll,
   Castle,
   Swords,
+  Bookmark,
+  Info,
 } from 'lucide-react'
 import { useSupabase, useUser } from '@/hooks'
 import { createClient } from '@/lib/supabase/client'
 import { logActivity } from '@/lib/activity-log'
 import Image from 'next/image'
 import { getInitials } from '@/lib/utils'
+import type { ContentMode } from '@/types/database'
 
 interface ShareCampaignModalProps {
   isOpen: boolean
   onClose: () => void
   campaignId: string
   campaignName: string
+  contentMode?: ContentMode
 }
 
 interface SectionToggle {
@@ -123,6 +127,7 @@ export function ShareCampaignModal({
   onClose,
   campaignId,
   campaignName,
+  contentMode = 'active',
 }: ShareCampaignModalProps) {
   const supabase = useSupabase()
   const { user } = useUser()
@@ -137,6 +142,9 @@ export function ShareCampaignModal({
   const [selectedShareId, setSelectedShareId] = useState<string | null>(null)
   const [checkingExisting, setCheckingExisting] = useState(true)
   const [showNewLinkForm, setShowNewLinkForm] = useState(false)
+  const [allowSave, setAllowSave] = useState(false)
+
+  const isTemplate = contentMode === 'template'
 
   // Content availability
   const [sectionContent, setSectionContent] = useState<Record<string, boolean>>({})
@@ -426,6 +434,7 @@ export function ShareCampaignModal({
           includedSections,
           expiresInDays,
           note: note.trim() || null,
+          allowSave: isTemplate ? allowSave : false,
         }),
       })
 
@@ -850,6 +859,52 @@ export function ShareCampaignModal({
                   })}
                 </div>
               </div>
+
+              {/* Template Settings - only for templates */}
+              {isTemplate ? (
+                <div className="p-4 bg-purple-500/5 border border-purple-500/20 rounded-xl">
+                  <div className="flex items-start gap-3 mb-3">
+                    <Bookmark className="w-5 h-5 text-purple-400 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium text-white">Template Settings</h4>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Control how others can interact with this template
+                      </p>
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white/[0.02]">
+                    <button
+                      type="button"
+                      onClick={() => setAllowSave(!allowSave)}
+                      className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
+                        allowSave
+                          ? 'bg-purple-600 border-purple-600'
+                          : 'border-white/20 hover:border-white/40'
+                      }`}
+                    >
+                      {allowSave && <Check className="w-3 h-3 text-white" />}
+                    </button>
+                    <div>
+                      <span className="text-sm text-gray-300">Allow viewers to save to their collection</span>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Others can save this template to start their own campaign
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              ) : (
+                <div className="flex items-start gap-3 p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl">
+                  <Info className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm text-gray-300">
+                      Active content is view-only
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Viewers cannot save this to their collection. To enable saving, publish this as a template first.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Expiration - only for new links */}
               {showNewLinkForm && (

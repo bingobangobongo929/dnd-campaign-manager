@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, Trash2, Copy, X, CheckSquare, Square, CopyPlus, Check, LayoutGrid, Grid3X3, PenLine, Sparkles, Star, Play, ChevronRight, User, Eye, BookOpen, Filter } from 'lucide-react'
+import { Plus, Search, Trash2, Copy, X, CheckSquare, Square, CopyPlus, Check, LayoutGrid, Grid3X3, PenLine, Sparkles, Star, Play, ChevronRight, User, Eye, BookOpen, Filter, Bookmark, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import { Modal, Dropdown } from '@/components/ui'
@@ -12,8 +12,9 @@ import { CharacterCard } from '@/components/vault/CharacterCard'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { useCanUseAI } from '@/store'
 import { VaultPageMobile } from './page.mobile'
-import { cn, getInitials } from '@/lib/utils'
-import type { VaultCharacter, Campaign } from '@/types/database'
+import { cn, getInitials, formatDate } from '@/lib/utils'
+import type { VaultCharacter, Campaign, ContentSave } from '@/types/database'
+import { ContentModeToggle, TemplateStateBadge, type ContentModeTab } from '@/components/templates'
 
 export default function VaultPage() {
   const router = useRouter()
@@ -23,9 +24,11 @@ export default function VaultPage() {
   const canUseAI = useCanUseAI()
 
   const [vaultCharacters, setVaultCharacters] = useState<VaultCharacter[]>([])
+  const [savedCharacters, setSavedCharacters] = useState<ContentSave[]>([])
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
+  const [activeTab, setActiveTab] = useState<ContentModeTab>('active')
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'pc' | 'npc'>('all')
@@ -121,6 +124,13 @@ export default function VaultPage() {
 
     setCampaigns(campaignsData || [])
 
+    // Load saved characters from others
+    const savedResponse = await fetch('/api/templates/saved?type=character')
+    if (savedResponse.ok) {
+      const savedData = await savedResponse.json()
+      setSavedCharacters(savedData.saves || [])
+    }
+
     setLoading(false)
     setHasLoadedOnce(true)
   }
@@ -134,9 +144,42 @@ export default function VaultPage() {
     return Array.from(statuses)
   }, [vaultCharacters])
 
-  // Filter and sort characters
+  // Filter characters by content mode (tab)
+  const modeFilteredCharacters = useMemo(() => {
+    return vaultCharacters.filter(c => {
+      if (activeTab === 'active') return c.content_mode === 'active' || !c.content_mode
+      if (activeTab === 'inactive') return c.content_mode === 'inactive'
+      if (activeTab === 'template') return c.content_mode === 'template'
+      return false
+    })
+  }, [vaultCharacters, activeTab])
+
+  // Get counts for tabs
+  const tabCounts = useMemo(() => ({
+    active: vaultCharacters.filter(c => c.content_mode === 'active' || !c.content_mode).length,
+    inactive: vaultCharacters.filter(c => c.content_mode === 'inactive').length,
+    template: vaultCharacters.filter(c => c.content_mode === 'template').length,
+    saved: savedCharacters.length,
+  }), [vaultCharacters, savedCharacters])
+
+  const handleReactivate = async (characterId: string) => {
+    const response = await fetch('/api/content/reactivate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contentType: 'character',
+        contentId: characterId,
+      }),
+    })
+
+    if (response.ok) {
+      loadData()
+    }
+  }
+
+  // Filter and sort characters (within the mode-filtered list)
   const filteredCharacters = useMemo(() => {
-    let filtered = vaultCharacters.filter((char) => {
+    let filtered = modeFilteredCharacters.filter((char) => {
       // Text search
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
@@ -358,6 +401,7 @@ export default function VaultPage() {
     return (
       <VaultPageMobile
         filteredCharacters={filteredCharacters}
+        savedCharacters={savedCharacters}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         typeFilter={typeFilter}
@@ -373,6 +417,10 @@ export default function VaultPage() {
         setIsAddModalOpen={setIsAddModalOpen}
         onNavigate={(path) => router.push(path)}
         canUseAI={canUseAI}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        tabCounts={tabCounts}
+        onReactivate={handleReactivate}
       />
     )
   }
@@ -441,6 +489,214 @@ export default function VaultPage() {
           </div>
         </div>
 
+        {/* Tabs */}
+        <ContentModeToggle
+          value={activeTab}
+          onChange={setActiveTab}
+          counts={tabCounts}
+          contentType="character"
+        />
+
+        {/* Saved Characters Tab */}
+        {activeTab === 'saved' && (
+          <div className="space-y-6">
+            {savedCharacters.length === 0 ? (
+              <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
+                <Bookmark className="w-12 h-12 mx-auto mb-4 text-purple-400/50" />
+                <h3 className="text-lg font-medium text-white mb-2">No saved characters yet</h3>
+                <p className="text-gray-400 max-w-sm mx-auto">
+                  When you save character templates from share links, they'll appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {savedCharacters.map((save) => (
+                  <div
+                    key={save.id}
+                    className="relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/40 transition-all"
+                  >
+                    <div className="relative h-40 overflow-hidden">
+                      {save.source_image_url ? (
+                        <>
+                          <Image
+                            src={save.source_image_url}
+                            alt={save.source_name}
+                            fill
+                            className="object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                          <User className="w-12 h-12 text-purple-400/30" />
+                        </div>
+                      )}
+                      <div className="absolute top-3 left-3">
+                        <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                          Saved Template
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-5">
+                      <h4 className="font-display font-semibold text-lg text-white truncate">
+                        {save.source_name}
+                      </h4>
+                      <p className="text-xs text-gray-500 mt-1">
+                        v{save.saved_version}
+                        {save.update_available && (
+                          <span className="ml-2 text-purple-400">Update available!</span>
+                        )}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Saved {formatDate(save.saved_at)}
+                      </p>
+                      {save.instance_id ? (
+                        <button
+                          onClick={() => router.push(`/vault/${save.instance_id}`)}
+                          className="mt-4 flex items-center justify-center gap-2 w-full px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-lg transition-colors"
+                        >
+                          <Play className="w-4 h-4" />
+                          Continue Playing
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => router.push(`/vault?startPlaying=${save.id}`)}
+                          className="mt-4 flex items-center justify-center gap-2 w-full px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg transition-colors"
+                        >
+                          <Play className="w-4 h-4" />
+                          Start Playing
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Inactive Characters Tab */}
+        {activeTab === 'inactive' && (
+          <div className="space-y-6">
+            {modeFilteredCharacters.length === 0 ? (
+              <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
+                <User className="w-12 h-12 mx-auto mb-4 text-gray-400/50" />
+                <h3 className="text-lg font-medium text-white mb-2">No inactive characters</h3>
+                <p className="text-gray-400 max-w-sm mx-auto">
+                  Retired or deceased characters will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {modeFilteredCharacters.map((character) => (
+                  <div
+                    key={character.id}
+                    className="group relative rounded-xl overflow-hidden bg-gray-900/30 border border-white/[0.04] opacity-75 hover:opacity-100 transition-all"
+                  >
+                    <div className="relative h-40 overflow-hidden">
+                      {character.image_url ? (
+                        <>
+                          <Image
+                            src={character.image_url}
+                            alt={character.name}
+                            fill
+                            className="object-cover grayscale group-hover:grayscale-0 transition-all"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-gray-800/30 to-gray-900 flex items-center justify-center">
+                          <User className="w-12 h-12 text-gray-500/30" />
+                        </div>
+                      )}
+                      <div className="absolute top-3 left-3">
+                        <TemplateStateBadge mode="inactive" inactiveReason={character.inactive_reason} size="sm" />
+                      </div>
+                    </div>
+                    <div className="p-5">
+                      <h4 className="font-display font-semibold text-lg text-gray-300 truncate">
+                        {character.name}
+                      </h4>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {[character.race, character.class].filter(Boolean).join(' • ') || character.type === 'pc' ? 'Player Character' : 'NPC'}
+                      </p>
+                      <button
+                        onClick={() => handleReactivate(character.id)}
+                        className="mt-4 flex items-center justify-center gap-2 w-full px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-sm font-medium rounded-lg transition-colors"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        Reactivate
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Templates Tab */}
+        {activeTab === 'template' && (
+          <div className="space-y-6">
+            {modeFilteredCharacters.length === 0 ? (
+              <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
+                <Sparkles className="w-12 h-12 mx-auto mb-4 text-purple-400/50" />
+                <h3 className="text-lg font-medium text-white mb-2">No templates yet</h3>
+                <p className="text-gray-400 max-w-sm mx-auto">
+                  Publish your characters as templates to share them with others.
+                </p>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {modeFilteredCharacters.map((character) => (
+                  <button
+                    key={character.id}
+                    onClick={() => router.push(`/vault/${character.id}`)}
+                    className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-purple-500/20 hover:border-purple-500/40 transition-all text-left"
+                  >
+                    <div className="relative h-48 overflow-hidden">
+                      {character.image_url ? (
+                        <>
+                          <Image
+                            src={character.image_url}
+                            alt={character.name}
+                            fill
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                          <User className="w-16 h-16 text-purple-400/30" />
+                        </div>
+                      )}
+                      <div className="absolute top-3 left-3 flex gap-2">
+                        <TemplateStateBadge mode="template" size="sm" />
+                      </div>
+                      {character.template_save_count > 0 && (
+                        <div className="absolute top-3 right-3 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-lg text-xs text-gray-300">
+                          {character.template_save_count} saves
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-5">
+                      <h4 className="font-display font-semibold text-lg text-white truncate group-hover:text-purple-400 transition-colors">
+                        {character.name}
+                      </h4>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {[character.race, character.class].filter(Boolean).join(' • ') || (character.type === 'pc' ? 'Player Character' : 'NPC')} • v{character.template_version || 1}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Active Characters Tab */}
+        {activeTab === 'active' && (
+          <>
         {/* Bulk Actions Bar */}
         {selectionMode && selectedIds.size > 0 && (
           <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-between">
@@ -846,6 +1102,8 @@ export default function VaultPage() {
               )
             })}
           </div>
+        )}
+          </>
         )}
 
         {/* Context Menu */}

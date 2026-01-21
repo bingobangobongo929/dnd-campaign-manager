@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createServerComponentClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import { headers } from 'next/headers'
+import { headers, cookies } from 'next/headers'
 import crypto from 'crypto'
 import { CampaignShareClient } from './client'
 import { SharePageHeader } from '@/components/share/SharePageHeader'
@@ -413,6 +414,49 @@ export default async function ShareCampaignPage({ params }: SharePageProps) {
     }
   }
 
+  // Check if save is allowed and get snapshot info
+  let snapshotId: string | null = null
+  let isLoggedIn = false
+  let isSaved = false
+  const allowSave = share.allow_save === true && campaign.content_mode === 'template'
+
+  if (allowSave) {
+    // Get the latest snapshot for this campaign
+    const snapshotVersion = share.snapshot_version || null
+    let snapshotQuery = supabase
+      .from('template_snapshots')
+      .select('id')
+      .eq('content_type', 'campaign')
+      .eq('content_id', campaign.id)
+
+    if (snapshotVersion) {
+      snapshotQuery = snapshotQuery.eq('version', snapshotVersion)
+    } else {
+      snapshotQuery = snapshotQuery.order('version', { ascending: false }).limit(1)
+    }
+
+    const { data: snapshot } = await snapshotQuery.single()
+    snapshotId = snapshot?.id || null
+
+    // Check if user is logged in and has already saved
+    if (snapshotId) {
+      const cookieStore = await cookies()
+      const userSupabase = createServerComponentClient(cookieStore)
+      const { data: { user } } = await userSupabase.auth.getUser()
+      isLoggedIn = !!user
+
+      if (user && snapshotId) {
+        const { data: existingSave } = await supabase
+          .from('content_saves')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('snapshot_id', snapshotId)
+          .single()
+        isSaved = !!existingSave
+      }
+    }
+  }
+
   // Determine which tabs to show
   const availableTabs: string[] = []
 
@@ -443,7 +487,14 @@ export default async function ShareCampaignPage({ params }: SharePageProps) {
 
   return (
     <>
-      <SharePageHeader contentType="campaign" contentName={campaign.name} />
+      <SharePageHeader
+        contentType="campaign"
+        contentName={campaign.name}
+        allowSave={allowSave}
+        snapshotId={snapshotId}
+        isLoggedIn={isLoggedIn}
+        isSaved={isSaved}
+      />
       <CampaignShareClient
         campaign={campaign}
         sections={sections}

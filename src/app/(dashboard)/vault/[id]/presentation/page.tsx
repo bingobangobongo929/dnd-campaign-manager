@@ -21,6 +21,7 @@ import { renderMarkdown } from '@/lib/character-display'
 import { sanitizeHtml } from '@/components/ui/safe-html'
 import { MarkdownContent } from '@/components/ui'
 import { FloatingDock } from '@/components/layout/floating-dock'
+import { AttributionBanner } from '@/components/templates'
 
 interface PresentationPageProps {
   params: Promise<{ id: string }>
@@ -118,6 +119,17 @@ export default async function CharacterPresentationPage({ params }: Presentation
 
   if (charError || !character) {
     notFound()
+  }
+
+  // Fetch original template info if this character was created from a template
+  let templateInfo: { name: string; attribution_name: string | null } | null = null
+  if (character.template_id) {
+    const { data: template } = await supabase
+      .from('vault_characters')
+      .select('name, attribution_name')
+      .eq('id', character.template_id)
+      .single()
+    templateInfo = template
   }
 
   // Fetch ALL relationships (no filtering)
@@ -351,6 +363,19 @@ export default async function CharacterPresentationPage({ params }: Presentation
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto bg-[#0d0d0f]">
           <div className="w-full max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 py-8 lg:py-10">
+            {/* Attribution banner if created from a template */}
+            {templateInfo && (
+              <div className="mb-8">
+                <AttributionBanner
+                  templateName={templateInfo.name}
+                  creatorName={templateInfo.attribution_name}
+                  templateId={character.template_id}
+                  contentType="character"
+                  version={character.saved_template_version}
+                />
+              </div>
+            )}
+
             {/* Stats Grid */}
             <div className="mb-8">
               <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">

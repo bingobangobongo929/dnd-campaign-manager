@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { Users, Clock, Scroll, BookOpen, Target, Eye } from 'lucide-react'
 import { MarkdownContent } from '@/components/ui'
 import { FloatingDock } from '@/components/layout/floating-dock'
+import { AttributionBanner } from '@/components/templates'
 
 interface ViewPageProps {
   params: Promise<{ id: string }>
@@ -28,6 +29,17 @@ export default async function OneshotViewPage({ params }: ViewPageProps) {
 
   if (oneshotError || !oneshot) {
     notFound()
+  }
+
+  // Fetch original template info if this oneshot was created from a template
+  let templateInfo: { title: string; attribution_name: string | null } | null = null
+  if (oneshot.template_id) {
+    const { data: template } = await supabase
+      .from('oneshots')
+      .select('title, attribution_name')
+      .eq('id', oneshot.template_id)
+      .single()
+    templateInfo = template
   }
 
   // Fetch genre tags
@@ -145,6 +157,17 @@ export default async function OneshotViewPage({ params }: ViewPageProps) {
 
         {/* Content */}
         <div className="max-w-4xl mx-auto px-6 py-12 space-y-10">
+          {/* Attribution banner if created from a template */}
+          {templateInfo && (
+            <AttributionBanner
+              templateName={templateInfo.title}
+              creatorName={templateInfo.attribution_name}
+              templateId={oneshot.template_id}
+              contentType="oneshot"
+              version={oneshot.saved_template_version}
+            />
+          )}
+
           {/* Introduction */}
           {sections.introduction && oneshot.introduction && (
             <section>

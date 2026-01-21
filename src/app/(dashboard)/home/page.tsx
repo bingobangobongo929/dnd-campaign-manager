@@ -14,6 +14,7 @@ import {
   Play,
   Sparkles,
   ArrowRight,
+  Bookmark,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
@@ -22,7 +23,7 @@ import { MobileLayout, MobileSectionHeader, MobileSearchBar } from '@/components
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { useAppStore } from '@/store'
 import { formatDistanceToNow, cn } from '@/lib/utils'
-import type { Campaign, VaultCharacter, Oneshot } from '@/types/database'
+import type { Campaign, VaultCharacter, Oneshot, ContentSave } from '@/types/database'
 import { HomePageMobile } from './page.mobile'
 
 export default function HomePage() {
@@ -35,6 +36,7 @@ export default function HomePage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [characters, setCharacters] = useState<VaultCharacter[]>([])
   const [oneshots, setOneshots] = useState<Oneshot[]>([])
+  const [savedTemplates, setSavedTemplates] = useState<ContentSave[]>([])
   const [loading, setLoading] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
 
@@ -66,30 +68,41 @@ export default function HomePage() {
   const loadData = async () => {
     if (!user) return
 
-    const [campaignsRes, charactersRes, oneshotsRes] = await Promise.all([
+    const [campaignsRes, charactersRes, oneshotsRes, savedRes] = await Promise.all([
       supabase
         .from('campaigns')
         .select('*')
         .eq('user_id', user.id)
+        .or('content_mode.eq.active,content_mode.is.null')
         .order('updated_at', { ascending: false })
         .limit(6),
       supabase
         .from('vault_characters')
         .select('*')
         .eq('user_id', user.id)
+        .or('content_mode.eq.active,content_mode.is.null')
         .order('updated_at', { ascending: false })
         .limit(8),
       supabase
         .from('oneshots')
         .select('*')
         .eq('user_id', user.id)
+        .or('content_mode.eq.active,content_mode.is.null')
         .order('updated_at', { ascending: false })
         .limit(4),
+      supabase
+        .from('content_saves')
+        .select('*')
+        .eq('user_id', user.id)
+        .is('instance_id', null)
+        .order('saved_at', { ascending: false })
+        .limit(6),
     ])
 
     if (campaignsRes.data) setCampaigns(campaignsRes.data)
     if (charactersRes.data) setCharacters(charactersRes.data)
     if (oneshotsRes.data) setOneshots(oneshotsRes.data)
+    if (savedRes.data) setSavedTemplates(savedRes.data)
     setLoading(false)
   }
 
@@ -111,6 +124,7 @@ export default function HomePage() {
           campaigns={campaigns}
           characters={characters}
           oneshots={oneshots}
+          savedTemplates={savedTemplates}
           featuredCampaign={featuredCampaign}
           displayCampaigns={displayCampaigns}
           onNavigate={(path) => router.push(path)}
@@ -505,6 +519,123 @@ export default function HomePage() {
             </div>
           )}
         </section>
+
+        {/* Saved from Community */}
+        {savedTemplates.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-green-500/10">
+                  <Bookmark className="w-5 h-5 text-green-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">Saved from Community</h3>
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {savedTemplates.map((save) => {
+                const getContentLink = () => {
+                  switch (save.source_type) {
+                    case 'campaign':
+                      return `/campaigns?startPlaying=${save.id}`
+                    case 'character':
+                      return `/vault?startPlaying=${save.id}`
+                    case 'oneshot':
+                      return `/oneshots?startPlaying=${save.id}`
+                    default:
+                      return '#'
+                  }
+                }
+
+                const getIcon = () => {
+                  switch (save.source_type) {
+                    case 'campaign':
+                      return <Swords className="w-8 h-8 text-blue-400/30" />
+                    case 'character':
+                      return <BookOpen className="w-8 h-8 text-purple-400/30" />
+                    case 'oneshot':
+                      return <Scroll className="w-8 h-8 text-amber-400/30" />
+                    default:
+                      return <Bookmark className="w-8 h-8 text-gray-400/30" />
+                  }
+                }
+
+                const getColorClasses = () => {
+                  switch (save.source_type) {
+                    case 'campaign':
+                      return 'from-blue-900/30 to-gray-900 hover:border-blue-500/30'
+                    case 'character':
+                      return 'from-purple-900/30 to-gray-900 hover:border-purple-500/30'
+                    case 'oneshot':
+                      return 'from-amber-900/30 to-gray-900 hover:border-amber-500/30'
+                    default:
+                      return 'from-gray-800/30 to-gray-900 hover:border-gray-500/30'
+                  }
+                }
+
+                return (
+                  <div
+                    key={save.id}
+                    className={cn(
+                      "group relative rounded-xl overflow-hidden bg-gradient-to-br border border-white/[0.06] transition-all",
+                      getColorClasses()
+                    )}
+                  >
+                    <div className="relative h-32">
+                      {save.source_image_url ? (
+                        <>
+                          <Image
+                            src={save.source_image_url}
+                            alt={save.source_name}
+                            fill
+                            className="object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          {getIcon()}
+                        </div>
+                      )}
+                      <div className="absolute top-2 left-2">
+                        <span className="px-2 py-1 text-[10px] font-medium bg-green-500/20 text-green-400 rounded capitalize">
+                          {save.source_type}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <h4 className="font-semibold text-white truncate">{save.source_name}</h4>
+                      <p className="text-xs text-gray-500 mt-1">v{save.saved_version}</p>
+                      {save.instance_id ? (
+                        <Link
+                          href={
+                            save.source_type === 'campaign'
+                              ? `/campaigns/${save.instance_id}/canvas`
+                              : save.source_type === 'character'
+                              ? `/vault/${save.instance_id}`
+                              : `/oneshots/${save.instance_id}`
+                          }
+                          className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-lg transition-colors"
+                        >
+                          <Play className="w-4 h-4" />
+                          Continue Playing
+                        </Link>
+                      ) : (
+                        <Link
+                          href={getContentLink()}
+                          className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg transition-colors"
+                        >
+                          <Play className="w-4 h-4" />
+                          Start Playing
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
 
         {/* Recent Activity - Subtle Footer */}
         {recentItems.length > 0 && (

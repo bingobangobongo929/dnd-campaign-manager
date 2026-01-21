@@ -22,6 +22,7 @@ import { AppLayout } from '@/components/layout/app-layout'
 import { Button, SafeHtml, Modal, Spinner } from '@/components/ui'
 import { MobileLayout } from '@/components/mobile'
 import { ShareCharacterModal } from '@/components/vault/ShareCharacterModal'
+import { AttributionBanner } from '@/components/templates'
 import { cn, getInitials } from '@/lib/utils'
 import {
   BulletListDisplay,
@@ -35,12 +36,18 @@ import type {
   CharacterLink,
 } from '@/types/database'
 
+interface TemplateInfo {
+  name: string
+  attribution_name: string | null
+}
+
 export interface CharacterViewPageMobileProps {
   characterId: string
   character: VaultCharacter | null
   loading: boolean
   notFound: boolean
   onNavigate: (path: string) => void
+  templateInfo?: TemplateInfo | null
 }
 
 // Relationship type colors
@@ -130,6 +137,7 @@ export function CharacterViewPageMobile({
   loading,
   notFound,
   onNavigate,
+  templateInfo,
 }: CharacterViewPageMobileProps) {
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -257,6 +265,20 @@ export function CharacterViewPageMobile({
         }
       >
         <div className="pb-24">
+          {/* Attribution banner if created from a template */}
+          {templateInfo && character && (
+            <div className="px-4 mb-4">
+              <AttributionBanner
+                templateName={templateInfo.name}
+                creatorName={templateInfo.attribution_name}
+                templateId={character.template_id}
+                contentType="character"
+                version={character.saved_template_version}
+                compact
+              />
+            </div>
+          )}
+
           {/* Hero Image */}
           <div className="px-4 mb-4">
             {displayUrl ? (

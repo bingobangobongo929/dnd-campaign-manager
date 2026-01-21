@@ -11,15 +11,20 @@ import {
   Filter,
   User,
   Eye,
+  Bookmark,
+  RotateCcw,
+  Play,
 } from 'lucide-react'
 import { Modal } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout, MobileSearchBar, MobileSegmentedControl, MobileBottomSheet, MobileFAB, MobileSectionHeader } from '@/components/mobile'
-import { cn, getInitials } from '@/lib/utils'
-import type { VaultCharacter } from '@/types/database'
+import { MobileContentModeToggle, TemplateStateBadge, type ContentModeTab } from '@/components/templates'
+import { cn, getInitials, formatDate } from '@/lib/utils'
+import type { VaultCharacter, ContentSave } from '@/types/database'
 
 export interface VaultPageMobileProps {
   filteredCharacters: VaultCharacter[]
+  savedCharacters: ContentSave[]
   searchQuery: string
   setSearchQuery: (query: string) => void
   typeFilter: 'all' | 'pc' | 'npc'
@@ -35,10 +40,20 @@ export interface VaultPageMobileProps {
   setIsAddModalOpen: (open: boolean) => void
   onNavigate: (path: string) => void
   canUseAI: boolean
+  activeTab: ContentModeTab
+  setActiveTab: (tab: ContentModeTab) => void
+  tabCounts: {
+    active: number
+    inactive: number
+    template: number
+    saved: number
+  }
+  onReactivate: (characterId: string) => void
 }
 
 export function VaultPageMobile({
   filteredCharacters,
+  savedCharacters,
   searchQuery,
   setSearchQuery,
   typeFilter,
@@ -54,10 +69,182 @@ export function VaultPageMobile({
   setIsAddModalOpen,
   onNavigate,
   canUseAI,
+  activeTab,
+  setActiveTab,
+  tabCounts,
+  onReactivate,
 }: VaultPageMobileProps) {
   return (
     <AppLayout>
       <MobileLayout title="Character Vault" showBackButton={false}>
+        {/* Tabs */}
+        <div className="px-4 pt-2 pb-4">
+          <MobileContentModeToggle
+            value={activeTab}
+            onChange={setActiveTab}
+            counts={tabCounts}
+            contentType="character"
+          />
+        </div>
+
+        {/* Saved Characters Tab */}
+        {activeTab === 'saved' && (
+          savedCharacters.length === 0 ? (
+            <div className="mobile-empty-state">
+              <Bookmark className="mobile-empty-icon" />
+              <h3 className="mobile-empty-title">No saved characters</h3>
+              <p className="mobile-empty-description">Character templates you save will appear here</p>
+            </div>
+          ) : (
+            <div className="px-4 space-y-3 pb-20">
+              {savedCharacters.map((save) => (
+                <div
+                  key={save.id}
+                  className="bg-[--bg-surface] rounded-xl border border-white/[0.06] overflow-hidden"
+                >
+                  <div className="relative h-32">
+                    {save.source_image_url ? (
+                      <>
+                        <Image
+                          src={save.source_image_url}
+                          alt={save.source_name}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent" />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                        <User className="w-10 h-10 text-purple-400/30" />
+                      </div>
+                    )}
+                    <div className="absolute top-2 left-2">
+                      <span className="px-2 py-1 text-[10px] bg-purple-500/20 text-purple-300 rounded">Saved</span>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <h4 className="font-semibold text-white">{save.source_name}</h4>
+                    <p className="text-xs text-gray-500 mt-1">v{save.saved_version}</p>
+                    {save.instance_id ? (
+                      <button
+                        onClick={() => onNavigate(`/vault/${save.instance_id}`)}
+                        className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg"
+                      >
+                        <Play className="w-4 h-4" />
+                        Continue Playing
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => onNavigate(`/vault?startPlaying=${save.id}`)}
+                        className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg"
+                      >
+                        <Play className="w-4 h-4" />
+                        Start Playing
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Inactive Characters Tab */}
+        {activeTab === 'inactive' && (
+          filteredCharacters.length === 0 ? (
+            <div className="mobile-empty-state">
+              <User className="mobile-empty-icon opacity-50" />
+              <h3 className="mobile-empty-title">No inactive characters</h3>
+              <p className="mobile-empty-description">Retired or deceased characters will appear here</p>
+            </div>
+          ) : (
+            <div className="px-4 space-y-3 pb-20">
+              {filteredCharacters.map((character) => (
+                <div
+                  key={character.id}
+                  className="flex items-center gap-4 p-3 bg-[--bg-surface] rounded-xl border border-white/[0.04] opacity-75"
+                >
+                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-900 flex-shrink-0">
+                    {character.image_url ? (
+                      <Image
+                        src={character.image_url}
+                        alt={character.name}
+                        width={64}
+                        height={64}
+                        className="w-full h-full object-cover grayscale"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-900">
+                        <User className="w-6 h-6 text-gray-600" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-gray-400 truncate">{character.name}</h4>
+                    <TemplateStateBadge mode="inactive" inactiveReason={character.inactive_reason} size="sm" />
+                  </div>
+                  <button
+                    onClick={() => onReactivate(character.id)}
+                    className="p-2 bg-white/5 rounded-lg"
+                  >
+                    <RotateCcw className="w-5 h-5 text-gray-400" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Templates Tab */}
+        {activeTab === 'template' && (
+          filteredCharacters.length === 0 ? (
+            <div className="mobile-empty-state">
+              <Sparkles className="mobile-empty-icon" />
+              <h3 className="mobile-empty-title">No templates</h3>
+              <p className="mobile-empty-description">Publish your characters as templates to share with others</p>
+            </div>
+          ) : (
+            <div className="px-4 space-y-3 pb-20">
+              {filteredCharacters.map((character) => (
+                <button
+                  key={character.id}
+                  onClick={() => onNavigate(`/vault/${character.id}`)}
+                  className="w-full flex items-center gap-4 p-3 bg-[--bg-surface] rounded-xl border border-purple-500/20 active:bg-[--bg-hover]"
+                >
+                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-900 flex-shrink-0">
+                    {character.image_url ? (
+                      <Image
+                        src={character.image_url}
+                        alt={character.name}
+                        width={64}
+                        height={64}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-900/30 to-gray-900">
+                        <User className="w-6 h-6 text-purple-400/50" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <h4 className="font-semibold text-white truncate">{character.name}</h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <TemplateStateBadge mode="template" size="sm" />
+                      {character.template_save_count > 0 && (
+                        <span className="text-xs text-gray-500">{character.template_save_count} saves</span>
+                      )}
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-600" />
+                </button>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Active Characters Tab */}
+        {activeTab === 'active' && (
+          <>
         {/* Search Bar */}
         <MobileSearchBar
           value={searchQuery}
@@ -115,6 +302,13 @@ export function VaultPageMobile({
                 <Sparkles className="mobile-empty-icon" />
                 <h3 className="mobile-empty-title">Your Vault Awaits</h3>
                 <p className="mobile-empty-description">Create characters to store and reuse across campaigns</p>
+                <button
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white font-medium rounded-xl"
+                >
+                  <User className="w-5 h-5" />
+                  Add Character
+                </button>
               </>
             )}
           </div>
@@ -238,6 +432,8 @@ export function VaultPageMobile({
             ))}
             </div>
           </div>
+        )}
+          </>
         )}
 
         {/* FAB for adding characters */}

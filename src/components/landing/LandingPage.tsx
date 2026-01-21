@@ -476,7 +476,7 @@ const features = [
   {
     icon: BookOpen,
     title: 'Session Notes',
-    description: 'Keep detailed session logs with AI-assisted summaries and timeline tracking.',
+    description: 'Keep detailed session logs with easy recaps, attendee tracking, and timeline integration.',
     gradient: 'from-violet-600 to-violet-800',
   },
   {
@@ -487,8 +487,8 @@ const features = [
   },
   {
     icon: Sparkles,
-    title: 'AI Assistant',
-    description: 'Get help with NPC names, plot hooks, and session recaps powered by AI.',
+    title: 'Share & Collaborate',
+    description: 'Share campaigns and characters with your players via secure links with granular privacy controls.',
     gradient: 'from-pink-600 to-pink-800',
   },
   {

@@ -2,14 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import { Modal } from '@/components/ui'
-import { Check, Copy, Link2, Trash2, Loader2, ExternalLink } from 'lucide-react'
+import { Check, Copy, Link2, Trash2, Loader2, ExternalLink, Bookmark, Info } from 'lucide-react'
 import { useSupabase } from '@/hooks'
+import type { ContentMode } from '@/types/database'
 
 interface ShareOneshotModalProps {
   isOpen: boolean
   onClose: () => void
   oneshotId: string
   oneshotTitle: string
+  contentMode?: ContentMode
 }
 
 interface SectionToggle {
@@ -45,6 +47,7 @@ export function ShareOneshotModal({
   onClose,
   oneshotId,
   oneshotTitle,
+  contentMode = 'active',
 }: ShareOneshotModalProps) {
   const supabase = useSupabase()
   const [sections, setSections] = useState<Record<string, boolean>>({})
@@ -58,6 +61,9 @@ export function ShareOneshotModal({
   const [selectedShareId, setSelectedShareId] = useState<string | null>(null)
   const [checkingExisting, setCheckingExisting] = useState(true)
   const [showNewLinkForm, setShowNewLinkForm] = useState(false)
+  const [allowSave, setAllowSave] = useState(false)
+
+  const isTemplate = contentMode === 'template'
 
   // Initialize with defaults
   useEffect(() => {
@@ -137,6 +143,7 @@ export function ShareOneshotModal({
           includedSections: sections,
           expiresInDays,
           note: note.trim() || null,
+          allowSave: isTemplate ? allowSave : false,
         }),
       })
 
@@ -328,6 +335,52 @@ export function ShareOneshotModal({
                   ))}
                 </div>
               </div>
+
+              {/* Template Settings - only for templates */}
+              {isTemplate ? (
+                <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl">
+                  <div className="flex items-start gap-3 mb-3">
+                    <Bookmark className="w-5 h-5 text-amber-400 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium text-white">Template Settings</h4>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Control how others can interact with this template
+                      </p>
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white/[0.02]">
+                    <button
+                      type="button"
+                      onClick={() => setAllowSave(!allowSave)}
+                      className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
+                        allowSave
+                          ? 'bg-amber-600 border-amber-600'
+                          : 'border-white/20 hover:border-white/40'
+                      }`}
+                    >
+                      {allowSave && <Check className="w-3 h-3 text-white" />}
+                    </button>
+                    <div>
+                      <span className="text-sm text-gray-300">Allow viewers to save to their collection</span>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Others can save this template to run their own one-shot
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              ) : (
+                <div className="flex items-start gap-3 p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl">
+                  <Info className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm text-gray-300">
+                      Active content is view-only
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Viewers cannot save this to their collection. To enable saving, publish this as a template first.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Expiration - only for new links */}
               {showNewLinkForm && (

@@ -8,11 +8,13 @@ import {
   Plus,
   ChevronRight,
   Clock,
+  Bookmark,
+  Play,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout, MobileSectionHeader } from '@/components/mobile'
 import { formatDistanceToNow } from '@/lib/utils'
-import type { Campaign, VaultCharacter, Oneshot } from '@/types/database'
+import type { Campaign, VaultCharacter, Oneshot, ContentSave } from '@/types/database'
 
 function getInitials(name: string): string {
   return name.split(' ').map((word) => word[0]).slice(0, 2).join('').toUpperCase()
@@ -22,6 +24,7 @@ export interface HomePageMobileProps {
   campaigns: Campaign[]
   characters: VaultCharacter[]
   oneshots: Oneshot[]
+  savedTemplates: ContentSave[]
   featuredCampaign: Campaign | undefined
   displayCampaigns: Campaign[]
   onNavigate: (path: string) => void
@@ -31,6 +34,7 @@ export function HomePageMobile({
   campaigns,
   characters,
   oneshots,
+  savedTemplates,
   displayCampaigns,
   onNavigate,
 }: HomePageMobileProps) {
@@ -244,6 +248,95 @@ export function HomePageMobile({
               </button>
             ))}
           </div>
+        )}
+
+        {/* Saved from Community Section */}
+        {savedTemplates.length > 0 && (
+          <>
+            <MobileSectionHeader title="Saved from Community" />
+            <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
+              {savedTemplates.slice(0, 6).map((save) => {
+                const getIcon = () => {
+                  switch (save.source_type) {
+                    case 'campaign':
+                      return <Swords className="w-8 h-8 text-blue-400/30" />
+                    case 'character':
+                      return <BookOpen className="w-8 h-8 text-purple-400/30" />
+                    case 'oneshot':
+                      return <Scroll className="w-8 h-8 text-amber-400/30" />
+                    default:
+                      return <Bookmark className="w-8 h-8 text-gray-400/30" />
+                  }
+                }
+
+                const getContentLink = () => {
+                  if (save.instance_id) {
+                    switch (save.source_type) {
+                      case 'campaign':
+                        return `/campaigns/${save.instance_id}/canvas`
+                      case 'character':
+                        return `/vault/${save.instance_id}`
+                      case 'oneshot':
+                        return `/oneshots/${save.instance_id}`
+                      default:
+                        return '#'
+                    }
+                  }
+                  switch (save.source_type) {
+                    case 'campaign':
+                      return `/campaigns?startPlaying=${save.id}`
+                    case 'character':
+                      return `/vault?startPlaying=${save.id}`
+                    case 'oneshot':
+                      return `/oneshots?startPlaying=${save.id}`
+                    default:
+                      return '#'
+                  }
+                }
+
+                return (
+                  <button
+                    key={save.id}
+                    onClick={() => onNavigate(getContentLink())}
+                    className="flex-shrink-0 w-44 rounded-xl overflow-hidden bg-[--bg-surface] border border-white/[0.06] active:scale-[0.98] transition-transform"
+                  >
+                    <div className="relative h-24">
+                      {save.source_image_url ? (
+                        <>
+                          <Image
+                            src={save.source_image_url}
+                            alt={save.source_name}
+                            fill
+                            className="object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                          {getIcon()}
+                        </div>
+                      )}
+                      <div className="absolute top-2 left-2">
+                        <span className="px-2 py-0.5 text-[9px] font-medium bg-green-500/20 text-green-400 rounded capitalize">
+                          {save.source_type}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-3">
+                      <h4 className="font-semibold text-white text-sm truncate">{save.source_name}</h4>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-[10px] text-gray-500">v{save.saved_version}</span>
+                        <span className={`flex items-center gap-1 text-[10px] font-medium ${save.instance_id ? 'text-green-400' : 'text-purple-400'}`}>
+                          <Play className="w-3 h-3" />
+                          {save.instance_id ? 'Continue' : 'Start'}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </>
         )}
 
         {/* Characters Section */}

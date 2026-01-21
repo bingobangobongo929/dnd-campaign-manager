@@ -6,12 +6,16 @@ import {
   Swords,
   Sparkles,
   ChevronRight,
+  Bookmark,
+  RotateCcw,
+  Play,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import { Modal, Input, Textarea, Dropdown } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout, MobileSectionHeader, MobileFAB } from '@/components/mobile'
-import type { Campaign } from '@/types/database'
+import { MobileContentModeToggle, TemplateStateBadge, type ContentModeTab } from '@/components/templates'
+import type { Campaign, ContentSave } from '@/types/database'
 
 const GAME_SYSTEMS = [
   { value: 'D&D 5e', label: 'D&D 5e' },
@@ -25,7 +29,8 @@ const GAME_SYSTEMS = [
 
 export interface CampaignsPageMobileProps {
   campaigns: Campaign[]
-  featuredCampaign: Campaign | undefined
+  savedCampaigns: ContentSave[]
+  featuredCampaign: Campaign | null | undefined
   editingCampaign: Campaign | null
   setEditingCampaign: (campaign: Campaign | null) => void
   formData: {
@@ -43,10 +48,20 @@ export interface CampaignsPageMobileProps {
   saving: boolean
   handleUpdate: () => void
   onNavigate: (path: string) => void
+  activeTab: ContentModeTab
+  setActiveTab: (tab: ContentModeTab) => void
+  tabCounts: {
+    active: number
+    inactive: number
+    template: number
+    saved: number
+  }
+  onReactivate: (campaignId: string) => void
 }
 
 export function CampaignsPageMobile({
   campaigns,
+  savedCampaigns,
   featuredCampaign,
   editingCampaign,
   setEditingCampaign,
@@ -55,27 +70,198 @@ export function CampaignsPageMobile({
   saving,
   handleUpdate,
   onNavigate,
+  activeTab,
+  setActiveTab,
+  tabCounts,
+  onReactivate,
 }: CampaignsPageMobileProps) {
   return (
     <AppLayout>
       <MobileLayout title="Campaigns" showBackButton={false}>
-        {campaigns.length === 0 ? (
-          <div className="mobile-empty-state">
-            <Sparkles className="mobile-empty-icon" />
-            <h3 className="mobile-empty-title">Begin Your Adventure</h3>
-            <p className="mobile-empty-description">Create your first campaign to start building an epic story</p>
-            <button
-              onClick={() => onNavigate('/campaigns/new')}
-              className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white font-medium rounded-xl"
-            >
-              <Swords className="w-5 h-5" />
-              Create Campaign
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-4 pb-20">
-            {/* Featured Campaign */}
-            {featuredCampaign && (
+        {/* Tabs */}
+        <div className="px-4 pt-2 pb-4">
+          <MobileContentModeToggle
+            value={activeTab}
+            onChange={setActiveTab}
+            counts={tabCounts}
+            contentType="campaign"
+          />
+        </div>
+
+        {/* Saved Campaigns Tab */}
+        {activeTab === 'saved' && (
+          savedCampaigns.length === 0 ? (
+            <div className="mobile-empty-state">
+              <Bookmark className="mobile-empty-icon" />
+              <h3 className="mobile-empty-title">No saved campaigns</h3>
+              <p className="mobile-empty-description">Campaign templates you save will appear here</p>
+            </div>
+          ) : (
+            <div className="px-4 space-y-3 pb-20">
+              {savedCampaigns.map((save) => (
+                <div
+                  key={save.id}
+                  className="bg-[--bg-surface] rounded-xl border border-white/[0.06] overflow-hidden"
+                >
+                  <div className="relative h-32">
+                    {save.source_image_url ? (
+                      <>
+                        <Image
+                          src={save.source_image_url}
+                          alt={save.source_name}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent" />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                        <Swords className="w-10 h-10 text-purple-400/30" />
+                      </div>
+                    )}
+                    <div className="absolute top-2 left-2">
+                      <span className="px-2 py-1 text-[10px] bg-purple-500/20 text-purple-300 rounded">Saved</span>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <h4 className="font-semibold text-white">{save.source_name}</h4>
+                    <p className="text-xs text-gray-500 mt-1">v{save.saved_version}</p>
+                    {save.instance_id ? (
+                      <button
+                        onClick={() => onNavigate(`/campaigns/${save.instance_id}/canvas`)}
+                        className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg"
+                      >
+                        <Play className="w-4 h-4" />
+                        Continue Playing
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => onNavigate(`/campaigns?startPlaying=${save.id}`)}
+                        className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg"
+                      >
+                        <Play className="w-4 h-4" />
+                        Start Playing
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Inactive Campaigns Tab */}
+        {activeTab === 'inactive' && (
+          campaigns.length === 0 ? (
+            <div className="mobile-empty-state">
+              <Swords className="mobile-empty-icon opacity-50" />
+              <h3 className="mobile-empty-title">No inactive campaigns</h3>
+              <p className="mobile-empty-description">Completed or retired campaigns will appear here</p>
+            </div>
+          ) : (
+            <div className="px-4 space-y-3 pb-20">
+              {campaigns.map((campaign) => (
+                <div
+                  key={campaign.id}
+                  className="flex items-center gap-4 p-3 bg-[--bg-surface] rounded-xl border border-white/[0.04] opacity-75"
+                >
+                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-900 flex-shrink-0">
+                    {campaign.image_url ? (
+                      <Image
+                        src={campaign.image_url}
+                        alt={campaign.name}
+                        width={64}
+                        height={64}
+                        className="w-full h-full object-cover grayscale"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-900">
+                        <Swords className="w-6 h-6 text-gray-600" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-gray-400 truncate">{campaign.name}</h4>
+                    <TemplateStateBadge mode="inactive" inactiveReason={campaign.inactive_reason} size="sm" />
+                  </div>
+                  <button
+                    onClick={() => onReactivate(campaign.id)}
+                    className="p-2 bg-white/5 rounded-lg"
+                  >
+                    <RotateCcw className="w-5 h-5 text-gray-400" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Templates Tab */}
+        {activeTab === 'template' && (
+          campaigns.length === 0 ? (
+            <div className="mobile-empty-state">
+              <Sparkles className="mobile-empty-icon" />
+              <h3 className="mobile-empty-title">No templates</h3>
+              <p className="mobile-empty-description">Publish your campaigns as templates to share with others</p>
+            </div>
+          ) : (
+            <div className="px-4 space-y-3 pb-20">
+              {campaigns.map((campaign) => (
+                <button
+                  key={campaign.id}
+                  onClick={() => onNavigate(`/campaigns/${campaign.id}/canvas`)}
+                  className="w-full flex items-center gap-4 p-3 bg-[--bg-surface] rounded-xl border border-purple-500/20 active:bg-[--bg-hover]"
+                >
+                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-900 flex-shrink-0">
+                    {campaign.image_url ? (
+                      <Image
+                        src={campaign.image_url}
+                        alt={campaign.name}
+                        width={64}
+                        height={64}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-900/30 to-gray-900">
+                        <Swords className="w-6 h-6 text-purple-400/50" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <h4 className="font-semibold text-white truncate">{campaign.name}</h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <TemplateStateBadge mode="template" size="sm" />
+                      {campaign.template_save_count > 0 && (
+                        <span className="text-xs text-gray-500">{campaign.template_save_count} saves</span>
+                      )}
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-600" />
+                </button>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Active Campaigns Tab */}
+        {activeTab === 'active' && (
+          campaigns.length === 0 ? (
+            <div className="mobile-empty-state">
+              <Sparkles className="mobile-empty-icon" />
+              <h3 className="mobile-empty-title">Begin Your Adventure</h3>
+              <p className="mobile-empty-description">Create your first campaign to start building an epic story</p>
+              <button
+                onClick={() => onNavigate('/campaigns/new')}
+                className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white font-medium rounded-xl"
+              >
+                <Swords className="w-5 h-5" />
+                Create Campaign
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4 pb-20">
+              {/* Featured Campaign */}
+              {featuredCampaign && (
               <button
                 onClick={() => onNavigate(`/campaigns/${featuredCampaign.id}/canvas`)}
                 className="w-full mx-4 max-w-[calc(100%-32px)] relative rounded-2xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform"

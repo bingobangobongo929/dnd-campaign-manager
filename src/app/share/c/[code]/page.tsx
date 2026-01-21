@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { headers } from 'next/headers'
+import { createServerComponentClient } from '@/lib/supabase/server'
+import { headers, cookies } from 'next/headers'
 import Image from 'next/image'
 import {
   User,
@@ -404,6 +405,49 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
     sessions_data = data || []
   }
 
+  // Check if save is allowed and get snapshot info
+  let snapshotId: string | null = null
+  let isLoggedIn = false
+  let isSaved = false
+  const allowSave = share.allow_save === true && character.content_mode === 'template'
+
+  if (allowSave) {
+    // Get the latest snapshot for this character
+    const snapshotVersion = share.snapshot_version || null
+    let snapshotQuery = supabase
+      .from('template_snapshots')
+      .select('id')
+      .eq('content_type', 'character')
+      .eq('content_id', character.id)
+
+    if (snapshotVersion) {
+      snapshotQuery = snapshotQuery.eq('version', snapshotVersion)
+    } else {
+      snapshotQuery = snapshotQuery.order('version', { ascending: false }).limit(1)
+    }
+
+    const { data: snapshot } = await snapshotQuery.single()
+    snapshotId = snapshot?.id || null
+
+    // Check if user is logged in and has already saved
+    if (snapshotId) {
+      const cookieStore = await cookies()
+      const userSupabase = createServerComponentClient(cookieStore)
+      const { data: { user } } = await userSupabase.auth.getUser()
+      isLoggedIn = !!user
+
+      if (user && snapshotId) {
+        const { data: existingSave } = await supabase
+          .from('content_saves')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('snapshot_id', snapshotId)
+          .single()
+        isSaved = !!existingSave
+      }
+    }
+  }
+
   // Parse data
   const partyMembers = relationships.filter(r => r.is_party_member && !r.is_companion)
   const npcs = relationships.filter(r => !r.is_companion && !r.is_party_member)
@@ -455,7 +499,14 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
 
   return (
     <>
-      <SharePageHeader contentType="character" contentName={character.name} />
+      <SharePageHeader
+        contentType="character"
+        contentName={character.name}
+        allowSave={allowSave}
+        snapshotId={snapshotId}
+        isLoggedIn={isLoggedIn}
+        isSaved={isSaved}
+      />
       <div className="min-h-screen flex flex-col lg:flex-row">
         {/* Sidebar */}
         <aside className="w-full lg:w-[320px] xl:w-[380px] flex-shrink-0 bg-[#0f0f11] border-b lg:border-b-0 lg:border-r border-white/[0.06]">

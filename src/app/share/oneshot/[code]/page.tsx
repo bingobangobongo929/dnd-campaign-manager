@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createServerComponentClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import { headers } from 'next/headers'
+import { headers, cookies } from 'next/headers'
 import Image from 'next/image'
 import { Users, Clock, Scroll, BookOpen, Target, Eye } from 'lucide-react'
 import { SharePageHeader } from '@/components/share/SharePageHeader'
@@ -247,9 +248,59 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
 
   const sections = share.included_sections as Record<string, boolean>
 
+  // Check if save is allowed and get snapshot info
+  let snapshotId: string | null = null
+  let isLoggedIn = false
+  let isSaved = false
+  const allowSave = share.allow_save === true && oneshot.content_mode === 'template'
+
+  if (allowSave) {
+    // Get the latest snapshot for this oneshot
+    const snapshotVersion = share.snapshot_version || null
+    let snapshotQuery = supabase
+      .from('template_snapshots')
+      .select('id')
+      .eq('content_type', 'oneshot')
+      .eq('content_id', oneshot.id)
+
+    if (snapshotVersion) {
+      snapshotQuery = snapshotQuery.eq('version', snapshotVersion)
+    } else {
+      snapshotQuery = snapshotQuery.order('version', { ascending: false }).limit(1)
+    }
+
+    const { data: snapshot } = await snapshotQuery.single()
+    snapshotId = snapshot?.id || null
+
+    // Check if user is logged in and has already saved
+    if (snapshotId) {
+      const cookieStore = await cookies()
+      const userSupabase = createServerComponentClient(cookieStore)
+      const { data: { user } } = await userSupabase.auth.getUser()
+      isLoggedIn = !!user
+
+      if (user && snapshotId) {
+        const { data: existingSave } = await supabase
+          .from('content_saves')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('snapshot_id', snapshotId)
+          .single()
+        isSaved = !!existingSave
+      }
+    }
+  }
+
   return (
     <>
-      <SharePageHeader contentType="oneshot" contentName={oneshot.title} />
+      <SharePageHeader
+        contentType="oneshot"
+        contentName={oneshot.title}
+        allowSave={allowSave}
+        snapshotId={snapshotId}
+        isLoggedIn={isLoggedIn}
+        isSaved={isSaved}
+      />
       <div className="min-h-screen bg-[--bg-base]">
         {/* Hero Section */}
       <div className="relative">

@@ -2,17 +2,18 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { Modal } from '@/components/ui'
-import { Check, Copy, Link2, Trash2, Loader2, ExternalLink, AlertCircle } from 'lucide-react'
+import { Check, Copy, Link2, Trash2, Loader2, ExternalLink, AlertCircle, Bookmark, Info } from 'lucide-react'
 import { useSupabase, useUser } from '@/hooks'
 import { createClient } from '@/lib/supabase/client'
 import { logActivity } from '@/lib/activity-log'
-import type { VaultCharacter, VaultCharacterRelationship } from '@/types/database'
+import type { VaultCharacter, VaultCharacterRelationship, ContentMode } from '@/types/database'
 
 interface ShareCharacterModalProps {
   isOpen: boolean
   onClose: () => void
   characterId: string
   characterName: string
+  contentMode?: ContentMode
 }
 
 interface SectionToggle {
@@ -64,6 +65,7 @@ export function ShareCharacterModal({
   onClose,
   characterId,
   characterName,
+  contentMode = 'active',
 }: ShareCharacterModalProps) {
   const supabase = useSupabase()
   const { user } = useUser()
@@ -78,6 +80,9 @@ export function ShareCharacterModal({
   const [selectedShareId, setSelectedShareId] = useState<string | null>(null)
   const [checkingExisting, setCheckingExisting] = useState(true)
   const [showNewLinkForm, setShowNewLinkForm] = useState(false)
+  const [allowSave, setAllowSave] = useState(false)
+
+  const isTemplate = contentMode === 'template'
 
   // Track which sections have content
   const [sectionContent, setSectionContent] = useState<Record<string, boolean>>({})
@@ -243,6 +248,7 @@ export function ShareCharacterModal({
           includedSections: sections,
           expiresInDays,
           note: note.trim() || null,
+          allowSave: isTemplate ? allowSave : false,
         }),
       })
 
@@ -485,6 +491,52 @@ export function ShareCharacterModal({
                   })}
                 </div>
               </div>
+
+              {/* Template Settings - only for templates */}
+              {isTemplate ? (
+                <div className="p-4 bg-purple-500/5 border border-purple-500/20 rounded-xl">
+                  <div className="flex items-start gap-3 mb-3">
+                    <Bookmark className="w-5 h-5 text-purple-400 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium text-white">Template Settings</h4>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Control how others can interact with this template
+                      </p>
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white/[0.02]">
+                    <button
+                      type="button"
+                      onClick={() => setAllowSave(!allowSave)}
+                      className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
+                        allowSave
+                          ? 'bg-purple-600 border-purple-600'
+                          : 'border-white/20 hover:border-white/40'
+                      }`}
+                    >
+                      {allowSave && <Check className="w-3 h-3 text-white" />}
+                    </button>
+                    <div>
+                      <span className="text-sm text-gray-300">Allow viewers to save to their collection</span>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Others can save this template to start their own character
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              ) : (
+                <div className="flex items-start gap-3 p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl">
+                  <Info className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm text-gray-300">
+                      Active content is view-only
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Viewers cannot save this to their collection. To enable saving, publish this as a template first.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Expiration - only for new links */}
               {showNewLinkForm && (

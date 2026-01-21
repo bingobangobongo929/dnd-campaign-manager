@@ -20,6 +20,19 @@ export interface Database {
           status: 'active' | 'completed' | 'hiatus' | 'archived'
           last_intelligence_run: string | null
           is_demo: boolean
+          // Template system fields
+          content_mode: 'active' | 'inactive' | 'template'
+          template_id: string | null
+          template_version: number
+          saved_template_version: number | null
+          published_at: string | null
+          is_session0_ready: boolean
+          template_description: string | null
+          template_tags: string[] | null
+          template_save_count: number
+          allow_save: boolean
+          attribution_name: string | null
+          inactive_reason: string | null
           created_at: string
           updated_at: string
         }
@@ -33,6 +46,19 @@ export interface Database {
           status?: 'active' | 'completed' | 'hiatus' | 'archived'
           last_intelligence_run?: string | null
           is_demo?: boolean
+          // Template system fields
+          content_mode?: 'active' | 'inactive' | 'template'
+          template_id?: string | null
+          template_version?: number
+          saved_template_version?: number | null
+          published_at?: string | null
+          is_session0_ready?: boolean
+          template_description?: string | null
+          template_tags?: string[] | null
+          template_save_count?: number
+          allow_save?: boolean
+          attribution_name?: string | null
+          inactive_reason?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -46,6 +72,19 @@ export interface Database {
           status?: 'active' | 'completed' | 'hiatus' | 'archived'
           last_intelligence_run?: string | null
           is_demo?: boolean
+          // Template system fields
+          content_mode?: 'active' | 'inactive' | 'template'
+          template_id?: string | null
+          template_version?: number
+          saved_template_version?: number | null
+          published_at?: string | null
+          is_session0_ready?: boolean
+          template_description?: string | null
+          template_tags?: string[] | null
+          template_save_count?: number
+          allow_save?: boolean
+          attribution_name?: string | null
+          inactive_reason?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -567,6 +606,19 @@ export interface Database {
           party_relations: Json | null
           combat_stats: Json | null
           is_demo: boolean
+          // Template system fields
+          content_mode: 'active' | 'inactive' | 'template'
+          template_id: string | null
+          template_version: number
+          saved_template_version: number | null
+          published_at: string | null
+          is_session0_ready: boolean
+          template_description: string | null
+          template_tags: string[] | null
+          template_save_count: number
+          allow_save: boolean
+          attribution_name: string | null
+          inactive_reason: string | null
           created_at: string
           updated_at: string
         }
@@ -691,6 +743,19 @@ export interface Database {
           gameplay_tips?: string[] | null
           party_relations?: Json | null
           combat_stats?: Json | null
+          // Template system fields
+          content_mode?: 'active' | 'inactive' | 'template'
+          template_id?: string | null
+          template_version?: number
+          saved_template_version?: number | null
+          published_at?: string | null
+          is_session0_ready?: boolean
+          template_description?: string | null
+          template_tags?: string[] | null
+          template_save_count?: number
+          allow_save?: boolean
+          attribution_name?: string | null
+          inactive_reason?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -816,6 +881,19 @@ export interface Database {
           party_relations?: Json | null
           combat_stats?: Json | null
           is_demo?: boolean
+          // Template system fields
+          content_mode?: 'active' | 'inactive' | 'template'
+          template_id?: string | null
+          template_version?: number
+          saved_template_version?: number | null
+          published_at?: string | null
+          is_session0_ready?: boolean
+          template_description?: string | null
+          template_tags?: string[] | null
+          template_save_count?: number
+          allow_save?: boolean
+          attribution_name?: string | null
+          inactive_reason?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1038,6 +1116,8 @@ export interface Database {
           last_viewed_at: string | null
           note: string | null
           status: 'active' | 'deleted'
+          allow_save: boolean
+          snapshot_version: number | null
           created_at: string
         }
         Insert: {
@@ -1050,6 +1130,8 @@ export interface Database {
           last_viewed_at?: string | null
           note?: string | null
           status?: 'active' | 'deleted'
+          allow_save?: boolean
+          snapshot_version?: number | null
           created_at?: string
         }
         Update: {
@@ -1062,6 +1144,8 @@ export interface Database {
           last_viewed_at?: string | null
           note?: string | null
           status?: 'active' | 'deleted'
+          allow_save?: boolean
+          snapshot_version?: number | null
           created_at?: string
         }
       }
@@ -1136,6 +1220,19 @@ export interface Database {
           handouts: string | null
           status: string
           is_demo: boolean
+          // Template system fields
+          content_mode: 'active' | 'inactive' | 'template'
+          template_id: string | null
+          template_version: number
+          saved_template_version: number | null
+          published_at: string | null
+          is_session0_ready: boolean
+          template_description: string | null
+          template_tags: string[] | null
+          template_save_count: number
+          allow_save: boolean
+          attribution_name: string | null
+          inactive_reason: string | null
           created_at: string
           updated_at: string
         }
@@ -1160,6 +1257,19 @@ export interface Database {
           handouts?: string | null
           status?: string
           is_demo?: boolean
+          // Template system fields
+          content_mode?: 'active' | 'inactive' | 'template'
+          template_id?: string | null
+          template_version?: number
+          saved_template_version?: number | null
+          published_at?: string | null
+          is_session0_ready?: boolean
+          template_description?: string | null
+          template_tags?: string[] | null
+          template_save_count?: number
+          allow_save?: boolean
+          attribution_name?: string | null
+          inactive_reason?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1184,6 +1294,19 @@ export interface Database {
           handouts?: string | null
           status?: string
           is_demo?: boolean
+          // Template system fields
+          content_mode?: 'active' | 'inactive' | 'template'
+          template_id?: string | null
+          template_version?: number
+          saved_template_version?: number | null
+          published_at?: string | null
+          is_session0_ready?: boolean
+          template_description?: string | null
+          template_tags?: string[] | null
+          template_save_count?: number
+          allow_save?: boolean
+          attribution_name?: string | null
+          inactive_reason?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1231,6 +1354,8 @@ export interface Database {
           last_viewed_at: string | null
           note: string | null
           status: 'active' | 'deleted'
+          allow_save: boolean
+          snapshot_version: number | null
           created_at: string
         }
         Insert: {
@@ -1243,6 +1368,8 @@ export interface Database {
           last_viewed_at?: string | null
           note?: string | null
           status?: 'active' | 'deleted'
+          allow_save?: boolean
+          snapshot_version?: number | null
           created_at?: string
         }
         Update: {
@@ -1255,6 +1382,8 @@ export interface Database {
           last_viewed_at?: string | null
           note?: string | null
           status?: 'active' | 'deleted'
+          allow_save?: boolean
+          snapshot_version?: number | null
           created_at?: string
         }
       }
@@ -1570,6 +1699,8 @@ export interface Database {
           last_viewed_at: string | null
           note: string | null
           status: 'active' | 'deleted'
+          allow_save: boolean
+          snapshot_version: number | null
           created_at: string
         }
         Insert: {
@@ -1583,6 +1714,8 @@ export interface Database {
           last_viewed_at?: string | null
           note?: string | null
           status?: 'active' | 'deleted'
+          allow_save?: boolean
+          snapshot_version?: number | null
           created_at?: string
         }
         Update: {
@@ -1596,6 +1729,8 @@ export interface Database {
           last_viewed_at?: string | null
           note?: string | null
           status?: 'active' | 'deleted'
+          allow_save?: boolean
+          snapshot_version?: number | null
           created_at?: string
         }
       }
@@ -2026,6 +2161,115 @@ export interface Database {
           updated_at?: string
         }
       }
+      // =====================================================
+      // TEMPLATE SYSTEM TABLES
+      // =====================================================
+      template_snapshots: {
+        Row: {
+          id: string
+          user_id: string
+          content_type: 'campaign' | 'character' | 'oneshot'
+          content_id: string
+          version: number
+          version_name: string | null
+          version_notes: string | null
+          snapshot_data: Json
+          related_data: Json | null
+          allow_save: boolean
+          attribution_name: string | null
+          template_description: string | null
+          template_tags: string[] | null
+          save_count: number
+          published_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          content_type: 'campaign' | 'character' | 'oneshot'
+          content_id: string
+          version?: number
+          version_name?: string | null
+          version_notes?: string | null
+          snapshot_data: Json
+          related_data?: Json | null
+          allow_save?: boolean
+          attribution_name?: string | null
+          template_description?: string | null
+          template_tags?: string[] | null
+          save_count?: number
+          published_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          content_type?: 'campaign' | 'character' | 'oneshot'
+          content_id?: string
+          version?: number
+          version_name?: string | null
+          version_notes?: string | null
+          snapshot_data?: Json
+          related_data?: Json | null
+          allow_save?: boolean
+          attribution_name?: string | null
+          template_description?: string | null
+          template_tags?: string[] | null
+          save_count?: number
+          published_at?: string
+          created_at?: string
+        }
+      }
+      content_saves: {
+        Row: {
+          id: string
+          user_id: string
+          snapshot_id: string
+          source_type: string
+          source_name: string
+          source_image_url: string | null
+          source_owner_id: string
+          saved_version: number
+          latest_available_version: number | null
+          update_available: boolean
+          instance_id: string | null
+          started_playing_at: string | null
+          saved_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          snapshot_id: string
+          source_type: string
+          source_name: string
+          source_image_url?: string | null
+          source_owner_id: string
+          saved_version: number
+          latest_available_version?: number | null
+          update_available?: boolean
+          instance_id?: string | null
+          started_playing_at?: string | null
+          saved_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          snapshot_id?: string
+          source_type?: string
+          source_name?: string
+          source_image_url?: string | null
+          source_owner_id?: string
+          saved_version?: number
+          latest_available_version?: number | null
+          update_available?: boolean
+          instance_id?: string | null
+          started_playing_at?: string | null
+          saved_at?: string
+          created_at?: string
+        }
+      }
     }
   }
 }
@@ -2136,4 +2380,21 @@ export type CampaignWithDetails = Campaign & {
 export type OneshotWithDetails = Oneshot & {
   genre_tags: OneshotGenreTag[]
   runs: OneshotRun[]
+}
+
+// Template system types
+export type TemplateSnapshot = Database['public']['Tables']['template_snapshots']['Row']
+export type ContentSave = Database['public']['Tables']['content_saves']['Row']
+
+// Content mode type for filtering
+export type ContentMode = 'active' | 'inactive' | 'template'
+
+// Inactive reason types per content type
+export type CampaignInactiveReason = 'completed' | 'on_hiatus' | 'retired'
+export type CharacterInactiveReason = 'retired' | 'deceased' | 'on_hiatus'
+export type OneshotInactiveReason = 'completed' | 'archived'
+
+// Content save with snapshot data for display
+export type ContentSaveWithSnapshot = ContentSave & {
+  snapshot?: TemplateSnapshot
 }

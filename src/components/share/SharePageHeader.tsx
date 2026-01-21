@@ -1,14 +1,30 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, Bookmark } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
+import { SaveToCollectionButton } from '@/components/templates'
 
 interface SharePageHeaderProps {
   contentType?: 'character' | 'campaign' | 'oneshot'
   contentName?: string
+  // Template save functionality
+  allowSave?: boolean
+  snapshotId?: string | null
+  isLoggedIn?: boolean
+  isSaved?: boolean
 }
 
-export function SharePageHeader({ contentType, contentName }: SharePageHeaderProps) {
+export function SharePageHeader({
+  contentType,
+  contentName,
+  allowSave = false,
+  snapshotId,
+  isLoggedIn = false,
+  isSaved = false,
+}: SharePageHeaderProps) {
+  // Can only show save button if allowSave is true and we have a snapshot
+  const canSave = allowSave && snapshotId
+
   return (
     <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#0a0a0f]/95 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -32,25 +48,31 @@ export function SharePageHeader({ contentType, contentName }: SharePageHeaderPro
 
           {/* Right: Auth buttons + Save CTA */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href="/login"
-              className="hidden sm:inline-flex items-center gap-1.5 text-sm text-purple-400 hover:text-purple-300 transition-colors px-3 py-1.5 rounded-lg hover:bg-purple-500/10"
-            >
-              <Bookmark className="w-4 h-4" />
-              <span>Save to Collection</span>
-            </Link>
-            <Link
-              href="/login"
-              className="text-sm text-gray-400 hover:text-white transition-colors px-3 py-1.5"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/login"
-              className="text-sm font-medium px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-colors"
-            >
-              Get Started
-            </Link>
+            {/* Show save button only for templates with allowSave enabled */}
+            {canSave ? (
+              <SaveToCollectionButton
+                snapshotId={snapshotId}
+                isLoggedIn={isLoggedIn}
+                isSaved={isSaved}
+                size="sm"
+              />
+            ) : (
+              // Show sign-in/get started for non-saveable content
+              <>
+                <Link
+                  href="/login"
+                  className="text-sm text-gray-400 hover:text-white transition-colors px-3 py-1.5"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/login"
+                  className="text-sm font-medium px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-colors"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

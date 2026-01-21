@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import { CampaignShareClient } from '@/app/share/campaign/[code]/client'
 import { FloatingDock } from '@/components/layout/floating-dock'
+import { AttributionBanner } from '@/components/templates'
 
 interface ViewPageProps {
   params: Promise<{ id: string }>
@@ -26,6 +27,17 @@ export default async function CampaignViewPage({ params }: ViewPageProps) {
 
   if (campaignError || !campaign) {
     notFound()
+  }
+
+  // Fetch original template info if this campaign was created from a template
+  let templateInfo: { name: string; attribution_name: string | null } | null = null
+  if (campaign.template_id) {
+    const { data: template } = await supabase
+      .from('campaigns')
+      .select('name, attribution_name')
+      .eq('id', campaign.template_id)
+      .single()
+    templateInfo = template
   }
 
   // ALL sections enabled - owner sees everything
@@ -172,6 +184,18 @@ export default async function CampaignViewPage({ params }: ViewPageProps) {
   return (
     <>
       <FloatingDock campaignId={campaignId} />
+      {/* Attribution banner if created from a template */}
+      {templateInfo && (
+        <div className="max-w-4xl mx-auto px-6 pt-6">
+          <AttributionBanner
+            templateName={templateInfo.name}
+            creatorName={templateInfo.attribution_name}
+            templateId={campaign.template_id}
+            contentType="campaign"
+            version={campaign.saved_template_version}
+          />
+        </div>
+      )}
       <CampaignShareClient
         campaign={campaign}
         sections={sections}

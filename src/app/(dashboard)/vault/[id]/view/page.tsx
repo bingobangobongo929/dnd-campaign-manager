@@ -7,10 +7,16 @@ import { AppLayout } from '@/components/layout/app-layout'
 import { Button } from '@/components/ui'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { CharacterViewer } from '@/components/vault/CharacterViewer'
+import { AttributionBanner } from '@/components/templates'
 import { useIsMobile } from '@/hooks'
 import { createClient } from '@/lib/supabase/client'
 import { CharacterViewPageMobile } from './page.mobile'
 import type { VaultCharacter } from '@/types/database'
+
+interface TemplateInfo {
+  name: string
+  attribution_name: string | null
+}
 
 export default function CharacterViewPage() {
   const params = useParams()
@@ -20,6 +26,7 @@ export default function CharacterViewPage() {
   const isMobile = useIsMobile()
 
   const [character, setCharacter] = useState<VaultCharacter | null>(null)
+  const [templateInfo, setTemplateInfo] = useState<TemplateInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
@@ -35,6 +42,15 @@ export default function CharacterViewPage() {
         setNotFound(true)
       } else {
         setCharacter(data)
+        // Fetch template info if this character was created from a template
+        if (data.template_id) {
+          const { data: template } = await supabase
+            .from('vault_characters')
+            .select('name, attribution_name')
+            .eq('id', data.template_id)
+            .single()
+          setTemplateInfo(template)
+        }
       }
       setLoading(false)
     }
@@ -51,6 +67,7 @@ export default function CharacterViewPage() {
         loading={loading}
         notFound={notFound}
         onNavigate={(path) => router.push(path)}
+        templateInfo={templateInfo}
       />
     )
   }
@@ -86,6 +103,18 @@ export default function CharacterViewPage() {
 
   return (
     <AppLayout characterId={characterId}>
+      {/* Attribution banner if created from a template */}
+      {templateInfo && character && (
+        <div className="max-w-4xl mx-auto px-6 pt-6">
+          <AttributionBanner
+            templateName={templateInfo.name}
+            creatorName={templateInfo.attribution_name}
+            templateId={character.template_id}
+            contentType="character"
+            version={character.saved_template_version}
+          />
+        </div>
+      )}
       <CharacterViewer character={character} />
       <BackToTopButton />
     </AppLayout>
