@@ -947,6 +947,36 @@ export function CharacterEditor({ character, mode, standalone = true, fromTempla
         }
       }
     }
+
+    // Sync status with content_mode (Retired/Deceased -> inactive, Active/In Progress -> active)
+    if (savedCharId) {
+      const inactiveStatuses = ['Retired', 'Deceased']
+      const activeStatuses = ['Active', 'In Progress']
+
+      if (inactiveStatuses.includes(dataToSave.status)) {
+        // Set content to inactive
+        const reason = dataToSave.status.toLowerCase() // 'retired' or 'deceased'
+        await fetch('/api/content/set-inactive', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contentType: 'character',
+            contentId: savedCharId,
+            reason,
+          }),
+        })
+      } else if (activeStatuses.includes(dataToSave.status)) {
+        // Reactivate content if it was inactive
+        await fetch('/api/content/reactivate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contentType: 'character',
+            contentId: savedCharId,
+          }),
+        })
+      }
+    }
   }, [characterId, supabase, writingsLoaded])
 
   const { status } = useAutoSave({

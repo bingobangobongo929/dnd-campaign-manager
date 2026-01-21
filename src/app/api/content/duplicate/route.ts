@@ -88,28 +88,36 @@ async function duplicateCampaign(supabase: any, userId: string, campaignId: stri
     return null
   }
 
-  // Copy related data
-  await Promise.all([
-    // Copy characters
+  // Copy related data with error tracking
+  const copyResults = await Promise.allSettled([
     copyCharacters(supabase, campaignId, newCampaign.id),
-    // Copy tags
     copyTags(supabase, campaignId, newCampaign.id),
-    // Copy canvas groups
     copyCanvasGroups(supabase, campaignId, newCampaign.id),
-    // Copy lore
     copyLore(supabase, campaignId, newCampaign.id),
-    // Copy world maps
     copyWorldMaps(supabase, campaignId, newCampaign.id),
   ])
+
+  const failures = copyResults
+    .map((result, i) => ({ result, operation: ['characters', 'tags', 'canvas_groups', 'lore', 'world_maps'][i] }))
+    .filter((item): item is { result: PromiseRejectedResult; operation: string } => item.result.status === 'rejected')
+
+  if (failures.length > 0) {
+    console.error('Some copy operations failed:', failures.map(f => ({ operation: f.operation, error: f.result.reason })))
+    // Campaign was created but some data wasn't copied - still return success but log the issue
+  }
 
   return newCampaign.id
 }
 
 async function copyCharacters(supabase: any, oldCampaignId: string, newCampaignId: string) {
-  const { data: characters } = await supabase
+  const { data: characters, error: fetchError } = await supabase
     .from('characters')
     .select('*')
     .eq('campaign_id', oldCampaignId)
+
+  if (fetchError) {
+    throw new Error(`Failed to fetch characters: ${fetchError.message}`)
+  }
 
   if (!characters?.length) return
 
@@ -118,7 +126,7 @@ async function copyCharacters(supabase: any, oldCampaignId: string, newCampaignI
   // Insert characters with new IDs
   for (const char of characters) {
     const { id: oldId, campaign_id: _cid, created_at: _ca, updated_at: _ua, ...charData } = char
-    const { data: newChar } = await supabase
+    const { data: newChar, error: insertError } = await supabase
       .from('characters')
       .insert({
         ...charData,
@@ -127,16 +135,24 @@ async function copyCharacters(supabase: any, oldCampaignId: string, newCampaignI
       .select()
       .single()
 
+    if (insertError) {
+      throw new Error(`Failed to copy character ${char.name}: ${insertError.message}`)
+    }
+
     if (newChar) {
       idMap.set(oldId, newChar.id)
     }
   }
 
   // Copy relationships using the ID map
-  const { data: relationships } = await supabase
+  const { data: relationships, error: relFetchError } = await supabase
     .from('character_relationships')
     .select('*')
     .eq('campaign_id', oldCampaignId)
+
+  if (relFetchError) {
+    throw new Error(`Failed to fetch relationships: ${relFetchError.message}`)
+  }
 
   if (relationships?.length) {
     const newRelationships = relationships
@@ -152,16 +168,23 @@ async function copyCharacters(supabase: any, oldCampaignId: string, newCampaignI
       })
 
     if (newRelationships.length) {
-      await supabase.from('character_relationships').insert(newRelationships)
+      const { error: relInsertError } = await supabase.from('character_relationships').insert(newRelationships)
+      if (relInsertError) {
+        throw new Error(`Failed to copy relationships: ${relInsertError.message}`)
+      }
     }
   }
 }
 
 async function copyTags(supabase: any, oldCampaignId: string, newCampaignId: string) {
-  const { data: tags } = await supabase
+  const { data: tags, error: fetchError } = await supabase
     .from('tags')
     .select('*')
     .eq('campaign_id', oldCampaignId)
+
+  if (fetchError) {
+    throw new Error(`Failed to fetch tags: ${fetchError.message}`)
+  }
 
   if (!tags?.length) return
 
@@ -170,14 +193,21 @@ async function copyTags(supabase: any, oldCampaignId: string, newCampaignId: str
     return { ...tagData, campaign_id: newCampaignId }
   })
 
-  await supabase.from('tags').insert(newTags)
+  const { error: insertError } = await supabase.from('tags').insert(newTags)
+  if (insertError) {
+    throw new Error(`Failed to copy tags: ${insertError.message}`)
+  }
 }
 
 async function copyCanvasGroups(supabase: any, oldCampaignId: string, newCampaignId: string) {
-  const { data: groups } = await supabase
+  const { data: groups, error: fetchError } = await supabase
     .from('canvas_groups')
     .select('*')
     .eq('campaign_id', oldCampaignId)
+
+  if (fetchError) {
+    throw new Error(`Failed to fetch canvas groups: ${fetchError.message}`)
+  }
 
   if (!groups?.length) return
 
@@ -186,14 +216,21 @@ async function copyCanvasGroups(supabase: any, oldCampaignId: string, newCampaig
     return { ...groupData, campaign_id: newCampaignId }
   })
 
-  await supabase.from('canvas_groups').insert(newGroups)
+  const { error: insertError } = await supabase.from('canvas_groups').insert(newGroups)
+  if (insertError) {
+    throw new Error(`Failed to copy canvas groups: ${insertError.message}`)
+  }
 }
 
 async function copyLore(supabase: any, oldCampaignId: string, newCampaignId: string) {
-  const { data: lore } = await supabase
+  const { data: lore, error: fetchError } = await supabase
     .from('campaign_lore')
     .select('*')
     .eq('campaign_id', oldCampaignId)
+
+  if (fetchError) {
+    throw new Error(`Failed to fetch lore: ${fetchError.message}`)
+  }
 
   if (!lore?.length) return
 
@@ -202,14 +239,21 @@ async function copyLore(supabase: any, oldCampaignId: string, newCampaignId: str
     return { ...loreData, campaign_id: newCampaignId }
   })
 
-  await supabase.from('campaign_lore').insert(newLore)
+  const { error: insertError } = await supabase.from('campaign_lore').insert(newLore)
+  if (insertError) {
+    throw new Error(`Failed to copy lore: ${insertError.message}`)
+  }
 }
 
 async function copyWorldMaps(supabase: any, oldCampaignId: string, newCampaignId: string) {
-  const { data: maps } = await supabase
+  const { data: maps, error: fetchError } = await supabase
     .from('world_maps')
     .select('*')
     .eq('campaign_id', oldCampaignId)
+
+  if (fetchError) {
+    throw new Error(`Failed to fetch world maps: ${fetchError.message}`)
+  }
 
   if (!maps?.length) return
 
@@ -218,7 +262,10 @@ async function copyWorldMaps(supabase: any, oldCampaignId: string, newCampaignId
     return { ...mapData, campaign_id: newCampaignId }
   })
 
-  await supabase.from('world_maps').insert(newMaps)
+  const { error: insertError } = await supabase.from('world_maps').insert(newMaps)
+  if (insertError) {
+    throw new Error(`Failed to copy world maps: ${insertError.message}`)
+  }
 }
 
 async function duplicateCharacter(supabase: any, userId: string, characterId: string, newName: string): Promise<string | null> {
@@ -255,8 +302,8 @@ async function duplicateCharacter(supabase: any, userId: string, characterId: st
     return null
   }
 
-  // Copy related data
-  await Promise.all([
+  // Copy related data with error tracking
+  const copyResults = await Promise.allSettled([
     copyCharacterImages(supabase, characterId, newCharacter.id),
     copyCharacterRelationships(supabase, characterId, newCharacter.id),
     copyCharacterSpells(supabase, characterId, newCharacter.id),
@@ -264,14 +311,26 @@ async function duplicateCharacter(supabase: any, userId: string, characterId: st
     copyCharacterLocations(supabase, characterId, newCharacter.id),
   ])
 
+  const failures = copyResults
+    .map((result, i) => ({ result, operation: ['images', 'relationships', 'spells', 'writings', 'locations'][i] }))
+    .filter((item): item is { result: PromiseRejectedResult; operation: string } => item.result.status === 'rejected')
+
+  if (failures.length > 0) {
+    console.error('Some character copy operations failed:', failures.map(f => ({ operation: f.operation, error: f.result.reason })))
+  }
+
   return newCharacter.id
 }
 
 async function copyCharacterImages(supabase: any, oldCharId: string, newCharId: string) {
-  const { data: images } = await supabase
+  const { data: images, error: fetchError } = await supabase
     .from('vault_character_images')
     .select('*')
     .eq('character_id', oldCharId)
+
+  if (fetchError) {
+    throw new Error(`Failed to fetch character images: ${fetchError.message}`)
+  }
 
   if (!images?.length) return
 
@@ -280,14 +339,21 @@ async function copyCharacterImages(supabase: any, oldCharId: string, newCharId: 
     return { ...imageData, character_id: newCharId }
   })
 
-  await supabase.from('vault_character_images').insert(newImages)
+  const { error: insertError } = await supabase.from('vault_character_images').insert(newImages)
+  if (insertError) {
+    throw new Error(`Failed to copy character images: ${insertError.message}`)
+  }
 }
 
 async function copyCharacterRelationships(supabase: any, oldCharId: string, newCharId: string) {
-  const { data: rels } = await supabase
+  const { data: rels, error: fetchError } = await supabase
     .from('vault_character_relationships')
     .select('*')
     .eq('character_id', oldCharId)
+
+  if (fetchError) {
+    throw new Error(`Failed to fetch character relationships: ${fetchError.message}`)
+  }
 
   if (!rels?.length) return
 
@@ -296,14 +362,21 @@ async function copyCharacterRelationships(supabase: any, oldCharId: string, newC
     return { ...relData, character_id: newCharId }
   })
 
-  await supabase.from('vault_character_relationships').insert(newRels)
+  const { error: insertError } = await supabase.from('vault_character_relationships').insert(newRels)
+  if (insertError) {
+    throw new Error(`Failed to copy character relationships: ${insertError.message}`)
+  }
 }
 
 async function copyCharacterSpells(supabase: any, oldCharId: string, newCharId: string) {
-  const { data: spells } = await supabase
+  const { data: spells, error: fetchError } = await supabase
     .from('vault_character_spells')
     .select('*')
     .eq('character_id', oldCharId)
+
+  if (fetchError) {
+    throw new Error(`Failed to fetch character spells: ${fetchError.message}`)
+  }
 
   if (!spells?.length) return
 
@@ -312,14 +385,21 @@ async function copyCharacterSpells(supabase: any, oldCharId: string, newCharId: 
     return { ...spellData, character_id: newCharId }
   })
 
-  await supabase.from('vault_character_spells').insert(newSpells)
+  const { error: insertError } = await supabase.from('vault_character_spells').insert(newSpells)
+  if (insertError) {
+    throw new Error(`Failed to copy character spells: ${insertError.message}`)
+  }
 }
 
 async function copyCharacterWritings(supabase: any, oldCharId: string, newCharId: string) {
-  const { data: writings } = await supabase
+  const { data: writings, error: fetchError } = await supabase
     .from('vault_character_writings')
     .select('*')
     .eq('character_id', oldCharId)
+
+  if (fetchError) {
+    throw new Error(`Failed to fetch character writings: ${fetchError.message}`)
+  }
 
   if (!writings?.length) return
 
@@ -328,14 +408,21 @@ async function copyCharacterWritings(supabase: any, oldCharId: string, newCharId
     return { ...writingData, character_id: newCharId }
   })
 
-  await supabase.from('vault_character_writings').insert(newWritings)
+  const { error: insertError } = await supabase.from('vault_character_writings').insert(newWritings)
+  if (insertError) {
+    throw new Error(`Failed to copy character writings: ${insertError.message}`)
+  }
 }
 
 async function copyCharacterLocations(supabase: any, oldCharId: string, newCharId: string) {
-  const { data: locations } = await supabase
+  const { data: locations, error: fetchError } = await supabase
     .from('vault_character_locations')
     .select('*')
     .eq('character_id', oldCharId)
+
+  if (fetchError) {
+    throw new Error(`Failed to fetch character locations: ${fetchError.message}`)
+  }
 
   if (!locations?.length) return
 
@@ -344,7 +431,10 @@ async function copyCharacterLocations(supabase: any, oldCharId: string, newCharI
     return { ...locData, character_id: newCharId }
   })
 
-  await supabase.from('vault_character_locations').insert(newLocations)
+  const { error: insertError } = await supabase.from('vault_character_locations').insert(newLocations)
+  if (insertError) {
+    throw new Error(`Failed to copy character locations: ${insertError.message}`)
+  }
 }
 
 async function duplicateOneshot(supabase: any, userId: string, oneshotId: string, newName: string): Promise<string | null> {
