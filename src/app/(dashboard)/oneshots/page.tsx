@@ -362,7 +362,7 @@ export default function OneshotsPage() {
                   return (
                     <Link
                       key={snapshot.id}
-                      href={`/oneshots/${snapshot.content_id}`}
+                      href={`/oneshots/${snapshot.content_id}?fromTemplate=true`}
                       className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-amber-500/20 hover:border-amber-500/40 transition-all aspect-[2/3]"
                     >
                       {imageUrl ? (

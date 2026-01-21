@@ -689,7 +689,7 @@ export default function VaultPage() {
                   return (
                     <button
                       key={snapshot.id}
-                      onClick={() => router.push(`/vault/${snapshot.content_id}`)}
+                      onClick={() => router.push(`/vault/${snapshot.content_id}?fromTemplate=true`)}
                       className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-purple-500/20 hover:border-purple-500/40 transition-all text-left"
                     >
                       <div className="relative h-48 overflow-hidden">

@@ -429,7 +429,7 @@ export default function CampaignsPage() {
                   return (
                     <Link
                       key={snapshot.id}
-                      href={`/campaigns/${snapshot.content_id}/canvas`}
+                      href={`/campaigns/${snapshot.content_id}/canvas?fromTemplate=true`}
                       className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-purple-500/20 hover:border-purple-500/40 transition-all"
                     >
                       <div className="relative h-48 overflow-hidden">

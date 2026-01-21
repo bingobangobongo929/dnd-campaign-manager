@@ -208,7 +208,7 @@ export function VaultPageMobile({
               {filteredCharacters.map((character) => (
                 <button
                   key={character.id}
-                  onClick={() => onNavigate(`/vault/${character.id}`)}
+                  onClick={() => onNavigate(`/vault/${character.id}?fromTemplate=true`)}
                   className="w-full flex items-center gap-4 p-3 bg-[--bg-surface] rounded-xl border border-purple-500/20 active:bg-[--bg-hover]"
                 >
                   <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-900 flex-shrink-0">

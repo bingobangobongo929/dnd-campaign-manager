@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { toast } from 'sonner'
 import {
@@ -67,12 +67,14 @@ const textareaStyles = "w-full py-4 px-5 text-[15px] bg-white/[0.02] border bord
 export default function OneshotEditorPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const supabase = useSupabase()
   const { user } = useUser()
   const isMobile = useIsMobile()
 
   const isNew = params.id === 'new'
   const oneshotId = isNew ? null : (params.id as string)
+  const fromTemplate = searchParams.get('fromTemplate') === 'true'
 
   // Form state
   const [formData, setFormData] = useState({
@@ -753,12 +755,14 @@ export default function OneshotEditorPage() {
                   <Share2 className="w-4 h-4" />
                   Share
                 </button>
-                <button
-                  onClick={() => setDeleteModalOpen(true)}
-                  className="flex items-center justify-center gap-2 py-3 px-5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 active:bg-red-500/20 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {!fromTemplate && (
+                  <button
+                    onClick={() => setDeleteModalOpen(true)}
+                    className="flex items-center justify-center gap-2 py-3 px-5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 active:bg-red-500/20 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -920,13 +924,15 @@ export default function OneshotEditorPage() {
                   >
                     <Share2 className="w-5 h-5" />
                   </button>
-                  <button
-                    onClick={() => setDeleteModalOpen(true)}
-                    className="p-2 text-gray-400 hover:text-red-400 transition-colors"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                  {!fromTemplate && (
+                    <button
+                      onClick={() => setDeleteModalOpen(true)}
+                      className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  )}
                 </>
               )}
               <button

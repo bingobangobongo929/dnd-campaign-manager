@@ -97,6 +97,8 @@ interface CharacterEditorProps {
   mode: 'create' | 'edit'
   /** When true, renders own navigation (FloatingDock/MobileTabBar). Set to false when wrapped in AppLayout. */
   standalone?: boolean
+  /** When true, hide delete button (accessed from My Templates tab) */
+  fromTemplate?: boolean
 }
 
 // Default statuses
@@ -180,7 +182,7 @@ function CollapsibleSection({
   )
 }
 
-export function CharacterEditor({ character, mode, standalone = true }: CharacterEditorProps) {
+export function CharacterEditor({ character, mode, standalone = true, fromTemplate = false }: CharacterEditorProps) {
   const router = useRouter()
   const isMobile = useIsMobile()
   // Memoize supabase client to prevent recreation on each render
@@ -1985,17 +1987,19 @@ export function CharacterEditor({ character, mode, standalone = true }: Characte
                   <Copy className="w-3.5 h-3.5" />
                   {!isMobile && <span className="text-[13px]">Duplicate</span>}
                 </button>
-                <button
-                  onClick={() => setIsDeleteConfirmOpen(true)}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-lg hover:bg-red-500/10 transition-all duration-200 text-gray-500 hover:text-red-400",
-                    isMobile ? "p-2" : "px-3 py-1.5"
-                  )}
-                  title="Delete"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  {!isMobile && <span className="text-[13px]">Delete</span>}
-                </button>
+                {!fromTemplate && (
+                  <button
+                    onClick={() => setIsDeleteConfirmOpen(true)}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-lg hover:bg-red-500/10 transition-all duration-200 text-gray-500 hover:text-red-400",
+                      isMobile ? "p-2" : "px-3 py-1.5"
+                    )}
+                    title="Delete"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    {!isMobile && <span className="text-[13px]">Delete</span>}
+                  </button>
+                )}
               </>
             )}
           </div>

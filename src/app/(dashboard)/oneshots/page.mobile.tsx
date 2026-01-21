@@ -187,7 +187,7 @@ export function OneshotsPageMobile({
               {oneshots.map((oneshot) => (
                 <button
                   key={oneshot.id}
-                  onClick={() => onNavigate(`/oneshots/${oneshot.id}`)}
+                  onClick={() => onNavigate(`/oneshots/${oneshot.id}?fromTemplate=true`)}
                   className="relative rounded-xl overflow-hidden bg-gray-900 border border-amber-500/20 active:scale-[0.98] transition-transform aspect-[2/3] text-left"
                 >
                   {oneshot.image_url ? (

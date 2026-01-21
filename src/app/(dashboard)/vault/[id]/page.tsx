@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { CharacterEditor } from '@/components/vault/CharacterEditor'
@@ -15,7 +15,9 @@ import type { VaultCharacter } from '@/types/database'
 export default function EditVaultCharacterPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const isMobile = useIsMobile()
+  const fromTemplate = searchParams.get('fromTemplate') === 'true'
   // Memoize supabase client to prevent recreation on each render
   const supabase = useMemo(() => createClient(), [])
   const { trackRecentItem } = useAppStore()
@@ -82,7 +84,7 @@ export default function EditVaultCharacterPage() {
 
   return (
     <AppLayout characterId={characterId} fullBleed>
-      <CharacterEditor character={character} mode="edit" standalone={false} />
+      <CharacterEditor character={character} mode="edit" standalone={false} fromTemplate={fromTemplate} />
       <BackToTopButton />
     </AppLayout>
   )
