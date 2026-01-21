@@ -3434,7 +3434,7 @@ export function CharacterEditor({ character, mode, standalone = true, fromTempla
         isOpen={isDeleteConfirmOpen}
         onClose={() => setIsDeleteConfirmOpen(false)}
         title="Delete Character"
-        description="Are you sure? This will permanently delete this character and all related data."
+        description="This will move the character to your recycle bin. You can restore it within 30 days."
       >
         <div className="flex justify-end gap-3 pt-4">
           <button className="btn btn-secondary" onClick={() => setIsDeleteConfirmOpen(false)}>Cancel</button>

@@ -730,11 +730,11 @@ export function CharacterEditorMobile({
         isOpen={isDeleteConfirmOpen}
         onClose={() => setIsDeleteConfirmOpen(false)}
         title="Delete Character"
-        description="This action cannot be undone."
+        description="This will move the character to your recycle bin."
       >
         <div className="space-y-4 py-4">
           <p className="text-sm text-gray-400">
-            Are you sure you want to delete <strong className="text-white">{formData.name || 'this character'}</strong>?
+            <strong className="text-white">{formData.name || 'This character'}</strong> will be moved to the recycle bin. You can restore it within 30 days.
           </p>
           <div className="flex gap-3">
             <button
