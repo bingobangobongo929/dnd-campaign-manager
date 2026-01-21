@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
@@ -116,7 +117,7 @@ async function copyCharacters(supabase: any, oldCampaignId: string, newCampaignI
 
   // Insert characters with new IDs
   for (const char of characters) {
-    const { id: oldId, campaign_id, created_at, updated_at, ...charData } = char
+    const { id: oldId, campaign_id: _cid, created_at: _ca, updated_at: _ua, ...charData } = char
     const { data: newChar } = await supabase
       .from('characters')
       .insert({
@@ -141,7 +142,7 @@ async function copyCharacters(supabase: any, oldCampaignId: string, newCampaignI
     const newRelationships = relationships
       .filter((r: any) => idMap.has(r.from_character_id) && idMap.has(r.to_character_id))
       .map((r: any) => {
-        const { id, campaign_id, from_character_id, to_character_id, created_at, updated_at, ...relData } = r
+        const { id: _id, campaign_id: _cid, from_character_id, to_character_id, created_at: _ca, updated_at: _ua, ...relData } = r
         return {
           ...relData,
           campaign_id: newCampaignId,
@@ -165,7 +166,7 @@ async function copyTags(supabase: any, oldCampaignId: string, newCampaignId: str
   if (!tags?.length) return
 
   const newTags = tags.map((t: any) => {
-    const { id, campaign_id, created_at, ...tagData } = t
+    const { id: _id, campaign_id: _cid, created_at: _ca, ...tagData } = t
     return { ...tagData, campaign_id: newCampaignId }
   })
 
@@ -181,7 +182,7 @@ async function copyCanvasGroups(supabase: any, oldCampaignId: string, newCampaig
   if (!groups?.length) return
 
   const newGroups = groups.map((g: any) => {
-    const { id, campaign_id, created_at, updated_at, ...groupData } = g
+    const { id: _id, campaign_id: _cid, created_at: _ca, updated_at: _ua, ...groupData } = g
     return { ...groupData, campaign_id: newCampaignId }
   })
 
@@ -197,7 +198,7 @@ async function copyLore(supabase: any, oldCampaignId: string, newCampaignId: str
   if (!lore?.length) return
 
   const newLore = lore.map((l: any) => {
-    const { id, campaign_id, created_at, updated_at, ...loreData } = l
+    const { id: _id, campaign_id: _cid, created_at: _ca, updated_at: _ua, ...loreData } = l
     return { ...loreData, campaign_id: newCampaignId }
   })
 
@@ -213,7 +214,7 @@ async function copyWorldMaps(supabase: any, oldCampaignId: string, newCampaignId
   if (!maps?.length) return
 
   const newMaps = maps.map((m: any) => {
-    const { id, campaign_id, created_at, updated_at, ...mapData } = m
+    const { id: _id, campaign_id: _cid, created_at: _ca, updated_at: _ua, ...mapData } = m
     return { ...mapData, campaign_id: newCampaignId }
   })
 
@@ -235,7 +236,7 @@ async function duplicateCharacter(supabase: any, userId: string, characterId: st
   }
 
   // Create new character (reset template-related fields)
-  const { id, created_at, updated_at, template_id, template_version, saved_template_version, published_at, is_published, ...charData } = character
+  const { id: _id, created_at: _ca, updated_at: _ua, template_id: _tid, template_version: _tv, saved_template_version: _stv, published_at: _pa, is_published: _ip, ...charData } = character
 
   const { data: newCharacter, error: createError } = await supabase
     .from('vault_characters')
@@ -275,7 +276,7 @@ async function copyCharacterImages(supabase: any, oldCharId: string, newCharId: 
   if (!images?.length) return
 
   const newImages = images.map((i: any) => {
-    const { id, character_id, created_at, ...imageData } = i
+    const { id: _id, character_id: _cid, created_at: _ca, ...imageData } = i
     return { ...imageData, character_id: newCharId }
   })
 
@@ -291,7 +292,7 @@ async function copyCharacterRelationships(supabase: any, oldCharId: string, newC
   if (!rels?.length) return
 
   const newRels = rels.map((r: any) => {
-    const { id, character_id, created_at, updated_at, ...relData } = r
+    const { id: _id, character_id: _cid, created_at: _ca, updated_at: _ua, ...relData } = r
     return { ...relData, character_id: newCharId }
   })
 
@@ -307,7 +308,7 @@ async function copyCharacterSpells(supabase: any, oldCharId: string, newCharId: 
   if (!spells?.length) return
 
   const newSpells = spells.map((s: any) => {
-    const { id, character_id, created_at, ...spellData } = s
+    const { id: _id, character_id: _cid, created_at: _ca, ...spellData } = s
     return { ...spellData, character_id: newCharId }
   })
 
@@ -323,7 +324,7 @@ async function copyCharacterWritings(supabase: any, oldCharId: string, newCharId
   if (!writings?.length) return
 
   const newWritings = writings.map((w: any) => {
-    const { id, character_id, created_at, updated_at, ...writingData } = w
+    const { id: _id, character_id: _cid, created_at: _ca, updated_at: _ua, ...writingData } = w
     return { ...writingData, character_id: newCharId }
   })
 
@@ -339,7 +340,7 @@ async function copyCharacterLocations(supabase: any, oldCharId: string, newCharI
   if (!locations?.length) return
 
   const newLocations = locations.map((l: any) => {
-    const { id, character_id, created_at, updated_at, ...locData } = l
+    const { id: _id, character_id: _cid, created_at: _ca, updated_at: _ua, ...locData } = l
     return { ...locData, character_id: newCharId }
   })
 
@@ -361,7 +362,7 @@ async function duplicateOneshot(supabase: any, userId: string, oneshotId: string
   }
 
   // Create new oneshot (reset template-related fields)
-  const { id, created_at, updated_at, template_id, template_version, saved_template_version, published_at, is_published, ...oneshotData } = oneshot
+  const { id: _id, created_at: _ca, updated_at: _ua, template_id: _tid, template_version: _tv, saved_template_version: _stv, published_at: _pa, is_published: _ip, ...oneshotData } = oneshot
 
   const { data: newOneshot, error: createError } = await supabase
     .from('oneshots')

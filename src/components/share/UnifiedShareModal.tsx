@@ -1,5 +1,6 @@
 'use client'
 
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { useState, useEffect } from 'react'
 import { Modal } from '@/components/ui'
 import {
@@ -62,12 +63,12 @@ export function UnifiedShareModal({
   contentType,
   contentId,
   contentName,
-  isPublished = false,
+  isPublished: _isPublished = false,
   onPublished,
   onDuplicated,
 }: UnifiedShareModalProps) {
   const supabase = useSupabase()
-  const { user } = useUser()
+  const { user: _user } = useUser()
   const { settings } = useAppStore()
 
   // State
