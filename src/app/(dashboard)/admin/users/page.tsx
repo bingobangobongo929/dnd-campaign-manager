@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, MoreVertical, Shield, Ban, UserX, Crown, Loader2, Check, X, Sparkles, Bot } from 'lucide-react'
+import { Search, MoreVertical, Shield, Ban, UserX, Crown, Loader2, Check, X, Sparkles, Bot, Copy } from 'lucide-react'
 import { useSupabase, useUserSettings } from '@/hooks'
 import { Modal, Button } from '@/components/ui'
 import { DropdownMenu } from '@/components/ui/dropdown-menu'
@@ -48,6 +48,8 @@ export default function AdminUsersPage() {
   const [showSuspendModal, setShowSuspendModal] = useState(false)
   const [showChangeTierModal, setShowChangeTierModal] = useState(false)
   const [showChangeRoleModal, setShowChangeRoleModal] = useState(false)
+  const [showCloneModal, setShowCloneModal] = useState(false)
+  const [cloneResults, setCloneResults] = useState<{ campaigns: number; oneshots: number; characters: number; errors: string[] } | null>(null)
   const [suspendReason, setSuspendReason] = useState('')
   const [newTier, setNewTier] = useState('')
   const [newRole, setNewRole] = useState<UserRole>('user')
@@ -285,6 +287,32 @@ export default function AdminUsersPage() {
       fetchUsers()
     } catch (error) {
       toast.error('Failed to update AI access')
+    }
+  }
+
+  const handleCloneUserData = async () => {
+    if (!selectedUser || !isSuperAdminUser) return
+
+    setActionLoading(true)
+    setCloneResults(null)
+
+    try {
+      const res = await fetch('/api/admin/clone-user-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceUserId: selectedUser.id }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) throw new Error(data.error || 'Failed to clone data')
+
+      setCloneResults(data.results)
+      toast.success('User data cloned to your account')
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to clone user data')
+    } finally {
+      setActionLoading(false)
     }
   }
 
@@ -552,6 +580,19 @@ export default function AdminUsersPage() {
                                 <Shield className="w-4 h-4" />
                                 Change Role
                               </button>
+
+                              {/* Clone User Data */}
+                              <button
+                                onClick={() => {
+                                  setSelectedUser(user)
+                                  setCloneResults(null)
+                                  setShowCloneModal(true)
+                                }}
+                                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left text-cyan-400 hover:bg-white/[0.04]"
+                              >
+                                <Copy className="w-4 h-4" />
+                                Clone Data to My Account
+                              </button>
                             </>
                           )}
                         </DropdownMenu>
@@ -680,6 +721,94 @@ export default function AdminUsersPage() {
               {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update Role'}
             </Button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Clone User Data Modal */}
+      <Modal
+        isOpen={showCloneModal}
+        onClose={() => {
+          setShowCloneModal(false)
+          setCloneResults(null)
+        }}
+        title="Clone User Data"
+      >
+        <div className="space-y-4">
+          {!cloneResults ? (
+            <>
+              <div className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-xl">
+                <p className="text-sm text-cyan-200">
+                  This will copy all campaigns, oneshots, and vault characters from this user to your account.
+                </p>
+                <p className="text-xs text-cyan-200/70 mt-2">
+                  Items will be named with "(from username)" suffix. Original data is not affected.
+                </p>
+              </div>
+
+              <div className="text-sm text-gray-400">
+                <p>User ID: <span className="text-white font-mono">{selectedUser?.id.slice(0, 8)}...</span></p>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowCloneModal(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <button
+                  onClick={handleCloneUserData}
+                  disabled={actionLoading}
+                  className="flex-1 py-2.5 rounded-xl bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 disabled:opacity-50 font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  {actionLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Cloning...
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      Clone Data
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
+                <p className="text-sm text-green-400 font-medium mb-2">Clone Complete</p>
+                <div className="text-sm text-green-200 space-y-1">
+                  <p>Campaigns: {cloneResults.campaigns}</p>
+                  <p>One-Shots: {cloneResults.oneshots}</p>
+                  <p>Vault Characters: {cloneResults.characters}</p>
+                </div>
+              </div>
+
+              {cloneResults.errors.length > 0 && (
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                  <p className="text-sm text-red-400 font-medium mb-2">Errors ({cloneResults.errors.length})</p>
+                  <div className="text-xs text-red-200 space-y-1 max-h-32 overflow-y-auto">
+                    {cloneResults.errors.map((err, i) => (
+                      <p key={i}>{err}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <Button
+                onClick={() => {
+                  setShowCloneModal(false)
+                  setCloneResults(null)
+                }}
+                className="w-full"
+              >
+                Done
+              </Button>
+            </>
+          )}
         </div>
       </Modal>
     </div>
