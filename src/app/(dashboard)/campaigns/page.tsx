@@ -83,6 +83,7 @@ export default function CampaignsPage() {
       .from('campaigns')
       .select('*')
       .eq('user_id', user!.id)
+      .is('deleted_at', null)
       .order('updated_at', { ascending: false })
 
     if (campaignsData) {

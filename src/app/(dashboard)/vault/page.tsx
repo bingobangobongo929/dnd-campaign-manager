@@ -125,6 +125,7 @@ export default function VaultPage() {
       .from('vault_characters')
       .select('*')
       .eq('user_id', user!.id)
+      .is('deleted_at', null)
       .order('updated_at', { ascending: false })
 
     setVaultCharacters(charactersData || [])

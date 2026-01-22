@@ -73,6 +73,7 @@ export default function HomePage() {
         .from('campaigns')
         .select('*')
         .eq('user_id', user.id)
+        .is('deleted_at', null)
         .or('content_mode.eq.active,content_mode.is.null')
         .order('updated_at', { ascending: false })
         .limit(6),
@@ -80,6 +81,7 @@ export default function HomePage() {
         .from('vault_characters')
         .select('*')
         .eq('user_id', user.id)
+        .is('deleted_at', null)
         .or('content_mode.eq.active,content_mode.is.null')
         .order('updated_at', { ascending: false })
         .limit(8),
@@ -87,6 +89,7 @@ export default function HomePage() {
         .from('oneshots')
         .select('*')
         .eq('user_id', user.id)
+        .is('deleted_at', null)
         .or('content_mode.eq.active,content_mode.is.null')
         .order('updated_at', { ascending: false })
         .limit(4),

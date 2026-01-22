@@ -62,6 +62,7 @@ export default function OneshotsPage() {
       .from('oneshots')
       .select('*')
       .eq('user_id', user!.id)
+      .is('deleted_at', null)
       .order('updated_at', { ascending: false })
 
     if (oneshotsData) {
