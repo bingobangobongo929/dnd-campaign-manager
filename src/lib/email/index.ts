@@ -16,6 +16,16 @@ function getResendClient(): Resend {
 const FROM_EMAIL = 'Multiloop <noreply@multiloop.app>'
 const SUPPORT_EMAIL = 'contact@multiloop.app'
 
+// Inline SVG icons as data URIs for email compatibility
+const EMAIL_ICONS = {
+  verify: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%238b5cf6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 11.08V12a10 10 0 1 1-5.93-9.14'/%3E%3Cpolyline points='22 4 12 14.01 9 11.01'/%3E%3C/svg%3E`,
+  lock: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2' ry='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E`,
+  invite: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%238b5cf6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='8.5' cy='7' r='4'/%3E%3Cline x1='20' y1='8' x2='20' y2='14'/%3E%3Cline x1='23' y1='11' x2='17' y2='11'/%3E%3C/svg%3E`,
+  shield: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/%3E%3Cpolyline points='9 12 11 14 15 10'/%3E%3C/svg%3E`,
+  shieldOff: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19.69 14a6.9 6.9 0 0 0 .31-2V5l-8-3-3.16 1.18'/%3E%3Cpath d='M4.73 4.73 4 5v7c0 6 8 10 8 10a20.29 20.29 0 0 0 5.62-4.38'/%3E%3Cline x1='1' y1='1' x2='23' y2='23'/%3E%3C/svg%3E`,
+  mail: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%238b5cf6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='4' width='20' height='16' rx='2'/%3E%3Cpath d='m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7'/%3E%3C/svg%3E`,
+}
+
 export interface SendEmailOptions {
   to: string
   subject: string
@@ -203,7 +213,7 @@ export function verificationEmail(verifyUrl: string): { subject: string; html: s
   const content = `
     <div style="text-align: center; margin-bottom: 24px;">
       <div style="display: inline-block; padding: 16px; background: rgba(139, 92, 246, 0.1); border-radius: 50%;">
-        <img src="https://multiloop.app/email/verify-icon.png" alt="" width="32" height="32" style="display: block;" onerror="this.style.display='none'">
+        <img src="${EMAIL_ICONS.verify}" alt="" width="32" height="32" style="display: block;">
       </div>
     </div>
 
@@ -243,7 +253,7 @@ export function passwordResetEmail(resetUrl: string): { subject: string; html: s
   const content = `
     <div style="text-align: center; margin-bottom: 24px;">
       <div style="display: inline-block; padding: 16px; background: rgba(239, 68, 68, 0.1); border-radius: 50%;">
-        <img src="https://multiloop.app/email/lock-icon.png" alt="" width="32" height="32" style="display: block;" onerror="this.style.display='none'">
+        <img src="${EMAIL_ICONS.lock}" alt="" width="32" height="32" style="display: block;">
       </div>
     </div>
 
@@ -285,7 +295,7 @@ export function inviteCodeEmail(code: string, inviterName?: string): { subject: 
   const content = `
     <div style="text-align: center; margin-bottom: 24px;">
       <div style="display: inline-block; padding: 16px; background: rgba(139, 92, 246, 0.1); border-radius: 50%;">
-        <img src="https://multiloop.app/email/invite-icon.png" alt="" width="32" height="32" style="display: block;" onerror="this.style.display='none'">
+        <img src="${EMAIL_ICONS.invite}" alt="" width="32" height="32" style="display: block;">
       </div>
     </div>
 
@@ -328,7 +338,7 @@ export function twoFactorEnabledEmail(): { subject: string; html: string } {
   const content = `
     <div style="text-align: center; margin-bottom: 24px;">
       <div style="display: inline-block; padding: 16px; background: rgba(34, 197, 94, 0.1); border-radius: 50%;">
-        <img src="https://multiloop.app/email/shield-icon.png" alt="" width="32" height="32" style="display: block;" onerror="this.style.display='none'">
+        <img src="${EMAIL_ICONS.shield}" alt="" width="32" height="32" style="display: block;">
       </div>
     </div>
 
@@ -369,7 +379,7 @@ export function twoFactorDisabledEmail(): { subject: string; html: string } {
   const content = `
     <div style="text-align: center; margin-bottom: 24px;">
       <div style="display: inline-block; padding: 16px; background: rgba(239, 68, 68, 0.1); border-radius: 50%;">
-        <img src="https://multiloop.app/email/shield-off-icon.png" alt="" width="32" height="32" style="display: block;" onerror="this.style.display='none'">
+        <img src="${EMAIL_ICONS.shieldOff}" alt="" width="32" height="32" style="display: block;">
       </div>
     </div>
 
@@ -439,7 +449,7 @@ export function waitlistConfirmationEmail(verifyUrl: string): { subject: string;
   const content = `
     <div style="text-align: center; margin-bottom: 24px;">
       <div style="display: inline-block; padding: 16px; background: rgba(139, 92, 246, 0.1); border-radius: 50%;">
-        <img src="https://multiloop.app/email/mail-icon.png" alt="" width="32" height="32" style="display: block;" onerror="this.style.display='none'">
+        <img src="${EMAIL_ICONS.mail}" alt="" width="32" height="32" style="display: block;">
       </div>
     </div>
 

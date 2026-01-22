@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, MoreVertical, Shield, Ban, UserX, Crown, Loader2, Check, X, Sparkles, Bot, Copy } from 'lucide-react'
+import { Search, MoreVertical, Shield, Ban, UserX, Crown, Loader2, Check, X, Sparkles, Bot, Copy, AtSign } from 'lucide-react'
 import { useSupabase, useUserSettings } from '@/hooks'
 import { Modal, Button } from '@/components/ui'
 import { DropdownMenu } from '@/components/ui/dropdown-menu'
@@ -21,6 +21,7 @@ interface UserWithSettings {
   email: string
   created_at: string
   settings: {
+    username: string | null
     tier: string
     role: UserRole
     is_founder: boolean
@@ -48,11 +49,14 @@ export default function AdminUsersPage() {
   const [showSuspendModal, setShowSuspendModal] = useState(false)
   const [showChangeTierModal, setShowChangeTierModal] = useState(false)
   const [showChangeRoleModal, setShowChangeRoleModal] = useState(false)
+  const [showChangeUsernameModal, setShowChangeUsernameModal] = useState(false)
   const [showCloneModal, setShowCloneModal] = useState(false)
   const [cloneResults, setCloneResults] = useState<{ campaigns: number; oneshots: number; characters: number; errors: string[] } | null>(null)
   const [suspendReason, setSuspendReason] = useState('')
   const [newTier, setNewTier] = useState('')
   const [newRole, setNewRole] = useState<UserRole>('user')
+  const [newUsername, setNewUsername] = useState('')
+  const [usernameError, setUsernameError] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
 
   const isSuperAdminUser = isSuperAdmin(currentUserSettings?.role || 'user')
@@ -77,6 +81,7 @@ export default function AdminUsersPage() {
         email: '', // We'll need to get this separately or store it in user_settings
         created_at: s.created_at,
         settings: {
+          username: s.username || null,
           tier: s.tier || 'adventurer',
           role: s.role,
           is_founder: s.is_founder || false,
@@ -227,6 +232,77 @@ export default function AdminUsersPage() {
     }
   }
 
+  const handleChangeUsername = async () => {
+    if (!selectedUser || !isSuperAdminUser) return
+
+    const trimmedUsername = newUsername.trim().toLowerCase()
+
+    // Validate username format
+    if (trimmedUsername && !/^[a-z0-9_]{3,20}$/.test(trimmedUsername)) {
+      setUsernameError('Username must be 3-20 characters, lowercase letters, numbers, and underscores only')
+      return
+    }
+
+    // Check reserved usernames
+    const reservedUsernames = [
+      'admin', 'administrator', 'mod', 'moderator', 'support', 'help',
+      'staff', 'team', 'multiloop', 'system', 'root', 'official',
+      'superadmin', 'super_admin', 'owner', 'founder', 'ceo',
+      'api', 'www', 'mail', 'ftp', 'test', 'dev', 'null', 'undefined',
+    ]
+
+    if (trimmedUsername && reservedUsernames.includes(trimmedUsername)) {
+      setUsernameError('This username is reserved and cannot be used')
+      return
+    }
+
+    setActionLoading(true)
+    setUsernameError('')
+
+    try {
+      const oldUsername = selectedUser.settings?.username
+
+      // Check if username is taken (if not clearing it)
+      if (trimmedUsername) {
+        const { data: existing } = await supabase
+          .from('user_settings')
+          .select('user_id')
+          .eq('username', trimmedUsername)
+          .neq('user_id', selectedUser.id)
+          .single()
+
+        if (existing) {
+          setUsernameError('This username is already taken')
+          setActionLoading(false)
+          return
+        }
+      }
+
+      const { error } = await supabase
+        .from('user_settings')
+        .update({ username: trimmedUsername || null })
+        .eq('user_id', selectedUser.id)
+
+      if (error) throw error
+
+      await supabase.from('admin_activity_log').insert({
+        admin_id: (await supabase.auth.getUser()).data.user?.id,
+        action: 'change_username',
+        target_user_id: selectedUser.id,
+        details: { old_username: oldUsername, new_username: trimmedUsername || null },
+      })
+
+      toast.success(trimmedUsername ? 'Username updated' : 'Username cleared')
+      setShowChangeUsernameModal(false)
+      setNewUsername('')
+      fetchUsers()
+    } catch (error) {
+      toast.error('Failed to change username')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   const handleToggleFounder = async (user: UserWithSettings) => {
     if (!isSuperAdminUser) return
 
@@ -320,7 +396,9 @@ export default function AdminUsersPage() {
   const filteredUsers = users.filter(user => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
-      if (!user.id.toLowerCase().includes(query)) {
+      const matchesId = user.id.toLowerCase().includes(query)
+      const matchesUsername = user.settings?.username?.toLowerCase().includes(query)
+      if (!matchesId && !matchesUsername) {
         return false
       }
     }
@@ -354,7 +432,7 @@ export default function AdminUsersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
           <input
             type="text"
-            placeholder="Search by user ID..."
+            placeholder="Search by username or user ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50"
@@ -402,6 +480,7 @@ export default function AdminUsersPage() {
             <thead>
               <tr className="border-b border-white/[0.06]">
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">User</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Username</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Tier</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Founder</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">AI</th>
@@ -415,7 +494,7 @@ export default function AdminUsersPage() {
             <tbody>
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-12 text-gray-500">
+                  <td colSpan={10} className="text-center py-12 text-gray-500">
                     No users found
                   </td>
                 </tr>
@@ -433,6 +512,15 @@ export default function AdminUsersPage() {
                             Joined {formatDate(user.created_at)}
                           </p>
                         </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        {user.settings?.username ? (
+                          <span className="text-sm text-purple-400 font-medium">
+                            @{user.settings.username}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-600 italic">Not set</span>
+                        )}
                       </td>
                       <td className="py-3 px-4">
                         <span className={cn("px-2 py-1 rounded text-xs font-medium", getTierBadgeColor(user.settings?.tier || 'adventurer'))}>
@@ -579,6 +667,20 @@ export default function AdminUsersPage() {
                               >
                                 <Shield className="w-4 h-4" />
                                 Change Role
+                              </button>
+
+                              {/* Change Username */}
+                              <button
+                                onClick={() => {
+                                  setSelectedUser(user)
+                                  setNewUsername(user.settings?.username || '')
+                                  setUsernameError('')
+                                  setShowChangeUsernameModal(true)
+                                }}
+                                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left text-green-400 hover:bg-white/[0.04]"
+                              >
+                                <AtSign className="w-4 h-4" />
+                                Change Username
                               </button>
 
                               {/* Clone User Data */}
@@ -809,6 +911,73 @@ export default function AdminUsersPage() {
               </Button>
             </>
           )}
+        </div>
+      </Modal>
+
+      {/* Change Username Modal */}
+      <Modal
+        isOpen={showChangeUsernameModal}
+        onClose={() => {
+          setShowChangeUsernameModal(false)
+          setNewUsername('')
+          setUsernameError('')
+        }}
+        title="Change Username"
+      >
+        <div className="space-y-4">
+          <div className="text-sm text-gray-400">
+            <p>User ID: <span className="text-white font-mono">{selectedUser?.id.slice(0, 8)}...</span></p>
+            <p className="mt-1">Current: {selectedUser?.settings?.username ? (
+              <span className="text-purple-400">@{selectedUser.settings.username}</span>
+            ) : (
+              <span className="text-gray-600 italic">Not set</span>
+            )}</p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-300">New Username</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">@</span>
+              <input
+                type="text"
+                value={newUsername}
+                onChange={(e) => {
+                  setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
+                  setUsernameError('')
+                }}
+                placeholder="username"
+                className="w-full pl-8 pr-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50"
+                maxLength={20}
+              />
+            </div>
+            <p className="text-xs text-gray-500">
+              3-20 characters, lowercase letters, numbers, and underscores only. Leave empty to clear.
+            </p>
+            {usernameError && (
+              <p className="text-xs text-red-400">{usernameError}</p>
+            )}
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowChangeUsernameModal(false)
+                setNewUsername('')
+                setUsernameError('')
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleChangeUsername}
+              disabled={actionLoading}
+              className="flex-1"
+            >
+              {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update Username'}
+            </Button>
+          </div>
         </div>
       </Modal>
     </div>

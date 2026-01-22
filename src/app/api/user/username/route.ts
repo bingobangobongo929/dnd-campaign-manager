@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// Reserved usernames that cannot be claimed by users
+const RESERVED_USERNAMES = [
+  'admin', 'administrator', 'mod', 'moderator', 'support', 'help',
+  'staff', 'team', 'multiloop', 'system', 'root', 'official',
+  'superadmin', 'super_admin', 'owner', 'founder', 'ceo',
+  'api', 'www', 'mail', 'ftp', 'test', 'dev', 'null', 'undefined',
+]
+
 // Validate username format
 function validateUsername(username: string): string | null {
   if (!username) return 'Username is required'
@@ -8,6 +16,7 @@ function validateUsername(username: string): string | null {
   if (username.length > 20) return 'Username must be 20 characters or less'
   if (!/^[a-zA-Z0-9_]+$/.test(username)) return 'Only letters, numbers, and underscores allowed'
   if (/^[0-9]/.test(username)) return 'Username cannot start with a number'
+  if (RESERVED_USERNAMES.includes(username.toLowerCase())) return 'This username is reserved'
   return null
 }
 

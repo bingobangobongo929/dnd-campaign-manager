@@ -17,11 +17,11 @@ export const CURRENCY_CONFIG: Record<Currency, { symbol: string; name: string; r
 // Recent item for quick navigation
 export interface RecentItem {
   id: string
-  type: 'campaign' | 'character' | 'oneshot' | 'session'
+  type: 'campaign' | 'character' | 'oneshot'
   name: string
   href: string
   imageUrl?: string | null
-  parentName?: string // Campaign name for sessions
+  subtitle?: string // e.g., race/class for characters, game system for campaigns
   visitedAt: number
 }
 
@@ -30,7 +30,7 @@ interface PersistedSettings {
   aiEnabled: boolean
   aiProvider: AIProvider
   currency: Currency
-  recentItems: RecentItem[]
+  // Note: recentItems is NOT persisted to localStorage - it's stored in the database per-user
 }
 
 interface AppState extends PersistedSettings {
@@ -100,10 +100,14 @@ interface AppState extends PersistedSettings {
   currency: Currency
   setCurrency: (currency: Currency) => void
 
-  // Recent Items
+  // Recent Items (stored in database, not localStorage)
   recentItems: RecentItem[]
-  trackRecentItem: (item: Omit<RecentItem, 'visitedAt'>) => void
-  clearRecentItems: () => void
+  recentItemsLoading: boolean
+  setRecentItems: (items: RecentItem[]) => void
+  setRecentItemsLoading: (loading: boolean) => void
+  trackRecentItem: (item: Omit<RecentItem, 'visitedAt'>) => Promise<void>
+  clearRecentItems: () => Promise<void>
+  fetchRecentItems: () => Promise<void>
 }
 
 export const useAppStore = create<AppState>()(
@@ -190,29 +194,89 @@ export const useAppStore = create<AppState>()(
       currency: 'GBP' as Currency,
       setCurrency: (currency) => set({ currency }),
 
-      // Recent Items (persisted)
+      // Recent Items (stored in database, synced via API)
       recentItems: [],
-      trackRecentItem: (item) =>
+      recentItemsLoading: false,
+      setRecentItems: (items) => set({ recentItems: items }),
+      setRecentItemsLoading: (loading) => set({ recentItemsLoading: loading }),
+
+      trackRecentItem: async (item) => {
+        const now = Date.now()
+
+        // Optimistically update local state
         set((state) => {
           const MAX_RECENT_ITEMS = 10
-          const now = Date.now()
-          // Remove existing entry for same item if present
           const filtered = state.recentItems.filter((r) => r.id !== item.id || r.type !== item.type)
-          // Add new item at the front
           const newItems = [{ ...item, visitedAt: now }, ...filtered].slice(0, MAX_RECENT_ITEMS)
           return { recentItems: newItems }
-        }),
-      clearRecentItems: () => set({ recentItems: [] }),
+        })
+
+        // Sync to database (fire and forget, don't block UI)
+        try {
+          await fetch('/api/recent-items', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              itemType: item.type,
+              itemId: item.id,
+              itemName: item.name,
+              itemSubtitle: item.subtitle,
+              itemImageUrl: item.imageUrl,
+            }),
+          })
+        } catch (error) {
+          console.error('Failed to sync recent item:', error)
+        }
+      },
+
+      clearRecentItems: async () => {
+        // Clear local state immediately
+        set({ recentItems: [] })
+
+        // Sync to database
+        try {
+          await fetch('/api/recent-items', { method: 'DELETE' })
+        } catch (error) {
+          console.error('Failed to clear recent items:', error)
+        }
+      },
+
+      fetchRecentItems: async () => {
+        set({ recentItemsLoading: true })
+        try {
+          const res = await fetch('/api/recent-items')
+          if (res.ok) {
+            const data = await res.json()
+            const items: RecentItem[] = (data.items || []).map((item: any) => ({
+              id: item.item_id,
+              type: item.item_type,
+              name: item.item_name,
+              href: item.item_type === 'campaign'
+                ? `/campaigns/${item.item_id}/canvas`
+                : item.item_type === 'oneshot'
+                ? `/oneshots/${item.item_id}`
+                : `/vault/${item.item_id}`,
+              imageUrl: item.item_image_url,
+              subtitle: item.item_subtitle,
+              visitedAt: new Date(item.accessed_at).getTime(),
+            }))
+            set({ recentItems: items })
+          }
+        } catch (error) {
+          console.error('Failed to fetch recent items:', error)
+        } finally {
+          set({ recentItemsLoading: false })
+        }
+      },
     }),
     {
       name: 'dnd-campaign-manager-settings',
       storage: createJSONStorage(() => localStorage),
-      // Persist AI settings, currency, and recent items
+      // Persist AI settings and currency only - recent items are stored in database
       partialize: (state) => ({
         aiEnabled: state.aiEnabled,
         aiProvider: state.aiProvider,
         currency: state.currency,
-        recentItems: state.recentItems,
       }),
     }
   )

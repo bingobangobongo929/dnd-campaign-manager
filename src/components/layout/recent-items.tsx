@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Clock, Swords, BookOpen, Scroll, ScrollText, ChevronRight } from 'lucide-react'
+import { Clock, Swords, BookOpen, Scroll, ChevronRight, Loader2 } from 'lucide-react'
 import { useAppStore, type RecentItem } from '@/store'
 import Image from 'next/image'
 
@@ -10,21 +10,18 @@ const TYPE_ICONS = {
   campaign: Swords,
   character: BookOpen,
   oneshot: Scroll,
-  session: ScrollText,
 }
 
 const TYPE_LABELS = {
   campaign: 'Campaign',
   character: 'Character',
   oneshot: 'One-Shot',
-  session: 'Session',
 }
 
 const TYPE_COLORS = {
   campaign: 'text-blue-400 bg-blue-500/15',
   character: 'text-purple-400 bg-purple-500/15',
   oneshot: 'text-amber-400 bg-amber-500/15',
-  session: 'text-emerald-400 bg-emerald-500/15',
 }
 
 function getInitials(name: string): string {
@@ -53,9 +50,18 @@ function formatTimeAgo(timestamp: number): string {
 
 export function RecentItems() {
   const router = useRouter()
-  const { recentItems } = useAppStore()
+  const { recentItems, recentItemsLoading, fetchRecentItems } = useAppStore()
   const [isOpen, setIsOpen] = useState(false)
+  const [hasFetched, setHasFetched] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Fetch recent items from database on mount
+  useEffect(() => {
+    if (!hasFetched) {
+      fetchRecentItems()
+      setHasFetched(true)
+    }
+  }, [fetchRecentItems, hasFetched])
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -73,7 +79,12 @@ export function RecentItems() {
     router.push(item.href)
   }
 
-  if (recentItems.length === 0) {
+  // Don't show if loading and no items, or if no items after loading
+  if (recentItemsLoading && recentItems.length === 0) {
+    return null
+  }
+
+  if (!recentItemsLoading && recentItems.length === 0) {
     return null
   }
 
@@ -95,59 +106,62 @@ export function RecentItems() {
           </div>
 
           <div className="max-h-96 overflow-y-auto">
-            {recentItems.map((item) => {
-              const Icon = TYPE_ICONS[item.type]
-              return (
-                <button
-                  key={`${item.type}-${item.id}`}
-                  onClick={() => handleItemClick(item)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors text-left group"
-                >
-                  {/* Image/Icon */}
-                  <div className="flex-shrink-0">
-                    {item.imageUrl ? (
-                      <Image
-                        src={item.imageUrl}
-                        alt={item.name}
-                        width={36}
-                        height={36}
-                        className="w-9 h-9 rounded-lg object-cover"
-                      />
-                    ) : (
-                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${TYPE_COLORS[item.type]}`}>
-                        {item.type === 'character' ? (
-                          <span className="text-xs font-bold">{getInitials(item.name)}</span>
-                        ) : (
-                          <Icon className="w-4 h-4" />
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{item.name}</p>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <span className={`px-1.5 py-0.5 rounded ${TYPE_COLORS[item.type]}`}>
-                        {TYPE_LABELS[item.type]}
-                      </span>
-                      {item.parentName && (
-                        <>
-                          <span>in</span>
-                          <span className="truncate">{item.parentName}</span>
-                        </>
+            {recentItemsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+              </div>
+            ) : (
+              recentItems.map((item) => {
+                const Icon = TYPE_ICONS[item.type]
+                return (
+                  <button
+                    key={`${item.type}-${item.id}`}
+                    onClick={() => handleItemClick(item)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors text-left group"
+                  >
+                    {/* Image/Icon */}
+                    <div className="flex-shrink-0">
+                      {item.imageUrl ? (
+                        <Image
+                          src={item.imageUrl}
+                          alt={item.name}
+                          width={36}
+                          height={36}
+                          className="w-9 h-9 rounded-lg object-cover"
+                        />
+                      ) : (
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${TYPE_COLORS[item.type]}`}>
+                          {item.type === 'character' ? (
+                            <span className="text-xs font-bold">{getInitials(item.name)}</span>
+                          ) : (
+                            <Icon className="w-4 h-4" />
+                          )}
+                        </div>
                       )}
                     </div>
-                  </div>
 
-                  {/* Time & Arrow */}
-                  <div className="flex items-center gap-2 text-gray-500">
-                    <span className="text-xs">{formatTimeAgo(item.visitedAt)}</span>
-                    <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                </button>
-              )
-            })}
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-white truncate">{item.name}</p>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <span className={`px-1.5 py-0.5 rounded ${TYPE_COLORS[item.type]}`}>
+                          {TYPE_LABELS[item.type]}
+                        </span>
+                        {item.subtitle && (
+                          <span className="truncate">{item.subtitle}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Time & Arrow */}
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <span className="text-xs">{formatTimeAgo(item.visitedAt)}</span>
+                      <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </button>
+                )
+              })
+            )}
           </div>
         </div>
       )}

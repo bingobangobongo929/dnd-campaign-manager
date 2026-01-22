@@ -188,12 +188,13 @@ export function LandingPage() {
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-            Track Campaigns.{' '}
-            <span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
+            <span className="whitespace-nowrap">Track Campaigns.</span>{' '}
+            <span className="whitespace-nowrap bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
               Build Characters.
             </span>
-            <br />
-            Chronicle Your Epic Journeys.
+            <br className="hidden sm:block" />
+            <span className="sm:hidden"> </span>
+            <span className="whitespace-nowrap">Chronicle Your Epic Journeys.</span>
           </h1>
 
           <p className="text-lg sm:text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
