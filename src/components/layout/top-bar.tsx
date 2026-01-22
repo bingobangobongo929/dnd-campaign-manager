@@ -252,7 +252,7 @@ export function TopBar({
 
             {showCampaignDropdown && (
               <div
-                className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-72 bg-[--bg-surface] border border-[--border] rounded-xl shadow-xl overflow-hidden animate-scale-in z-50"
+                className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-72 bg-[#12121a] border border-[--border] rounded-xl shadow-2xl overflow-hidden animate-scale-in z-50"
               >
                 <div className="p-2 border-b border-[--border]">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-[--text-tertiary] px-2">Switch Campaign</span>
@@ -321,7 +321,7 @@ export function TopBar({
 
             {showCharacterDropdown && (
               <div
-                className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-72 bg-[--bg-surface] border border-[--border] rounded-xl shadow-xl overflow-hidden animate-scale-in z-50"
+                className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-72 bg-[#12121a] border border-[--border] rounded-xl shadow-2xl overflow-hidden animate-scale-in z-50"
               >
                 <div className="p-2 border-b border-[--border]">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-[--text-tertiary] px-2">Switch Character</span>

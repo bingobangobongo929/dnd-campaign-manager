@@ -763,7 +763,7 @@ export function CharacterModal({
                           <ChevronDown className="w-4 h-4 text-[--text-tertiary]" />
                         </button>
                         {statusDropdownOpen && (
-                          <div className="absolute top-full left-0 right-0 mt-1 bg-[--bg-surface] border border-white/[0.08] rounded-lg shadow-xl z-50 py-1">
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-[#12121a] border border-white/[0.08] rounded-lg shadow-2xl z-50 py-1">
                             {STATUS_OPTIONS.map(s => (
                               <button
                                 key={s.value}
@@ -952,7 +952,7 @@ export function CharacterModal({
                             <ChevronDown className="w-4 h-4 text-[--text-tertiary]" />
                           </button>
                           {statusDropdownOpen && (
-                            <div className="absolute top-full left-0 right-0 mt-1 bg-[--bg-surface] border border-white/[0.08] rounded-lg shadow-xl z-50 py-1">
+                            <div className="absolute top-full left-0 right-0 mt-1 bg-[#12121a] border border-white/[0.08] rounded-lg shadow-2xl z-50 py-1">
                               {STATUS_OPTIONS.map(s => (
                                 <button
                                   key={s.value}

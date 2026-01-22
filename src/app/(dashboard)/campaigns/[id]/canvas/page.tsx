@@ -601,7 +601,7 @@ export default function CampaignCanvasPage() {
           )}
         </button>
         {connectionDropdownOpen && (
-          <div className="absolute top-full right-0 mt-1 w-48 bg-[--bg-surface] border border-[--border] rounded-lg shadow-xl z-50 py-1">
+          <div className="absolute top-full right-0 mt-1 w-48 bg-[#12121a] border border-[--border] rounded-lg shadow-2xl z-50 py-1">
             {/* Toggle on/off */}
             <button
               className={cn(

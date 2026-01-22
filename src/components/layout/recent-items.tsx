@@ -100,7 +100,7 @@ export function RecentItems() {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full right-0 mt-2 w-80 bg-[--bg-surface] border border-[--border] rounded-xl shadow-xl overflow-hidden animate-scale-in z-50">
+        <div className="absolute top-full right-0 mt-2 w-80 bg-[#12121a] border border-[--border] rounded-xl shadow-2xl overflow-hidden animate-scale-in z-50">
           <div className="p-3 border-b border-white/[0.06]">
             <h3 className="text-sm font-medium text-white">Recently Visited</h3>
           </div>
