@@ -5,6 +5,7 @@ import { X, Trash2, Plus, User, Users, Maximize2, Minimize2, Sparkles, Eye, EyeO
 import { Input, Dropdown, Modal } from '@/components/ui'
 import { TagBadge } from '@/components/ui'
 import { CharacterImageUpload } from './character-image-upload'
+import { RelationshipEditor } from './RelationshipEditor'
 import { RichTextEditor } from '@/components/editor/rich-text-editor'
 import { useSupabase } from '@/hooks'
 import { useAutoSave } from '@/hooks'
@@ -822,6 +823,18 @@ export function CharacterModal({
                       Add Tag
                     </button>
                   </div>
+
+                  {/* Smart Relationships */}
+                  {!isCreateMode && character && (
+                    <div className="pt-4 border-t border-[--border]">
+                      <RelationshipEditor
+                        character={character}
+                        campaignId={campaignId}
+                        allCharacters={allCharacters}
+                        onRelationshipsChange={onTagsChange}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Center Column: Main Content */}

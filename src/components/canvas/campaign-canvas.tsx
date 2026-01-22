@@ -20,10 +20,11 @@ import {
 import '@xyflow/react/dist/style.css'
 import { CharacterNode, CharacterNodeData, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT } from './character-node'
 import { GroupNode, GroupNodeData } from './group-node'
+import { generateConnectionEdges, type ConnectionLineData } from './connection-edges'
 import { useAppStore } from '@/store'
 import { useSupabase } from '@/hooks'
 import { useDebouncedCallback } from 'use-debounce'
-import type { Character, Tag, CharacterTag, CanvasGroup } from '@/types/database'
+import type { Character, Tag, CharacterTag, CanvasGroup, CanvasRelationship, RelationshipTemplate, RelationshipCategory } from '@/types/database'
 
 const SNAP_THRESHOLD = 10 // pixels
 const SNAP_GRID = 20
@@ -36,6 +37,10 @@ interface CampaignCanvasProps {
   initialCharacterSizes?: Record<string, { width?: number; height?: number }>
   // External size overrides from resize toolbar - highest priority
   characterSizeOverrides?: Map<string, { width: number; height: number }>
+  // Connection lines
+  relationships?: (CanvasRelationship & { template?: RelationshipTemplate | null })[]
+  showConnections?: boolean
+  connectionFilter?: RelationshipCategory | null
   onCharacterPreview: (id: string) => void
   onCharacterEdit: (id: string) => void
   onCharacterPositionChange: (id: string, x: number, y: number) => void
@@ -62,6 +67,9 @@ function CampaignCanvasInner({
   groups,
   initialCharacterSizes,
   characterSizeOverrides,
+  relationships,
+  showConnections,
+  connectionFilter,
   onCharacterPreview,
   onCharacterEdit,
   onCharacterPositionChange,
@@ -142,7 +150,21 @@ function CampaignCanvasInner({
 
   // Initialize nodes
   const [nodes, setNodes] = useNodesState(createNodes())
-  const [edges, setEdges] = useEdgesState([])
+  const [edges, setEdges] = useEdgesState<Edge>([])
+
+  // Update edges when showConnections or relationships change
+  useEffect(() => {
+    if (showConnections && relationships && relationships.length > 0) {
+      const connectionEdges = generateConnectionEdges({
+        relationships,
+        filterCategory: connectionFilter || null,
+        highlightCharacterId: selectedCharacterId || null,
+      })
+      setEdges(connectionEdges)
+    } else {
+      setEdges([])
+    }
+  }, [showConnections, relationships, connectionFilter, selectedCharacterId, setEdges])
 
   // Update nodes when data changes
   useEffect(() => {

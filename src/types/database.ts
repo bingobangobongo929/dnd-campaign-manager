@@ -210,7 +210,11 @@ export interface Database {
           icon: string | null
           tag_type: 'categorical' | 'relational'
           category: 'general' | 'faction' | 'relationship'
+          description: string | null
+          is_archived: boolean
+          display_order: number
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
@@ -220,7 +224,11 @@ export interface Database {
           icon?: string | null
           tag_type?: 'categorical' | 'relational'
           category?: 'general' | 'faction' | 'relationship'
+          description?: string | null
+          is_archived?: boolean
+          display_order?: number
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -230,7 +238,11 @@ export interface Database {
           icon?: string | null
           tag_type?: 'categorical' | 'relational'
           category?: 'general' | 'faction' | 'relationship'
+          description?: string | null
+          is_archived?: boolean
+          display_order?: number
           created_at?: string
+          updated_at?: string
         }
       }
       character_tags: {
@@ -2338,6 +2350,244 @@ export interface Database {
           updated_at?: string
         }
       }
+      // =====================================================
+      // CAMPAIGN TAGS & RELATIONSHIPS SYSTEM
+      // =====================================================
+      relationship_templates: {
+        Row: {
+          id: string
+          campaign_id: string | null
+          name: string
+          inverse_name: string | null
+          relationship_mode: 'symmetric' | 'asymmetric' | 'one_way'
+          color: string
+          icon: string | null
+          inverse_icon: string | null
+          description: string | null
+          category: 'family' | 'professional' | 'romantic' | 'conflict' | 'social' | 'other'
+          is_system: boolean
+          display_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          campaign_id?: string | null
+          name: string
+          inverse_name?: string | null
+          relationship_mode?: 'symmetric' | 'asymmetric' | 'one_way'
+          color?: string
+          icon?: string | null
+          inverse_icon?: string | null
+          description?: string | null
+          category?: 'family' | 'professional' | 'romantic' | 'conflict' | 'social' | 'other'
+          is_system?: boolean
+          display_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          campaign_id?: string | null
+          name?: string
+          inverse_name?: string | null
+          relationship_mode?: 'symmetric' | 'asymmetric' | 'one_way'
+          color?: string
+          icon?: string | null
+          inverse_icon?: string | null
+          description?: string | null
+          category?: 'family' | 'professional' | 'romantic' | 'conflict' | 'social' | 'other'
+          is_system?: boolean
+          display_order?: number
+          created_at?: string
+        }
+      }
+      campaign_factions: {
+        Row: {
+          id: string
+          campaign_id: string
+          name: string
+          description: string | null
+          color: string
+          icon: string
+          image_url: string | null
+          parent_faction_id: string | null
+          faction_type: 'guild' | 'kingdom' | 'cult' | 'family' | 'military' | 'criminal' | 'religious' | 'merchant' | 'academic' | 'other'
+          alignment: string | null
+          status: 'active' | 'disbanded' | 'secret' | 'destroyed'
+          headquarters: string | null
+          is_known_to_party: boolean
+          notes: string | null
+          display_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          campaign_id: string
+          name: string
+          description?: string | null
+          color?: string
+          icon?: string
+          image_url?: string | null
+          parent_faction_id?: string | null
+          faction_type?: 'guild' | 'kingdom' | 'cult' | 'family' | 'military' | 'criminal' | 'religious' | 'merchant' | 'academic' | 'other'
+          alignment?: string | null
+          status?: 'active' | 'disbanded' | 'secret' | 'destroyed'
+          headquarters?: string | null
+          is_known_to_party?: boolean
+          notes?: string | null
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          campaign_id?: string
+          name?: string
+          description?: string | null
+          color?: string
+          icon?: string
+          image_url?: string | null
+          parent_faction_id?: string | null
+          faction_type?: 'guild' | 'kingdom' | 'cult' | 'family' | 'military' | 'criminal' | 'religious' | 'merchant' | 'academic' | 'other'
+          alignment?: string | null
+          status?: 'active' | 'disbanded' | 'secret' | 'destroyed'
+          headquarters?: string | null
+          is_known_to_party?: boolean
+          notes?: string | null
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      faction_memberships: {
+        Row: {
+          id: string
+          faction_id: string
+          character_id: string
+          role: string | null
+          title: string | null
+          rank: number
+          joined_date: string | null
+          left_date: string | null
+          is_public: boolean
+          is_active: boolean
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          faction_id: string
+          character_id: string
+          role?: string | null
+          title?: string | null
+          rank?: number
+          joined_date?: string | null
+          left_date?: string | null
+          is_public?: boolean
+          is_active?: boolean
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          faction_id?: string
+          character_id?: string
+          role?: string | null
+          title?: string | null
+          rank?: number
+          joined_date?: string | null
+          left_date?: string | null
+          is_public?: boolean
+          is_active?: boolean
+          notes?: string | null
+          created_at?: string
+        }
+      }
+      faction_relations: {
+        Row: {
+          id: string
+          faction_id: string
+          related_faction_id: string
+          relation_type: 'allied' | 'friendly' | 'neutral' | 'rival' | 'hostile' | 'war' | 'subsidiary' | 'parent'
+          description: string | null
+          is_public: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          faction_id: string
+          related_faction_id: string
+          relation_type?: 'allied' | 'friendly' | 'neutral' | 'rival' | 'hostile' | 'war' | 'subsidiary' | 'parent'
+          description?: string | null
+          is_public?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          faction_id?: string
+          related_faction_id?: string
+          relation_type?: 'allied' | 'friendly' | 'neutral' | 'rival' | 'hostile' | 'war' | 'subsidiary' | 'parent'
+          description?: string | null
+          is_public?: boolean
+          created_at?: string
+        }
+      }
+      canvas_relationships: {
+        Row: {
+          id: string
+          campaign_id: string
+          from_character_id: string
+          to_character_id: string
+          template_id: string | null
+          custom_label: string | null
+          pair_id: string | null
+          is_primary: boolean
+          description: string | null
+          started_date: string | null
+          ended_date: string | null
+          status: 'active' | 'ended' | 'complicated' | 'secret'
+          is_known_to_party: boolean
+          display_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          campaign_id: string
+          from_character_id: string
+          to_character_id: string
+          template_id?: string | null
+          custom_label?: string | null
+          pair_id?: string | null
+          is_primary?: boolean
+          description?: string | null
+          started_date?: string | null
+          ended_date?: string | null
+          status?: 'active' | 'ended' | 'complicated' | 'secret'
+          is_known_to_party?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          campaign_id?: string
+          from_character_id?: string
+          to_character_id?: string
+          template_id?: string | null
+          custom_label?: string | null
+          pair_id?: string | null
+          is_primary?: boolean
+          description?: string | null
+          started_date?: string | null
+          ended_date?: string | null
+          status?: 'active' | 'ended' | 'complicated' | 'secret'
+          is_known_to_party?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }
@@ -2466,4 +2716,52 @@ export type OneshotInactiveReason = 'completed' | 'archived'
 // Content save with snapshot data for display
 export type ContentSaveWithSnapshot = ContentSave & {
   snapshot?: TemplateSnapshot
+}
+
+// Campaign Tags & Relationships System types
+export type RelationshipTemplate = Database['public']['Tables']['relationship_templates']['Row']
+export type CampaignFaction = Database['public']['Tables']['campaign_factions']['Row']
+export type FactionMembership = Database['public']['Tables']['faction_memberships']['Row']
+export type FactionRelation = Database['public']['Tables']['faction_relations']['Row']
+export type CanvasRelationship = Database['public']['Tables']['canvas_relationships']['Row']
+
+// Relationship mode type
+export type RelationshipMode = 'symmetric' | 'asymmetric' | 'one_way'
+
+// Relationship category type
+export type RelationshipCategory = 'family' | 'professional' | 'romantic' | 'conflict' | 'social' | 'other'
+
+// Faction type
+export type FactionType = 'guild' | 'kingdom' | 'cult' | 'family' | 'military' | 'criminal' | 'religious' | 'merchant' | 'academic' | 'other'
+
+// Faction status
+export type FactionStatus = 'active' | 'disbanded' | 'secret' | 'destroyed'
+
+// Faction relation type
+export type FactionRelationType = 'allied' | 'friendly' | 'neutral' | 'rival' | 'hostile' | 'war' | 'subsidiary' | 'parent'
+
+// Canvas relationship status
+export type CanvasRelationshipStatus = 'active' | 'ended' | 'complicated' | 'secret'
+
+// Extended types with relations
+export type CampaignFactionWithMembers = CampaignFaction & {
+  memberships: (FactionMembership & { character: Character })[]
+  parent_faction?: CampaignFaction | null
+  child_factions: CampaignFaction[]
+  relations: (FactionRelation & { related_faction: CampaignFaction })[]
+}
+
+export type CanvasRelationshipWithDetails = CanvasRelationship & {
+  template?: RelationshipTemplate | null
+  from_character: Character
+  to_character: Character
+}
+
+export type CharacterWithFactions = Character & {
+  faction_memberships: (FactionMembership & { faction: CampaignFaction })[]
+}
+
+export type CharacterWithRelationships = Character & {
+  outgoing_relationships: CanvasRelationshipWithDetails[]
+  incoming_relationships: CanvasRelationshipWithDetails[]
 }

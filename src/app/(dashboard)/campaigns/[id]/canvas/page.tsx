@@ -3,10 +3,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
-import { Plus, FolderPlus, Scaling, Trash2, Brain, Share2, ChevronRight, Users, Sparkles, ChevronDown, Loader2 } from 'lucide-react'
+import { Plus, FolderPlus, Scaling, Trash2, Brain, Share2, ChevronRight, Users, Sparkles, ChevronDown, Loader2, Tags, Shield, Link2, ChevronUp } from 'lucide-react'
 import { Modal, Input, ColorPicker, IconPicker, getGroupIcon } from '@/components/ui'
-import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT } from '@/components/canvas'
+import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT, CONNECTION_FILTER_OPTIONS } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
+import { TagManager, FactionManager } from '@/components/campaign'
 import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 import { TemplateStateBadge } from '@/components/templates/TemplateStateBadge'
 import { TemplateOnboardingModal } from '@/components/templates/TemplateOnboardingModal'
@@ -16,7 +17,7 @@ import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { CampaignCanvasPageMobile } from './page.mobile'
 import { useAppStore, useCanUseAI } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
-import type { Campaign, Character, Tag, CharacterTag, CanvasGroup } from '@/types/database'
+import type { Campaign, Character, Tag, CharacterTag, CanvasGroup, CanvasRelationship, RelationshipTemplate, RelationshipCategory } from '@/types/database'
 
 // Type for undo history
 interface UndoAction {
@@ -63,6 +64,14 @@ export default function CampaignCanvasPage() {
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false)
   const [isResizeToolbarOpen, setIsResizeToolbarOpen] = useState(false)
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+  const [isTagManagerOpen, setIsTagManagerOpen] = useState(false)
+  const [isFactionManagerOpen, setIsFactionManagerOpen] = useState(false)
+
+  // Connection lines state
+  const [showConnections, setShowConnections] = useState(false)
+  const [connectionFilter, setConnectionFilter] = useState<RelationshipCategory | null>(null)
+  const [connectionDropdownOpen, setConnectionDropdownOpen] = useState(false)
+  const [relationships, setRelationships] = useState<(CanvasRelationship & { template?: RelationshipTemplate | null })[]>([])
   const [viewingCharacterId, setViewingCharacterId] = useState<string | null>(null)
   const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null)
   const [groupForm, setGroupForm] = useState({ name: '', color: '#8B5CF6', icon: 'users' })
@@ -157,6 +166,17 @@ export default function CampaignCanvasPage() {
       .eq('campaign_id', campaignId)
 
     setGroups(groupsData || [])
+
+    // Load relationships with templates
+    const { data: relationshipsData } = await supabase
+      .from('canvas_relationships')
+      .select(`
+        *,
+        template:relationship_templates(*)
+      `)
+      .eq('campaign_id', campaignId)
+
+    setRelationships((relationshipsData || []) as (CanvasRelationship & { template?: RelationshipTemplate | null })[])
 
     setLoading(false)
     setHasLoadedOnce(true)
@@ -562,6 +582,94 @@ export default function CampaignCanvasPage() {
           <span className="hidden sm:inline ml-1.5">Intelligence</span>
         </button>
       )}
+      {/* Connection Lines Toggle */}
+      <div className="relative">
+        <button
+          className={cn(
+            "btn btn-sm flex items-center gap-1.5",
+            showConnections ? "btn-primary" : "btn-secondary"
+          )}
+          onClick={() => setConnectionDropdownOpen(!connectionDropdownOpen)}
+          title="Show relationship connections"
+        >
+          <Link2 className="w-4 h-4" />
+          <span className="hidden sm:inline">Connections</span>
+          {connectionDropdownOpen ? (
+            <ChevronUp className="w-3 h-3" />
+          ) : (
+            <ChevronDown className="w-3 h-3" />
+          )}
+        </button>
+        {connectionDropdownOpen && (
+          <div className="absolute top-full right-0 mt-1 w-48 bg-[--bg-surface] border border-[--border] rounded-lg shadow-xl z-50 py-1">
+            {/* Toggle on/off */}
+            <button
+              className={cn(
+                "w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-white/[0.05]",
+                showConnections ? "text-purple-400" : "text-[--text-secondary]"
+              )}
+              onClick={() => {
+                setShowConnections(!showConnections)
+                if (showConnections) {
+                  setConnectionDropdownOpen(false)
+                }
+              }}
+            >
+              <Link2 className="w-4 h-4" />
+              {showConnections ? "Hide Connections" : "Show Connections"}
+            </button>
+
+            {showConnections && (
+              <>
+                <div className="border-t border-[--border] my-1" />
+                <div className="px-3 py-1.5 text-xs text-[--text-muted] uppercase tracking-wider">
+                  Filter by Category
+                </div>
+                {CONNECTION_FILTER_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    className={cn(
+                      "w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-white/[0.05]",
+                      (option.value === 'all' ? connectionFilter === null : connectionFilter === option.value)
+                        ? "text-white"
+                        : "text-[--text-secondary]"
+                    )}
+                    onClick={() => {
+                      setConnectionFilter(option.value === 'all' ? null : option.value as RelationshipCategory)
+                      setConnectionDropdownOpen(false)
+                    }}
+                  >
+                    <span
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: option.color }}
+                    />
+                    {option.label}
+                    {(option.value === 'all' ? connectionFilter === null : connectionFilter === option.value) && (
+                      <span className="ml-auto text-purple-400">✓</span>
+                    )}
+                  </button>
+                ))}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+      <button
+        className="btn btn-secondary btn-sm"
+        onClick={() => setIsTagManagerOpen(true)}
+        title="Manage Tags"
+      >
+        <Tags className="w-4 h-4" />
+        <span className="hidden sm:inline ml-1.5">Tags</span>
+      </button>
+      <button
+        className="btn btn-secondary btn-sm"
+        onClick={() => setIsFactionManagerOpen(true)}
+        title="Manage Factions"
+      >
+        <Shield className="w-4 h-4" />
+        <span className="hidden sm:inline ml-1.5">Factions</span>
+      </button>
       <button
         className="btn btn-secondary btn-sm"
         onClick={() => setIsResizeToolbarOpen(true)}
@@ -656,6 +764,9 @@ export default function CampaignCanvasPage() {
           characterTags={characterTags}
           groups={groups}
           characterSizeOverrides={characterSizeOverrides}
+          relationships={relationships}
+          showConnections={showConnections}
+          connectionFilter={connectionFilter}
           onCharacterPreview={handleCharacterPreview}
           onCharacterEdit={handleCharacterEdit}
           onCharacterPositionChange={handleCharacterPositionChange}
@@ -945,6 +1056,23 @@ export default function CampaignCanvasPage() {
           onTemplateCreated={handlePublished}
         />
       )}
+
+      {/* Tag Manager Modal */}
+      <TagManager
+        campaignId={campaignId}
+        isOpen={isTagManagerOpen}
+        onClose={() => setIsTagManagerOpen(false)}
+        onTagsChange={loadCampaignData}
+      />
+
+      {/* Faction Manager Modal */}
+      <FactionManager
+        campaignId={campaignId}
+        characters={characters}
+        isOpen={isFactionManagerOpen}
+        onClose={() => setIsFactionManagerOpen(false)}
+        onFactionsChange={loadCampaignData}
+      />
 
       {/* Template Onboarding Modal */}
       {campaign && (
