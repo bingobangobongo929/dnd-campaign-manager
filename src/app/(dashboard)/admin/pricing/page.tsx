@@ -147,7 +147,7 @@ export default function AdminPricingPage() {
       <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
         {tiers.map((tier) => {
           const Icon = tier.icon
-          const colorClasses = {
+          const colorMap = {
             emerald: {
               bg: 'bg-emerald-500/10',
               border: 'border-emerald-500/20',
@@ -166,7 +166,8 @@ export default function AdminPricingPage() {
               text: 'text-amber-400',
               button: 'bg-amber-600 hover:bg-amber-500',
             },
-          }[tier.color]
+          }
+          const colorClasses = colorMap[tier.color as keyof typeof colorMap]
 
           return (
             <div

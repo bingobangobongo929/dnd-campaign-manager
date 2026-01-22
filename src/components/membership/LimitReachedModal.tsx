@@ -1,8 +1,7 @@
 'use client'
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { AlertCircle, Trash2, Archive } from 'lucide-react'
+import { Modal } from '@/components/ui'
+import { AlertCircle, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { LimitType } from '@/lib/membership'
 
@@ -86,38 +85,42 @@ export function LimitReachedModal({
   const info = limitInfo[limitType]
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={info.title}
+      size="sm"
+    >
+      <div className="space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="p-2 rounded-lg bg-amber-500/10">
             <AlertCircle className="w-5 h-5 text-amber-500" />
-            {info.title}
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4 py-4">
-          <p className="text-muted-foreground">{info.description}</p>
-
-          <div className="flex items-center justify-center p-4 bg-muted rounded-lg">
-            <div className="text-center">
-              <div className="text-3xl font-bold">
-                {current} / {limit}
-              </div>
-              <div className="text-sm text-muted-foreground">Currently used</div>
-            </div>
           </div>
+          <p className="text-gray-400 pt-1">{info.description}</p>
+        </div>
 
-          <div className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-            <Trash2 className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-blue-200">{info.tip}</p>
+        <div className="flex items-center justify-center p-4 bg-white/[0.04] rounded-lg">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-white">
+              {current} / {limit}
+            </div>
+            <div className="text-sm text-gray-500">Currently used</div>
           </div>
         </div>
 
-        <div className="flex gap-2 justify-end">
-          <Button variant="outline" onClick={onClose}>
+        <div className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+          <Trash2 className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-blue-200">{info.tip}</p>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"
+          >
             Cancel
-          </Button>
-          <Button
+          </button>
+          <button
             onClick={() => {
               onClose()
               if (onManage) {
@@ -126,12 +129,13 @@ export function LimitReachedModal({
                 window.location.href = info.managePath
               }
             }}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg transition-colors"
           >
             {info.manageLabel}
-          </Button>
+          </button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </Modal>
   )
 }
 
@@ -174,7 +178,7 @@ export function LimitWarning({
         <p className="font-medium">
           {atLimit ? info.title : `Approaching ${info.title.replace('Reached', 'Limit')}`}
         </p>
-        <p className="text-muted-foreground">
+        <p className="text-gray-400">
           {current} of {limit} used. {atLimit ? info.tip : ''}
         </p>
       </div>
