@@ -19,11 +19,18 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url)
-    const limit = parseInt(searchParams.get('limit') || '50', 10)
-    const offset = parseInt(searchParams.get('offset') || '0', 10)
+
+    // Validate and sanitize pagination parameters to prevent DoS
+    const rawLimit = parseInt(searchParams.get('limit') || '50', 10)
+    const rawOffset = parseInt(searchParams.get('offset') || '0', 10)
+    const rawDays = parseInt(searchParams.get('days') || '30', 10)
+
+    const limit = Math.min(Math.max(1, isNaN(rawLimit) ? 50 : rawLimit), 100) // 1-100
+    const offset = Math.max(0, isNaN(rawOffset) ? 0 : rawOffset) // >= 0
+    const days = Math.min(Math.max(1, isNaN(rawDays) ? 30 : rawDays), 365) // 1-365
+
     const entityType = searchParams.get('type') // Filter by entity type
-    const entityId = searchParams.get('entity_id') // Filter by specific entity
-    const days = parseInt(searchParams.get('days') || '30', 10) // Days to look back
+    const entityId = searchParams.get('entity_id') // Filter by specific entity (already filtered by user_id)
 
     // Build query
     let query = supabase
