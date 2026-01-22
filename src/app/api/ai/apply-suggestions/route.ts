@@ -197,11 +197,11 @@ export async function POST(req: Request) {
             }
 
             case 'relationship': {
-              // Create a character relationship record
+              // Create a canvas relationship record (new relationship system)
               const relValue = value as {
                 related_character_id?: string
                 related_character_name?: string
-                relationship_type: string
+                relationship_type?: string
                 relationship_label?: string
                 notes?: string
               }
@@ -219,18 +219,37 @@ export async function POST(req: Request) {
               }
 
               if (relatedId) {
+                // Generate pair_id for bidirectional relationship
+                const pairId = crypto.randomUUID()
+
+                // Create primary relationship
                 await supabase
-                  .from('character_relationships')
-                  .upsert({
+                  .from('canvas_relationships')
+                  .insert({
                     campaign_id: campaignId,
-                    character_id: characterId,
-                    related_character_id: relatedId,
-                    relationship_type: relValue.relationship_type || 'other',
-                    relationship_label: relValue.relationship_label,
+                    from_character_id: characterId,
+                    to_character_id: relatedId,
+                    custom_label: relValue.relationship_label || relValue.relationship_type || 'Related',
+                    description: relValue.notes || `Discovered in session`,
                     is_known_to_party: true,
-                    notes: relValue.notes || `Discovered in session`,
-                  }, {
-                    onConflict: 'character_id,related_character_id,relationship_type'
+                    pair_id: pairId,
+                    is_primary: true,
+                    status: 'active',
+                  })
+
+                // Create inverse relationship
+                await supabase
+                  .from('canvas_relationships')
+                  .insert({
+                    campaign_id: campaignId,
+                    from_character_id: relatedId,
+                    to_character_id: characterId,
+                    custom_label: relValue.relationship_label || relValue.relationship_type || 'Related',
+                    description: relValue.notes || `Discovered in session`,
+                    is_known_to_party: true,
+                    pair_id: pairId,
+                    is_primary: false,
+                    status: 'active',
                   })
               }
               break

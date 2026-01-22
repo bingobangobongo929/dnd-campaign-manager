@@ -109,18 +109,35 @@ export async function POST(req: Request) {
       .order('session_number', { ascending: false })
       .limit(5)
 
-    // Load existing relationships
-    const { data: relationships } = await supabase
-      .from('character_relationships')
+    // Load canvas relationships (new relationship system)
+    const { data: canvasRelationships } = await supabase
+      .from('canvas_relationships')
       .select(`
         id,
-        character_id,
-        related_character_id,
-        relationship_type,
-        relationship_label,
-        notes
+        from_character_id,
+        to_character_id,
+        custom_label,
+        description,
+        is_known_to_party,
+        template:relationship_templates(name, category)
       `)
       .eq('campaign_id', campaignId)
+      .eq('is_primary', true)
+
+    // Load faction memberships
+    const characterIds = (characters || []).map(c => c.id)
+    const { data: factionMemberships } = characterIds.length > 0
+      ? await supabase
+          .from('faction_memberships')
+          .select(`
+            character_id,
+            role,
+            title,
+            faction:campaign_factions(name, faction_type)
+          `)
+          .in('character_id', characterIds)
+          .eq('is_active', true)
+      : { data: [] }
 
     // Build comprehensive context
     const characterContext = (characters || []).map(c => {
@@ -133,6 +150,19 @@ export async function POST(req: Request) {
       if (c.summary) parts.push(`- Summary: ${c.summary}`)
       if (c.goals) parts.push(`- Goals: ${c.goals}`)
       if (c.secrets) parts.push(`- Known Secrets (DM): ${c.secrets}`)
+
+      // Add faction memberships
+      const charFactions = (factionMemberships || []).filter((fm: any) => fm.character_id === c.id)
+      if (charFactions.length > 0) {
+        const factionInfo = charFactions.map((fm: any) => {
+          const faction = fm.faction as any
+          let info = faction?.name || 'Unknown Faction'
+          if (fm.title) info += ` (${fm.title})`
+          if (fm.role) info += ` - ${fm.role}`
+          return info
+        }).join('; ')
+        parts.push(`- Factions: ${factionInfo}`)
+      }
 
       const storyHooks = c.story_hooks as Array<{ hook: string; notes?: string }> | null
       if (storyHooks && storyHooks.length > 0) {
@@ -152,12 +182,15 @@ export async function POST(req: Request) {
       return parts.join('\n')
     }).join('\n\n')
 
-    // Build relationship context
-    const relationshipContext = (relationships || []).map(r => {
-      const char1 = characters?.find(c => c.id === r.character_id)
-      const char2 = characters?.find(c => c.id === r.related_character_id)
+    // Build relationship context from canvas relationships
+    const relationshipContext = (canvasRelationships || []).map((r: any) => {
+      const char1 = characters?.find(c => c.id === r.from_character_id)
+      const char2 = characters?.find(c => c.id === r.to_character_id)
       if (char1 && char2) {
-        return `${char1.name} → ${char2.name}: ${r.relationship_label || r.relationship_type}`
+        const template = r.template as any
+        const label = r.custom_label || template?.name || 'Related'
+        const category = template?.category ? ` [${template.category}]` : ''
+        return `${char1.name} → ${char2.name}: ${label}${category}`
       }
       return null
     }).filter(Boolean).join('\n')
