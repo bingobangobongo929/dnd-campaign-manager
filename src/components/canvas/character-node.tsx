@@ -4,9 +4,18 @@ import { memo, useState, useCallback } from 'react'
 import { Handle, Position, NodeResizer } from '@xyflow/react'
 import { cn } from '@/lib/utils'
 import { TagBadge } from '@/components/ui'
-import { Eye, Pencil, Move, Check, X, RotateCcw } from 'lucide-react'
+import { Eye, Pencil, Move, Check, X, RotateCcw, Shield, Users } from 'lucide-react'
 import Image from 'next/image'
-import type { Character, Tag, CharacterTag } from '@/types/database'
+import type { Character, Tag, CharacterTag, CanvasRelationship, RelationshipTemplate, FactionMembership, CampaignFaction } from '@/types/database'
+
+// Type for relationship with details
+type RelationshipWithDetails = CanvasRelationship & {
+  template?: RelationshipTemplate | null
+  to_character?: { id: string; name: string }
+}
+
+// Type for faction membership with details
+type FactionMembershipWithFaction = FactionMembership & { faction: CampaignFaction }
 
 // Default card dimensions
 export const DEFAULT_CARD_WIDTH = 320
@@ -19,6 +28,8 @@ export const MAX_CARD_HEIGHT = 800
 export interface CharacterNodeData extends Record<string, unknown> {
   character: Character
   tags: (CharacterTag & { tag: Tag; related_character?: Character | null })[]
+  relationships: RelationshipWithDetails[]
+  factionMemberships: FactionMembershipWithFaction[]
   isSelected: boolean
   onPreview: (id: string) => void
   onEdit: (id: string) => void
@@ -33,7 +44,7 @@ function CharacterNodeComponent({
   data: CharacterNodeData
   selected?: boolean
 }) {
-  const { character, tags, onPreview, onEdit, onResize } = data
+  const { character, tags, relationships, factionMemberships, onPreview, onEdit, onResize } = data
   const isPC = character.type === 'pc'
   const isActive = selected || data.isSelected
 
@@ -207,53 +218,79 @@ function CharacterNodeComponent({
           </div>
         </div>
 
-        {/* BOTTOM: Tags spanning full width - Factions first, then Relationship tags */}
-        {tags.length > 0 && (() => {
-          const factionTags = tags.filter(ct => ct.tag.category === 'faction')
-          const relationshipTags = tags.filter(ct => ct.tag.category !== 'faction')
+        {/* BOTTOM: Factions and Relationships */}
+        {(factionMemberships.length > 0 || relationships.length > 0 || tags.length > 0) && (
+          <div className="character-card-tags-bottom">
+            {/* Factions Section (from new system) */}
+            {factionMemberships.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 w-full">
+                {factionMemberships.map((fm) => (
+                  <div
+                    key={fm.id}
+                    className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider"
+                    style={{
+                      backgroundColor: `${fm.faction.color}20`,
+                      color: fm.faction.color,
+                      border: `1px solid ${fm.faction.color}40`,
+                    }}
+                  >
+                    <Shield className="w-2.5 h-2.5" />
+                    <span>{fm.faction.name}</span>
+                    {fm.role && <span className="opacity-70">• {fm.role}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
 
-          return (
-            <div className="character-card-tags-bottom">
-              {/* Factions Section */}
-              {factionTags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 w-full">
-                  {factionTags.map((ct) => (
-                    <TagBadge
-                      key={ct.id}
-                      name={ct.tag.name}
-                      color={ct.tag.color}
-                      icon={ct.tag.icon || undefined}
-                      relatedCharacter={ct.related_character?.name}
-                      size="sm"
-                      uppercase
-                      isFaction
-                    />
-                  ))}
-                </div>
-              )}
+            {/* Relationships Section (from new system) */}
+            {relationships.length > 0 && (
+              <div className={cn(
+                "flex flex-wrap gap-1.5 w-full",
+                factionMemberships.length > 0 && "pt-1.5 mt-1.5 border-t border-white/10"
+              )}>
+                {relationships.slice(0, 4).map((rel) => (
+                  <div
+                    key={rel.id}
+                    className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium"
+                    style={{
+                      backgroundColor: `${rel.template?.color || '#8B5CF6'}15`,
+                      color: rel.template?.color || '#8B5CF6',
+                      border: `1px solid ${rel.template?.color || '#8B5CF6'}30`,
+                    }}
+                  >
+                    <span>{rel.custom_label || rel.template?.name || 'Related'}</span>
+                    <span className="opacity-70">→</span>
+                    <span className="text-white/80">{rel.to_character?.name || 'Unknown'}</span>
+                  </div>
+                ))}
+                {relationships.length > 4 && (
+                  <div className="px-2 py-0.5 rounded text-[10px] text-gray-400 bg-white/5">
+                    +{relationships.length - 4} more
+                  </div>
+                )}
+              </div>
+            )}
 
-              {/* Relationship Tags Section */}
-              {relationshipTags.length > 0 && (
-                <div className={cn(
-                  "flex flex-wrap gap-1.5 w-full",
-                  factionTags.length > 0 && "pt-1.5 mt-1.5 border-t border-white/10"
-                )}>
-                  {relationshipTags.map((ct) => (
-                    <TagBadge
-                      key={ct.id}
-                      name={ct.tag.name}
-                      color={ct.tag.color}
-                      icon={ct.tag.icon || undefined}
-                      relatedCharacter={ct.related_character?.name}
-                      size="sm"
-                      uppercase
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          )
-        })()}
+            {/* General Tags (old system - still support them) */}
+            {tags.filter(ct => ct.tag.category === 'general').length > 0 && (
+              <div className={cn(
+                "flex flex-wrap gap-1.5 w-full",
+                (factionMemberships.length > 0 || relationships.length > 0) && "pt-1.5 mt-1.5 border-t border-white/10"
+              )}>
+                {tags.filter(ct => ct.tag.category === 'general').map((ct) => (
+                  <TagBadge
+                    key={ct.id}
+                    name={ct.tag.name}
+                    color={ct.tag.color}
+                    icon={ct.tag.icon || undefined}
+                    size="sm"
+                    uppercase
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Invisible handles for connections */}
         <Handle

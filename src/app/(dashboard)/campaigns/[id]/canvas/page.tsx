@@ -7,7 +7,7 @@ import { Plus, FolderPlus, Scaling, Trash2, Brain, Share2, ChevronRight, Users, 
 import { Modal, Input, ColorPicker, IconPicker, getGroupIcon } from '@/components/ui'
 import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT, CONNECTION_FILTER_OPTIONS } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
-import { TagManager, FactionManager } from '@/components/campaign'
+import { TagManager, FactionManager, RelationshipManager } from '@/components/campaign'
 import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 import { TemplateStateBadge } from '@/components/templates/TemplateStateBadge'
 import { TemplateOnboardingModal } from '@/components/templates/TemplateOnboardingModal'
@@ -17,7 +17,10 @@ import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { CampaignCanvasPageMobile } from './page.mobile'
 import { useAppStore, useCanUseAI } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
-import type { Campaign, Character, Tag, CharacterTag, CanvasGroup, CanvasRelationship, RelationshipTemplate, RelationshipCategory } from '@/types/database'
+import type { Campaign, Character, Tag, CharacterTag, CanvasGroup, CanvasRelationship, RelationshipTemplate, RelationshipCategory, FactionMembership, CampaignFaction } from '@/types/database'
+
+// Type for faction membership with faction details
+type FactionMembershipWithFaction = FactionMembership & { faction: CampaignFaction }
 
 // Type for undo history
 interface UndoAction {
@@ -66,12 +69,14 @@ export default function CampaignCanvasPage() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false)
   const [isFactionManagerOpen, setIsFactionManagerOpen] = useState(false)
+  const [isRelationshipManagerOpen, setIsRelationshipManagerOpen] = useState(false)
 
   // Connection lines state
   const [showConnections, setShowConnections] = useState(false)
   const [connectionFilter, setConnectionFilter] = useState<RelationshipCategory | null>(null)
   const [connectionDropdownOpen, setConnectionDropdownOpen] = useState(false)
-  const [relationships, setRelationships] = useState<(CanvasRelationship & { template?: RelationshipTemplate | null })[]>([])
+  const [relationships, setRelationships] = useState<(CanvasRelationship & { template?: RelationshipTemplate | null; to_character?: { id: string; name: string } })[]>([])
+  const [factionMemberships, setFactionMemberships] = useState<FactionMembershipWithFaction[]>([])
   const [viewingCharacterId, setViewingCharacterId] = useState<string | null>(null)
   const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null)
   const [groupForm, setGroupForm] = useState({ name: '', color: '#8B5CF6', icon: 'users' })
@@ -172,11 +177,25 @@ export default function CampaignCanvasPage() {
       .from('canvas_relationships')
       .select(`
         *,
-        template:relationship_templates(*)
+        template:relationship_templates(*),
+        to_character:characters!canvas_relationships_to_character_id_fkey(id, name)
       `)
       .eq('campaign_id', campaignId)
 
-    setRelationships((relationshipsData || []) as (CanvasRelationship & { template?: RelationshipTemplate | null })[])
+    setRelationships((relationshipsData || []) as (CanvasRelationship & { template?: RelationshipTemplate | null; to_character?: { id: string; name: string } })[])
+
+    // Load faction memberships with faction details
+    const { data: factionMembershipsData } = characterIds.length > 0
+      ? await supabase
+          .from('faction_memberships')
+          .select(`
+            *,
+            faction:campaign_factions(*)
+          `)
+          .in('character_id', characterIds)
+      : { data: null }
+
+    setFactionMemberships((factionMembershipsData || []) as FactionMembershipWithFaction[])
 
     setLoading(false)
     setHasLoadedOnce(true)
@@ -657,10 +676,10 @@ export default function CampaignCanvasPage() {
       <button
         className="btn btn-secondary btn-sm"
         onClick={() => setIsTagManagerOpen(true)}
-        title="Manage Tags"
+        title="Manage Labels (General Tags)"
       >
         <Tags className="w-4 h-4" />
-        <span className="hidden sm:inline ml-1.5">Tags</span>
+        <span className="hidden sm:inline ml-1.5">Labels</span>
       </button>
       <button
         className="btn btn-secondary btn-sm"
@@ -669,6 +688,14 @@ export default function CampaignCanvasPage() {
       >
         <Shield className="w-4 h-4" />
         <span className="hidden sm:inline ml-1.5">Factions</span>
+      </button>
+      <button
+        className="btn btn-secondary btn-sm"
+        onClick={() => setIsRelationshipManagerOpen(true)}
+        title="Manage Relationships"
+      >
+        <Users className="w-4 h-4" />
+        <span className="hidden sm:inline ml-1.5">Relationships</span>
       </button>
       <button
         className="btn btn-secondary btn-sm"
@@ -765,6 +792,7 @@ export default function CampaignCanvasPage() {
           groups={groups}
           characterSizeOverrides={characterSizeOverrides}
           relationships={relationships}
+          factionMemberships={factionMemberships}
           showConnections={showConnections}
           connectionFilter={connectionFilter}
           onCharacterPreview={handleCharacterPreview}
@@ -1072,6 +1100,13 @@ export default function CampaignCanvasPage() {
         isOpen={isFactionManagerOpen}
         onClose={() => setIsFactionManagerOpen(false)}
         onFactionsChange={loadCampaignData}
+      />
+
+      {/* Relationship Manager Modal */}
+      <RelationshipManager
+        campaignId={campaignId}
+        isOpen={isRelationshipManagerOpen}
+        onClose={() => setIsRelationshipManagerOpen(false)}
       />
 
       {/* Template Onboarding Modal */}

@@ -24,7 +24,16 @@ import { generateConnectionEdges, type ConnectionLineData } from './connection-e
 import { useAppStore } from '@/store'
 import { useSupabase } from '@/hooks'
 import { useDebouncedCallback } from 'use-debounce'
-import type { Character, Tag, CharacterTag, CanvasGroup, CanvasRelationship, RelationshipTemplate, RelationshipCategory } from '@/types/database'
+import type { Character, Tag, CharacterTag, CanvasGroup, CanvasRelationship, RelationshipTemplate, RelationshipCategory, FactionMembership, CampaignFaction } from '@/types/database'
+
+// Type for relationship with details
+type RelationshipWithDetails = CanvasRelationship & {
+  template?: RelationshipTemplate | null
+  to_character?: { id: string; name: string }
+}
+
+// Type for faction membership with details
+type FactionMembershipWithFaction = FactionMembership & { faction: CampaignFaction }
 
 const SNAP_THRESHOLD = 10 // pixels
 const SNAP_GRID = 20
@@ -38,7 +47,8 @@ interface CampaignCanvasProps {
   // External size overrides from resize toolbar - highest priority
   characterSizeOverrides?: Map<string, { width: number; height: number }>
   // Connection lines
-  relationships?: (CanvasRelationship & { template?: RelationshipTemplate | null })[]
+  relationships?: RelationshipWithDetails[]
+  factionMemberships?: FactionMembershipWithFaction[]
   showConnections?: boolean
   connectionFilter?: RelationshipCategory | null
   onCharacterPreview: (id: string) => void
@@ -68,6 +78,7 @@ function CampaignCanvasInner({
   initialCharacterSizes,
   characterSizeOverrides,
   relationships,
+  factionMemberships,
   showConnections,
   connectionFilter,
   onCharacterPreview,
@@ -114,6 +125,11 @@ function CampaignCanvasInner({
       const width = overrideSize?.width || savedSize?.width || char.canvas_width || DEFAULT_CARD_WIDTH
       const height = overrideSize?.height || savedSize?.height || char.canvas_height || DEFAULT_CARD_HEIGHT
 
+      // Get relationships FROM this character
+      const charRelationships = relationships?.filter(r => r.from_character_id === char.id) || []
+      // Get faction memberships for this character
+      const charFactionMemberships = factionMemberships?.filter(fm => fm.character_id === char.id) || []
+
       return {
         id: char.id,
         type: 'character' as const,
@@ -122,6 +138,8 @@ function CampaignCanvasInner({
         data: {
           character: char,
           tags: characterTags.get(char.id) || [],
+          relationships: charRelationships,
+          factionMemberships: charFactionMemberships,
           isSelected: char.id === selectedCharacterId,
           onPreview: onCharacterPreview,
           onEdit: onCharacterEdit,
@@ -146,7 +164,7 @@ function CampaignCanvasInner({
 
     // Groups should render behind characters
     return [...groupNodes, ...characterNodes] as unknown as Node[]
-  }, [characters, characterTags, groups, selectedCharacterId, characterSizeOverrides, onCharacterPreview, onCharacterEdit, onCharacterSizeChange, onGroupUpdate, onGroupDelete, onGroupEdit])
+  }, [characters, characterTags, groups, selectedCharacterId, characterSizeOverrides, relationships, factionMemberships, onCharacterPreview, onCharacterEdit, onCharacterSizeChange, onGroupUpdate, onGroupDelete, onGroupEdit])
 
   // Initialize nodes
   const [nodes, setNodes] = useNodesState(createNodes())
