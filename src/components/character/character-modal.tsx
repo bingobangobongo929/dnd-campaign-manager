@@ -371,9 +371,10 @@ export function CharacterModal({
 
   const currentCharacterId = createdCharacterId || character?.id
   const otherCharacters = allCharacters.filter(c => c.id !== currentCharacterId)
-  const unusedTags = availableTags.filter(t => !tags.some(ct => ct.tag_id === t.id))
+  const unusedTags = availableTags.filter(t => !tags.some(ct => ct.tag_id === t.id) && !t.is_archived)
   const factionTags = unusedTags.filter(t => t.category === 'faction')
-  const relationshipTags = unusedTags.filter(t => t.category === 'relationship' || t.category === 'general')
+  // Only show general tags - relationships should use the new RelationshipEditor
+  const generalTags = unusedTags.filter(t => t.category === 'general')
 
   const handleBackdropClick = useCallback(() => {
     if (isFullscreen) {
@@ -1022,6 +1023,18 @@ export function CharacterModal({
                   </div>
                 )}
 
+                {/* Smart Relationships - Non-fullscreen mode */}
+                {!isCreateMode && character && (
+                  <div className="pb-4 border-b border-[--border]">
+                    <RelationshipEditor
+                      character={character}
+                      campaignId={campaignId}
+                      allCharacters={allCharacters}
+                      onRelationshipsChange={onTagsChange}
+                    />
+                  </div>
+                )}
+
                 {/* Summary */}
                 <div className="form-group">
                   <label className="form-label">Summary</label>
@@ -1126,12 +1139,12 @@ export function CharacterModal({
                 </div>
               )}
 
-              {/* Relationship Tags */}
-              {relationshipTags.length > 0 && (
+              {/* General Tags */}
+              {generalTags.length > 0 && (
                 <div className="space-y-2">
-                  <label className="form-label">Relationship Tags</label>
+                  <label className="form-label">General Tags</label>
                   <div className="flex flex-wrap gap-2">
-                    {relationshipTags.map((tag) => (
+                    {generalTags.map((tag) => (
                       <button
                         key={tag.id}
                         onClick={() => handleAddExistingTag(tag.id)}
@@ -1150,11 +1163,16 @@ export function CharacterModal({
               )}
 
               {/* Show message if no existing tags */}
-              {factionTags.length === 0 && relationshipTags.length === 0 && (
+              {factionTags.length === 0 && generalTags.length === 0 && (
                 <p className="text-sm text-[--text-tertiary] text-center py-4">
                   No existing tags. Create a new one below.
                 </p>
               )}
+
+              {/* Note about relationships */}
+              <p className="text-xs text-[--text-muted] bg-white/[0.02] p-2 rounded-lg">
+                For character relationships, use the Relationships section in fullscreen mode or the canvas Connections feature.
+              </p>
 
               <button className="btn btn-secondary w-full" onClick={() => setIsCreatingNewTag(true)}>
                 <Plus className="w-4 h-4" />
