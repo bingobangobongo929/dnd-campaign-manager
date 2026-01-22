@@ -380,25 +380,6 @@ export default function SettingsPage() {
                   {user?.created_at ? formatDate(user.created_at) : 'Unknown'}
                 </p>
               </div>
-
-              <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
-                <span className="text-sm text-gray-400">Currency</span>
-                <div className="flex gap-1">
-                  {(Object.keys(CURRENCY_CONFIG) as Currency[]).map((cur) => (
-                    <button
-                      key={cur}
-                      onClick={() => setCurrency(cur)}
-                      className={`px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
-                        currency === cur
-                          ? 'bg-[--arcane-purple] text-white'
-                          : 'bg-white/5 text-gray-400'
-                      }`}
-                    >
-                      {CURRENCY_CONFIG[cur].symbol}
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
           </section>
 
@@ -475,6 +456,28 @@ export default function SettingsPage() {
                         </button>
                       )
                     })}
+
+                    {/* Currency in AI section */}
+                    <div className="flex items-center justify-between pt-3 mt-3 border-t border-white/[0.06]">
+                      <div>
+                        <span className="text-xs text-gray-500">Cost Display</span>
+                      </div>
+                      <div className="flex gap-1">
+                        {(Object.keys(CURRENCY_CONFIG) as Currency[]).map((cur) => (
+                          <button
+                            key={cur}
+                            onClick={() => setCurrency(cur)}
+                            className={`px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
+                              currency === cur
+                                ? 'bg-[--arcane-purple] text-white'
+                                : 'bg-white/5 text-gray-400'
+                            }`}
+                          >
+                            {CURRENCY_CONFIG[cur].symbol}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -482,13 +485,13 @@ export default function SettingsPage() {
             </section>
           )}
 
-          {/* Content Stats */}
+          {/* Data Management */}
           <section className="space-y-3">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center">
                 <Database className="w-4 h-4 text-white" />
               </div>
-              <h2 className="text-base font-semibold text-white">Your Content</h2>
+              <h2 className="text-base font-semibold text-white">Data Management</h2>
             </div>
 
             <div className="grid grid-cols-4 gap-2">
@@ -532,6 +535,20 @@ export default function SettingsPage() {
                 <ChevronRight className="w-5 h-5 text-gray-500" />
               </Link>
 
+              <Link
+                href="/recycle-bin"
+                className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] active:bg-white/[0.04] transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Trash2 className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm font-medium text-white">Recycle Bin</p>
+                    <p className="text-xs text-gray-500">Restore deleted content</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-500" />
+              </Link>
+
               <button
                 onClick={handleExportData}
                 disabled={exporting}
@@ -550,16 +567,31 @@ export default function SettingsPage() {
                   <ChevronRight className="w-5 h-5 text-gray-500" />
                 )}
               </button>
+
+              {/* Danger Zone */}
+              <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                  <span className="text-sm font-medium text-red-400">Danger Zone</span>
+                </div>
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border border-red-500/30 text-red-400 active:bg-red-500/10 transition-colors text-sm"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete All Data
+                </button>
+              </div>
             </div>
           </section>
 
-          {/* App Info */}
+          {/* About */}
           <section className="space-y-3">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
                 <Info className="w-4 h-4 text-white" />
               </div>
-              <h2 className="text-base font-semibold text-white">App Info</h2>
+              <h2 className="text-base font-semibold text-white">About</h2>
             </div>
 
             <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-4">
@@ -580,18 +612,11 @@ export default function SettingsPage() {
                 >
                   What&apos;s New
                 </button>
-                <button
-                  onClick={() => setShowKeyboardShortcuts(true)}
-                  className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-white/5 text-gray-400 active:bg-white/10"
-                >
-                  <Keyboard className="w-3 h-3" />
-                  Shortcuts
-                </button>
               </div>
             </div>
           </section>
 
-          {/* Sign Out & Danger Zone */}
+          {/* Sign Out */}
           <section className="space-y-3">
             <button
               onClick={handleLogout}
@@ -600,20 +625,6 @@ export default function SettingsPage() {
               <LogOut className="w-5 h-5" />
               <span className="font-medium">Sign Out</span>
             </button>
-
-            <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20">
-              <div className="flex items-center gap-2 mb-3">
-                <AlertTriangle className="w-4 h-4 text-red-500" />
-                <span className="text-sm font-medium text-red-400">Danger Zone</span>
-              </div>
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border border-red-500/30 text-red-400 active:bg-red-500/10 transition-colors text-sm"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete All Data
-              </button>
-            </div>
           </section>
 
           {/* Legal Footer */}
@@ -801,29 +812,6 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {/* Currency Preference */}
-            <div className="flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border]">
-              <div>
-                <label className="text-xs text-[--text-tertiary] uppercase tracking-wide">Display Currency</label>
-                <p className="text-[--text-primary] font-medium">{CURRENCY_CONFIG[currency].name}</p>
-              </div>
-              <div className="flex gap-1">
-                {(Object.keys(CURRENCY_CONFIG) as Currency[]).map((cur) => (
-                  <button
-                    key={cur}
-                    onClick={() => setCurrency(cur)}
-                    className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                      currency === cur
-                        ? 'bg-[--arcane-purple] text-white'
-                        : 'bg-[--bg-surface] text-[--text-secondary] hover:text-[--text-primary]'
-                    }`}
-                  >
-                    {CURRENCY_CONFIG[cur].symbol}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <button
               className="btn btn-secondary w-full justify-center text-[--arcane-ember] hover:bg-red-500/10"
               onClick={handleLogout}
@@ -980,6 +968,28 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
+                {/* Currency Preference - controls AI cost display */}
+                <div className="flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border]">
+                  <div>
+                    <label className="text-xs text-[--text-tertiary] uppercase tracking-wide">Cost Display Currency</label>
+                    <p className="text-xs text-[--text-tertiary] mt-0.5">For AI cost estimates</p>
+                  </div>
+                  <div className="flex gap-1">
+                    {(Object.keys(CURRENCY_CONFIG) as Currency[]).map((cur) => (
+                      <button
+                        key={cur}
+                        onClick={() => setCurrency(cur)}
+                        className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                          currency === cur
+                            ? 'bg-[--arcane-purple] text-white'
+                            : 'bg-[--bg-surface] text-[--text-secondary] hover:text-[--text-primary]'
+                        }`}
+                      >
+                        {CURRENCY_CONFIG[cur].symbol}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </>
             )}
           </div>
@@ -987,76 +997,7 @@ export default function SettingsPage() {
         )}
 
         {/* ═══════════════════════════════════════════════════════════════════
-            SECTION: HELP & TIPS
-            ═══════════════════════════════════════════════════════════════════ */}
-        <section>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center">
-              <Lightbulb className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-[--text-primary]">Help & Tips</h2>
-              <p className="text-sm text-[--text-tertiary]">Onboarding and contextual guidance</p>
-            </div>
-          </div>
-
-          <div className="card p-5 space-y-4">
-            {/* Contextual Tips Toggle */}
-            <div className="flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border]">
-              <div className="flex-1">
-                <p className="font-medium text-[--text-primary]">Show Contextual Tips</p>
-                <p className="text-xs text-[--text-tertiary] mt-0.5">
-                  Helpful hints that appear near UI elements
-                </p>
-              </div>
-              <button
-                onClick={handleToggleTips}
-                className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 ml-4 ${
-                  showTips ? 'bg-purple-600' : 'bg-gray-600'
-                }`}
-              >
-                <div
-                  className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-md transition-transform ${
-                    showTips ? 'translate-x-7' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* Restart Tour Button */}
-            <button
-              onClick={handleRestartTour}
-              className="w-full flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 transition-colors group"
-            >
-              <div className="flex items-center gap-3">
-                <RefreshCw className="w-5 h-5 text-[--text-secondary] group-hover:text-[--arcane-purple]" />
-                <div className="text-left">
-                  <p className="font-medium text-[--text-primary]">Restart Welcome Tour</p>
-                  <p className="text-xs text-[--text-tertiary]">See the app introduction again</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
-            </button>
-
-            {/* Reset Tips Button */}
-            <button
-              onClick={handleResetTips}
-              className="w-full flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 transition-colors group"
-            >
-              <div className="flex items-center gap-3">
-                <Lightbulb className="w-5 h-5 text-[--text-secondary] group-hover:text-[--arcane-purple]" />
-                <div className="text-left">
-                  <p className="font-medium text-[--text-primary]">Reset All Tips</p>
-                  <p className="text-xs text-[--text-tertiary]">Show dismissed tips again</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
-            </button>
-          </div>
-        </section>
-
-        {/* ═══════════════════════════════════════════════════════════════════
-            SECTION 3: YOUR CONTENT
+            SECTION: DATA MANAGEMENT
             ═══════════════════════════════════════════════════════════════════ */}
         <section>
           <div className="flex items-center gap-3 mb-4">
@@ -1064,8 +1005,8 @@ export default function SettingsPage() {
               <Database className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[--text-primary]">Your Content</h2>
-              <p className="text-sm text-[--text-tertiary]">Data, storage, and sharing</p>
+              <h2 className="text-lg font-semibold text-[--text-primary]">Data Management</h2>
+              <p className="text-sm text-[--text-tertiary]">Content, storage, and sharing</p>
             </div>
           </div>
 
@@ -1118,6 +1059,21 @@ export default function SettingsPage() {
               <ChevronRight className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
             </Link>
 
+            {/* Recycle Bin */}
+            <Link
+              href="/recycle-bin"
+              className="flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <Trash2 className="w-5 h-5 text-gray-400" />
+                <div>
+                  <p className="font-medium text-[--text-primary]">Recycle Bin</p>
+                  <p className="text-xs text-[--text-tertiary]">Restore deleted content within 30 days</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
+            </Link>
+
             {/* Export Data */}
             <button
               className="w-full flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 transition-colors group"
@@ -1137,24 +1093,64 @@ export default function SettingsPage() {
                 <ChevronRight className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
               )}
             </button>
+
+            {/* Danger Zone */}
+            <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20">
+              <div className="flex items-center gap-3 mb-3">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+                <div>
+                  <p className="font-medium text-red-400">Danger Zone</p>
+                  <p className="text-xs text-red-400/70">Irreversible actions</p>
+                </div>
+              </div>
+              <button
+                className="btn btn-secondary text-red-400 border-red-500/30 hover:bg-red-500/10"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete All Data
+              </button>
+            </div>
           </div>
         </section>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            SECTION 4: APP INFO
+            SECTION: PREFERENCES
             ═══════════════════════════════════════════════════════════════════ */}
         <section>
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-              <Info className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center">
+              <Lightbulb className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[--text-primary]">App Info</h2>
-              <p className="text-sm text-[--text-tertiary]">Help, shortcuts, and about</p>
+              <h2 className="text-lg font-semibold text-[--text-primary]">Preferences</h2>
+              <p className="text-sm text-[--text-tertiary]">Tips, shortcuts, and guidance</p>
             </div>
           </div>
 
           <div className="card p-5 space-y-4">
+            {/* Contextual Tips Toggle */}
+            <div className="flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border]">
+              <div className="flex-1">
+                <p className="font-medium text-[--text-primary]">Show Contextual Tips</p>
+                <p className="text-xs text-[--text-tertiary] mt-0.5">
+                  Helpful hints that appear near UI elements
+                </p>
+              </div>
+              <button
+                onClick={handleToggleTips}
+                className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 ml-4 ${
+                  showTips ? 'bg-purple-600' : 'bg-gray-600'
+                }`}
+              >
+                <div
+                  className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-md transition-transform ${
+                    showTips ? 'translate-x-7' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
             {/* Keyboard Shortcuts */}
             <button
               className="w-full flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 transition-colors group"
@@ -1170,6 +1166,53 @@ export default function SettingsPage() {
               <ChevronRight className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
             </button>
 
+            {/* Restart Tour Button */}
+            <button
+              onClick={handleRestartTour}
+              className="w-full flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <RefreshCw className="w-5 h-5 text-[--text-secondary] group-hover:text-[--arcane-purple]" />
+                <div className="text-left">
+                  <p className="font-medium text-[--text-primary]">Restart Welcome Tour</p>
+                  <p className="text-xs text-[--text-tertiary]">See the app introduction again</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
+            </button>
+
+            {/* Reset Tips Button */}
+            <button
+              onClick={handleResetTips}
+              className="w-full flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <Lightbulb className="w-5 h-5 text-[--text-secondary] group-hover:text-[--arcane-purple]" />
+                <div className="text-left">
+                  <p className="font-medium text-[--text-primary]">Reset All Tips</p>
+                  <p className="text-xs text-[--text-tertiary]">Show dismissed tips again</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
+            </button>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            SECTION: ABOUT
+            ═══════════════════════════════════════════════════════════════════ */}
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+              <Info className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-[--text-primary]">About</h2>
+              <p className="text-sm text-[--text-tertiary]">Version info and feedback</p>
+            </div>
+          </div>
+
+          <div className="card p-5 space-y-4">
             {/* About */}
             <div className="p-4 rounded-xl bg-[--bg-elevated] border border-[--border]">
               <div className="flex items-center justify-between mb-3">
@@ -1212,24 +1255,6 @@ export default function SettingsPage() {
               <p className="text-xs text-[--text-tertiary] border-t border-[--border] pt-3">
                 Built with Next.js, Supabase, and AI.
               </p>
-            </div>
-
-            {/* Danger Zone */}
-            <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20">
-              <div className="flex items-center gap-3 mb-3">
-                <AlertTriangle className="w-5 h-5 text-red-500" />
-                <div>
-                  <p className="font-medium text-red-400">Danger Zone</p>
-                  <p className="text-xs text-red-400/70">Irreversible actions</p>
-                </div>
-              </div>
-              <button
-                className="btn btn-secondary text-red-400 border-red-500/30 hover:bg-red-500/10"
-                onClick={() => setShowDeleteConfirm(true)}
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete All Data
-              </button>
             </div>
           </div>
         </section>

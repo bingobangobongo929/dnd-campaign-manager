@@ -16,7 +16,6 @@ import {
   Sparkles,
   Brain,
   Shield,
-  Trash2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui'
@@ -51,7 +50,6 @@ export function Sidebar({ campaignId }: SidebarProps) {
   const globalLinks = [
     { href: '/campaigns', label: 'Campaigns', icon: Users },
     { href: '/vault', label: 'Character Vault', icon: BookOpen },
-    { href: '/recycle-bin', label: 'Recycle Bin', icon: Trash2 },
     { href: '/settings', label: 'Settings', icon: Settings },
     ...(showAdmin ? [{ href: '/admin', label: 'Admin', icon: Shield }] : []),
   ]
