@@ -5,13 +5,16 @@
 -- 1. Faction tags → campaign_factions + faction_memberships
 -- 2. Relationship character_tags → canvas_relationships
 -- 3. Archives migrated tags (doesn't delete them)
+--
+-- IMPORTANT: This migration requires 053_tags_relationships_overhaul.sql
+-- to have run successfully first!
 -- ============================================================================
 
 -- ============================================================================
 -- 1. MIGRATE FACTION TAGS TO CAMPAIGN_FACTIONS
 -- ============================================================================
 
--- Create factions from faction tags
+-- Create factions from faction tags (only if tables exist and have faction category)
 INSERT INTO campaign_factions (campaign_id, name, color, icon, created_at)
 SELECT DISTINCT
   campaign_id,
@@ -21,6 +24,7 @@ SELECT DISTINCT
   created_at
 FROM tags
 WHERE category = 'faction'
+  AND campaign_id IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 -- Create memberships for characters that have faction tags
@@ -63,25 +67,31 @@ WHERE t.category = 'relationship'
 ON CONFLICT DO NOTHING;
 
 -- Also migrate any data from the character_relationships table (from migration 007)
-INSERT INTO canvas_relationships (
-  campaign_id,
-  from_character_id,
-  to_character_id,
-  custom_label,
-  description,
-  is_known_to_party,
-  created_at
-)
-SELECT DISTINCT
-  cr.campaign_id,
-  cr.character_id,
-  cr.related_character_id,
-  COALESCE(cr.relationship_label, cr.relationship_type),
-  cr.notes,
-  COALESCE(cr.is_known_to_party, true),
-  cr.created_at
-FROM character_relationships cr
-ON CONFLICT DO NOTHING;
+-- This is wrapped in a DO block since the table may not exist
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'character_relationships') THEN
+    INSERT INTO canvas_relationships (
+      campaign_id,
+      from_character_id,
+      to_character_id,
+      custom_label,
+      description,
+      is_known_to_party,
+      created_at
+    )
+    SELECT DISTINCT
+      cr.campaign_id,
+      cr.character_id,
+      cr.related_character_id,
+      COALESCE(cr.relationship_label, cr.relationship_type),
+      cr.notes,
+      COALESCE(cr.is_known_to_party, true),
+      cr.created_at
+    FROM character_relationships cr
+    ON CONFLICT DO NOTHING;
+  END IF;
+END $$;
 
 -- ============================================================================
 -- 3. ARCHIVE MIGRATED TAGS (Don't delete, just hide)
