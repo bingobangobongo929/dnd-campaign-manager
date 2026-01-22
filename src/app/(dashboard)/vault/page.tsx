@@ -285,12 +285,20 @@ export default function VaultPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Move this character to the recycle bin? You can restore it within 30 days.')) return
 
-    await supabase
+    const { error } = await supabase
       .from('vault_characters')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
+
+    if (error) {
+      console.error('Delete error:', error)
+      toast.error(`Failed to delete: ${error.message}`)
+      return
+    }
+
     setVaultCharacters(vaultCharacters.filter((c) => c.id !== id))
     setContextMenu(null)
+    toast.success('Moved to recycle bin')
   }
 
   const handleCopyToCampaign = async () => {
