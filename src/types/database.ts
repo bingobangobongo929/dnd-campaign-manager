@@ -2588,6 +2588,186 @@ export interface Database {
           updated_at?: string
         }
       }
+      // =====================================================
+      // FEEDBACK SYSTEM TABLES
+      // =====================================================
+      feedback: {
+        Row: {
+          id: string
+          user_id: string
+          type: 'bug' | 'feature' | 'question' | 'praise'
+          status: 'new' | 'reviewing' | 'in_progress' | 'fixed' | 'closed' | 'wont_fix'
+          priority: 'low' | 'medium' | 'high' | 'critical' | null
+          title: string
+          description: string
+          reproduce_steps: string | null
+          expected_behavior: string | null
+          actual_behavior: string | null
+          frequency: 'always' | 'sometimes' | 'once' | null
+          affected_area: string | null
+          current_url: string | null
+          current_route: string | null
+          browser_info: Json | null
+          screen_resolution: string | null
+          viewport_size: string | null
+          session_duration_seconds: number | null
+          console_errors: Json | null
+          network_status: string | null
+          navigation_history: Json | null
+          app_version: string | null
+          user_email: string | null
+          user_username: string | null
+          user_tier: string | null
+          user_role: string | null
+          assigned_to: string | null
+          internal_notes: string | null
+          resolution_notes: string | null
+          created_at: string
+          updated_at: string
+          resolved_at: string | null
+          first_response_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: 'bug' | 'feature' | 'question' | 'praise'
+          status?: 'new' | 'reviewing' | 'in_progress' | 'fixed' | 'closed' | 'wont_fix'
+          priority?: 'low' | 'medium' | 'high' | 'critical' | null
+          title: string
+          description: string
+          reproduce_steps?: string | null
+          expected_behavior?: string | null
+          actual_behavior?: string | null
+          frequency?: 'always' | 'sometimes' | 'once' | null
+          affected_area?: string | null
+          current_url?: string | null
+          current_route?: string | null
+          browser_info?: Json | null
+          screen_resolution?: string | null
+          viewport_size?: string | null
+          session_duration_seconds?: number | null
+          console_errors?: Json | null
+          network_status?: string | null
+          navigation_history?: Json | null
+          app_version?: string | null
+          user_email?: string | null
+          user_username?: string | null
+          user_tier?: string | null
+          user_role?: string | null
+          assigned_to?: string | null
+          internal_notes?: string | null
+          resolution_notes?: string | null
+          created_at?: string
+          updated_at?: string
+          resolved_at?: string | null
+          first_response_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: 'bug' | 'feature' | 'question' | 'praise'
+          status?: 'new' | 'reviewing' | 'in_progress' | 'fixed' | 'closed' | 'wont_fix'
+          priority?: 'low' | 'medium' | 'high' | 'critical' | null
+          title?: string
+          description?: string
+          reproduce_steps?: string | null
+          expected_behavior?: string | null
+          actual_behavior?: string | null
+          frequency?: 'always' | 'sometimes' | 'once' | null
+          affected_area?: string | null
+          current_url?: string | null
+          current_route?: string | null
+          browser_info?: Json | null
+          screen_resolution?: string | null
+          viewport_size?: string | null
+          session_duration_seconds?: number | null
+          console_errors?: Json | null
+          network_status?: string | null
+          navigation_history?: Json | null
+          app_version?: string | null
+          user_email?: string | null
+          user_username?: string | null
+          user_tier?: string | null
+          user_role?: string | null
+          assigned_to?: string | null
+          internal_notes?: string | null
+          resolution_notes?: string | null
+          created_at?: string
+          updated_at?: string
+          resolved_at?: string | null
+          first_response_at?: string | null
+        }
+      }
+      feedback_attachments: {
+        Row: {
+          id: string
+          feedback_id: string
+          storage_path: string
+          public_url: string
+          file_name: string
+          file_type: string
+          file_size: number
+          is_screenshot: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          feedback_id: string
+          storage_path: string
+          public_url: string
+          file_name: string
+          file_type: string
+          file_size: number
+          is_screenshot?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          feedback_id?: string
+          storage_path?: string
+          public_url?: string
+          file_name?: string
+          file_type?: string
+          file_size?: number
+          is_screenshot?: boolean
+          created_at?: string
+        }
+      }
+      feedback_responses: {
+        Row: {
+          id: string
+          feedback_id: string
+          user_id: string
+          content: string
+          is_internal: boolean
+          is_status_change: boolean
+          old_status: string | null
+          new_status: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          feedback_id: string
+          user_id: string
+          content: string
+          is_internal?: boolean
+          is_status_change?: boolean
+          old_status?: string | null
+          new_status?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          feedback_id?: string
+          user_id?: string
+          content?: string
+          is_internal?: boolean
+          is_status_change?: boolean
+          old_status?: string | null
+          new_status?: string | null
+          created_at?: string
+        }
+      }
     }
   }
 }
@@ -2764,4 +2944,57 @@ export type CharacterWithFactions = Character & {
 export type CharacterWithRelationships = Character & {
   outgoing_relationships: CanvasRelationshipWithDetails[]
   incoming_relationships: CanvasRelationshipWithDetails[]
+}
+
+// =====================================================
+// FEEDBACK SYSTEM TYPES
+// =====================================================
+
+// Base types
+export type Feedback = Database['public']['Tables']['feedback']['Row']
+export type FeedbackInsert = Database['public']['Tables']['feedback']['Insert']
+export type FeedbackUpdate = Database['public']['Tables']['feedback']['Update']
+export type FeedbackAttachment = Database['public']['Tables']['feedback_attachments']['Row']
+export type FeedbackResponse = Database['public']['Tables']['feedback_responses']['Row']
+
+// Type aliases for enum-like values
+export type FeedbackType = 'bug' | 'feature' | 'question' | 'praise'
+export type FeedbackStatus = 'new' | 'reviewing' | 'in_progress' | 'fixed' | 'closed' | 'wont_fix'
+export type FeedbackPriority = 'low' | 'medium' | 'high' | 'critical'
+export type FeedbackFrequency = 'always' | 'sometimes' | 'once'
+
+// Context capture types
+export interface BrowserInfo {
+  name: string
+  version: string
+  os: string
+  osVersion: string
+  device: 'desktop' | 'mobile' | 'tablet'
+  userAgent: string
+}
+
+export interface ConsoleError {
+  message: string
+  source?: string
+  lineno?: number
+  colno?: number
+  timestamp: string
+  stack?: string
+}
+
+export interface NavigationEntry {
+  url: string
+  title: string
+  timestamp: string
+}
+
+// Extended feedback with attachments and responses
+export type FeedbackWithDetails = Feedback & {
+  attachments: FeedbackAttachment[]
+  responses: FeedbackResponse[]
+}
+
+// For admin list display
+export type FeedbackListItem = Feedback & {
+  response_count: number
 }

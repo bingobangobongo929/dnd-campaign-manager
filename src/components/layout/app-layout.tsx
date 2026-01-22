@@ -8,7 +8,7 @@ import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { useAppStore, useCanUseAI } from '@/store'
 import type { Campaign, Character, Session, TimelineEvent, CampaignLore, CanvasGroup } from '@/types/database'
 import { AIAssistant } from '@/components/ai/ai-assistant'
-import { BugReportButton } from '@/components/ui/bug-report-button'
+import { FeedbackButton, FeedbackModal } from '@/components/feedback'
 import { UsernameSetupModal } from '@/components/auth/UsernameSetupModal'
 
 interface AppLayoutProps {
@@ -248,8 +248,9 @@ export function AppLayout({
       {/* AI Assistant Panel - with campaign context, only when user can use AI */}
       {isAIAssistantOpen && canUseAI && <AIAssistant campaignContext={campaignContext} />}
 
-      {/* Bug Report / Feedback Button */}
-      <BugReportButton />
+      {/* Feedback Button & Modal */}
+      <FeedbackButton />
+      <FeedbackModal />
 
       {/* Username Setup Modal - shown if user hasn't set a username */}
       <UsernameSetupModal
