@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Trash2, Tag as TagIcon, Search, Check } from 'lucide-react'
+import { Plus, Trash2, Tag as TagIcon, Search, Check, Settings } from 'lucide-react'
 import { useSupabase } from '@/hooks'
 import { cn, TAG_COLORS } from '@/lib/utils'
 import { Input, Modal, ColorPicker, IconPicker, getGroupIcon } from '@/components/ui'
+import { TagManager } from '@/components/campaign/TagManager'
 import type { Character, Tag, CharacterTag } from '@/types/database'
 
 interface LabelWithTag extends CharacterTag {
@@ -26,8 +27,11 @@ export function LabelsEditor({
   const [characterLabels, setCharacterLabels] = useState<LabelWithTag[]>([])
   const [availableLabels, setAvailableLabels] = useState<Tag[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Modal states - separate for Add, Create, Manage
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [isCreateMode, setIsCreateMode] = useState(false)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isManageModalOpen, setIsManageModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
   // Create form state
@@ -140,8 +144,7 @@ export function LabelsEditor({
         icon: 'star',
         description: '',
       })
-      setIsCreateMode(false)
-      setIsAddModalOpen(false)
+      setIsCreateModalOpen(false)
       loadCharacterLabels()
       loadAvailableLabels()
       onLabelsChange?.()
@@ -150,14 +153,16 @@ export function LabelsEditor({
     setSaving(false)
   }
 
+  const handleManageClose = () => {
+    setIsManageModalOpen(false)
+    // Reload labels in case any were edited/deleted
+    loadAvailableLabels()
+    loadCharacterLabels()
+  }
+
   // Get labels not already on this character
   const unusedLabels = availableLabels.filter(
     label => !characterLabels.some(cl => cl.tag_id === label.id)
-  )
-
-  // Filter by search
-  const filteredLabels = unusedLabels.filter(label =>
-    label.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   if (loading) {
@@ -169,34 +174,18 @@ export function LabelsEditor({
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header with Add button */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[--text-secondary] uppercase tracking-wider flex items-center gap-2">
-          <TagIcon className="w-4 h-4 text-blue-400" />
-          Labels
-        </h3>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="btn btn-secondary btn-xs"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Add
-        </button>
-      </div>
+    <div className="space-y-3">
+      {/* Header */}
+      <h3 className="text-sm font-semibold text-[--text-secondary] uppercase tracking-wider flex items-center gap-2">
+        <TagIcon className="w-4 h-4 text-blue-400" />
+        Labels
+      </h3>
 
       {/* Labels list */}
       {characterLabels.length === 0 ? (
-        <div className="text-center py-6 bg-white/[0.02] rounded-xl border border-white/[0.06]">
-          <TagIcon className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-          <p className="text-sm text-gray-400">No labels yet</p>
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="btn btn-secondary btn-sm mt-3"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add First Label
-          </button>
+        <div className="text-center py-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+          <TagIcon className="w-6 h-6 text-gray-600 mx-auto mb-1" />
+          <p className="text-xs text-gray-400">No labels assigned</p>
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
@@ -234,13 +223,126 @@ export function LabelsEditor({
         </div>
       )}
 
-      {/* Add Label Modal */}
+      {/* Action Buttons - 3 buttons at bottom */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="flex-1 btn btn-secondary btn-sm justify-center"
+        >
+          <Plus className="w-4 h-4" />
+          Add
+        </button>
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="flex-1 btn btn-secondary btn-sm justify-center"
+        >
+          <Plus className="w-4 h-4" />
+          Create
+        </button>
+        <button
+          onClick={() => setIsManageModalOpen(true)}
+          className="flex-1 btn btn-secondary btn-sm justify-center"
+        >
+          <Settings className="w-4 h-4" />
+          Manage
+        </button>
+      </div>
+
+      {/* Add Label Modal - Select from existing */}
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => {
           setIsAddModalOpen(false)
-          setIsCreateMode(false)
           setSearchQuery('')
+        }}
+        title="Add Label"
+      >
+        <div className="space-y-4">
+          {/* Search */}
+          {availableLabels.length > 3 && (
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                className="pl-10"
+                placeholder="Search labels..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          )}
+
+          {/* Available labels */}
+          {availableLabels.length > 0 ? (
+            <div className="space-y-2">
+              <label className="form-label">Available Labels</label>
+              <div className="flex flex-wrap gap-2 max-h-[300px] overflow-y-auto">
+                {availableLabels
+                  .filter(label => label.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                  .map(label => {
+                    const IconComponent = getGroupIcon(label.icon)
+                    const isAlreadyAdded = characterLabels.some(cl => cl.tag_id === label.id)
+                    return (
+                      <button
+                        key={label.id}
+                        onClick={() => {
+                          if (!isAlreadyAdded) {
+                            handleAddLabel(label.id)
+                            setIsAddModalOpen(false)
+                          }
+                        }}
+                        disabled={saving || isAlreadyAdded}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                          isAlreadyAdded
+                            ? "opacity-50 cursor-not-allowed"
+                            : "hover:scale-105"
+                        )}
+                        style={{
+                          backgroundColor: `${label.color}20`,
+                          color: label.color,
+                          border: `1px solid ${label.color}40`,
+                        }}
+                      >
+                        {isAlreadyAdded ? (
+                          <Check className="w-4 h-4" />
+                        ) : (
+                          <IconComponent className="w-4 h-4" />
+                        )}
+                        {label.name}
+                      </button>
+                    )
+                  })}
+              </div>
+              {characterLabels.length > 0 && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Labels with checkmark are already assigned
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <TagIcon className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+              <p className="text-sm text-gray-400">No labels exist yet</p>
+              <button
+                className="btn btn-primary btn-sm mt-3"
+                onClick={() => {
+                  setIsAddModalOpen(false)
+                  setIsCreateModalOpen(true)
+                }}
+              >
+                <Plus className="w-4 h-4" />
+                Create First Label
+              </button>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Create Label Modal */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => {
+          setIsCreateModalOpen(false)
           setCreateForm({
             name: '',
             color: TAG_COLORS[0].value as string,
@@ -248,146 +350,73 @@ export function LabelsEditor({
             description: '',
           })
         }}
-        title="Add Label"
+        title="Create New Label"
       >
         <div className="space-y-4">
-          {!isCreateMode ? (
-            <>
-              {/* Search */}
-              {unusedLabels.length > 3 && (
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    className="pl-10"
-                    placeholder="Search labels..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-              )}
+          <div className="form-group">
+            <label className="form-label">Label Name</label>
+            <Input
+              value={createForm.name}
+              onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+              placeholder="e.g., Noble, Cursed, Quest Giver..."
+              className="form-input"
+              autoFocus
+            />
+          </div>
 
-              {/* All labels (showing which are already added) */}
-              {availableLabels.length > 0 ? (
-                <div className="space-y-2">
-                  <label className="form-label">Campaign Labels</label>
-                  <div className="flex flex-wrap gap-2 max-h-[200px] overflow-y-auto">
-                    {availableLabels
-                      .filter(label => label.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                      .map(label => {
-                        const IconComponent = getGroupIcon(label.icon)
-                        const isAlreadyAdded = characterLabels.some(cl => cl.tag_id === label.id)
-                        return (
-                          <button
-                            key={label.id}
-                            onClick={() => {
-                              if (!isAlreadyAdded) {
-                                handleAddLabel(label.id)
-                                setIsAddModalOpen(false)
-                              }
-                            }}
-                            disabled={saving || isAlreadyAdded}
-                            className={cn(
-                              "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all",
-                              isAlreadyAdded
-                                ? "opacity-50 cursor-not-allowed"
-                                : "hover:scale-105"
-                            )}
-                            style={{
-                              backgroundColor: `${label.color}20`,
-                              color: label.color,
-                              border: `1px solid ${label.color}40`,
-                            }}
-                          >
-                            {isAlreadyAdded ? (
-                              <Check className="w-4 h-4" />
-                            ) : (
-                              <IconComponent className="w-4 h-4" />
-                            )}
-                            {label.name}
-                          </button>
-                        )
-                      })}
-                  </div>
-                  {characterLabels.length > 0 && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      Labels with ✓ are already on this character
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-400 text-center py-4">
-                  No labels exist yet. Create one below.
-                </p>
-              )}
+          <div className="form-group">
+            <label className="form-label">Description (optional)</label>
+            <textarea
+              value={createForm.description}
+              onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+              placeholder="What does this label represent?"
+              rows={2}
+              className="form-textarea"
+            />
+          </div>
 
-              <button
-                className="btn btn-secondary w-full"
-                onClick={() => setIsCreateMode(true)}
-              >
-                <Plus className="w-4 h-4" />
-                Create New Label
-              </button>
-            </>
-          ) : (
-            <>
-              <div className="form-group">
-                <label className="form-label">Label Name</label>
-                <Input
-                  value={createForm.name}
-                  onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                  placeholder="e.g., Noble, Cursed, Quest Giver..."
-                  className="form-input"
-                  autoFocus
-                />
-              </div>
+          <div className="form-group">
+            <label className="form-label">Icon</label>
+            <IconPicker
+              value={createForm.icon}
+              onChange={(icon) => setCreateForm({ ...createForm, icon })}
+              color={createForm.color}
+            />
+          </div>
 
-              <div className="form-group">
-                <label className="form-label">Description (optional)</label>
-                <textarea
-                  value={createForm.description}
-                  onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
-                  placeholder="What does this label represent?"
-                  rows={2}
-                  className="form-textarea"
-                />
-              </div>
+          <div className="form-group">
+            <label className="form-label">Color</label>
+            <ColorPicker
+              value={createForm.color}
+              onChange={(color) => setCreateForm({ ...createForm, color })}
+            />
+          </div>
 
-              <div className="form-group">
-                <label className="form-label">Icon</label>
-                <IconPicker
-                  value={createForm.icon}
-                  onChange={(icon) => setCreateForm({ ...createForm, icon })}
-                  color={createForm.color}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Color</label>
-                <ColorPicker
-                  value={createForm.color}
-                  onChange={(color) => setCreateForm({ ...createForm, color })}
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => setIsCreateMode(false)}
-                >
-                  Back
-                </button>
-                <button
-                  className="btn btn-primary"
-                  onClick={handleCreateLabel}
-                  disabled={saving || !createForm.name.trim()}
-                >
-                  {saving ? 'Creating...' : 'Create & Add'}
-                </button>
-              </div>
-            </>
-          )}
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setIsCreateModalOpen(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleCreateLabel}
+              disabled={saving || !createForm.name.trim()}
+            >
+              {saving ? 'Creating...' : 'Create & Assign'}
+            </button>
+          </div>
         </div>
       </Modal>
+
+      {/* Manage Labels Modal (TagManager) */}
+      <TagManager
+        campaignId={campaignId}
+        isOpen={isManageModalOpen}
+        onClose={handleManageClose}
+        onTagsChange={onLabelsChange}
+      />
     </div>
   )
 }

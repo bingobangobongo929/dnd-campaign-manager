@@ -21,6 +21,7 @@ interface AddRelationshipModalProps {
   isOpen: boolean
   onClose: () => void
   onRelationshipCreated: () => void
+  initialMode?: 'template' | 'custom'
 }
 
 const CATEGORY_ICONS: Record<RelationshipCategory, React.ReactNode> = {
@@ -55,6 +56,7 @@ export function AddRelationshipModal({
   isOpen,
   onClose,
   onRelationshipCreated,
+  initialMode = 'template',
 }: AddRelationshipModalProps) {
   const supabase = useSupabase()
   const [templates, setTemplates] = useState<RelationshipTemplate[]>([])
@@ -73,7 +75,14 @@ export function AddRelationshipModal({
   const [expandedCategories, setExpandedCategories] = useState<Set<RelationshipCategory>>(
     new Set(['family', 'social', 'conflict'])
   )
-  const [isCustomMode, setIsCustomMode] = useState(false)
+  const [isCustomMode, setIsCustomMode] = useState(initialMode === 'custom')
+
+  // Reset mode when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setIsCustomMode(initialMode === 'custom')
+    }
+  }, [isOpen, initialMode])
 
   // Load templates
   const loadTemplates = useCallback(async () => {

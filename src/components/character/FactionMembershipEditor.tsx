@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Trash2, Shield, EyeOff, Pencil } from 'lucide-react'
+import { Plus, Trash2, Shield, EyeOff, Pencil, Settings } from 'lucide-react'
 import { useSupabase } from '@/hooks'
 import { cn } from '@/lib/utils'
-import { Input, Modal } from '@/components/ui'
-import type { Character, CampaignFaction, FactionMembership } from '@/types/database'
+import { Input, Modal, ColorPicker } from '@/components/ui'
+import { FactionManager } from '@/components/campaign/FactionManager'
+import type { Character, CampaignFaction, FactionMembership, FactionType } from '@/types/database'
 
 interface MembershipWithFaction extends FactionMembership {
   faction: CampaignFaction
@@ -14,26 +15,53 @@ interface MembershipWithFaction extends FactionMembership {
 interface FactionMembershipEditorProps {
   character: Character
   campaignId: string
+  allCharacters: Character[]
   onMembershipsChange?: () => void
 }
+
+const FACTION_TYPES: { value: FactionType; label: string }[] = [
+  { value: 'guild', label: 'Guild' },
+  { value: 'kingdom', label: 'Kingdom' },
+  { value: 'military', label: 'Military' },
+  { value: 'criminal', label: 'Criminal' },
+  { value: 'religious', label: 'Religious' },
+  { value: 'merchant', label: 'Merchant' },
+  { value: 'academic', label: 'Academic' },
+  { value: 'family', label: 'Family' },
+  { value: 'cult', label: 'Cult' },
+  { value: 'other', label: 'Other' },
+]
 
 export function FactionMembershipEditor({
   character,
   campaignId,
+  allCharacters,
   onMembershipsChange,
 }: FactionMembershipEditorProps) {
   const supabase = useSupabase()
   const [memberships, setMemberships] = useState<MembershipWithFaction[]>([])
   const [availableFactions, setAvailableFactions] = useState<CampaignFaction[]>([])
   const [loading, setLoading] = useState(true)
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
-  // Form state for adding membership
+  // Modal states - separate for Join, Create, Manage
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isManageModalOpen, setIsManageModalOpen] = useState(false)
+
+  // Form state for joining existing faction
   const [selectedFactionId, setSelectedFactionId] = useState<string>('')
   const [membershipRole, setMembershipRole] = useState('')
   const [membershipTitle, setMembershipTitle] = useState('')
   const [isPublic, setIsPublic] = useState(true)
   const [saving, setSaving] = useState(false)
+
+  // Create faction form state
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    description: '',
+    color: '#8B5CF6',
+    faction_type: 'guild' as FactionType,
+  })
 
   // Edit state
   const [editingMembership, setEditingMembership] = useState<MembershipWithFaction | null>(null)
@@ -97,7 +125,7 @@ export function FactionMembershipEditor({
       setMembershipRole('')
       setMembershipTitle('')
       setIsPublic(true)
-      setIsAddModalOpen(false)
+      setIsJoinModalOpen(false)
       loadMemberships()
       onMembershipsChange?.()
     }
@@ -144,6 +172,57 @@ export function FactionMembershipEditor({
     setSaving(false)
   }
 
+  const handleCreateFaction = async () => {
+    if (!createForm.name.trim()) return
+    setSaving(true)
+
+    // Create the faction
+    const { data: faction, error: factionError } = await supabase
+      .from('campaign_factions')
+      .insert({
+        campaign_id: campaignId,
+        name: createForm.name.trim(),
+        description: createForm.description.trim() || null,
+        color: createForm.color,
+        faction_type: createForm.faction_type,
+      })
+      .select()
+      .single()
+
+    if (!factionError && faction) {
+      // Auto-join the character to this faction
+      await supabase
+        .from('faction_memberships')
+        .insert({
+          faction_id: faction.id,
+          character_id: character.id,
+          is_public: true,
+          is_active: true,
+        })
+
+      // Reset form
+      setCreateForm({
+        name: '',
+        description: '',
+        color: '#8B5CF6',
+        faction_type: 'guild',
+      })
+      setIsCreateModalOpen(false)
+      loadMemberships()
+      loadFactions()
+      onMembershipsChange?.()
+    }
+
+    setSaving(false)
+  }
+
+  const handleManageClose = () => {
+    setIsManageModalOpen(false)
+    // Reload factions in case any were edited/deleted
+    loadFactions()
+    loadMemberships()
+  }
+
   // Get factions this character isn't already a member of
   const joinableFactions = availableFactions.filter(
     f => !memberships.some(m => m.faction_id === f.id)
@@ -158,42 +237,18 @@ export function FactionMembershipEditor({
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header with Add button */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[--text-secondary] uppercase tracking-wider flex items-center gap-2">
-          <Shield className="w-4 h-4 text-[--arcane-gold]" />
-          Factions
-        </h3>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="btn btn-secondary btn-xs"
-          disabled={joinableFactions.length === 0}
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Join
-        </button>
-      </div>
+    <div className="space-y-3">
+      {/* Header */}
+      <h3 className="text-sm font-semibold text-[--text-secondary] uppercase tracking-wider flex items-center gap-2">
+        <Shield className="w-4 h-4 text-[--arcane-gold]" />
+        Factions
+      </h3>
 
       {/* Memberships list */}
       {memberships.length === 0 ? (
-        <div className="text-center py-6 bg-white/[0.02] rounded-xl border border-white/[0.06]">
-          <Shield className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-          <p className="text-sm text-gray-400">Not a member of any faction</p>
-          {joinableFactions.length > 0 && (
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="btn btn-secondary btn-sm mt-3"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Join First Faction
-            </button>
-          )}
-          {joinableFactions.length === 0 && availableFactions.length === 0 && (
-            <p className="text-xs text-gray-500 mt-2">
-              No factions exist yet. Create factions from the canvas toolbar.
-            </p>
-          )}
+        <div className="text-center py-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+          <Shield className="w-6 h-6 text-gray-600 mx-auto mb-1" />
+          <p className="text-xs text-gray-400">Not a member of any faction</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -259,11 +314,36 @@ export function FactionMembershipEditor({
         </div>
       )}
 
-      {/* Add Membership Modal */}
+      {/* Action Buttons - 3 buttons at bottom */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setIsJoinModalOpen(true)}
+          className="flex-1 btn btn-secondary btn-sm justify-center"
+        >
+          <Plus className="w-4 h-4" />
+          Join
+        </button>
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="flex-1 btn btn-secondary btn-sm justify-center"
+        >
+          <Plus className="w-4 h-4" />
+          Create
+        </button>
+        <button
+          onClick={() => setIsManageModalOpen(true)}
+          className="flex-1 btn btn-secondary btn-sm justify-center"
+        >
+          <Settings className="w-4 h-4" />
+          Manage
+        </button>
+      </div>
+
+      {/* Join Faction Modal - Select from existing */}
       <Modal
-        isOpen={isAddModalOpen}
+        isOpen={isJoinModalOpen}
         onClose={() => {
-          setIsAddModalOpen(false)
+          setIsJoinModalOpen(false)
           setSelectedFactionId('')
           setMembershipRole('')
           setMembershipTitle('')
@@ -371,13 +451,16 @@ export function FactionMembershipEditor({
           <div className="flex justify-end gap-3 pt-4">
             <button
               className="btn btn-secondary"
-              onClick={() => setIsAddModalOpen(false)}
+              onClick={() => setIsJoinModalOpen(false)}
             >
               Cancel
             </button>
             <button
               className="btn btn-primary"
-              onClick={handleAddMembership}
+              onClick={() => {
+                handleAddMembership()
+                setIsJoinModalOpen(false)
+              }}
               disabled={!selectedFactionId || saving}
             >
               {saving ? 'Joining...' : 'Join Faction'}
@@ -385,6 +468,98 @@ export function FactionMembershipEditor({
           </div>
         </div>
       </Modal>
+
+      {/* Create Faction Modal */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => {
+          setIsCreateModalOpen(false)
+          setCreateForm({
+            name: '',
+            description: '',
+            color: '#8B5CF6',
+            faction_type: 'guild',
+          })
+        }}
+        title="Create New Faction"
+      >
+        <div className="space-y-4">
+          <div className="form-group">
+            <label className="form-label">Faction Name</label>
+            <Input
+              value={createForm.name}
+              onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+              placeholder="e.g., The Silver Hand, Black Dagger Guild..."
+              className="form-input"
+              autoFocus
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Description (optional)</label>
+            <textarea
+              value={createForm.description}
+              onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+              placeholder="What is this faction's purpose?"
+              rows={2}
+              className="form-textarea"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Type</label>
+            <div className="flex flex-wrap gap-2">
+              {FACTION_TYPES.map(type => (
+                <button
+                  key={type.value}
+                  onClick={() => setCreateForm({ ...createForm, faction_type: type.value })}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors",
+                    createForm.faction_type === type.value
+                      ? "bg-[--arcane-gold]/20 border-[--arcane-gold] text-[--arcane-gold]"
+                      : "bg-white/[0.03] border-white/[0.08] text-[--text-secondary] hover:bg-white/[0.05]"
+                  )}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Color</label>
+            <ColorPicker
+              value={createForm.color}
+              onChange={(color) => setCreateForm({ ...createForm, color })}
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setIsCreateModalOpen(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleCreateFaction}
+              disabled={saving || !createForm.name.trim()}
+            >
+              {saving ? 'Creating...' : 'Create & Join'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Manage Factions Modal (FactionManager) */}
+      <FactionManager
+        campaignId={campaignId}
+        characters={allCharacters}
+        isOpen={isManageModalOpen}
+        onClose={handleManageClose}
+        onFactionsChange={onMembershipsChange}
+      />
 
       {/* Edit Membership Modal */}
       <Modal

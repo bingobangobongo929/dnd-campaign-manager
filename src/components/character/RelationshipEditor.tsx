@@ -3,13 +3,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Plus, Trash2, Users, Heart, Swords, Briefcase, Crown,
-  ArrowRight, ArrowLeftRight, EyeOff, Link2, Pencil
+  ArrowRight, ArrowLeftRight, EyeOff, Link2, Pencil, Settings
 } from 'lucide-react'
 import Image from 'next/image'
 import { useSupabase } from '@/hooks'
 import { cn, getInitials } from '@/lib/utils'
 import { getGroupIcon, Modal, Input } from '@/components/ui'
 import { AddRelationshipModal } from './AddRelationshipModal'
+import { RelationshipManager } from '@/components/campaign/RelationshipManager'
 import type {
   Character, CanvasRelationship, RelationshipTemplate,
   RelationshipCategory
@@ -45,7 +46,11 @@ export function RelationshipEditor({
   const supabase = useSupabase()
   const [relationships, setRelationships] = useState<RelationshipWithDetails[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Modal states - separate for Add, Create, Manage
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isManageModalOpen, setIsManageModalOpen] = useState(false)
 
   // Edit state
   const [editingRelationship, setEditingRelationship] = useState<RelationshipWithDetails | null>(null)
@@ -97,6 +102,12 @@ export function RelationshipEditor({
   const handleRelationshipCreated = () => {
     loadRelationships()
     onRelationshipsChange?.()
+  }
+
+  const handleManageClose = () => {
+    setIsManageModalOpen(false)
+    // Reload relationships in case any were deleted
+    loadRelationships()
   }
 
   const handleEditClick = (rel: RelationshipWithDetails) => {
@@ -168,34 +179,18 @@ export function RelationshipEditor({
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header with Add button */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[--text-secondary] uppercase tracking-wider flex items-center gap-2">
-          <Users className="w-4 h-4" />
-          Relationships
-        </h3>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="btn btn-secondary btn-xs"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Add
-        </button>
-      </div>
+    <div className="space-y-3">
+      {/* Header */}
+      <h3 className="text-sm font-semibold text-[--text-secondary] uppercase tracking-wider flex items-center gap-2">
+        <Users className="w-4 h-4" />
+        Relationships
+      </h3>
 
       {/* Relationships list */}
       {relationships.length === 0 ? (
-        <div className="text-center py-6 bg-white/[0.02] rounded-xl border border-white/[0.06]">
-          <Users className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-          <p className="text-sm text-gray-400">No relationships yet</p>
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="btn btn-secondary btn-sm mt-3"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add First Relationship
-          </button>
+        <div className="text-center py-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+          <Users className="w-6 h-6 text-gray-600 mx-auto mb-1" />
+          <p className="text-xs text-gray-400">No relationships yet</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -292,7 +287,32 @@ export function RelationshipEditor({
         </div>
       )}
 
-      {/* Add Relationship Modal */}
+      {/* Action Buttons - 3 buttons at bottom */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="flex-1 btn btn-secondary btn-sm justify-center"
+        >
+          <Plus className="w-4 h-4" />
+          Add
+        </button>
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="flex-1 btn btn-secondary btn-sm justify-center"
+        >
+          <Plus className="w-4 h-4" />
+          Create
+        </button>
+        <button
+          onClick={() => setIsManageModalOpen(true)}
+          className="flex-1 btn btn-secondary btn-sm justify-center"
+        >
+          <Settings className="w-4 h-4" />
+          Manage
+        </button>
+      </div>
+
+      {/* Add Relationship Modal - Use existing templates */}
       <AddRelationshipModal
         campaignId={campaignId}
         character={character}
@@ -301,6 +321,26 @@ export function RelationshipEditor({
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onRelationshipCreated={handleRelationshipCreated}
+        initialMode="template"
+      />
+
+      {/* Create Relationship Modal - Custom mode */}
+      <AddRelationshipModal
+        campaignId={campaignId}
+        character={character}
+        allCharacters={allCharacters}
+        existingRelationships={relationships}
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onRelationshipCreated={handleRelationshipCreated}
+        initialMode="custom"
+      />
+
+      {/* Manage Relationships Modal */}
+      <RelationshipManager
+        campaignId={campaignId}
+        isOpen={isManageModalOpen}
+        onClose={handleManageClose}
       />
 
       {/* Edit Relationship Modal */}

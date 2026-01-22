@@ -710,6 +710,7 @@ export function CharacterModal({
                       <FactionMembershipEditor
                         character={character}
                         campaignId={campaignId}
+                        allCharacters={allCharacters}
                         onMembershipsChange={onTagsChange}
                       />
                       <RelationshipEditor
@@ -866,6 +867,7 @@ export function CharacterModal({
                     <FactionMembershipEditor
                       character={character}
                       campaignId={campaignId}
+                      allCharacters={allCharacters}
                       onMembershipsChange={onTagsChange}
                     />
                     <RelationshipEditor
