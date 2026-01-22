@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Trash2, Tag as TagIcon, Search } from 'lucide-react'
+import { Plus, Trash2, Tag as TagIcon, Search, Check } from 'lucide-react'
 import { useSupabase } from '@/hooks'
 import { cn, TAG_COLORS } from '@/lib/utils'
 import { Input, Modal, ColorPicker, IconPicker, getGroupIcon } from '@/components/ui'
@@ -223,10 +223,10 @@ export function LabelsEditor({
                 </span>
                 <button
                   onClick={() => handleRemoveLabel(label.id)}
-                  className="opacity-0 group-hover:opacity-100 p-0.5 rounded-full hover:bg-red-500/20 transition-all"
+                  className="p-0.5 rounded-full hover:bg-red-500/20 transition-all text-gray-400 hover:text-red-400"
                   title="Remove label"
                 >
-                  <Trash2 className="w-3 h-3 text-red-400" />
+                  <Trash2 className="w-3 h-3" />
                 </button>
               </div>
             )
@@ -266,40 +266,57 @@ export function LabelsEditor({
                 </div>
               )}
 
-              {/* Existing labels */}
-              {filteredLabels.length > 0 ? (
+              {/* All labels (showing which are already added) */}
+              {availableLabels.length > 0 ? (
                 <div className="space-y-2">
-                  <label className="form-label">Available Labels</label>
+                  <label className="form-label">Campaign Labels</label>
                   <div className="flex flex-wrap gap-2 max-h-[200px] overflow-y-auto">
-                    {filteredLabels.map(label => {
-                      const IconComponent = getGroupIcon(label.icon)
-                      return (
-                        <button
-                          key={label.id}
-                          onClick={() => {
-                            handleAddLabel(label.id)
-                            setIsAddModalOpen(false)
-                          }}
-                          disabled={saving}
-                          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105"
-                          style={{
-                            backgroundColor: `${label.color}20`,
-                            color: label.color,
-                            border: `1px solid ${label.color}40`,
-                          }}
-                        >
-                          <IconComponent className="w-4 h-4" />
-                          {label.name}
-                        </button>
-                      )
-                    })}
+                    {availableLabels
+                      .filter(label => label.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .map(label => {
+                        const IconComponent = getGroupIcon(label.icon)
+                        const isAlreadyAdded = characterLabels.some(cl => cl.tag_id === label.id)
+                        return (
+                          <button
+                            key={label.id}
+                            onClick={() => {
+                              if (!isAlreadyAdded) {
+                                handleAddLabel(label.id)
+                                setIsAddModalOpen(false)
+                              }
+                            }}
+                            disabled={saving || isAlreadyAdded}
+                            className={cn(
+                              "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                              isAlreadyAdded
+                                ? "opacity-50 cursor-not-allowed"
+                                : "hover:scale-105"
+                            )}
+                            style={{
+                              backgroundColor: `${label.color}20`,
+                              color: label.color,
+                              border: `1px solid ${label.color}40`,
+                            }}
+                          >
+                            {isAlreadyAdded ? (
+                              <Check className="w-4 h-4" />
+                            ) : (
+                              <IconComponent className="w-4 h-4" />
+                            )}
+                            {label.name}
+                          </button>
+                        )
+                      })}
                   </div>
+                  {characterLabels.length > 0 && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      Labels with ✓ are already on this character
+                    </p>
+                  )}
                 </div>
               ) : (
                 <p className="text-sm text-gray-400 text-center py-4">
-                  {unusedLabels.length === 0
-                    ? "No more labels available. Create a new one below."
-                    : "No labels match your search."}
+                  No labels exist yet. Create one below.
                 </p>
               )}
 

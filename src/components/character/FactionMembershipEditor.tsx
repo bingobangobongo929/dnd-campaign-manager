@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Trash2, Shield, EyeOff, ChevronDown, X } from 'lucide-react'
+import { Plus, Trash2, Shield, EyeOff, Pencil } from 'lucide-react'
 import { useSupabase } from '@/hooks'
 import { cn } from '@/lib/utils'
 import { Input, Modal } from '@/components/ui'
@@ -34,6 +34,12 @@ export function FactionMembershipEditor({
   const [membershipTitle, setMembershipTitle] = useState('')
   const [isPublic, setIsPublic] = useState(true)
   const [saving, setSaving] = useState(false)
+
+  // Edit state
+  const [editingMembership, setEditingMembership] = useState<MembershipWithFaction | null>(null)
+  const [editRole, setEditRole] = useState('')
+  const [editTitle, setEditTitle] = useState('')
+  const [editIsPublic, setEditIsPublic] = useState(true)
 
   // Load memberships for this character
   const loadMemberships = useCallback(async () => {
@@ -107,6 +113,35 @@ export function FactionMembershipEditor({
 
     loadMemberships()
     onMembershipsChange?.()
+  }
+
+  const handleEditClick = (membership: MembershipWithFaction) => {
+    setEditingMembership(membership)
+    setEditRole(membership.role || '')
+    setEditTitle(membership.title || '')
+    setEditIsPublic(membership.is_public)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingMembership) return
+    setSaving(true)
+
+    const { error } = await supabase
+      .from('faction_memberships')
+      .update({
+        role: editRole || null,
+        title: editTitle || null,
+        is_public: editIsPublic,
+      })
+      .eq('id', editingMembership.id)
+
+    if (!error) {
+      setEditingMembership(null)
+      loadMemberships()
+      onMembershipsChange?.()
+    }
+
+    setSaving(false)
   }
 
   // Get factions this character isn't already a member of
@@ -202,14 +237,23 @@ export function FactionMembershipEditor({
                 )}
               </div>
 
-              {/* Delete button */}
-              <button
-                onClick={() => handleRemoveMembership(membership.id)}
-                className="p-1.5 rounded-lg text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10 transition-all shrink-0"
-                title="Leave faction"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              {/* Action buttons - always visible */}
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => handleEditClick(membership)}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 transition-all"
+                  title="Edit membership"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleRemoveMembership(membership.id)}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                  title="Leave faction"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -337,6 +381,84 @@ export function FactionMembershipEditor({
               disabled={!selectedFactionId || saving}
             >
               {saving ? 'Joining...' : 'Join Faction'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Membership Modal */}
+      <Modal
+        isOpen={!!editingMembership}
+        onClose={() => setEditingMembership(null)}
+        title={`Edit ${editingMembership?.faction.name} Membership`}
+      >
+        <div className="space-y-4">
+          {/* Role */}
+          <div className="form-group">
+            <label className="form-label">Role</label>
+            <Input
+              value={editRole}
+              onChange={(e) => setEditRole(e.target.value)}
+              placeholder="e.g., Spy, Enforcer, Advisor..."
+              className="form-input"
+            />
+          </div>
+
+          {/* Title */}
+          <div className="form-group">
+            <label className="form-label">Title</label>
+            <Input
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              placeholder="e.g., Guildmaster, Initiate, Captain..."
+              className="form-input"
+            />
+          </div>
+
+          {/* Public/Secret toggle */}
+          <div className="form-group">
+            <label className="form-label">Visibility</label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setEditIsPublic(true)}
+                className={cn(
+                  "flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors",
+                  editIsPublic
+                    ? "bg-green-500/20 border-green-500 text-green-400"
+                    : "bg-white/[0.03] border-white/[0.08] text-[--text-secondary] hover:bg-white/[0.05]"
+                )}
+              >
+                Public
+              </button>
+              <button
+                onClick={() => setEditIsPublic(false)}
+                className={cn(
+                  "flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center gap-1.5",
+                  !editIsPublic
+                    ? "bg-purple-500/20 border-purple-500 text-purple-400"
+                    : "bg-white/[0.03] border-white/[0.08] text-[--text-secondary] hover:bg-white/[0.05]"
+                )}
+              >
+                <EyeOff className="w-4 h-4" />
+                Secret
+              </button>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setEditingMembership(null)}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleSaveEdit}
+              disabled={saving}
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </div>

@@ -3,12 +3,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Plus, Trash2, Users, Heart, Swords, Briefcase, Crown,
-  ArrowRight, ArrowLeftRight, EyeOff, Link2
+  ArrowRight, ArrowLeftRight, EyeOff, Link2, Pencil
 } from 'lucide-react'
 import Image from 'next/image'
 import { useSupabase } from '@/hooks'
 import { cn, getInitials } from '@/lib/utils'
-import { getGroupIcon } from '@/components/ui'
+import { getGroupIcon, Modal, Input } from '@/components/ui'
 import { AddRelationshipModal } from './AddRelationshipModal'
 import type {
   Character, CanvasRelationship, RelationshipTemplate,
@@ -46,6 +46,13 @@ export function RelationshipEditor({
   const [relationships, setRelationships] = useState<RelationshipWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+
+  // Edit state
+  const [editingRelationship, setEditingRelationship] = useState<RelationshipWithDetails | null>(null)
+  const [editCustomLabel, setEditCustomLabel] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editIsKnown, setEditIsKnown] = useState(true)
+  const [saving, setSaving] = useState(false)
 
   // Load relationships for this character
   const loadRelationships = useCallback(async () => {
@@ -90,6 +97,36 @@ export function RelationshipEditor({
   const handleRelationshipCreated = () => {
     loadRelationships()
     onRelationshipsChange?.()
+  }
+
+  const handleEditClick = (rel: RelationshipWithDetails) => {
+    setEditingRelationship(rel)
+    setEditCustomLabel(rel.custom_label || '')
+    setEditDescription(rel.description || '')
+    setEditIsKnown(rel.is_known_to_party)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingRelationship) return
+    setSaving(true)
+
+    const { error } = await supabase
+      .from('canvas_relationships')
+      .update({
+        custom_label: editCustomLabel || null,
+        description: editDescription || null,
+        is_known_to_party: editIsKnown,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', editingRelationship.id)
+
+    if (!error) {
+      setEditingRelationship(null)
+      loadRelationships()
+      onRelationshipsChange?.()
+    }
+
+    setSaving(false)
   }
 
   const getRelationshipIcon = (relationship: RelationshipWithDetails) => {
@@ -230,14 +267,23 @@ export function RelationshipEditor({
                         )}
                       </div>
 
-                      {/* Delete button */}
-                      <button
-                        onClick={() => handleDeleteRelationship(rel)}
-                        className="p-1.5 rounded-lg text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10 transition-all shrink-0"
-                        title={rel.pair_id ? "Remove relationship (both directions)" : "Remove relationship"}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {/* Action buttons - always visible */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => handleEditClick(rel)}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 transition-all"
+                          title="Edit relationship"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteRelationship(rel)}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                          title={rel.pair_id ? "Remove relationship (both directions)" : "Remove relationship"}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   )
                 })}
@@ -256,6 +302,90 @@ export function RelationshipEditor({
         onClose={() => setIsAddModalOpen(false)}
         onRelationshipCreated={handleRelationshipCreated}
       />
+
+      {/* Edit Relationship Modal */}
+      <Modal
+        isOpen={!!editingRelationship}
+        onClose={() => setEditingRelationship(null)}
+        title={`Edit Relationship with ${editingRelationship?.to_character.name}`}
+      >
+        <div className="space-y-4">
+          {/* Custom Label */}
+          <div className="form-group">
+            <label className="form-label">
+              Custom Label
+              <span className="text-gray-500 font-normal ml-1">
+                (overrides "{editingRelationship?.template?.name || 'template'}")
+              </span>
+            </label>
+            <Input
+              value={editCustomLabel}
+              onChange={(e) => setEditCustomLabel(e.target.value)}
+              placeholder={editingRelationship?.template?.name || 'Enter custom label...'}
+              className="form-input"
+            />
+          </div>
+
+          {/* Description */}
+          <div className="form-group">
+            <label className="form-label">Description</label>
+            <textarea
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Add details about this relationship..."
+              rows={3}
+              className="form-textarea"
+            />
+          </div>
+
+          {/* Visibility toggle */}
+          <div className="form-group">
+            <label className="form-label">Visibility</label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setEditIsKnown(true)}
+                className={cn(
+                  "flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors",
+                  editIsKnown
+                    ? "bg-green-500/20 border-green-500 text-green-400"
+                    : "bg-white/[0.03] border-white/[0.08] text-[--text-secondary] hover:bg-white/[0.05]"
+                )}
+              >
+                Known to Party
+              </button>
+              <button
+                onClick={() => setEditIsKnown(false)}
+                className={cn(
+                  "flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center gap-1.5",
+                  !editIsKnown
+                    ? "bg-purple-500/20 border-purple-500 text-purple-400"
+                    : "bg-white/[0.03] border-white/[0.08] text-[--text-secondary] hover:bg-white/[0.05]"
+                )}
+              >
+                <EyeOff className="w-4 h-4" />
+                Hidden
+              </button>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setEditingRelationship(null)}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleSaveEdit}
+              disabled={saving}
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
