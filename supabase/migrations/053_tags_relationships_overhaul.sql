@@ -177,7 +177,6 @@ CREATE TABLE IF NOT EXISTS canvas_relationships (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
 
-  UNIQUE(from_character_id, to_character_id, COALESCE(template_id, '00000000-0000-0000-0000-000000000000'::uuid), COALESCE(custom_label, '')),
   CHECK (from_character_id != to_character_id)
 );
 
@@ -185,6 +184,10 @@ CREATE INDEX IF NOT EXISTS idx_canvas_relationships_campaign ON canvas_relations
 CREATE INDEX IF NOT EXISTS idx_canvas_relationships_from ON canvas_relationships(from_character_id);
 CREATE INDEX IF NOT EXISTS idx_canvas_relationships_to ON canvas_relationships(to_character_id);
 CREATE INDEX IF NOT EXISTS idx_canvas_relationships_pair ON canvas_relationships(pair_id);
+
+-- Unique index to prevent duplicate relationships (handles NULL template_id and custom_label)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_canvas_relationships_unique
+  ON canvas_relationships(from_character_id, to_character_id, COALESCE(template_id, '00000000-0000-0000-0000-000000000000'::uuid), COALESCE(custom_label, ''));
 
 -- ============================================================================
 -- 6. IMPROVE EXISTING TAGS TABLE
