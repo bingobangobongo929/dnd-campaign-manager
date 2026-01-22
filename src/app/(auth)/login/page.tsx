@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Loader2, Sparkles, Shield, BookOpen, Dices, Check, AlertCircle, Ticket } from 'lucide-react'
+import { Loader2, Sparkles, Shield, BookOpen, Dices, Check, AlertCircle, Ticket, Compass } from 'lucide-react'
 import { useSupabase } from '@/hooks'
 import { cn } from '@/lib/utils'
 import { LegalFooter } from '@/components/ui/legal-footer'
@@ -281,6 +281,19 @@ function LoginForm() {
               <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 {error}
+              </div>
+            )}
+
+            {/* Founder Banner (signup only) */}
+            {mode === 'signup' && (
+              <div className="flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                <div className="p-2 rounded-lg bg-amber-500/20">
+                  <Compass className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <p className="font-medium text-amber-400 text-sm">Become a Founder</p>
+                  <p className="text-xs text-amber-200/70">Join now for permanent early supporter benefits</p>
+                </div>
               </div>
             )}
 
