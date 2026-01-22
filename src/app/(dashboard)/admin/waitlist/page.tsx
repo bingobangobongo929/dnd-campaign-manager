@@ -14,6 +14,9 @@ import {
   Search,
   Download,
   Send,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
 } from 'lucide-react'
 import { useSupabase } from '@/hooks'
 import { cn } from '@/lib/utils'
@@ -24,6 +27,9 @@ interface WaitlistEntry {
   created_at: string
   invited_at: string | null
   notes: string | null
+  verified: boolean
+  verification_sent_at: string | null
+  token_expires_at: string | null
 }
 
 export default function WaitlistPage() {
@@ -38,7 +44,9 @@ export default function WaitlistPage() {
   // Stats
   const stats = {
     total: entries.length,
-    pending: entries.filter(e => !e.invited_at).length,
+    verified: entries.filter(e => e.verified).length,
+    unverified: entries.filter(e => !e.verified).length,
+    pending: entries.filter(e => e.verified && !e.invited_at).length,
     invited: entries.filter(e => e.invited_at).length,
   }
 
@@ -55,12 +63,12 @@ export default function WaitlistPage() {
   const loadWaitlist = async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('waitlist')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
+      const res = await fetch('/api/waitlist')
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to load waitlist')
+      }
+      const { entries: data } = await res.json()
       setEntries(data || [])
     } catch (err) {
       console.error('Failed to load waitlist:', err)
@@ -106,16 +114,17 @@ export default function WaitlistPage() {
   }
 
   const sendBulkInvites = async () => {
+    // Only invite verified users who haven't been invited yet
     const pendingSelected = filteredEntries.filter(
-      e => selectedIds.has(e.id) && !e.invited_at
+      e => selectedIds.has(e.id) && e.verified && !e.invited_at
     )
 
     if (pendingSelected.length === 0) {
-      alert('No pending entries selected')
+      alert('No verified pending entries selected. Users must verify their email first.')
       return
     }
 
-    if (!confirm(`Send invites to ${pendingSelected.length} email(s)?`)) return
+    if (!confirm(`Send invites to ${pendingSelected.length} verified email(s)?`)) return
 
     setBulkSending(true)
     let successCount = 0
@@ -159,23 +168,28 @@ export default function WaitlistPage() {
     if (!confirm('Remove this email from the waitlist?')) return
 
     try {
-      const { error } = await supabase
-        .from('waitlist')
-        .delete()
-        .eq('id', id)
+      const res = await fetch(`/api/waitlist?id=${id}`, {
+        method: 'DELETE',
+      })
 
-      if (error) throw error
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to delete entry')
+      }
+
       await loadWaitlist()
     } catch (err) {
       console.error('Failed to delete entry:', err)
+      alert(err instanceof Error ? err.message : 'Failed to delete entry')
     }
   }
 
   const exportToCsv = () => {
     const csvContent = [
-      ['Email', 'Signed Up', 'Invited', 'Notes'].join(','),
+      ['Email', 'Verified', 'Signed Up', 'Invited', 'Notes'].join(','),
       ...entries.map(e => [
         e.email,
+        e.verified ? 'Yes' : 'No',
         format(new Date(e.created_at), 'yyyy-MM-dd HH:mm'),
         e.invited_at ? format(new Date(e.invited_at), 'yyyy-MM-dd HH:mm') : '',
         e.notes || ''
@@ -212,7 +226,7 @@ export default function WaitlistPage() {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-500/10 rounded-lg">
@@ -220,7 +234,18 @@ export default function WaitlistPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-white">{stats.total}</p>
-              <p className="text-sm text-gray-400">Total Signups</p>
+              <p className="text-sm text-gray-400">Total</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-500/10 rounded-lg">
+              <CheckCircle className="w-5 h-5 text-green-400" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-white">{stats.verified}</p>
+              <p className="text-sm text-gray-400">Verified</p>
             </div>
           </div>
         </div>
@@ -231,14 +256,14 @@ export default function WaitlistPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-white">{stats.pending}</p>
-              <p className="text-sm text-gray-400">Pending</p>
+              <p className="text-sm text-gray-400">Pending Invite</p>
             </div>
           </div>
         </div>
         <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-500/10 rounded-lg">
-              <MailCheck className="w-5 h-5 text-green-400" />
+            <div className="p-2 bg-blue-500/10 rounded-lg">
+              <MailCheck className="w-5 h-5 text-blue-400" />
             </div>
             <div>
               <p className="text-2xl font-bold text-white">{stats.invited}</p>
@@ -319,79 +344,103 @@ export default function WaitlistPage() {
                     />
                   </th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-gray-400">Email</th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-400">Status</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-400">Verified</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-400">Invite Status</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-gray-400">Signed Up</th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-400">Invited</th>
                   <th className="text-right px-4 py-3 text-sm font-medium text-gray-400">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredEntries.map((entry) => (
-                  <tr key={entry.id} className="border-b border-white/[0.04] hover:bg-white/[0.02]">
-                    <td className="px-4 py-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(entry.id)}
-                        onChange={() => toggleOne(entry.id)}
-                        className="w-4 h-4 rounded bg-white/[0.04] border-white/[0.08] text-purple-600 focus:ring-purple-500"
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-white">{entry.email}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {entry.invited_at ? (
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-green-500/20 text-green-400">
-                          Invited
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-amber-500/20 text-amber-400">
-                          Pending
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-400">
-                      {format(new Date(entry.created_at), 'MMM d, yyyy')}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-400">
-                      {entry.invited_at
-                        ? format(new Date(entry.invited_at), 'MMM d, yyyy')
-                        : '-'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        {!entry.invited_at && (
-                          <button
-                            onClick={() => sendInviteToEmail(entry)}
-                            disabled={sendingInvite === entry.id}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 rounded-lg transition-colors disabled:opacity-50"
-                            title="Send invite"
-                          >
-                            {sendingInvite === entry.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Send className="w-4 h-4" />
-                            )}
-                            Invite
-                          </button>
-                        )}
-                        {entry.invited_at && (
-                          <span className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-green-400">
-                            <Check className="w-4 h-4" />
-                            Sent
+                {filteredEntries.map((entry) => {
+                  // Check if token is expired
+                  const isExpired = entry.token_expires_at && new Date(entry.token_expires_at) < new Date()
+                  const canInvite = entry.verified && !entry.invited_at
+
+                  return (
+                    <tr key={entry.id} className="border-b border-white/[0.04] hover:bg-white/[0.02]">
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(entry.id)}
+                          onChange={() => toggleOne(entry.id)}
+                          className="w-4 h-4 rounded bg-white/[0.04] border-white/[0.08] text-purple-600 focus:ring-purple-500"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-white">{entry.email}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {entry.verified ? (
+                          <span className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-green-500/20 text-green-400">
+                            <CheckCircle className="w-3 h-3" />
+                            Verified
+                          </span>
+                        ) : isExpired ? (
+                          <span className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-red-500/20 text-red-400">
+                            <AlertCircle className="w-3 h-3" />
+                            Expired
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-amber-500/20 text-amber-400">
+                            <Clock className="w-3 h-3" />
+                            Pending
                           </span>
                         )}
-                        <button
-                          onClick={() => deleteEntry(entry.id)}
-                          className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                          title="Remove"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-4 py-3">
+                        {entry.invited_at ? (
+                          <span className="px-2 py-0.5 text-xs rounded-full bg-blue-500/20 text-blue-400">
+                            Invited
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 text-xs rounded-full bg-gray-500/20 text-gray-400">
+                            Not invited
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-400">
+                        {format(new Date(entry.created_at), 'MMM d, yyyy')}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          {!entry.invited_at && (
+                            <button
+                              onClick={() => sendInviteToEmail(entry)}
+                              disabled={sendingInvite === entry.id || !canInvite}
+                              className={cn(
+                                "flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors",
+                                canInvite
+                                  ? "text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"
+                                  : "text-gray-600 cursor-not-allowed"
+                              )}
+                              title={canInvite ? "Send invite" : "Must verify email first"}
+                            >
+                              {sendingInvite === entry.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Send className="w-4 h-4" />
+                              )}
+                              Invite
+                            </button>
+                          )}
+                          {entry.invited_at && (
+                            <span className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-400">
+                              <Check className="w-4 h-4" />
+                              Sent
+                            </span>
+                          )}
+                          <button
+                            onClick={() => deleteEntry(entry.id)}
+                            className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                            title="Remove"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

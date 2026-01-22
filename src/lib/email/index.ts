@@ -192,7 +192,7 @@ export function welcomeEmail(userName: string): { subject: string; html: string 
       <li>Track characters, NPCs, and their stories</li>
       <li>Log detailed session notes</li>
       <li>Build timelines and lore for your world</li>
-      <li>Import characters from D&D Beyond</li>
+      <li>Share campaigns with your players</li>
     </ul>
 
     <p style="margin: 0 0 8px 0; font-size: 13px; color: #fbbf24; text-align: center; font-weight: 500;">

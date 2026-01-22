@@ -166,10 +166,9 @@ export function ImageCropModal({
   const currentAspect = activeMode === 'avatar' ? AVATAR_ASPECT : DETAIL_ASPECT
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop">
       <div
         className="w-[900px] max-w-[95vw] max-h-[90vh] bg-[--bg-surface] border border-[--border] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[--border]">

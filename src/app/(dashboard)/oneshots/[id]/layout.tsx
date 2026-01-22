@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
     .single()
 
   if (!oneshot) {
-    return { title: 'One-Shot Not Found' }
+    return { title: 'One-Shot | Multiloop' }
   }
 
   // Build specs for title

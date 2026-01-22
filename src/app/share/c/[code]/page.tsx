@@ -77,7 +77,7 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
     .single()
 
   if (!share) {
-    return { title: 'Character Not Found' }
+    return { title: 'Character | Multiloop' }
   }
 
   const { data: character } = await supabase
@@ -87,7 +87,7 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
     .single()
 
   if (!character) {
-    return { title: 'Character Not Found' }
+    return { title: 'Character | Multiloop' }
   }
 
   // Build a rich title: "Name | Race Class" or "Name | Class"
@@ -420,9 +420,22 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
 
   // Check if user is logged in (for hiding sign-in buttons)
   let isLoggedIn = false
+  let userEmail: string | undefined
+  let userAvatar: string | null = null
   const userSupabase = await createUserClient()
   const { data: { user: currentUser } } = await userSupabase.auth.getUser()
   isLoggedIn = !!currentUser
+  userEmail = currentUser?.email
+
+  // Get user's avatar if logged in
+  if (currentUser) {
+    const { data: userSettings } = await supabase
+      .from('user_settings')
+      .select('avatar_url')
+      .eq('user_id', currentUser.id)
+      .single()
+    userAvatar = userSettings?.avatar_url || null
+  }
 
   // Check if save is allowed and get snapshot info
   let snapshotId: string | null = null
@@ -527,6 +540,8 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
         snapshotId={snapshotId}
         isLoggedIn={isLoggedIn}
         isSaved={isSaved}
+        userEmail={userEmail}
+        userAvatar={userAvatar}
       />
       <div className="min-h-screen flex flex-col lg:flex-row">
         {/* Sidebar */}

@@ -13,6 +13,7 @@ interface ModalProps {
   children: React.ReactNode
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full' | 'fullscreen'
   showCloseButton?: boolean
+  disableBackdropClose?: boolean
 }
 
 export function Modal({
@@ -23,6 +24,7 @@ export function Modal({
   children,
   size = 'md',
   showCloseButton = true,
+  disableBackdropClose = false,
 }: ModalProps) {
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
@@ -68,7 +70,7 @@ export function Modal({
   }
 
   const modalContent = (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop" onClick={disableBackdropClose ? undefined : onClose}>
       <div
         className={cn(
           'modal max-h-[85vh] md:max-h-[90vh] flex flex-col',

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, MoreVertical, Shield, Ban, UserX, Crown, Loader2, Check, X, Sparkles, Bot, Copy, AtSign } from 'lucide-react'
+import { Search, MoreVertical, Shield, Ban, UserX, Crown, Loader2, Check, X, Sparkles, Bot, Copy, AtSign, CheckCircle, AlertCircle } from 'lucide-react'
 import { useSupabase, useUserSettings } from '@/hooks'
 import { Modal, Button } from '@/components/ui'
 import { DropdownMenu } from '@/components/ui/dropdown-menu'
@@ -20,6 +20,8 @@ interface UserWithSettings {
   id: string
   email: string
   created_at: string
+  email_confirmed_at: string | null
+  last_sign_in_at: string | null
   settings: {
     username: string | null
     tier: string
@@ -67,33 +69,15 @@ export default function AdminUsersPage() {
 
   const fetchUsers = async () => {
     try {
-      // Fetch users with their settings
-      const { data: settingsData, error } = await supabase
-        .from('user_settings')
-        .select('*')
-        .order('created_at', { ascending: false })
+      // Fetch users with emails from admin API
+      const res = await fetch('/api/admin/users')
 
-      if (error) throw error
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to fetch users')
+      }
 
-      // Transform to user format
-      const usersData: UserWithSettings[] = (settingsData || []).map(s => ({
-        id: s.user_id,
-        email: '', // We'll need to get this separately or store it in user_settings
-        created_at: s.created_at,
-        settings: {
-          username: s.username || null,
-          tier: s.tier || 'adventurer',
-          role: s.role,
-          is_founder: s.is_founder || false,
-          ai_access: s.ai_access || false,
-          suspended_at: s.suspended_at,
-          suspended_reason: s.suspended_reason,
-          disabled_at: s.disabled_at,
-          last_login_at: s.last_login_at,
-          totp_enabled: s.totp_enabled,
-        },
-      }))
-
+      const { users: usersData } = await res.json()
       setUsers(usersData)
     } catch (error) {
       console.error('Failed to fetch users:', error)
@@ -397,8 +381,9 @@ export default function AdminUsersPage() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       const matchesId = user.id.toLowerCase().includes(query)
+      const matchesEmail = user.email?.toLowerCase().includes(query)
       const matchesUsername = user.settings?.username?.toLowerCase().includes(query)
-      if (!matchesId && !matchesUsername) {
+      if (!matchesId && !matchesEmail && !matchesUsername) {
         return false
       }
     }
@@ -432,7 +417,7 @@ export default function AdminUsersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
           <input
             type="text"
-            placeholder="Search by username or user ID..."
+            placeholder="Search by email, username, or ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50"
@@ -505,11 +490,19 @@ export default function AdminUsersPage() {
                     <tr key={user.id} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
                       <td className="py-3 px-4">
                         <div>
-                          <p className="text-sm font-medium text-white truncate max-w-[200px]" title={user.id}>
-                            {user.id.slice(0, 8)}...
-                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-medium text-white truncate max-w-[200px]" title={user.email || user.id}>
+                              {user.email || `${user.id.slice(0, 8)}...`}
+                            </p>
+                            {user.email_confirmed_at ? (
+                              <CheckCircle className="w-3.5 h-3.5 text-green-400 flex-shrink-0" title="Email confirmed" />
+                            ) : (
+                              <AlertCircle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" title="Email not confirmed" />
+                            )}
+                          </div>
                           <p className="text-xs text-gray-500">
-                            Joined {formatDate(user.created_at)}
+                            {user.id.slice(0, 8)}... · Joined {formatDate(user.created_at)}
+                            {user.last_sign_in_at && ` · Last login ${formatDate(user.last_sign_in_at)}`}
                           </p>
                         </div>
                       </td>

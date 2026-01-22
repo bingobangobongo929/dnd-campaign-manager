@@ -2,8 +2,10 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { LogOut, Home, Settings, ChevronDown } from 'lucide-react'
 import { SaveToCollectionButton } from '@/components/templates'
 import { FounderIndicator } from '@/components/membership'
+import { DropdownMenu } from '@/components/ui/dropdown-menu'
 import { getInitials } from '@/lib/utils'
 
 interface SharePageHeaderProps {
@@ -18,6 +20,9 @@ interface SharePageHeaderProps {
   snapshotId?: string | null
   isLoggedIn?: boolean
   isSaved?: boolean
+  // User info for logged-in state
+  userEmail?: string
+  userAvatar?: string | null
 }
 
 export function SharePageHeader({
@@ -30,6 +35,8 @@ export function SharePageHeader({
   snapshotId,
   isLoggedIn = false,
   isSaved = false,
+  userEmail,
+  userAvatar,
 }: SharePageHeaderProps) {
   // Can only show save button if allowSave is true and we have a snapshot
   const canSave = allowSave && snapshotId
@@ -86,16 +93,19 @@ export function SharePageHeader({
 
           {/* Right: Auth buttons + Save CTA */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Show save button only for templates with allowSave enabled */}
-            {canSave ? (
+            {/* Save button - show if allowed AND logged in */}
+            {canSave && isLoggedIn && (
               <SaveToCollectionButton
                 snapshotId={snapshotId}
                 isLoggedIn={isLoggedIn}
                 isSaved={isSaved}
                 size="sm"
               />
-            ) : !isLoggedIn ? (
-              // Show sign-in/join waitlist for non-logged-in users only
+            )}
+
+            {/* Auth state */}
+            {!isLoggedIn ? (
+              // Show sign-in/join waitlist for non-logged-in users
               <>
                 <Link
                   href="/login"
@@ -110,7 +120,53 @@ export function SharePageHeader({
                   Join Waitlist
                 </Link>
               </>
-            ) : null}
+            ) : (
+              // ALWAYS show user dropdown for logged-in users
+              <DropdownMenu
+                trigger={
+                  <button className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/[0.04] transition-colors">
+                    {userAvatar ? (
+                      <Image
+                        src={userAvatar}
+                        alt={userEmail || 'User'}
+                        width={28}
+                        height={28}
+                        className="rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="w-7 h-7 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-medium">
+                        {getInitials(userEmail || 'User')}
+                      </span>
+                    )}
+                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  </button>
+                }
+                align="right"
+              >
+                <Link
+                  href="/home"
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left text-gray-300 hover:bg-white/[0.04] hover:text-white"
+                >
+                  <Home className="w-4 h-4" />
+                  Dashboard
+                </Link>
+                <Link
+                  href="/settings"
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left text-gray-300 hover:bg-white/[0.04] hover:text-white"
+                >
+                  <Settings className="w-4 h-4" />
+                  Settings
+                </Link>
+                <div className="border-t border-white/[0.06] my-1" />
+                <Link
+                  href="/api/auth/logout"
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left text-red-400 hover:bg-red-500/10"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </Link>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </div>

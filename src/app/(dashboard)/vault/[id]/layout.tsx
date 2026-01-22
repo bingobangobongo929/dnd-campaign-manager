@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
     .single()
 
   if (!character) {
-    return { title: 'Character Not Found' }
+    return { title: 'Character | Multiloop' }
   }
 
   const subtitle = [character.race, character.class].filter(Boolean).join(' ')

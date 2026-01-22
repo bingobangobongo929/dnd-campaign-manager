@@ -61,7 +61,7 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
     .single()
 
   if (!share) {
-    return { title: 'Campaign Not Found' }
+    return { title: 'Campaign | Multiloop' }
   }
 
   const { data: campaign } = await supabase
@@ -71,7 +71,7 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
     .single()
 
   if (!campaign) {
-    return { title: 'Campaign Not Found' }
+    return { title: 'Campaign | Multiloop' }
   }
 
   // Count sessions and characters for rich context
@@ -450,9 +450,22 @@ export default async function ShareCampaignPage({ params }: SharePageProps) {
 
   // Check if user is logged in (for hiding sign-in buttons)
   let isLoggedIn = false
+  let userEmail: string | undefined
+  let userAvatar: string | null = null
   const userSupabase = await createUserClient()
   const { data: { user: currentUser } } = await userSupabase.auth.getUser()
   isLoggedIn = !!currentUser
+  userEmail = currentUser?.email
+
+  // Get user's avatar if logged in
+  if (currentUser) {
+    const { data: userSettings } = await supabase
+      .from('user_settings')
+      .select('avatar_url')
+      .eq('user_id', currentUser.id)
+      .single()
+    userAvatar = userSettings?.avatar_url || null
+  }
 
   // Check if save is allowed and get snapshot info
   let snapshotId: string | null = null
@@ -536,6 +549,8 @@ export default async function ShareCampaignPage({ params }: SharePageProps) {
         snapshotId={snapshotId}
         isLoggedIn={isLoggedIn}
         isSaved={isSaved}
+        userEmail={userEmail}
+        userAvatar={userAvatar}
       />
       <CampaignShareClient
         campaign={campaign}

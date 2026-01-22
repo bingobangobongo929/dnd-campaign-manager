@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LegalFooter } from '@/components/ui/legal-footer'
+import { FounderBadge } from '@/components/membership'
 
 // Verification status messages
 const VERIFICATION_MESSAGES: Record<string, { icon: typeof Check; color: string; message: string }> = {
@@ -324,12 +325,13 @@ export function LandingPage() {
             </div>
           )}
 
+          {/* Visual divide */}
+          <div className="w-24 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent mx-auto my-8" />
+
           {/* Founding Member Benefits */}
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 mb-8">
             <div className="flex items-center gap-2 text-sm text-gray-300">
-              <div className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center">
-                <Star className="w-3 h-3 text-purple-400" />
-              </div>
+              <FounderBadge size="sm" />
               <span>Permanent Founder badge</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-300">

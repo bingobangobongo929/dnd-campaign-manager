@@ -1,9 +1,12 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { sendEmail, waitlistConfirmationEmail } from '@/lib/email'
 import { z } from 'zod'
 import crypto from 'crypto'
+
+export const runtime = 'nodejs'
 
 const waitlistSchema = z.object({
   email: z.string().email('Invalid email address').max(255),
@@ -139,7 +142,10 @@ export async function POST(request: NextRequest) {
 
     if (!emailResult.success) {
       console.error('Failed to send waitlist confirmation email:', emailResult.error)
-      // Still return success to user (don't reveal email delivery issues)
+      return NextResponse.json(
+        { error: 'Failed to send confirmation email. Please try again or contact support.' },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({
@@ -152,5 +158,88 @@ export async function POST(request: NextRequest) {
       { error: 'An error occurred' },
       { status: 500 }
     )
+  }
+}
+
+// Helper function to verify admin user
+async function verifyAdmin() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: 'Unauthorized', status: 401 }
+  }
+
+  const { data: settings } = await supabase
+    .from('user_settings')
+    .select('role')
+    .eq('user_id', user.id)
+    .single()
+
+  if (!settings || !['super_admin', 'moderator'].includes(settings.role)) {
+    return { error: 'Forbidden', status: 403 }
+  }
+
+  return { user, settings }
+}
+
+// GET - Get all waitlist entries (admin only)
+export async function GET(request: NextRequest) {
+  try {
+    const auth = await verifyAdmin()
+    if ('error' in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
+    }
+
+    const adminSupabase = createAdminClient()
+
+    const { data, error } = await adminSupabase
+      .from('waitlist')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Failed to fetch waitlist:', error)
+      return NextResponse.json({ error: 'Failed to fetch waitlist' }, { status: 500 })
+    }
+
+    return NextResponse.json({ entries: data })
+  } catch (err) {
+    console.error('Waitlist GET error:', err)
+    return NextResponse.json({ error: 'An error occurred' }, { status: 500 })
+  }
+}
+
+// DELETE - Delete a waitlist entry (admin only)
+export async function DELETE(request: NextRequest) {
+  try {
+    const auth = await verifyAdmin()
+    if ('error' in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: 'Missing id parameter' }, { status: 400 })
+    }
+
+    const adminSupabase = createAdminClient()
+
+    const { error } = await adminSupabase
+      .from('waitlist')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error('Failed to delete waitlist entry:', error)
+      return NextResponse.json({ error: 'Failed to delete entry' }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (err) {
+    console.error('Waitlist DELETE error:', err)
+    return NextResponse.json({ error: 'An error occurred' }, { status: 500 })
   }
 }

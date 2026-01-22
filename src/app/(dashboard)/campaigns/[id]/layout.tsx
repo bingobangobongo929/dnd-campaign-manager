@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
     .single()
 
   if (!campaign) {
-    return { title: 'Campaign Not Found' }
+    return { title: 'Campaign | Multiloop' }
   }
 
   const title = campaign.setting

@@ -1621,6 +1621,22 @@ select option {
   to { transform: rotate(360deg); }
 }
 
+/* Founder badge glow animation */
+@keyframes founder-glow {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 2px rgba(251, 191, 36, 0.3));
+  }
+  50% {
+    opacity: 0.85;
+    filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.5));
+  }
+}
+
+.animate-founder-glow {
+  animation: founder-glow 3s ease-in-out infinite;
+}
+
 .animate-fade-in {
   animation: fadeIn 300ms ease forwards;
 }
