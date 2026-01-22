@@ -257,7 +257,20 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
     oneshot.genre_tag_ids?.includes(tag.id)
   )
 
-  const sections = share.included_sections as Record<string, boolean>
+  // If included_sections is empty or not set, default to showing all sections
+  const rawSections = share.included_sections as Record<string, boolean> | null
+  const sections = (rawSections && Object.keys(rawSections).length > 0)
+    ? rawSections
+    : {
+        tagline: true,
+        introduction: true,
+        settingNotes: true,
+        characterCreation: true,
+        handouts: true,
+        sessionPlan: true,
+        twists: true,
+        keyNpcs: true,
+      }
 
   // Check if save is allowed and get snapshot info
   let snapshotId: string | null = null

@@ -82,8 +82,36 @@ export function PartyShareSection({
     setError(null)
 
     try {
+      // Default to including all sections
+      const defaultSections = {
+        // Campaign sections
+        description: true,
+        setting: true,
+        sessions: true,
+        characters: true,
+        lore: true,
+        // Character sections
+        backstory: true,
+        personality: true,
+        appearance: true,
+        stats: true,
+        abilities: true,
+        inventory: true,
+        notes: true,
+        relationships: true,
+        // Oneshot sections
+        tagline: true,
+        introduction: true,
+        settingNotes: true,
+        characterCreation: true,
+        handouts: true,
+        sessionPlan: true,
+        twists: true,
+        keyNpcs: true,
+      }
+
       const body: Record<string, unknown> = {
-        includedSections: {},
+        includedSections: defaultSections,
         note: shareNote.trim() || null,
         shareType: 'party',
         password: usePassword ? password : undefined,
