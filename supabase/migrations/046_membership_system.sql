@@ -12,8 +12,19 @@
 -- PART 1: Add membership columns to user_settings
 -- ============================================
 
--- Tier: adventurer (free), hero, legend
-ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS tier TEXT DEFAULT 'adventurer'
+-- First, drop existing tier check constraint if it exists (might have old values)
+ALTER TABLE user_settings DROP CONSTRAINT IF EXISTS user_settings_tier_check;
+
+-- Update existing tier values to new naming convention
+UPDATE user_settings SET tier = 'adventurer' WHERE tier IN ('free', 'adventurer');
+UPDATE user_settings SET tier = 'hero' WHERE tier = 'standard';
+UPDATE user_settings SET tier = 'legend' WHERE tier = 'premium';
+
+-- Add tier column if it doesn't exist, then add the new check constraint
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS tier TEXT DEFAULT 'adventurer';
+
+-- Add the new check constraint
+ALTER TABLE user_settings ADD CONSTRAINT user_settings_tier_check
   CHECK (tier IN ('adventurer', 'hero', 'legend'));
 
 -- Founder status (permanent reward for early users)
@@ -28,10 +39,14 @@ ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS ai_access_granted_at TIMESTAM
 
 -- Future billing integration
 ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
-ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'none'
-  CHECK (subscription_status IN ('none', 'active', 'cancelled', 'past_due'));
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'none';
 ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS subscription_tier TEXT;
 ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS subscription_ends_at TIMESTAMPTZ;
+
+-- Drop existing constraint if it exists, then add
+ALTER TABLE user_settings DROP CONSTRAINT IF EXISTS user_settings_subscription_status_check;
+ALTER TABLE user_settings ADD CONSTRAINT user_settings_subscription_status_check
+  CHECK (subscription_status IN ('none', 'active', 'cancelled', 'past_due'));
 
 -- ============================================
 -- PART 2: Create app_settings table
@@ -55,11 +70,23 @@ ON CONFLICT (id) DO NOTHING;
 -- RLS for app_settings (only admins can write, anyone can read)
 ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can read app settings" ON app_settings;
 CREATE POLICY "Anyone can read app settings" ON app_settings
   FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Only admins can update app settings" ON app_settings;
 CREATE POLICY "Only admins can update app settings" ON app_settings
   FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM user_settings
+      WHERE user_id = auth.uid()
+      AND role IN ('admin', 'super_admin')
+    )
+  );
+
+DROP POLICY IF EXISTS "Only admins can insert app settings" ON app_settings;
+CREATE POLICY "Only admins can insert app settings" ON app_settings
+  FOR INSERT WITH CHECK (
     EXISTS (
       SELECT 1 FROM user_settings
       WHERE user_id = auth.uid()
