@@ -92,6 +92,75 @@ export async function POST(request: Request) {
   }
 }
 
+// PATCH - Update an existing share link
+export async function PATCH(request: Request) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { shareCode, includedSections, password, removePassword } = await request.json()
+
+    if (!shareCode) {
+      return NextResponse.json({ error: 'Share code required' }, { status: 400 })
+    }
+
+    // Verify ownership via character
+    const { data: share } = await supabase
+      .from('character_shares')
+      .select(`
+        id,
+        character_id,
+        vault_characters!inner(user_id)
+      `)
+      .eq('share_code', shareCode)
+      .single()
+
+    if (!share || (share.vault_characters as any).user_id !== user.id) {
+      return NextResponse.json({ error: 'Share not found' }, { status: 404 })
+    }
+
+    // Build update object
+    const updates: Record<string, unknown> = {}
+
+    if (includedSections !== undefined) {
+      updates.included_sections = includedSections
+    }
+
+    if (removePassword) {
+      updates.password_hash = null
+    } else if (password && password.trim()) {
+      updates.password_hash = await bcrypt.hash(password.trim(), 10)
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'No updates provided' }, { status: 400 })
+    }
+
+    // Update the share
+    const { error } = await supabase
+      .from('character_shares')
+      .update(updates)
+      .eq('share_code', shareCode)
+
+    if (error) {
+      console.error('Update share error:', error)
+      return NextResponse.json({ error: 'Failed to update share' }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      success: true,
+      hasPassword: !removePassword && (password ? true : undefined),
+    })
+  } catch (error) {
+    console.error('Update share error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
 export async function DELETE(request: Request) {
   try {
     const supabase = await createClient()

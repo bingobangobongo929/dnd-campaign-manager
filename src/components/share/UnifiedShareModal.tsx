@@ -17,6 +17,9 @@ import {
   RefreshCw,
   FileEdit,
   ChevronRight,
+  Pencil,
+  X,
+  LockOpen,
 } from 'lucide-react'
 import { useSupabase, useMembership } from '@/hooks'
 import { cn } from '@/lib/utils'
@@ -42,6 +45,7 @@ interface ShareLink {
   view_count: number
   password_hash?: string | null
   share_type?: string
+  included_sections?: Record<string, boolean>
 }
 
 interface UnifiedShareModalProps {
@@ -131,6 +135,13 @@ export function UnifiedShareModal({
 
   // Section selection state
   const [selectedSections, setSelectedSections] = useState<Record<string, boolean>>({})
+
+  // Edit state
+  const [editingShareCode, setEditingShareCode] = useState<string | null>(null)
+  const [editSections, setEditSections] = useState<Record<string, boolean>>({})
+  const [editPassword, setEditPassword] = useState('')
+  const [editUsePassword, setEditUsePassword] = useState(false)
+  const [removePassword, setRemovePassword] = useState(false)
 
   // Determine template state
   const isTemplate = contentMode === 'template'
@@ -302,6 +313,98 @@ export function UnifiedShareModal({
       console.error('Revoke error:', err)
     }
     setLoading(false)
+  }
+
+  const startEditShare = (share: ShareLink) => {
+    setEditingShareCode(share.share_code)
+    // Initialize edit sections from share's current sections or defaults
+    if (share.included_sections && Object.keys(share.included_sections).length > 0) {
+      setEditSections(share.included_sections)
+    } else {
+      // Use defaults if no sections saved
+      const sections = getSections()
+      const defaults: Record<string, boolean> = {}
+      sections.forEach(s => { defaults[s.key] = s.default })
+      setEditSections(defaults)
+    }
+    setEditPassword('')
+    setEditUsePassword(false)
+    setRemovePassword(false)
+  }
+
+  const cancelEditShare = () => {
+    setEditingShareCode(null)
+    setEditSections({})
+    setEditPassword('')
+    setEditUsePassword(false)
+    setRemovePassword(false)
+  }
+
+  const updateShareLink = async () => {
+    if (!editingShareCode) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const body: Record<string, unknown> = {
+        shareCode: editingShareCode,
+        includedSections: editSections,
+      }
+
+      if (removePassword) {
+        body.removePassword = true
+      } else if (editUsePassword && editPassword.trim()) {
+        body.password = editPassword.trim()
+      }
+
+      const res = await fetch(getShareApiPath(), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+
+      if (!res.ok) throw new Error('Failed to update share link')
+
+      const data = await res.json()
+
+      // Update local state
+      setExistingShares(prev => prev.map(s => {
+        if (s.share_code === editingShareCode) {
+          return {
+            ...s,
+            included_sections: editSections,
+            password_hash: removePassword ? null : (editPassword ? 'set' : s.password_hash),
+          }
+        }
+        return s
+      }))
+
+      cancelEditShare()
+    } catch (err) {
+      console.error('Update share error:', err)
+      setError('Failed to update share link')
+    }
+
+    setLoading(false)
+  }
+
+  const toggleEditSection = (key: string) => {
+    setEditSections(prev => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  const selectAllEditSections = () => {
+    const sections = getSections()
+    const all: Record<string, boolean> = {}
+    sections.forEach(s => { all[s.key] = true })
+    setEditSections(all)
+  }
+
+  const selectPlayerEditSections = () => {
+    const sections = getSections()
+    const playerOnly: Record<string, boolean> = {}
+    sections.forEach(s => { playerOnly[s.key] = !s.dmOnly })
+    setEditSections(playerOnly)
   }
 
   const saveAsTemplate = async () => {
@@ -577,6 +680,21 @@ export function UnifiedShareModal({
                         copiedCode={copiedCode}
                         onCopy={copyToClipboard}
                         onRevoke={revokeShareLink}
+                        onEdit={startEditShare}
+                        onUpdate={updateShareLink}
+                        onCancelEdit={cancelEditShare}
+                        isEditing={editingShareCode === share.share_code}
+                        editSections={editSections}
+                        onToggleEditSection={toggleEditSection}
+                        onSelectAllEditSections={selectAllEditSections}
+                        onSelectPlayerEditSections={selectPlayerEditSections}
+                        editPassword={editPassword}
+                        onEditPasswordChange={setEditPassword}
+                        editUsePassword={editUsePassword}
+                        onEditUsePasswordChange={setEditUsePassword}
+                        removePassword={removePassword}
+                        onRemovePasswordChange={setRemovePassword}
+                        sections={getSections()}
                         loading={loading}
                         formatDate={formatDate}
                       />
@@ -719,6 +837,21 @@ export function UnifiedShareModal({
                         copiedCode={copiedCode}
                         onCopy={copyToClipboard}
                         onRevoke={revokeShareLink}
+                        onEdit={startEditShare}
+                        onUpdate={updateShareLink}
+                        onCancelEdit={cancelEditShare}
+                        isEditing={editingShareCode === share.share_code}
+                        editSections={editSections}
+                        onToggleEditSection={toggleEditSection}
+                        onSelectAllEditSections={selectAllEditSections}
+                        onSelectPlayerEditSections={selectPlayerEditSections}
+                        editPassword={editPassword}
+                        onEditPasswordChange={setEditPassword}
+                        editUsePassword={editUsePassword}
+                        onEditUsePasswordChange={setEditUsePassword}
+                        removePassword={removePassword}
+                        onRemovePasswordChange={setRemovePassword}
+                        sections={getSections()}
                         loading={loading}
                         formatDate={formatDate}
                       />
@@ -839,13 +972,37 @@ export function UnifiedShareModal({
   )
 }
 
-// Extracted share link card component
+// Section definition type
+interface SectionDef {
+  key: string
+  label: string
+  description: string
+  default: boolean
+  dmOnly?: boolean
+}
+
+// Extracted share link card component with edit functionality
 function ShareLinkCard({
   share,
   shareUrlPath,
   copiedCode,
   onCopy,
   onRevoke,
+  onEdit,
+  onUpdate,
+  onCancelEdit,
+  isEditing,
+  editSections,
+  onToggleEditSection,
+  onSelectAllEditSections,
+  onSelectPlayerEditSections,
+  editPassword,
+  onEditPasswordChange,
+  editUsePassword,
+  onEditUsePasswordChange,
+  removePassword,
+  onRemovePasswordChange,
+  sections,
   loading,
   formatDate,
 }: {
@@ -854,11 +1011,29 @@ function ShareLinkCard({
   copiedCode: string | null
   onCopy: (code: string) => void
   onRevoke: (code: string) => void
+  onEdit: (share: ShareLink) => void
+  onUpdate: () => void
+  onCancelEdit: () => void
+  isEditing: boolean
+  editSections: Record<string, boolean>
+  onToggleEditSection: (key: string) => void
+  onSelectAllEditSections: () => void
+  onSelectPlayerEditSections: () => void
+  editPassword: string
+  onEditPasswordChange: (value: string) => void
+  editUsePassword: boolean
+  onEditUsePasswordChange: (value: boolean) => void
+  removePassword: boolean
+  onRemovePasswordChange: (value: boolean) => void
+  sections: SectionDef[]
   loading: boolean
   formatDate: (date: string) => string
 }) {
   return (
-    <div className="p-3 bg-white/[0.02] border border-white/[0.06] rounded-lg">
+    <div className={cn(
+      "p-3 bg-white/[0.02] border rounded-lg transition-all",
+      isEditing ? "border-purple-500/30" : "border-white/[0.06]"
+    )}>
       <div className="flex items-center justify-between gap-3 mb-2">
         <div className="flex items-center gap-3 text-xs text-gray-500">
           <span>{formatDate(share.created_at)}</span>
@@ -874,6 +1049,15 @@ function ShareLinkCard({
           )}
         </div>
         <div className="flex items-center gap-1">
+          {!isEditing && (
+            <button
+              onClick={() => onEdit(share)}
+              className="p-1.5 text-gray-400 hover:text-purple-400 hover:bg-purple-500/10 rounded transition-colors"
+              title="Edit share settings"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+          )}
           <button
             onClick={() => onCopy(share.share_code)}
             className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors"
@@ -895,10 +1079,144 @@ function ShareLinkCard({
           </button>
         </div>
       </div>
+
       <div className="flex items-center gap-2 px-2.5 py-1.5 bg-black/30 rounded text-xs font-mono text-gray-400 truncate">
         <Link2 className="w-3 h-3 flex-shrink-0" />
         {`${typeof window !== 'undefined' ? window.location.origin : ''}${shareUrlPath}/${share.share_code}`}
       </div>
+
+      {/* Edit Mode */}
+      {isEditing && (
+        <div className="mt-4 pt-4 border-t border-white/[0.08] space-y-4">
+          {/* Section Selection */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-white">Visible Sections</h4>
+              <div className="flex gap-2">
+                <button
+                  onClick={onSelectPlayerEditSections}
+                  className="text-xs px-2 py-1 text-purple-400 hover:bg-purple-500/10 rounded transition-colors"
+                >
+                  Player-safe
+                </button>
+                <button
+                  onClick={onSelectAllEditSections}
+                  className="text-xs px-2 py-1 text-gray-400 hover:bg-white/10 rounded transition-colors"
+                >
+                  All
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto">
+              {sections.map((section) => (
+                <label
+                  key={section.key}
+                  className={cn(
+                    "flex items-center gap-2 px-2 py-1.5 rounded text-xs cursor-pointer transition-all",
+                    editSections[section.key]
+                      ? "bg-purple-500/10 text-white"
+                      : "bg-white/[0.02] text-gray-400 hover:bg-white/[0.04]"
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={editSections[section.key] || false}
+                    onChange={() => onToggleEditSection(section.key)}
+                    className="w-3 h-3 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50"
+                  />
+                  <span className="truncate">{section.label}</span>
+                  {section.dmOnly && (
+                    <span className="text-[9px] px-1 py-0.5 bg-red-500/20 text-red-400 rounded flex-shrink-0">DM</span>
+                  )}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Password Options */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-white">Password</h4>
+
+            {share.password_hash ? (
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={removePassword}
+                    onChange={(e) => {
+                      onRemovePasswordChange(e.target.checked)
+                      if (e.target.checked) onEditUsePasswordChange(false)
+                    }}
+                    className="w-4 h-4 rounded border-white/20 bg-white/5 text-red-500 focus:ring-red-500/50"
+                  />
+                  <LockOpen className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-300">Remove password protection</span>
+                </label>
+
+                {!removePassword && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editUsePassword}
+                      onChange={(e) => onEditUsePasswordChange(e.target.checked)}
+                      className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50"
+                    />
+                    <Lock className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-300">Change password</span>
+                  </label>
+                )}
+              </div>
+            ) : (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editUsePassword}
+                  onChange={(e) => onEditUsePasswordChange(e.target.checked)}
+                  className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50"
+                />
+                <Lock className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-300">Add password protection</span>
+              </label>
+            )}
+
+            {editUsePassword && !removePassword && (
+              <Input
+                type="password"
+                value={editPassword}
+                onChange={(e) => onEditPasswordChange(e.target.value)}
+                placeholder={share.password_hash ? "Enter new password" : "Enter password"}
+                className="bg-white/[0.03] border-white/[0.08] text-sm"
+              />
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2 pt-2">
+            <button
+              onClick={onUpdate}
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  Save Changes
+                </>
+              )}
+            </button>
+            <button
+              onClick={onCancelEdit}
+              disabled={loading}
+              className="px-3 py-2 text-gray-400 hover:text-white text-sm rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

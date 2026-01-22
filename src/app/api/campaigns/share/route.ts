@@ -99,6 +99,83 @@ export async function POST(req: Request) {
   }
 }
 
+// PATCH - Update an existing share link
+export async function PATCH(req: Request) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await req.json()
+    const { shareCode, includedSections, password, removePassword } = body
+
+    if (!shareCode) {
+      return NextResponse.json({ error: 'Share code is required' }, { status: 400 })
+    }
+
+    // Get the share to verify ownership
+    const { data: share } = await supabase
+      .from('campaign_shares')
+      .select('id, campaign_id')
+      .eq('share_code', shareCode)
+      .single()
+
+    if (!share) {
+      return NextResponse.json({ error: 'Share not found' }, { status: 404 })
+    }
+
+    // Verify user owns the campaign
+    const { data: campaign } = await supabase
+      .from('campaigns')
+      .select('user_id')
+      .eq('id', share.campaign_id)
+      .single()
+
+    if (!campaign || campaign.user_id !== user.id) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+    }
+
+    // Build update object
+    const updates: Record<string, unknown> = {}
+
+    if (includedSections !== undefined) {
+      updates.included_sections = includedSections
+    }
+
+    if (removePassword) {
+      updates.password_hash = null
+    } else if (password && password.trim()) {
+      updates.password_hash = await bcrypt.hash(password.trim(), 10)
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'No updates provided' }, { status: 400 })
+    }
+
+    // Update the share
+    const { error } = await supabase
+      .from('campaign_shares')
+      .update(updates)
+      .eq('share_code', shareCode)
+
+    if (error) {
+      console.error('Update share error:', error)
+      return NextResponse.json({ error: 'Failed to update share' }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      success: true,
+      hasPassword: !removePassword && (password ? true : undefined),
+    })
+  } catch (error) {
+    console.error('Update share error:', error)
+    return NextResponse.json({ error: 'Failed to update share' }, { status: 500 })
+  }
+}
+
 // DELETE - Revoke a share link
 export async function DELETE(req: Request) {
   try {
