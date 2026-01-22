@@ -495,9 +495,13 @@ export default function AdminUsersPage() {
                               {user.email || `${user.id.slice(0, 8)}...`}
                             </p>
                             {user.email_confirmed_at ? (
-                              <CheckCircle className="w-3.5 h-3.5 text-green-400 flex-shrink-0" title="Email confirmed" />
+                              <span title="Email confirmed">
+                                <CheckCircle className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
+                              </span>
                             ) : (
-                              <AlertCircle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" title="Email not confirmed" />
+                              <span title="Email not confirmed">
+                                <AlertCircle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                              </span>
                             )}
                           </div>
                           <p className="text-xs text-gray-500">
