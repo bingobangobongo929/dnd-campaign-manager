@@ -2,14 +2,17 @@
 
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import Image from 'next/image'
 import { SaveToCollectionButton } from '@/components/templates'
 import { FounderIndicator } from '@/components/membership'
+import { getInitials } from '@/lib/utils'
 
 interface SharePageHeaderProps {
   contentType?: 'character' | 'campaign' | 'oneshot'
   contentName?: string
   // Author info
   authorName?: string
+  authorAvatar?: string | null
   isFounder?: boolean
   // Template save functionality
   allowSave?: boolean
@@ -22,6 +25,7 @@ export function SharePageHeader({
   contentType,
   contentName,
   authorName,
+  authorAvatar,
   isFounder = false,
   allowSave = false,
   snapshotId,
@@ -52,8 +56,21 @@ export function SharePageHeader({
               {authorName && (
                 <>
                   <span className="text-gray-600">•</span>
-                  <span className="text-gray-400 flex items-center gap-1">
-                    by {authorName}
+                  <span className="text-gray-400 flex items-center gap-1.5">
+                    {authorAvatar ? (
+                      <Image
+                        src={authorAvatar}
+                        alt={authorName}
+                        width={20}
+                        height={20}
+                        className="rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="w-5 h-5 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-[10px] font-medium">
+                        {getInitials(authorName)}
+                      </span>
+                    )}
+                    <span>by {authorName}</span>
                     {isFounder && <FounderIndicator />}
                   </span>
                 </>
@@ -71,8 +88,8 @@ export function SharePageHeader({
                 isSaved={isSaved}
                 size="sm"
               />
-            ) : (
-              // Show sign-in/get started for non-saveable content
+            ) : !isLoggedIn ? (
+              // Show sign-in/get started for non-logged-in users only
               <>
                 <Link
                   href="/login"
@@ -87,7 +104,7 @@ export function SharePageHeader({
                   Get Started
                 </Link>
               </>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

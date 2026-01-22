@@ -124,11 +124,40 @@ function LoginForm() {
         if (user) {
           const { data: settings } = await supabase
             .from('user_settings')
-            .select('totp_enabled')
+            .select('totp_enabled, user_id')
             .eq('user_id', user.id)
             .single()
 
-          if (settings?.totp_enabled) {
+          // Create settings if they don't exist (for manually added users)
+          if (!settings) {
+            const now = new Date().toISOString()
+            await supabase.from('user_settings').insert({
+              user_id: user.id,
+              tier: 'adventurer',
+              role: 'user',
+              last_login_at: now,
+              terms_accepted_at: now,
+              privacy_accepted_at: now,
+            })
+            router.push('/home')
+          } else if (settings?.totp_enabled) {
+            // Check if device is trusted before requiring 2FA
+            try {
+              const trustCheckRes = await fetch('/api/auth/2fa/trust-device')
+              const trustData = await trustCheckRes.json()
+              if (trustData.trusted) {
+                // Device is trusted, skip 2FA
+                await supabase
+                  .from('user_settings')
+                  .update({ last_login_at: new Date().toISOString() })
+                  .eq('user_id', user.id)
+                router.push('/home')
+                return
+              }
+            } catch (trustErr) {
+              // If trust check fails, proceed to 2FA anyway
+              console.error('Trust check failed:', trustErr)
+            }
             // Redirect to 2FA verification page
             router.push('/login/verify')
           } else {

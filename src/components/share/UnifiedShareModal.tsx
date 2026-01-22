@@ -613,59 +613,61 @@ export function UnifiedShareModal({
                 Back to options
               </button>
 
-              {/* Section Selection */}
-              <section className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium text-white">Choose what to share</h3>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={selectPlayerSections}
-                      className="text-xs px-2 py-1 text-purple-400 hover:bg-purple-500/10 rounded transition-colors"
-                    >
-                      Player-safe
-                    </button>
-                    <button
-                      onClick={selectAllSections}
-                      className="text-xs px-2 py-1 text-gray-400 hover:bg-white/10 rounded transition-colors"
-                    >
-                      All
-                    </button>
+              {/* Section Selection - hide when editing */}
+              {!editingShareCode && (
+                <section className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium text-white">Choose what to share</h3>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={selectPlayerSections}
+                        className="text-xs px-2 py-1 text-purple-400 hover:bg-purple-500/10 rounded transition-colors"
+                      >
+                        Player-safe
+                      </button>
+                      <button
+                        onClick={selectAllSections}
+                        className="text-xs px-2 py-1 text-gray-400 hover:bg-white/10 rounded transition-colors"
+                      >
+                        All
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto p-1">
-                  {getSections().map((section) => (
-                    <label
-                      key={section.key}
-                      className={cn(
-                        "flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all",
-                        selectedSections[section.key]
-                          ? "bg-purple-500/10 border-purple-500/30"
-                          : "bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12]"
-                      )}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedSections[section.key] || false}
-                        onChange={() => toggleSection(section.key)}
-                        className="mt-0.5 w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-white">{section.label}</span>
-                          {section.dmOnly && (
-                            <span className="text-[10px] px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded">DM</span>
-                          )}
+                  <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto p-1">
+                    {getSections().map((section) => (
+                      <label
+                        key={section.key}
+                        className={cn(
+                          "flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all",
+                          selectedSections[section.key]
+                            ? "bg-purple-500/10 border-purple-500/30"
+                            : "bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12]"
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedSections[section.key] || false}
+                          onChange={() => toggleSection(section.key)}
+                          className="mt-0.5 w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-white">{section.label}</span>
+                            {section.dmOnly && (
+                              <span className="text-[10px] px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded">DM</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 truncate">{section.description}</p>
                         </div>
-                        <p className="text-xs text-gray-500 truncate">{section.description}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </section>
+                      </label>
+                    ))}
+                  </div>
+                </section>
+              )}
 
-              {/* Divider */}
-              <div className="border-t border-white/[0.06]" />
+              {/* Divider - hide when editing */}
+              {!editingShareCode && <div className="border-t border-white/[0.06]" />}
 
               {/* Existing shares */}
               {partyShares.length > 0 && (
@@ -703,52 +705,54 @@ export function UnifiedShareModal({
                 </section>
               )}
 
-              {/* Create new share */}
-              <section className="space-y-4">
-                <h3 className="font-medium text-white text-sm">Create New Link</h3>
+              {/* Create new share - hide when editing */}
+              {!editingShareCode && (
+                <section className="space-y-4">
+                  <h3 className="font-medium text-white text-sm">Create New Link</h3>
 
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={usePassword}
-                    onChange={(e) => setUsePassword(e.target.checked)}
-                    className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50"
-                  />
-                  <Lock className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-300">Password protect</span>
-                </label>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={usePassword}
+                      onChange={(e) => setUsePassword(e.target.checked)}
+                      className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50"
+                    />
+                    <Lock className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-300">Password protect</span>
+                  </label>
 
-                {usePassword && (
-                  <Input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter password"
-                    className="bg-white/[0.03] border-white/[0.08]"
-                  />
-                )}
-
-                <LimitWarning
-                  limitType="shareLinks"
-                  current={usage.shareLinks}
-                  limit={limits.shareLinks}
-                />
-
-                <button
-                  onClick={() => createShareLink('party')}
-                  disabled={loading || (usePassword && !password.trim()) || (limits.shareLinks !== -1 && usage.shareLinks >= limits.shareLinks)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {loading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Link2 className="w-4 h-4" />
-                      Create Share Link
-                    </>
+                  {usePassword && (
+                    <Input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter password"
+                      className="bg-white/[0.03] border-white/[0.08]"
+                    />
                   )}
-                </button>
-              </section>
+
+                  <LimitWarning
+                    limitType="shareLinks"
+                    current={usage.shareLinks}
+                    limit={limits.shareLinks}
+                  />
+
+                  <button
+                    onClick={() => createShareLink('party')}
+                    disabled={loading || (usePassword && !password.trim()) || (limits.shareLinks !== -1 && usage.shareLinks >= limits.shareLinks)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Link2 className="w-4 h-4" />
+                        Create Share Link
+                      </>
+                    )}
+                  </button>
+                </section>
+              )}
 
               {error && (
                 <p className="text-sm text-red-400 text-center">{error}</p>

@@ -40,6 +40,10 @@ function groupByMonth(entries: Changelog[]): Map<string, Changelog[]> {
 export default async function ChangelogPage() {
   const supabase = await createClient()
 
+  // Check if user is logged in
+  const { data: { user } } = await supabase.auth.getUser()
+  const isLoggedIn = !!user
+
   const { data: entries } = await supabase
     .from('changelog')
     .select('*')
@@ -62,20 +66,22 @@ export default async function ChangelogPage() {
               <span className="font-medium hidden sm:inline">Back to Multiloop</span>
               <span className="font-medium sm:hidden">Back</span>
             </Link>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Link
-                href="/login"
-                className="text-sm text-gray-400 hover:text-white transition-colors px-3 py-1.5"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/login"
-                className="text-sm font-medium px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-colors"
-              >
-                Get Started
-              </Link>
-            </div>
+            {!isLoggedIn && (
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Link
+                  href="/login"
+                  className="text-sm text-gray-400 hover:text-white transition-colors px-3 py-1.5"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/login"
+                  className="text-sm font-medium px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-colors"
+                >
+                  Get Started
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </header>

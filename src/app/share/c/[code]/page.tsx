@@ -20,6 +20,7 @@ import { sanitizeHtml } from '@/components/ui/safe-html'
 import { MarkdownContent } from '@/components/ui'
 import { InteractivePortrait, BackToTopButton } from './client'
 import { SharePageHeader } from '@/components/share/SharePageHeader'
+import { SharePageFooter } from '@/components/share/SharePageFooter'
 import { PasswordGate } from '@/components/share/PasswordGate'
 import crypto from 'crypto'
 import type { Metadata } from 'next'
@@ -334,14 +335,15 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
     )
   }
 
-  // Fetch author info (username and founder status)
+  // Fetch author info (username, founder status, and avatar)
   const { data: authorSettings } = await supabase
     .from('user_settings')
-    .select('username, is_founder')
+    .select('username, is_founder, avatar_url')
     .eq('user_id', character.user_id)
     .single()
 
   const authorName = authorSettings?.username || null
+  const authorAvatar = authorSettings?.avatar_url || null
   const isFounder = authorSettings?.is_founder || false
 
   // Section visibility - default to showing if not explicitly false
@@ -416,9 +418,14 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
     sessions_data = data || []
   }
 
+  // Check if user is logged in (for hiding sign-in buttons)
+  let isLoggedIn = false
+  const userSupabase = await createUserClient()
+  const { data: { user: currentUser } } = await userSupabase.auth.getUser()
+  isLoggedIn = !!currentUser
+
   // Check if save is allowed and get snapshot info
   let snapshotId: string | null = null
-  let isLoggedIn = false
   let isSaved = false
   const allowSave = share.allow_save === true && character.content_mode === 'template'
 
@@ -440,21 +447,15 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
     const { data: snapshot } = await snapshotQuery.single()
     snapshotId = snapshot?.id || null
 
-    // Check if user is logged in and has already saved
-    if (snapshotId) {
-      const userSupabase = await createUserClient()
-      const { data: { user } } = await userSupabase.auth.getUser()
-      isLoggedIn = !!user
-
-      if (user && snapshotId) {
-        const { data: existingSave } = await supabase
-          .from('content_saves')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('snapshot_id', snapshotId)
-          .single()
-        isSaved = !!existingSave
-      }
+    // Check if user has already saved this snapshot
+    if (snapshotId && currentUser) {
+      const { data: existingSave } = await supabase
+        .from('content_saves')
+        .select('id')
+        .eq('user_id', currentUser.id)
+        .eq('snapshot_id', snapshotId)
+        .single()
+      isSaved = !!existingSave
     }
   }
 
@@ -520,6 +521,7 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
         contentType="character"
         contentName={character.name}
         authorName={authorName}
+        authorAvatar={authorAvatar}
         isFounder={isFounder}
         allowSave={allowSave}
         snapshotId={snapshotId}
@@ -1277,18 +1279,15 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
             </Section>
           )}
 
-          {/* Footer */}
-          <div className="mt-12 pt-6 border-t border-white/10 text-center">
-            <p className="text-sm text-gray-600">
-              Created with Multiloop
-            </p>
-          </div>
         </div>
       </main>
 
         {/* Back to Top Button */}
         <BackToTopButton />
       </div>
+
+      {/* Footer Banner */}
+      <SharePageFooter contentType="character" isLoggedIn={isLoggedIn} />
     </PasswordGate>
   )
 }

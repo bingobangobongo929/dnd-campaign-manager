@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Shield, Loader2, Key } from 'lucide-react'
+import { Shield, Loader2, Key, Check } from 'lucide-react'
 import { useSupabase } from '@/hooks'
 import { cn } from '@/lib/utils'
 
@@ -11,6 +11,7 @@ export default function TwoFactorVerifyPage() {
   const supabase = useSupabase()
   const [code, setCode] = useState('')
   const [isBackupCode, setIsBackupCode] = useState(false)
+  const [trustDevice, setTrustDevice] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [checkingAuth, setCheckingAuth] = useState(true)
@@ -73,6 +74,19 @@ export default function TwoFactorVerifyPage() {
 
       if (!response.ok) {
         throw new Error(data.error || 'Invalid code')
+      }
+
+      // If trust device is checked, call the trust device API
+      if (trustDevice) {
+        try {
+          await fetch('/api/auth/2fa/trust-device', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          })
+        } catch (trustError) {
+          // Don't block login if trust fails, just log it
+          console.error('Failed to trust device:', trustError)
+        }
       }
 
       router.push('/home')
@@ -151,6 +165,29 @@ export default function TwoFactorVerifyPage() {
                 />
               </div>
             )}
+
+            {/* Trust device checkbox */}
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={trustDevice}
+                  onChange={(e) => setTrustDevice(e.target.checked)}
+                  className="sr-only"
+                />
+                <div className={cn(
+                  "w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
+                  trustDevice
+                    ? "bg-purple-600 border-purple-600"
+                    : "border-gray-600 group-hover:border-gray-500"
+                )}>
+                  {trustDevice && <Check className="w-3 h-3 text-white" />}
+                </div>
+              </div>
+              <span className="text-sm text-gray-400">
+                Trust this device for 30 days
+              </span>
+            </label>
 
             <button
               type="submit"

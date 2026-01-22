@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import Image from 'next/image'
 import { Users, Clock, Scroll, BookOpen, Target, Eye } from 'lucide-react'
 import { SharePageHeader } from '@/components/share/SharePageHeader'
+import { SharePageFooter } from '@/components/share/SharePageFooter'
 import { PasswordGate } from '@/components/share/PasswordGate'
 import { MarkdownContent } from '@/components/ui'
 import crypto from 'crypto'
@@ -237,14 +238,15 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
     notFound()
   }
 
-  // Fetch author info (username and founder status)
+  // Fetch author info (username, founder status, and avatar)
   const { data: authorSettings } = await supabase
     .from('user_settings')
-    .select('username, is_founder')
+    .select('username, is_founder, avatar_url')
     .eq('user_id', oneshot.user_id)
     .single()
 
   const authorName = authorSettings?.username || null
+  const authorAvatar = authorSettings?.avatar_url || null
   const isFounder = authorSettings?.is_founder || false
 
   // Fetch genre tags
@@ -272,9 +274,14 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
         keyNpcs: true,
       }
 
+  // Check if user is logged in (for hiding sign-in buttons)
+  let isLoggedIn = false
+  const userSupabase = await createUserClient()
+  const { data: { user: currentUser } } = await userSupabase.auth.getUser()
+  isLoggedIn = !!currentUser
+
   // Check if save is allowed and get snapshot info
   let snapshotId: string | null = null
-  let isLoggedIn = false
   let isSaved = false
   const allowSave = share.allow_save === true && oneshot.content_mode === 'template'
 
@@ -296,21 +303,15 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
     const { data: snapshot } = await snapshotQuery.single()
     snapshotId = snapshot?.id || null
 
-    // Check if user is logged in and has already saved
-    if (snapshotId) {
-      const userSupabase = await createUserClient()
-      const { data: { user } } = await userSupabase.auth.getUser()
-      isLoggedIn = !!user
-
-      if (user && snapshotId) {
-        const { data: existingSave } = await supabase
-          .from('content_saves')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('snapshot_id', snapshotId)
-          .single()
-        isSaved = !!existingSave
-      }
+    // Check if user has already saved this snapshot
+    if (snapshotId && currentUser) {
+      const { data: existingSave } = await supabase
+        .from('content_saves')
+        .select('id')
+        .eq('user_id', currentUser.id)
+        .eq('snapshot_id', snapshotId)
+        .single()
+      isSaved = !!existingSave
     }
   }
 
@@ -327,6 +328,7 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
         contentType="oneshot"
         contentName={oneshot.title}
         authorName={authorName}
+        authorAvatar={authorAvatar}
         isFounder={isFounder}
         allowSave={allowSave}
         snapshotId={snapshotId}
@@ -538,13 +540,8 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
         )}
       </div>
 
-        {/* Footer */}
-        <div className="border-t border-white/10 py-8">
-          <div className="max-w-4xl mx-auto px-6 text-center text-sm text-gray-500">
-            Shared via Multiloop
-          </div>
-        </div>
       </div>
+      <SharePageFooter contentType="oneshot" isLoggedIn={isLoggedIn} />
     </PasswordGate>
   )
 }

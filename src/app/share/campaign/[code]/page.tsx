@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import crypto from 'crypto'
 import { CampaignShareClient } from './client'
 import { SharePageHeader } from '@/components/share/SharePageHeader'
+import { SharePageFooter } from '@/components/share/SharePageFooter'
 import { PasswordGate } from '@/components/share/PasswordGate'
 import type { Metadata } from 'next'
 
@@ -228,14 +229,15 @@ export default async function ShareCampaignPage({ params }: SharePageProps) {
     notFound()
   }
 
-  // Fetch author info (username and founder status)
+  // Fetch author info (username, founder status, and avatar)
   const { data: authorSettings } = await supabase
     .from('user_settings')
-    .select('username, is_founder')
+    .select('username, is_founder, avatar_url')
     .eq('user_id', campaign.user_id)
     .single()
 
   const authorName = authorSettings?.username || null
+  const authorAvatar = authorSettings?.avatar_url || null
   const isFounder = authorSettings?.is_founder || false
 
   // Parse included sections
@@ -425,9 +427,14 @@ export default async function ShareCampaignPage({ params }: SharePageProps) {
     }
   }
 
+  // Check if user is logged in (for hiding sign-in buttons)
+  let isLoggedIn = false
+  const userSupabase = await createUserClient()
+  const { data: { user: currentUser } } = await userSupabase.auth.getUser()
+  isLoggedIn = !!currentUser
+
   // Check if save is allowed and get snapshot info
   let snapshotId: string | null = null
-  let isLoggedIn = false
   let isSaved = false
   const allowSave = share.allow_save === true && campaign.content_mode === 'template'
 
@@ -449,21 +456,15 @@ export default async function ShareCampaignPage({ params }: SharePageProps) {
     const { data: snapshot } = await snapshotQuery.single()
     snapshotId = snapshot?.id || null
 
-    // Check if user is logged in and has already saved
-    if (snapshotId) {
-      const userSupabase = await createUserClient()
-      const { data: { user } } = await userSupabase.auth.getUser()
-      isLoggedIn = !!user
-
-      if (user && snapshotId) {
-        const { data: existingSave } = await supabase
-          .from('content_saves')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('snapshot_id', snapshotId)
-          .single()
-        isSaved = !!existingSave
-      }
+    // Check if user has already saved this snapshot
+    if (snapshotId && currentUser) {
+      const { data: existingSave } = await supabase
+        .from('content_saves')
+        .select('id')
+        .eq('user_id', currentUser.id)
+        .eq('snapshot_id', snapshotId)
+        .single()
+      isSaved = !!existingSave
     }
   }
 
@@ -508,6 +509,7 @@ export default async function ShareCampaignPage({ params }: SharePageProps) {
         contentType="campaign"
         contentName={campaign.name}
         authorName={authorName}
+        authorAvatar={authorAvatar}
         isFounder={isFounder}
         allowSave={allowSave}
         snapshotId={snapshotId}
@@ -531,6 +533,7 @@ export default async function ShareCampaignPage({ params }: SharePageProps) {
         characterTags={characterTags}
         characters={characters}
       />
+      <SharePageFooter contentType="campaign" isLoggedIn={isLoggedIn} />
     </PasswordGate>
   )
 }
