@@ -95,19 +95,54 @@ export async function POST(req: Request) {
       .gt('updated_at', lastRunTime)
       .order('session_number', { ascending: true })
 
-    // Load ALL relationships for context
-    const { data: relationships } = await supabase
-      .from('character_relationships')
+    // Load ALL canvas relationships for context (new relationship system)
+    const { data: canvasRelationships } = await supabase
+      .from('canvas_relationships')
       .select(`
         id,
-        character_id,
-        related_character_id,
-        relationship_type,
-        relationship_label,
-        notes,
-        updated_at
+        from_character_id,
+        to_character_id,
+        custom_label,
+        description,
+        is_known_to_party,
+        status,
+        template:relationship_templates(name, category, relationship_mode)
       `)
       .eq('campaign_id', campaignId)
+      .eq('is_primary', true)
+
+    // Load faction memberships for all characters
+    const characterIds = (allCharacters || []).map(c => c.id)
+    const { data: factionMemberships } = characterIds.length > 0
+      ? await supabase
+          .from('faction_memberships')
+          .select(`
+            character_id,
+            role,
+            title,
+            is_public,
+            faction:campaign_factions(id, name, faction_type, status)
+          `)
+          .in('character_id', characterIds)
+          .eq('is_active', true)
+      : { data: [] }
+
+    // Load campaign factions
+    const { data: campaignFactions } = await supabase
+      .from('campaign_factions')
+      .select('id, name, description, faction_type, status, is_known_to_party')
+      .eq('campaign_id', campaignId)
+
+    // Load character labels/tags
+    const { data: characterTags } = characterIds.length > 0
+      ? await supabase
+          .from('character_tags')
+          .select(`
+            character_id,
+            tag:tags(name, color, category, description)
+          `)
+          .in('character_id', characterIds)
+      : { data: [] }
 
     // Load ALL timeline events for context (so AI doesn't suggest duplicates)
     const { data: timelineEvents } = await supabase
@@ -148,6 +183,32 @@ export async function POST(req: Request) {
       if (c.goals) parts.push(`- Goals: ${c.goals}`)
       if (c.secrets) parts.push(`- Known Secrets (DM): ${c.secrets}`)
 
+      // Add faction memberships
+      const charFactions = (factionMemberships || []).filter((fm: any) => fm.character_id === c.id)
+      if (charFactions.length > 0) {
+        const factionInfo = charFactions.map((fm: any) => {
+          const faction = fm.faction as any
+          let info = faction?.name || 'Unknown Faction'
+          if (fm.title) info += ` (${fm.title})`
+          if (fm.role) info += ` - ${fm.role}`
+          if (!fm.is_public) info += ' [SECRET]'
+          return info
+        }).join('; ')
+        parts.push(`- Faction Memberships: ${factionInfo}`)
+      }
+
+      // Add labels/tags
+      const charTags = (characterTags || []).filter((ct: any) => ct.character_id === c.id)
+      if (charTags.length > 0) {
+        const tagNames = charTags
+          .map((ct: any) => ct.tag?.name)
+          .filter(Boolean)
+          .join(', ')
+        if (tagNames) {
+          parts.push(`- Labels: ${tagNames}`)
+        }
+      }
+
       const storyHooks = c.story_hooks as Array<{ hook: string; notes?: string }> | string[] | null
       if (storyHooks && storyHooks.length > 0) {
         const hooks = Array.isArray(storyHooks)
@@ -176,15 +237,29 @@ export async function POST(req: Request) {
       return parts.join('\n')
     }).join('\n\n')
 
-    // Build relationship context
-    const relationshipContext = (relationships || []).map(r => {
-      const char1 = allCharacters?.find(c => c.id === r.character_id)
-      const char2 = allCharacters?.find(c => c.id === r.related_character_id)
+    // Build relationship context from canvas relationships
+    const relationshipContext = (canvasRelationships || []).map((r: any) => {
+      const char1 = allCharacters?.find(c => c.id === r.from_character_id)
+      const char2 = allCharacters?.find(c => c.id === r.to_character_id)
       if (char1 && char2) {
-        return `${char1.name} → ${char2.name}: ${r.relationship_label || r.relationship_type}`
+        const template = r.template as any
+        const label = r.custom_label || template?.name || 'Related'
+        const category = template?.category ? ` [${template.category}]` : ''
+        const visibility = !r.is_known_to_party ? ' [SECRET]' : ''
+        const status = r.status && r.status !== 'active' ? ` (${r.status})` : ''
+        let line = `${char1.name} → ${char2.name}: ${label}${category}${status}${visibility}`
+        if (r.description) line += ` - "${r.description}"`
+        return line
       }
       return null
     }).filter(Boolean).join('\n')
+
+    // Build factions context
+    const factionsContext = (campaignFactions || []).map((f: any) => {
+      const visibility = !f.is_known_to_party ? ' [SECRET]' : ''
+      const memberCount = (factionMemberships || []).filter((fm: any) => (fm.faction as any)?.id === f.id).length
+      return `- ${f.name} (${f.faction_type || 'organization'}, ${f.status || 'active'})${visibility}: ${memberCount} members${f.description ? ` - ${f.description}` : ''}`
+    }).join('\n')
 
     // Build timeline context (so AI can avoid duplicates)
     const timelineContext = (timelineEvents || []).map(e => {
@@ -218,7 +293,10 @@ Current state: ${c.summary || c.description || 'No summary'}`
 ## ALL EXISTING CHARACTERS (for context and cross-referencing)
 ${fullCharacterContext || 'No characters recorded yet.'}
 
-## KNOWN RELATIONSHIPS
+## FACTIONS & ORGANIZATIONS (${campaignFactions?.length || 0} factions)
+${factionsContext || 'No factions recorded.'}
+
+## CHARACTER RELATIONSHIPS (${canvasRelationships?.length || 0} relationships)
 ${relationshipContext || 'No relationships recorded.'}
 
 ## EXISTING TIMELINE EVENTS (${timelineEvents?.length || 0} events)
@@ -246,7 +324,9 @@ IMPORTANT INSTRUCTIONS:
 6. Extract memorable quotes from session notes
 7. Identify new NPCs that should be added
 8. Note any revealed secrets or plot developments
-9. TIMELINE EVENTS: Suggest significant events for the timeline (battles, discoveries, deaths, alliances, quest milestones). ${timelineIsEmpty ? 'The timeline is currently EMPTY so please suggest key events from the sessions to populate it.' : 'Check existing timeline events above to avoid duplicates.'}`
+9. RELATIONSHIPS: Look for new relationships between characters (family, professional, conflict, romantic, social). Check existing relationships to avoid duplicates.
+10. FACTIONS: Note any faction involvement, membership changes, or new organizations mentioned.
+11. TIMELINE EVENTS: Suggest significant events for the timeline (battles, discoveries, deaths, alliances, quest milestones). ${timelineIsEmpty ? 'The timeline is currently EMPTY so please suggest key events from the sessions to populate it.' : 'Check existing timeline events above to avoid duplicates.'}`
 
     const selectedProvider = provider || 'anthropic'
     const model = getAIModel(selectedProvider)
@@ -404,7 +484,9 @@ IMPORTANT INSTRUCTIONS:
         sessionsAnalyzed: updatedSessions?.length || 0,
         charactersUpdated: updatedCharacters?.length || 0,
         totalCharacters: allCharacters?.length || 0,
-        totalRelationships: relationships?.length || 0,
+        totalRelationships: canvasRelationships?.length || 0,
+        totalFactions: campaignFactions?.length || 0,
+        totalFactionMemberships: factionMemberships?.length || 0,
       }
     }), {
       status: 200,
