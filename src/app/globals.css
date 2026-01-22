@@ -274,9 +274,10 @@
   right: 0;
   height: var(--topbar-height);
   z-index: 90;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
+  gap: 16px;
   padding: 0 24px 0 calc(var(--dock-width-collapsed) + 32px);
   background: linear-gradient(to bottom, var(--bg-void), transparent);
   transition: all var(--transition-smooth);
@@ -290,6 +291,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .breadcrumb {
@@ -320,15 +323,17 @@
 }
 
 .topbar-center {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  min-width: 0;
 }
 
 .topbar-right {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 12px;
+  min-width: 0;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
