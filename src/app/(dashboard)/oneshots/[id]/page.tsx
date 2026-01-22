@@ -379,9 +379,16 @@ export default function OneshotEditorPage() {
       .from('oneshots')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', oneshotId)
-    if (!error) {
-      router.push('/oneshots')
+
+    if (error) {
+      console.error('Delete error:', error)
+      toast.error(`Failed to delete: ${error.message}`)
+      setDeleteModalOpen(false)
+      return
     }
+
+    toast.success('Moved to recycle bin')
+    router.push('/oneshots')
     setDeleteModalOpen(false)
   }
 
