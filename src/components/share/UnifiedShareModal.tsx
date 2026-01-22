@@ -61,20 +61,38 @@ interface UnifiedShareModalProps {
 
 // Section definitions per content type
 const CAMPAIGN_SECTIONS = [
+  // Campaign & Party
   { key: 'campaignInfo', label: 'Campaign Info', description: 'Name, description, setting', default: true },
   { key: 'partySummary', label: 'Party Summary', description: 'Overview of the party', default: true },
-  { key: 'pcBasics', label: 'PC Basics', description: 'Player character names, classes, races', default: true },
+
+  // Player Characters
+  { key: 'pcBasics', label: 'PC Basics', description: 'Names, classes, races, factions, labels', default: true },
   { key: 'pcDetails', label: 'PC Details', description: 'Backstories, goals, personality', default: true },
   { key: 'pcSecrets', label: 'PC Secrets', description: 'Hidden info, DM notes on PCs', default: false, dmOnly: true },
-  { key: 'npcBasics', label: 'NPC Basics', description: 'NPC names and roles', default: true },
+
+  // NPCs
+  { key: 'npcBasics', label: 'NPC Basics', description: 'Names, roles, factions, labels', default: true },
   { key: 'npcDetails', label: 'NPC Details', description: 'NPC backstories, motivations', default: true },
   { key: 'npcSecrets', label: 'NPC Secrets', description: 'Hidden NPC info', default: false, dmOnly: true },
+
+  // Sessions & Timeline
   { key: 'sessionRecaps', label: 'Session Recaps', description: 'Player-facing session summaries', default: true },
   { key: 'sessionNotes', label: 'Session Notes', description: 'DM session planning notes', default: false, dmOnly: true },
+  { key: 'timeline', label: 'Timeline', description: 'Timeline events and milestones', default: true },
+
+  // World
+  { key: 'worldMaps', label: 'World Maps', description: 'Map images', default: true },
   { key: 'locations', label: 'Locations', description: 'Places in your world', default: true },
   { key: 'factions', label: 'Factions', description: 'Groups and organizations', default: true },
   { key: 'lore', label: 'Lore', description: 'World history and lore', default: true },
-  { key: 'worldMaps', label: 'World Maps', description: 'Map images', default: true },
+
+  // Relationships & Canvas
+  { key: 'knownRelationships', label: 'Relationships', description: 'Known character relationships', default: true },
+  { key: 'hiddenRelationships', label: 'Hidden Relationships', description: 'Secret relationships', default: false, dmOnly: true },
+  { key: 'canvas', label: 'Canvas', description: 'Interactive character canvas', default: true },
+
+  // Media
+  { key: 'gallery', label: 'Gallery', description: 'Campaign images and art', default: true },
 ]
 
 const CHARACTER_SECTIONS = [
