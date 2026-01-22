@@ -10,6 +10,7 @@ import {
   Clock,
   Bookmark,
   Play,
+  X,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout, MobileSectionHeader } from '@/components/mobile'
@@ -30,6 +31,8 @@ export interface HomePageMobileProps {
   displayCampaigns: Campaign[]
   onNavigate: (path: string) => void
   isFounder?: boolean
+  founderBannerDismissed?: boolean
+  onDismissFounderBanner?: () => void
 }
 
 export function HomePageMobile({
@@ -40,6 +43,8 @@ export function HomePageMobile({
   displayCampaigns,
   onNavigate,
   isFounder = false,
+  founderBannerDismissed = false,
+  onDismissFounderBanner,
 }: HomePageMobileProps) {
   // Combine recent items for activity section
   const recentActivity = [
@@ -89,15 +94,24 @@ export function HomePageMobile({
     <AppLayout>
       <MobileLayout title="Home" showBackButton={false}>
         {/* Founder Welcome Banner */}
-        {isFounder && (
-          <div className="mx-4 mb-4 flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+        {isFounder && !founderBannerDismissed && (
+          <div className="mx-4 mb-4 flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl relative">
             <FounderBadge size="md" />
-            <div>
-              <p className="font-medium text-amber-400 text-sm">Welcome, Founder!</p>
-              <p className="text-xs text-[--text-tertiary]">
-                Thank you for being an early supporter.
+            <div className="flex-1">
+              <p className="font-medium text-amber-400 text-sm">You're a Founder!</p>
+              <p className="text-xs text-amber-200/70">
+                Extra capacity to build your worlds.
               </p>
             </div>
+            {onDismissFounderBanner && (
+              <button
+                onClick={onDismissFounderBanner}
+                className="p-1.5 rounded-lg text-amber-400/50 hover:text-amber-400 transition-colors"
+                aria-label="Dismiss"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         )}
 

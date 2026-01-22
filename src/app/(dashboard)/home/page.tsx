@@ -15,6 +15,7 @@ import {
   Sparkles,
   ArrowRight,
   Bookmark,
+  X,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
@@ -41,6 +42,18 @@ export default function HomePage() {
   const [savedTemplates, setSavedTemplates] = useState<ContentSave[]>([])
   const [loading, setLoading] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [founderBannerDismissed, setFounderBannerDismissed] = useState(true) // Start true to prevent flash
+
+  // Check if founder banner was dismissed
+  useEffect(() => {
+    const dismissed = localStorage.getItem('founder-banner-dismissed')
+    setFounderBannerDismissed(dismissed === 'true')
+  }, [])
+
+  const dismissFounderBanner = () => {
+    localStorage.setItem('founder-banner-dismissed', 'true')
+    setFounderBannerDismissed(true)
+  }
 
   useEffect(() => {
     if (user) {
@@ -134,6 +147,8 @@ export default function HomePage() {
           displayCampaigns={displayCampaigns}
           onNavigate={(path) => router.push(path)}
           isFounder={isFounder}
+          founderBannerDismissed={founderBannerDismissed}
+          onDismissFounderBanner={dismissFounderBanner}
         />
         <OnboardingTour
           isOpen={showOnboarding}
@@ -149,15 +164,22 @@ export default function HomePage() {
       <div className="max-w-7xl mx-auto space-y-12">
 
         {/* Founder Welcome Banner */}
-        {isFounder && !membershipLoading && (
-          <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+        {isFounder && !membershipLoading && !founderBannerDismissed && (
+          <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl relative group">
             <FounderBadge size="lg" />
-            <div>
-              <p className="font-medium text-amber-400">Welcome, Founder!</p>
-              <p className="text-sm text-[--text-tertiary]">
-                Thank you for being an early supporter. You have access to expanded features.
+            <div className="flex-1">
+              <p className="font-medium text-amber-400">You're a Founder!</p>
+              <p className="text-sm text-amber-200/70">
+                Thanks for being here early. You've got extra capacity to build out your worlds.
               </p>
             </div>
+            <button
+              onClick={dismissFounderBanner}
+              className="absolute top-2 right-2 p-1.5 rounded-lg text-amber-400/50 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         )}
 
