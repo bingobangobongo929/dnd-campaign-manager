@@ -13,14 +13,16 @@ import {
   Trash2,
   Lock,
   Eye,
-  BookmarkPlus,
+  ArrowLeft,
   RefreshCw,
   FileEdit,
+  ChevronRight,
 } from 'lucide-react'
 import { useSupabase, useMembership } from '@/hooks'
 import { cn } from '@/lib/utils'
 
 type ContentType = 'campaign' | 'character' | 'oneshot'
+type ModalView = 'initial' | 'share' | 'template-manage'
 
 interface TemplateSnapshot {
   id: string
@@ -53,6 +55,52 @@ interface UnifiedShareModalProps {
   onShareCreated?: () => void
 }
 
+// Section definitions per content type
+const CAMPAIGN_SECTIONS = [
+  { key: 'campaignInfo', label: 'Campaign Info', description: 'Name, description, setting', default: true },
+  { key: 'partySummary', label: 'Party Summary', description: 'Overview of the party', default: true },
+  { key: 'pcBasics', label: 'PC Basics', description: 'Player character names, classes, races', default: true },
+  { key: 'pcDetails', label: 'PC Details', description: 'Backstories, goals, personality', default: true },
+  { key: 'pcSecrets', label: 'PC Secrets', description: 'Hidden info, DM notes on PCs', default: false, dmOnly: true },
+  { key: 'npcBasics', label: 'NPC Basics', description: 'NPC names and roles', default: true },
+  { key: 'npcDetails', label: 'NPC Details', description: 'NPC backstories, motivations', default: true },
+  { key: 'npcSecrets', label: 'NPC Secrets', description: 'Hidden NPC info', default: false, dmOnly: true },
+  { key: 'sessionRecaps', label: 'Session Recaps', description: 'Player-facing session summaries', default: true },
+  { key: 'sessionNotes', label: 'Session Notes', description: 'DM session planning notes', default: false, dmOnly: true },
+  { key: 'locations', label: 'Locations', description: 'Places in your world', default: true },
+  { key: 'factions', label: 'Factions', description: 'Groups and organizations', default: true },
+  { key: 'lore', label: 'Lore', description: 'World history and lore', default: true },
+  { key: 'worldMaps', label: 'World Maps', description: 'Map images', default: true },
+]
+
+const CHARACTER_SECTIONS = [
+  { key: 'summary', label: 'Summary', description: 'Quick overview', default: true },
+  { key: 'tldr', label: 'TL;DR', description: 'At-a-glance summary', default: true },
+  { key: 'backstory', label: 'Backstory', description: 'Character history', default: true },
+  { key: 'lifePhases', label: 'Life Phases', description: 'Timeline of life events', default: true },
+  { key: 'appearance', label: 'Appearance', description: 'Physical description', default: true },
+  { key: 'personality', label: 'Personality', description: 'Traits, ideals, bonds, flaws', default: true },
+  { key: 'goals', label: 'Goals', description: 'Character motivations', default: true },
+  { key: 'fears', label: 'Fears & Weaknesses', description: 'Character vulnerabilities', default: true },
+  { key: 'secrets', label: 'Secrets', description: 'Hidden character info', default: false, dmOnly: true },
+  { key: 'partyMembers', label: 'Party Members', description: 'Relationships with party', default: true },
+  { key: 'npcs', label: 'NPCs', description: 'NPC relationships', default: true },
+  { key: 'writings', label: 'Writings', description: 'Journal entries, letters', default: true },
+  { key: 'rumors', label: 'Rumors', description: 'What others say', default: false, dmOnly: true },
+  { key: 'dmQa', label: 'DM Q&A', description: 'DM notes and questions', default: false, dmOnly: true },
+]
+
+const ONESHOT_SECTIONS = [
+  { key: 'tagline', label: 'Tagline', description: 'Hook line', default: true },
+  { key: 'introduction', label: 'Introduction', description: 'Adventure overview', default: true },
+  { key: 'settingNotes', label: 'Setting Notes', description: 'World context', default: true },
+  { key: 'characterCreation', label: 'Character Creation', description: 'Guidelines for players', default: true },
+  { key: 'handouts', label: 'Handouts', description: 'Player handouts', default: true },
+  { key: 'sessionPlan', label: 'Session Plan', description: 'DM session outline', default: false, dmOnly: true },
+  { key: 'twists', label: 'Twists & Secrets', description: 'Plot twists', default: false, dmOnly: true },
+  { key: 'keyNpcs', label: 'Key NPCs', description: 'Important NPCs', default: false, dmOnly: true },
+]
+
 export function UnifiedShareModal({
   isOpen,
   onClose,
@@ -66,7 +114,10 @@ export function UnifiedShareModal({
   const supabase = useSupabase()
   const { canCreateShareLink, limits, usage } = useMembership()
 
-  // State
+  // View state
+  const [view, setView] = useState<ModalView>('initial')
+
+  // Data state
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [existingShares, setExistingShares] = useState<ShareLink[]>([])
@@ -78,12 +129,37 @@ export function UnifiedShareModal({
   const [password, setPassword] = useState('')
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
 
+  // Section selection state
+  const [selectedSections, setSelectedSections] = useState<Record<string, boolean>>({})
+
   // Determine template state
   const isTemplate = contentMode === 'template'
   const hasPublishedVersions = existingSnapshots.length > 0
   const latestSnapshot = hasPublishedVersions
     ? existingSnapshots.reduce((latest, curr) => curr.version > latest.version ? curr : latest)
     : null
+
+  // Get sections for current content type
+  const getSections = () => {
+    switch (contentType) {
+      case 'campaign': return CAMPAIGN_SECTIONS
+      case 'character': return CHARACTER_SECTIONS
+      case 'oneshot': return ONESHOT_SECTIONS
+    }
+  }
+
+  // Initialize section defaults when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const sections = getSections()
+      const defaults: Record<string, boolean> = {}
+      sections.forEach(s => {
+        defaults[s.key] = s.default
+      })
+      setSelectedSections(defaults)
+      setView(isTemplate && hasPublishedVersions ? 'template-manage' : 'initial')
+    }
+  }, [isOpen, contentType, isTemplate, hasPublishedVersions])
 
   // Load existing data when modal opens
   useEffect(() => {
@@ -170,36 +246,8 @@ export function UnifiedShareModal({
     setError(null)
 
     try {
-      // Default to including all sections
-      const defaultSections = {
-        // Campaign sections
-        description: true,
-        setting: true,
-        sessions: true,
-        characters: true,
-        lore: true,
-        // Character sections
-        backstory: true,
-        personality: true,
-        appearance: true,
-        stats: true,
-        abilities: true,
-        inventory: true,
-        notes: true,
-        relationships: true,
-        // Oneshot sections
-        tagline: true,
-        introduction: true,
-        settingNotes: true,
-        characterCreation: true,
-        handouts: true,
-        sessionPlan: true,
-        twists: true,
-        keyNpcs: true,
-      }
-
       const body: Record<string, unknown> = {
-        includedSections: defaultSections,
+        includedSections: selectedSections,
         shareType,
       }
 
@@ -261,14 +309,13 @@ export function UnifiedShareModal({
     setError(null)
 
     try {
-      // This will create a copy as a template draft
       const res = await fetch('/api/content/duplicate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contentType,
           contentId,
-          asTemplate: true, // New flag to create as template draft
+          asTemplate: true,
         }),
       })
 
@@ -281,7 +328,6 @@ export function UnifiedShareModal({
       onTemplateCreated?.()
       onClose()
 
-      // Redirect to edit the new template with onboarding flag
       if (data.newId) {
         const editPath = contentType === 'campaign'
           ? `/campaigns/${data.newId}?newTemplate=1`
@@ -342,22 +388,46 @@ export function UnifiedShareModal({
     })
   }
 
+  const toggleSection = (key: string) => {
+    setSelectedSections(prev => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  const selectAllSections = () => {
+    const sections = getSections()
+    const all: Record<string, boolean> = {}
+    sections.forEach(s => { all[s.key] = true })
+    setSelectedSections(all)
+  }
+
+  const selectPlayerSections = () => {
+    const sections = getSections()
+    const playerOnly: Record<string, boolean> = {}
+    sections.forEach(s => { playerOnly[s.key] = !s.dmOnly })
+    setSelectedSections(playerOnly)
+  }
+
   // Filter shares by type
   const partyShares = existingShares.filter(s => s.share_type !== 'template')
   const templateShares = existingShares.filter(s => s.share_type === 'template')
 
-  // Determine modal title
-  const modalTitle = isTemplate
-    ? hasPublishedVersions
-      ? `Share "${contentName}" (Template)`
-      : `Share "${contentName}" (Template Draft)`
-    : `Share "${contentName}"`
+  const handleClose = () => {
+    setView('initial')
+    setError(null)
+    onClose()
+  }
+
+  // Modal title based on view
+  const getModalTitle = () => {
+    if (view === 'share') return 'Share with Link'
+    if (view === 'template-manage') return `Manage Template`
+    return `Share "${contentName}"`
+  }
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
-      title={modalTitle}
+      onClose={handleClose}
+      title={getModalTitle()}
       size="lg"
     >
       {dataLoading ? (
@@ -367,26 +437,137 @@ export function UnifiedShareModal({
       ) : (
         <div className="space-y-6">
           {/* ============================================ */}
-          {/* ACTIVE CONTENT - Not a template yet */}
+          {/* INITIAL VIEW - Two main options */}
           {/* ============================================ */}
-          {!isTemplate && (
+          {view === 'initial' && !isTemplate && (
             <>
-              {/* Share with Link Section */}
-              <section className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-500/10 rounded-lg">
-                    <Link2 className="w-5 h-5 text-purple-400" />
+              {/* Share with Link Button */}
+              <button
+                onClick={() => setView('share')}
+                className="w-full p-5 bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-purple-500/30 rounded-xl text-left transition-all group"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-purple-500/10 rounded-lg group-hover:bg-purple-500/20 transition-colors">
+                    <Link2 className="w-6 h-6 text-purple-400" />
                   </div>
-                  <div>
-                    <h3 className="font-medium text-white">Share with Link</h3>
-                    <p className="text-sm text-gray-400">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-white text-lg flex items-center gap-2">
+                      Share with Link
+                      <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-purple-400 transition-colors" />
+                    </h3>
+                    <p className="text-sm text-gray-400 mt-1">
                       Share a live view with your party. They can view but not save it.
                     </p>
                   </div>
                 </div>
-
-                {/* Existing party shares */}
                 {partyShares.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-white/[0.06] text-xs text-gray-500">
+                    {partyShares.length} active share link{partyShares.length !== 1 ? 's' : ''}
+                  </div>
+                )}
+              </button>
+
+              {/* Save to Templates Button */}
+              <button
+                onClick={saveAsTemplate}
+                disabled={loading}
+                className="w-full p-5 bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-amber-500/30 rounded-xl text-left transition-all group"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-amber-500/10 rounded-lg group-hover:bg-amber-500/20 transition-colors">
+                    {loading ? (
+                      <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
+                    ) : (
+                      <Package className="w-6 h-6 text-amber-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-white text-lg">Save to my Templates</h3>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Creates an editable copy in your Templates. Edit it for Session 0, then share when ready.
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              {error && (
+                <p className="text-sm text-red-400 text-center">{error}</p>
+              )}
+            </>
+          )}
+
+          {/* ============================================ */}
+          {/* SHARE VIEW - Section selection + share options */}
+          {/* ============================================ */}
+          {view === 'share' && (
+            <>
+              {/* Back button */}
+              <button
+                onClick={() => setView('initial')}
+                className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors -mt-2 mb-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to options
+              </button>
+
+              {/* Section Selection */}
+              <section className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium text-white">Choose what to share</h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={selectPlayerSections}
+                      className="text-xs px-2 py-1 text-purple-400 hover:bg-purple-500/10 rounded transition-colors"
+                    >
+                      Player-safe
+                    </button>
+                    <button
+                      onClick={selectAllSections}
+                      className="text-xs px-2 py-1 text-gray-400 hover:bg-white/10 rounded transition-colors"
+                    >
+                      All
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto p-1">
+                  {getSections().map((section) => (
+                    <label
+                      key={section.key}
+                      className={cn(
+                        "flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all",
+                        selectedSections[section.key]
+                          ? "bg-purple-500/10 border-purple-500/30"
+                          : "bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12]"
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedSections[section.key] || false}
+                        onChange={() => toggleSection(section.key)}
+                        className="mt-0.5 w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-white">{section.label}</span>
+                          {section.dmOnly && (
+                            <span className="text-[10px] px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded">DM</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 truncate">{section.description}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </section>
+
+              {/* Divider */}
+              <div className="border-t border-white/[0.06]" />
+
+              {/* Existing shares */}
+              {partyShares.length > 0 && (
+                <section className="space-y-3">
+                  <h3 className="font-medium text-white text-sm">Active Share Links</h3>
                   <div className="space-y-2">
                     {partyShares.map((share) => (
                       <ShareLinkCard
@@ -401,96 +582,67 @@ export function UnifiedShareModal({
                       />
                     ))}
                   </div>
+                </section>
+              )}
+
+              {/* Create new share */}
+              <section className="space-y-4">
+                <h3 className="font-medium text-white text-sm">Create New Link</h3>
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={usePassword}
+                    onChange={(e) => setUsePassword(e.target.checked)}
+                    className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50"
+                  />
+                  <Lock className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-300">Password protect</span>
+                </label>
+
+                {usePassword && (
+                  <Input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password"
+                    className="bg-white/[0.03] border-white/[0.08]"
+                  />
                 )}
 
-                {/* Create new share link */}
-                <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl space-y-4">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={usePassword}
-                      onChange={(e) => setUsePassword(e.target.checked)}
-                      className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50"
-                    />
-                    <Lock className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm text-gray-300">Password protect</span>
-                  </label>
-
-                  {usePassword && (
-                    <Input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter password"
-                      className="bg-white/[0.03] border-white/[0.08]"
-                    />
-                  )}
-
-                  {/* Share link limit warning */}
-                  <LimitWarning
-                    limitType="shareLinks"
-                    current={usage.shareLinks}
-                    limit={limits.shareLinks}
-                  />
-
-                  <button
-                    onClick={() => createShareLink('party')}
-                    disabled={loading || (usePassword && !password.trim()) || (limits.shareLinks !== -1 && usage.shareLinks >= limits.shareLinks)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {loading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <>
-                        <Link2 className="w-4 h-4" />
-                        Create Share Link
-                      </>
-                    )}
-                  </button>
-                </div>
-              </section>
-
-              {/* Divider */}
-              <div className="border-t border-white/[0.06]" />
-
-              {/* Save to my Templates Section */}
-              <section className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-amber-500/10 rounded-lg">
-                    <Package className="w-5 h-5 text-amber-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-white">Save to my Templates</h3>
-                    <p className="text-sm text-gray-400">
-                      Creates an editable copy in your Templates. Edit it for Session 0, then share when ready.
-                    </p>
-                  </div>
-                </div>
+                <LimitWarning
+                  limitType="shareLinks"
+                  current={usage.shareLinks}
+                  limit={limits.shareLinks}
+                />
 
                 <button
-                  onClick={saveAsTemplate}
-                  disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white font-medium rounded-lg border border-white/[0.08] transition-colors disabled:opacity-50"
+                  onClick={() => createShareLink('party')}
+                  disabled={loading || (usePassword && !password.trim()) || (limits.shareLinks !== -1 && usage.shareLinks >= limits.shareLinks)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <>
-                      <Package className="w-4 h-4" />
-                      Save to my Templates
+                      <Link2 className="w-4 h-4" />
+                      Create Share Link
                     </>
                   )}
                 </button>
               </section>
+
+              {error && (
+                <p className="text-sm text-red-400 text-center">{error}</p>
+              )}
             </>
           )}
 
           {/* ============================================ */}
           {/* TEMPLATE DRAFT - No published versions yet */}
           {/* ============================================ */}
-          {isTemplate && !hasPublishedVersions && (
+          {isTemplate && !hasPublishedVersions && view === 'initial' && (
             <>
-              {/* Draft Notice */}
               <section className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-amber-500/10 rounded-lg">
@@ -520,7 +672,6 @@ export function UnifiedShareModal({
                 </button>
               </section>
 
-              {/* Disabled Share Sections */}
               <section className="space-y-4 opacity-50">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-purple-500/10 rounded-lg">
@@ -533,19 +684,9 @@ export function UnifiedShareModal({
                 </div>
               </section>
 
-              <div className="border-t border-white/[0.06]" />
-
-              <section className="space-y-4 opacity-50">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-500/10 rounded-lg">
-                    <Globe className="w-5 h-5 text-purple-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-400">Share to Community</h3>
-                    <p className="text-sm text-gray-500">Publish a version first to enable sharing</p>
-                  </div>
-                </div>
-              </section>
+              {error && (
+                <p className="text-sm text-red-400 text-center">{error}</p>
+              )}
             </>
           )}
 
@@ -568,7 +709,6 @@ export function UnifiedShareModal({
                   </div>
                 </div>
 
-                {/* Existing template shares */}
                 {templateShares.length > 0 && (
                   <div className="space-y-2">
                     {templateShares.map((share) => (
@@ -586,7 +726,6 @@ export function UnifiedShareModal({
                   </div>
                 )}
 
-                {/* Create new share link */}
                 <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl space-y-4">
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input
@@ -626,7 +765,6 @@ export function UnifiedShareModal({
                 </div>
               </section>
 
-              {/* Divider */}
               <div className="border-t border-white/[0.06]" />
 
               {/* Update Template Section */}
@@ -660,7 +798,6 @@ export function UnifiedShareModal({
                 </button>
               </section>
 
-              {/* Divider */}
               <div className="border-t border-white/[0.06]" />
 
               {/* Share to Community - Coming Soon */}
@@ -690,12 +827,11 @@ export function UnifiedShareModal({
                   Publish to Community
                 </button>
               </section>
-            </>
-          )}
 
-          {/* Error Display */}
-          {error && (
-            <p className="text-sm text-red-400 text-center">{error}</p>
+              {error && (
+                <p className="text-sm text-red-400 text-center">{error}</p>
+              )}
+            </>
           )}
         </div>
       )}
