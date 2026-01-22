@@ -11,6 +11,13 @@
 -- ============================================================================
 
 -- ============================================================================
+-- 0. FIX: Add 'organization' to faction_type check constraint
+-- ============================================================================
+ALTER TABLE campaign_factions DROP CONSTRAINT IF EXISTS campaign_factions_faction_type_check;
+ALTER TABLE campaign_factions ADD CONSTRAINT campaign_factions_faction_type_check
+  CHECK (faction_type IN ('guild', 'kingdom', 'cult', 'family', 'military', 'criminal', 'religious', 'merchant', 'academic', 'organization', 'other'));
+
+-- ============================================================================
 -- 1. MIGRATE FACTION TAGS TO CAMPAIGN_FACTIONS
 -- ============================================================================
 

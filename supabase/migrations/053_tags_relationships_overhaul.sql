@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS campaign_factions (
 
   -- Lore
   faction_type TEXT DEFAULT 'organization'
-    CHECK (faction_type IN ('guild', 'kingdom', 'cult', 'family', 'military', 'criminal', 'religious', 'merchant', 'academic', 'other')),
+    CHECK (faction_type IN ('guild', 'kingdom', 'cult', 'family', 'military', 'criminal', 'religious', 'merchant', 'academic', 'organization', 'other')),
   alignment TEXT,
   status TEXT DEFAULT 'active'
     CHECK (status IN ('active', 'disbanded', 'secret', 'destroyed')),
