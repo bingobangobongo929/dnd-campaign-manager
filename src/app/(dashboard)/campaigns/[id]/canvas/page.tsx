@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
-import { Plus, FolderPlus, Scaling, Trash2, Brain, Share2, ChevronRight, Users, Sparkles, ChevronDown, Loader2, Tags, Shield, Link2, ChevronUp } from 'lucide-react'
+import { Plus, FolderPlus, Scaling, Trash2, Brain, Share2, ChevronRight, Users, Sparkles, ChevronDown, Loader2, Tags, Shield, Link2, ChevronUp, Settings2 } from 'lucide-react'
 import { Modal, Input, ColorPicker, IconPicker, getGroupIcon } from '@/components/ui'
 import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT, CONNECTION_FILTER_OPTIONS } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
@@ -70,6 +70,8 @@ export default function CampaignCanvasPage() {
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false)
   const [isFactionManagerOpen, setIsFactionManagerOpen] = useState(false)
   const [isRelationshipManagerOpen, setIsRelationshipManagerOpen] = useState(false)
+  const [manageDropdownOpen, setManageDropdownOpen] = useState(false)
+  const [addDropdownOpen, setAddDropdownOpen] = useState(false)
 
   // Connection lines state
   const [showConnections, setShowConnections] = useState(false)
@@ -608,20 +610,19 @@ export default function CampaignCanvasPage() {
             "btn btn-sm flex items-center gap-1.5",
             showConnections ? "btn-primary" : "btn-secondary"
           )}
-          onClick={() => setConnectionDropdownOpen(!connectionDropdownOpen)}
+          onClick={() => {
+            setConnectionDropdownOpen(!connectionDropdownOpen)
+            setManageDropdownOpen(false)
+            setAddDropdownOpen(false)
+          }}
           title="Show relationship connections"
         >
           <Link2 className="w-4 h-4" />
           <span className="hidden sm:inline">Connections</span>
-          {connectionDropdownOpen ? (
-            <ChevronUp className="w-3 h-3" />
-          ) : (
-            <ChevronDown className="w-3 h-3" />
-          )}
+          <ChevronDown className={cn("w-3 h-3 transition-transform", connectionDropdownOpen && "rotate-180")} />
         </button>
         {connectionDropdownOpen && (
           <div className="absolute top-full right-0 mt-1 w-48 bg-[#12121a] border border-[--border] rounded-lg shadow-2xl z-50 py-1">
-            {/* Toggle on/off */}
             <button
               className={cn(
                 "w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-white/[0.05]",
@@ -629,43 +630,30 @@ export default function CampaignCanvasPage() {
               )}
               onClick={() => {
                 setShowConnections(!showConnections)
-                if (showConnections) {
-                  setConnectionDropdownOpen(false)
-                }
+                if (showConnections) setConnectionDropdownOpen(false)
               }}
             >
               <Link2 className="w-4 h-4" />
               {showConnections ? "Hide Connections" : "Show Connections"}
             </button>
-
             {showConnections && (
               <>
                 <div className="border-t border-[--border] my-1" />
-                <div className="px-3 py-1.5 text-xs text-[--text-muted] uppercase tracking-wider">
-                  Filter by Category
-                </div>
+                <div className="px-3 py-1.5 text-xs text-[--text-muted] uppercase tracking-wider">Filter</div>
                 {CONNECTION_FILTER_OPTIONS.map((option) => (
                   <button
                     key={option.value}
                     className={cn(
                       "w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-white/[0.05]",
-                      (option.value === 'all' ? connectionFilter === null : connectionFilter === option.value)
-                        ? "text-white"
-                        : "text-[--text-secondary]"
+                      (option.value === 'all' ? connectionFilter === null : connectionFilter === option.value) ? "text-white" : "text-[--text-secondary]"
                     )}
                     onClick={() => {
                       setConnectionFilter(option.value === 'all' ? null : option.value as RelationshipCategory)
                       setConnectionDropdownOpen(false)
                     }}
                   >
-                    <span
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: option.color }}
-                    />
+                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: option.color }} />
                     {option.label}
-                    {(option.value === 'all' ? connectionFilter === null : connectionFilter === option.value) && (
-                      <span className="ml-auto text-purple-400">✓</span>
-                    )}
                   </button>
                 ))}
               </>
@@ -673,51 +661,90 @@ export default function CampaignCanvasPage() {
           </div>
         )}
       </div>
-      <button
-        className="btn btn-secondary btn-sm"
-        onClick={() => setIsTagManagerOpen(true)}
-        title="Manage Labels (General Tags)"
-      >
-        <Tags className="w-4 h-4" />
-        <span className="hidden sm:inline ml-1.5">Labels</span>
-      </button>
-      <button
-        className="btn btn-secondary btn-sm"
-        onClick={() => setIsFactionManagerOpen(true)}
-        title="Manage Factions"
-      >
-        <Shield className="w-4 h-4" />
-        <span className="hidden sm:inline ml-1.5">Factions</span>
-      </button>
-      <button
-        className="btn btn-secondary btn-sm"
-        onClick={() => setIsRelationshipManagerOpen(true)}
-        title="Manage Relationships"
-      >
-        <Users className="w-4 h-4" />
-        <span className="hidden sm:inline ml-1.5">Relationships</span>
-      </button>
-      <button
-        className="btn btn-secondary btn-sm"
-        onClick={() => setIsResizeToolbarOpen(true)}
-      >
-        <Scaling className="w-4 h-4" />
-        <span className="hidden sm:inline ml-1.5">Resize</span>
-      </button>
-      <button
-        className="btn btn-secondary btn-sm"
-        onClick={() => setIsCreateGroupOpen(true)}
-      >
-        <FolderPlus className="w-4 h-4" />
-        <span className="hidden sm:inline ml-1.5">Add Group</span>
-      </button>
-      <button
-        className="btn btn-primary btn-sm"
-        onClick={() => setIsCreateCharacterModalOpen(true)}
-      >
-        <Plus className="w-4 h-4" />
-        <span className="hidden sm:inline ml-1.5">Add Character</span>
-      </button>
+
+      {/* Manage Dropdown - Labels, Factions, Relationships, Resize */}
+      <div className="relative">
+        <button
+          className="btn btn-secondary btn-sm flex items-center gap-1.5"
+          onClick={() => {
+            setManageDropdownOpen(!manageDropdownOpen)
+            setConnectionDropdownOpen(false)
+            setAddDropdownOpen(false)
+          }}
+          title="Manage campaign data"
+        >
+          <Settings2 className="w-4 h-4" />
+          <span className="hidden sm:inline">Manage</span>
+          <ChevronDown className={cn("w-3 h-3 transition-transform", manageDropdownOpen && "rotate-180")} />
+        </button>
+        {manageDropdownOpen && (
+          <div className="absolute top-full right-0 mt-1 w-48 bg-[#12121a] border border-[--border] rounded-lg shadow-2xl z-50 py-1">
+            <button
+              className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
+              onClick={() => { setIsTagManagerOpen(true); setManageDropdownOpen(false) }}
+            >
+              <Tags className="w-4 h-4" />
+              Labels
+            </button>
+            <button
+              className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
+              onClick={() => { setIsFactionManagerOpen(true); setManageDropdownOpen(false) }}
+            >
+              <Shield className="w-4 h-4" />
+              Factions
+            </button>
+            <button
+              className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
+              onClick={() => { setIsRelationshipManagerOpen(true); setManageDropdownOpen(false) }}
+            >
+              <Users className="w-4 h-4" />
+              Relationships
+            </button>
+            <div className="border-t border-[--border] my-1" />
+            <button
+              className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
+              onClick={() => { setIsResizeToolbarOpen(true); setManageDropdownOpen(false) }}
+            >
+              <Scaling className="w-4 h-4" />
+              Resize Cards
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Add Dropdown - Group, Character */}
+      <div className="relative">
+        <button
+          className="btn btn-primary btn-sm flex items-center gap-1.5"
+          onClick={() => {
+            setAddDropdownOpen(!addDropdownOpen)
+            setConnectionDropdownOpen(false)
+            setManageDropdownOpen(false)
+          }}
+        >
+          <Plus className="w-4 h-4" />
+          <span className="hidden sm:inline">Add</span>
+          <ChevronDown className={cn("w-3 h-3 transition-transform", addDropdownOpen && "rotate-180")} />
+        </button>
+        {addDropdownOpen && (
+          <div className="absolute top-full right-0 mt-1 w-44 bg-[#12121a] border border-[--border] rounded-lg shadow-2xl z-50 py-1">
+            <button
+              className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
+              onClick={() => { setIsCreateCharacterModalOpen(true); setAddDropdownOpen(false) }}
+            >
+              <Plus className="w-4 h-4" />
+              Add Character
+            </button>
+            <button
+              className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
+              onClick={() => { setIsCreateGroupOpen(true); setAddDropdownOpen(false) }}
+            >
+              <FolderPlus className="w-4 h-4" />
+              Add Group
+            </button>
+          </div>
+        )}
+      </div>
     </>
   )
 
