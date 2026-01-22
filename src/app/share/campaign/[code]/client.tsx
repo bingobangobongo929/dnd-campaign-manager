@@ -44,6 +44,7 @@ interface CampaignShareClientProps {
   timelineEvents: any[]
   worldMaps: any[]
   relationships: any[]
+  factionMemberships: any[]
   lore: any[]
   gallery: any[]
   canvasGroups: any[]
@@ -210,6 +211,7 @@ export function CampaignShareClient({
   timelineEvents,
   worldMaps,
   relationships,
+  factionMemberships,
   lore,
   gallery,
   canvasGroups,
@@ -1021,9 +1023,13 @@ export function CampaignShareClient({
             <Section title="All Relationships" icon={Network} count={relationships.length} id="relationship-list">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {relationships.map(rel => {
-                  const fromChar = characters.find(c => c.id === rel.character_id)
-                  const toChar = characters.find(c => c.id === rel.related_character_id)
+                  const fromChar = rel.from_character
+                  const toChar = rel.to_character
                   if (!fromChar || !toChar) return null
+
+                  const relationshipColor = rel.template?.color || '#8B5CF6'
+                  const relationshipLabel = rel.custom_label || rel.template?.name || 'Related'
+                  const category = rel.template?.category || 'other'
 
                   return (
                     <div
@@ -1054,13 +1060,14 @@ export function CampaignShareClient({
                             <ChevronRight className="w-3 h-3 text-gray-500 flex-shrink-0" />
                             <span className="truncate">{toChar.name}</span>
                           </div>
-                          <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded ${
-                            rel.relationship_type === 'ally' ? 'bg-green-500/15 text-green-400' :
-                            rel.relationship_type === 'enemy' ? 'bg-red-500/15 text-red-400' :
-                            rel.relationship_type === 'family' ? 'bg-purple-500/15 text-purple-400' :
-                            'bg-gray-500/15 text-gray-400'
-                          }`}>
-                            {rel.relationship_label || rel.relationship_type}
+                          <span
+                            className="inline-block mt-1 text-xs px-2 py-0.5 rounded"
+                            style={{
+                              backgroundColor: `${relationshipColor}15`,
+                              color: relationshipColor,
+                            }}
+                          >
+                            {relationshipLabel}
                           </span>
                         </div>
                       </div>

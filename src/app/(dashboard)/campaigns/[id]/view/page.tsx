@@ -120,11 +120,32 @@ export default async function CampaignViewPage({ params }: ViewPageProps) {
     .order('is_primary', { ascending: false })
     .order('created_at')
 
-  // Fetch ALL relationships (including hidden)
+  // Fetch ALL relationships from canvas_relationships (including hidden)
   const { data: relationships } = await supabase
-    .from('character_relationships')
-    .select('*')
+    .from('canvas_relationships')
+    .select(`
+      *,
+      template:relationship_templates(*),
+      from_character:characters!canvas_relationships_from_character_id_fkey(*),
+      to_character:characters!canvas_relationships_to_character_id_fkey(*)
+    `)
     .eq('campaign_id', campaignId)
+    .eq('is_primary', true)
+
+  // Fetch faction memberships
+  let factionMemberships: any[] = []
+  if (allCharacters.length > 0) {
+    const charIds = allCharacters.map(c => c.id)
+    const { data } = await supabase
+      .from('faction_memberships')
+      .select(`
+        *,
+        faction:campaign_factions(*),
+        character:characters(*)
+      `)
+      .in('character_id', charIds)
+    factionMemberships = data || []
+  }
 
   // Fetch ALL lore
   const { data: lore } = await supabase
@@ -207,6 +228,7 @@ export default async function CampaignViewPage({ params }: ViewPageProps) {
         timelineEvents={timelineEvents || []}
         worldMaps={worldMaps || []}
         relationships={relationships || []}
+        factionMemberships={factionMemberships}
         lore={lore || []}
         gallery={gallery || []}
         canvasGroups={canvasGroups || []}

@@ -6,7 +6,7 @@ import {
   AlertTriangle, Building2, ChevronRight, ChevronDown,
   Crown, Swords, Book, Coins, Church, Skull, GraduationCap, HelpCircle
 } from 'lucide-react'
-import { Modal, Input, ColorPicker } from '@/components/ui'
+import { Modal, Input, ColorPicker, IconPicker, getGroupIcon } from '@/components/ui'
 import { useSupabase } from '@/hooks'
 import { cn } from '@/lib/utils'
 import type { CampaignFaction, FactionMembership, Character, FactionType, FactionStatus } from '@/types/database'
@@ -57,6 +57,7 @@ export function FactionManager({ campaignId, characters, isOpen, onClose, onFact
     name: '',
     description: '',
     color: '#8B5CF6',
+    icon: 'shield',
     faction_type: 'guild' as FactionType,
     status: 'active' as FactionStatus,
     parent_faction_id: null as string | null,
@@ -69,6 +70,7 @@ export function FactionManager({ campaignId, characters, isOpen, onClose, onFact
     name: '',
     description: '',
     color: '#8B5CF6',
+    icon: 'shield',
     faction_type: 'guild' as FactionType,
     status: 'active' as FactionStatus,
     parent_faction_id: null as string | null,
@@ -163,6 +165,7 @@ export function FactionManager({ campaignId, characters, isOpen, onClose, onFact
         name: createForm.name.trim(),
         description: createForm.description.trim() || null,
         color: createForm.color,
+        icon: createForm.icon,
         faction_type: createForm.faction_type,
         status: createForm.status,
         parent_faction_id: createForm.parent_faction_id,
@@ -178,6 +181,7 @@ export function FactionManager({ campaignId, characters, isOpen, onClose, onFact
         name: '',
         description: '',
         color: '#8B5CF6',
+        icon: 'shield',
         faction_type: 'guild',
         status: 'active',
         parent_faction_id: null,
@@ -196,6 +200,7 @@ export function FactionManager({ campaignId, characters, isOpen, onClose, onFact
       name: faction.name,
       description: faction.description || '',
       color: faction.color,
+      icon: faction.icon || 'shield',
       faction_type: faction.faction_type,
       status: faction.status,
       parent_faction_id: faction.parent_faction_id,
@@ -213,6 +218,7 @@ export function FactionManager({ campaignId, characters, isOpen, onClose, onFact
         name: editForm.name.trim(),
         description: editForm.description.trim() || null,
         color: editForm.color,
+        icon: editForm.icon,
         faction_type: editForm.faction_type,
         status: editForm.status,
         parent_faction_id: editForm.parent_faction_id,
@@ -309,6 +315,7 @@ export function FactionManager({ campaignId, characters, isOpen, onClose, onFact
     const hasChildren = faction.child_factions.length > 0
     const isExpanded = expandedFactions.has(faction.id)
     const statusConfig = getStatusConfig(faction.status)
+    const FactionIcon = getGroupIcon(faction.icon)
 
     return (
       <div key={faction.id} className={cn("space-y-2", depth > 0 && "ml-6")}>
@@ -341,9 +348,7 @@ export function FactionManager({ campaignId, characters, isOpen, onClose, onFact
               className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
               style={{ backgroundColor: `${faction.color}20` }}
             >
-              <div style={{ color: faction.color }}>
-                {getFactionTypeIcon(faction.faction_type)}
-              </div>
+              <FactionIcon className="w-5 h-5" style={{ color: faction.color }} />
             </div>
 
             {/* Faction info */}
@@ -515,6 +520,15 @@ export function FactionManager({ campaignId, characters, isOpen, onClose, onFact
       </div>
 
       <div className="form-group">
+        <label className="form-label">Icon</label>
+        <IconPicker
+          value={form.icon}
+          onChange={(icon) => setForm({ ...form, icon })}
+          color={form.color}
+        />
+      </div>
+
+      <div className="form-group">
         <label className="form-label">Color</label>
         <ColorPicker
           value={form.color}
@@ -603,6 +617,7 @@ export function FactionManager({ campaignId, characters, isOpen, onClose, onFact
             name: '',
             description: '',
             color: '#8B5CF6',
+            icon: 'shield',
             faction_type: 'guild',
             status: 'active',
             parent_faction_id: null,

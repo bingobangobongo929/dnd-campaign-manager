@@ -1,16 +1,38 @@
 'use client'
 
-import { X, Pencil, User, Scroll, Target, Eye, Lock, Quote, Users } from 'lucide-react'
+import { X, Pencil, User, Scroll, Target, Eye, Lock, Quote, Users, Shield, Tag as TagIcon, Heart, Swords, Briefcase, Crown, Link2 } from 'lucide-react'
 import { cn, getInitials } from '@/lib/utils'
-import { TagBadge, sanitizeHtml, MarkdownContent } from '@/components/ui'
+import { sanitizeHtml, MarkdownContent, getGroupIcon } from '@/components/ui'
 import Image from 'next/image'
-import type { Character, Tag, CharacterTag } from '@/types/database'
+import type { Character, Tag, CharacterTag, CanvasRelationship, RelationshipTemplate, CampaignFaction, FactionMembership, RelationshipCategory } from '@/types/database'
+
+// Extended types for relationships and factions
+interface RelationshipWithDetails extends CanvasRelationship {
+  template?: RelationshipTemplate | null
+  to_character: Character
+}
+
+interface MembershipWithFaction extends FactionMembership {
+  faction: CampaignFaction
+}
 
 interface CharacterViewModalProps {
   character: Character
   tags: (CharacterTag & { tag: Tag; related_character?: Character | null })[]
+  relationships?: RelationshipWithDetails[]
+  factionMemberships?: MembershipWithFaction[]
   onEdit: () => void
   onClose: () => void
+}
+
+// Category icons for relationships
+const CATEGORY_ICONS: Record<RelationshipCategory, React.ReactNode> = {
+  family: <Crown className="w-3.5 h-3.5" />,
+  professional: <Briefcase className="w-3.5 h-3.5" />,
+  romantic: <Heart className="w-3.5 h-3.5" />,
+  conflict: <Swords className="w-3.5 h-3.5" />,
+  social: <Users className="w-3.5 h-3.5" />,
+  other: <Link2 className="w-3.5 h-3.5" />,
 }
 
 // Helper component for info rows
@@ -40,6 +62,8 @@ function SectionTitle({ children, icon: Icon }: { children: React.ReactNode; ico
 export function CharacterViewModal({
   character,
   tags,
+  relationships = [],
+  factionMemberships = [],
   onEdit,
   onClose,
 }: CharacterViewModalProps) {
@@ -50,6 +74,9 @@ export function CharacterViewModal({
   const storyHooks = character.story_hooks as string[] | null
   const quotes = character.quotes as string[] | null
 
+  // Filter to only general tags (labels)
+  const labels = tags.filter(ct => ct.tag.category === 'general')
+
   // Check if we have any content to show
   const hasBasicInfo = character.race || character.class || character.age || character.background
   const hasAppearanceInfo = character.appearance
@@ -59,6 +86,10 @@ export function CharacterViewModal({
   const hasQuotes = quotes && quotes.length > 0
   const hasImportantPeople = importantPeople && importantPeople.length > 0
   const hasStoryHooks = storyHooks && storyHooks.length > 0
+  const hasLabels = labels.length > 0
+  const hasFactions = factionMemberships.length > 0
+  const hasRelationships = relationships.length > 0
+  const hasConnectionsSection = hasLabels || hasFactions || hasRelationships
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -145,17 +176,92 @@ export function CharacterViewModal({
               <p className="character-view-summary mt-4">{character.summary}</p>
             )}
 
-            {/* Tags */}
-            {tags.length > 0 && (
-              <div className="character-view-tags mt-4">
-                {tags.map((ct) => (
-                  <TagBadge
-                    key={ct.id}
-                    name={ct.tag.name}
-                    color={ct.tag.color}
-                    relatedCharacter={ct.related_character?.name}
-                  />
-                ))}
+            {/* Labels, Factions, Relationships - Combined display */}
+            {hasConnectionsSection && (
+              <div className="mt-4 space-y-3">
+                {/* Labels */}
+                {hasLabels && (
+                  <div className="flex flex-wrap gap-2">
+                    {labels.map((ct) => {
+                      const IconComponent = getGroupIcon(ct.tag.icon)
+                      return (
+                        <span
+                          key={ct.id}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                          style={{
+                            backgroundColor: `${ct.tag.color}20`,
+                            color: ct.tag.color,
+                            border: `1px solid ${ct.tag.color}40`,
+                          }}
+                        >
+                          <IconComponent className="w-3 h-3" />
+                          {ct.tag.name}
+                        </span>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Factions */}
+                {hasFactions && (
+                  <div className="flex flex-wrap gap-2">
+                    {factionMemberships.map((fm) => (
+                      <span
+                        key={fm.id}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium"
+                        style={{
+                          backgroundColor: `${fm.faction.color}20`,
+                          color: fm.faction.color,
+                          border: `1px solid ${fm.faction.color}40`,
+                        }}
+                      >
+                        <Shield className="w-3 h-3" />
+                        {fm.faction.name}
+                        {fm.title && <span className="opacity-70">• {fm.title}</span>}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Relationships with Avatars */}
+                {hasRelationships && (
+                  <div className="flex flex-wrap gap-2">
+                    {relationships.slice(0, 6).map((rel) => {
+                      const avatarUrl = rel.to_character.image_url ||
+                        `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(rel.to_character.name)}&backgroundColor=1a1a24`
+                      const category = rel.template?.category || 'other'
+                      const color = rel.template?.color || '#8B5CF6'
+
+                      return (
+                        <div
+                          key={rel.id}
+                          className="flex items-center gap-2 px-2 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06]"
+                        >
+                          <div className="relative w-6 h-6 rounded-full overflow-hidden shrink-0">
+                            <Image
+                              src={avatarUrl}
+                              alt={rel.to_character.name}
+                              fill
+                              className="object-cover"
+                              sizes="24px"
+                            />
+                          </div>
+                          <span className="text-xs" style={{ color }}>
+                            {rel.custom_label || rel.template?.name || 'Related'}
+                          </span>
+                          <span className="text-xs text-white/80">
+                            {rel.to_character.name}
+                          </span>
+                        </div>
+                      )
+                    })}
+                    {relationships.length > 6 && (
+                      <span className="px-2 py-1 rounded-lg text-xs text-gray-400 bg-white/[0.03]">
+                        +{relationships.length - 6} more
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -267,7 +373,7 @@ export function CharacterViewModal({
           )}
 
           {/* Empty state if nothing to show */}
-          {!hasBasicInfo && !hasAppearanceInfo && !hasPersonalityInfo && !hasSecrets && !hasNotes && !hasQuotes && !hasImportantPeople && !hasStoryHooks && (
+          {!hasBasicInfo && !hasAppearanceInfo && !hasPersonalityInfo && !hasSecrets && !hasNotes && !hasQuotes && !hasImportantPeople && !hasStoryHooks && !hasConnectionsSection && (
             <div className="text-center py-12">
               <p className="text-[--text-tertiary]">
                 No details yet.

@@ -5,7 +5,7 @@ import {
   X, Plus, Pencil, Archive, Trash2, ArchiveRestore,
   Tag as TagIcon, Shield, Search, AlertTriangle, Users
 } from 'lucide-react'
-import { Modal, Input, ColorPicker, IconPicker } from '@/components/ui'
+import { Modal, Input, ColorPicker, IconPicker, getGroupIcon } from '@/components/ui'
 import { useSupabase } from '@/hooks'
 import { cn, TAG_COLORS } from '@/lib/utils'
 import type { Tag } from '@/types/database'
@@ -33,6 +33,7 @@ export function TagManager({ campaignId, isOpen, onClose, onTagsChange }: TagMan
   const [editForm, setEditForm] = useState({
     name: '',
     color: TAG_COLORS[0].value as string,
+    icon: 'tag',
     description: '',
     category: 'general' as 'general' | 'faction' | 'relationship'
   })
@@ -46,6 +47,7 @@ export function TagManager({ campaignId, isOpen, onClose, onTagsChange }: TagMan
   const [createForm, setCreateForm] = useState({
     name: '',
     color: TAG_COLORS[0].value as string,
+    icon: 'tag',
     description: '',
     category: 'general' as 'general' | 'faction' | 'relationship'
   })
@@ -113,6 +115,7 @@ export function TagManager({ campaignId, isOpen, onClose, onTagsChange }: TagMan
     setEditForm({
       name: tag.name,
       color: tag.color,
+      icon: tag.icon || 'tag',
       description: tag.description || '',
       category: tag.category as 'general' | 'faction' | 'relationship'
     })
@@ -127,6 +130,7 @@ export function TagManager({ campaignId, isOpen, onClose, onTagsChange }: TagMan
       .update({
         name: editForm.name.trim(),
         color: editForm.color,
+        icon: editForm.icon,
         description: editForm.description.trim() || null,
         category: editForm.category,
         updated_at: new Date().toISOString()
@@ -136,7 +140,7 @@ export function TagManager({ campaignId, isOpen, onClose, onTagsChange }: TagMan
     if (!error) {
       setTags(prev => prev.map(t =>
         t.id === editingTag.id
-          ? { ...t, name: editForm.name, color: editForm.color, description: editForm.description, category: editForm.category }
+          ? { ...t, name: editForm.name, color: editForm.color, icon: editForm.icon, description: editForm.description, category: editForm.category }
           : t
       ))
       setEditingTag(null)
@@ -198,6 +202,7 @@ export function TagManager({ campaignId, isOpen, onClose, onTagsChange }: TagMan
         campaign_id: campaignId,
         name: createForm.name.trim(),
         color: createForm.color,
+        icon: createForm.icon,
         description: createForm.description.trim() || null,
         category: createForm.category,
         display_order: tags.length
@@ -207,7 +212,7 @@ export function TagManager({ campaignId, isOpen, onClose, onTagsChange }: TagMan
 
     if (!error && data) {
       setTags(prev => [...prev, { ...data, usage_count: 0 }])
-      setCreateForm({ name: '', color: TAG_COLORS[0].value as string, description: '', category: 'general' })
+      setCreateForm({ name: '', color: TAG_COLORS[0].value as string, icon: 'tag', description: '', category: 'general' })
       setIsCreateOpen(false)
       onTagsChange?.()
     }
@@ -215,7 +220,9 @@ export function TagManager({ campaignId, isOpen, onClose, onTagsChange }: TagMan
     setSaving(false)
   }
 
-  const renderTagCard = (tag: TagWithUsage) => (
+  const renderTagCard = (tag: TagWithUsage) => {
+    const IconComponent = getGroupIcon(tag.icon)
+    return (
     <div
       key={tag.id}
       className={cn(
@@ -230,11 +237,7 @@ export function TagManager({ campaignId, isOpen, onClose, onTagsChange }: TagMan
           className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
           style={{ backgroundColor: `${tag.color}20` }}
         >
-          {tag.category === 'faction' ? (
-            <Shield className="w-5 h-5" style={{ color: tag.color }} />
-          ) : (
-            <TagIcon className="w-5 h-5" style={{ color: tag.color }} />
-          )}
+          <IconComponent className="w-5 h-5" style={{ color: tag.color }} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -283,7 +286,7 @@ export function TagManager({ campaignId, isOpen, onClose, onTagsChange }: TagMan
         </div>
       </div>
     </div>
-  )
+  )}
 
   const renderTagSection = (title: string, tagsList: TagWithUsage[], icon: React.ReactNode, emptyMessage: string) => {
     if (tagsList.length === 0) return null
@@ -437,6 +440,15 @@ export function TagManager({ campaignId, isOpen, onClose, onTagsChange }: TagMan
           </div>
 
           <div className="form-group">
+            <label className="form-label">Icon</label>
+            <IconPicker
+              value={editForm.icon}
+              onChange={(icon) => setEditForm({ ...editForm, icon })}
+              color={editForm.color}
+            />
+          </div>
+
+          <div className="form-group">
             <label className="form-label">Color</label>
             <ColorPicker
               value={editForm.color}
@@ -467,7 +479,7 @@ export function TagManager({ campaignId, isOpen, onClose, onTagsChange }: TagMan
         isOpen={isCreateOpen}
         onClose={() => {
           setIsCreateOpen(false)
-          setCreateForm({ name: '', color: TAG_COLORS[0].value as string, description: '', category: 'general' })
+          setCreateForm({ name: '', color: TAG_COLORS[0].value as string, icon: 'tag', description: '', category: 'general' })
         }}
         title="Create Tag"
         size="md"
@@ -516,6 +528,15 @@ export function TagManager({ campaignId, isOpen, onClose, onTagsChange }: TagMan
           </div>
 
           <div className="form-group">
+            <label className="form-label">Icon</label>
+            <IconPicker
+              value={createForm.icon}
+              onChange={(icon) => setCreateForm({ ...createForm, icon })}
+              color={createForm.color}
+            />
+          </div>
+
+          <div className="form-group">
             <label className="form-label">Color</label>
             <ColorPicker
               value={createForm.color}
@@ -528,7 +549,7 @@ export function TagManager({ campaignId, isOpen, onClose, onTagsChange }: TagMan
               className="btn btn-secondary"
               onClick={() => {
                 setIsCreateOpen(false)
-                setCreateForm({ name: '', color: TAG_COLORS[0].value as string, description: '', category: 'general' })
+                setCreateForm({ name: '', color: TAG_COLORS[0].value as string, icon: 'tag', description: '', category: 'general' })
               }}
             >
               Cancel

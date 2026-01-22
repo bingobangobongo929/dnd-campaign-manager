@@ -1,15 +1,16 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { X, Trash2, Plus, User, Users, Maximize2, Minimize2, Sparkles, Eye, EyeOff, ChevronDown, Shield } from 'lucide-react'
-import { Input, Dropdown, Modal } from '@/components/ui'
-import { TagBadge } from '@/components/ui'
+import { X, Trash2, Plus, User, Users, Maximize2, Minimize2, Eye, EyeOff, ChevronDown } from 'lucide-react'
+import { Input, Modal } from '@/components/ui'
 import { CharacterImageUpload } from './character-image-upload'
 import { RelationshipEditor } from './RelationshipEditor'
+import { FactionMembershipEditor } from './FactionMembershipEditor'
+import { LabelsEditor } from './LabelsEditor'
 import { RichTextEditor } from '@/components/editor/rich-text-editor'
 import { useSupabase } from '@/hooks'
 import { useAutoSave } from '@/hooks'
-import { cn, TAG_COLORS } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import type { Character, Tag, CharacterTag, Json } from '@/types/database'
 
 // Helper to safely convert JSONB field to string array
@@ -105,16 +106,6 @@ export function CharacterModal({
   })
 
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
-  const [isAddTagOpen, setIsAddTagOpen] = useState(false)
-  const [availableTags, setAvailableTags] = useState<Tag[]>([])
-  const [newTagForm, setNewTagForm] = useState({
-    name: '',
-    color: TAG_COLORS[0].value as string,
-    related_character_id: null as string | null,
-    category: 'general' as 'general' | 'faction' | 'relationship',
-  })
-  const [savingTag, setSavingTag] = useState(false)
-  const [isCreatingNewTag, setIsCreatingNewTag] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showSecrets, setShowSecrets] = useState(false)
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false)
@@ -153,11 +144,6 @@ export function CharacterModal({
     }
   }, [character?.id])
 
-  // Load available tags for campaign
-  useEffect(() => {
-    loadAvailableTags()
-  }, [campaignId])
-
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -175,15 +161,6 @@ export function CharacterModal({
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isFullscreen])
-
-  const loadAvailableTags = async () => {
-    const { data } = await supabase
-      .from('tags')
-      .select('*')
-      .eq('campaign_id', campaignId)
-      .order('name')
-    setAvailableTags(data || [])
-  }
 
   const handleImageUpdate = useCallback((avatarUrl: string | null, detailUrl: string | null, aiGenerated: boolean) => {
     setFormData(prev => ({
@@ -290,58 +267,6 @@ export function CharacterModal({
     setIsDeleteConfirmOpen(false)
   }
 
-  const handleAddExistingTag = async (tagId: string) => {
-    const characterId = createdCharacterId || character?.id
-    if (!characterId) return
-    setSavingTag(true)
-    await supabase.from('character_tags').insert({
-      character_id: characterId,
-      tag_id: tagId,
-      related_character_id: newTagForm.related_character_id,
-    })
-    setNewTagForm({ name: '', color: TAG_COLORS[0].value, related_character_id: null, category: 'general' })
-    setIsAddTagOpen(false)
-    setSavingTag(false)
-    onTagsChange()
-  }
-
-  const handleCreateAndAddTag = async () => {
-    const characterId = createdCharacterId || character?.id
-    if (!newTagForm.name.trim() || !characterId) return
-    setSavingTag(true)
-
-    const { data: tag } = await supabase
-      .from('tags')
-      .insert({
-        campaign_id: campaignId,
-        name: newTagForm.name,
-        color: newTagForm.color,
-        category: newTagForm.category,
-      })
-      .select()
-      .single()
-
-    if (tag) {
-      await supabase.from('character_tags').insert({
-        character_id: characterId,
-        tag_id: tag.id,
-        related_character_id: newTagForm.related_character_id,
-      })
-      setAvailableTags([...availableTags, tag])
-    }
-
-    setNewTagForm({ name: '', color: TAG_COLORS[0].value, related_character_id: null, category: 'general' })
-    setIsAddTagOpen(false)
-    setIsCreatingNewTag(false)
-    setSavingTag(false)
-    onTagsChange()
-  }
-
-  const handleRemoveTag = async (characterTagId: string) => {
-    await supabase.from('character_tags').delete().eq('id', characterTagId)
-    onTagsChange()
-  }
-
   // List field handlers
   const addListItem = (field: 'story_hooks' | 'quotes' | 'important_people', value: string, setter: (v: string) => void) => {
     if (!value.trim()) return
@@ -370,11 +295,6 @@ export function CharacterModal({
   }
 
   const currentCharacterId = createdCharacterId || character?.id
-  const otherCharacters = allCharacters.filter(c => c.id !== currentCharacterId)
-  const unusedTags = availableTags.filter(t => !tags.some(ct => ct.tag_id === t.id) && !t.is_archived)
-  const factionTags = unusedTags.filter(t => t.category === 'faction')
-  // Only show general tags - relationships should use the new RelationshipEditor
-  const generalTags = unusedTags.filter(t => t.category === 'general')
 
   const handleBackdropClick = useCallback(() => {
     if (isFullscreen) {
@@ -779,55 +699,19 @@ export function CharacterModal({
                       </div>
                   </div>
 
-                  {/* Factions & Tags */}
-                  <div className="form-group">
-                    {/* Factions */}
-                    {tags.filter(ct => ct.tag.category === 'faction').length > 0 && (
-                      <div className="mb-3">
-                        <label className="form-label text-xs flex items-center gap-1.5">
-                          <Shield className="w-3 h-3 text-[--arcane-gold]" />
-                          Factions
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          {tags.filter(ct => ct.tag.category === 'faction').map((ct) => (
-                            <TagBadge
-                              key={ct.id}
-                              name={ct.tag.name}
-                              color={ct.tag.color}
-                              relatedCharacter={ct.related_character?.name}
-                              onRemove={() => handleRemoveTag(ct.id)}
-                              isFaction
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Relationship Tags */}
-                    <label className="form-label text-xs">Relationship Tags</label>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {tags.filter(ct => ct.tag.category !== 'faction').map((ct) => (
-                        <TagBadge
-                          key={ct.id}
-                          name={ct.tag.name}
-                          color={ct.tag.color}
-                          relatedCharacter={ct.related_character?.name}
-                          onRemove={() => handleRemoveTag(ct.id)}
-                        />
-                      ))}
-                      {tags.filter(ct => ct.tag.category !== 'faction').length === 0 && (
-                        <span className="text-xs text-[--text-tertiary]">No relationship tags</span>
-                      )}
-                    </div>
-                    <button className="btn btn-secondary w-full justify-start" onClick={() => setIsAddTagOpen(true)}>
-                      <Plus className="w-4 h-4" />
-                      Add Tag
-                    </button>
-                  </div>
-
-                  {/* Smart Relationships */}
+                  {/* Tags & Connections - All three editors */}
                   {!isCreateMode && character && (
-                    <div className="pt-4 border-t border-[--border]">
+                    <div className="space-y-4">
+                      <LabelsEditor
+                        character={character}
+                        campaignId={campaignId}
+                        onLabelsChange={onTagsChange}
+                      />
+                      <FactionMembershipEditor
+                        character={character}
+                        campaignId={campaignId}
+                        onMembershipsChange={onTagsChange}
+                      />
                       <RelationshipEditor
                         character={character}
                         campaignId={campaignId}
@@ -967,65 +851,23 @@ export function CharacterModal({
                           )}
                         </div>
                       </div>
-                      <div className="form-group">
-                        <label className="form-label">Tags</label>
-                        <button className="btn btn-secondary w-full justify-start" onClick={() => setIsAddTagOpen(true)}>
-                          <Plus className="w-4 h-4" />
-                          Add
-                        </button>
-                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Tags Display - Separated into Factions and Relationships */}
-                {tags.length > 0 && (
-                  <div className="pb-4 border-b border-[--border] space-y-3">
-                    {/* Factions */}
-                    {tags.filter(ct => ct.tag.category === 'faction').length > 0 && (
-                      <div>
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <Shield className="w-3 h-3 text-[--arcane-gold]" />
-                          <span className="text-xs font-medium text-[--text-tertiary] uppercase tracking-wide">Factions</span>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {tags.filter(ct => ct.tag.category === 'faction').map((ct) => (
-                            <TagBadge
-                              key={ct.id}
-                              name={ct.tag.name}
-                              color={ct.tag.color}
-                              relatedCharacter={ct.related_character?.name}
-                              onRemove={() => handleRemoveTag(ct.id)}
-                              isFaction
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Relationship Tags */}
-                    {tags.filter(ct => ct.tag.category !== 'faction').length > 0 && (
-                      <div>
-                        <span className="text-xs font-medium text-[--text-tertiary] uppercase tracking-wide mb-2 block">Relationships</span>
-                        <div className="flex flex-wrap gap-2">
-                          {tags.filter(ct => ct.tag.category !== 'faction').map((ct) => (
-                            <TagBadge
-                              key={ct.id}
-                              name={ct.tag.name}
-                              color={ct.tag.color}
-                              relatedCharacter={ct.related_character?.name}
-                              onRemove={() => handleRemoveTag(ct.id)}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Smart Relationships - Non-fullscreen mode */}
+                {/* Tags & Connections - All three editors - Non-fullscreen mode */}
                 {!isCreateMode && character && (
-                  <div className="pb-4 border-b border-[--border]">
+                  <div className="pb-4 border-b border-[--border] space-y-4">
+                    <LabelsEditor
+                      character={character}
+                      campaignId={campaignId}
+                      onLabelsChange={onTagsChange}
+                    />
+                    <FactionMembershipEditor
+                      character={character}
+                      campaignId={campaignId}
+                      onMembershipsChange={onTagsChange}
+                    />
                     <RelationshipEditor
                       character={character}
                       campaignId={campaignId}
@@ -1096,172 +938,6 @@ export function CharacterModal({
         <div className="flex justify-end gap-3 pt-4">
           <button className="btn btn-secondary" onClick={() => setIsDeleteConfirmOpen(false)}>Cancel</button>
           <button className="btn bg-[--arcane-ember] hover:bg-[--arcane-ember]/80 text-white" onClick={handleDelete}>Delete</button>
-        </div>
-      </Modal>
-
-      {/* Add Tag Modal */}
-      <Modal
-        isOpen={isAddTagOpen}
-        onClose={() => {
-          setIsAddTagOpen(false)
-          setIsCreatingNewTag(false)
-          setNewTagForm({ name: '', color: TAG_COLORS[0].value, related_character_id: null, category: 'general' })
-        }}
-        title="Add Tag"
-      >
-        <div className="space-y-4">
-          {!isCreatingNewTag ? (
-            <>
-              {/* Faction Tags */}
-              {factionTags.length > 0 && (
-                <div className="space-y-2">
-                  <label className="form-label flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-[--arcane-gold]" />
-                    Factions
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {factionTags.map((tag) => (
-                      <button
-                        key={tag.id}
-                        onClick={() => handleAddExistingTag(tag.id)}
-                        className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover:scale-105 flex items-center gap-1.5"
-                        style={{
-                          backgroundColor: `${tag.color}20`,
-                          color: tag.color,
-                          border: `1px solid ${tag.color}40`,
-                        }}
-                      >
-                        <Shield className="w-3 h-3" />
-                        {tag.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* General Tags */}
-              {generalTags.length > 0 && (
-                <div className="space-y-2">
-                  <label className="form-label">General Tags</label>
-                  <div className="flex flex-wrap gap-2">
-                    {generalTags.map((tag) => (
-                      <button
-                        key={tag.id}
-                        onClick={() => handleAddExistingTag(tag.id)}
-                        className="px-3 py-1.5 rounded-full text-sm font-medium transition-all hover:scale-105"
-                        style={{
-                          backgroundColor: `${tag.color}20`,
-                          color: tag.color,
-                          border: `1px solid ${tag.color}40`,
-                        }}
-                      >
-                        {tag.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Show message if no existing tags */}
-              {factionTags.length === 0 && generalTags.length === 0 && (
-                <p className="text-sm text-[--text-tertiary] text-center py-4">
-                  No existing tags. Create a new one below.
-                </p>
-              )}
-
-              {/* Note about relationships */}
-              <p className="text-xs text-[--text-muted] bg-white/[0.02] p-2 rounded-lg">
-                For character relationships, use the Relationships section in fullscreen mode or the canvas Connections feature.
-              </p>
-
-              <button className="btn btn-secondary w-full" onClick={() => setIsCreatingNewTag(true)}>
-                <Plus className="w-4 h-4" />
-                Create New Tag
-              </button>
-            </>
-          ) : (
-            <>
-              <div className="form-group">
-                <label className="form-label">Tag Name</label>
-                <Input
-                  placeholder="e.g., Ally, Enemy, Quest Giver..."
-                  value={newTagForm.name}
-                  onChange={(e) => setNewTagForm({ ...newTagForm, name: e.target.value })}
-                  autoFocus
-                  className="form-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Category</label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setNewTagForm({ ...newTagForm, category: 'general' })}
-                    className={cn(
-                      'flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors',
-                      newTagForm.category === 'general'
-                        ? 'bg-[--arcane-purple]/20 border-[--arcane-purple] text-[--arcane-purple]'
-                        : 'bg-white/[0.03] border-white/[0.08] text-[--text-secondary] hover:bg-white/[0.05]'
-                    )}
-                  >
-                    General
-                  </button>
-                  <button
-                    onClick={() => setNewTagForm({ ...newTagForm, category: 'faction' })}
-                    className={cn(
-                      'flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center gap-1.5',
-                      newTagForm.category === 'faction'
-                        ? 'bg-[--arcane-gold]/20 border-[--arcane-gold] text-[--arcane-gold]'
-                        : 'bg-white/[0.03] border-white/[0.08] text-[--text-secondary] hover:bg-white/[0.05]'
-                    )}
-                  >
-                    <Shield className="w-4 h-4" />
-                    Faction
-                  </button>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Color</label>
-                <div className="flex flex-wrap gap-2">
-                  {TAG_COLORS.map((color) => (
-                    <button
-                      key={color.value}
-                      onClick={() => setNewTagForm({ ...newTagForm, color: color.value })}
-                      className={cn(
-                        'w-8 h-8 rounded-full transition-all',
-                        newTagForm.color === color.value && 'ring-2 ring-offset-2 ring-offset-[--bg-surface]'
-                      )}
-                      style={{ backgroundColor: color.value, '--tw-ring-color': color.value } as React.CSSProperties}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Related Character (optional)</label>
-                <Dropdown
-                  options={[
-                    { value: '', label: 'None' },
-                    ...otherCharacters.map(c => ({ value: c.id, label: c.name }))
-                  ]}
-                  value={newTagForm.related_character_id || ''}
-                  onChange={(value) => setNewTagForm({ ...newTagForm, related_character_id: value || null })}
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <button className="btn btn-secondary" onClick={() => setIsCreatingNewTag(false)}>Back</button>
-                <button
-                  className="btn btn-primary"
-                  onClick={handleCreateAndAddTag}
-                  disabled={!newTagForm.name.trim() || savingTag}
-                >
-                  {savingTag ? 'Creating...' : 'Create & Add'}
-                </button>
-              </div>
-            </>
-          )}
         </div>
       </Modal>
     </>

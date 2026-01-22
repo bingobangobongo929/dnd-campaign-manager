@@ -5,7 +5,7 @@ import {
   X, Search, Plus, Users, Heart, Swords, Briefcase,
   Crown, ArrowRight, ArrowLeftRight, Info, ChevronDown
 } from 'lucide-react'
-import { Modal, Input } from '@/components/ui'
+import { Modal, Input, getGroupIcon } from '@/components/ui'
 import { useSupabase } from '@/hooks'
 import { cn } from '@/lib/utils'
 import type {
@@ -221,11 +221,7 @@ export function AddRelationshipModal({
 
   const renderTemplateButton = (template: RelationshipTemplate) => {
     const isSelected = selectedTemplate?.id === template.id
-    const modeIcon = template.relationship_mode === 'symmetric'
-      ? <ArrowLeftRight className="w-3 h-3" />
-      : template.relationship_mode === 'asymmetric'
-        ? <span className="text-[10px]">↔</span>
-        : <ArrowRight className="w-3 h-3" />
+    const TemplateIcon = getGroupIcon(template.icon)
 
     return (
       <button
@@ -247,7 +243,7 @@ export function AddRelationshipModal({
           className="w-6 h-6 rounded flex items-center justify-center shrink-0"
           style={{ backgroundColor: template.color + '20', color: template.color }}
         >
-          {modeIcon}
+          <TemplateIcon className="w-3.5 h-3.5" />
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">

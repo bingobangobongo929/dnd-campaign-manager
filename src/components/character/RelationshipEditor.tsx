@@ -3,10 +3,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Plus, Trash2, Users, Heart, Swords, Briefcase, Crown,
-  ArrowRight, ArrowLeftRight, Eye, EyeOff, Link2
+  ArrowRight, ArrowLeftRight, EyeOff, Link2
 } from 'lucide-react'
+import Image from 'next/image'
 import { useSupabase } from '@/hooks'
-import { cn } from '@/lib/utils'
+import { cn, getInitials } from '@/lib/utils'
+import { getGroupIcon } from '@/components/ui'
 import { AddRelationshipModal } from './AddRelationshipModal'
 import type {
   Character, CanvasRelationship, RelationshipTemplate,
@@ -91,6 +93,11 @@ export function RelationshipEditor({
   }
 
   const getRelationshipIcon = (relationship: RelationshipWithDetails) => {
+    // Use template icon if available, otherwise fall back to category icons
+    if (relationship.template?.icon) {
+      const IconComponent = getGroupIcon(relationship.template.icon)
+      return <IconComponent className="w-3.5 h-3.5" />
+    }
     const category = relationship.template?.category || 'other'
     return CATEGORY_ICONS[category]
   }
@@ -163,60 +170,77 @@ export function RelationshipEditor({
                   {CATEGORY_ICONS[category]}
                   {category}
                 </h4>
-                {categoryRelationships.map(rel => (
-                  <div
-                    key={rel.id}
-                    className="group flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.1] transition-all"
-                  >
-                    {/* Icon */}
+                {categoryRelationships.map(rel => {
+                  const avatarUrl = rel.to_character.image_url ||
+                    `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(rel.to_character.name)}&backgroundColor=1a1a24`
+
+                  return (
                     <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: getRelationshipColor(rel) + '20' }}
+                      key={rel.id}
+                      className="group flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.1] transition-all"
                     >
-                      <div style={{ color: getRelationshipColor(rel) }}>
-                        {getRelationshipIcon(rel)}
-                      </div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="text-sm font-medium"
-                          style={{ color: getRelationshipColor(rel) }}
+                      {/* Character Avatar */}
+                      <div className="relative w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-[--bg-elevated]">
+                        <Image
+                          src={avatarUrl}
+                          alt={rel.to_character.name}
+                          fill
+                          className="object-cover"
+                          sizes="40px"
+                        />
+                        {/* Relationship type badge */}
+                        <div
+                          className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#12121a]"
+                          style={{ backgroundColor: getRelationshipColor(rel) }}
                         >
-                          {rel.custom_label || rel.template?.name || 'Related to'}
-                        </span>
-                        {getModeIcon(rel)}
-                        {!rel.is_known_to_party && (
-                          <span title="Hidden from party">
-                            <EyeOff className="w-3 h-3 text-gray-500" />
+                          <div className="text-white scale-75">
+                            {getRelationshipIcon(rel)}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-white truncate">
+                            {rel.to_character.name}
                           </span>
+                          {rel.to_character.type === 'npc' && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">NPC</span>
+                          )}
+                          {!rel.is_known_to_party && (
+                            <span title="Hidden from party">
+                              <EyeOff className="w-3 h-3 text-gray-500" />
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span
+                            className="text-xs font-medium"
+                            style={{ color: getRelationshipColor(rel) }}
+                          >
+                            {rel.custom_label || rel.template?.name || 'Related'}
+                          </span>
+                          {getModeIcon(rel)}
+                        </div>
+                        {rel.description && (
+                          <p className="text-xs text-gray-400 mt-1 line-clamp-1">
+                            {rel.description}
+                          </p>
                         )}
                       </div>
-                      <p className="text-sm text-white truncate">
-                        {rel.to_character.name}
-                        {rel.to_character.type === 'npc' && (
-                          <span className="text-xs text-gray-500 ml-1.5">(NPC)</span>
-                        )}
-                      </p>
-                      {rel.description && (
-                        <p className="text-xs text-gray-400 mt-1 line-clamp-1">
-                          {rel.description}
-                        </p>
-                      )}
-                    </div>
 
-                    {/* Delete button */}
-                    <button
-                      onClick={() => handleDeleteRelationship(rel)}
-                      className="p-1.5 rounded-lg text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10 transition-all shrink-0"
-                      title={rel.pair_id ? "Remove relationship (both directions)" : "Remove relationship"}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
+                      {/* Delete button */}
+                      <button
+                        onClick={() => handleDeleteRelationship(rel)}
+                        className="p-1.5 rounded-lg text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10 transition-all shrink-0"
+                        title={rel.pair_id ? "Remove relationship (both directions)" : "Remove relationship"}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )
+                })}
               </div>
             ))}
         </div>

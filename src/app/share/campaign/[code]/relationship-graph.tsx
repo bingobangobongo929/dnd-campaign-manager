@@ -25,9 +25,21 @@ interface GraphEdge {
   target: string
   type: string
   label?: string
+  color?: string
   isKnown: boolean
 }
 
+// Colors by relationship category (from new system)
+const CATEGORY_COLORS: Record<string, string> = {
+  family: '#3B82F6',
+  professional: '#10B981',
+  romantic: '#EC4899',
+  conflict: '#EF4444',
+  social: '#8B5CF6',
+  other: '#6B7280',
+}
+
+// Fallback colors for old relationship types (backwards compat)
 const RELATIONSHIP_COLORS: Record<string, string> = {
   ally: '#22c55e',
   enemy: '#ef4444',
@@ -49,15 +61,30 @@ export function RelationshipGraph({ characters, relationships }: RelationshipGra
   const isDragging = useRef(false)
   const dragNode = useRef<string | null>(null)
 
-  // Build graph data
+  // Build graph data (handles both old and new relationship formats)
   const edges = useMemo<GraphEdge[]>(() => {
-    return relationships.map(rel => ({
-      source: rel.character_id,
-      target: rel.related_character_id,
-      type: rel.relationship_type || 'neutral',
-      label: rel.relationship_label,
-      isKnown: rel.is_known_to_party,
-    }))
+    return relationships.map(rel => {
+      // New format: canvas_relationships with template
+      if (rel.from_character_id && rel.to_character_id) {
+        const category = rel.template?.category || 'other'
+        return {
+          source: rel.from_character_id,
+          target: rel.to_character_id,
+          type: category,
+          label: rel.custom_label || rel.template?.name,
+          color: rel.template?.color || CATEGORY_COLORS[category] || CATEGORY_COLORS.other,
+          isKnown: rel.is_known_to_party !== false,
+        }
+      }
+      // Old format: character_relationships
+      return {
+        source: rel.character_id,
+        target: rel.related_character_id,
+        type: rel.relationship_type || 'neutral',
+        label: rel.relationship_label,
+        isKnown: rel.is_known_to_party !== false,
+      }
+    })
   }, [relationships])
 
   // Initialize nodes with positions
@@ -241,7 +268,7 @@ export function RelationshipGraph({ characters, relationships }: RelationshipGra
           if (!source || !target) return null
 
           const isHighlighted = highlightedNodes.has(edge.source) && highlightedNodes.has(edge.target)
-          const color = RELATIONSHIP_COLORS[edge.type] || RELATIONSHIP_COLORS.neutral
+          const color = edge.color || CATEGORY_COLORS[edge.type] || RELATIONSHIP_COLORS[edge.type] || RELATIONSHIP_COLORS.neutral
 
           // Calculate midpoint for label
           const midX = (source.x + target.x) / 2

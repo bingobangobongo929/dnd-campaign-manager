@@ -351,19 +351,40 @@ export default async function ShareCampaignPage({ params }: SharePageProps) {
     worldMaps = data || []
   }
 
-  // Fetch relationships
+  // Fetch relationships from canvas_relationships with templates
   let relationships: any[] = []
   if (sections.knownRelationships || sections.hiddenRelationships) {
     const { data } = await supabase
-      .from('character_relationships')
-      .select('*')
+      .from('canvas_relationships')
+      .select(`
+        *,
+        template:relationship_templates(*),
+        from_character:characters!canvas_relationships_from_character_id_fkey(*),
+        to_character:characters!canvas_relationships_to_character_id_fkey(*)
+      `)
       .eq('campaign_id', campaign.id)
+      .eq('is_primary', true)
     relationships = data || []
 
     // Filter based on visibility
     if (!sections.hiddenRelationships) {
       relationships = relationships.filter(r => r.is_known_to_party)
     }
+  }
+
+  // Fetch faction memberships
+  let factionMemberships: any[] = []
+  if (sections.factions && characters.length > 0) {
+    const charIds = characters.map(c => c.id)
+    const { data } = await supabase
+      .from('faction_memberships')
+      .select(`
+        *,
+        faction:campaign_factions(*),
+        character:characters(*)
+      `)
+      .in('character_id', charIds)
+    factionMemberships = data || []
   }
 
   // Fetch lore
@@ -527,6 +548,7 @@ export default async function ShareCampaignPage({ params }: SharePageProps) {
         timelineEvents={timelineEvents}
         worldMaps={worldMaps}
         relationships={relationships}
+        factionMemberships={factionMemberships}
         lore={lore}
         gallery={gallery}
         canvasGroups={canvasGroups}
