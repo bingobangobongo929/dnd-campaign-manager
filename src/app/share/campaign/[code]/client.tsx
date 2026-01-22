@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import Image from 'next/image'
 import {
   Users,
@@ -238,19 +238,29 @@ export function CampaignShareClient({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [canvasFullscreen])
 
-  // Extract factions from character tags
+  // Helper to get faction memberships for a character
+  const getCharacterFactions = useCallback((characterId: string) => {
+    return factionMemberships.filter(fm => fm.character_id === characterId)
+  }, [factionMemberships])
+
+  // Extract factions from faction_memberships (new system) and status from tags
   type TagInfo = { name: string; color: string; count: number }
   const { factionTags, statusTags } = useMemo(() => {
     const factions: Record<string, TagInfo> = {}
     const statuses: Record<string, TagInfo> = {}
 
+    // Get factions from faction_memberships
+    factionMemberships.forEach((fm: any) => {
+      if (fm.faction && npcs.some(npc => npc.id === fm.character_id)) {
+        const existing = factions[fm.faction.name] || { name: fm.faction.name, color: fm.faction.color, count: 0 }
+        factions[fm.faction.name] = { ...existing, count: existing.count + 1 }
+      }
+    })
+
+    // Get status tags from character_tags
     npcs.forEach(npc => {
       const tags = characterTags[npc.id] || []
       tags.forEach((t: any) => {
-        if (t.tag?.category === 'faction' || t.tag?.name?.toLowerCase().includes('faction')) {
-          const existing = factions[t.tag.name] || { name: t.tag.name, color: t.tag.color, count: 0 }
-          factions[t.tag.name] = { ...existing, count: existing.count + 1 }
-        }
         if (t.tag?.category === 'status') {
           const existing = statuses[t.tag.name] || { name: t.tag.name, color: t.tag.color, count: 0 }
           statuses[t.tag.name] = { ...existing, count: existing.count + 1 }
@@ -259,18 +269,27 @@ export function CampaignShareClient({
     })
 
     return { factionTags: factions, statusTags: statuses }
-  }, [npcs, characterTags])
+  }, [npcs, characterTags, factionMemberships])
 
-  // Group NPCs by faction or status
+  // Group NPCs by faction (from faction_memberships) or status (from tags)
   const groupedNpcs = castGroupBy === 'none'
     ? { 'All NPCs': npcs }
     : castGroupBy === 'faction'
       ? npcs.reduce((acc, npc) => {
-          const tags = characterTags[npc.id] || []
-          const factionTag = tags.find((t: any) => t.tag?.category === 'faction' || t.tag?.name?.toLowerCase().includes('faction'))
-          const group = factionTag?.tag?.name || 'Unaffiliated'
-          if (!acc[group]) acc[group] = []
-          acc[group].push(npc)
+          const npcFactions = getCharacterFactions(npc.id)
+          if (npcFactions.length > 0) {
+            // Add NPC to each faction they belong to
+            npcFactions.forEach((fm: any) => {
+              const group = fm.faction?.name || 'Unaffiliated'
+              if (!acc[group]) acc[group] = []
+              if (!acc[group].some((n: any) => n.id === npc.id)) {
+                acc[group].push(npc)
+              }
+            })
+          } else {
+            if (!acc['Unaffiliated']) acc['Unaffiliated'] = []
+            acc['Unaffiliated'].push(npc)
+          }
           return acc
         }, {} as Record<string, any[]>)
       : npcs.reduce((acc, npc) => {
@@ -520,7 +539,12 @@ export function CampaignShareClient({
         {/* Party Tab */}
         {activeTab === 'party' && (
           <div className="space-y-6">
-            {pcs.map(pc => (
+            {pcs.map(pc => {
+              const pcFactions = getCharacterFactions(pc.id)
+              const pcTags = characterTags[pc.id] || []
+              const pcLabels = pcTags.filter((t: any) => t.tag?.category === 'general')
+
+              return (
               <div
                 key={pc.id}
                 className="bg-white/[0.02] rounded-2xl border border-white/[0.06] overflow-hidden"
@@ -551,6 +575,45 @@ export function CampaignShareClient({
                         <span className="text-xs px-2.5 py-1 bg-amber-500/15 text-amber-400 rounded-lg">Level {pc.level}</span>
                       )}
                     </div>
+                    {/* Factions */}
+                    {pcFactions.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {pcFactions.map((fm: any) => (
+                          <span
+                            key={fm.id}
+                            className="px-2 py-0.5 text-xs rounded-lg flex items-center gap-1"
+                            style={{
+                              backgroundColor: `${fm.faction?.color || '#888'}20`,
+                              color: fm.faction?.color || '#888',
+                            }}
+                          >
+                            <Shield className="w-3 h-3" />
+                            {fm.faction?.name}
+                            {fm.title && <span className="opacity-70">• {fm.title}</span>}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {/* Labels */}
+                    {pcLabels.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {pcLabels.slice(0, 4).map((t: any) => (
+                          <span
+                            key={t.id}
+                            className="px-2 py-0.5 text-xs rounded-lg"
+                            style={{
+                              backgroundColor: `${t.tag?.color || '#888'}15`,
+                              color: t.tag?.color || '#888',
+                            }}
+                          >
+                            {t.tag?.name}
+                          </span>
+                        ))}
+                        {pcLabels.length > 4 && (
+                          <span className="px-2 py-0.5 text-xs text-gray-500">+{pcLabels.length - 4}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   {expandedCharacters.has(pc.id) ? (
                     <ChevronUp className="w-6 h-6 text-gray-500 flex-shrink-0" />
@@ -604,7 +667,7 @@ export function CampaignShareClient({
                   </div>
                 )}
               </div>
-            ))}
+            )})}
           </div>
         )}
 
@@ -677,7 +740,10 @@ export function CampaignShareClient({
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {(groupNpcs as any[]).map(npc => {
                     const npcTags = characterTags[npc.id] || []
+                    const npcFactions = getCharacterFactions(npc.id)
                     const statusTag = npcTags.find((t: any) => t.tag?.category === 'status')
+                    // Filter to only general/label tags (not status or faction category)
+                    const labelTags = npcTags.filter((t: any) => t.tag?.category === 'general')
 
                     return (
                       <div
@@ -721,12 +787,35 @@ export function CampaignShareClient({
                                 {npc.race}{npc.race && npc.class ? ' ' : ''}{npc.class}
                               </p>
                             )}
-                            {/* Tags with proper styling */}
-                            {npcTags.length > 0 && (
+                            {/* Factions */}
+                            {npcFactions.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-2">
-                                {npcTags
-                                  .filter((t: any) => t.tag?.category !== 'status')
-                                  .slice(0, 4)
+                                {npcFactions.slice(0, 2).map((fm: any) => (
+                                  <span
+                                    key={fm.id}
+                                    className="px-1.5 py-0.5 text-[10px] rounded flex items-center gap-1"
+                                    style={{
+                                      backgroundColor: `${fm.faction?.color || '#888'}20`,
+                                      color: fm.faction?.color || '#888',
+                                    }}
+                                  >
+                                    <Shield className="w-2.5 h-2.5" />
+                                    {fm.faction?.name}
+                                    {fm.title && <span className="opacity-70">• {fm.title}</span>}
+                                  </span>
+                                ))}
+                                {npcFactions.length > 2 && (
+                                  <span className="px-1.5 py-0.5 text-[10px] text-gray-500">
+                                    +{npcFactions.length - 2}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {/* Labels (general tags) */}
+                            {labelTags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {labelTags
+                                  .slice(0, 3)
                                   .map((t: any) => (
                                     <span
                                       key={t.id}
@@ -739,9 +828,9 @@ export function CampaignShareClient({
                                       {t.tag?.name}
                                     </span>
                                   ))}
-                                {npcTags.filter((t: any) => t.tag?.category !== 'status').length > 4 && (
+                                {labelTags.length > 3 && (
                                   <span className="px-1.5 py-0.5 text-[10px] text-gray-500">
-                                    +{npcTags.filter((t: any) => t.tag?.category !== 'status').length - 4}
+                                    +{labelTags.length - 3}
                                   </span>
                                 )}
                               </div>
