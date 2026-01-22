@@ -75,10 +75,10 @@ export default async function ChangelogPage() {
                   Sign In
                 </Link>
                 <Link
-                  href="/login"
-                  className="text-sm font-medium px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-colors"
+                  href="/#waitlist"
+                  className="text-sm font-medium px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white transition-all shadow-lg shadow-purple-500/20"
                 >
-                  Get Started
+                  Join Waitlist
                 </Link>
               </div>
             )}

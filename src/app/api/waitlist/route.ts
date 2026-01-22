@@ -7,6 +7,8 @@ import crypto from 'crypto'
 
 const waitlistSchema = z.object({
   email: z.string().email('Invalid email address').max(255),
+  consent: z.boolean().optional().default(true),
+  source: z.string().optional().default('landing'),
 })
 
 // Rate limit: 3 requests per hour per IP
@@ -47,7 +49,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { email } = result.data
+    const { email, consent, source } = result.data
     const normalizedEmail = email.toLowerCase().trim()
 
     // Rate limit per email to prevent spam
@@ -90,7 +92,8 @@ export async function POST(request: NextRequest) {
         .update({
           verification_token: verificationToken,
           token_expires_at: tokenExpiresAt,
-          verification_sent_at: now
+          verification_sent_at: now,
+          consent_given_at: consent ? now : null,
         })
         .eq('id', existing.id)
     } else {
@@ -102,7 +105,9 @@ export async function POST(request: NextRequest) {
           verified: false,
           verification_token: verificationToken,
           token_expires_at: tokenExpiresAt,
-          verification_sent_at: now
+          verification_sent_at: now,
+          consent_given_at: consent ? now : null,
+          signup_source: source,
         })
 
       if (error) {

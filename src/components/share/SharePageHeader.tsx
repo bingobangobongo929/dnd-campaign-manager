@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
 import Image from 'next/image'
 import { SaveToCollectionButton } from '@/components/templates'
 import { FounderIndicator } from '@/components/membership'
@@ -36,16 +35,23 @@ export function SharePageHeader({
   const canSave = allowSave && snapshotId
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#0a0a0f]/95 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#0a0a0f]/95 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
-          {/* Left: Back to home */}
+          {/* Left: Logo + Brand */}
           <Link
             href="/"
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+            className="flex items-center gap-2.5 hover:opacity-90 transition-opacity"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm font-medium hidden sm:inline">Multiloop</span>
+            <div className="w-8 h-8 rounded-lg overflow-hidden shadow-lg shadow-purple-500/20">
+              <img src="/icons/icon-192x192.png" alt="Multiloop" className="w-full h-full object-cover" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-base font-bold text-white">Multiloop</span>
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                BETA
+              </span>
+            </div>
           </Link>
 
           {/* Center: Content info (optional) */}
@@ -89,7 +95,7 @@ export function SharePageHeader({
                 size="sm"
               />
             ) : !isLoggedIn ? (
-              // Show sign-in/get started for non-logged-in users only
+              // Show sign-in/join waitlist for non-logged-in users only
               <>
                 <Link
                   href="/login"
@@ -98,10 +104,10 @@ export function SharePageHeader({
                   Sign In
                 </Link>
                 <Link
-                  href="/login"
-                  className="text-sm font-medium px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-colors"
+                  href="/#waitlist"
+                  className="text-sm font-medium px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white transition-all shadow-lg shadow-purple-500/20"
                 >
-                  Get Started
+                  Join Waitlist
                 </Link>
               </>
             ) : null}

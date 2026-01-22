@@ -16,10 +16,12 @@ import {
   Loader2,
   Swords,
   Crown,
-  AlertCircle,
-  Mail,
   XCircle,
   Clock,
+  Star,
+  Zap,
+  Heart,
+  ArrowRight,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LegalFooter } from '@/components/ui/legal-footer'
@@ -53,12 +55,135 @@ const VERIFICATION_MESSAGES: Record<string, { icon: typeof Check; color: string;
   },
 }
 
-export function LandingPage() {
-  const searchParams = useSearchParams()
+// Reusable Waitlist Form Component
+function WaitlistForm({
+  source = 'hero',
+  buttonText = 'Join the Waitlist',
+  className = '',
+  onSuccess,
+}: {
+  source?: string
+  buttonText?: string
+  className?: string
+  onSuccess?: () => void
+}) {
   const [email, setEmail] = useState('')
+  const [consent, setConsent] = useState(true)
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email || !consent) return
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const response = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, consent, source }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to join waitlist')
+        return
+      }
+
+      setSubmitted(true)
+      onSuccess?.()
+    } catch {
+      setError('An error occurred. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (submitted) {
+    return (
+      <div className={cn("inline-flex items-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/30", className)}>
+        <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+          <Check className="w-5 h-5 text-purple-400" />
+        </div>
+        <div className="text-left">
+          <p className="font-semibold text-white">Check your inbox!</p>
+          <p className="text-sm text-gray-400">Confirm your email to secure your spot.</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className={cn("w-full max-w-md", className)}>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <input
+            type="email"
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-5 py-3.5 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
+            required
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={loading || !consent}
+          className="px-6 py-3.5 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 hover:shadow-lg hover:shadow-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+        >
+          {loading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4" />
+              {buttonText}
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Consent checkbox */}
+      <label className="flex items-start gap-3 mt-4 cursor-pointer group">
+        <div className="relative mt-0.5">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            className="sr-only"
+          />
+          <div className={cn(
+            "w-5 h-5 rounded border-2 transition-all flex items-center justify-center",
+            consent
+              ? "bg-purple-600 border-purple-600"
+              : "border-gray-600 group-hover:border-gray-500"
+          )}>
+            {consent && <Check className="w-3 h-3 text-white" />}
+          </div>
+        </div>
+        <span className="text-sm text-gray-400 leading-tight">
+          I agree to receive email updates about early access.{' '}
+          <Link href="/privacy" className="text-purple-400 hover:text-purple-300 underline">
+            Privacy Policy
+          </Link>
+        </span>
+      </label>
+
+      {error && (
+        <p className="mt-3 text-sm text-red-400 flex items-center gap-2">
+          <XCircle className="w-4 h-4" />
+          {error}
+        </p>
+      )}
+    </form>
+  )
+}
+
+export function LandingPage() {
+  const searchParams = useSearchParams()
   const [verificationStatus, setVerificationStatus] = useState<string | null>(null)
 
   // Check for verification status in URL
@@ -70,35 +195,6 @@ export function LandingPage() {
       window.history.replaceState({}, '', '/')
     }
   }, [searchParams])
-
-  const handleWaitlist = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email) return
-
-    setLoading(true)
-    setError('')
-
-    try {
-      const response = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to join waitlist')
-        return
-      }
-
-      setSubmitted(true)
-    } catch {
-      setError('An error occurred. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white overflow-x-hidden">
@@ -140,19 +236,21 @@ export function LandingPage() {
               >
                 Sign In
               </Link>
-              <Link
-                href="/login"
-                className="text-sm font-medium px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-colors"
+              <a
+                href="#waitlist"
+                className="text-sm font-medium px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white transition-all flex items-center gap-2 shadow-lg shadow-purple-500/20"
               >
-                Get Started
-              </Link>
+                <Sparkles className="w-4 h-4" />
+                <span className="hidden sm:inline">Join Waitlist</span>
+                <span className="sm:hidden">Join</span>
+              </a>
             </div>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-4 overflow-hidden">
+      <section id="waitlist" className="relative pt-28 pb-16 px-4 overflow-hidden">
         {/* Background Effects */}
         <div className="absolute inset-0">
           <div className="absolute top-1/4 -left-20 w-96 h-96 bg-purple-600/20 rounded-full blur-[128px] animate-pulse" />
@@ -182,9 +280,12 @@ export function LandingPage() {
         </div>
 
         <div className="relative max-w-5xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/[0.08] mb-8">
-            <Sparkles className="w-4 h-4 text-purple-400" />
-            <span className="text-sm text-gray-300">Your tabletop adventures, organized</span>
+          {/* Exclusive Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/10 to-purple-500/10 border border-amber-500/30 mb-8">
+            <Crown className="w-4 h-4 text-amber-400" />
+            <span className="text-sm font-medium text-amber-300">Founding Members Only</span>
+            <span className="w-1 h-1 rounded-full bg-amber-400/50" />
+            <span className="text-sm text-gray-400">Closed Beta</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
@@ -197,42 +298,104 @@ export function LandingPage() {
             <span className="whitespace-nowrap">Chronicle Your Epic Journeys.</span>
           </h1>
 
-          <p className="text-lg sm:text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
-            The ultimate companion for Dungeon Masters and players. Manage your TTRPG campaigns,
-            track session notes, and bring your characters to life.
+          <p className="text-lg sm:text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
+            The ultimate companion for Dungeon Masters and players. Join now to become a
+            Founding Member with exclusive early access and permanent benefits.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-            <Link
-              href="/login"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 hover:shadow-lg hover:shadow-purple-500/25 transition-all"
-            >
-              <Sparkles className="w-5 h-5" />
-              Start Your Adventure
-              <ChevronRight className="w-5 h-5" />
-            </Link>
-            <a
-              href="#demo"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-gray-300 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:text-white transition-all"
-            >
-              <BookOpen className="w-5 h-5" />
-              Explore Demo
-            </a>
+          {/* Show verification status from URL param */}
+          {verificationStatus && VERIFICATION_MESSAGES[verificationStatus] && (
+            <div className={cn(
+              "inline-flex items-center gap-2 px-6 py-4 rounded-xl border mb-8",
+              VERIFICATION_MESSAGES[verificationStatus].color
+            )}>
+              {(() => {
+                const Icon = VERIFICATION_MESSAGES[verificationStatus].icon
+                return <Icon className="w-5 h-5" />
+              })()}
+              <span>{VERIFICATION_MESSAGES[verificationStatus].message}</span>
+            </div>
+          )}
+
+          {/* Waitlist Form - Primary CTA */}
+          {verificationStatus !== 'confirmed' && verificationStatus !== 'already-verified' && (
+            <div className="flex justify-center mb-8">
+              <WaitlistForm source="hero" />
+            </div>
+          )}
+
+          {/* Founding Member Benefits */}
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 mb-8">
+            <div className="flex items-center gap-2 text-sm text-gray-300">
+              <div className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center">
+                <Star className="w-3 h-3 text-purple-400" />
+              </div>
+              <span>Permanent Founder badge</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-300">
+              <div className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center">
+                <Zap className="w-3 h-3 text-purple-400" />
+              </div>
+              <span>Early access before open beta</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-300">
+              <div className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center">
+                <Heart className="w-3 h-3 text-purple-400" />
+              </div>
+              <span>Shape the product with your feedback</span>
+            </div>
           </div>
 
-          <p className="text-sm text-gray-500">
-            Already have an account?{' '}
-            <Link href="/login" className="text-purple-400 hover:text-purple-300 underline">
-              Sign in
+          {/* Secondary Actions */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a
+              href="#demo"
+              className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>Explore the demo first</span>
+              <ChevronRight className="w-4 h-4" />
+            </a>
+            <span className="hidden sm:block text-gray-600">|</span>
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-colors"
+            >
+              <span>Already have an invite?</span>
+              <ArrowRight className="w-4 h-4" />
             </Link>
-          </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Social Proof / Trust Banner */}
+      <section className="py-6 px-4 border-y border-white/[0.06] bg-gradient-to-r from-purple-900/5 via-transparent to-indigo-900/5">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-gray-500">
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-emerald-500" />
+              <span>Your data is encrypted & private</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Dices className="w-4 h-4 text-purple-500" />
+              <span>Built by tabletop enthusiasts</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span>Open beta launching Q1 2026</span>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 px-4 border-t border-white/[0.06]">
+      <section id="features" className="py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-4">
+              <Sparkles className="w-3 h-3 text-purple-400" />
+              <span className="text-xs text-gray-400 uppercase tracking-wider">What&apos;s Inside</span>
+            </div>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
               Everything You Need to Run{' '}
               <span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
@@ -273,14 +436,18 @@ export function LandingPage() {
       <section id="demo" className="py-20 px-4 border-t border-white/[0.06] bg-gradient-to-b from-transparent to-purple-900/5">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-4">
+              <BookOpen className="w-3 h-3 text-purple-400" />
+              <span className="text-xs text-gray-400 uppercase tracking-wider">Try It Now</span>
+            </div>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Try Before You{' '}
+              Preview What&apos;s{' '}
               <span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
-                Commit
+                Waiting For You
               </span>
             </h2>
             <p className="text-gray-400 max-w-2xl mx-auto">
-              Explore fully-featured demo content to see what Multiloop can do for your games.
+              Explore fully-featured demo content. No account needed.
             </p>
           </div>
 
@@ -292,7 +459,7 @@ export function LandingPage() {
             >
               <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="p-6">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center mb-4">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/20">
                   <Map className="w-7 h-7 text-white" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2 text-white">The Sunken Citadel</h3>
@@ -313,7 +480,7 @@ export function LandingPage() {
             >
               <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="p-6">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center mb-4">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center mb-4 shadow-lg shadow-indigo-500/20">
                   <Users className="w-7 h-7 text-white" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2 text-white">Lyra Silvervane</h3>
@@ -334,7 +501,7 @@ export function LandingPage() {
             >
               <div className="absolute inset-0 bg-gradient-to-br from-amber-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="p-6">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center mb-4">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center mb-4 shadow-lg shadow-amber-500/20">
                   <Crown className="w-7 h-7 text-white" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2 text-white">The Night Market</h3>
@@ -351,79 +518,63 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Waitlist / CTA Section */}
+      {/* Bottom CTA Section - Founding Members */}
       <section className="py-20 px-4 border-t border-white/[0.06]">
-        <div className="max-w-2xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 mb-6">
-            <AlertCircle className="w-4 h-4 text-amber-400" />
-            <span className="text-sm text-amber-300">Closed Beta - Open Beta Q1 2026</span>
+        <div className="max-w-3xl mx-auto">
+          <div className="relative rounded-3xl bg-gradient-to-b from-purple-900/20 to-indigo-900/20 border border-purple-500/20 p-8 sm:p-12 overflow-hidden">
+            {/* Background glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-purple-600/20 rounded-full blur-[100px] -z-10" />
+
+            <div className="text-center">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 mb-6">
+                <Star className="w-4 h-4 text-amber-400" />
+                <span className="text-sm font-medium text-amber-300">Become a Founding Member</span>
+              </div>
+
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+                Secure Your Spot as a{' '}
+                <span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
+                  Founder
+                </span>
+              </h2>
+
+              <p className="text-gray-400 mb-8 max-w-xl mx-auto">
+                Join now and lock in your Founding Member status forever. Early supporters get permanent recognition
+                and help shape the future of Multiloop.
+              </p>
+
+              {/* Benefits Grid */}
+              <div className="grid sm:grid-cols-3 gap-4 mb-8">
+                <div className="p-4 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+                  <Star className="w-6 h-6 text-amber-400 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-white">Founder Badge</p>
+                  <p className="text-xs text-gray-500">Displayed forever on your profile</p>
+                </div>
+                <div className="p-4 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+                  <Zap className="w-6 h-6 text-purple-400 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-white">Priority Access</p>
+                  <p className="text-xs text-gray-500">First to try new features</p>
+                </div>
+                <div className="p-4 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+                  <Heart className="w-6 h-6 text-pink-400 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-white">Direct Feedback</p>
+                  <p className="text-xs text-gray-500">Help shape the product</p>
+                </div>
+              </div>
+
+              {/* Waitlist Form */}
+              <div className="flex justify-center mb-6">
+                <WaitlistForm source="footer" buttonText="Reserve My Spot" />
+              </div>
+
+              <p className="text-sm text-gray-500">
+                Already have an invite?{' '}
+                <Link href="/login" className="text-purple-400 hover:text-purple-300 underline">
+                  Sign in here
+                </Link>
+              </p>
+            </div>
           </div>
-
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            Ready to Begin Your{' '}
-            <span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
-              Adventure?
-            </span>
-          </h2>
-          <p className="text-gray-400 mb-8">
-            We&apos;re currently in closed beta while we polish the experience. Request early access below
-            or sign in with your invite code. Open beta is planned for Q1 2026.
-          </p>
-
-          {/* Show verification status from URL param */}
-          {verificationStatus && VERIFICATION_MESSAGES[verificationStatus] && (
-            <div className={cn(
-              "inline-flex items-center gap-2 px-6 py-4 rounded-xl border mb-6",
-              VERIFICATION_MESSAGES[verificationStatus].color
-            )}>
-              {(() => {
-                const Icon = VERIFICATION_MESSAGES[verificationStatus].icon
-                return <Icon className="w-5 h-5" />
-              })()}
-              <span>{VERIFICATION_MESSAGES[verificationStatus].message}</span>
-            </div>
-          )}
-
-          {submitted ? (
-            <div className="inline-flex items-center gap-2 px-6 py-4 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400">
-              <Mail className="w-5 h-5" />
-              <span>Check your email to confirm your spot on the waitlist!</span>
-            </div>
-          ) : verificationStatus === 'confirmed' || verificationStatus === 'already-verified' ? null : (
-            <div className="max-w-md mx-auto">
-              <form onSubmit={handleWaitlist} className="flex flex-col sm:flex-row gap-3">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20"
-                  required
-                />
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <>Request Access</>
-                  )}
-                </button>
-              </form>
-              {error && (
-                <p className="mt-3 text-sm text-red-400">{error}</p>
-              )}
-            </div>
-          )}
-
-          <p className="text-sm text-gray-500 mt-6">
-            Already have an invite?{' '}
-            <Link href="/login" className="text-purple-400 hover:text-purple-300 underline">
-              Sign in here
-            </Link>
-          </p>
         </div>
       </section>
 
@@ -436,6 +587,9 @@ export function LandingPage() {
                 <img src="/icons/icon-192x192.png" alt="Multiloop" className="w-full h-full object-cover" />
               </div>
               <span className="text-gray-400">Multiloop</span>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                BETA
+              </span>
             </div>
 
             <LegalFooter className="!mt-0" />
@@ -499,4 +653,3 @@ const features = [
     gradient: 'from-emerald-600 to-emerald-800',
   },
 ]
-

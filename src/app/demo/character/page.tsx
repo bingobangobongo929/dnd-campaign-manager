@@ -86,10 +86,10 @@ export default async function DemoCharacterPage() {
                 Sign In
               </Link>
               <Link
-                href="/login"
-                className="text-sm font-medium px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-colors"
+                href="/#waitlist"
+                className="text-sm font-medium px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white transition-all shadow-lg shadow-purple-500/20"
               >
-                Get Started
+                Join Waitlist
               </Link>
             </div>
           </div>
@@ -318,14 +318,14 @@ export default async function DemoCharacterPage() {
         <div className="text-center py-12 mt-8 border-t border-white/[0.06]">
           <h3 className="text-2xl font-bold text-white mb-4">Ready to Create Your Own Character?</h3>
           <p className="text-gray-400 mb-6 max-w-md mx-auto">
-            Sign up to build rich character profiles with backstories, relationships, and journals.
+            Join the waitlist to become a Founding Member and bring your characters to life.
           </p>
           <Link
-            href="/login"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 transition-all"
+            href="/#waitlist"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 hover:shadow-lg hover:shadow-purple-500/25 transition-all"
           >
             <Sparkles className="w-5 h-5" />
-            Get Started Free
+            Join the Waitlist
           </Link>
         </div>
       </div>

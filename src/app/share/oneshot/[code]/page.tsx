@@ -373,11 +373,12 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
                   {genreTags.map((tag: any) => (
                     <span
                       key={tag.id}
-                      className="px-2.5 py-1 text-xs font-semibold uppercase tracking-wider rounded"
+                      className="px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded"
                       style={{
-                        backgroundColor: `${tag.color}25`,
+                        backgroundColor: `${tag.color}40`,
                         color: tag.color,
-                        border: `1px solid ${tag.color}40`,
+                        border: `1px solid ${tag.color}60`,
+                        textShadow: '0 1px 2px rgba(0,0,0,0.5)',
                       }}
                     >
                       {tag.name}
