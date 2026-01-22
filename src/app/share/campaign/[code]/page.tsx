@@ -228,6 +228,16 @@ export default async function ShareCampaignPage({ params }: SharePageProps) {
     notFound()
   }
 
+  // Fetch author info (username and founder status)
+  const { data: authorSettings } = await supabase
+    .from('user_settings')
+    .select('username, is_founder')
+    .eq('user_id', campaign.user_id)
+    .single()
+
+  const authorName = authorSettings?.username || null
+  const isFounder = authorSettings?.is_founder || false
+
   // Parse included sections
   const rawSections = share.included_sections as Record<string, any> || {}
   const sections = {
@@ -497,6 +507,8 @@ export default async function ShareCampaignPage({ params }: SharePageProps) {
       <SharePageHeader
         contentType="campaign"
         contentName={campaign.name}
+        authorName={authorName}
+        isFounder={isFounder}
         allowSave={allowSave}
         snapshotId={snapshotId}
         isLoggedIn={isLoggedIn}

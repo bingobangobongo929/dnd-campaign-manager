@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout, MobileSectionHeader } from '@/components/mobile'
+import { FounderBadge } from '@/components/membership'
 import { formatDistanceToNow } from '@/lib/utils'
 import type { Campaign, VaultCharacter, Oneshot, ContentSave } from '@/types/database'
 
@@ -28,6 +29,7 @@ export interface HomePageMobileProps {
   featuredCampaign: Campaign | undefined
   displayCampaigns: Campaign[]
   onNavigate: (path: string) => void
+  isFounder?: boolean
 }
 
 export function HomePageMobile({
@@ -37,6 +39,7 @@ export function HomePageMobile({
   savedTemplates,
   displayCampaigns,
   onNavigate,
+  isFounder = false,
 }: HomePageMobileProps) {
   // Combine recent items for activity section
   const recentActivity = [
@@ -85,6 +88,19 @@ export function HomePageMobile({
   return (
     <AppLayout>
       <MobileLayout title="Home" showBackButton={false}>
+        {/* Founder Welcome Banner */}
+        {isFounder && (
+          <div className="mx-4 mb-4 flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+            <FounderBadge size="md" />
+            <div>
+              <p className="font-medium text-amber-400 text-sm">Welcome, Founder!</p>
+              <p className="text-xs text-[--text-tertiary]">
+                Thank you for being an early supporter.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Recent Activity Section */}
         {recentActivity.length > 0 && (
           <>

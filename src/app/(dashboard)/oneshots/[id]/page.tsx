@@ -28,13 +28,14 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { Modal, UnifiedImageModal } from '@/components/ui'
+import { LimitReachedModal } from '@/components/membership'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 import { TemplateStateBadge } from '@/components/templates/TemplateStateBadge'
 import { TemplateOnboardingModal } from '@/components/templates/TemplateOnboardingModal'
 import { MobileLayout, MobileBottomSheet } from '@/components/mobile'
 import { FloatingDock } from '@/components/layout/floating-dock'
-import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { useSupabase, useUser, useIsMobile, useMembership } from '@/hooks'
 import { useAppStore, useCanUseAI } from '@/store'
 import { cn } from '@/lib/utils'
 import { v4 as uuidv4 } from 'uuid'
@@ -89,6 +90,11 @@ export default function OneshotEditorPage() {
   const isNew = params.id === 'new'
   const oneshotId = isNew ? null : (params.id as string)
   const fromTemplate = searchParams.get('fromTemplate') === 'true'
+  const { canCreateOneshot } = useMembership()
+
+  // Limit modal state
+  const [limitModalOpen, setLimitModalOpen] = useState(false)
+  const [limitInfo, setLimitInfo] = useState({ current: 0, limit: 0 })
 
   // Form state
   const [formData, setFormData] = useState({
@@ -312,6 +318,16 @@ export default function OneshotEditorPage() {
 
   const handleSave = async () => {
     if (!formData.title.trim() || !user) return
+
+    // Check oneshot limit before saving (only for new oneshots)
+    if (isNew) {
+      const limitCheck = canCreateOneshot()
+      if (!limitCheck.allowed) {
+        setLimitInfo({ current: limitCheck.current, limit: limitCheck.limit })
+        setLimitModalOpen(true)
+        return
+      }
+    }
 
     setSaving(true)
     try {
@@ -1447,6 +1463,16 @@ export default function OneshotEditorPage() {
         onClose={() => setShowTemplateOnboarding(false)}
         onOpenShareModal={() => setShareModalOpen(true)}
         contentName={formData.title || 'Untitled One-Shot'}
+      />
+
+      {/* Limit Reached Modal */}
+      <LimitReachedModal
+        isOpen={limitModalOpen}
+        onClose={() => setLimitModalOpen(false)}
+        limitType="oneshots"
+        current={limitInfo.current}
+        limit={limitInfo.limit}
+        onManage={() => router.push('/oneshots')}
       />
 
       <BackToTopButton />

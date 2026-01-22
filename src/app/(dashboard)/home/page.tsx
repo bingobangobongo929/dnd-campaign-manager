@@ -19,8 +19,9 @@ import {
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { OnboardingTour } from '@/components/ui'
+import { FounderBadge } from '@/components/membership'
 import { MobileLayout, MobileSectionHeader, MobileSearchBar } from '@/components/mobile'
-import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { useSupabase, useUser, useIsMobile, useMembership } from '@/hooks'
 import { useAppStore } from '@/store'
 import { formatDistanceToNow, cn } from '@/lib/utils'
 import type { Campaign, VaultCharacter, Oneshot, ContentSave } from '@/types/database'
@@ -32,6 +33,7 @@ export default function HomePage() {
   const { user } = useUser()
   const isMobile = useIsMobile()
   const { recentItems } = useAppStore()
+  const { isFounder, loading: membershipLoading } = useMembership()
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [characters, setCharacters] = useState<VaultCharacter[]>([])
@@ -131,6 +133,7 @@ export default function HomePage() {
           featuredCampaign={featuredCampaign}
           displayCampaigns={displayCampaigns}
           onNavigate={(path) => router.push(path)}
+          isFounder={isFounder}
         />
         <OnboardingTour
           isOpen={showOnboarding}
@@ -144,6 +147,19 @@ export default function HomePage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto space-y-12">
+
+        {/* Founder Welcome Banner */}
+        {isFounder && !membershipLoading && (
+          <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+            <FounderBadge size="lg" />
+            <div>
+              <p className="font-medium text-amber-400">Welcome, Founder!</p>
+              <p className="text-sm text-[--text-tertiary]">
+                Thank you for being an early supporter. You have access to expanded features.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Your Campaigns Section */}
         <section>

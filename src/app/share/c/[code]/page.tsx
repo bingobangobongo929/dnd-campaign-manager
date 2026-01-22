@@ -334,6 +334,16 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
     )
   }
 
+  // Fetch author info (username and founder status)
+  const { data: authorSettings } = await supabase
+    .from('user_settings')
+    .select('username, is_founder')
+    .eq('user_id', character.user_id)
+    .single()
+
+  const authorName = authorSettings?.username || null
+  const isFounder = authorSettings?.is_founder || false
+
   // Section visibility - default to showing if not explicitly false
   const rawSections = share.included_sections as Record<string, boolean> || {}
   const sections = {
@@ -509,6 +519,8 @@ export default async function ShareCharacterPage({ params }: SharePageProps) {
       <SharePageHeader
         contentType="character"
         contentName={character.name}
+        authorName={authorName}
+        isFounder={isFounder}
         allowSave={allowSave}
         snapshotId={snapshotId}
         isLoggedIn={isLoggedIn}

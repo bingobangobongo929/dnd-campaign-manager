@@ -68,6 +68,11 @@ export function getRoleBadgeColor(role: UserRole): string {
  */
 export function getTierDisplayName(tier: string): string {
   const names: Record<string, string> = {
+    // New tier names
+    adventurer: 'Adventurer',
+    hero: 'Hero',
+    legend: 'Legend',
+    // Legacy tier names (for backwards compatibility)
     free: 'Free',
     standard: 'Standard',
     premium: 'Premium',
@@ -80,6 +85,11 @@ export function getTierDisplayName(tier: string): string {
  */
 export function getTierBadgeColor(tier: string): string {
   const colors: Record<string, string> = {
+    // New tier names
+    adventurer: 'bg-emerald-500/20 text-emerald-400',
+    hero: 'bg-blue-500/20 text-blue-400',
+    legend: 'bg-amber-500/20 text-amber-400',
+    // Legacy tier names (for backwards compatibility)
     free: 'bg-gray-500/20 text-gray-400',
     standard: 'bg-green-500/20 text-green-400',
     premium: 'bg-amber-500/20 text-amber-400',

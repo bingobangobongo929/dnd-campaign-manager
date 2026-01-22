@@ -25,8 +25,9 @@ import {
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css'
 import { Modal } from '@/components/ui'
+import { LimitReachedModal } from '@/components/membership'
 import { FloatingDock } from '@/components/layout'
-import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { useSupabase, useUser, useIsMobile, useMembership } from '@/hooks'
 import { NewCampaignMobile } from './page.mobile'
 import { useCanUseAI } from '@/store'
 import { cn } from '@/lib/utils'
@@ -80,6 +81,11 @@ export default function NewCampaignPage() {
   const imageInputRef = useRef<HTMLInputElement>(null)
   const canUseAI = useCanUseAI()
   const isMobile = useIsMobile()
+  const { canCreateCampaign, refreshUsage } = useMembership()
+
+  // Limit modal state
+  const [limitModalOpen, setLimitModalOpen] = useState(false)
+  const [limitInfo, setLimitInfo] = useState({ current: 0, limit: 0 })
 
   // Form state
   const [formData, setFormData] = useState({
@@ -264,6 +270,14 @@ export default function NewCampaignPage() {
 
   const handleSave = async () => {
     if (!formData.name.trim() || !user) return
+
+    // Check campaign limit before saving
+    const limitCheck = canCreateCampaign()
+    if (!limitCheck.allowed) {
+      setLimitInfo({ current: limitCheck.current, limit: limitCheck.limit })
+      setLimitModalOpen(true)
+      return
+    }
 
     setSaving(true)
     try {
@@ -783,6 +797,16 @@ export default function NewCampaignPage() {
 
       {/* Floating Dock Navigation */}
       <FloatingDock />
+
+      {/* Limit Reached Modal */}
+      <LimitReachedModal
+        isOpen={limitModalOpen}
+        onClose={() => setLimitModalOpen(false)}
+        limitType="campaigns"
+        current={limitInfo.current}
+        limit={limitInfo.limit}
+        onManage={() => router.push('/campaigns')}
+      />
     </>
   )
 }

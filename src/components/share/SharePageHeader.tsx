@@ -3,10 +3,14 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { SaveToCollectionButton } from '@/components/templates'
+import { FounderIndicator } from '@/components/membership'
 
 interface SharePageHeaderProps {
   contentType?: 'character' | 'campaign' | 'oneshot'
   contentName?: string
+  // Author info
+  authorName?: string
+  isFounder?: boolean
   // Template save functionality
   allowSave?: boolean
   snapshotId?: string | null
@@ -17,6 +21,8 @@ interface SharePageHeaderProps {
 export function SharePageHeader({
   contentType,
   contentName,
+  authorName,
+  isFounder = false,
   allowSave = false,
   snapshotId,
   isLoggedIn = false,
@@ -43,6 +49,15 @@ export function SharePageHeader({
             <div className="hidden md:flex items-center gap-2 text-sm">
               <span className="text-gray-500 capitalize">{contentType}:</span>
               <span className="text-gray-300 truncate max-w-[200px]">{contentName}</span>
+              {authorName && (
+                <>
+                  <span className="text-gray-600">•</span>
+                  <span className="text-gray-400 flex items-center gap-1">
+                    by {authorName}
+                    {isFounder && <FounderIndicator />}
+                  </span>
+                </>
+              )}
             </div>
           )}
 

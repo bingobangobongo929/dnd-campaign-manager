@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, MoreVertical, Shield, Ban, UserX, Crown, Loader2, Check, X } from 'lucide-react'
+import { Search, MoreVertical, Shield, Ban, UserX, Crown, Loader2, Check, X, Sparkles, Bot } from 'lucide-react'
 import { useSupabase, useUserSettings } from '@/hooks'
 import { Modal, Button } from '@/components/ui'
 import { DropdownMenu } from '@/components/ui/dropdown-menu'
@@ -23,6 +23,8 @@ interface UserWithSettings {
   settings: {
     tier: string
     role: UserRole
+    is_founder: boolean
+    ai_access: boolean
     suspended_at: string | null
     suspended_reason: string | null
     disabled_at: string | null
@@ -73,8 +75,10 @@ export default function AdminUsersPage() {
         email: '', // We'll need to get this separately or store it in user_settings
         created_at: s.created_at,
         settings: {
-          tier: s.tier,
+          tier: s.tier || 'adventurer',
           role: s.role,
+          is_founder: s.is_founder || false,
+          ai_access: s.ai_access || false,
           suspended_at: s.suspended_at,
           suspended_reason: s.suspended_reason,
           disabled_at: s.disabled_at,
@@ -221,6 +225,69 @@ export default function AdminUsersPage() {
     }
   }
 
+  const handleToggleFounder = async (user: UserWithSettings) => {
+    if (!isSuperAdminUser) return
+
+    const currentFounder = user.settings?.is_founder || false
+    const newFounder = !currentFounder
+
+    try {
+      const adminUser = (await supabase.auth.getUser()).data.user
+      const { error } = await supabase
+        .from('user_settings')
+        .update({
+          is_founder: newFounder,
+          founder_granted_at: newFounder ? new Date().toISOString() : null,
+        })
+        .eq('user_id', user.id)
+
+      if (error) throw error
+
+      await supabase.from('admin_activity_log').insert({
+        admin_id: adminUser?.id,
+        action: newFounder ? 'grant_founder' : 'revoke_founder',
+        target_user_id: user.id,
+      })
+
+      toast.success(newFounder ? 'Founder status granted' : 'Founder status revoked')
+      fetchUsers()
+    } catch (error) {
+      toast.error('Failed to update founder status')
+    }
+  }
+
+  const handleToggleAIAccess = async (user: UserWithSettings) => {
+    if (!isSuperAdminUser) return
+
+    const currentAI = user.settings?.ai_access || false
+    const newAI = !currentAI
+
+    try {
+      const adminUser = (await supabase.auth.getUser()).data.user
+      const { error } = await supabase
+        .from('user_settings')
+        .update({
+          ai_access: newAI,
+          ai_access_granted_by: newAI ? adminUser?.id : null,
+          ai_access_granted_at: newAI ? new Date().toISOString() : null,
+        })
+        .eq('user_id', user.id)
+
+      if (error) throw error
+
+      await supabase.from('admin_activity_log').insert({
+        admin_id: adminUser?.id,
+        action: newAI ? 'grant_ai_access' : 'revoke_ai_access',
+        target_user_id: user.id,
+      })
+
+      toast.success(newAI ? 'AI access granted' : 'AI access revoked')
+      fetchUsers()
+    } catch (error) {
+      toast.error('Failed to update AI access')
+    }
+  }
+
   // Filter users
   const filteredUsers = users.filter(user => {
     if (searchQuery) {
@@ -272,9 +339,9 @@ export default function AdminUsersPage() {
           className="px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-purple-500/50"
         >
           <option value="all">All Tiers</option>
-          <option value="free">Free</option>
-          <option value="standard">Standard</option>
-          <option value="premium">Premium</option>
+          <option value="adventurer">Adventurer</option>
+          <option value="hero">Hero</option>
+          <option value="legend">Legend</option>
         </select>
 
         <select
@@ -308,6 +375,8 @@ export default function AdminUsersPage() {
               <tr className="border-b border-white/[0.06]">
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">User</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Tier</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Founder</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">AI</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Role</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Status</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Last Login</th>
@@ -318,7 +387,7 @@ export default function AdminUsersPage() {
             <tbody>
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-gray-500">
+                  <td colSpan={9} className="text-center py-12 text-gray-500">
                     No users found
                   </td>
                 </tr>
@@ -338,9 +407,41 @@ export default function AdminUsersPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <span className={cn("px-2 py-1 rounded text-xs font-medium", getTierBadgeColor(user.settings?.tier || 'free'))}>
-                          {getTierDisplayName(user.settings?.tier || 'free')}
+                        <span className={cn("px-2 py-1 rounded text-xs font-medium", getTierBadgeColor(user.settings?.tier || 'adventurer'))}>
+                          {getTierDisplayName(user.settings?.tier || 'adventurer')}
                         </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <button
+                          onClick={() => handleToggleFounder(user)}
+                          disabled={!isSuperAdminUser}
+                          className={cn(
+                            "p-1.5 rounded-lg transition-colors",
+                            user.settings?.is_founder
+                              ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
+                              : "bg-gray-500/10 text-gray-600 hover:bg-gray-500/20",
+                            !isSuperAdminUser && "cursor-not-allowed opacity-50"
+                          )}
+                          title={user.settings?.is_founder ? "Click to revoke founder status" : "Click to grant founder status"}
+                        >
+                          <Sparkles className="w-4 h-4" />
+                        </button>
+                      </td>
+                      <td className="py-3 px-4">
+                        <button
+                          onClick={() => handleToggleAIAccess(user)}
+                          disabled={!isSuperAdminUser}
+                          className={cn(
+                            "p-1.5 rounded-lg transition-colors",
+                            user.settings?.ai_access
+                              ? "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30"
+                              : "bg-gray-500/10 text-gray-600 hover:bg-gray-500/20",
+                            !isSuperAdminUser && "cursor-not-allowed opacity-50"
+                          )}
+                          title={user.settings?.ai_access ? "Click to revoke AI access" : "Click to grant AI access"}
+                        >
+                          <Bot className="w-4 h-4" />
+                        </button>
                       </td>
                       <td className="py-3 px-4">
                         <span className={cn("px-2 py-1 rounded text-xs font-medium", getRoleBadgeColor(user.settings?.role || 'user'))}>

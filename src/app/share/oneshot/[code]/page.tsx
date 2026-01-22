@@ -237,6 +237,16 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
     notFound()
   }
 
+  // Fetch author info (username and founder status)
+  const { data: authorSettings } = await supabase
+    .from('user_settings')
+    .select('username, is_founder')
+    .eq('user_id', oneshot.user_id)
+    .single()
+
+  const authorName = authorSettings?.username || null
+  const isFounder = authorSettings?.is_founder || false
+
   // Fetch genre tags
   const { data: allTags } = await supabase
     .from('oneshot_genre_tags')
@@ -303,6 +313,8 @@ export default async function ShareOneshotPage({ params }: SharePageProps) {
       <SharePageHeader
         contentType="oneshot"
         contentName={oneshot.title}
+        authorName={authorName}
+        isFounder={isFounder}
         allowSave={allowSave}
         snapshotId={snapshotId}
         isLoggedIn={isLoggedIn}

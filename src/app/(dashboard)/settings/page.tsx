@@ -35,13 +35,14 @@ import { toast } from 'sonner'
 import { Modal, OnboardingTour, useResetTips, useToggleTips } from '@/components/ui'
 import { AvatarCropModal } from '@/components/ui/avatar-crop-modal'
 import { MobileLayout } from '@/components/mobile'
-import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { useSupabase, useUser, useIsMobile, useMembership } from '@/hooks'
 import { useAppStore, CURRENCY_CONFIG, type Currency, useTierHasAI } from '@/store'
 import { AI_PROVIDERS, AIProvider } from '@/lib/ai/config'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { formatDate } from '@/lib/utils'
 import { LegalFooter } from '@/components/ui/legal-footer'
+import { FounderBadge, UsageBar } from '@/components/membership'
 
 // App version - using date-based versioning
 const APP_VERSION = '2025.01.17'
@@ -69,6 +70,7 @@ export default function SettingsPage() {
     settings, setSettings,
   } = useAppStore()
   const tierHasAI = useTierHasAI()
+  const { isFounder, founderGrantedAt, limits, usage, loading: membershipLoading } = useMembership()
 
   // Avatar upload state
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
@@ -380,6 +382,16 @@ export default function SettingsPage() {
                   {user?.created_at ? formatDate(user.created_at) : 'Unknown'}
                 </p>
               </div>
+
+              {isFounder && (
+                <div className="flex items-center gap-2 pt-2 border-t border-white/[0.06]">
+                  <FounderBadge size="md" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-400">Founder</p>
+                    <p className="text-[10px] text-gray-500">Early supporter</p>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
@@ -812,6 +824,21 @@ export default function SettingsPage() {
               </div>
             </div>
 
+            {/* Founder Status */}
+            {isFounder && (
+              <div className="flex items-center justify-between p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                <div className="flex items-center gap-3">
+                  <FounderBadge size="lg" />
+                  <div>
+                    <p className="font-medium text-amber-400">Founder</p>
+                    <p className="text-xs text-[--text-tertiary]">
+                      Early supporter since {founderGrantedAt ? formatDate(founderGrantedAt) : 'the beginning'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <button
               className="btn btn-secondary w-full justify-center text-[--arcane-ember] hover:bg-red-500/10"
               onClick={handleLogout}
@@ -1011,6 +1038,27 @@ export default function SettingsPage() {
           </div>
 
           <div className="card p-5 space-y-5">
+            {/* Usage Limits */}
+            {!membershipLoading && (
+              <div className="p-4 rounded-xl bg-[--bg-elevated] border border-[--border] space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-[--text-primary]">Usage</p>
+                  {isFounder && (
+                    <span className="text-xs text-amber-400 flex items-center gap-1">
+                      <FounderBadge size="sm" />
+                      Expanded limits
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <UsageBar label="Campaigns" used={usage.campaigns} limit={limits.campaigns} />
+                  <UsageBar label="One-Shots" used={usage.oneshots} limit={limits.oneshots} />
+                  <UsageBar label="Characters" used={usage.vaultCharacters} limit={limits.vaultCharacters} />
+                  <UsageBar label="Storage" used={usage.storageMB} limit={limits.storageMB} unit="MB" />
+                </div>
+              </div>
+            )}
+
             {/* Content Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[

@@ -15,7 +15,7 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { cn, getInitials } from '@/lib/utils'
 import { logActivity } from '@/lib/activity-log'
-import { useAutoSave, useIsMobile } from '@/hooks'
+import { useAutoSave, useIsMobile, useMembership } from '@/hooks'
 import {
   X,
   User,
@@ -62,6 +62,7 @@ import {
 } from 'lucide-react'
 import { useAppStore, useCanUseAI } from '@/store'
 import { Modal } from '@/components/ui'
+import { LimitReachedModal } from '@/components/membership'
 import { UnifiedImageModal } from '@/components/ui/unified-image-modal'
 import { VaultImageCropModal } from './VaultImageCropModal'
 import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
@@ -205,6 +206,11 @@ export function CharacterEditor({ character, mode, standalone = true, fromTempla
   // This is critical - without memoization, all useEffects with supabase dependency re-run every render
   const supabase = useMemo(() => createClient(), [])
   const canUseAI = useCanUseAI()
+  const { canCreateCharacter } = useMembership()
+
+  // Limit modal state
+  const [limitModalOpen, setLimitModalOpen] = useState(false)
+  const [limitInfo, setLimitInfo] = useState({ current: 0, limit: 0 })
   const imageInputRef = useRef<HTMLInputElement>(null)
   const portraitInputRef = useRef<HTMLInputElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -900,6 +906,14 @@ export function CharacterEditor({ character, mode, standalone = true, fromTempla
         return
       }
     } else {
+      // Check character limit before creating
+      const limitCheck = canCreateCharacter()
+      if (!limitCheck.allowed) {
+        setLimitInfo({ current: limitCheck.current, limit: limitCheck.limit })
+        setLimitModalOpen(true)
+        return
+      }
+
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) throw new Error('Not authenticated')
 
@@ -4412,6 +4426,16 @@ export function CharacterEditor({ character, mode, standalone = true, fromTempla
           appearance: formData.appearance,
         }}
         title="Add Gallery Image"
+      />
+
+      {/* Limit Reached Modal */}
+      <LimitReachedModal
+        isOpen={limitModalOpen}
+        onClose={() => setLimitModalOpen(false)}
+        limitType="vaultCharacters"
+        current={limitInfo.current}
+        limit={limitInfo.limit}
+        onManage={() => router.push('/vault')}
       />
 
       {/* Floating Dock Navigation */}

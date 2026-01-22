@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Modal, Input } from '@/components/ui'
+import { LimitWarning } from '@/components/membership'
 import {
   Link2,
   Package,
@@ -16,7 +17,7 @@ import {
   RefreshCw,
   FileEdit,
 } from 'lucide-react'
-import { useSupabase } from '@/hooks'
+import { useSupabase, useMembership } from '@/hooks'
 import { cn } from '@/lib/utils'
 
 type ContentType = 'campaign' | 'character' | 'oneshot'
@@ -63,6 +64,7 @@ export function UnifiedShareModal({
   onShareCreated,
 }: UnifiedShareModalProps) {
   const supabase = useSupabase()
+  const { canCreateShareLink, limits, usage } = useMembership()
 
   // State
   const [loading, setLoading] = useState(false)
@@ -157,6 +159,13 @@ export function UnifiedShareModal({
   }
 
   const createShareLink = async (shareType: 'party' | 'template' = 'party') => {
+    // Check share link limit before creating
+    const limitCheck = canCreateShareLink()
+    if (!limitCheck.allowed) {
+      setError(`Share link limit reached (${limitCheck.current}/${limitCheck.limit}). Revoke an existing link to create a new one.`)
+      return
+    }
+
     setLoading(true)
     setError(null)
 
@@ -389,9 +398,16 @@ export function UnifiedShareModal({
                     />
                   )}
 
+                  {/* Share link limit warning */}
+                  <LimitWarning
+                    limitType="shareLinks"
+                    current={usage.shareLinks}
+                    limit={limits.shareLinks}
+                  />
+
                   <button
                     onClick={() => createShareLink('party')}
-                    disabled={loading || (usePassword && !password.trim())}
+                    disabled={loading || (usePassword && !password.trim()) || (limits.shareLinks !== -1 && usage.shareLinks >= limits.shareLinks)}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
                   >
                     {loading ? (
