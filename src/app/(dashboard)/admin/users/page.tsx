@@ -559,7 +559,7 @@ export default function AdminUsersPage() {
                               <button
                                 onClick={() => {
                                   setSelectedUser(user)
-                                  setNewTier(user.settings?.tier || 'free')
+                                  setNewTier(user.settings?.tier || 'adventurer')
                                   setShowChangeTierModal(true)
                                 }}
                                 className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left text-blue-400 hover:bg-white/[0.04]"
@@ -662,9 +662,9 @@ export default function AdminUsersPage() {
               onChange={(e) => setNewTier(e.target.value)}
               className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-purple-500/50"
             >
-              <option value="free">Free</option>
-              <option value="standard">Standard</option>
-              <option value="premium">Premium</option>
+              <option value="adventurer">Adventurer</option>
+              <option value="hero">Hero</option>
+              <option value="legend">Legend</option>
             </select>
           </div>
           <div className="flex gap-3">

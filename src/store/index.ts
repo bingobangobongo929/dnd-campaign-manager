@@ -235,7 +235,7 @@ export function useCanUseAI(): boolean {
   const impersonatedTier = useAppStore((state) => state.impersonatedTier)
 
   // Use impersonated tier if set, otherwise use actual tier
-  const tier: UserTier = impersonatedTier || settings?.tier || 'free'
+  const tier: UserTier = impersonatedTier || settings?.tier || 'adventurer'
 
   // Check if tier allows AI AND user has AI enabled
   return TIER_HAS_AI[tier] && aiEnabled
@@ -243,13 +243,13 @@ export function useCanUseAI(): boolean {
 
 /**
  * Hook to get the user's current tier.
- * Defaults to 'free' if settings not loaded yet.
+ * Defaults to 'adventurer' if settings not loaded yet.
  * Respects admin impersonation for testing purposes.
  */
 export function useUserTier(): UserTier {
   const settings = useAppStore((state) => state.settings)
   const impersonatedTier = useAppStore((state) => state.impersonatedTier)
-  return impersonatedTier || settings?.tier || 'free'
+  return impersonatedTier || settings?.tier || 'adventurer'
 }
 
 /**
@@ -260,7 +260,7 @@ export function useUserTier(): UserTier {
 export function useTierHasAI(): boolean {
   const settings = useAppStore((state) => state.settings)
   const impersonatedTier = useAppStore((state) => state.impersonatedTier)
-  const tier: UserTier = impersonatedTier || settings?.tier || 'free'
+  const tier: UserTier = impersonatedTier || settings?.tier || 'adventurer'
   return TIER_HAS_AI[tier]
 }
 

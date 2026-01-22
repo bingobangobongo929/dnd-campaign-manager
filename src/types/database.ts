@@ -1409,7 +1409,7 @@ export interface Database {
           username_set_at: string | null
           ai_provider: 'anthropic' | 'google'
           theme: 'dark' | 'light' | 'system'
-          tier: 'free' | 'standard' | 'premium'
+          tier: 'adventurer' | 'hero' | 'legend'
           role: 'user' | 'moderator' | 'super_admin'
           avatar_url: string | null
           // Account status
@@ -1442,7 +1442,7 @@ export interface Database {
           username_set_at?: string | null
           ai_provider?: 'anthropic' | 'google'
           theme?: 'dark' | 'light' | 'system'
-          tier?: 'free' | 'standard' | 'premium'
+          tier?: 'adventurer' | 'hero' | 'legend'
           role?: 'user' | 'moderator' | 'super_admin'
           avatar_url?: string | null
           suspended_at?: string | null
@@ -1471,7 +1471,7 @@ export interface Database {
           username_set_at?: string | null
           ai_provider?: 'anthropic' | 'google'
           theme?: 'dark' | 'light' | 'system'
-          tier?: 'free' | 'standard' | 'premium'
+          tier?: 'adventurer' | 'hero' | 'legend'
           role?: 'user' | 'moderator' | 'super_admin'
           avatar_url?: string | null
           suspended_at?: string | null
@@ -2376,15 +2376,15 @@ export type CampaignShare = Database['public']['Tables']['campaign_shares']['Row
 export type ShareViewEvent = Database['public']['Tables']['share_view_events']['Row']
 export type IntelligenceSuggestion = Database['public']['Tables']['intelligence_suggestions']['Row']
 
-// User tier type
-export type UserTier = 'free' | 'standard' | 'premium'
+// User tier type (renamed from free/standard/premium to adventurer/hero/legend)
+export type UserTier = 'adventurer' | 'hero' | 'legend'
 export type UserRole = 'user' | 'moderator' | 'super_admin'
 
 // Helper to check if a tier has AI access
 export const TIER_HAS_AI: Record<UserTier, boolean> = {
-  free: false,
-  standard: true,
-  premium: true,
+  adventurer: false,
+  hero: true,
+  legend: true,
 }
 
 // Role-based permissions

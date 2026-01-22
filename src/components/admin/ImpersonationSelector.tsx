@@ -8,23 +8,23 @@ import { cn } from '@/lib/utils'
 
 const TIERS: { value: UserTier; label: string; description: string; icon: typeof User; color: string }[] = [
   {
-    value: 'free',
-    label: 'Free',
-    description: 'No AI features, basic functionality',
+    value: 'adventurer',
+    label: 'Adventurer',
+    description: 'Core features, limited capacity',
     icon: User,
-    color: 'border-gray-500 bg-gray-500/10 hover:bg-gray-500/20',
+    color: 'border-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20',
   },
   {
-    value: 'standard',
-    label: 'Standard',
-    description: 'AI features enabled, standard limits',
+    value: 'hero',
+    label: 'Hero',
+    description: 'Expanded capacity, more content',
     icon: Sparkles,
     color: 'border-blue-500 bg-blue-500/10 hover:bg-blue-500/20',
   },
   {
-    value: 'premium',
-    label: 'Premium',
-    description: 'All features, priority AI access',
+    value: 'legend',
+    label: 'Legend',
+    description: 'Maximum capacity, all features',
     icon: Crown,
     color: 'border-amber-500 bg-amber-500/10 hover:bg-amber-500/20',
   },
@@ -92,26 +92,26 @@ export function ImpersonationSelector() {
                 isSelected
                   ? tier.color.replace('hover:', '') + ' ring-2 ring-offset-2 ring-offset-[#0c0c0e]'
                   : 'border-white/10 hover:border-white/20 bg-white/[0.02]',
-                tier.value === 'free' && isSelected && 'ring-gray-500',
-                tier.value === 'standard' && isSelected && 'ring-blue-500',
-                tier.value === 'premium' && isSelected && 'ring-amber-500'
+                tier.value === 'adventurer' && isSelected && 'ring-emerald-500',
+                tier.value === 'hero' && isSelected && 'ring-blue-500',
+                tier.value === 'legend' && isSelected && 'ring-amber-500'
               )}
             >
               {isSelected && (
                 <div className="absolute top-2 right-2">
                   <Check className={cn(
                     'w-4 h-4',
-                    tier.value === 'free' && 'text-gray-400',
-                    tier.value === 'standard' && 'text-blue-400',
-                    tier.value === 'premium' && 'text-amber-400'
+                    tier.value === 'adventurer' && 'text-emerald-400',
+                    tier.value === 'hero' && 'text-blue-400',
+                    tier.value === 'legend' && 'text-amber-400'
                   )} />
                 </div>
               )}
               <Icon className={cn(
                 'w-6 h-6 mb-2',
-                tier.value === 'free' && 'text-gray-400',
-                tier.value === 'standard' && 'text-blue-400',
-                tier.value === 'premium' && 'text-amber-400'
+                tier.value === 'adventurer' && 'text-emerald-400',
+                tier.value === 'hero' && 'text-blue-400',
+                tier.value === 'legend' && 'text-amber-400'
               )} />
               <h4 className="font-medium text-white mb-1">{tier.label}</h4>
               <p className="text-xs text-gray-400">{tier.description}</p>

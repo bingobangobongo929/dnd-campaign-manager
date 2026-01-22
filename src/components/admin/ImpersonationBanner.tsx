@@ -5,9 +5,9 @@ import { useAppStore, useIsImpersonating, useImpersonatedTier } from '@/store'
 import type { UserTier } from '@/types/database'
 
 const TIER_INFO: Record<UserTier, { label: string; icon: typeof User; color: string }> = {
-  free: { label: 'Free', icon: User, color: 'bg-gray-500' },
-  standard: { label: 'Standard', icon: Sparkles, color: 'bg-blue-500' },
-  premium: { label: 'Premium', icon: Crown, color: 'bg-amber-500' },
+  adventurer: { label: 'Adventurer', icon: User, color: 'bg-emerald-500' },
+  hero: { label: 'Hero', icon: Sparkles, color: 'bg-blue-500' },
+  legend: { label: 'Legend', icon: Crown, color: 'bg-amber-500' },
 }
 
 export function ImpersonationBanner() {
