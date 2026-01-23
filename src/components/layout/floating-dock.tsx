@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutGrid,
+  LayoutDashboard,
   ScrollText,
   Clock,
   Map,
@@ -52,6 +53,7 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
 
   const campaignLinks = campaignId
     ? [
+        { href: `/campaigns/${campaignId}/dashboard`, label: 'Dashboard', icon: LayoutDashboard },
         { href: `/campaigns/${campaignId}/canvas`, label: 'Canvas', icon: LayoutGrid },
         { href: `/campaigns/${campaignId}/view`, label: 'View', icon: Eye },
         { href: `/campaigns/${campaignId}/sessions`, label: 'Session Notes', icon: ScrollText },

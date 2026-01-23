@@ -326,7 +326,7 @@ export default function CampaignsPage() {
                       </p>
                       {save.instance_id ? (
                         <Link
-                          href={`/campaigns/${save.instance_id}/canvas`}
+                          href={`/campaigns/${save.instance_id}/dashboard`}
                           className="mt-4 flex items-center justify-center gap-2 w-full px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-lg transition-colors"
                         >
                           <Play className="w-4 h-4" />
@@ -515,7 +515,7 @@ export default function CampaignsPage() {
             {featuredCampaign && (
               <section className="group relative">
                 <Link
-                  href={`/campaigns/${featuredCampaign.id}/canvas`}
+                  href={`/campaigns/${featuredCampaign.id}/dashboard`}
                   className="relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-purple-500/30 transition-all duration-500"
                 >
                   <div className="relative h-[350px] md:h-[450px] overflow-hidden">
@@ -595,7 +595,7 @@ export default function CampaignsPage() {
                   {filteredCampaigns.map((campaign) => (
                     <div key={campaign.id} className="group relative">
                       <Link
-                        href={`/campaigns/${campaign.id}/canvas`}
+                        href={`/campaigns/${campaign.id}/dashboard`}
                         className="relative block rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/40 transition-all"
                       >
                         {/* Large Image */}
