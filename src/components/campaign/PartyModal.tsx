@@ -434,6 +434,11 @@ export function PartyModal({
                             </span>
                           )}
                         </div>
+                        {member.status === 'pending' && member.invited_at && (
+                          <p className="text-xs text-gray-500">
+                            Invited {new Date(member.invited_at).toLocaleDateString()}
+                          </p>
+                        )}
                         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                           <span className={cn(
                             "inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded",
@@ -495,7 +500,14 @@ export function PartyModal({
                   {selectedMember.email && (
                     <p className="text-sm text-gray-500">{selectedMember.email}</p>
                   )}
-                  {selectedMember.joined_at && (
+                  {selectedMember.discord_id && (
+                    <p className="text-sm text-gray-500">Discord: {selectedMember.discord_id}</p>
+                  )}
+                  {selectedMember.status === 'pending' && selectedMember.invited_at ? (
+                    <p className="text-xs text-amber-400">
+                      Pending since {new Date(selectedMember.invited_at).toLocaleDateString()}
+                    </p>
+                  ) : selectedMember.joined_at && (
                     <p className="text-xs text-gray-600">
                       Joined {new Date(selectedMember.joined_at).toLocaleDateString()}
                     </p>

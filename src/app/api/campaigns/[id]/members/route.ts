@@ -44,17 +44,19 @@ export async function GET(
     }
 
     // Get all members with user settings
-    const { data: members, error } = await supabase
+    // Use admin client to bypass RLS (we've already verified authorization above)
+    const adminClient = createAdminClient()
+    const { data: members, error } = await adminClient
       .from('campaign_members')
       .select(`
         *,
-        user_settings:user_settings!campaign_members_user_id_fkey(username, avatar_url),
+        user_settings:user_settings(username, avatar_url),
         character:characters(id, name, image_url, type),
         vault_character:vault_characters(id, name, image_url)
       `)
       .eq('campaign_id', campaignId)
       .order('role', { ascending: true })
-      .order('joined_at', { ascending: true })
+      .order('invited_at', { ascending: false, nullsFirst: false })
 
     if (error) {
       console.error('Failed to fetch members:', error)
@@ -193,7 +195,12 @@ export async function POST(
       }, { status: 500 })
     }
 
-    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/invite/${inviteToken}`
+    // Build invite URL - prefer env var, fallback to request origin
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ||
+      request.headers.get('origin') ||
+      `https://${request.headers.get('host')}` ||
+      'https://multiloop.app'
+    const inviteUrl = `${appUrl}/invite/${inviteToken}`
 
     // Send email invite if email provided
     if (email) {
