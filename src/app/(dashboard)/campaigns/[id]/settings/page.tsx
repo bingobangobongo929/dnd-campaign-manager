@@ -784,24 +784,45 @@ export default function CampaignSettingsPage() {
             <div className="pt-6 space-y-4">
               {/* Template Creation */}
               <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col gap-4">
                   <div>
-                    <h4 className="text-white font-medium">
-                      {sessionCount === 0 ? 'Save as Template' : 'Create Session 0 Template'}
+                    <h4 className="text-white font-medium mb-2">
+                      Publish as Template
                     </h4>
-                    <p className="text-purple-300/70 text-sm mt-1">
-                      {sessionCount === 0
-                        ? 'Share your campaign setup with others. Perfect for sharing your world before Session 1.'
-                        : 'Create a Session 0 snapshot of your campaign that others can use as a starting point.'}
+                    <p className="text-purple-300/70 text-sm">
+                      Templates let other DMs use your campaign as a starting point for their own games.
+                      They get your world, characters, locations, and lore - but start fresh with their own sessions and story.
                     </p>
                   </div>
-                  <button
-                    onClick={createTemplate}
-                    className="btn btn-primary btn-sm whitespace-nowrap"
-                  >
-                    <FileText className="w-4 h-4 mr-1.5" />
-                    {sessionCount === 0 ? 'Create Template' : 'Create Session 0'}
-                  </button>
+
+                  {sessionCount > 0 ? (
+                    <div className="p-3 bg-white/[0.03] rounded-lg border border-white/[0.06]">
+                      <p className="text-sm text-gray-300 mb-2">
+                        <strong className="text-white">This is an active campaign</strong> with {sessionCount} session{sessionCount !== 1 ? 's' : ''}.
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        The template will capture your world setup (characters, locations, factions, lore) as a "Session 0" snapshot.
+                        Your session notes and story progress stay private - others start from scratch with your world.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-white/[0.03] rounded-lg border border-white/[0.06]">
+                      <p className="text-sm text-gray-300">
+                        <strong className="text-white">Ready to publish</strong> - your campaign has no sessions yet,
+                        so it's already in the perfect state to share as a template.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end">
+                    <button
+                      onClick={createTemplate}
+                      className="btn btn-primary btn-sm"
+                    >
+                      <FileText className="w-4 h-4 mr-1.5" />
+                      Create Template
+                    </button>
+                  </div>
                 </div>
               </div>
 
