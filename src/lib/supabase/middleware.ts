@@ -48,6 +48,7 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith('/reset-password') ||
     pathname.startsWith('/auth/callback') ||
     pathname.startsWith('/share') ||
+    pathname.startsWith('/invite') || // Campaign invite links - show invite details before auth
     pathname.startsWith('/demo') ||
     pathname.startsWith('/privacy') ||
     pathname.startsWith('/terms') ||
