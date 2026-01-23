@@ -77,12 +77,15 @@ export function PartyModal({
   const [saving, setSaving] = useState(false)
 
   // Invite form state
+  const [inviteMethod, setInviteMethod] = useState<'email' | 'discord'>('email')
   const [inviteForm, setInviteForm] = useState({
     email: '',
     discordId: '',
     role: 'player' as CampaignMemberRole,
     characterId: '',
+    permissions: DEFAULT_PERMISSIONS['player'] as MemberPermissions,
   })
+  const [showAdvancedPermissions, setShowAdvancedPermissions] = useState(false)
 
   // Member edit state
   const [editForm, setEditForm] = useState<{
@@ -119,8 +122,9 @@ export function PartyModal({
   }
 
   const handleInvite = async () => {
-    if (!inviteForm.email && !inviteForm.discordId) {
-      toast.error('Please enter an email or Discord ID')
+    const identifier = inviteMethod === 'email' ? inviteForm.email : inviteForm.discordId
+    if (!identifier) {
+      toast.error(`Please enter ${inviteMethod === 'email' ? 'an email address' : 'a Discord username'}`)
       return
     }
 
@@ -130,11 +134,11 @@ export function PartyModal({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: inviteForm.email || undefined,
-          discordId: inviteForm.discordId || undefined,
+          email: inviteMethod === 'email' ? inviteForm.email : undefined,
+          discordId: inviteMethod === 'discord' ? inviteForm.discordId : undefined,
           role: inviteForm.role,
           characterId: inviteForm.characterId || undefined,
-          permissions: DEFAULT_PERMISSIONS[inviteForm.role],
+          permissions: inviteForm.permissions,
         }),
       })
 
@@ -266,6 +270,23 @@ export function PartyModal({
     })
   }
 
+  const updateInvitePermission = (
+    category: keyof MemberPermissions,
+    key: string,
+    value: boolean
+  ) => {
+    setInviteForm({
+      ...inviteForm,
+      permissions: {
+        ...inviteForm.permissions,
+        [category]: {
+          ...inviteForm.permissions[category],
+          [key]: value,
+        },
+      },
+    })
+  }
+
   const getDisplayName = (member: CampaignMember) => {
     return member.user_settings?.username ||
       member.email ||
@@ -345,7 +366,15 @@ export function PartyModal({
               {/* Invite Button */}
               <button
                 onClick={() => {
-                  setInviteForm({ email: '', discordId: '', role: 'player', characterId: '' })
+                  setInviteMethod('email')
+                  setInviteForm({
+                    email: '',
+                    discordId: '',
+                    role: 'player',
+                    characterId: '',
+                    permissions: DEFAULT_PERMISSIONS['player'],
+                  })
+                  setShowAdvancedPermissions(false)
                   setView('invite')
                 }}
                 className="btn btn-primary w-full"
@@ -785,40 +814,74 @@ export function PartyModal({
                 Back to Party
               </button>
 
-              {/* Email */}
+              {/* Invite Method Selection */}
               <div className="form-group">
-                <label className="form-label">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <Input
-                    type="email"
-                    placeholder="player@example.com"
-                    value={inviteForm.email}
-                    onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
-                    className="pl-10"
-                  />
+                <label className="form-label">Invite via</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setInviteMethod('email')}
+                    className={cn(
+                      "p-3 rounded-lg border text-left transition-colors flex items-center gap-3",
+                      inviteMethod === 'email'
+                        ? "bg-purple-500/10 border-purple-500/30"
+                        : "bg-white/[0.02] border-[--border] hover:border-purple-500/20"
+                    )}
+                  >
+                    <Mail className={cn("w-5 h-5", inviteMethod === 'email' ? "text-purple-400" : "text-gray-500")} />
+                    <span className={cn("font-medium text-sm", inviteMethod === 'email' ? "text-white" : "text-gray-400")}>
+                      Email
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setInviteMethod('discord')}
+                    className={cn(
+                      "p-3 rounded-lg border text-left transition-colors flex items-center gap-3",
+                      inviteMethod === 'discord'
+                        ? "bg-purple-500/10 border-purple-500/30"
+                        : "bg-white/[0.02] border-[--border] hover:border-purple-500/20"
+                    )}
+                  >
+                    <LinkIcon className={cn("w-5 h-5", inviteMethod === 'discord' ? "text-purple-400" : "text-gray-500")} />
+                    <span className={cn("font-medium text-sm", inviteMethod === 'discord' ? "text-white" : "text-gray-400")}>
+                      Discord
+                    </span>
+                  </button>
                 </div>
               </div>
 
-              {/* Discord ID */}
-              <div className="form-group">
-                <label className="form-label">
-                  Or Discord Username <span className="text-gray-500 text-xs">(optional)</span>
-                </label>
-                <div className="relative">
-                  <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <Input
-                    placeholder="username"
-                    value={inviteForm.discordId}
-                    onChange={(e) => setInviteForm({ ...inviteForm, discordId: e.target.value })}
-                    className="pl-10"
-                  />
+              {/* Email or Discord Input based on selection */}
+              {inviteMethod === 'email' ? (
+                <div className="form-group">
+                  <label className="form-label">Email Address</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                    <Input
+                      type="email"
+                      placeholder="player@example.com"
+                      value={inviteForm.email}
+                      onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                      className="pl-10"
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="form-group">
+                  <label className="form-label">Discord Username</label>
+                  <div className="relative">
+                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                    <Input
+                      placeholder="username"
+                      value={inviteForm.discordId}
+                      onChange={(e) => setInviteForm({ ...inviteForm, discordId: e.target.value })}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Role Selection */}
               <div className="form-group">
-                <label className="form-label">Role & Starting Permissions</label>
+                <label className="form-label">Role</label>
                 <div className="space-y-2">
                   {(['player', 'contributor', 'guest', ...(isOwner ? ['co_dm'] : [])] as CampaignMemberRole[]).map((role) => {
                     const RoleIcon = getRoleIcon(role)
@@ -831,7 +894,11 @@ export function PartyModal({
                     return (
                       <button
                         key={role}
-                        onClick={() => setInviteForm({ ...inviteForm, role })}
+                        onClick={() => setInviteForm({
+                          ...inviteForm,
+                          role,
+                          permissions: DEFAULT_PERMISSIONS[role],
+                        })}
                         className={cn(
                           "w-full p-3 rounded-lg border text-left transition-colors",
                           inviteForm.role === role
@@ -856,9 +923,6 @@ export function PartyModal({
                     )
                   })}
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  You can customize their exact permissions after inviting.
-                </p>
               </div>
 
               {/* Character Assignment */}
@@ -885,6 +949,93 @@ export function PartyModal({
                 </div>
               )}
 
+              {/* Advanced Permissions Toggle */}
+              <div className="border-t border-[--border] pt-4">
+                <button
+                  onClick={() => setShowAdvancedPermissions(!showAdvancedPermissions)}
+                  className="flex items-center justify-between w-full text-sm"
+                >
+                  <span className="font-medium text-white">Customize Permissions</span>
+                  <ChevronRight className={cn(
+                    "w-4 h-4 text-gray-400 transition-transform",
+                    showAdvancedPermissions && "rotate-90"
+                  )} />
+                </button>
+                <p className="text-xs text-gray-500 mt-1">
+                  Fine-tune what this member can do before sending the invite.
+                </p>
+              </div>
+
+              {/* Advanced Permissions (collapsible) */}
+              {showAdvancedPermissions && (
+                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 border border-[--border] rounded-lg p-4 bg-white/[0.01]">
+                  {/* Session Notes */}
+                  <PermissionSection title="Session Notes">
+                    <PermissionRow
+                      label="Add own session notes"
+                      checked={inviteForm.permissions.sessionNotes?.addOwn ?? false}
+                      onChange={(v) => updateInvitePermission('sessionNotes', 'addOwn', v)}
+                    />
+                    <PermissionRow
+                      label="View session recaps"
+                      checked={inviteForm.permissions.sessionNotes?.viewRecaps ?? false}
+                      onChange={(v) => updateInvitePermission('sessionNotes', 'viewRecaps', v)}
+                    />
+                  </PermissionSection>
+
+                  {/* Characters */}
+                  <PermissionSection title="Characters">
+                    <PermissionRow
+                      label="Edit own character"
+                      checked={inviteForm.permissions.characters?.editOwn ?? false}
+                      onChange={(v) => updateInvitePermission('characters', 'editOwn', v)}
+                    />
+                    <PermissionRow
+                      label="View party members"
+                      checked={inviteForm.permissions.characters?.viewParty ?? false}
+                      onChange={(v) => updateInvitePermission('characters', 'viewParty', v)}
+                    />
+                  </PermissionSection>
+
+                  {/* Timeline */}
+                  <PermissionSection title="Timeline">
+                    <PermissionRow
+                      label="View timeline"
+                      checked={inviteForm.permissions.timeline?.view ?? false}
+                      onChange={(v) => updateInvitePermission('timeline', 'view', v)}
+                    />
+                    <PermissionRow
+                      label="Add events"
+                      checked={inviteForm.permissions.timeline?.add ?? false}
+                      onChange={(v) => updateInvitePermission('timeline', 'add', v)}
+                    />
+                  </PermissionSection>
+
+                  {/* Gallery */}
+                  <PermissionSection title="Gallery">
+                    <PermissionRow
+                      label="View gallery"
+                      checked={inviteForm.permissions.gallery?.view ?? false}
+                      onChange={(v) => updateInvitePermission('gallery', 'view', v)}
+                    />
+                    <PermissionRow
+                      label="Add images"
+                      checked={inviteForm.permissions.gallery?.add ?? false}
+                      onChange={(v) => updateInvitePermission('gallery', 'add', v)}
+                    />
+                  </PermissionSection>
+
+                  {/* Maps */}
+                  <PermissionSection title="Maps">
+                    <PermissionRow
+                      label="View maps"
+                      checked={inviteForm.permissions.maps?.view ?? false}
+                      onChange={(v) => updateInvitePermission('maps', 'view', v)}
+                    />
+                  </PermissionSection>
+                </div>
+              )}
+
               {/* Actions */}
               <div className="flex gap-3 pt-4">
                 <button
@@ -895,7 +1046,7 @@ export function PartyModal({
                 </button>
                 <button
                   onClick={handleInvite}
-                  disabled={saving || (!inviteForm.email && !inviteForm.discordId)}
+                  disabled={saving || (inviteMethod === 'email' ? !inviteForm.email : !inviteForm.discordId)}
                   className="btn btn-primary flex-1"
                 >
                   {saving ? (
@@ -903,7 +1054,7 @@ export function PartyModal({
                   ) : (
                     <>
                       <UserPlus className="w-4 h-4 mr-2" />
-                      Send Invite
+                      Create Invite
                     </>
                   )}
                 </button>
