@@ -22,9 +22,11 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCanUseAI } from '@/store'
+import { usePermissions } from '@/hooks'
 import { useState } from 'react'
 import { MobileBottomSheet } from './mobile-layout'
 import { hapticLight, hapticSelection } from '@/lib/haptics'
+import type { UsePermissionsReturn } from '@/hooks/usePermissions'
 
 interface MobileTabBarProps {
   campaignId?: string
@@ -41,6 +43,9 @@ export function MobileTabBar({ campaignId, characterId }: MobileTabBarProps) {
   const detectedCampaignId = campaignId || extractCampaignId(pathname)
   const detectedCharacterId = characterId || extractCharacterId(pathname)
 
+  // Get permissions for campaign context
+  const permissions = usePermissions(detectedCampaignId || null)
+
   // Determine which context we're in
   const isInCampaign = !!detectedCampaignId && pathname.startsWith('/campaigns/')
   const isInCharacter = !!detectedCharacterId && pathname.startsWith('/vault/')
@@ -50,7 +55,7 @@ export function MobileTabBar({ campaignId, characterId }: MobileTabBarProps) {
   const tabs = isInCharacter
     ? getCharacterTabs(detectedCharacterId!, canUseAI)
     : isInCampaign
-    ? getCampaignTabs(detectedCampaignId!, canUseAI)
+    ? getCampaignTabs(detectedCampaignId!, canUseAI, permissions)
     : getGlobalTabs()
 
   // For campaign/character context, we show a back button + 4 main tabs + more
@@ -186,20 +191,47 @@ function getGlobalTabs() {
   ]
 }
 
-// Campaign context tabs
-function getCampaignTabs(campaignId: string, canUseAI: boolean) {
-  const tabs = [
-    { href: `/campaigns/${campaignId}/canvas`, label: 'Characters', icon: LayoutGrid },
-    { href: `/campaigns/${campaignId}/sessions`, label: 'Sessions', icon: ScrollText },
-    { href: `/campaigns/${campaignId}/timeline`, label: 'Timeline', icon: Clock },
-    { href: `/campaigns/${campaignId}/lore`, label: 'Lore', icon: Network },
-    { href: `/campaigns/${campaignId}/map`, label: 'Map', icon: Map },
-    { href: `/campaigns/${campaignId}/gallery`, label: 'Gallery', icon: Image },
-  ]
+// Campaign context tabs - filtered based on permissions
+function getCampaignTabs(campaignId: string, canUseAI: boolean, permissions: UsePermissionsReturn) {
+  const { can, isDm } = permissions
+  const tabs: Array<{ href: string; label: string; icon: typeof LayoutGrid }> = []
 
-  if (canUseAI) {
-    // Insert intelligence after lore
-    tabs.splice(4, 0, { href: `/campaigns/${campaignId}/intelligence`, label: 'AI', icon: Brain })
+  // View is always visible
+  tabs.push({ href: `/campaigns/${campaignId}/view`, label: 'View', icon: Eye })
+
+  // Canvas - only for DMs or those with canvas permission
+  if (isDm || can.viewCanvas) {
+    tabs.push({ href: `/campaigns/${campaignId}/canvas`, label: 'Characters', icon: LayoutGrid })
+  }
+
+  // Sessions - based on session view permission
+  if (isDm || can.viewSessions) {
+    tabs.push({ href: `/campaigns/${campaignId}/sessions`, label: 'Sessions', icon: ScrollText })
+  }
+
+  // Timeline - based on timeline view permission
+  if (isDm || can.viewTimeline) {
+    tabs.push({ href: `/campaigns/${campaignId}/timeline`, label: 'Timeline', icon: Clock })
+  }
+
+  // Lore - based on lore view permission
+  if (isDm || can.viewLore) {
+    tabs.push({ href: `/campaigns/${campaignId}/lore`, label: 'Lore', icon: Network })
+  }
+
+  // Intelligence - only for DMs with AI access
+  if (isDm && canUseAI) {
+    tabs.push({ href: `/campaigns/${campaignId}/intelligence`, label: 'AI', icon: Brain })
+  }
+
+  // Map - based on maps view permission
+  if (isDm || can.viewMaps) {
+    tabs.push({ href: `/campaigns/${campaignId}/map`, label: 'Map', icon: Map })
+  }
+
+  // Gallery - based on gallery view permission
+  if (isDm || can.viewGallery) {
+    tabs.push({ href: `/campaigns/${campaignId}/gallery`, label: 'Gallery', icon: Image })
   }
 
   return tabs

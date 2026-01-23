@@ -22,7 +22,7 @@ import {
   Shield,
 } from 'lucide-react'
 import { useCanUseAI } from '@/store'
-import { useUserSettings } from '@/hooks'
+import { useUserSettings, usePermissions } from '@/hooks'
 import { isAdmin } from '@/lib/admin'
 
 interface FloatingDockProps {
@@ -36,6 +36,7 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
   const canUseAI = useCanUseAI()
   const { settings } = useUserSettings()
   const showAdmin = settings?.role && isAdmin(settings.role)
+  const { can, isOwner, isDm, loading: permissionsLoading } = usePermissions(campaignId || null)
 
   // Character-specific links (when viewing a vault character)
   // Order matches campaign dock: Edit/View are like Canvas, then Sessions, then other features
@@ -51,17 +52,28 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
       ]
     : []
 
+  // Build campaign links based on permissions
+  // Owners and DMs see everything, others see based on their permissions
   const campaignLinks = campaignId
     ? [
-        { href: `/campaigns/${campaignId}/dashboard`, label: 'Dashboard', icon: LayoutDashboard },
-        { href: `/campaigns/${campaignId}/canvas`, label: 'Canvas', icon: LayoutGrid },
+        // View page - always visible to members
         { href: `/campaigns/${campaignId}/view`, label: 'View', icon: Eye },
-        { href: `/campaigns/${campaignId}/sessions`, label: 'Session Notes', icon: ScrollText },
-        { href: `/campaigns/${campaignId}/timeline`, label: 'Timeline', icon: Clock },
-        ...(canUseAI ? [{ href: `/campaigns/${campaignId}/intelligence`, label: 'Intelligence', icon: Brain }] : []),
-        { href: `/campaigns/${campaignId}/lore`, label: 'Lore', icon: Network },
-        { href: `/campaigns/${campaignId}/map`, label: 'World Map', icon: Map },
-        { href: `/campaigns/${campaignId}/gallery`, label: 'Gallery', icon: Image },
+        // Dashboard - visible to DMs and those with canvas access
+        ...(isDm || can.viewCanvas ? [{ href: `/campaigns/${campaignId}/dashboard`, label: 'Dashboard', icon: LayoutDashboard }] : []),
+        // Canvas - only for DMs or those with canvas permission
+        ...(isDm || can.viewCanvas ? [{ href: `/campaigns/${campaignId}/canvas`, label: 'Canvas', icon: LayoutGrid }] : []),
+        // Sessions - based on session view permission
+        ...(isDm || can.viewSessions ? [{ href: `/campaigns/${campaignId}/sessions`, label: 'Session Notes', icon: ScrollText }] : []),
+        // Timeline - based on timeline view permission
+        ...(isDm || can.viewTimeline ? [{ href: `/campaigns/${campaignId}/timeline`, label: 'Timeline', icon: Clock }] : []),
+        // Intelligence - only for DMs with AI access
+        ...(isDm && canUseAI ? [{ href: `/campaigns/${campaignId}/intelligence`, label: 'Intelligence', icon: Brain }] : []),
+        // Lore - based on lore view permission
+        ...(isDm || can.viewLore ? [{ href: `/campaigns/${campaignId}/lore`, label: 'Lore', icon: Network }] : []),
+        // Map - based on maps view permission
+        ...(isDm || can.viewMaps ? [{ href: `/campaigns/${campaignId}/map`, label: 'World Map', icon: Map }] : []),
+        // Gallery - based on gallery view permission
+        ...(isDm || can.viewGallery ? [{ href: `/campaigns/${campaignId}/gallery`, label: 'Gallery', icon: Image }] : []),
       ]
     : []
 
