@@ -4028,7 +4028,7 @@ export interface SessionTimerState {
 
 // Pinned reference for quick access
 export interface PinnedReference {
-  entity_type: 'character' | 'npc' | 'location' | 'lore' | 'faction'
+  entity_type: 'character' | 'npc' | 'location' | 'lore' | 'faction' | 'note'
   entity_id: string
   label: string
 }

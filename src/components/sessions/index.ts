@@ -1,4 +1,4 @@
 export { PartyMemberAvatar, PartyMemberAvatarStack } from './PartyMemberAvatar'
 export { PartyMemberSelector } from './PartyMemberSelector'
 export { PlayerNotes, PlayerNotesPreview } from './PlayerNotes'
-export { SessionWorkflow, SessionPhaseIndicator } from './SessionWorkflow'
+export { SessionWorkflow, SessionPhaseIndicator, ThoughtsForNextCard } from './SessionWorkflow'

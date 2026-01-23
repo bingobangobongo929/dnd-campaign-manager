@@ -19,6 +19,8 @@ import {
   X,
   Clock,
   Pause,
+  RefreshCw,
+  MapPin,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -33,17 +35,47 @@ import type {
 } from '@/types/database'
 import { v4 as uuidv4 } from 'uuid'
 
+interface Character {
+  id: string
+  name: string
+  type: 'pc' | 'npc'
+  image_url?: string | null
+}
+
+interface Location {
+  id: string
+  name: string
+  type?: string
+}
+
 interface SessionWorkflowProps {
   campaignId: string
   session: Session
+  characters?: Character[]
+  locations?: Location[]
+  previousSession?: Session | null
   onUpdate?: (session: Session) => void
 }
 
-export function SessionWorkflow({ campaignId, session, onUpdate }: SessionWorkflowProps) {
+// Get default sections based on phase
+function getDefaultSections(phase: SessionPhase): SessionSection[] {
+  switch (phase) {
+    case 'prep':
+      return ['prep_checklist', 'thoughts_for_next', 'quick_reference']
+    case 'live':
+      return ['session_timer', 'quick_reference']
+    case 'completed':
+      return ['thoughts_for_next']
+    default:
+      return ['prep_checklist']
+  }
+}
+
+export function SessionWorkflow({ campaignId, session, characters = [], locations = [], previousSession, onUpdate }: SessionWorkflowProps) {
   // Parse session data with proper types
   const [phase, setPhase] = useState<SessionPhase>((session.phase as SessionPhase) || 'prep')
   const [enabledSections, setEnabledSections] = useState<SessionSection[]>(
-    (session.enabled_sections as unknown as SessionSection[]) || ['prep_checklist']
+    (session.enabled_sections as unknown as SessionSection[]) || getDefaultSections((session.phase as SessionPhase) || 'prep')
   )
   const [prepChecklist, setPrepChecklist] = useState<PrepChecklistItem[]>(
     (session.prep_checklist as unknown as PrepChecklistItem[]) || []
@@ -59,6 +91,11 @@ export function SessionWorkflow({ campaignId, session, onUpdate }: SessionWorkfl
   const [newPrepItem, setNewPrepItem] = useState('')
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+
+  // Quick reference state
+  const [showCharacterPicker, setShowCharacterPicker] = useState(false)
+  const [showLocationPicker, setShowLocationPicker] = useState(false)
+  const [newManualRef, setNewManualRef] = useState('')
 
   // Timer display state
   const [timerDisplay, setTimerDisplay] = useState('00:00:00')
@@ -254,6 +291,83 @@ export function SessionWorkflow({ campaignId, session, onUpdate }: SessionWorkfl
     setTimerDisplay('00:00:00')
   }
 
+  // Carry over prep checklist from previous session
+  const carryOverFromPrevious = () => {
+    if (!previousSession?.prep_checklist) return
+    const prevChecklist = previousSession.prep_checklist as unknown as PrepChecklistItem[]
+    if (!prevChecklist.length) return
+
+    // Reset all items to unchecked and give new IDs
+    const carriedItems = prevChecklist.map(item => ({
+      id: uuidv4(),
+      text: item.text,
+      checked: false,
+    }))
+
+    setPrepChecklist([...prepChecklist, ...carriedItems])
+  }
+
+  // Quick reference functions
+  const addCharacterRef = (char: Character) => {
+    // Don't add duplicates
+    if (pinnedRefs.some(r => r.entity_id === char.id)) return
+
+    setPinnedRefs([
+      ...pinnedRefs,
+      {
+        entity_type: char.type === 'npc' ? 'npc' : 'character',
+        entity_id: char.id,
+        label: char.name,
+      }
+    ])
+    setShowCharacterPicker(false)
+  }
+
+  const addLocationRef = (loc: Location) => {
+    // Don't add duplicates
+    if (pinnedRefs.some(r => r.entity_id === loc.id)) return
+
+    setPinnedRefs([
+      ...pinnedRefs,
+      {
+        entity_type: 'location',
+        entity_id: loc.id,
+        label: loc.name,
+      }
+    ])
+    setShowLocationPicker(false)
+  }
+
+  const addManualRef = () => {
+    if (!newManualRef.trim()) return
+    setPinnedRefs([
+      ...pinnedRefs,
+      {
+        entity_type: 'note',
+        entity_id: uuidv4(),
+        label: newManualRef.trim(),
+      }
+    ])
+    setNewManualRef('')
+  }
+
+  const removeRef = (entityId: string) => {
+    setPinnedRefs(pinnedRefs.filter(r => r.entity_id !== entityId))
+  }
+
+  // Filter out already pinned characters and locations
+  const unpinnedCharacters = characters.filter(
+    char => !pinnedRefs.some(r => r.entity_id === char.id)
+  )
+
+  const unpinnedLocations = locations.filter(
+    loc => !pinnedRefs.some(r => r.entity_id === loc.id)
+  )
+
+  // Check if previous session has a prep checklist we can carry over
+  const previousChecklist = previousSession?.prep_checklist as unknown as PrepChecklistItem[] | undefined
+  const canCarryOver = previousChecklist && previousChecklist.length > 0
+
   // Phase configuration
   const phases: { value: SessionPhase; label: string; description: string; icon: typeof FileText; color: string }[] = [
     { value: 'prep', label: 'Prep', description: 'Preparing for session', icon: ClipboardList, color: 'text-yellow-400' },
@@ -344,6 +458,15 @@ export function SessionWorkflow({ campaignId, session, onUpdate }: SessionWorkfl
                 </span>
               )}
             </div>
+            {canCarryOver && (
+              <button
+                onClick={carryOverFromPrevious}
+                className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded hover:bg-yellow-500/30 transition-colors flex items-center gap-1"
+              >
+                <RefreshCw className="w-3 h-3" />
+                Carry over from last session
+              </button>
+            )}
           </div>
 
           {/* Checklist Items */}
@@ -480,27 +603,161 @@ export function SessionWorkflow({ campaignId, session, onUpdate }: SessionWorkfl
       {/* Quick Reference Section */}
       {enabledSections.includes('quick_reference') && (
         <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Pin className="w-5 h-5 text-blue-400" />
-            <span className="font-medium text-white">Quick Reference</span>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Pin className="w-5 h-5 text-blue-400" />
+              <span className="font-medium text-white">Quick Reference</span>
+              {pinnedRefs.length > 0 && (
+                <span className="text-xs text-gray-500">({pinnedRefs.length})</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {characters.length > 0 && (
+                <button
+                  onClick={() => {
+                    setShowCharacterPicker(!showCharacterPicker)
+                    setShowLocationPicker(false)
+                  }}
+                  className={cn(
+                    "text-xs px-2 py-1 rounded transition-colors",
+                    showCharacterPicker
+                      ? "bg-blue-500/30 text-blue-300"
+                      : "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                  )}
+                >
+                  <Plus className="w-3 h-3 inline mr-1" />
+                  Character
+                </button>
+              )}
+              {locations.length > 0 && (
+                <button
+                  onClick={() => {
+                    setShowLocationPicker(!showLocationPicker)
+                    setShowCharacterPicker(false)
+                  }}
+                  className={cn(
+                    "text-xs px-2 py-1 rounded transition-colors",
+                    showLocationPicker
+                      ? "bg-emerald-500/30 text-emerald-300"
+                      : "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
+                  )}
+                >
+                  <MapPin className="w-3 h-3 inline mr-1" />
+                  Location
+                </button>
+              )}
+            </div>
           </div>
 
-          {pinnedRefs.length === 0 ? (
-            <p className="text-sm text-gray-500">
-              No pinned items yet. Pin NPCs, locations, or lore entries for quick access during the session.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {pinnedRefs.map((ref, idx) => (
+          {/* Character Picker Dropdown */}
+          {showCharacterPicker && unpinnedCharacters.length > 0 && (
+            <div className="mb-3 p-2 bg-white/[0.02] rounded-lg border border-white/[0.06] max-h-48 overflow-y-auto">
+              <div className="text-xs text-gray-500 mb-2">Select a character to pin:</div>
+              <div className="space-y-1">
+                {unpinnedCharacters.map(char => (
+                  <button
+                    key={char.id}
+                    onClick={() => addCharacterRef(char)}
+                    className="w-full flex items-center gap-2 p-2 rounded hover:bg-white/[0.05] transition-colors text-left"
+                  >
+                    <span className={cn(
+                      "text-[10px] px-1.5 py-0.5 rounded uppercase font-medium",
+                      char.type === 'npc' ? "bg-amber-500/20 text-amber-400" : "bg-purple-500/20 text-purple-400"
+                    )}>
+                      {char.type}
+                    </span>
+                    <span className="text-sm text-gray-300">{char.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {showCharacterPicker && unpinnedCharacters.length === 0 && (
+            <div className="mb-3 p-2 bg-white/[0.02] rounded-lg border border-white/[0.06]">
+              <p className="text-xs text-gray-500">All characters are already pinned.</p>
+            </div>
+          )}
+
+          {/* Location Picker Dropdown */}
+          {showLocationPicker && unpinnedLocations.length > 0 && (
+            <div className="mb-3 p-2 bg-white/[0.02] rounded-lg border border-white/[0.06] max-h-48 overflow-y-auto">
+              <div className="text-xs text-gray-500 mb-2">Select a location to pin:</div>
+              <div className="space-y-1">
+                {unpinnedLocations.map(loc => (
+                  <button
+                    key={loc.id}
+                    onClick={() => addLocationRef(loc)}
+                    className="w-full flex items-center gap-2 p-2 rounded hover:bg-white/[0.05] transition-colors text-left"
+                  >
+                    <span className="text-[10px] px-1.5 py-0.5 rounded uppercase font-medium bg-emerald-500/20 text-emerald-400">
+                      {loc.type || 'location'}
+                    </span>
+                    <span className="text-sm text-gray-300">{loc.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {showLocationPicker && unpinnedLocations.length === 0 && (
+            <div className="mb-3 p-2 bg-white/[0.02] rounded-lg border border-white/[0.06]">
+              <p className="text-xs text-gray-500">All locations are already pinned.</p>
+            </div>
+          )}
+
+          {/* Pinned Items */}
+          {pinnedRefs.length > 0 && (
+            <div className="space-y-2 mb-3">
+              {pinnedRefs.map((ref) => (
                 <div
-                  key={idx}
-                  className="flex items-center gap-2 p-2 bg-white/[0.02] rounded-lg"
+                  key={ref.entity_id}
+                  className="flex items-center gap-2 p-2 bg-white/[0.02] rounded-lg group"
                 >
-                  <span className="text-xs text-blue-400 uppercase">{ref.entity_type}</span>
-                  <span className="text-sm text-gray-300">{ref.label}</span>
+                  <span className={cn(
+                    "text-[10px] px-1.5 py-0.5 rounded uppercase font-medium",
+                    ref.entity_type === 'npc' ? "bg-amber-500/20 text-amber-400" :
+                    ref.entity_type === 'character' ? "bg-purple-500/20 text-purple-400" :
+                    ref.entity_type === 'location' ? "bg-emerald-500/20 text-emerald-400" :
+                    "bg-gray-500/20 text-gray-400"
+                  )}>
+                    {ref.entity_type}
+                  </span>
+                  <span className="text-sm text-gray-300 flex-1">{ref.label}</span>
+                  <button
+                    onClick={() => removeRef(ref.entity_id!)}
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/[0.05] rounded text-red-400 transition-opacity"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
                 </div>
               ))}
             </div>
+          )}
+
+          {/* Manual Note Input */}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newManualRef}
+              onChange={(e) => setNewManualRef(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addManualRef()}
+              placeholder="Add a quick note..."
+              className="form-input flex-1 text-sm"
+            />
+            <button
+              onClick={addManualRef}
+              disabled={!newManualRef.trim()}
+              className="btn btn-sm btn-secondary"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+
+          {pinnedRefs.length === 0 && !showCharacterPicker && (
+            <p className="text-xs text-gray-500 mt-2">
+              Pin NPCs, characters, or add notes for quick access during the session.
+            </p>
           )}
         </div>
       )}
@@ -572,5 +829,88 @@ export function SessionPhaseIndicator({ phase, className }: SessionPhaseIndicato
     )}>
       {config.label}
     </span>
+  )
+}
+
+// Standalone Thoughts for Next component for Completed mode
+interface ThoughtsForNextProps {
+  campaignId: string
+  sessionId: string
+  initialValue: string
+  onSave?: (value: string) => void
+}
+
+export function ThoughtsForNextCard({ campaignId, sessionId, initialValue, onSave }: ThoughtsForNextProps) {
+  const [thoughts, setThoughts] = useState(initialValue)
+  const [saving, setSaving] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
+
+  useEffect(() => {
+    setHasChanges(thoughts !== initialValue)
+  }, [thoughts, initialValue])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const response = await fetch(
+        `/api/campaigns/${campaignId}/sessions/${sessionId}/workflow`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ thoughtsForNext: thoughts }),
+        }
+      )
+
+      if (!response.ok) {
+        toast.error('Failed to save')
+        return
+      }
+
+      toast.success('Saved')
+      onSave?.(thoughts)
+      setHasChanges(false)
+    } catch (error) {
+      console.error('Failed to save:', error)
+      toast.error('Failed to save')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="card p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Lightbulb className="w-5 h-5 text-purple-400" />
+        <span className="text-lg font-semibold text-white">Thoughts for Next Session</span>
+      </div>
+      <textarea
+        value={thoughts}
+        onChange={(e) => setThoughts(e.target.value)}
+        placeholder="What should happen next? Any threads to follow up on? Ideas for future sessions..."
+        rows={4}
+        className="form-input w-full text-sm mb-3"
+      />
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-gray-500">
+          These notes will be shown when creating your next session.
+        </p>
+        {hasChanges && (
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="btn btn-sm btn-primary"
+          >
+            {saving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-1" />
+                Save
+              </>
+            )}
+          </button>
+        )}
+      </div>
+    </div>
   )
 }

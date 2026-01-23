@@ -34,7 +34,7 @@ import { useAppStore, useCanUseAI } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
 import type { Session, Campaign, Character, SessionPhase } from '@/types/database'
-import { SessionWorkflow, PlayerNotes } from '@/components/sessions'
+import { SessionWorkflow, PlayerNotes, ThoughtsForNextCard } from '@/components/sessions'
 import { DmNotesSection } from '@/components/dm-notes'
 
 export default function SessionDetailPage() {
@@ -59,6 +59,8 @@ export default function SessionDetailPage() {
   const [sessionVersion, setSessionVersion] = useState(1)
   const [originalData, setOriginalData] = useState<any>(null)
   const [characters, setCharacters] = useState<Character[]>([])
+  const [locations, setLocations] = useState<{ id: string; name: string; type?: string }[]>([])
+  const [previousSessionData, setPreviousSessionData] = useState<Session | null>(null)
   const [attendees, setAttendees] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
@@ -119,11 +121,20 @@ export default function SessionDetailPage() {
 
     setCharacters(charactersData || [])
 
+    // Load locations for quick reference
+    const { data: locationsData } = await supabase
+      .from('lore_locations')
+      .select('id, name, type')
+      .eq('campaign_id', campaignId)
+      .order('name')
+
+    setLocations(locationsData || [])
+
     if (isNew) {
-      // Get previous session for next session number and thoughts_for_next
+      // Get previous session for next session number, thoughts_for_next, and prep_checklist
       const { data: sessions } = await supabase
         .from('sessions')
-        .select('session_number, thoughts_for_next')
+        .select('*')
         .eq('campaign_id', campaignId)
         .order('session_number', { ascending: false })
         .limit(1)
@@ -133,9 +144,10 @@ export default function SessionDetailPage() {
         ? previousSession.session_number + 1
         : 0
 
-      // Store thoughts from previous session
+      // Store thoughts from previous session and full previous session data
       const thoughtsFromPrevious = previousSession?.thoughts_for_next || ''
       setPreviousThoughts(thoughtsFromPrevious)
+      setPreviousSessionData(previousSession)
 
       setFormData({
         session_number: nextNumber.toString(),
@@ -182,6 +194,19 @@ export default function SessionDetailPage() {
       .eq('session_id', sessionId)
 
     setAttendees(attendeesData?.map(a => a.character_id) || [])
+
+    // Fetch previous session for carry-over functionality
+    if (sessionData.session_number && sessionData.session_number > 0) {
+      const { data: prevSessions } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('campaign_id', campaignId)
+        .lt('session_number', sessionData.session_number)
+        .order('session_number', { ascending: false })
+        .limit(1)
+
+      setPreviousSessionData(prevSessions && prevSessions.length > 0 ? prevSessions[0] : null)
+    }
 
     // If there's existing notes, show them expanded
     if (sessionData.notes && sessionData.notes.trim()) {
@@ -778,6 +803,9 @@ export default function SessionDetailPage() {
               <SessionWorkflow
                 session={session}
                 campaignId={campaignId}
+                characters={characters}
+                locations={locations}
+                previousSession={previousSessionData}
                 onUpdate={(updatedSession) => setSession(updatedSession)}
               />
             )}
@@ -811,6 +839,9 @@ export default function SessionDetailPage() {
               <SessionWorkflow
                 session={session}
                 campaignId={campaignId}
+                characters={characters}
+                locations={locations}
+                previousSession={previousSessionData}
                 onUpdate={(updatedSession) => setSession(updatedSession)}
               />
             )}
@@ -1139,12 +1170,13 @@ export default function SessionDetailPage() {
               </div>
             )}
 
-            {/* Session Workflow - For "Thoughts for Next" in Completed mode */}
+            {/* Thoughts for Next - Standalone card in Completed mode */}
             {!isNew && session && campaign?.user_id === user?.id && (
-              <SessionWorkflow
-                session={session}
+              <ThoughtsForNextCard
                 campaignId={campaignId}
-                onUpdate={(updatedSession) => setSession(updatedSession)}
+                sessionId={session.id}
+                initialValue={session.thoughts_for_next || ''}
+                onSave={(value) => setSession({ ...session, thoughts_for_next: value })}
               />
             )}
 
