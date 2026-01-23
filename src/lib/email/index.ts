@@ -494,4 +494,76 @@ export function waitlistConfirmationEmail(verifyUrl: string): { subject: string;
   }
 }
 
+export function campaignInviteEmail(options: {
+  campaignName: string
+  inviterName: string
+  role: string
+  inviteUrl: string
+  characterName?: string
+}): { subject: string; html: string } {
+  const { campaignName, inviterName, role, inviteUrl, characterName } = options
+
+  const roleDescriptions: Record<string, string> = {
+    co_dm: 'Co-DM with full access to manage the campaign',
+    player: 'Player who can view campaign content and add session notes',
+    contributor: 'Contributor who can add session notes',
+    guest: 'Guest with view-only access',
+  }
+
+  const content = `
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; padding: 16px; background: rgba(139, 92, 246, 0.1); border-radius: 50%;">
+        <img src="${EMAIL_ICONS.invite}" alt="" width="32" height="32" style="display: block;">
+      </div>
+    </div>
+
+    <h1 style="margin: 0 0 8px 0; font-size: 26px; font-weight: 700; color: #ffffff; text-align: center;">
+      You're Invited!
+    </h1>
+    <p style="margin: 0 0 24px 0; font-size: 15px; color: #9ca3af; text-align: center;">
+      ${inviterName} has invited you to join a campaign
+    </p>
+
+    ${emailDivider()}
+
+    <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 16px; padding: 24px; text-align: center; margin: 24px 0;">
+      <p style="margin: 0 0 8px 0; font-size: 13px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px;">
+        Campaign
+      </p>
+      <p style="margin: 0 0 16px 0; font-size: 24px; font-weight: 700; color: #ffffff;">
+        ${campaignName}
+      </p>
+      <p style="margin: 0; font-size: 14px; color: #a78bfa;">
+        Role: <strong>${role.charAt(0).toUpperCase() + role.slice(1).replace('_', '-')}</strong>
+      </p>
+      ${characterName ? `
+        <p style="margin: 8px 0 0 0; font-size: 14px; color: #9ca3af;">
+          Playing as: <strong style="color: #ffffff;">${characterName}</strong>
+        </p>
+      ` : ''}
+    </div>
+
+    <p style="margin: 0 0 16px 0; font-size: 15px; color: #d1d5db; line-height: 1.6; text-align: center;">
+      ${roleDescriptions[role] || 'Join this campaign to collaborate on adventures!'}
+    </p>
+
+    ${emailButton('Join Campaign', inviteUrl)}
+
+    <p style="margin: 0 0 16px 0; font-size: 13px; color: #6b7280; text-align: center;">
+      This invite link is unique to you. Don't share it with others.
+    </p>
+
+    ${emailDivider()}
+
+    <p style="margin: 0; font-size: 12px; color: #6b7280; text-align: center;">
+      Multiloop is a campaign management tool for tabletop RPGs. Track campaigns, characters, session notes, and more.
+    </p>
+  `
+
+  return {
+    subject: `${inviterName} invited you to join "${campaignName}" on Multiloop`,
+    html: emailWrapper(content, `You've been invited to join the ${campaignName} campaign on Multiloop`)
+  }
+}
+
 export { SUPPORT_EMAIL }

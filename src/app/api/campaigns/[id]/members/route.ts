@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { nanoid } from 'nanoid'
 import type { CampaignMemberInsert, CampaignMemberRole, MemberPermissions } from '@/types/database'
 import { DEFAULT_PERMISSIONS } from '@/types/database'
+import { sendEmail, campaignInviteEmail } from '@/lib/email'
 
 // GET - Get all members of a campaign
 export async function GET(
@@ -91,7 +92,7 @@ export async function POST(
 
     const { data: campaign } = await supabase
       .from('campaigns')
-      .select('user_id')
+      .select('user_id, name')
       .eq('id', campaignId)
       .single()
 
@@ -101,6 +102,16 @@ export async function POST(
     if (!isOwner && !isCoGm) {
       return NextResponse.json({ error: 'Only owners and co-DMs can invite members' }, { status: 403 })
     }
+
+    // Get inviter's name
+    const { data: inviterSettings } = await supabase
+      .from('user_settings')
+      .select('username')
+      .eq('user_id', user.id)
+      .single()
+
+    const inviterName = inviterSettings?.username || 'A DM'
+    const campaignName = campaign?.name || 'a campaign'
 
     const body = await request.json()
     const { email, discordId, role, characterId, permissions } = body as {
@@ -171,15 +182,50 @@ export async function POST(
 
     if (error) {
       console.error('Failed to create invite:', error)
-      return NextResponse.json({ error: 'Failed to create invite' }, { status: 500 })
+      return NextResponse.json({
+        error: 'Failed to create invite',
+        details: error.message,
+        code: error.code
+      }, { status: 500 })
     }
 
-    // TODO: Send email invite if email provided
-    // For now, just return the invite link
     const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/invite/${inviteToken}`
 
+    // Send email invite if email provided
+    if (email) {
+      // Get character name if assigned
+      let characterName: string | undefined
+      if (characterId) {
+        const { data: character } = await supabase
+          .from('characters')
+          .select('name')
+          .eq('id', characterId)
+          .single()
+        characterName = character?.name
+      }
+
+      const emailContent = campaignInviteEmail({
+        campaignName,
+        inviterName,
+        role,
+        inviteUrl,
+        characterName,
+      })
+
+      const emailResult = await sendEmail({
+        to: email.toLowerCase(),
+        subject: emailContent.subject,
+        html: emailContent.html,
+      })
+
+      if (!emailResult.success) {
+        console.error('Failed to send invite email:', emailResult.error)
+        // Don't fail the request - invite was created, email just didn't send
+      }
+    }
+
     return NextResponse.json({
-      message: 'Invite created',
+      message: email ? 'Invite sent' : 'Invite created',
       member,
       inviteUrl,
     })
