@@ -19,7 +19,6 @@ import {
   Play,
   CheckCircle2,
   Lightbulb,
-  MessageSquare,
 } from 'lucide-react'
 import { sanitizeHtml } from '@/components/ui'
 import { RichTextEditor } from '@/components/editor'
@@ -264,20 +263,6 @@ export function SessionDetailMobile({
             </div>
           </div>
 
-          {/* Quick Action: Add Player Notes - Always visible for existing sessions */}
-          {!isNew && session && (
-            <button
-              onClick={() => setOpenPlayerNotesModal(true)}
-              className="w-full mb-4 flex items-center justify-between p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl active:bg-blue-500/20"
-            >
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-blue-400" />
-                <span className="text-sm font-medium text-white">Player Perspectives</span>
-              </div>
-              <span className="text-xs text-blue-400">Add Notes →</span>
-            </button>
-          )}
-
           {/* === PREP PHASE LAYOUT === */}
           {currentPhase === 'prep' && (
             <>
@@ -405,53 +390,6 @@ export function SessionDetailMobile({
                 </div>
               )}
 
-              {/* Attendance */}
-              <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
-                <div className="flex items-center gap-2 mb-3">
-                  <Users className="w-4 h-4 text-[--arcane-purple]" />
-                  <span className="text-sm font-medium text-white">Attendance</span>
-                  <span className="text-xs text-gray-500">({attendees.length})</span>
-                </div>
-
-                {/* PCs */}
-                {pcCharacters.length > 0 && (
-                  <div className="mb-3">
-                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">Player Characters</p>
-                    <div className="flex flex-wrap gap-2">
-                      {pcCharacters.map((char) => {
-                        const isAttending = attendees.includes(char.id)
-                        return (
-                          <button
-                            key={char.id}
-                            onClick={() => toggleAttendee(char.id)}
-                            className={cn(
-                              'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors',
-                              isAttending
-                                ? 'bg-[--arcane-purple]/20 border-[--arcane-purple] text-white'
-                                : 'bg-transparent border-white/10 text-gray-400 opacity-60'
-                            )}
-                          >
-                            <div className="w-5 h-5 rounded-full overflow-hidden bg-[--bg-surface] flex-shrink-0">
-                              {char.image_url ? (
-                                <Image src={char.image_url} alt={char.name} width={20} height={20} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-[8px] font-bold">{getInitials(char.name)}</div>
-                              )}
-                            </div>
-                            <span className="text-xs font-medium">{char.name}</span>
-                            {isAttending && <Check className="w-3 h-3 text-[--arcane-purple]" />}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {pcCharacters.length === 0 && (
-                  <p className="text-xs text-gray-500 text-center py-2">No characters yet</p>
-                )}
-              </div>
-
               {/* Summary Section */}
               <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
                 <div className="flex items-center justify-between mb-3">
@@ -522,6 +460,53 @@ export function SessionDetailMobile({
                   )}
                 </div>
               )}
+
+              {/* Attendance */}
+              <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="w-4 h-4 text-[--arcane-purple]" />
+                  <span className="text-sm font-medium text-white">Attendance</span>
+                  <span className="text-xs text-gray-500">({attendees.length})</span>
+                </div>
+
+                {/* PCs */}
+                {pcCharacters.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">Player Characters</p>
+                    <div className="flex flex-wrap gap-2">
+                      {pcCharacters.map((char) => {
+                        const isAttending = attendees.includes(char.id)
+                        return (
+                          <button
+                            key={char.id}
+                            onClick={() => toggleAttendee(char.id)}
+                            className={cn(
+                              'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors',
+                              isAttending
+                                ? 'bg-[--arcane-purple]/20 border-[--arcane-purple] text-white'
+                                : 'bg-transparent border-white/10 text-gray-400 opacity-60'
+                            )}
+                          >
+                            <div className="w-5 h-5 rounded-full overflow-hidden bg-[--bg-surface] flex-shrink-0">
+                              {char.image_url ? (
+                                <Image src={char.image_url} alt={char.name} width={20} height={20} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[8px] font-bold">{getInitials(char.name)}</div>
+                              )}
+                            </div>
+                            <span className="text-xs font-medium">{char.name}</span>
+                            {isAttending && <Check className="w-3 h-3 text-[--arcane-purple]" />}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {pcCharacters.length === 0 && (
+                  <p className="text-xs text-gray-500 text-center py-2">No characters yet</p>
+                )}
+              </div>
 
               {/* Detailed Notes Section */}
               {(formData.notes || !detailedNotesCollapsed) && (

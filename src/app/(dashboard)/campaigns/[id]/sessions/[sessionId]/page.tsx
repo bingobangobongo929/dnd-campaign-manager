@@ -21,7 +21,6 @@ import {
   Lightbulb,
   ClipboardList,
   Play,
-  MessageSquare,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input, Button, sanitizeHtml } from '@/components/ui'
@@ -790,26 +789,6 @@ export default function SessionDetailPage() {
           </div>
         </div>
 
-        {/* Quick Action: Add Player Notes - Always visible for existing sessions */}
-        {!isNew && session && (
-          <div className="mb-8 flex items-center justify-between p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl">
-            <div className="flex items-center gap-3">
-              <MessageSquare className="w-5 h-5 text-blue-400" />
-              <div>
-                <p className="text-sm font-medium text-white">Player Perspectives</p>
-                <p className="text-xs text-gray-400">Add notes from players or on their behalf</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setOpenPlayerNotesModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-colors text-sm font-medium"
-            >
-              <MessageSquare className="w-4 h-4" />
-              Add Notes
-            </button>
-          </div>
-        )}
-
         {/* === PREP PHASE LAYOUT === */}
         {currentPhase === 'prep' && (
           <>
@@ -926,7 +905,7 @@ export default function SessionDetailPage() {
         {/* === COMPLETED PHASE LAYOUT === */}
         {currentPhase === 'completed' && (
           <>
-            {/* Thoughts from Previous Session (also show for new completed sessions) */}
+            {/* 1. Thoughts from Previous Session (context for new sessions) */}
             {isNew && previousThoughts && (
               <div className="card p-6 mb-8 border-purple-500/30 bg-purple-500/5">
                 <div className="flex items-center gap-3 mb-4">
@@ -942,72 +921,7 @@ export default function SessionDetailPage() {
               </div>
             )}
 
-            {/* Attendance Section - Shown in Completed mode */}
-            <div className="card p-6 mb-8">
-              <div className="flex items-center gap-3 mb-4">
-                <Users className="w-5 h-5 text-[--arcane-purple]" />
-                <label className="text-lg font-semibold text-[--text-primary]">
-                  Attendance
-                </label>
-                <span className="text-sm text-[--text-tertiary]">
-                  ({attendees.length} present)
-                </span>
-              </div>
-
-              {/* PC Characters */}
-              {pcCharacters.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-3">
-                    Player Characters
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {pcCharacters.map((char) => {
-                      const isAttending = attendees.includes(char.id)
-                      return (
-                        <button
-                          key={char.id}
-                          onClick={() => toggleAttendee(char.id)}
-                          className={cn(
-                            'flex items-center gap-2 px-3 py-2 rounded-lg transition-all border-2',
-                            isAttending
-                              ? 'bg-[--arcane-purple]/20 border-[--arcane-purple] text-white'
-                              : 'bg-transparent border-white/10 text-[--text-secondary] hover:border-white/20 opacity-50 hover:opacity-75'
-                          )}
-                        >
-                          <div className="relative w-6 h-6 rounded-full overflow-hidden flex-shrink-0 bg-[--bg-surface]">
-                            {char.image_url ? (
-                              <Image
-                                src={char.image_url}
-                                alt={char.name}
-                                fill
-                                className="object-cover"
-                                sizes="24px"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-xs font-medium">
-                                {getInitials(char.name)}
-                              </div>
-                            )}
-                          </div>
-                          <span className="text-sm font-medium">{char.name}</span>
-                          {isAttending && (
-                            <CheckCircle2 className="w-4 h-4 text-[--arcane-purple]" />
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {pcCharacters.length === 0 && (
-                <p className="text-sm text-[--text-tertiary] text-center py-4">
-                  No characters in this campaign yet.
-                </p>
-              )}
-            </div>
-
-            {/* Summary Section - PRIMARY FOCUS for Completed mode */}
+            {/* 2. Summary Section - PRIMARY FOCUS for Completed mode */}
             <div className="card p-6 mb-8">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -1131,6 +1045,57 @@ export default function SessionDetailPage() {
                 )}
               </div>
             )}
+
+            {/* Attendance Section */}
+            <div className="card p-6 mb-8">
+              <div className="flex items-center gap-3 mb-4">
+                <Users className="w-5 h-5 text-[--arcane-purple]" />
+                <div>
+                  <label className="text-lg font-semibold text-[--text-primary] block">
+                    Attendance
+                  </label>
+                  <span className="text-sm text-[--text-tertiary]">
+                    Who was present this session?
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {pcCharacters.map((char) => (
+                  <button
+                    key={char.id}
+                    onClick={() => toggleAttendee(char.id)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-lg border transition-all",
+                      attendees.includes(char.id)
+                        ? "bg-[--arcane-purple]/20 border-[--arcane-purple]/50 text-white"
+                        : "border-white/10 text-[--text-secondary] hover:border-white/20"
+                    )}
+                  >
+                    {char.image_url ? (
+                      <Image
+                        src={char.image_url}
+                        alt={char.name}
+                        width={24}
+                        height={24}
+                        className="w-6 h-6 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-[--bg-elevated] flex items-center justify-center text-xs font-medium">
+                        {getInitials(char.name)}
+                      </div>
+                    )}
+                    <span className="text-sm font-medium">{char.name}</span>
+                    {attendees.includes(char.id) && (
+                      <Check className="w-4 h-4 text-[--arcane-purple]" />
+                    )}
+                  </button>
+                ))}
+                {pcCharacters.length === 0 && (
+                  <p className="text-sm text-[--text-tertiary]">No player characters in this campaign yet.</p>
+                )}
+              </div>
+            </div>
 
             {/* Detailed Notes Section */}
             {(formData.notes || !detailedNotesCollapsed) && (
