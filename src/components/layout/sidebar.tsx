@@ -16,6 +16,7 @@ import {
   Sparkles,
   Brain,
   Shield,
+  Network,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui'
@@ -42,6 +43,7 @@ export function Sidebar({ campaignId }: SidebarProps) {
         { href: `/campaigns/${campaignId}/sessions`, label: 'Sessions', icon: ScrollText },
         { href: `/campaigns/${campaignId}/timeline`, label: 'Timeline', icon: Clock },
         ...(canUseAI ? [{ href: `/campaigns/${campaignId}/intelligence`, label: 'Intelligence', icon: Brain }] : []),
+        { href: `/campaigns/${campaignId}/lore`, label: 'Lore', icon: Network },
         { href: `/campaigns/${campaignId}/map`, label: 'World Map', icon: Map },
         { href: `/campaigns/${campaignId}/gallery`, label: 'Gallery', icon: Image },
       ]
