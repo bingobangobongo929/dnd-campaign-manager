@@ -7,7 +7,7 @@ import { Plus, FolderPlus, Scaling, Trash2, Brain, Share2, ChevronRight, Users, 
 import { Modal, Input, ColorPicker, IconPicker, getGroupIcon } from '@/components/ui'
 import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT, CONNECTION_FILTER_OPTIONS } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
-import { TagManager, FactionManager, RelationshipManager, UnclaimedCharactersBanner, CampaignMemberManager } from '@/components/campaign'
+import { TagManager, FactionManager, RelationshipManager, UnclaimedCharactersBanner, PartyModal } from '@/components/campaign'
 import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 import { TemplateStateBadge } from '@/components/templates/TemplateStateBadge'
 import { TemplateOnboardingModal } from '@/components/templates/TemplateOnboardingModal'
@@ -1144,8 +1144,8 @@ export default function CampaignCanvasPage() {
         onClose={() => setIsRelationshipManagerOpen(false)}
       />
 
-      {/* Campaign Member Manager Modal */}
-      <CampaignMemberManager
+      {/* Party Modal */}
+      <PartyModal
         campaignId={campaignId}
         characters={characters}
         isOpen={isMemberManagerOpen}

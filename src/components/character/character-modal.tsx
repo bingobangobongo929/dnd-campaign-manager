@@ -9,10 +9,11 @@ import { FactionMembershipEditor } from './FactionMembershipEditor'
 import { LabelsEditor } from './LabelsEditor'
 import { RichTextEditor } from '@/components/editor/rich-text-editor'
 import { DmNotesSection, type VisibilityLevel } from '@/components/dm-notes'
-import { useSupabase } from '@/hooks'
+import { CharacterClaiming } from '@/components/campaign'
+import { useSupabase, useUser } from '@/hooks'
 import { useAutoSave } from '@/hooks'
 import { cn } from '@/lib/utils'
-import type { Character, Tag, CharacterTag, Json } from '@/types/database'
+import type { Character, Tag, CharacterTag, Json, VaultCharacter } from '@/types/database'
 
 // Helper to safely convert JSONB field to string array
 // Handles: null, string[], object[] (converts to readable strings), or any other format
@@ -74,8 +75,43 @@ export function CharacterModal({
   onTagsChange,
 }: CharacterModalProps) {
   const supabase = useSupabase()
+  const { user } = useUser()
   const isCreateMode = !character
   const [createdCharacterId, setCreatedCharacterId] = useState<string | null>(null)
+
+  // Character claiming state
+  const [userVaultCharacters, setUserVaultCharacters] = useState<Pick<VaultCharacter, 'id' | 'name' | 'image_url'>[]>([])
+  const [characterClaimed, setCharacterClaimed] = useState(false)
+
+  // Check if this character is designated for the current user
+  const isDesignatedForUser = !!(
+    character &&
+    user &&
+    (character.controlled_by_user_id === user.id ||
+     (character.controlled_by_email && character.controlled_by_email.toLowerCase() === user.email?.toLowerCase()))
+  )
+
+  // Check if character is claimable (PC, not already claimed, designated for user)
+  const isClaimable = !!(
+    character &&
+    character.type === 'pc' &&
+    !character.vault_character_id &&
+    !characterClaimed &&
+    isDesignatedForUser
+  )
+
+  // Fetch user's vault characters for linking
+  useEffect(() => {
+    if (user && isDesignatedForUser && !character?.vault_character_id) {
+      supabase
+        .from('vault_characters')
+        .select('id, name, image_url')
+        .eq('user_id', user.id)
+        .then(({ data }) => {
+          setUserVaultCharacters(data || [])
+        })
+    }
+  }, [user, isDesignatedForUser, character?.vault_character_id, supabase])
 
   // Form data with all new fields
   const [formData, setFormData] = useState({
@@ -748,6 +784,21 @@ export function CharacterModal({
 
                 {/* Center Column: Main Content */}
                 <div className="character-modal-center space-y-4 overflow-y-auto">
+                  {/* Character Claiming Banner */}
+                  {isClaimable && character && (
+                    <CharacterClaiming
+                      campaignId={campaignId}
+                      character={character}
+                      isDesignatedForUser={isDesignatedForUser}
+                      userVaultCharacters={userVaultCharacters}
+                      onClaimed={(vaultCharacterId) => {
+                        setCharacterClaimed(true)
+                        // Update the character with the vault link
+                        onUpdate({ ...character, vault_character_id: vaultCharacterId })
+                      }}
+                    />
+                  )}
+
                   <div className="form-group">
                     <label className="form-label">Summary</label>
                     <textarea
@@ -900,6 +951,20 @@ export function CharacterModal({
                       onRelationshipsChange={onTagsChange}
                     />
                   </div>
+                )}
+
+                {/* Character Claiming Banner - Non-fullscreen */}
+                {isClaimable && character && (
+                  <CharacterClaiming
+                    campaignId={campaignId}
+                    character={character}
+                    isDesignatedForUser={isDesignatedForUser}
+                    userVaultCharacters={userVaultCharacters}
+                    onClaimed={(vaultCharacterId) => {
+                      setCharacterClaimed(true)
+                      onUpdate({ ...character, vault_character_id: vaultCharacterId })
+                    }}
+                  />
                 )}
 
                 {/* Summary */}

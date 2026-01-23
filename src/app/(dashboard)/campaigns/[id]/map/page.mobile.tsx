@@ -1,9 +1,10 @@
 'use client'
 
-import { Map, Upload, Plus, Trash2, Loader2, ZoomIn, ZoomOut } from 'lucide-react'
+import { Map, Upload, Plus, Trash2, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout, MobileBottomSheet } from '@/components/mobile'
+import { InteractiveMap } from '@/components/maps'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import type { WorldMap } from '@/types/database'
@@ -16,8 +17,6 @@ export interface CampaignMapPageMobileProps {
   loading: boolean
   uploading: boolean
   error: string | null
-  zoom: number
-  setZoom: (zoom: number | ((z: number) => number)) => void
   isNameModalOpen: boolean
   setIsNameModalOpen: (open: boolean) => void
   mapName: string
@@ -38,8 +37,6 @@ export function CampaignMapPageMobile({
   loading,
   uploading,
   error,
-  zoom,
-  setZoom,
   isNameModalOpen,
   setIsNameModalOpen,
   mapName,
@@ -139,45 +136,16 @@ export function CampaignMapPageMobile({
         ) : (
           /* Map Viewer */
           <div className="flex flex-col h-[calc(100vh-180px)]">
-            {/* Zoom Controls */}
-            <div className="flex items-center justify-center gap-3 py-2 border-b border-white/[0.06]">
-              <button
-                onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}
-                className="p-2 rounded-lg bg-white/5 active:bg-white/10 transition-colors"
-              >
-                <ZoomOut className="w-5 h-5 text-gray-400" />
-              </button>
-              <span className="text-sm text-gray-400 w-16 text-center font-medium">
-                {Math.round(zoom * 100)}%
-              </span>
-              <button
-                onClick={() => setZoom(z => Math.min(3, z + 0.25))}
-                className="p-2 rounded-lg bg-white/5 active:bg-white/10 transition-colors"
-              >
-                <ZoomIn className="w-5 h-5 text-gray-400" />
-              </button>
-            </div>
-
-            {/* Map Display */}
-            <div className="flex-1 overflow-auto p-4 flex items-center justify-center">
+            {/* Interactive Map Display with Pins */}
+            <div className="flex-1 overflow-hidden p-2">
               {selectedMap && (
-                <div
-                  style={{
-                    transform: `scale(${zoom})`,
-                    transformOrigin: 'center center',
-                    transition: 'transform 0.2s ease',
-                  }}
-                >
-                  <img
-                    src={selectedMap.image_url}
-                    alt={selectedMap.name || 'World map'}
-                    className="rounded-lg shadow-2xl max-w-full"
-                    style={{
-                      maxHeight: 'calc(100vh - 350px)',
-                      objectFit: 'contain',
-                    }}
-                  />
-                </div>
+                <InteractiveMap
+                  campaignId={campaignId}
+                  mapId={selectedMap.id}
+                  imageUrl={selectedMap.image_url}
+                  isDm={true}
+                  className="h-full"
+                />
               )}
             </div>
 
@@ -188,10 +156,7 @@ export function CampaignMapPageMobile({
                   {maps.map(map => (
                     <button
                       key={map.id}
-                      onClick={() => {
-                        setSelectedMap(map)
-                        setZoom(1) // Reset zoom when switching maps
-                      }}
+                      onClick={() => setSelectedMap(map)}
                       className={cn(
                         'relative w-16 h-12 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all',
                         selectedMap?.id === map.id

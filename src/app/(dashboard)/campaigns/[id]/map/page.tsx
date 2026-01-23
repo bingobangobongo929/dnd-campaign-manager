@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Map, Upload, Plus, Trash2, X, Loader2, ZoomIn, ZoomOut } from 'lucide-react'
+import { Map, Upload, Plus, Trash2, Loader2 } from 'lucide-react'
 import { Modal, Input } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
+import { InteractiveMap } from '@/components/maps'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { CampaignMapPageMobile } from './page.mobile'
 import { cn } from '@/lib/utils'
@@ -30,7 +31,6 @@ export default function WorldMapPage() {
   const [isNameModalOpen, setIsNameModalOpen] = useState(false)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [mapName, setMapName] = useState('')
-  const [zoom, setZoom] = useState(1)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -173,8 +173,6 @@ export default function WorldMapPage() {
         loading={loading}
         uploading={uploading}
         error={error}
-        zoom={zoom}
-        setZoom={setZoom}
         isNameModalOpen={isNameModalOpen}
         setIsNameModalOpen={setIsNameModalOpen}
         mapName={mapName}
@@ -268,26 +266,6 @@ export default function WorldMapPage() {
               )}
             </div>
             <div className="flex items-center gap-2">
-              {/* Zoom controls */}
-              <div className="flex items-center gap-1 mr-2">
-                <button
-                  onClick={() => setZoom(z => Math.max(0.25, z - 0.25))}
-                  className="btn-ghost btn-icon w-8 h-8"
-                  title="Zoom out"
-                >
-                  <ZoomOut className="w-4 h-4" />
-                </button>
-                <span className="text-sm text-[--text-secondary] w-12 text-center">
-                  {Math.round(zoom * 100)}%
-                </span>
-                <button
-                  onClick={() => setZoom(z => Math.min(3, z + 0.25))}
-                  className="btn-ghost btn-icon w-8 h-8"
-                  title="Zoom in"
-                >
-                  <ZoomIn className="w-4 h-4" />
-                </button>
-              </div>
               <button
                 onClick={handleFileSelect}
                 disabled={uploading}
@@ -308,28 +286,16 @@ export default function WorldMapPage() {
             </div>
           </div>
 
-          {/* Map Display */}
-          <div className="flex-1 overflow-auto bg-[--bg-base] p-4 flex items-center justify-center">
+          {/* Interactive Map Display with Pins */}
+          <div className="flex-1 overflow-hidden bg-[--bg-base] p-4">
             {selectedMap && (
-              <div
-                className="flex items-center justify-center"
-                style={{
-                  transform: `scale(${zoom})`,
-                  transformOrigin: 'center center',
-                  transition: 'transform 0.2s ease',
-                }}
-              >
-                <img
-                  src={selectedMap.image_url}
-                  alt={selectedMap.name || 'World map'}
-                  className="rounded-lg shadow-2xl"
-                  style={{
-                    maxWidth: '100%',
-                    maxHeight: 'calc(100vh - 200px)',
-                    objectFit: 'contain',
-                  }}
-                />
-              </div>
+              <InteractiveMap
+                campaignId={campaignId}
+                mapId={selectedMap.id}
+                imageUrl={selectedMap.image_url}
+                isDm={true}
+                className="h-full"
+              />
             )}
           </div>
 

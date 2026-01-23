@@ -3730,6 +3730,178 @@ export type CampaignMemberUpdate = Database['public']['Tables']['campaign_member
 export type CampaignMemberRole = 'owner' | 'co_dm' | 'player' | 'contributor' | 'guest'
 export type CampaignMemberStatus = 'pending' | 'active' | 'declined' | 'removed'
 
+// Member permissions - granular per-member access control
+export interface MemberPermissions {
+  // Session Notes
+  sessionNotes: {
+    addOwn: boolean
+    viewRecaps: boolean
+    viewOthers: boolean
+    editOthers: boolean
+  }
+  // Characters
+  characters: {
+    editOwn: boolean
+    viewParty: boolean
+    viewPartyDetails: boolean
+    editParty: boolean
+  }
+  // NPCs
+  npcs: {
+    view: boolean
+    viewDetails: boolean
+    add: boolean
+    edit: boolean
+    delete: boolean
+    viewRelationships: boolean
+    editRelationships: boolean
+  }
+  // Timeline
+  timeline: {
+    view: boolean
+    viewFuture: boolean
+    add: boolean
+    edit: boolean
+    delete: boolean
+  }
+  // World Building - Factions
+  factions: {
+    view: boolean
+    add: boolean
+    edit: boolean
+    delete: boolean
+  }
+  // World Building - Locations
+  locations: {
+    view: boolean
+    add: boolean
+    edit: boolean
+    delete: boolean
+  }
+  // World Building - Lore
+  lore: {
+    view: boolean
+    add: boolean
+    edit: boolean
+    delete: boolean
+  }
+  // Maps
+  maps: {
+    view: boolean
+    add: boolean
+    delete: boolean
+  }
+  // Map Pins
+  mapPins: {
+    view: boolean
+    add: boolean
+    edit: boolean
+    delete: boolean
+  }
+  // Gallery
+  gallery: {
+    view: boolean
+    add: boolean
+    delete: boolean
+  }
+  // Canvas
+  canvas: {
+    view: boolean
+    editLayout: boolean
+  }
+  // Sessions (records)
+  sessions: {
+    view: boolean
+    add: boolean
+    edit: boolean
+    delete: boolean
+  }
+  // Secrets & Visibility
+  secrets: {
+    viewPartyItems: boolean
+    viewRevealHistory: boolean
+  }
+}
+
+// Default permissions by role
+export const DEFAULT_PERMISSIONS: Record<CampaignMemberRole, MemberPermissions> = {
+  owner: {
+    sessionNotes: { addOwn: true, viewRecaps: true, viewOthers: true, editOthers: true },
+    characters: { editOwn: true, viewParty: true, viewPartyDetails: true, editParty: true },
+    npcs: { view: true, viewDetails: true, add: true, edit: true, delete: true, viewRelationships: true, editRelationships: true },
+    timeline: { view: true, viewFuture: true, add: true, edit: true, delete: true },
+    factions: { view: true, add: true, edit: true, delete: true },
+    locations: { view: true, add: true, edit: true, delete: true },
+    lore: { view: true, add: true, edit: true, delete: true },
+    maps: { view: true, add: true, delete: true },
+    mapPins: { view: true, add: true, edit: true, delete: true },
+    gallery: { view: true, add: true, delete: true },
+    canvas: { view: true, editLayout: true },
+    sessions: { view: true, add: true, edit: true, delete: true },
+    secrets: { viewPartyItems: true, viewRevealHistory: true },
+  },
+  co_dm: {
+    sessionNotes: { addOwn: true, viewRecaps: true, viewOthers: true, editOthers: true },
+    characters: { editOwn: true, viewParty: true, viewPartyDetails: true, editParty: true },
+    npcs: { view: true, viewDetails: true, add: true, edit: true, delete: true, viewRelationships: true, editRelationships: true },
+    timeline: { view: true, viewFuture: true, add: true, edit: true, delete: true },
+    factions: { view: true, add: true, edit: true, delete: true },
+    locations: { view: true, add: true, edit: true, delete: true },
+    lore: { view: true, add: true, edit: true, delete: true },
+    maps: { view: true, add: true, delete: true },
+    mapPins: { view: true, add: true, edit: true, delete: true },
+    gallery: { view: true, add: true, delete: true },
+    canvas: { view: true, editLayout: true },
+    sessions: { view: true, add: true, edit: true, delete: true },
+    secrets: { viewPartyItems: true, viewRevealHistory: true },
+  },
+  player: {
+    sessionNotes: { addOwn: true, viewRecaps: true, viewOthers: true, editOthers: false },
+    characters: { editOwn: true, viewParty: true, viewPartyDetails: false, editParty: false },
+    npcs: { view: true, viewDetails: false, add: false, edit: false, delete: false, viewRelationships: false, editRelationships: false },
+    timeline: { view: true, viewFuture: false, add: false, edit: false, delete: false },
+    factions: { view: true, add: false, edit: false, delete: false },
+    locations: { view: true, add: false, edit: false, delete: false },
+    lore: { view: false, add: false, edit: false, delete: false },
+    maps: { view: true, add: false, delete: false },
+    mapPins: { view: true, add: false, edit: false, delete: false },
+    gallery: { view: true, add: false, delete: false },
+    canvas: { view: true, editLayout: false },
+    sessions: { view: true, add: false, edit: false, delete: false },
+    secrets: { viewPartyItems: true, viewRevealHistory: true },
+  },
+  contributor: {
+    sessionNotes: { addOwn: true, viewRecaps: true, viewOthers: true, editOthers: false },
+    characters: { editOwn: false, viewParty: true, viewPartyDetails: false, editParty: false },
+    npcs: { view: false, viewDetails: false, add: false, edit: false, delete: false, viewRelationships: false, editRelationships: false },
+    timeline: { view: true, viewFuture: false, add: false, edit: false, delete: false },
+    factions: { view: false, add: false, edit: false, delete: false },
+    locations: { view: false, add: false, edit: false, delete: false },
+    lore: { view: false, add: false, edit: false, delete: false },
+    maps: { view: false, add: false, delete: false },
+    mapPins: { view: false, add: false, edit: false, delete: false },
+    gallery: { view: false, add: false, delete: false },
+    canvas: { view: false, editLayout: false },
+    sessions: { view: true, add: false, edit: false, delete: false },
+    secrets: { viewPartyItems: false, viewRevealHistory: false },
+  },
+  guest: {
+    sessionNotes: { addOwn: false, viewRecaps: true, viewOthers: false, editOthers: false },
+    characters: { editOwn: false, viewParty: true, viewPartyDetails: false, editParty: false },
+    npcs: { view: false, viewDetails: false, add: false, edit: false, delete: false, viewRelationships: false, editRelationships: false },
+    timeline: { view: true, viewFuture: false, add: false, edit: false, delete: false },
+    factions: { view: false, add: false, edit: false, delete: false },
+    locations: { view: false, add: false, edit: false, delete: false },
+    lore: { view: false, add: false, edit: false, delete: false },
+    maps: { view: false, add: false, delete: false },
+    mapPins: { view: false, add: false, edit: false, delete: false },
+    gallery: { view: false, add: false, delete: false },
+    canvas: { view: true, editLayout: false },
+    sessions: { view: true, add: false, edit: false, delete: false },
+    secrets: { viewPartyItems: false, viewRevealHistory: false },
+  },
+}
+
 // Player session notes
 export type PlayerSessionNote = Database['public']['Tables']['player_session_notes']['Row']
 export type PlayerSessionNoteInsert = Database['public']['Tables']['player_session_notes']['Insert']

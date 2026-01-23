@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { nanoid } from 'nanoid'
-import type { CampaignMemberInsert, CampaignMemberRole } from '@/types/database'
+import type { CampaignMemberInsert, CampaignMemberRole, MemberPermissions } from '@/types/database'
+import { DEFAULT_PERMISSIONS } from '@/types/database'
 
 // GET - Get all members of a campaign
 export async function GET(
@@ -102,11 +103,12 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { email, discordId, role, characterId } = body as {
+    const { email, discordId, role, characterId, permissions } = body as {
       email?: string
       discordId?: string
       role: CampaignMemberRole
       characterId?: string
+      permissions?: MemberPermissions
     }
 
     // Validate role
@@ -145,6 +147,9 @@ export async function POST(
     // Generate invite token
     const inviteToken = nanoid(32)
 
+    // Use provided permissions or default for role
+    const memberPermissions = permissions || DEFAULT_PERMISSIONS[role]
+
     // Create the member record
     const memberData: CampaignMemberInsert = {
       campaign_id: campaignId,
@@ -155,7 +160,7 @@ export async function POST(
       invite_token: inviteToken,
       invited_at: new Date().toISOString(),
       status: 'pending',
-      permissions: {},
+      permissions: memberPermissions,
     }
 
     const { data: member, error } = await supabase
@@ -200,11 +205,12 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { memberId, role, permissions, status } = body as {
+    const { memberId, role, permissions, status, characterId } = body as {
       memberId: string
       role?: CampaignMemberRole
-      permissions?: Record<string, boolean>
+      permissions?: MemberPermissions
       status?: 'active' | 'removed'
+      characterId?: string | null
     }
 
     if (!memberId) {
@@ -261,6 +267,7 @@ export async function PATCH(
     if (role) updateData.role = role
     if (permissions) updateData.permissions = permissions
     if (status) updateData.status = status
+    if (characterId !== undefined) updateData.character_id = characterId
 
     const { data: updated, error } = await supabase
       .from('campaign_members')

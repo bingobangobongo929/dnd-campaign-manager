@@ -22,7 +22,7 @@ interface CharacterClaimingProps {
   campaignId: string
   character: Character
   isDesignatedForUser: boolean
-  userVaultCharacters?: VaultCharacter[]
+  userVaultCharacters?: Pick<VaultCharacter, 'id' | 'name' | 'image_url'>[]
   onClaimed?: (vaultCharacterId: string) => void
 }
 

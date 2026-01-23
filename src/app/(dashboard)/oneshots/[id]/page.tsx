@@ -27,6 +27,7 @@ import {
   Check,
   Sparkles,
   Swords,
+  MapPin,
 } from 'lucide-react'
 import { Modal, UnifiedImageModal } from '@/components/ui'
 import { LimitReachedModal } from '@/components/membership'
@@ -36,6 +37,7 @@ import { TemplateStateBadge } from '@/components/templates/TemplateStateBadge'
 import { TemplateOnboardingModal } from '@/components/templates/TemplateOnboardingModal'
 import { MobileLayout, MobileBottomSheet } from '@/components/mobile'
 import { FloatingDock } from '@/components/layout/floating-dock'
+import { OneshotNpcs, OneshotEncounters, OneshotLocations } from '@/components/oneshots'
 import { useSupabase, useUser, useIsMobile, useMembership } from '@/hooks'
 import { useAppStore, useCanUseAI } from '@/store'
 import { cn } from '@/lib/utils'
@@ -154,6 +156,9 @@ export default function OneshotEditorPage() {
     sessionPlan: true,
     twists: true,
     npcs: false,
+    structuredNpcs: true,
+    structuredEncounters: true,
+    structuredLocations: true,
     handouts: false,
     runs: true,
   })
@@ -753,9 +758,9 @@ export default function OneshotEditorPage() {
                 )}
               </MobileCollapsibleSection>
 
-              {/* Key NPCs */}
+              {/* Key NPCs - Quick Notes */}
               <MobileCollapsibleSection
-                title="Key NPCs"
+                title="Key NPCs (Notes)"
                 icon={Users}
                 expanded={expandedSections.npcs}
                 onToggle={() => toggleSection('npcs')}
@@ -767,6 +772,42 @@ export default function OneshotEditorPage() {
                   className="w-full py-3 px-4 text-sm bg-white/[0.03] border border-white/[0.08] rounded-lg text-white placeholder:text-gray-600 resize-none min-h-[120px]"
                 />
               </MobileCollapsibleSection>
+
+              {/* Structured NPCs - Full Management (only for existing oneshots) */}
+              {!isNew && oneshotId && (
+                <MobileCollapsibleSection
+                  title="NPCs (Structured)"
+                  icon={Users}
+                  expanded={expandedSections.structuredNpcs}
+                  onToggle={() => toggleSection('structuredNpcs')}
+                >
+                  <OneshotNpcs oneshotId={oneshotId} />
+                </MobileCollapsibleSection>
+              )}
+
+              {/* Structured Encounters (only for existing oneshots) */}
+              {!isNew && oneshotId && (
+                <MobileCollapsibleSection
+                  title="Encounters"
+                  icon={Swords}
+                  expanded={expandedSections.structuredEncounters}
+                  onToggle={() => toggleSection('structuredEncounters')}
+                >
+                  <OneshotEncounters oneshotId={oneshotId} />
+                </MobileCollapsibleSection>
+              )}
+
+              {/* Structured Locations (only for existing oneshots) */}
+              {!isNew && oneshotId && (
+                <MobileCollapsibleSection
+                  title="Locations"
+                  icon={MapPin}
+                  expanded={expandedSections.structuredLocations}
+                  onToggle={() => toggleSection('structuredLocations')}
+                >
+                  <OneshotLocations oneshotId={oneshotId} />
+                </MobileCollapsibleSection>
+              )}
 
               {/* Handouts */}
               <MobileCollapsibleSection
@@ -1348,9 +1389,9 @@ export default function OneshotEditorPage() {
                   )}
                 </CollapsibleSection>
 
-                {/* Key NPCs */}
+                {/* Key NPCs - Quick Notes */}
                 <CollapsibleSection
-                  title="Key NPCs"
+                  title="Key NPCs (Notes)"
                   icon={Users}
                   expanded={expandedSections.npcs}
                   onToggle={() => toggleSection('npcs')}
@@ -1362,6 +1403,42 @@ export default function OneshotEditorPage() {
                     className={textareaStyles}
                   />
                 </CollapsibleSection>
+
+                {/* Structured NPCs - Full Management (only for existing oneshots) */}
+                {!isNew && oneshotId && (
+                  <CollapsibleSection
+                    title="NPCs (Structured)"
+                    icon={Users}
+                    expanded={expandedSections.structuredNpcs}
+                    onToggle={() => toggleSection('structuredNpcs')}
+                  >
+                    <OneshotNpcs oneshotId={oneshotId} />
+                  </CollapsibleSection>
+                )}
+
+                {/* Structured Encounters (only for existing oneshots) */}
+                {!isNew && oneshotId && (
+                  <CollapsibleSection
+                    title="Encounters"
+                    icon={Swords}
+                    expanded={expandedSections.structuredEncounters}
+                    onToggle={() => toggleSection('structuredEncounters')}
+                  >
+                    <OneshotEncounters oneshotId={oneshotId} />
+                  </CollapsibleSection>
+                )}
+
+                {/* Structured Locations (only for existing oneshots) */}
+                {!isNew && oneshotId && (
+                  <CollapsibleSection
+                    title="Locations"
+                    icon={MapPin}
+                    expanded={expandedSections.structuredLocations}
+                    onToggle={() => toggleSection('structuredLocations')}
+                  >
+                    <OneshotLocations oneshotId={oneshotId} />
+                  </CollapsibleSection>
+                )}
 
                 {/* Handouts */}
                 <CollapsibleSection

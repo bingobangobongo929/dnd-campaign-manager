@@ -28,7 +28,7 @@ import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { useAppStore, useCanUseAI } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
 import type { Campaign, Character, Session, TimelineEvent, PlayerSessionNote, CampaignMember } from '@/types/database'
-import { CampaignMemberManager } from '@/components/campaign/CampaignMemberManager'
+import { PartyModal } from '@/components/campaign'
 import { Modal } from '@/components/ui'
 
 // Widget component wrapper
@@ -673,21 +673,13 @@ export default function CampaignDashboardPage() {
         </div>
       </div>
 
-      {/* Members Modal */}
-      <Modal
+      {/* Party Modal */}
+      <PartyModal
+        campaignId={campaignId}
+        characters={characters}
         isOpen={showMembersModal}
         onClose={() => setShowMembersModal(false)}
-        title="Manage Members"
-        description="Invite players and manage campaign access"
-        size="lg"
-      >
-        <CampaignMemberManager
-          campaignId={campaignId}
-          characters={characters}
-          isOpen={showMembersModal}
-          onClose={() => setShowMembersModal(false)}
-        />
-      </Modal>
+      />
     </AppLayout>
   )
 }
