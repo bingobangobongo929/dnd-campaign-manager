@@ -284,9 +284,9 @@ export const useAppStore = create<AppState>()(
 
 /**
  * Hook to check if the current user can use AI features.
- * Returns true only if:
- * 1. User has a tier that supports AI (standard or premium)
- * 2. User has AI enabled in their preferences
+ * Returns true if:
+ * 1. User has a tier that supports AI AND has AI enabled in preferences
+ * 2. OR User is an admin (moderator or super_admin role) with AI enabled
  *
  * For free tier users, this always returns false regardless of aiEnabled preference.
  * This ensures AI features are completely hidden from free users.
@@ -297,6 +297,12 @@ export function useCanUseAI(): boolean {
   const settings = useAppStore((state) => state.settings)
   const aiEnabled = useAppStore((state) => state.aiEnabled)
   const impersonatedTier = useAppStore((state) => state.impersonatedTier)
+
+  // Admins always have AI access (if they have aiEnabled on)
+  const isAdminUser = settings?.role === 'moderator' || settings?.role === 'super_admin'
+  if (isAdminUser) {
+    return aiEnabled
+  }
 
   // Use impersonated tier if set, otherwise use actual tier
   const tier: UserTier = impersonatedTier || settings?.tier || 'adventurer'

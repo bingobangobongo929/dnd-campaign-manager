@@ -495,7 +495,7 @@ export default function OneshotEditorPage() {
               {!isNew && (
                 <>
                   <button
-                    onClick={() => router.push(`/oneshots/${oneshotId}/run`)}
+                    onClick={() => router.push(`/oneshots/${oneshotId}/present`)}
                     className="p-2 rounded-lg bg-emerald-600 active:bg-emerald-500 transition-colors"
                   >
                     <Play className="w-5 h-5 text-white" />
@@ -1041,12 +1041,12 @@ export default function OneshotEditorPage() {
                   )}
 
                   <button
-                    onClick={() => router.push(`/oneshots/${oneshotId}/run`)}
+                    onClick={() => router.push(`/oneshots/${oneshotId}/present`)}
                     className="flex items-center gap-2 px-3 py-2 bg-emerald-600/80 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition-colors"
-                    title="Start Run Mode"
+                    title="Present Mode"
                   >
                     <Play className="w-4 h-4" />
-                    Run
+                    Present
                   </button>
 
                   <button
