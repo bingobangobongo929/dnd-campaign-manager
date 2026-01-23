@@ -1,0 +1,1278 @@
+ Ready to code?
+
+ Here is Claude's plan:
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+ Multiloop: Becoming THE TTRPG Campaign Management Platform
+
+ Vision
+
+ Replace Google Docs, compete with Kanka/World Anvil/Obsidian Portal, and become the only site worth using for TTRPG campaign management - from Session 0 pitch to ongoing play to
+  campaign completion.
+
+ NOT in scope: Virtual tabletop (VTT), battle maps, character stat management during combat, dice rolling, initiative tracking.
+
+ IN scope: Everything around the table - campaign organization, session notes, world building, player collaboration, sharing, and AI-powered assistance that saves time without
+ being "AI-y".
+
+ ---
+ What Already Exists (Verified)
+
+ Template System - FULLY IMPLEMENTED
+
+ - Works for all three content types (campaigns, characters, oneshots)
+ - Publishing creates immutable snapshots with version management
+ - "Save to Collection" is lightweight reference
+ - "Start Playing" copies data into user's editable version
+ - Attribution, update notifications, Session 0 ready flags all working
+ - Future community marketplace infrastructure in place
+
+ D&D Beyond / External Sheet Linking - ALREADY EXISTS
+
+ - character_sheet_url field in vault_characters
+ - character_links table for additional links (art, inspiration, etc.)
+ - UI for adding links with type selection
+ - Displayed across editor, viewer, mobile, presentation, share views
+ - We do NOT store D&D stats - just link to external sources
+
+ Current Feature Summary
+ ┌────────────────────────┬────────┬────────────────────────────────────────┐
+ │      Feature Area      │ Status │                 Notes                  │
+ ├────────────────────────┼────────┼────────────────────────────────────────┤
+ │ Campaign Canvas        │ Done   │ Infinite canvas, character cards       │
+ ├────────────────────────┼────────┼────────────────────────────────────────┤
+ │ Campaign Sessions      │ Done   │ Notes, summaries, timeline integration │
+ ├────────────────────────┼────────┼────────────────────────────────────────┤
+ │ Campaign Timeline      │ Done   │ Multiple view modes                    │
+ ├────────────────────────┼────────┼────────────────────────────────────────┤
+ │ Campaign Lore          │ Done   │ Factions, locations, artifacts         │
+ ├────────────────────────┼────────┼────────────────────────────────────────┤
+ │ Campaign Intelligence  │ Done   │ AI suggestions                         │
+ ├────────────────────────┼────────┼────────────────────────────────────────┤
+ │ Character Vault        │ Done   │ 70+ fields, comprehensive              │
+ ├────────────────────────┼────────┼────────────────────────────────────────┤
+ │ Play Journal           │ Done   │ Session notes in vault                 │
+ ├────────────────────────┼────────┼────────────────────────────────────────┤
+ │ Character Writings     │ Done   │ Letters, stories                       │
+ ├────────────────────────┼────────┼────────────────────────────────────────┤
+ │ Character Intelligence │ Done   │ AI suggestions                         │
+ ├────────────────────────┼────────┼────────────────────────────────────────┤
+ │ Oneshot Editor         │ Done   │ Text-based sections                    │
+ ├────────────────────────┼────────┼────────────────────────────────────────┤
+ │ Oneshot Run Mode       │ Done   │ But confusing/needs redesign           │
+ ├────────────────────────┼────────┼────────────────────────────────────────┤
+ │ Template Publishing    │ Done   │ All three content types                │
+ ├────────────────────────┼────────┼────────────────────────────────────────┤
+ │ Sharing System         │ Done   │ Links, passwords, visibility           │
+ ├────────────────────────┼────────┼────────────────────────────────────────┤
+ │ AI Import              │ Done   │ PDF/image parsing                      │
+ └────────────────────────┴────────┴────────────────────────────────────────┘
+ ---
+ The Big Features to Build
+
+ 1. Player Collaboration System (CRITICAL)
+
+ The Problem: Currently campaigns are DM-only. Players can't contribute.
+
+ The Solution: Multi-tiered access with invite flexibility.
+
+ Invite Methods (equal options):
+ - Email invite (magic link)
+ - Discord invite (requires Discord auth setup)
+ - Password-protected view link (for guests)
+
+ Access Levels:
+ ┌─────────────┬────────────────────────────┬─────────────────────────────────────────────────────┐
+ │    Level    │        How to Join         │                       Can Do                        │
+ ├─────────────┼────────────────────────────┼─────────────────────────────────────────────────────┤
+ │ Guest       │ Password link              │ View shared sections only                           │
+ ├─────────────┼────────────────────────────┼─────────────────────────────────────────────────────┤
+ │ Contributor │ Invite (no account)        │ View + add session notes                            │
+ ├─────────────┼────────────────────────────┼─────────────────────────────────────────────────────┤
+ │ Player      │ Multiloop account + invite │ Full character management, session notes, see party │
+ ├─────────────┼────────────────────────────┼─────────────────────────────────────────────────────┤
+ │ Co-DM       │ Elevated by owner          │ Everything except delete campaign                   │
+ ├─────────────┼────────────────────────────┼─────────────────────────────────────────────────────┤
+ │ Owner       │ Creator                    │ Full access                                         │
+ └─────────────┴────────────────────────────┴─────────────────────────────────────────────────────┘
+ DM Permission Controls (per-campaign toggles):
+ - "Players can add session notes"
+ - "Players can edit their character"
+ - "Players can see other player characters"
+ - "Players can see session summaries"
+ - "Players can see timeline"
+
+ DM can add notes on behalf of players:
+ - For players who don't use the site
+ - Copy/paste from Discord
+ - Attribute to specific character
+ - Still feeds into Campaign Intelligence
+
+ Player Dashboard (when player views campaign):
+ - "My Character" - their linked/claimed character
+ - "Recent Sessions" - notes from recent games
+ - "Party" - other PCs (if DM allows)
+ - "Add Session Notes" - their perspective
+
+ 2. Vault ↔ Campaign Character Linking
+
+ The Problem: Vault characters and campaign characters are separate systems.
+
+ Key Principle: Vault must work perfectly standalone. Players can use vault for campaigns NOT on Multiloop, exporting notes to Discord etc.
+
+ Scenario A: Player brings vault character to campaign
+ 1. Player has character in vault
+ 2. DM invites player to campaign
+ 3. Player links their vault character
+ 4. System creates "campaign state" - synced fork
+ 5. Session 0 snapshot automatically preserved
+
+ Scenario B: DM creates character, player claims later ("Claim and Expand")
+ 1. DM creates campaign
+ 2. DM creates/imports characters for players
+ 3. DM optionally sets "Belongs to: email/Discord" (OPTIONAL)
+ 4. Only that email/Discord can claim (prevents theft)
+ 5. Player creates account, joins campaign
+ 6. Player sees "Claim to your vault?"
+ 7. Player claims → vault character created, linked
+ 8. Player can expand with PDF import or manual entry
+ 9. Session 0 snapshot preserved
+
+ Field Synchronization:
+ ┌─────────────────────────────────────┬─────────────────┬───────────────────────────────────────────────┐
+ │             Field Type              │ Where it lives  │                 Sync behavior                 │
+ ├─────────────────────────────────────┼─────────────────┼───────────────────────────────────────────────┤
+ │ Core identity (name, pronouns, age) │ Both            │ Syncs both ways                               │
+ ├─────────────────────────────────────┼─────────────────┼───────────────────────────────────────────────┤
+ │ Appearance (description, portrait)  │ Both            │ Syncs both ways                               │
+ ├─────────────────────────────────────┼─────────────────┼───────────────────────────────────────────────┤
+ │ Personality (traits, bonds, flaws)  │ Both            │ Syncs both ways                               │
+ ├─────────────────────────────────────┼─────────────────┼───────────────────────────────────────────────┤
+ │ Basic backstory                     │ Both            │ Campaign → Vault on claim, then syncs         │
+ ├─────────────────────────────────────┼─────────────────┼───────────────────────────────────────────────┤
+ │ Detailed backstory (phases)         │ Vault only      │ Player's personal record                      │
+ ├─────────────────────────────────────┼─────────────────┼───────────────────────────────────────────────┤
+ │ External sheet link                 │ Vault only      │ Link to D&D Beyond etc.                       │
+ ├─────────────────────────────────────┼─────────────────┼───────────────────────────────────────────────┤
+ │ Campaign relationships              │ Campaign only   │ DM manages                                    │
+ ├─────────────────────────────────────┼─────────────────┼───────────────────────────────────────────────┤
+ │ DM notes                            │ Campaign only   │ Never visible to player                       │
+ ├─────────────────────────────────────┼─────────────────┼───────────────────────────────────────────────┤
+ │ Personal writings                   │ Vault only      │ Player can share if they choose               │
+ ├─────────────────────────────────────┼─────────────────┼───────────────────────────────────────────────┤
+ │ Play journal                        │ Both (separate) │ Player writes in vault, can share to campaign │
+ └─────────────────────────────────────┴─────────────────┴───────────────────────────────────────────────┘
+ Session 0 Snapshot:
+ - Automatically created when character joins campaign
+ - Immutable preservation of original state
+ - Player can "Fork from Session 0" to start fresh in new campaign
+ - Some players want baggage, some want clean slate - support both
+
+ Campaign character view:
+ - Default: Summary card (name, portrait, brief description)
+ - Click to drill down: Full detail view
+ - If linked to vault: Shows all fields (editable by player)
+ - If not linked: Shows campaign fields only
+ - DM always sees their DM notes; players never do
+
+ 3. Secrets & Visibility System
+
+ The Problem: No way to annotate shared content with DM-only info.
+
+ The Solution: Triple-layer visibility with post-session reveal tracking.
+
+ Important: Players watch VTT/tabletop during sessions, not Multiloop. Reveals happen verbally at the table. Multiloop just tracks what players CAN see when they browse.
+
+ Visibility Layers:
+ ┌─────────┬──────────────────────┬───────────────────────────────────────┐
+ │  Layer  │       Who Sees       │               Examples                │
+ ├─────────┼──────────────────────┼───────────────────────────────────────┤
+ │ Public  │ Everyone with access │ Character name, appearance            │
+ ├─────────┼──────────────────────┼───────────────────────────────────────┤
+ │ Party   │ All players + DM     │ Shared backstory, current goals       │
+ ├─────────┼──────────────────────┼───────────────────────────────────────┤
+ │ DM Only │ DM only              │ Secrets, true motivations, plot hooks │
+ └─────────┴──────────────────────┴───────────────────────────────────────┘
+ Implementation:
+ - "DM Notes" section on every entity (always hidden from players)
+ - Optional per-field visibility toggle for granular control
+ - "Revealed" tracking with session attribution
+ - Timeline of revelations for campaign history
+
+ Reveal Flow (post-session, not live):
+ 1. DM has secret on NPC: "Working for BBEG"
+ 2. During session 15, players discover truth (at table)
+ 3. After session, DM opens Multiloop
+ 4. Marks secret as "Revealed in Session 15"
+ 5. Now players can see it when they browse
+ 6. Timeline event: "Session 15: [Secret] discovered"
+
+ UI:
+ - Eye icon shows visibility level
+ - Color hints: Normal (public), subtle blue (party), subtle red (DM only)
+ - Quick toggle in edit mode
+
+ 4. Campaign Dashboard (New Entry Point)
+
+ The Problem: Canvas is powerful but not the best starting point for quick reference.
+
+ The Solution: Customizable dashboard as default, canvas still accessible.
+
+ Default Widgets (drag to reorder, add/remove):
+ ┌─────────────────┬───────────────────────────────────────────────────┐
+ │     Widget      │                      Purpose                      │
+ ├─────────────────┼───────────────────────────────────────────────────┤
+ │ Next Session    │ Date, prep checklist, who's attending             │
+ ├─────────────────┼───────────────────────────────────────────────────┤
+ │ Recent Activity │ Last 5 changes, player contributions              │
+ ├─────────────────┼───────────────────────────────────────────────────┤
+ │ Quick Actions   │ Add Session, Add Character, Open Intelligence     │
+ ├─────────────────┼───────────────────────────────────────────────────┤
+ │ Campaign Health │ "3 NPCs need details", "2 sessions without notes" │
+ ├─────────────────┼───────────────────────────────────────────────────┤
+ │ Party Overview  │ PC cards with quick stats                         │
+ ├─────────────────┼───────────────────────────────────────────────────┤
+ │ Upcoming Plot   │ Next timeline events                              │
+ ├─────────────────┼───────────────────────────────────────────────────┤
+ │ Player Notes    │ Recent notes from players to review               │
+ └─────────────────┴───────────────────────────────────────────────────┘
+ Customization:
+ - Drag to reorder
+ - Collapse/expand widgets
+ - Add/remove from palette
+ - Layout saved per campaign per user
+ - Mobile-optimized version
+
+ 5. Session Workflow Enhancement
+
+ The Problem: Sessions are basic. No prep vs post-session flow.
+
+ The Solution: Session lifecycle with clear phases.
+
+ Phase 1: Prep Mode
+ - Pre-session checklist (customizable per campaign)
+ - Import from previous session's "thoughts for next"
+ - Quick NPC creation
+ - Pull relevant NPCs/locations for reference
+
+ Phase 2: During Session
+ - NOT trying to replace VTT
+ - Simple notes area for DM
+ - Players can add notes from their phones (optional)
+ - Reference panel for quick lookups
+
+ Phase 3: Recap Mode
+ - DM notes + player notes in one view
+ - "Merge into Summary" via Intelligence
+ - Extract timeline events
+ - Update character statuses
+ - "Thoughts for next session" field
+
+ 6. Visual Tools
+
+ Interactive Maps:
+ - Upload map images
+ - Add pins with popups (link to locations, NPCs, encounters)
+ - Layers: geographic, political, player knowledge
+ - Basic fog of war (DM reveals regions)
+ - Distance tool for travel estimation
+ - Works for campaigns AND oneshots (if they add that detail)
+
+ Relationship Diagrams:
+ - Auto-generate from character relationships
+ - Family tree view
+ - Faction membership visualization
+ - "Conspiracy board" mode with string connections
+ - Export as image for sharing
+
+ Enhanced Timeline:
+ - Character-focused view (one character's journey)
+ - Era/chapter grouping
+ - Parallel storyline support
+ - Future: In-game calendar dates
+
+ 7. Oneshot Restructuring
+
+ Current Problem:
+ - Editor is text-only, may be missing important sections
+ - Run mode is confusing and tries to be a VTT
+ - Oneshots get shared as templates - need to be complete for other DMs
+
+ Oneshot Editor - Hybrid Approach:
+
+ Keep text sections (flexible, fast):
+ - Introduction (read-aloud)
+ - Setting Notes
+ - Session Plan
+ - Twists & Secrets (DM-only)
+ - Handouts
+
+ Add structured entities (richer content):
+ - NPCs - Full profiles (appearance, personality, motivation, stat reference)
+ - Encounters - Difficulty, enemies, tactics, terrain, rewards
+ - Locations - Description, features, connections
+ - Maps - Interactive with pins linking to above
+
+ Cross-referencing:
+ - Session plan can reference [[NPC: Mira]] or [[Location: The Flask]]
+ - Click reference → shows inline detail
+ - Everything included when published as template
+
+ Present Mode (replaces confusing "Run Mode"):
+ - Clean reading experience of adventure content
+ - Section navigation (quick jump between scenes)
+ - Checklist mode (mark scenes as done)
+ - Expandable stat blocks inline
+ - Collapsible notes panel
+ - Optional simple timer in corner
+ - REMOVED: Initiative tracker, HP management, conditions, player view sharing (use VTT for this)
+
+ After session:
+ - Save notes
+ - Optionally rate the run
+ - "Convert to Campaign" button (creates campaign from oneshot for Session 2+)
+
+ 8. AI Intelligence Hub
+
+ Philosophy: AI should organize, import, suggest, summarize - never replace creativity.
+
+ Centralized in Campaign/Character Intelligence (not scattered):
+
+ Campaign Intelligence - Review Hub:
+ After updating session notes, DM opens Intelligence to see:
+
+ ┌─────────────────────────────────────────────┐
+ │ REVIEW QUEUE (12 suggestions)              │
+ ├─────────────────────────────────────────────┤
+ │ ⏱️ Timeline Events (3)                      │
+ │   "Party arrived at Thornhold" [👍 👎] [Accept/Edit/Dismiss]
+ │                                             │
+ │ 👥 NPC Updates (2)                          │
+ │   "Lord Barros mentioned - create NPC?" [👍 👎] [Create]
+ │                                             │
+ │ 🔗 Relationships (4)                        │
+ │   "Thornwick ↔ Lord Barros: met" [👍 👎] [Add]
+ │                                             │
+ │ ⚠️ Inconsistencies (1)                      │
+ │   "Session 3 says Mira dead, Session 7 alive"
+ │                                             │
+ │ 📝 Missing Info (2)                         │
+ │   "Lord Barros has no location set"         │
+ └─────────────────────────────────────────────┘
+
+ Each suggestion: 👍/👎 feedback | Accept (one click) | Edit then accept | Dismiss
+
+ Suggestion Feedback System:
+ - Every suggestion has thumbs up/down buttons
+ - Feedback stored and linked to existing feedback system
+ - Helps measure AI quality without explicit reviews
+ - Admin can see: "Timeline suggestions: 78% positive, NPC detection: 62% positive"
+
+ Character Intelligence - Same pattern:
+ - Backstory inconsistencies
+ - Relationship suggestions
+ - Missing fields
+ - Arc tracking ("Your character has grown from X to Y")
+ - Same 👍/👎 feedback on each suggestion
+
+ AI Features by Area:
+ ┌───────────┬──────────────────────────┬──────────────────────────────────────────────┐
+ │   Area    │         Feature          │                 What it does                 │
+ ├───────────┼──────────────────────────┼──────────────────────────────────────────────┤
+ │ Campaigns │ "Previously on..."       │ Generate session recap from notes            │
+ ├───────────┼──────────────────────────┼──────────────────────────────────────────────┤
+ │ Campaigns │ Plot thread tracker      │ "These storylines are unresolved"            │
+ ├───────────┼──────────────────────────┼──────────────────────────────────────────────┤
+ │ Campaigns │ NPC reminder             │ "These NPCs haven't appeared in 5+ sessions" │
+ ├───────────┼──────────────────────────┼──────────────────────────────────────────────┤
+ │ Campaigns │ Session prep suggestions │ Based on where story is                      │
+ ├───────────┼──────────────────────────┼──────────────────────────────────────────────┤
+ │ Vault     │ Play journal prompts     │ "How did [character] feel about [event]?"    │
+ ├───────────┼──────────────────────────┼──────────────────────────────────────────────┤
+ │ Vault     │ Character voice helper   │ Help write in-character                      │
+ ├───────────┼──────────────────────────┼──────────────────────────────────────────────┤
+ │ Vault     │ Arc tracking             │ Visualize character development              │
+ ├───────────┼──────────────────────────┼──────────────────────────────────────────────┤
+ │ Sessions  │ Merge perspectives       │ Combine DM + player notes                    │
+ ├───────────┼──────────────────────────┼──────────────────────────────────────────────┤
+ │ Sessions  │ Timeline extraction      │ "Add these events to timeline?"              │
+ ├───────────┼──────────────────────────┼──────────────────────────────────────────────┤
+ │ Sessions  │ NPC detection            │ "New NPC mentioned: [name]"                  │
+ ├───────────┼──────────────────────────┼──────────────────────────────────────────────┤
+ │ Oneshots  │ Encounter balancer       │ "This might be deadly for 4 level-3s"        │
+ ├───────────┼──────────────────────────┼──────────────────────────────────────────────┤
+ │ Oneshots  │ Summary generator        │ Create shareable pitch                       │
+ └───────────┴──────────────────────────┴──────────────────────────────────────────────┘
+ NOT doing (too "AI-y"):
+ - Auto-generate plot ideas
+ - Write backstories from nothing
+ - Create NPCs from scratch
+ - Suggest creative content
+
+ 9. AI Usage & Cooldown System
+
+ Time-Based Cooldowns (not monthly limits):
+ ┌────────────────────────┬──────────┬────────────────────────┐
+ │   Intelligence Type    │ Cooldown │         Notes          │
+ ├────────────────────────┼──────────┼────────────────────────┤
+ │ Campaign Intelligence  │ 12 hours │ Separate per campaign  │
+ ├────────────────────────┼──────────┼────────────────────────┤
+ │ Character Intelligence │ 12 hours │ Separate per character │
+ └────────────────────────┴──────────┴────────────────────────┘
+ Default 12 hours for founders - admin can adjust per tier.
+
+ Why cooldowns over monthly limits:
+ - "Available in 8 hours" is clearer than "3 runs left"
+ - Naturally encourages batching updates
+ - No gaming or saving up
+ - Predictable for users
+
+ Import is UNLIMITED - Priority is getting data onto the site.
+
+ UI When on Cooldown:
+ ┌────────────────────────────────────────┐
+ │ Campaign Intelligence                  │
+ │                                        │
+ │ ⏱️ Available again in 8h 32m           │
+ │                                        │
+ │ While you wait, make sure your session │
+ │ notes are up to date for the best      │
+ │ suggestions next time.                 │
+ │                                        │
+ │ [View Previous Suggestions]            │
+ └────────────────────────────────────────┘
+
+ Encouraging Efficient Usage:
+ - Before running: "Make sure all session notes are added for best results"
+ - After saving notes: "Notes saved! Run Intelligence when you're ready to review suggestions"
+ - Don't nag, just guide
+
+ No Visible "Credits":
+ - Users don't see a credit counter
+ - Just cooldown timers when applicable
+ - Simple limit message if hit: "Limit reached. Available again on [date]"
+
+ 10. AI Admin Panel (CRITICAL)
+
+ New admin section: /admin/ai-usage
+
+ Purpose: Complete visibility into AI usage, costs, and effectiveness across the entire site.
+
+ Usage Metrics
+ ┌────────────────────┬────────────────────────────────────────────────────────────────┐
+ │       Metric       │                         What It Shows                          │
+ ├────────────────────┼────────────────────────────────────────────────────────────────┤
+ │ Total AI calls     │ By type (import, campaign intel, character intel, merge, etc.) │
+ ├────────────────────┼────────────────────────────────────────────────────────────────┤
+ │ Calls per user     │ Identify heavy users, patterns                                 │
+ ├────────────────────┼────────────────────────────────────────────────────────────────┤
+ │ Calls over time    │ Daily/weekly/monthly trends, charts                            │
+ ├────────────────────┼────────────────────────────────────────────────────────────────┤
+ │ Peak usage times   │ When users run AI most                                         │
+ ├────────────────────┼────────────────────────────────────────────────────────────────┤
+ │ Operations by type │ Pie chart of what's being used                                 │
+ └────────────────────┴────────────────────────────────────────────────────────────────┘
+ Cost Metrics
+ ┌────────────────────────┬─────────────────────────────────────────────┐
+ │         Metric         │                What It Shows                │
+ ├────────────────────────┼─────────────────────────────────────────────┤
+ │ Total cost             │ By model, by operation type, by time period │
+ ├────────────────────────┼─────────────────────────────────────────────┤
+ │ Cost per user          │ Identify cost outliers                      │
+ ├────────────────────────┼─────────────────────────────────────────────┤
+ │ Cost per operation     │ Know what's expensive                       │
+ ├────────────────────────┼─────────────────────────────────────────────┤
+ │ Daily/weekly burn rate │ Budget tracking                             │
+ ├────────────────────────┼─────────────────────────────────────────────┤
+ │ Model cost comparison  │ Side-by-side cost analysis                  │
+ └────────────────────────┴─────────────────────────────────────────────┘
+ Import Analytics (Critical)
+ ┌────────────────────────────┬────────────────────────────┐
+ │           Metric           │       What It Shows        │
+ ├────────────────────────────┼────────────────────────────┤
+ │ Import started             │ Total attempts             │
+ ├────────────────────────────┼────────────────────────────┤
+ │ Import completed           │ Parsed successfully        │
+ ├────────────────────────────┼────────────────────────────┤
+ │ Import saved               │ User saved the result      │
+ ├────────────────────────────┼────────────────────────────┤
+ │ Import cancelled/abandoned │ Wasted spend               │
+ ├────────────────────────────┼────────────────────────────┤
+ │ Completion rate            │ started → saved funnel     │
+ ├────────────────────────────┼────────────────────────────┤
+ │ Average cost per import    │ By type (PDF, image, text) │
+ ├────────────────────────────┼────────────────────────────┤
+ │ Import types breakdown     │ What formats people use    │
+ └────────────────────────────┴────────────────────────────┘
+ Intelligence Effectiveness
+ ┌──────────────────────────────────┬────────────────────────────────┐
+ │              Metric              │         What It Shows          │
+ ├──────────────────────────────────┼────────────────────────────────┤
+ │ Suggestions generated            │ Total, by type                 │
+ ├──────────────────────────────────┼────────────────────────────────┤
+ │ Suggestions accepted             │ One-click accepts              │
+ ├──────────────────────────────────┼────────────────────────────────┤
+ │ Suggestions edited then accepted │ Needed tweaking                │
+ ├──────────────────────────────────┼────────────────────────────────┤
+ │ Suggestions dismissed            │ Not useful                     │
+ ├──────────────────────────────────┼────────────────────────────────┤
+ │ Acceptance rate                  │ % accepted (quality indicator) │
+ ├──────────────────────────────────┼────────────────────────────────┤
+ │ 👍/👎 feedback ratio             │ Per suggestion type            │
+ ├──────────────────────────────────┼────────────────────────────────┤
+ │ Average suggestions per run      │ Is it finding things?          │
+ └──────────────────────────────────┴────────────────────────────────┘
+ Model Comparison
+ ┌───────────────────┬────────────────────────────────┐
+ │      Metric       │         What It Shows          │
+ ├───────────────────┼────────────────────────────────┤
+ │ Cost per model    │ Economics                      │
+ ├───────────────────┼────────────────────────────────┤
+ │ Speed per model   │ Response time                  │
+ ├───────────────────┼────────────────────────────────┤
+ │ Quality score     │ Based on acceptance + feedback │
+ ├───────────────────┼────────────────────────────────┤
+ │ Error rate        │ Failed calls                   │
+ ├───────────────────┼────────────────────────────────┤
+ │ Side-by-side view │ Compare models directly        │
+ └───────────────────┴────────────────────────────────┘
+ Admin Controls
+
+ Model Selection (existing, verify working):
+ - Toggle between Gemini Pro 3, Gemini Flash 3, etc.
+ - Apply site-wide instantly
+ - Per-operation model override (future)
+
+ Cooldown Configuration:
+ - Edit cooldown hours per tier
+ - Edit cooldown per Intelligence type
+ - Changes apply site-wide immediately
+
+ Per-User View:
+ - Search/filter users
+ - See individual user's AI usage
+ - Cost attributed to user
+ - Usage patterns
+
+ Alerts & Monitoring
+ ┌──────────────────────────┬────────────────────────────┐
+ │          Alert           │          Trigger           │
+ ├──────────────────────────┼────────────────────────────┤
+ │ Cost spike               │ Daily cost > 2x average    │
+ ├──────────────────────────┼────────────────────────────┤
+ │ Heavy user               │ User > 10x average usage   │
+ ├──────────────────────────┼────────────────────────────┤
+ │ High error rate          │ > 5% failures              │
+ ├──────────────────────────┼────────────────────────────┤
+ │ Low acceptance rate      │ < 30% suggestions accepted │
+ ├──────────────────────────┼────────────────────────────┤
+ │ Import abandonment spike │ > 50% imports cancelled    │
+ └──────────────────────────┴────────────────────────────┘
+ Visualizations
+
+ - Cost over time: Line chart, filterable by period
+ - Usage by operation: Pie chart
+ - Import funnel: Sankey diagram (started → completed → saved)
+ - Model comparison: Bar charts side-by-side
+ - User leaderboard: Top users by usage/cost
+ - Acceptance heatmap: Which suggestion types perform best
+
+ 11. Tutorials & Guidance
+
+ The Problem: Features exist but users don't know how to use them effectively.
+
+ The Solution: Contextual help throughout the entire site that guides WORKFLOWS, not just features.
+
+ Guidance Philosophy
+
+ Wrong approach (feature-focused):
+ "You can add timeline events here"
+
+ Right approach (workflow-focused):
+ "Timeline events track your campaign's key moments. Add them manually, or let Campaign Intelligence suggest them from your session notes."
+
+ Guidance Types
+ ┌─────────────────────┬────────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+ │        Type         │            When            │                                                      Example                                                       │
+ ├─────────────────────┼────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+ │ Empty states        │ Section has no content     │ "This is your timeline. Add key moments to track your story, or let Intelligence suggest them from session notes." │
+ ├─────────────────────┼────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+ │ First-time tooltips │ First visit to feature     │ Highlight Intelligence: "Analyze your campaign for suggestions - works best with up-to-date session notes"         │
+ ├─────────────────────┼────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+ │ Contextual help     │ ? icon on complex features │ "What are tags?" → explanation                                                                                     │
+ ├─────────────────────┼────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+ │ Onboarding flow     │ New campaign/character     │ Step-by-step guide                                                                                                 │
+ ├─────────────────────┼────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+ │ Workflow prompts    │ After certain actions      │ "Session notes saved! Open Intelligence to review suggestions based on this session."                              │
+ ├─────────────────────┼────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+ │ Feature discovery   │ Underused features         │ "Did you know? You can share this as a template"                                                                   │
+ ├─────────────────────┼────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+ │ Efficiency guidance │ Before AI operations       │ "Make sure all session notes are added for the best Intelligence suggestions"                                      │
+ └─────────────────────┴────────────────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+ Intelligence-Integrated Guidance
+
+ On Session Notes page:
+ - Empty state: "Session notes are the foundation. Intelligence uses them to suggest timeline events, detect new NPCs, and track plot threads."
+ - After saving: "Notes saved! Open Campaign Intelligence to review suggestions."
+
+ On Timeline page:
+ - Empty state: "Add timeline events manually, or let Intelligence extract them from your session notes."
+
+ On Characters page:
+ - Empty state: "Add characters manually, or let Intelligence detect NPCs mentioned in session notes."
+
+ On Intelligence page:
+ - First visit: "Intelligence analyzes your campaign to save you time. It works best when session notes are up to date."
+ - Before running: "Before running, make sure session notes are up to date for the best suggestions."
+ - On cooldown: "Available in Xh. While you wait, add any new session notes or character details."
+
+ On Import:
+ - Start: "Import your character from a PDF, image, or text. Our AI will match fields automatically."
+ - Processing: "Analyzing your document..."
+ - Review: "Review the imported data below. You can edit anything before saving."
+
+ Requirements
+
+ - Nothing missed across the entire site
+ - Tips must be accurate (not wrong/outdated)
+ - Dismissable and not annoying
+ - Remember what user has seen (stored in user_settings or local storage)
+ - Guide workflows, not just individual features
+ - Don't mention costs/credits in tips
+
+ 12. Enhanced Sharing & Discord
+
+ Discord Auth for Invites:
+ - Equal option alongside email
+ - DM can invite via Discord username
+ - Player connects Discord to Multiloop
+ - Streamlined join flow
+
+ Beautiful Share Pages:
+ - Session 0 pitch: Full campaign overview
+ - Active campaign: Party-appropriate view
+ - Character share: Already good, minor enhancements
+
+ Discord Embeds:
+ - Rich previews when pasting links
+ - "Copy for Discord" generates formatted text
+ - Future: Discord bot (not in v1)
+
+ ---
+ Implementation Phases
+
+ Phase 1: Foundation
+
+ Campaign Dashboard:
+ - New /campaigns/[id]/dashboard route
+ - Widget system with drag-drop (use existing component patterns)
+ - Default widgets: Next Session, Quick Actions, Recent Activity, Party
+ - Dashboard as new default entry point
+ - Canvas accessible from dashboard nav
+
+ Basic Player Access:
+ - campaign_members table
+ - Email invite flow with magic links
+ - Discord auth setup and invite option
+ - Password-protected view links
+ - Basic role system (owner, player, guest)
+
+ Secrets Layer v1:
+ - dm_notes field on characters, sessions, timeline_events, lore
+ - Basic visibility toggle (public/DM only)
+
+ Phase 2: Collaboration
+
+ Full Player System:
+ - Player session notes (player_session_notes table)
+ - DM can add notes on behalf of players
+ - Player dashboard view (My Character, Recent Sessions)
+ - Permission controls per campaign
+
+ Vault-Campaign Linking:
+ - Character claiming flow
+ - "Belongs to" field on campaign characters (optional)
+ - Session 0 snapshot on claim/link
+ - Bi-directional sync for appropriate fields
+ - Drill-down character view in campaigns
+
+ Party visibility:
+ - Player visibility toggle
+ - Revealed tracking with session attribution
+
+ Phase 3: Visual Tools
+
+ Interactive Maps:
+ - Map upload with zoom/pan (Leaflet or similar)
+ - Pin system with popups
+ - Link pins to entities
+ - Basic fog of war
+ - Works for campaigns and oneshots
+
+ Relationship Diagrams:
+ - Auto-generate from character relationships
+ - Family tree layout option
+ - Faction visualization
+ - Export as image
+
+ Timeline Enhancements:
+ - Character-focused view
+ - Era/chapter grouping
+
+ Phase 4: Content & Workflow
+
+ Oneshot Restructuring:
+ - Structured NPCs (new table, similar to campaign characters)
+ - Structured Encounters (new table)
+ - Structured Locations (new table)
+ - Present mode (simplified clean reading view)
+ - Remove VTT-like features from run mode
+
+ Session Workflow:
+ - Prep mode with checklist
+ - Recap mode with merge
+ - "Thoughts for next" field
+
+ Oneshot → Campaign conversion:
+ - "Continue as Campaign" button
+ - Copy NPCs, notes, settings
+
+ Phase 5: Intelligence & Admin
+
+ AI Intelligence Hub Enhancements:
+ - Review queue UI in Campaign Intelligence
+ - Timeline extraction suggestions
+ - NPC detection from notes
+ - Relationship suggestions
+ - Merge player + DM notes
+ - 👍/👎 feedback on each suggestion
+ - Cooldown system with timer display
+ - "View Previous Suggestions" when on cooldown
+
+ AI Admin Panel (/admin/ai-usage):
+ - Usage metrics dashboard (calls by type, by user, over time)
+ - Cost tracking dashboard (by model, by operation, burn rate)
+ - Import funnel analytics (started → parsed → saved)
+ - Intelligence effectiveness (acceptance rates, feedback ratios)
+ - Model comparison views
+ - Cooldown configuration per tier
+ - Per-user usage drill-down
+ - Alerts for anomalies (cost spikes, high error rates)
+
+ AI Infrastructure:
+ - ai_usage_logs table + logging middleware
+ - ai_cooldowns table + enforcement
+ - ai_suggestion_feedback table + UI integration
+ - import_sessions table + funnel tracking
+ - ai_tier_settings table + admin UI
+
+ Phase 6: Tutorials & Polish
+
+ Tutorials & Guidance:
+ - Empty state messages across entire site
+ - First-time tooltips (Intelligence, templates, sharing)
+ - Contextual help icons on complex features
+ - Workflow-aware guidance (not just feature tips)
+ - Onboarding flows for new campaigns/characters
+ - "What to do next" prompts
+
+ Enhanced Sharing:
+ - Discord-formatted copy button
+ - Improved share page designs
+
+ Final Polish:
+ - Verify all guidance is accurate
+ - Test all workflows end-to-end
+ - Mobile optimization pass
+ - Performance optimization
+
+ ---
+ Database Changes
+
+ New Tables
+
+ -- Campaign members (player access)
+ campaign_members (
+   id UUID PRIMARY KEY,
+   campaign_id UUID REFERENCES campaigns,
+   user_id UUID REFERENCES auth.users NULL,
+   email TEXT,
+   discord_id TEXT,
+   role TEXT NOT NULL, -- 'owner', 'co_dm', 'player', 'contributor', 'guest'
+   permissions JSONB DEFAULT '{}',
+   character_id UUID NULL, -- linked campaign character
+   vault_character_id UUID NULL, -- linked vault character
+   invite_token TEXT,
+   invited_at TIMESTAMPTZ,
+   joined_at TIMESTAMPTZ,
+   status TEXT DEFAULT 'pending'
+ )
+
+ -- Player session notes
+ player_session_notes (
+   id UUID PRIMARY KEY,
+   session_id UUID REFERENCES sessions,
+   character_id UUID REFERENCES characters,
+   added_by_user_id UUID REFERENCES auth.users, -- who typed it
+   attributed_to_user_id UUID NULL, -- whose perspective (null if no account)
+   notes TEXT,
+   source TEXT DEFAULT 'manual', -- 'manual', 'discord_import', 'player_submitted'
+   is_shared_with_party BOOLEAN DEFAULT true,
+   created_at TIMESTAMPTZ,
+   updated_at TIMESTAMPTZ
+ )
+
+ -- DM secrets / visibility layer
+ entity_secrets (
+   id UUID PRIMARY KEY,
+   entity_type TEXT, -- 'character', 'session', 'timeline_event', 'lore'
+   entity_id UUID,
+   field_name TEXT NULL, -- null = general DM notes
+   content TEXT,
+   visibility TEXT DEFAULT 'dm_only', -- 'dm_only', 'party', 'public'
+   revealed_at TIMESTAMPTZ NULL,
+   revealed_in_session_id UUID NULL,
+   created_at TIMESTAMPTZ
+ )
+
+ -- Map pins for interactive maps
+ map_pins (
+   id UUID PRIMARY KEY,
+   map_id UUID, -- can reference world_maps or oneshot_maps
+   map_type TEXT, -- 'campaign', 'oneshot'
+   x FLOAT,
+   y FLOAT,
+   label TEXT,
+   description TEXT,
+   icon TEXT,
+   color TEXT,
+   linked_entity_type TEXT NULL,
+   linked_entity_id UUID NULL,
+   visibility TEXT DEFAULT 'public',
+   sort_order INTEGER,
+   created_at TIMESTAMPTZ
+ )
+
+ -- Dashboard layouts
+ dashboard_layouts (
+   id UUID PRIMARY KEY,
+   user_id UUID REFERENCES auth.users,
+   campaign_id UUID REFERENCES campaigns,
+   layout JSONB,
+   created_at TIMESTAMPTZ,
+   updated_at TIMESTAMPTZ
+ )
+
+ -- Oneshot structured NPCs
+ oneshot_npcs (
+   id UUID PRIMARY KEY,
+   oneshot_id UUID REFERENCES oneshots,
+   name TEXT NOT NULL,
+   description TEXT,
+   appearance TEXT,
+   personality TEXT,
+   motivation TEXT,
+   stat_block TEXT, -- formatted reference
+   external_link TEXT, -- link to D&D Beyond etc.
+   image_url TEXT,
+   sort_order INTEGER,
+   created_at TIMESTAMPTZ
+ )
+
+ -- Oneshot structured encounters
+ oneshot_encounters (
+   id UUID PRIMARY KEY,
+   oneshot_id UUID REFERENCES oneshots,
+   name TEXT NOT NULL,
+   description TEXT,
+   difficulty TEXT, -- 'easy', 'medium', 'hard', 'deadly'
+   enemies JSONB, -- [{name, count, hp, ac, notes}]
+   tactics TEXT,
+   terrain TEXT,
+   rewards TEXT,
+   map_id UUID NULL, -- link to map if applicable
+   sort_order INTEGER,
+   created_at TIMESTAMPTZ
+ )
+
+ -- Oneshot structured locations
+ oneshot_locations (
+   id UUID PRIMARY KEY,
+   oneshot_id UUID REFERENCES oneshots,
+   name TEXT NOT NULL,
+   description TEXT,
+   features TEXT,
+   connected_locations UUID[], -- links to other locations
+   map_id UUID NULL,
+   sort_order INTEGER,
+   created_at TIMESTAMPTZ
+ )
+
+ -- Session 0 snapshots for characters
+ character_snapshots (
+   id UUID PRIMARY KEY,
+   vault_character_id UUID REFERENCES vault_characters,
+   campaign_id UUID REFERENCES campaigns,
+   snapshot_data JSONB, -- full character state at join time
+   snapshot_type TEXT DEFAULT 'session_0',
+   created_at TIMESTAMPTZ
+ )
+
+ -- AI usage tracking
+ ai_usage_logs (
+   id UUID PRIMARY KEY,
+   user_id UUID REFERENCES auth.users,
+   operation_type TEXT NOT NULL, -- 'campaign_intelligence', 'character_intelligence', 'import', 'merge', etc.
+   model_used TEXT, -- 'gemini-pro-3', 'gemini-flash-3', etc.
+   input_tokens INTEGER,
+   output_tokens INTEGER,
+   cost_usd DECIMAL(10,6),
+   duration_ms INTEGER,
+   status TEXT DEFAULT 'success', -- 'success', 'error', 'cancelled'
+   error_message TEXT NULL,
+   -- Context
+   campaign_id UUID NULL,
+   character_id UUID NULL,
+   oneshot_id UUID NULL,
+   -- Metadata
+   metadata JSONB DEFAULT '{}', -- additional context
+   created_at TIMESTAMPTZ DEFAULT NOW()
+ )
+
+ -- AI cooldown tracking
+ ai_cooldowns (
+   id UUID PRIMARY KEY,
+   user_id UUID REFERENCES auth.users,
+   cooldown_type TEXT NOT NULL, -- 'campaign_intelligence', 'character_intelligence'
+   entity_id UUID NULL, -- campaign_id or character_id
+   last_run_at TIMESTAMPTZ NOT NULL,
+   next_available_at TIMESTAMPTZ NOT NULL,
+   created_at TIMESTAMPTZ DEFAULT NOW()
+ )
+
+ -- AI suggestion feedback
+ ai_suggestion_feedback (
+   id UUID PRIMARY KEY,
+   user_id UUID REFERENCES auth.users,
+   usage_log_id UUID REFERENCES ai_usage_logs, -- link to the AI run
+   suggestion_type TEXT NOT NULL, -- 'timeline_event', 'npc_detection', 'relationship', etc.
+   suggestion_content TEXT, -- the suggestion text
+   action_taken TEXT NOT NULL, -- 'accepted', 'edited', 'dismissed'
+   feedback TEXT NULL, -- 'positive', 'negative', NULL
+   edit_details TEXT NULL, -- what they changed if edited
+   created_at TIMESTAMPTZ DEFAULT NOW()
+ )
+
+ -- Import tracking (for funnel analysis)
+ import_sessions (
+   id UUID PRIMARY KEY,
+   user_id UUID REFERENCES auth.users,
+   import_type TEXT NOT NULL, -- 'pdf', 'image', 'text'
+   target_type TEXT NOT NULL, -- 'vault_character', 'campaign_character', etc.
+   status TEXT DEFAULT 'started', -- 'started', 'parsed', 'reviewed', 'saved', 'cancelled'
+   usage_log_id UUID REFERENCES ai_usage_logs NULL, -- link to AI cost
+   file_size_bytes INTEGER NULL,
+   parse_duration_ms INTEGER NULL,
+   -- Timestamps for funnel
+   started_at TIMESTAMPTZ DEFAULT NOW(),
+   parsed_at TIMESTAMPTZ NULL,
+   reviewed_at TIMESTAMPTZ NULL, -- when user saw results
+   completed_at TIMESTAMPTZ NULL, -- saved or cancelled
+   created_at TIMESTAMPTZ DEFAULT NOW()
+ )
+
+ -- AI tier settings (admin-configurable)
+ ai_tier_settings (
+   id UUID PRIMARY KEY,
+   tier TEXT NOT NULL UNIQUE, -- 'free', 'founder', 'pro'
+   campaign_intelligence_cooldown_hours INTEGER DEFAULT 12,
+   character_intelligence_cooldown_hours INTEGER DEFAULT 12,
+   import_limit_per_day INTEGER NULL, -- NULL = unlimited
+   updated_at TIMESTAMPTZ DEFAULT NOW(),
+   updated_by UUID REFERENCES auth.users
+ )
+
+ Existing Table Modifications
+
+ -- campaigns: add collaboration settings
+ ALTER TABLE campaigns ADD COLUMN collaboration_settings JSONB DEFAULT '{}';
+
+ -- characters: add visibility and ownership
+ ALTER TABLE characters ADD COLUMN dm_notes TEXT;
+ ALTER TABLE characters ADD COLUMN visibility TEXT DEFAULT 'public';
+ ALTER TABLE characters ADD COLUMN vault_character_id UUID NULL;
+ ALTER TABLE characters ADD COLUMN controlled_by_user_id UUID NULL;
+ ALTER TABLE characters ADD COLUMN controlled_by_email TEXT NULL;
+ ALTER TABLE characters ADD COLUMN controlled_by_discord TEXT NULL;
+
+ -- vault_characters: add campaign tracking
+ ALTER TABLE vault_characters ADD COLUMN campaign_links JSONB DEFAULT '[]';
+ -- [{campaign_id, character_id, joined_at, snapshot_id}]
+
+ -- sessions: add workflow fields
+ ALTER TABLE sessions ADD COLUMN phase TEXT DEFAULT 'planned';
+ ALTER TABLE sessions ADD COLUMN prep_checklist JSONB DEFAULT '[]';
+ ALTER TABLE sessions ADD COLUMN thoughts_for_next TEXT;
+
+ -- timeline_events, lore entries: add dm_notes
+ ALTER TABLE timeline_events ADD COLUMN dm_notes TEXT;
+ ALTER TABLE timeline_events ADD COLUMN visibility TEXT DEFAULT 'public';
+ -- (similar for lore tables)
+
+ -- oneshots: add structured content flags
+ ALTER TABLE oneshots ADD COLUMN has_structured_npcs BOOLEAN DEFAULT false;
+ ALTER TABLE oneshots ADD COLUMN has_structured_encounters BOOLEAN DEFAULT false;
+ ALTER TABLE oneshots ADD COLUMN has_structured_locations BOOLEAN DEFAULT false;
+
+ ---
+ Key User Flows
+
+ Flow 1: DM Invites Player
+
+ DM: Campaign → Settings → Members → "Invite Player"
+ ↓
+ Choose: Email OR Discord
+ ↓
+ Optionally assign to existing character: "This is for Thornwick"
+ ↓
+ Player receives invite (email or Discord DM)
+ ↓
+ Player clicks link → Join page
+ ↓
+ If has account: Link vault character OR claim assigned character
+ If no account: Create account OR view as contributor
+ ↓
+ Player appears in member list
+ ↓
+ DM can adjust permissions anytime
+
+ Flow 2: Player Claims Character
+
+ DM created "Thornwick" and set "Belongs to: player@email.com"
+ ↓
+ Player creates account with player@email.com
+ ↓
+ Player joins campaign
+ ↓
+ Sees: "Thornwick was created for you. Claim to your vault?"
+ ↓
+ Player clicks "Claim"
+ ↓
+ Prompt: "Want to add more details?"
+   - Import character sheet (PDF) → AI populates
+   - Add manually
+   - Keep simple for now
+ ↓
+ Vault character created, linked to campaign character
+ ↓
+ Session 0 snapshot saved
+ ↓
+ Player now has full vault features
+
+ Flow 3: Player Adds Session Notes
+
+ After session, player opens campaign on phone
+ ↓
+ Dashboard shows "Session 12 just happened"
+ ↓
+ Clicks "Add My Notes"
+ ↓
+ Writes from their character's perspective
+ ↓
+ Submits
+ ↓
+ DM sees in session: "Thornwick's player added notes"
+ ↓
+ DM opens Campaign Intelligence
+ ↓
+ Sees suggestion: "Merge player notes into summary?"
+ ↓
+ Reviews, accepts with edits
+ ↓
+ Unified recap created
+
+ Flow 4: DM Reveals Secret
+
+ DM has NPC with DM note: "Actually a spy for BBEG"
+ ↓
+ Players discover during Session 15 (at the table, verbally)
+ ↓
+ After session, DM opens NPC in Multiloop
+ ↓
+ Clicks "Reveal" on the secret
+ ↓
+ Selects "Revealed in Session 15"
+ ↓
+ Secret now visible when players browse
+ ↓
+ Timeline event auto-created: "The spy was unmasked"
+
+ ---
+ Migration Safety
+
+ Principle: Additive changes only. Zero data loss.
+
+ For existing campaigns:
+ - All existing data untouched
+ - New campaign_members table starts with owner only
+ - New collaboration_settings defaults to restrictive (opt-in)
+ - New dm_notes fields are NULL (optional)
+ - Existing campaigns work exactly as before
+
+ For existing characters:
+ - No changes to vault_characters schema (only additions)
+ - New linking fields are NULL by default
+ - Standalone vault use unaffected
+
+ For wife's campaigns specifically:
+ - Run migration on test copy first
+ - Verify all sessions, characters, timeline, lore intact
+ - Verify canvas layout preserved
+ - Test all existing functionality before enabling new features
+
+ ---
+ Verification Plan
+
+ Core Features
+
+ 1. Migration test: Run on copy of production, verify zero data loss
+ 2. Existing functionality: All current features work unchanged
+ 3. Player invite flow: Email + Discord, both paths
+ 4. Character claiming: Full flow with PDF import
+ 5. Session notes: Player adds, DM sees, merge works
+ 6. Secrets: Create, reveal, verify visibility
+ 7. Dashboard: Customize, reload, verify persistence
+ 8. Maps: Upload, add pins, link entities
+ 9. Oneshot present mode: Clean reading, no VTT features
+ 10. Mobile: All flows work on mobile
+
+ AI System
+
+ 11. Intelligence suggestions: Appear correctly, categorized by type
+ 12. Suggestion feedback: 👍/👎 buttons work, data saved
+ 13. Accept/edit/dismiss: All three actions work correctly
+ 14. Cooldown system: Timer shows, enforced correctly, respects tier settings
+ 15. Previous suggestions: Viewable when on cooldown
+
+ AI Admin Panel
+
+ 16. Usage dashboard: Shows calls by type, by user, over time
+ 17. Cost tracking: Accurate cost per operation, totals correct
+ 18. Import funnel: Tracks started → parsed → saved correctly
+ 19. Effectiveness metrics: Acceptance rates calculated correctly
+ 20. Model comparison: Shows side-by-side metrics
+ 21. Cooldown config: Admin can edit per tier, changes apply immediately
+ 22. Per-user view: Can drill into individual user usage
+ 23. Alerts: Trigger correctly for cost spikes, anomalies
+
+ Tutorials & Guidance
+
+ 24. Empty states: Show on all relevant pages, guide to Intelligence
+ 25. First-time tooltips: Show once, don't repeat
+ 26. Workflow guidance: Tips reference full workflow, not just features
+ 27. Dismissable: All tips can be dismissed
+ 28. Persistence: Dismissed tips stay dismissed across sessions
+
+ ---
+ Success Metrics
+
+ Collaboration Metrics
+ ┌────────────────────────┬───────────────────────────────────────┬────────────────┐
+ │         Metric         │                Target                 │ How to Measure │
+ ├────────────────────────┼───────────────────────────────────────┼────────────────┤
+ │ Campaign collaboration │ 30% of campaigns have 2+ members      │ DB query       │
+ ├────────────────────────┼───────────────────────────────────────┼────────────────┤
+ │ Player engagement      │ 50% of invited players add notes      │ DB query       │
+ ├────────────────────────┼───────────────────────────────────────┼────────────────┤
+ │ Dashboard adoption     │ 70% use dashboard as entry            │ Analytics      │
+ ├────────────────────────┼───────────────────────────────────────┼────────────────┤
+ │ Character claiming     │ 60% of invited players claim          │ DB query       │
+ ├────────────────────────┼───────────────────────────────────────┼────────────────┤
+ │ Template sharing       │ 20% of content published as templates │ DB query       │
+ └────────────────────────┴───────────────────────────────────────┴────────────────┘
+ AI Effectiveness Metrics
+ ┌────────────────────────────────────┬───────────────────────────────────────┬────────────────────────┐
+ │               Metric               │                Target                 │     How to Measure     │
+ ├────────────────────────────────────┼───────────────────────────────────────┼────────────────────────┤
+ │ Intelligence suggestion acceptance │ 40%+ accepted                         │ ai_suggestion_feedback │
+ ├────────────────────────────────────┼───────────────────────────────────────┼────────────────────────┤
+ │ Suggestion positive feedback       │ 70%+ 👍 on accepted                   │ ai_suggestion_feedback │
+ ├────────────────────────────────────┼───────────────────────────────────────┼────────────────────────┤
+ │ Import completion rate             │ 80%+ saved after parsing              │ import_sessions funnel │
+ ├────────────────────────────────────┼───────────────────────────────────────┼────────────────────────┤
+ │ Average cost per user per month    │ < $2.00                               │ ai_usage_logs          │
+ ├────────────────────────────────────┼───────────────────────────────────────┼────────────────────────┤
+ │ Cooldown utilization               │ 60%+ users run Intelligence regularly │ ai_cooldowns           │
+ └────────────────────────────────────┴───────────────────────────────────────┴────────────────────────┘
+ Tutorial Effectiveness
+ ┌───────────────────────┬────────────────────────────────────────┬──────────────────────────────────┐
+ │        Metric         │                 Target                 │          How to Measure          │
+ ├───────────────────────┼────────────────────────────────────────┼──────────────────────────────────┤
+ │ Feature discovery     │ 50% use Intelligence within first week │ ai_usage_logs + user signup date │
+ ├───────────────────────┼────────────────────────────────────────┼──────────────────────────────────┤
+ │ Guidance engagement   │ 30% click through from tips            │ Analytics                        │
+ ├───────────────────────┼────────────────────────────────────────┼──────────────────────────────────┤
+ │ Onboarding completion │ 70% complete new campaign setup        │ Event tracking                   │
+ └───────────────────────┴────────────────────────────────────────┴──────────────────────────────────┘
+ ---
+ Out of Scope
+
+ - VTT / battle maps with tokens
+ - Dice rolling
+ - Initiative tracking in campaigns
+ - Character stat tracking during combat
+ - Full calendar system (maybe v2)
+ - Discord bot (future)
+ - Offline mode
+ - D&D Beyond API integration (they don't allow it)
+
+ ---
+ Critical Files to Modify
+
+ Campaign System
+
+ - src/app/(dashboard)/campaigns/[id]/ - Add dashboard route
+ - src/components/campaigns/ - Dashboard widgets, member management
+ - src/types/database.ts - New types for campaign_members, secrets, etc.
+
+ Character System
+
+ - src/components/vault/CharacterEditor.tsx - Campaign linking UI
+ - src/app/(dashboard)/vault/ - Claiming flow
+ - src/app/api/characters/ - Linking/claiming APIs
+
+ Oneshot System
+
+ - src/app/(dashboard)/oneshots/[id]/page.tsx - Structured content
+ - src/app/(dashboard)/oneshots/[id]/run/page.tsx - Replace with Present mode
+ - New components for NPCs, encounters, locations
+
+ Intelligence System
+
+ - src/app/(dashboard)/campaigns/[id]/intelligence/ - Review hub UI with feedback
+ - src/app/(dashboard)/vault/[id]/intelligence/ - Character intelligence with feedback
+ - src/app/api/intelligence/ - Suggestion generation with logging
+ - New: Cooldown checking middleware
+ - New: Suggestion feedback API
+
+ AI Admin Panel
+
+ - src/app/(dashboard)/admin/ai-usage/ - New admin page
+ - src/components/admin/ai/ - Dashboard widgets, charts, tables
+ - src/app/api/admin/ai/ - Usage stats, cost tracking, config APIs
+ - src/lib/ai/ - Logging middleware, cooldown enforcement
+
+ Import System
+
+ - src/app/api/vault/import*/ - Add import session tracking
+ - src/components/vault/import/ - Funnel tracking integration
+
+ Sharing & Auth
+
+ - src/lib/supabase/ - Discord auth setup
+ - src/app/api/invites/ - New invite system
+
+ Tutorials & Guidance
+
+ - src/components/guidance/ - Reusable tip components
+ - src/hooks/useGuidance.ts - Track what user has seen
+ - Empty state components across all feature areas

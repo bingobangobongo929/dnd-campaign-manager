@@ -1,8 +1,9 @@
 import { generateText } from 'ai'
 import { getAIModel, AI_PROMPTS, AIProvider, AI_PROVIDERS } from '@/lib/ai/config'
 import { createClient } from '@/lib/supabase/server'
-import { SuggestionType, ConfidenceLevel } from '@/types/database'
+import { SuggestionType, ConfidenceLevel, UserTier } from '@/types/database'
 import { recordAPIUsage } from '@/lib/api-usage'
+import { checkCooldown, setCooldown } from '@/lib/ai/cooldowns'
 
 export const maxDuration = 300 // Vercel Pro plan allows up to 300 seconds
 
@@ -50,8 +51,26 @@ export async function POST(req: Request) {
       .select('tier')
       .eq('user_id', user.id)
       .single()
-    if ((settings?.tier || 'free') === 'free') {
+    const userTier = (settings?.tier || 'free') as UserTier | 'free'
+    if (userTier === 'free') {
       return new Response(JSON.stringify({ error: 'AI features require a paid plan' }), { status: 403, headers: { 'Content-Type': 'application/json' } })
+    }
+
+    // Check cooldown before proceeding with expensive operations
+    const cooldownStatus = await checkCooldown(user.id, 'campaign_intelligence', campaignId)
+    if (cooldownStatus.isOnCooldown) {
+      return new Response(JSON.stringify({
+        error: 'Intelligence is on cooldown',
+        cooldown: {
+          availableAt: cooldownStatus.availableAt?.toISOString(),
+          remainingMs: cooldownStatus.remainingMs,
+          remainingFormatted: cooldownStatus.remainingFormatted,
+        },
+        message: `Campaign Intelligence is on cooldown. Available again in ${cooldownStatus.remainingFormatted}.`
+      }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json' }
+      })
     }
 
     // Load campaign with last intelligence run time
@@ -475,6 +494,9 @@ IMPORTANT INSTRUCTIONS:
       .from('campaigns')
       .update({ last_intelligence_run: new Date().toISOString() })
       .eq('id', campaignId)
+
+    // Set cooldown after successful analysis
+    await setCooldown(user.id, 'campaign_intelligence', userTier as UserTier, campaignId)
 
     return new Response(JSON.stringify({
       success: true,

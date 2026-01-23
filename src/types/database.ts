@@ -34,6 +34,8 @@ export interface Database {
           allow_save: boolean
           attribution_name: string | null
           inactive_reason: string | null
+          // Collaboration settings (Multiloop upgrade)
+          collaboration_settings: Json
           created_at: string
           updated_at: string
         }
@@ -61,6 +63,8 @@ export interface Database {
           allow_save?: boolean
           attribution_name?: string | null
           inactive_reason?: string | null
+          // Collaboration settings (Multiloop upgrade)
+          collaboration_settings?: Json
           created_at?: string
           updated_at?: string
         }
@@ -88,6 +92,8 @@ export interface Database {
           allow_save?: boolean
           attribution_name?: string | null
           inactive_reason?: string | null
+          // Collaboration settings (Multiloop upgrade)
+          collaboration_settings?: Json
           created_at?: string
           updated_at?: string
         }
@@ -129,6 +135,13 @@ export interface Database {
           // Import tracking
           source_document: string | null
           imported_at: string | null
+          // Multiloop upgrade: collaboration fields
+          dm_notes: string | null
+          visibility: 'public' | 'party' | 'dm_only'
+          vault_character_id: string | null
+          controlled_by_user_id: string | null
+          controlled_by_email: string | null
+          controlled_by_discord: string | null
           created_at: string
           updated_at: string
         }
@@ -163,6 +176,13 @@ export interface Database {
           quotes?: Json | null
           source_document?: string | null
           imported_at?: string | null
+          // Multiloop upgrade: collaboration fields
+          dm_notes?: string | null
+          visibility?: 'public' | 'party' | 'dm_only'
+          vault_character_id?: string | null
+          controlled_by_user_id?: string | null
+          controlled_by_email?: string | null
+          controlled_by_discord?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -197,6 +217,13 @@ export interface Database {
           quotes?: Json | null
           source_document?: string | null
           imported_at?: string | null
+          // Multiloop upgrade: collaboration fields
+          dm_notes?: string | null
+          visibility?: 'public' | 'party' | 'dm_only'
+          vault_character_id?: string | null
+          controlled_by_user_id?: string | null
+          controlled_by_email?: string | null
+          controlled_by_discord?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -318,6 +345,10 @@ export interface Database {
           date: string
           notes: string | null
           summary: string | null
+          // Multiloop upgrade: session workflow
+          phase: 'planned' | 'prep' | 'active' | 'recap' | 'complete'
+          prep_checklist: Json
+          thoughts_for_next: string | null
           created_at: string
           updated_at: string
         }
@@ -329,6 +360,10 @@ export interface Database {
           date?: string
           notes?: string | null
           summary?: string | null
+          // Multiloop upgrade: session workflow
+          phase?: 'planned' | 'prep' | 'active' | 'recap' | 'complete'
+          prep_checklist?: Json
+          thoughts_for_next?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -340,6 +375,10 @@ export interface Database {
           date?: string
           notes?: string | null
           summary?: string | null
+          // Multiloop upgrade: session workflow
+          phase?: 'planned' | 'prep' | 'active' | 'recap' | 'complete'
+          prep_checklist?: Json
+          thoughts_for_next?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -378,6 +417,9 @@ export interface Database {
           location: string | null
           is_major: boolean
           event_order: number
+          // Multiloop upgrade: visibility
+          dm_notes: string | null
+          visibility: 'public' | 'party' | 'dm_only'
           created_at: string
         }
         Insert: {
@@ -393,6 +435,9 @@ export interface Database {
           location?: string | null
           is_major?: boolean
           event_order?: number
+          // Multiloop upgrade: visibility
+          dm_notes?: string | null
+          visibility?: 'public' | 'party' | 'dm_only'
           created_at?: string
         }
         Update: {
@@ -408,6 +453,9 @@ export interface Database {
           location?: string | null
           is_major?: boolean
           event_order?: number
+          // Multiloop upgrade: visibility
+          dm_notes?: string | null
+          visibility?: 'public' | 'party' | 'dm_only'
           created_at?: string
         }
       }
@@ -417,6 +465,9 @@ export interface Database {
           campaign_id: string
           image_url: string
           name: string | null
+          // Multiloop upgrade: interactive maps
+          fog_of_war: Json
+          layers: Json
           created_at: string
         }
         Insert: {
@@ -424,6 +475,9 @@ export interface Database {
           campaign_id: string
           image_url: string
           name?: string | null
+          // Multiloop upgrade: interactive maps
+          fog_of_war?: Json
+          layers?: Json
           created_at?: string
         }
         Update: {
@@ -431,6 +485,9 @@ export interface Database {
           campaign_id?: string
           image_url?: string
           name?: string | null
+          // Multiloop upgrade: interactive maps
+          fog_of_war?: Json
+          layers?: Json
           created_at?: string
         }
       }
@@ -635,6 +692,8 @@ export interface Database {
           allow_save: boolean
           attribution_name: string | null
           inactive_reason: string | null
+          // Multiloop upgrade: campaign linking
+          campaign_links: Json
           created_at: string
           updated_at: string
         }
@@ -773,6 +832,8 @@ export interface Database {
           allow_save?: boolean
           attribution_name?: string | null
           inactive_reason?: string | null
+          // Multiloop upgrade: campaign linking
+          campaign_links?: Json
           created_at?: string
           updated_at?: string
         }
@@ -912,6 +973,8 @@ export interface Database {
           allow_save?: boolean
           attribution_name?: string | null
           inactive_reason?: string | null
+          // Multiloop upgrade: campaign linking
+          campaign_links?: Json
           created_at?: string
           updated_at?: string
         }
@@ -1252,6 +1315,10 @@ export interface Database {
           allow_save: boolean
           attribution_name: string | null
           inactive_reason: string | null
+          // Multiloop upgrade: structured content
+          has_structured_npcs: boolean
+          has_structured_encounters: boolean
+          has_structured_locations: boolean
           // Run mode fields
           encounter_presets: Json
           created_at: string
@@ -1292,6 +1359,10 @@ export interface Database {
           allow_save?: boolean
           attribution_name?: string | null
           inactive_reason?: string | null
+          // Multiloop upgrade: structured content
+          has_structured_npcs?: boolean
+          has_structured_encounters?: boolean
+          has_structured_locations?: boolean
           // Run mode fields
           encounter_presets?: Json
           created_at?: string
@@ -1332,6 +1403,10 @@ export interface Database {
           allow_save?: boolean
           attribution_name?: string | null
           inactive_reason?: string | null
+          // Multiloop upgrade: structured content
+          has_structured_npcs?: boolean
+          has_structured_encounters?: boolean
+          has_structured_locations?: boolean
           // Run mode fields
           encounter_presets?: Json
           created_at?: string
@@ -1638,6 +1713,9 @@ export interface Database {
           content: Json
           ai_generated: boolean
           last_analyzed_at: string | null
+          // Multiloop upgrade: visibility
+          dm_notes: string | null
+          visibility: 'public' | 'party' | 'dm_only'
           created_at: string
           updated_at: string
         }
@@ -1649,6 +1727,9 @@ export interface Database {
           content: Json
           ai_generated?: boolean
           last_analyzed_at?: string | null
+          // Multiloop upgrade: visibility
+          dm_notes?: string | null
+          visibility?: 'public' | 'party' | 'dm_only'
           created_at?: string
           updated_at?: string
         }
@@ -1660,6 +1741,9 @@ export interface Database {
           content?: Json
           ai_generated?: boolean
           last_analyzed_at?: string | null
+          // Multiloop upgrade: visibility
+          dm_notes?: string | null
+          visibility?: 'public' | 'party' | 'dm_only'
           created_at?: string
           updated_at?: string
         }
@@ -2416,6 +2500,9 @@ export interface Database {
           headquarters: string | null
           is_known_to_party: boolean
           notes: string | null
+          // Multiloop upgrade: visibility
+          dm_notes: string | null
+          visibility: 'public' | 'party' | 'dm_only'
           display_order: number
           created_at: string
           updated_at: string
@@ -2435,6 +2522,9 @@ export interface Database {
           headquarters?: string | null
           is_known_to_party?: boolean
           notes?: string | null
+          // Multiloop upgrade: visibility
+          dm_notes?: string | null
+          visibility?: 'public' | 'party' | 'dm_only'
           display_order?: number
           created_at?: string
           updated_at?: string
@@ -2454,6 +2544,9 @@ export interface Database {
           headquarters?: string | null
           is_known_to_party?: boolean
           notes?: string | null
+          // Multiloop upgrade: visibility
+          dm_notes?: string | null
+          visibility?: 'public' | 'party' | 'dm_only'
           display_order?: number
           created_at?: string
           updated_at?: string
@@ -2768,6 +2861,579 @@ export interface Database {
           created_at?: string
         }
       }
+      // =====================================================
+      // MULTILOOP PLATFORM UPGRADE TABLES
+      // =====================================================
+      campaign_members: {
+        Row: {
+          id: string
+          campaign_id: string
+          user_id: string | null
+          email: string | null
+          discord_id: string | null
+          role: 'owner' | 'co_dm' | 'player' | 'contributor' | 'guest'
+          permissions: Json
+          character_id: string | null
+          vault_character_id: string | null
+          invite_token: string | null
+          invited_at: string | null
+          joined_at: string | null
+          status: 'pending' | 'active' | 'declined' | 'removed'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          campaign_id: string
+          user_id?: string | null
+          email?: string | null
+          discord_id?: string | null
+          role?: 'owner' | 'co_dm' | 'player' | 'contributor' | 'guest'
+          permissions?: Json
+          character_id?: string | null
+          vault_character_id?: string | null
+          invite_token?: string | null
+          invited_at?: string | null
+          joined_at?: string | null
+          status?: 'pending' | 'active' | 'declined' | 'removed'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          campaign_id?: string
+          user_id?: string | null
+          email?: string | null
+          discord_id?: string | null
+          role?: 'owner' | 'co_dm' | 'player' | 'contributor' | 'guest'
+          permissions?: Json
+          character_id?: string | null
+          vault_character_id?: string | null
+          invite_token?: string | null
+          invited_at?: string | null
+          joined_at?: string | null
+          status?: 'pending' | 'active' | 'declined' | 'removed'
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      player_session_notes: {
+        Row: {
+          id: string
+          session_id: string
+          character_id: string | null
+          added_by_user_id: string
+          attributed_to_user_id: string | null
+          notes: string
+          source: 'manual' | 'discord_import' | 'player_submitted'
+          is_shared_with_party: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          session_id: string
+          character_id?: string | null
+          added_by_user_id: string
+          attributed_to_user_id?: string | null
+          notes: string
+          source?: 'manual' | 'discord_import' | 'player_submitted'
+          is_shared_with_party?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          session_id?: string
+          character_id?: string | null
+          added_by_user_id?: string
+          attributed_to_user_id?: string | null
+          notes?: string
+          source?: 'manual' | 'discord_import' | 'player_submitted'
+          is_shared_with_party?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      entity_secrets: {
+        Row: {
+          id: string
+          entity_type: 'character' | 'session' | 'timeline_event' | 'lore' | 'faction' | 'location' | 'artifact'
+          entity_id: string
+          field_name: string | null
+          content: string
+          visibility: 'dm_only' | 'party' | 'public'
+          revealed_at: string | null
+          revealed_in_session_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          entity_type: 'character' | 'session' | 'timeline_event' | 'lore' | 'faction' | 'location' | 'artifact'
+          entity_id: string
+          field_name?: string | null
+          content: string
+          visibility?: 'dm_only' | 'party' | 'public'
+          revealed_at?: string | null
+          revealed_in_session_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          entity_type?: 'character' | 'session' | 'timeline_event' | 'lore' | 'faction' | 'location' | 'artifact'
+          entity_id?: string
+          field_name?: string | null
+          content?: string
+          visibility?: 'dm_only' | 'party' | 'public'
+          revealed_at?: string | null
+          revealed_in_session_id?: string | null
+          created_at?: string
+        }
+      }
+      map_pins: {
+        Row: {
+          id: string
+          map_id: string
+          map_type: 'campaign' | 'oneshot'
+          x: number
+          y: number
+          label: string
+          description: string | null
+          icon: string | null
+          color: string | null
+          linked_entity_type: string | null
+          linked_entity_id: string | null
+          visibility: 'public' | 'party' | 'dm_only'
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          map_id: string
+          map_type: 'campaign' | 'oneshot'
+          x: number
+          y: number
+          label: string
+          description?: string | null
+          icon?: string | null
+          color?: string | null
+          linked_entity_type?: string | null
+          linked_entity_id?: string | null
+          visibility?: 'public' | 'party' | 'dm_only'
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          map_id?: string
+          map_type?: 'campaign' | 'oneshot'
+          x?: number
+          y?: number
+          label?: string
+          description?: string | null
+          icon?: string | null
+          color?: string | null
+          linked_entity_type?: string | null
+          linked_entity_id?: string | null
+          visibility?: 'public' | 'party' | 'dm_only'
+          sort_order?: number
+          created_at?: string
+        }
+      }
+      dashboard_layouts: {
+        Row: {
+          id: string
+          user_id: string
+          campaign_id: string
+          layout: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          campaign_id: string
+          layout: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          campaign_id?: string
+          layout?: Json
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      oneshot_npcs: {
+        Row: {
+          id: string
+          oneshot_id: string
+          name: string
+          description: string | null
+          appearance: string | null
+          personality: string | null
+          motivation: string | null
+          stat_block: string | null
+          external_link: string | null
+          image_url: string | null
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          oneshot_id: string
+          name: string
+          description?: string | null
+          appearance?: string | null
+          personality?: string | null
+          motivation?: string | null
+          stat_block?: string | null
+          external_link?: string | null
+          image_url?: string | null
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          oneshot_id?: string
+          name?: string
+          description?: string | null
+          appearance?: string | null
+          personality?: string | null
+          motivation?: string | null
+          stat_block?: string | null
+          external_link?: string | null
+          image_url?: string | null
+          sort_order?: number
+          created_at?: string
+        }
+      }
+      oneshot_encounters: {
+        Row: {
+          id: string
+          oneshot_id: string
+          name: string
+          description: string | null
+          difficulty: 'trivial' | 'easy' | 'medium' | 'hard' | 'deadly' | null
+          enemies: Json
+          tactics: string | null
+          terrain: string | null
+          rewards: string | null
+          map_id: string | null
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          oneshot_id: string
+          name: string
+          description?: string | null
+          difficulty?: 'trivial' | 'easy' | 'medium' | 'hard' | 'deadly' | null
+          enemies?: Json
+          tactics?: string | null
+          terrain?: string | null
+          rewards?: string | null
+          map_id?: string | null
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          oneshot_id?: string
+          name?: string
+          description?: string | null
+          difficulty?: 'trivial' | 'easy' | 'medium' | 'hard' | 'deadly' | null
+          enemies?: Json
+          tactics?: string | null
+          terrain?: string | null
+          rewards?: string | null
+          map_id?: string | null
+          sort_order?: number
+          created_at?: string
+        }
+      }
+      oneshot_locations: {
+        Row: {
+          id: string
+          oneshot_id: string
+          name: string
+          description: string | null
+          features: string | null
+          connected_locations: string[] | null
+          map_id: string | null
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          oneshot_id: string
+          name: string
+          description?: string | null
+          features?: string | null
+          connected_locations?: string[] | null
+          map_id?: string | null
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          oneshot_id?: string
+          name?: string
+          description?: string | null
+          features?: string | null
+          connected_locations?: string[] | null
+          map_id?: string | null
+          sort_order?: number
+          created_at?: string
+        }
+      }
+      character_snapshots: {
+        Row: {
+          id: string
+          vault_character_id: string
+          campaign_id: string
+          snapshot_data: Json
+          snapshot_type: 'session_0' | 'milestone' | 'manual'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          vault_character_id: string
+          campaign_id: string
+          snapshot_data: Json
+          snapshot_type?: 'session_0' | 'milestone' | 'manual'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          vault_character_id?: string
+          campaign_id?: string
+          snapshot_data?: Json
+          snapshot_type?: 'session_0' | 'milestone' | 'manual'
+          created_at?: string
+        }
+      }
+      ai_usage_logs: {
+        Row: {
+          id: string
+          user_id: string
+          operation_type: 'campaign_intelligence' | 'character_intelligence' | 'import' | 'merge' | 'summary' | 'other'
+          model_used: string | null
+          input_tokens: number | null
+          output_tokens: number | null
+          cost_usd: number | null
+          duration_ms: number | null
+          status: 'success' | 'error' | 'cancelled'
+          error_message: string | null
+          campaign_id: string | null
+          character_id: string | null
+          oneshot_id: string | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          operation_type: 'campaign_intelligence' | 'character_intelligence' | 'import' | 'merge' | 'summary' | 'other'
+          model_used?: string | null
+          input_tokens?: number | null
+          output_tokens?: number | null
+          cost_usd?: number | null
+          duration_ms?: number | null
+          status?: 'success' | 'error' | 'cancelled'
+          error_message?: string | null
+          campaign_id?: string | null
+          character_id?: string | null
+          oneshot_id?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          operation_type?: 'campaign_intelligence' | 'character_intelligence' | 'import' | 'merge' | 'summary' | 'other'
+          model_used?: string | null
+          input_tokens?: number | null
+          output_tokens?: number | null
+          cost_usd?: number | null
+          duration_ms?: number | null
+          status?: 'success' | 'error' | 'cancelled'
+          error_message?: string | null
+          campaign_id?: string | null
+          character_id?: string | null
+          oneshot_id?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+      }
+      ai_cooldowns: {
+        Row: {
+          id: string
+          user_id: string
+          cooldown_type: 'campaign_intelligence' | 'character_intelligence'
+          entity_id: string | null
+          last_run_at: string
+          next_available_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          cooldown_type: 'campaign_intelligence' | 'character_intelligence'
+          entity_id?: string | null
+          last_run_at: string
+          next_available_at: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          cooldown_type?: 'campaign_intelligence' | 'character_intelligence'
+          entity_id?: string | null
+          last_run_at?: string
+          next_available_at?: string
+          created_at?: string
+        }
+      }
+      ai_suggestion_feedback: {
+        Row: {
+          id: string
+          user_id: string
+          usage_log_id: string | null
+          suggestion_type: string
+          suggestion_content: string | null
+          action_taken: 'accepted' | 'edited' | 'dismissed'
+          feedback: 'positive' | 'negative' | null
+          edit_details: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          usage_log_id?: string | null
+          suggestion_type: string
+          suggestion_content?: string | null
+          action_taken: 'accepted' | 'edited' | 'dismissed'
+          feedback?: 'positive' | 'negative' | null
+          edit_details?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          usage_log_id?: string | null
+          suggestion_type?: string
+          suggestion_content?: string | null
+          action_taken?: 'accepted' | 'edited' | 'dismissed'
+          feedback?: 'positive' | 'negative' | null
+          edit_details?: string | null
+          created_at?: string
+        }
+      }
+      import_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          import_type: 'pdf' | 'image' | 'text'
+          target_type: 'vault_character' | 'campaign_character' | 'oneshot' | 'campaign'
+          status: 'started' | 'parsed' | 'reviewed' | 'saved' | 'cancelled'
+          usage_log_id: string | null
+          file_size_bytes: number | null
+          parse_duration_ms: number | null
+          started_at: string
+          parsed_at: string | null
+          reviewed_at: string | null
+          completed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          import_type: 'pdf' | 'image' | 'text'
+          target_type: 'vault_character' | 'campaign_character' | 'oneshot' | 'campaign'
+          status?: 'started' | 'parsed' | 'reviewed' | 'saved' | 'cancelled'
+          usage_log_id?: string | null
+          file_size_bytes?: number | null
+          parse_duration_ms?: number | null
+          started_at?: string
+          parsed_at?: string | null
+          reviewed_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          import_type?: 'pdf' | 'image' | 'text'
+          target_type?: 'vault_character' | 'campaign_character' | 'oneshot' | 'campaign'
+          status?: 'started' | 'parsed' | 'reviewed' | 'saved' | 'cancelled'
+          usage_log_id?: string | null
+          file_size_bytes?: number | null
+          parse_duration_ms?: number | null
+          started_at?: string
+          parsed_at?: string | null
+          reviewed_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+        }
+      }
+      ai_tier_settings: {
+        Row: {
+          id: string
+          tier: 'adventurer' | 'hero' | 'legend'
+          campaign_intelligence_cooldown_hours: number
+          character_intelligence_cooldown_hours: number
+          import_limit_per_day: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          tier: 'adventurer' | 'hero' | 'legend'
+          campaign_intelligence_cooldown_hours?: number
+          character_intelligence_cooldown_hours?: number
+          import_limit_per_day?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          tier?: 'adventurer' | 'hero' | 'legend'
+          campaign_intelligence_cooldown_hours?: number
+          character_intelligence_cooldown_hours?: number
+          import_limit_per_day?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+      }
+      user_guidance_state: {
+        Row: {
+          id: string
+          user_id: string
+          dismissed_tips: string[]
+          completed_onboarding: string[]
+          last_updated: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          dismissed_tips?: string[]
+          completed_onboarding?: string[]
+          last_updated?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          dismissed_tips?: string[]
+          completed_onboarding?: string[]
+          last_updated?: string
+          created_at?: string
+        }
+      }
     }
   }
 }
@@ -2997,4 +3663,151 @@ export type FeedbackWithDetails = Feedback & {
 // For admin list display
 export type FeedbackListItem = Feedback & {
   response_count: number
+}
+
+// =====================================================
+// MULTILOOP PLATFORM UPGRADE TYPES
+// =====================================================
+
+// Campaign collaboration types
+export type CampaignMember = Database['public']['Tables']['campaign_members']['Row']
+export type CampaignMemberInsert = Database['public']['Tables']['campaign_members']['Insert']
+export type CampaignMemberUpdate = Database['public']['Tables']['campaign_members']['Update']
+export type CampaignMemberRole = 'owner' | 'co_dm' | 'player' | 'contributor' | 'guest'
+export type CampaignMemberStatus = 'pending' | 'active' | 'declined' | 'removed'
+
+// Player session notes
+export type PlayerSessionNote = Database['public']['Tables']['player_session_notes']['Row']
+export type PlayerSessionNoteInsert = Database['public']['Tables']['player_session_notes']['Insert']
+export type PlayerSessionNoteUpdate = Database['public']['Tables']['player_session_notes']['Update']
+export type NoteSource = 'manual' | 'discord_import' | 'player_submitted'
+
+// Entity secrets (visibility system)
+export type EntitySecret = Database['public']['Tables']['entity_secrets']['Row']
+export type EntitySecretInsert = Database['public']['Tables']['entity_secrets']['Insert']
+export type EntitySecretUpdate = Database['public']['Tables']['entity_secrets']['Update']
+export type SecretEntityType = 'character' | 'session' | 'timeline_event' | 'lore' | 'faction' | 'location' | 'artifact'
+export type VisibilityLevel = 'dm_only' | 'party' | 'public'
+
+// Map pins (interactive maps)
+export type MapPin = Database['public']['Tables']['map_pins']['Row']
+export type MapPinInsert = Database['public']['Tables']['map_pins']['Insert']
+export type MapPinUpdate = Database['public']['Tables']['map_pins']['Update']
+export type MapType = 'campaign' | 'oneshot'
+
+// Dashboard layouts
+export type DashboardLayout = Database['public']['Tables']['dashboard_layouts']['Row']
+export type DashboardLayoutInsert = Database['public']['Tables']['dashboard_layouts']['Insert']
+export type DashboardLayoutUpdate = Database['public']['Tables']['dashboard_layouts']['Update']
+
+// Oneshot structured content
+export type OneshotNpc = Database['public']['Tables']['oneshot_npcs']['Row']
+export type OneshotNpcInsert = Database['public']['Tables']['oneshot_npcs']['Insert']
+export type OneshotNpcUpdate = Database['public']['Tables']['oneshot_npcs']['Update']
+
+export type OneshotEncounter = Database['public']['Tables']['oneshot_encounters']['Row']
+export type OneshotEncounterInsert = Database['public']['Tables']['oneshot_encounters']['Insert']
+export type OneshotEncounterUpdate = Database['public']['Tables']['oneshot_encounters']['Update']
+export type EncounterDifficulty = 'trivial' | 'easy' | 'medium' | 'hard' | 'deadly'
+
+export type OneshotLocation = Database['public']['Tables']['oneshot_locations']['Row']
+export type OneshotLocationInsert = Database['public']['Tables']['oneshot_locations']['Insert']
+export type OneshotLocationUpdate = Database['public']['Tables']['oneshot_locations']['Update']
+
+// Character snapshots (Session 0 preservation)
+export type CharacterSnapshot = Database['public']['Tables']['character_snapshots']['Row']
+export type CharacterSnapshotInsert = Database['public']['Tables']['character_snapshots']['Insert']
+export type CharacterSnapshotUpdate = Database['public']['Tables']['character_snapshots']['Update']
+export type SnapshotType = 'session_0' | 'milestone' | 'manual'
+
+// AI usage tracking
+export type AiUsageLog = Database['public']['Tables']['ai_usage_logs']['Row']
+export type AiUsageLogInsert = Database['public']['Tables']['ai_usage_logs']['Insert']
+export type AiUsageLogUpdate = Database['public']['Tables']['ai_usage_logs']['Update']
+export type AiOperationType = 'campaign_intelligence' | 'character_intelligence' | 'import' | 'merge' | 'summary' | 'other'
+export type AiOperationStatus = 'success' | 'error' | 'cancelled'
+
+// AI cooldowns
+export type AiCooldown = Database['public']['Tables']['ai_cooldowns']['Row']
+export type AiCooldownInsert = Database['public']['Tables']['ai_cooldowns']['Insert']
+export type AiCooldownUpdate = Database['public']['Tables']['ai_cooldowns']['Update']
+export type CooldownType = 'campaign_intelligence' | 'character_intelligence'
+
+// AI suggestion feedback
+export type AiSuggestionFeedback = Database['public']['Tables']['ai_suggestion_feedback']['Row']
+export type AiSuggestionFeedbackInsert = Database['public']['Tables']['ai_suggestion_feedback']['Insert']
+export type AiSuggestionFeedbackUpdate = Database['public']['Tables']['ai_suggestion_feedback']['Update']
+export type SuggestionAction = 'accepted' | 'edited' | 'dismissed'
+export type SuggestionFeedback = 'positive' | 'negative'
+
+// Import sessions (funnel tracking)
+export type ImportSession = Database['public']['Tables']['import_sessions']['Row']
+export type ImportSessionInsert = Database['public']['Tables']['import_sessions']['Insert']
+export type ImportSessionUpdate = Database['public']['Tables']['import_sessions']['Update']
+export type ImportType = 'pdf' | 'image' | 'text'
+export type ImportTargetType = 'vault_character' | 'campaign_character' | 'oneshot' | 'campaign'
+export type ImportStatus = 'started' | 'parsed' | 'reviewed' | 'saved' | 'cancelled'
+
+// AI tier settings
+export type AiTierSettings = Database['public']['Tables']['ai_tier_settings']['Row']
+export type AiTierSettingsInsert = Database['public']['Tables']['ai_tier_settings']['Insert']
+export type AiTierSettingsUpdate = Database['public']['Tables']['ai_tier_settings']['Update']
+
+// User guidance state
+export type UserGuidanceState = Database['public']['Tables']['user_guidance_state']['Row']
+export type UserGuidanceStateInsert = Database['public']['Tables']['user_guidance_state']['Insert']
+export type UserGuidanceStateUpdate = Database['public']['Tables']['user_guidance_state']['Update']
+
+// Session workflow types
+export type SessionPhase = 'planned' | 'prep' | 'active' | 'recap' | 'complete'
+
+// Extended types with relations
+export type CampaignMemberWithUser = CampaignMember & {
+  user_settings?: UserSettings | null
+  character?: Character | null
+  vault_character?: VaultCharacter | null
+}
+
+export type SessionWithPlayerNotes = Session & {
+  player_notes: PlayerSessionNote[]
+}
+
+export type OneshotWithStructuredContent = Oneshot & {
+  npcs: OneshotNpc[]
+  encounters: OneshotEncounter[]
+  locations: OneshotLocation[]
+}
+
+export type CampaignWithMembers = Campaign & {
+  members: CampaignMemberWithUser[]
+}
+
+// AI admin dashboard types
+export interface AiUsageStats {
+  totalCalls: number
+  callsByType: Record<AiOperationType, number>
+  callsByModel: Record<string, number>
+  totalCost: number
+  averageDuration: number
+  errorRate: number
+}
+
+export interface ImportFunnelStats {
+  started: number
+  parsed: number
+  reviewed: number
+  saved: number
+  cancelled: number
+  completionRate: number
+  averageCost: number
+}
+
+export interface SuggestionEffectivenessStats {
+  totalSuggestions: number
+  accepted: number
+  edited: number
+  dismissed: number
+  acceptanceRate: number
+  positiveRatio: number
+  negativeRatio: number
 }

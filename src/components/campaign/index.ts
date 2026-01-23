@@ -1,3 +1,8 @@
 export { TagManager } from './TagManager'
 export { FactionManager } from './FactionManager'
 export { RelationshipManager } from './RelationshipManager'
+export { CampaignMemberManager } from './CampaignMemberManager'
+export { SecretManager, VisibilityBadge, VisibilityToggle } from './SecretManager'
+export { DMNotes, DMNotesInline, DMNotesIndicator } from './DMNotes'
+export { CharacterClaiming, ClaimIndicator, UnclaimedCharactersBanner } from './CharacterClaiming'
+export { RelationshipDiagram } from './RelationshipDiagram'

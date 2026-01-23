@@ -3,6 +3,8 @@ import { getAIModel, AIProvider, AI_PROVIDERS } from '@/lib/ai/config'
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest } from 'next/server'
 import { recordAPIUsage } from '@/lib/api-usage'
+import { checkCooldown, setCooldown } from '@/lib/ai/cooldowns'
+import type { UserTier } from '@/types/database'
 
 export const maxDuration = 300
 
@@ -173,8 +175,26 @@ export async function POST(req: NextRequest) {
       .select('tier')
       .eq('user_id', user.id)
       .single()
-    if ((settings?.tier || 'free') === 'free') {
+    const userTier = (settings?.tier || 'free') as UserTier | 'free'
+    if (userTier === 'free') {
       return new Response(JSON.stringify({ error: 'AI features require a paid plan' }), { status: 403, headers: { 'Content-Type': 'application/json' } })
+    }
+
+    // Check cooldown before proceeding with expensive operations
+    const cooldownStatus = await checkCooldown(user.id, 'character_intelligence', characterId)
+    if (cooldownStatus.isOnCooldown) {
+      return new Response(JSON.stringify({
+        error: 'Intelligence is on cooldown',
+        cooldown: {
+          availableAt: cooldownStatus.availableAt?.toISOString(),
+          remainingMs: cooldownStatus.remainingMs,
+          remainingFormatted: cooldownStatus.remainingFormatted,
+        },
+        message: `Character Intelligence is on cooldown. Available again in ${cooldownStatus.remainingFormatted}.`
+      }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json' }
+      })
     }
 
     // Load the character
@@ -396,6 +416,9 @@ ${ANALYSIS_PROMPT}`
       .from('vault_characters')
       .update({ last_intelligence_run: new Date().toISOString() })
       .eq('id', characterId)
+
+    // Set cooldown after successful analysis
+    await setCooldown(user.id, 'character_intelligence', userTier as UserTier, characterId)
 
     return new Response(JSON.stringify({
       success: true,
