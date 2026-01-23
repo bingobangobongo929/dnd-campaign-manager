@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import type { PlayerSessionNoteInsert, MemberPermissions, CampaignMemberRole } from '@/types/database'
+import type { PlayerSessionNoteInsert, MemberPermissions, CampaignMemberRole, NoteSource } from '@/types/database'
 import { checkPermission, isDmRole } from '@/lib/permissions'
 
 // GET - Get all player notes for a session
@@ -147,7 +147,7 @@ export async function POST(
       notes: string
       characterId?: string
       attributedToUserId?: string
-      source?: 'manual' | 'discord_import' | 'player_submitted'
+      source?: NoteSource
       isSharedWithParty?: boolean
     }
 
@@ -170,13 +170,14 @@ export async function POST(
     // Use player's linked character if not specified
     const finalCharacterId = characterId || membership?.character_id || null
 
+    // Cast source to the database type - the migration 066 will update the constraint
     const noteData: PlayerSessionNoteInsert = {
       session_id: sessionId,
       character_id: finalCharacterId,
       added_by_user_id: user.id,
       attributed_to_user_id: attributedToUserId || null,
       notes,
-      source,
+      source: source as PlayerSessionNoteInsert['source'],
       is_shared_with_party: isSharedWithParty,
     }
 
