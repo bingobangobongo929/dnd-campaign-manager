@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { nanoid } from 'nanoid'
 import type { CampaignMemberInsert, CampaignMemberRole, MemberPermissions } from '@/types/database'
@@ -175,7 +176,9 @@ export async function POST(
       permissions: JSON.parse(JSON.stringify(memberPermissions)),
     }
 
-    const { data: member, error } = await supabase
+    // Use admin client to bypass RLS (we've already verified authorization above)
+    const adminClient = createAdminClient()
+    const { data: member, error } = await adminClient
       .from('campaign_members')
       .insert(memberData)
       .select()
