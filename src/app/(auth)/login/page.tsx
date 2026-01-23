@@ -25,15 +25,26 @@ function LoginForm() {
   const [inviteError, setInviteError] = useState('')
   const [checkingInvite, setCheckingInvite] = useState(false)
 
-  // Check invite code from URL on mount
+  // Check URL params on mount
   useEffect(() => {
     const invite = searchParams.get('invite')
+    const modeParam = searchParams.get('mode')
+
+    // Set mode from URL param (for invite page redirects)
+    if (modeParam === 'signup') {
+      setMode('signup')
+    }
+
+    // Handle invite code
     if (invite) {
       setInviteCode(invite)
       setMode('signup')
       validateInviteCode(invite)
     }
   }, [searchParams])
+
+  // Get redirect URL from params
+  const redirectUrl = searchParams.get('redirect') || '/home'
 
   const validateInviteCode = async (code: string) => {
     if (!code.trim()) {
@@ -139,7 +150,7 @@ function LoginForm() {
               terms_accepted_at: now,
               privacy_accepted_at: now,
             })
-            router.push('/home')
+            router.push(redirectUrl)
           } else if (settings?.totp_enabled) {
             // Check if device is trusted before requiring 2FA
             try {
@@ -151,7 +162,7 @@ function LoginForm() {
                   .from('user_settings')
                   .update({ last_login_at: new Date().toISOString() })
                   .eq('user_id', user.id)
-                router.push('/home')
+                router.push(redirectUrl)
                 return
               }
             } catch (trustErr) {
@@ -166,10 +177,10 @@ function LoginForm() {
               .from('user_settings')
               .update({ last_login_at: new Date().toISOString() })
               .eq('user_id', user.id)
-            router.push('/home')
+            router.push(redirectUrl)
           }
         } else {
-          router.push('/home')
+          router.push(redirectUrl)
         }
       }
     } else {
@@ -213,7 +224,7 @@ function LoginForm() {
         if (!data.session) {
           router.push('/signup/confirm')
         } else {
-          router.push('/home')
+          router.push(redirectUrl)
         }
       }
     }
