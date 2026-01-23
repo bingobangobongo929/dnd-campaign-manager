@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   Plus,
   Search,
@@ -9,6 +10,8 @@ import {
   Users,
   ChevronDown,
   ChevronUp,
+  ClipboardList,
+  CheckCircle2,
 } from 'lucide-react'
 import { sanitizeHtml } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
@@ -17,6 +20,7 @@ import { CharacterViewModal } from '@/components/character'
 import { formatDate, getInitials } from '@/lib/utils'
 import Image from 'next/image'
 import type { Campaign, Session, Character, Tag, CharacterTag } from '@/types/database'
+import { useRouter } from 'next/navigation'
 
 // Convert basic markdown to HTML for display
 function markdownToHtml(text: string): string {
@@ -42,15 +46,6 @@ export interface SessionsPageMobileProps {
   filteredSessions: SessionWithAttendees[]
   searchQuery: string
   setSearchQuery: (query: string) => void
-  isCreateModalOpen: boolean
-  setIsCreateModalOpen: (open: boolean) => void
-  formData: {
-    title: string
-    date: string
-    summary: string
-  }
-  setFormData: React.Dispatch<React.SetStateAction<{ title: string; date: string; summary: string }>>
-  saving: boolean
   expandedIds: Set<string>
   toggleExpanded: (id: string, e: React.MouseEvent) => void
   viewingCharacter: Character | null
@@ -59,7 +54,6 @@ export interface SessionsPageMobileProps {
   handleSessionClick: (session: SessionWithAttendees) => void
   handleCharacterClick: (character: Character) => void
   handleDelete: (id: string, e: React.MouseEvent) => void
-  handleCreate: () => void
 }
 
 export function SessionsPageMobile({
@@ -68,11 +62,6 @@ export function SessionsPageMobile({
   filteredSessions,
   searchQuery,
   setSearchQuery,
-  isCreateModalOpen,
-  setIsCreateModalOpen,
-  formData,
-  setFormData,
-  saving,
   expandedIds,
   toggleExpanded,
   viewingCharacter,
@@ -81,8 +70,14 @@ export function SessionsPageMobile({
   handleSessionClick,
   handleCharacterClick,
   handleDelete,
-  handleCreate,
 }: SessionsPageMobileProps) {
+  const router = useRouter()
+  const [showCreateSheet, setShowCreateSheet] = useState(false)
+
+  const handleCreateSession = (phase: 'prep' | 'completed') => {
+    router.push(`/campaigns/${campaignId}/sessions/new?phase=${phase}`)
+    setShowCreateSheet(false)
+  }
   if (loading) {
     return (
       <AppLayout campaignId={campaignId}>
@@ -103,7 +98,7 @@ export function SessionsPageMobile({
         backHref={`/campaigns/${campaignId}/canvas`}
         actions={
           <button
-            onClick={() => setIsCreateModalOpen(true)}
+            onClick={() => setShowCreateSheet(true)}
             className="p-2 rounded-lg bg-[--arcane-purple] text-white active:bg-[--arcane-purple]/80"
           >
             <Plus className="w-5 h-5" />
@@ -136,13 +131,22 @@ export function SessionsPageMobile({
                 {searchQuery ? 'Try a different search' : 'Document each session to track your campaign story'}
               </p>
               {!searchQuery && (
-                <button
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="inline-flex items-center gap-2 px-4 py-3 bg-[--arcane-purple] text-white rounded-xl active:bg-[--arcane-purple]/80 font-medium"
-                >
-                  <Plus className="w-5 h-5" />
-                  Create First Session
-                </button>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => handleCreateSession('prep')}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 rounded-xl active:bg-yellow-500/20 font-medium"
+                  >
+                    <ClipboardList className="w-5 h-5" />
+                    Plan Session
+                  </button>
+                  <button
+                    onClick={() => handleCreateSession('completed')}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-purple-500/10 border border-purple-500/30 text-purple-400 rounded-xl active:bg-purple-500/20 font-medium"
+                  >
+                    <CheckCircle2 className="w-5 h-5" />
+                    Add Recap
+                  </button>
+                </div>
               )}
             </div>
           ) : (
@@ -270,63 +274,44 @@ export function SessionsPageMobile({
 
         {/* Create Session Sheet */}
         <MobileBottomSheet
-          isOpen={isCreateModalOpen}
-          onClose={() => {
-            setIsCreateModalOpen(false)
-            setFormData({
-              title: '',
-              date: new Date().toISOString().split('T')[0],
-              summary: '',
-            })
-          }}
+          isOpen={showCreateSheet}
+          onClose={() => setShowCreateSheet(false)}
           title="New Session"
         >
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">Title</label>
-              <input
-                type="text"
-                className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[--arcane-purple]/50"
-                placeholder="e.g., The Journey Begins"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">Date</label>
-              <input
-                type="date"
-                className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-[--arcane-purple]/50"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                style={{ colorScheme: 'dark' }}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">Summary (optional)</label>
-              <textarea
-                className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[--arcane-purple]/50 resize-none"
-                placeholder="Brief summary..."
-                value={formData.summary}
-                onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                rows={3}
-              />
-            </div>
-            <div className="flex gap-3 pt-2">
-              <button
-                onClick={() => setIsCreateModalOpen(false)}
-                className="flex-1 py-3 rounded-xl bg-white/[0.04] text-gray-300 font-medium active:bg-white/[0.08]"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreate}
-                disabled={!formData.title.trim() || saving}
-                className="flex-1 py-3 rounded-xl bg-[--arcane-purple] text-white font-medium active:bg-[--arcane-purple]/80 disabled:opacity-50"
-              >
-                {saving ? 'Creating...' : 'Create'}
-              </button>
-            </div>
+            <p className="text-sm text-gray-400 text-center">
+              What would you like to do?
+            </p>
+            <button
+              onClick={() => handleCreateSession('prep')}
+              className="w-full flex items-center gap-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl active:bg-yellow-500/20"
+            >
+              <div className="w-12 h-12 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+                <ClipboardList className="w-6 h-6 text-yellow-400" />
+              </div>
+              <div className="text-left">
+                <div className="font-medium text-white">Plan Session</div>
+                <div className="text-xs text-gray-400">Prepare for an upcoming game</div>
+              </div>
+            </button>
+            <button
+              onClick={() => handleCreateSession('completed')}
+              className="w-full flex items-center gap-4 p-4 bg-purple-500/10 border border-purple-500/30 rounded-xl active:bg-purple-500/20"
+            >
+              <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                <CheckCircle2 className="w-6 h-6 text-purple-400" />
+              </div>
+              <div className="text-left">
+                <div className="font-medium text-white">Add Recap</div>
+                <div className="text-xs text-gray-400">Record a session that happened</div>
+              </div>
+            </button>
+            <button
+              onClick={() => setShowCreateSheet(false)}
+              className="w-full py-3 rounded-xl bg-white/[0.04] text-gray-400 font-medium active:bg-white/[0.08]"
+            >
+              Cancel
+            </button>
           </div>
         </MobileBottomSheet>
 

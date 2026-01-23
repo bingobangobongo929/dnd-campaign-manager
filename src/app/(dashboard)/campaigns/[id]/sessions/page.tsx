@@ -11,8 +11,10 @@ import {
   Users,
   ChevronDown,
   ChevronUp,
+  ClipboardList,
+  CheckCircle2,
 } from 'lucide-react'
-import { Input, Modal, Textarea, Tooltip, sanitizeHtml, AccessDeniedPage } from '@/components/ui'
+import { Tooltip, sanitizeHtml, AccessDeniedPage } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { SessionsPageMobile } from './page.mobile'
@@ -70,13 +72,6 @@ export default function SessionsPage() {
   const [loading, setLoading] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [formData, setFormData] = useState({
-    title: '',
-    date: new Date().toISOString().split('T')[0],
-    summary: '',
-  })
-  const [saving, setSaving] = useState(false)
 
   // Character preview modal state
   const [viewingCharacter, setViewingCharacter] = useState<Character | null>(null)
@@ -204,46 +199,9 @@ export default function SessionsPage() {
     )
   })
 
-  const handleCreate = async () => {
-    if (!formData.title.trim() || !user) return
-
-    setSaving(true)
-    const { data } = await supabase
-      .from('sessions')
-      .insert({
-        campaign_id: campaignId,
-        title: formData.title,
-        date: formData.date,
-        summary: formData.summary || null,
-        session_number: sessions.length + 1,
-      })
-      .select()
-      .single()
-
-    if (data) {
-      // Log activity
-      await logActivity(supabase, user.id, {
-        action: 'session.create',
-        entity_type: 'session',
-        entity_id: data.id,
-        entity_name: `Session ${data.session_number}: ${data.title}`,
-        metadata: {
-          campaign_id: campaignId,
-          campaign_name: campaign?.name,
-          session_number: data.session_number,
-        },
-      })
-
-      setIsCreateModalOpen(false)
-      setFormData({
-        title: '',
-        date: new Date().toISOString().split('T')[0],
-        summary: '',
-      })
-      // Navigate to the full-page editor for the new session
-      router.push(`/campaigns/${campaignId}/sessions/${data.id}`)
-    }
-    setSaving(false)
+  // Navigate to create session with specified phase
+  const handleCreateSession = (phase: 'prep' | 'completed') => {
+    router.push(`/campaigns/${campaignId}/sessions/new?phase=${phase}`)
   }
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
@@ -299,11 +257,6 @@ export default function SessionsPage() {
         filteredSessions={filteredSessions}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        isCreateModalOpen={isCreateModalOpen}
-        setIsCreateModalOpen={setIsCreateModalOpen}
-        formData={formData}
-        setFormData={setFormData}
-        saving={saving}
         expandedIds={expandedIds}
         toggleExpanded={toggleExpanded}
         viewingCharacter={viewingCharacter}
@@ -312,7 +265,6 @@ export default function SessionsPage() {
         handleSessionClick={handleSessionClick}
         handleCharacterClick={handleCharacterClick}
         handleDelete={handleDelete}
-        handleCreate={handleCreate}
       />
     )
   }
@@ -350,10 +302,22 @@ export default function SessionsPage() {
             <p className="page-subtitle">Record your campaign adventures</p>
           </div>
           {can.addSession && (
-            <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
-              <Plus className="w-4 h-4" />
-              New Session
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 transition-colors font-medium"
+                onClick={() => handleCreateSession('prep')}
+              >
+                <ClipboardList className="w-4 h-4" />
+                Plan Session
+              </button>
+              <button
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium"
+                onClick={() => handleCreateSession('completed')}
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                Add Recap
+              </button>
+            </div>
           )}
         </div>
 
@@ -390,10 +354,23 @@ export default function SessionsPage() {
                   Session notes power Campaign Intelligence - add detailed notes to get AI-powered timeline events, NPC suggestions, and relationship tracking.
                 </p>
                 {can.addSession && (
-                  <button className="btn btn-primary mt-4" onClick={() => setIsCreateModalOpen(true)}>
-                    <Plus className="w-5 h-5" />
-                    Create First Session
-                  </button>
+                  <div className="flex items-center justify-center gap-4 mt-6">
+                    <button
+                      className="flex items-center gap-2 px-5 py-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 transition-colors font-medium"
+                      onClick={() => handleCreateSession('prep')}
+                    >
+                      <ClipboardList className="w-5 h-5" />
+                      Plan Session
+                    </button>
+                    <span className="text-gray-600">or</span>
+                    <button
+                      className="flex items-center gap-2 px-5 py-3 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium"
+                      onClick={() => handleCreateSession('completed')}
+                    >
+                      <CheckCircle2 className="w-5 h-5" />
+                      Add Recap
+                    </button>
+                  </div>
                 )}
               </>
             )}
@@ -619,75 +596,6 @@ export default function SessionsPage() {
             ))}
           </div>
         )}
-
-        {/* FAB for mobile */}
-        {filteredSessions.length > 0 && can.addSession && (
-          <button
-            className="fab"
-            onClick={() => setIsCreateModalOpen(true)}
-            aria-label="Create new session"
-          >
-            <Plus className="fab-icon" />
-          </button>
-        )}
-
-        {/* Create Modal */}
-        <Modal
-          isOpen={isCreateModalOpen}
-          onClose={() => {
-            setIsCreateModalOpen(false)
-            setFormData({
-              title: '',
-              date: new Date().toISOString().split('T')[0],
-              summary: '',
-            })
-          }}
-          title="New Session"
-          description="Create a new session to record your adventures"
-        >
-          <div className="space-y-4">
-            <div className="form-group">
-              <label className="form-label">Session Title</label>
-              <Input
-                className="form-input"
-                placeholder="e.g., The Journey Begins"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Date</label>
-              <Input
-                className="form-input"
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Summary (optional)</label>
-              <Textarea
-                className="form-textarea"
-                placeholder="Brief summary of what happened..."
-                value={formData.summary}
-                onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                rows={3}
-              />
-            </div>
-            <div className="flex justify-end gap-3 pt-4">
-              <button className="btn btn-secondary" onClick={() => setIsCreateModalOpen(false)}>
-                Cancel
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleCreate}
-                disabled={!formData.title.trim() || saving}
-              >
-                {saving ? 'Creating...' : 'Create Session'}
-              </button>
-            </div>
-          </div>
-        </Modal>
 
         {/* Character View Modal */}
         {viewingCharacter && (

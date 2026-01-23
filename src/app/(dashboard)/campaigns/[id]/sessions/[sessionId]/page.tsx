@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import {
   ArrowLeft,
   Calendar,
@@ -19,6 +19,8 @@ import {
   AlertTriangle,
   RefreshCw,
   Lightbulb,
+  ClipboardList,
+  Play,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input, Button, sanitizeHtml } from '@/components/ui'
@@ -31,13 +33,14 @@ import { logActivity, diffChanges } from '@/lib/activity-log'
 import { useAppStore, useCanUseAI } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
-import type { Session, Campaign, Character } from '@/types/database'
+import type { Session, Campaign, Character, SessionPhase } from '@/types/database'
 import { SessionWorkflow, PlayerNotes } from '@/components/sessions'
 import { DmNotesSection } from '@/components/dm-notes'
 
 export default function SessionDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = useSupabase()
   const { user } = useUser()
   const isMobile = useIsMobile()
@@ -47,6 +50,9 @@ export default function SessionDetailPage() {
   const campaignId = params.id as string
   const sessionId = params.sessionId as string
   const isNew = sessionId === 'new'
+
+  // Get initial phase from URL query param for new sessions
+  const initialPhase = searchParams.get('phase') as SessionPhase | null
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [session, setSession] = useState<Session | null>(null)
@@ -75,6 +81,9 @@ export default function SessionDetailPage() {
   const [aiReasoning, setAiReasoning] = useState<string>('')
   const [detailedNotesCollapsed, setDetailedNotesCollapsed] = useState(true)
   const [previousThoughts, setPreviousThoughts] = useState<string>('')
+
+  // Phase management - for new sessions use URL param, for existing use session data
+  const [currentPhase, setCurrentPhase] = useState<SessionPhase>(initialPhase || 'prep')
 
   useEffect(() => {
     if (user && campaignId && sessionId) {
@@ -156,6 +165,7 @@ export default function SessionDetailPage() {
     setSession(sessionData)
     setSessionVersion((sessionData as any).version || 1)
     setOriginalData(sessionData)
+    setCurrentPhase((sessionData.phase as SessionPhase) || 'prep')
     setFormData({
       session_number: sessionData.session_number?.toString() || '',
       title: sessionData.title || '',
@@ -180,6 +190,37 @@ export default function SessionDetailPage() {
 
     setLoading(false)
     setHasLoadedOnce(true)
+  }
+
+  // Handle phase change - updates state and saves to DB for existing sessions
+  const handlePhaseChange = async (newPhase: SessionPhase) => {
+    setCurrentPhase(newPhase)
+
+    // For existing sessions, save to database immediately
+    if (!isNew && session) {
+      try {
+        const response = await fetch(
+          `/api/campaigns/${campaignId}/sessions/${session.id}/workflow`,
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phase: newPhase }),
+          }
+        )
+
+        if (!response.ok) {
+          toast.error('Failed to update phase')
+          return
+        }
+
+        const data = await response.json()
+        setSession(data.session)
+        toast.success(`Phase changed to ${newPhase}`)
+      } catch (error) {
+        console.error('Failed to update phase:', error)
+        toast.error('Failed to update phase')
+      }
+    }
   }
 
   // Toggle character attendance
@@ -283,7 +324,8 @@ export default function SessionDetailPage() {
 
   // Create new session
   const handleCreate = async () => {
-    if (!formData.summary.trim()) {
+    // Different validation based on phase
+    if (currentPhase === 'completed' && !formData.summary.trim()) {
       toast.error('Please add a summary first')
       return
     }
@@ -297,6 +339,7 @@ export default function SessionDetailPage() {
         date: formData.date || null,
         summary: formData.summary || null,
         notes: formData.notes || '',
+        phase: currentPhase,
       })
       .select()
       .single()
@@ -622,334 +665,509 @@ export default function SessionDetailPage() {
           </div>
         </div>
 
-        {/* Thoughts from Previous Session (only for new sessions) */}
-        {isNew && previousThoughts && (
-          <div className="card p-6 mb-8 border-purple-500/30 bg-purple-500/5">
-            <div className="flex items-center gap-3 mb-4">
-              <Lightbulb className="w-5 h-5 text-purple-400" />
-              <label className="text-lg font-semibold text-purple-300">
-                From Previous Session
-              </label>
-            </div>
-            <p className="text-gray-300 text-sm whitespace-pre-wrap">{previousThoughts}</p>
-            <p className="text-xs text-gray-500 mt-3">
-              These notes were left in the previous session for you to reference.
-            </p>
-          </div>
-        )}
-
-        {/* Attendance Section */}
-        <div className="card p-6 mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <Users className="w-5 h-5 text-[--arcane-purple]" />
-            <label className="text-lg font-semibold text-[--text-primary]">
-              Attendance
-            </label>
-            <span className="text-sm text-[--text-tertiary]">
-              ({attendees.length} present)
-            </span>
-          </div>
-
-          {/* PC Characters */}
-          {pcCharacters.length > 0 && (
-            <div className="mb-4">
-              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-3">
-                Player Characters
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {pcCharacters.map((char) => {
-                  const isAttending = attendees.includes(char.id)
-                  return (
-                    <button
-                      key={char.id}
-                      onClick={() => toggleAttendee(char.id)}
-                      className={cn(
-                        'flex items-center gap-2 px-3 py-2 rounded-lg transition-all border-2',
-                        isAttending
-                          ? 'bg-[--arcane-purple]/20 border-[--arcane-purple] text-white'
-                          : 'bg-transparent border-white/10 text-[--text-secondary] hover:border-white/20 opacity-50 hover:opacity-75'
-                      )}
-                    >
-                      <div className="relative w-6 h-6 rounded-full overflow-hidden flex-shrink-0 bg-[--bg-surface]">
-                        {char.image_url ? (
-                          <Image
-                            src={char.image_url}
-                            alt={char.name}
-                            fill
-                            className="object-cover"
-                            sizes="24px"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-xs font-medium">
-                            {getInitials(char.name)}
-                          </div>
-                        )}
-                      </div>
-                      <span className="text-sm font-medium">{char.name}</span>
-                      {isAttending && (
-                        <CheckCircle2 className="w-4 h-4 text-[--arcane-purple]" />
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* NPC Characters */}
-          {npcCharacters.length > 0 && (
-            <div>
-              <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-3">
-                NPCs Present
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {npcCharacters.map((char) => {
-                  const isAttending = attendees.includes(char.id)
-                  return (
-                    <button
-                      key={char.id}
-                      onClick={() => toggleAttendee(char.id)}
-                      className={cn(
-                        'flex items-center gap-2 px-3 py-2 rounded-lg transition-all border-2',
-                        isAttending
-                          ? 'bg-[--arcane-gold]/20 border-[--arcane-gold] text-white'
-                          : 'bg-transparent border-white/10 text-[--text-secondary] hover:border-white/20 opacity-50 hover:opacity-75'
-                      )}
-                    >
-                      <div className="relative w-6 h-6 rounded-full overflow-hidden flex-shrink-0 bg-[--bg-surface]">
-                        {char.image_url ? (
-                          <Image
-                            src={char.image_url}
-                            alt={char.name}
-                            fill
-                            className="object-cover"
-                            sizes="24px"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-xs font-medium">
-                            {getInitials(char.name)}
-                          </div>
-                        )}
-                      </div>
-                      <span className="text-sm font-medium">{char.name}</span>
-                      {isAttending && (
-                        <CheckCircle2 className="w-4 h-4 text-[--arcane-gold]" />
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {characters.length === 0 && (
-            <p className="text-sm text-[--text-tertiary] text-center py-4">
-              No characters in this campaign yet.
-            </p>
-          )}
-        </div>
-
-        {/* Summary Section - PRIMARY FOCUS */}
-        <div className="card p-6 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <label className="text-lg font-semibold text-[--text-primary] block">
-                Summary
-              </label>
-              <span className="text-sm text-[--text-tertiary]">
-                Write bullet points of what happened, then expand with AI
-              </span>
-            </div>
-            {canUseAI && !showExpandedPreview && (
-              <button
-                onClick={handleExpandNotes}
-                disabled={!formData.summary.trim() || expanding}
-                className={cn(
-                  "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                  "bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple]",
-                  "hover:bg-[--arcane-purple]/20 hover:border-[--arcane-purple]/50",
-                  "disabled:opacity-50 disabled:cursor-not-allowed"
-                )}
-              >
-                {expanding ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Wand2 className="w-4 h-4" />
-                )}
-                Expand Notes
-              </button>
-            )}
-          </div>
-
-          <RichTextEditor
-            content={formData.summary}
-            onChange={(content) => setFormData({ ...formData, summary: content })}
-            placeholder="Write your session notes as bullet points..."
-            className="min-h-[200px]"
-          />
-        </div>
-
-        {/* AI Expansion Preview */}
-        {showExpandedPreview && (
-          <div className="card p-6 mb-8 border-[--arcane-purple]/30 bg-[--arcane-purple]/5">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-5 h-5 text-[--arcane-purple]" />
-              <span className="text-lg font-semibold text-[--arcane-purple]">
-                {expanding ? 'Processing...' : 'AI Expansion Preview'}
-              </span>
-              {expanding && (
-                <Loader2 className="w-4 h-4 animate-spin text-[--arcane-purple]" />
-              )}
-            </div>
-
-            {/* Cleaned Summary Preview */}
-            {pendingSummary && (
-              <div className="mb-6">
-                <h4 className="text-sm font-medium text-[--text-secondary] mb-2">Cleaned Summary:</h4>
-                <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-                  <div
-                    className="prose prose-invert prose-sm max-w-none [&>ul]:mt-1 [&>ul]:mb-2 [&>li]:my-0.5 text-[--text-secondary]"
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatSummaryAsHtml(pendingSummary)) }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* AI-Generated Title Preview */}
-            {pendingTitle && !formData.title.trim() && (
-              <div className="mb-6">
-                <h4 className="text-sm font-medium text-[--text-secondary] mb-2">Suggested Title:</h4>
-                <div className="p-3 rounded-lg bg-[--arcane-gold]/5 border border-[--arcane-gold]/20">
-                  <p className="text-base font-medium text-[--arcane-gold]">{pendingTitle}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Detailed Notes Preview */}
-            {pendingNotes && (
-              <div className="mb-6">
-                <h4 className="text-sm font-medium text-[--text-secondary] mb-2">Detailed Notes:</h4>
-                <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-                  <div
-                    className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4"
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(pendingNotes) }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* AI Reasoning */}
-            {aiReasoning && (
-              <div className="mb-6 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-                <p className="text-xs text-[--text-tertiary] mb-1">AI Context Used:</p>
-                <p className="text-sm text-[--text-secondary] whitespace-pre-wrap">{aiReasoning}</p>
-              </div>
-            )}
-
-            {!expanding && (pendingNotes || pendingSummary) && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={acceptExpanded}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors"
-                >
-                  <Check className="w-4 h-4" />
-                  Accept
-                </button>
-                <button
-                  onClick={editExpanded}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple] hover:bg-[--arcane-purple]/20 transition-colors"
-                >
-                  <Pencil className="w-4 h-4" />
-                  Accept & Edit
-                </button>
-                <button
-                  onClick={declineExpanded}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                  Decline
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Detailed Notes Section */}
-        {(formData.notes || !detailedNotesCollapsed) && (
-          <div className="card p-6 mb-8">
+        {/* Phase Toggle Bar - Prominent at top */}
+        <div className="mb-8 p-1.5 bg-white/[0.03] rounded-xl border border-white/[0.08]">
+          <div className="grid grid-cols-3 gap-1.5">
+            {/* Prep Phase */}
             <button
-              onClick={() => setDetailedNotesCollapsed(!detailedNotesCollapsed)}
-              className="w-full flex items-center justify-between mb-4"
-            >
-              <div className="flex items-center gap-3">
-                <ScrollText className="w-5 h-5 text-[--arcane-purple]" />
-                <div className="text-left">
-                  <label className="text-lg font-semibold text-[--text-primary] block">
-                    Detailed Notes
-                  </label>
-                  <span className="text-sm text-[--text-tertiary]">
-                    Expanded session narrative
-                  </span>
-                </div>
-              </div>
-              {detailedNotesCollapsed ? (
-                <ChevronDown className="w-5 h-5 text-[--text-tertiary]" />
-              ) : (
-                <ChevronUp className="w-5 h-5 text-[--text-tertiary]" />
+              onClick={() => handlePhaseChange('prep')}
+              className={cn(
+                "flex flex-col items-center gap-1.5 py-4 px-4 rounded-lg transition-all",
+                currentPhase === 'prep'
+                  ? "bg-yellow-500/20 border-2 border-yellow-500/50 shadow-lg shadow-yellow-500/10"
+                  : "border-2 border-transparent hover:bg-white/[0.04]"
               )}
+            >
+              <ClipboardList className={cn(
+                "w-6 h-6",
+                currentPhase === 'prep' ? "text-yellow-400" : "text-gray-500"
+              )} />
+              <span className={cn(
+                "text-sm font-semibold",
+                currentPhase === 'prep' ? "text-yellow-400" : "text-gray-400"
+              )}>
+                Prep
+              </span>
+              <span className={cn(
+                "text-xs",
+                currentPhase === 'prep' ? "text-yellow-400/70" : "text-gray-600"
+              )}>
+                Planning ahead
+              </span>
             </button>
 
-            {!detailedNotesCollapsed && (
-              <RichTextEditor
-                content={formData.notes}
-                onChange={(content) => setFormData({ ...formData, notes: content })}
-                placeholder="Detailed session notes..."
-                className="min-h-[300px]"
+            {/* Live Phase */}
+            <button
+              onClick={() => handlePhaseChange('live')}
+              className={cn(
+                "flex flex-col items-center gap-1.5 py-4 px-4 rounded-lg transition-all",
+                currentPhase === 'live'
+                  ? "bg-green-500/20 border-2 border-green-500/50 shadow-lg shadow-green-500/10"
+                  : "border-2 border-transparent hover:bg-white/[0.04]"
+              )}
+            >
+              <Play className={cn(
+                "w-6 h-6",
+                currentPhase === 'live' ? "text-green-400" : "text-gray-500"
+              )} />
+              <span className={cn(
+                "text-sm font-semibold",
+                currentPhase === 'live' ? "text-green-400" : "text-gray-400"
+              )}>
+                Live
+              </span>
+              <span className={cn(
+                "text-xs",
+                currentPhase === 'live' ? "text-green-400/70" : "text-gray-600"
+              )}>
+                Session active
+              </span>
+            </button>
+
+            {/* Completed Phase */}
+            <button
+              onClick={() => handlePhaseChange('completed')}
+              className={cn(
+                "flex flex-col items-center gap-1.5 py-4 px-4 rounded-lg transition-all",
+                currentPhase === 'completed'
+                  ? "bg-purple-500/20 border-2 border-purple-500/50 shadow-lg shadow-purple-500/10"
+                  : "border-2 border-transparent hover:bg-white/[0.04]"
+              )}
+            >
+              <CheckCircle2 className={cn(
+                "w-6 h-6",
+                currentPhase === 'completed' ? "text-purple-400" : "text-gray-500"
+              )} />
+              <span className={cn(
+                "text-sm font-semibold",
+                currentPhase === 'completed' ? "text-purple-400" : "text-gray-400"
+              )}>
+                Completed
+              </span>
+              <span className={cn(
+                "text-xs",
+                currentPhase === 'completed' ? "text-purple-400/70" : "text-gray-600"
+              )}>
+                Session done
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* === PREP PHASE LAYOUT === */}
+        {currentPhase === 'prep' && (
+          <>
+            {/* Thoughts from Previous Session (shown in Prep mode) */}
+            {previousThoughts && (
+              <div className="card p-6 mb-8 border-purple-500/30 bg-purple-500/5">
+                <div className="flex items-center gap-3 mb-4">
+                  <Lightbulb className="w-5 h-5 text-purple-400" />
+                  <label className="text-lg font-semibold text-purple-300">
+                    From Previous Session
+                  </label>
+                </div>
+                <p className="text-gray-300 text-sm whitespace-pre-wrap">{previousThoughts}</p>
+                <p className="text-xs text-gray-500 mt-3">
+                  These notes were left in the previous session for you to reference.
+                </p>
+              </div>
+            )}
+
+            {/* Session Workflow - Full component for Prep mode */}
+            {!isNew && session && campaign?.user_id === user?.id && (
+              <SessionWorkflow
+                session={session}
+                campaignId={campaignId}
+                onUpdate={(updatedSession) => setSession(updatedSession)}
               />
             )}
-          </div>
+
+            {/* Basic info for new sessions in Prep mode */}
+            {isNew && (
+              <div className="card p-6 mb-8 border-yellow-500/30 bg-yellow-500/5">
+                <div className="flex items-center gap-2 mb-4">
+                  <ClipboardList className="w-5 h-5 text-yellow-400" />
+                  <span className="font-medium text-white">Session Planning</span>
+                </div>
+                <p className="text-sm text-gray-400 mb-4">
+                  You&apos;re in prep mode. Use this to plan your upcoming session with a checklist and reference materials.
+                  Switch to &quot;Completed&quot; when you&apos;re ready to add your session recap.
+                </p>
+                <div className="flex justify-end">
+                  <Button onClick={handleCreate} size="lg" variant="primary">
+                    Create Session
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
-        {/* DM Notes Section */}
-        {!isNew && campaign?.user_id === user?.id && (
-          <div className="card p-6 mb-8">
-            <DmNotesSection
-              dmNotes={formData.dm_notes}
-              onDmNotesChange={(notes) => setFormData({ ...formData, dm_notes: notes })}
-              showVisibilityToggle={false}
-              placeholder="Private notes about this session. Plot threads to follow up, player behaviors, etc."
-              collapsed={!formData.dm_notes}
-            />
-          </div>
+        {/* === LIVE PHASE LAYOUT === */}
+        {currentPhase === 'live' && (
+          <>
+            {/* Session Workflow for Live mode */}
+            {!isNew && session && campaign?.user_id === user?.id && (
+              <SessionWorkflow
+                session={session}
+                campaignId={campaignId}
+                onUpdate={(updatedSession) => setSession(updatedSession)}
+              />
+            )}
+
+            {/* For new sessions in live mode, show a prompt */}
+            {isNew && (
+              <div className="card p-6 mb-8 border-green-500/30 bg-green-500/5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Play className="w-5 h-5 text-green-400" />
+                  <span className="font-medium text-white">Session in Progress</span>
+                </div>
+                <p className="text-sm text-gray-400 mb-4">
+                  You&apos;re tracking a live session. The timer and quick reference are available once you create the session.
+                </p>
+                <div className="flex justify-end">
+                  <Button onClick={handleCreate} size="lg" variant="primary">
+                    Create Session
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
-        {/* Session Workflow - Prep/Recap Mode */}
-        {!isNew && session && campaign?.user_id === user?.id && (
-          <SessionWorkflow
-            session={session}
-            campaignId={campaignId}
-            onUpdate={(updatedSession) => setSession(updatedSession)}
-          />
-        )}
+        {/* === COMPLETED PHASE LAYOUT === */}
+        {currentPhase === 'completed' && (
+          <>
+            {/* Thoughts from Previous Session (also show for new completed sessions) */}
+            {isNew && previousThoughts && (
+              <div className="card p-6 mb-8 border-purple-500/30 bg-purple-500/5">
+                <div className="flex items-center gap-3 mb-4">
+                  <Lightbulb className="w-5 h-5 text-purple-400" />
+                  <label className="text-lg font-semibold text-purple-300">
+                    From Previous Session
+                  </label>
+                </div>
+                <p className="text-gray-300 text-sm whitespace-pre-wrap">{previousThoughts}</p>
+                <p className="text-xs text-gray-500 mt-3">
+                  These notes were left in the previous session for you to reference.
+                </p>
+              </div>
+            )}
 
-        {/* Player Notes Section */}
-        {!isNew && session && (
-          <div className="card p-6 mb-8">
-            <PlayerNotes
-              sessionId={sessionId}
-              campaignId={campaignId}
-              characters={characters}
-            />
-          </div>
-        )}
+            {/* Attendance Section - Shown in Completed mode */}
+            <div className="card p-6 mb-8">
+              <div className="flex items-center gap-3 mb-4">
+                <Users className="w-5 h-5 text-[--arcane-purple]" />
+                <label className="text-lg font-semibold text-[--text-primary]">
+                  Attendance
+                </label>
+                <span className="text-sm text-[--text-tertiary]">
+                  ({attendees.length} present)
+                </span>
+              </div>
 
-        {/* Create button for new sessions at bottom */}
-        {isNew && (
-          <div className="flex justify-end">
-            <Button onClick={handleCreate} size="lg">
-              Create Session
-            </Button>
-          </div>
+              {/* PC Characters */}
+              {pcCharacters.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-3">
+                    Player Characters
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {pcCharacters.map((char) => {
+                      const isAttending = attendees.includes(char.id)
+                      return (
+                        <button
+                          key={char.id}
+                          onClick={() => toggleAttendee(char.id)}
+                          className={cn(
+                            'flex items-center gap-2 px-3 py-2 rounded-lg transition-all border-2',
+                            isAttending
+                              ? 'bg-[--arcane-purple]/20 border-[--arcane-purple] text-white'
+                              : 'bg-transparent border-white/10 text-[--text-secondary] hover:border-white/20 opacity-50 hover:opacity-75'
+                          )}
+                        >
+                          <div className="relative w-6 h-6 rounded-full overflow-hidden flex-shrink-0 bg-[--bg-surface]">
+                            {char.image_url ? (
+                              <Image
+                                src={char.image_url}
+                                alt={char.name}
+                                fill
+                                className="object-cover"
+                                sizes="24px"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-xs font-medium">
+                                {getInitials(char.name)}
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-sm font-medium">{char.name}</span>
+                          {isAttending && (
+                            <CheckCircle2 className="w-4 h-4 text-[--arcane-purple]" />
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* NPC Characters - Always expanded */}
+              {npcCharacters.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-3">
+                    NPCs Present
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {npcCharacters.map((char) => {
+                      const isAttending = attendees.includes(char.id)
+                      return (
+                        <button
+                          key={char.id}
+                          onClick={() => toggleAttendee(char.id)}
+                          className={cn(
+                            'flex items-center gap-2 px-3 py-2 rounded-lg transition-all border-2',
+                            isAttending
+                              ? 'bg-[--arcane-gold]/20 border-[--arcane-gold] text-white'
+                              : 'bg-transparent border-white/10 text-[--text-secondary] hover:border-white/20 opacity-50 hover:opacity-75'
+                          )}
+                        >
+                          <div className="relative w-6 h-6 rounded-full overflow-hidden flex-shrink-0 bg-[--bg-surface]">
+                            {char.image_url ? (
+                              <Image
+                                src={char.image_url}
+                                alt={char.name}
+                                fill
+                                className="object-cover"
+                                sizes="24px"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-xs font-medium">
+                                {getInitials(char.name)}
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-sm font-medium">{char.name}</span>
+                          {isAttending && (
+                            <CheckCircle2 className="w-4 h-4 text-[--arcane-gold]" />
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {characters.length === 0 && (
+                <p className="text-sm text-[--text-tertiary] text-center py-4">
+                  No characters in this campaign yet.
+                </p>
+              )}
+            </div>
+
+            {/* Summary Section - PRIMARY FOCUS for Completed mode */}
+            <div className="card p-6 mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <label className="text-lg font-semibold text-[--text-primary] block">
+                    Summary
+                  </label>
+                  <span className="text-sm text-[--text-tertiary]">
+                    Write bullet points of what happened, then expand with AI
+                  </span>
+                </div>
+                {canUseAI && !showExpandedPreview && (
+                  <button
+                    onClick={handleExpandNotes}
+                    disabled={!formData.summary.trim() || expanding}
+                    className={cn(
+                      "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                      "bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple]",
+                      "hover:bg-[--arcane-purple]/20 hover:border-[--arcane-purple]/50",
+                      "disabled:opacity-50 disabled:cursor-not-allowed"
+                    )}
+                  >
+                    {expanding ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="w-4 h-4" />
+                    )}
+                    Expand Notes
+                  </button>
+                )}
+              </div>
+
+              <RichTextEditor
+                content={formData.summary}
+                onChange={(content) => setFormData({ ...formData, summary: content })}
+                placeholder="Write your session notes as bullet points..."
+                className="min-h-[200px]"
+              />
+            </div>
+
+            {/* AI Expansion Preview */}
+            {showExpandedPreview && (
+              <div className="card p-6 mb-8 border-[--arcane-purple]/30 bg-[--arcane-purple]/5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="w-5 h-5 text-[--arcane-purple]" />
+                  <span className="text-lg font-semibold text-[--arcane-purple]">
+                    {expanding ? 'Processing...' : 'AI Expansion Preview'}
+                  </span>
+                  {expanding && (
+                    <Loader2 className="w-4 h-4 animate-spin text-[--arcane-purple]" />
+                  )}
+                </div>
+
+                {/* Cleaned Summary Preview */}
+                {pendingSummary && (
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-[--text-secondary] mb-2">Cleaned Summary:</h4>
+                    <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                      <div
+                        className="prose prose-invert prose-sm max-w-none [&>ul]:mt-1 [&>ul]:mb-2 [&>li]:my-0.5 text-[--text-secondary]"
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatSummaryAsHtml(pendingSummary)) }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* AI-Generated Title Preview */}
+                {pendingTitle && !formData.title.trim() && (
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-[--text-secondary] mb-2">Suggested Title:</h4>
+                    <div className="p-3 rounded-lg bg-[--arcane-gold]/5 border border-[--arcane-gold]/20">
+                      <p className="text-base font-medium text-[--arcane-gold]">{pendingTitle}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Detailed Notes Preview */}
+                {pendingNotes && (
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-[--text-secondary] mb-2">Detailed Notes:</h4>
+                    <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                      <div
+                        className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4"
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(pendingNotes) }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* AI Reasoning */}
+                {aiReasoning && (
+                  <div className="mb-6 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                    <p className="text-xs text-[--text-tertiary] mb-1">AI Context Used:</p>
+                    <p className="text-sm text-[--text-secondary] whitespace-pre-wrap">{aiReasoning}</p>
+                  </div>
+                )}
+
+                {!expanding && (pendingNotes || pendingSummary) && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={acceptExpanded}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors"
+                    >
+                      <Check className="w-4 h-4" />
+                      Accept
+                    </button>
+                    <button
+                      onClick={editExpanded}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple] hover:bg-[--arcane-purple]/20 transition-colors"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      Accept & Edit
+                    </button>
+                    <button
+                      onClick={declineExpanded}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                      Decline
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Detailed Notes Section */}
+            {(formData.notes || !detailedNotesCollapsed) && (
+              <div className="card p-6 mb-8">
+                <button
+                  onClick={() => setDetailedNotesCollapsed(!detailedNotesCollapsed)}
+                  className="w-full flex items-center justify-between mb-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <ScrollText className="w-5 h-5 text-[--arcane-purple]" />
+                    <div className="text-left">
+                      <label className="text-lg font-semibold text-[--text-primary] block">
+                        Detailed Notes
+                      </label>
+                      <span className="text-sm text-[--text-tertiary]">
+                        Expanded session narrative
+                      </span>
+                    </div>
+                  </div>
+                  {detailedNotesCollapsed ? (
+                    <ChevronDown className="w-5 h-5 text-[--text-tertiary]" />
+                  ) : (
+                    <ChevronUp className="w-5 h-5 text-[--text-tertiary]" />
+                  )}
+                </button>
+
+                {!detailedNotesCollapsed && (
+                  <RichTextEditor
+                    content={formData.notes}
+                    onChange={(content) => setFormData({ ...formData, notes: content })}
+                    placeholder="Detailed session notes..."
+                    className="min-h-[300px]"
+                  />
+                )}
+              </div>
+            )}
+
+            {/* DM Notes Section */}
+            {!isNew && campaign?.user_id === user?.id && (
+              <div className="card p-6 mb-8">
+                <DmNotesSection
+                  dmNotes={formData.dm_notes}
+                  onDmNotesChange={(notes) => setFormData({ ...formData, dm_notes: notes })}
+                  showVisibilityToggle={false}
+                  placeholder="Private notes about this session. Plot threads to follow up, player behaviors, etc."
+                  collapsed={!formData.dm_notes}
+                />
+              </div>
+            )}
+
+            {/* Session Workflow - For "Thoughts for Next" in Completed mode */}
+            {!isNew && session && campaign?.user_id === user?.id && (
+              <SessionWorkflow
+                session={session}
+                campaignId={campaignId}
+                onUpdate={(updatedSession) => setSession(updatedSession)}
+              />
+            )}
+
+            {/* Player Notes Section */}
+            {!isNew && session && (
+              <div className="card p-6 mb-8">
+                <PlayerNotes
+                  sessionId={sessionId}
+                  campaignId={campaignId}
+                  characters={characters}
+                />
+              </div>
+            )}
+
+            {/* Create button for new sessions in Completed mode */}
+            {isNew && (
+              <div className="flex justify-end">
+                <Button onClick={handleCreate} size="lg">
+                  Create Session
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </AppLayout>
