@@ -20,12 +20,16 @@ import {
   ChevronRight,
   LayoutGrid,
   Loader2,
+  Share2,
+  UsersRound,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { useAppStore, useCanUseAI } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
 import type { Campaign, Character, Session, TimelineEvent, PlayerSessionNote, CampaignMember } from '@/types/database'
+import { CampaignMemberManager } from '@/components/campaign/CampaignMemberManager'
+import { Modal } from '@/components/ui'
 
 // Widget component wrapper
 function DashboardWidget({
@@ -214,6 +218,7 @@ export default function CampaignDashboardPage() {
   // Player/membership state
   const [membership, setMembership] = useState<CampaignMember | null>(null)
   const [myCharacter, setMyCharacter] = useState<Character | null>(null)
+  const [showMembersModal, setShowMembersModal] = useState(false)
   const isOwner = campaign?.user_id === user?.id
   const isPlayer = membership && ['player', 'contributor'].includes(membership.role) && !isOwner
 
@@ -410,6 +415,11 @@ export default function CampaignDashboardPage() {
                     label="New Session"
                     href={`/campaigns/${campaignId}/sessions`}
                     variant="primary"
+                  />
+                  <QuickAction
+                    icon={UsersRound}
+                    label="Members"
+                    onClick={() => setShowMembersModal(true)}
                   />
                   <QuickAction
                     icon={UserPlus}
@@ -662,6 +672,22 @@ export default function CampaignDashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Members Modal */}
+      <Modal
+        isOpen={showMembersModal}
+        onClose={() => setShowMembersModal(false)}
+        title="Manage Members"
+        description="Invite players and manage campaign access"
+        size="lg"
+      >
+        <CampaignMemberManager
+          campaignId={campaignId}
+          characters={characters}
+          isOpen={showMembersModal}
+          onClose={() => setShowMembersModal(false)}
+        />
+      </Modal>
     </AppLayout>
   )
 }

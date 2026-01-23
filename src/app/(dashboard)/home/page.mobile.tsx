@@ -84,7 +84,7 @@ export function HomePageMobile({
 
   const getItemPath = (type: 'campaign' | 'character' | 'oneshot', id: string) => {
     switch (type) {
-      case 'campaign': return `/campaigns/${id}/canvas`
+      case 'campaign': return `/campaigns/${id}/dashboard`
       case 'character': return `/vault/${id}`
       case 'oneshot': return `/oneshots/${id}`
     }
@@ -191,7 +191,7 @@ export function HomePageMobile({
             {campaigns.slice(0, 5).map((campaign) => (
               <button
                 key={campaign.id}
-                onClick={() => onNavigate(`/campaigns/${campaign.id}/canvas`)}
+                onClick={() => onNavigate(`/campaigns/${campaign.id}/dashboard`)}
                 className="flex-shrink-0 w-52 aspect-[16/10] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative"
               >
                 {campaign.image_url ? (
@@ -303,7 +303,7 @@ export function HomePageMobile({
                   if (save.instance_id) {
                     switch (save.source_type) {
                       case 'campaign':
-                        return `/campaigns/${save.instance_id}/canvas`
+                        return `/campaigns/${save.instance_id}/dashboard`
                       case 'character':
                         return `/vault/${save.instance_id}`
                       case 'oneshot':

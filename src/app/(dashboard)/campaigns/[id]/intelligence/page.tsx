@@ -152,7 +152,8 @@ export default function IntelligencePage() {
   const router = useRouter()
   const supabase = useSupabase()
   const { user } = useUser()
-  const { aiProvider } = useAppStore()
+  const { aiProvider, settings } = useAppStore()
+  const isAdmin = settings?.role === 'moderator' || settings?.role === 'super_admin'
   const canUseAI = useCanUseAI()
 
   const campaignId = params.id as string
@@ -572,22 +573,24 @@ export default function IntelligencePage() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Model Selector */}
-            <div className="relative">
-              <select
-                value={selectedProvider}
-                onChange={(e) => setSelectedProvider(e.target.value as AIProvider)}
-                className="appearance-none bg-[--bg-surface] border border-[--border] rounded-lg px-4 py-2 pr-10 text-sm font-medium cursor-pointer hover:border-[--arcane-purple]/50 transition-colors"
-                style={{ color: '#f3f4f6', colorScheme: 'dark' }}
-              >
-                {(Object.keys(AI_PROVIDERS) as AIProvider[]).map(provider => (
-                  <option key={provider} value={provider}>
-                    {AI_PROVIDERS[provider].name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: '#6b7280' }} />
-            </div>
+            {/* Model Selector - Admin only */}
+            {isAdmin && (
+              <div className="relative">
+                <select
+                  value={selectedProvider}
+                  onChange={(e) => setSelectedProvider(e.target.value as AIProvider)}
+                  className="appearance-none bg-[--bg-surface] border border-[--border] rounded-lg px-4 py-2 pr-10 text-sm font-medium cursor-pointer hover:border-[--arcane-purple]/50 transition-colors"
+                  style={{ color: '#f3f4f6', colorScheme: 'dark' }}
+                >
+                  {(Object.keys(AI_PROVIDERS) as AIProvider[]).map(provider => (
+                    <option key={provider} value={provider}>
+                      {AI_PROVIDERS[provider].name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: '#6b7280' }} />
+              </div>
+            )}
 
             <button
               className="btn btn-secondary flex items-center gap-2"

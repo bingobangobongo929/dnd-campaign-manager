@@ -588,25 +588,27 @@
 
 /* ═══════════════════════════════════════════════════════════════════════════
    MAIN CONTENT AREA
+   Must be in @layer base so Tailwind utilities can override them
    ═══════════════════════════════════════════════════════════════════════════ */
+@layer base {
+  .main-content {
+    min-height: 100vh;
+    padding-left: calc(var(--dock-width-collapsed) + 48px);
+    padding-top: calc(var(--topbar-height) + 32px);
+    padding-right: 48px;
+    padding-bottom: 48px;
+    position: relative;
+    z-index: 1;
+    max-width: 1600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
 
-.main-content {
-  min-height: 100vh;
-  padding-left: calc(var(--dock-width-collapsed) + 48px);
-  padding-top: calc(var(--topbar-height) + 32px);
-  padding-right: 48px;
-  padding-bottom: 48px;
-  position: relative;
-  z-index: 1;
-  max-width: 1600px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.main-content.full-bleed {
-  padding: 0;
-  padding-left: calc(var(--dock-width-collapsed) + 16px);
-  max-width: none;
+  .main-content.full-bleed {
+    padding: 0;
+    padding-left: calc(var(--dock-width-collapsed) + 16px);
+    max-width: none;
+  }
 }
 
 .page-header {

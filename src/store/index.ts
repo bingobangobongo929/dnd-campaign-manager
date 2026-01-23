@@ -252,7 +252,7 @@ export const useAppStore = create<AppState>()(
               type: item.item_type,
               name: item.item_name,
               href: item.item_type === 'campaign'
-                ? `/campaigns/${item.item_id}/canvas`
+                ? `/campaigns/${item.item_id}/dashboard`
                 : item.item_type === 'oneshot'
                 ? `/oneshots/${item.item_id}`
                 : `/vault/${item.item_id}`,

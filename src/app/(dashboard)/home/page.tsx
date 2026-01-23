@@ -202,7 +202,7 @@ export default function HomePage() {
           {/* Featured Campaign Hero */}
           {featuredCampaign && (
             <Link
-              href={`/campaigns/${featuredCampaign.id}/canvas`}
+              href={`/campaigns/${featuredCampaign.id}/dashboard`}
               className="group relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-blue-500/30 transition-all duration-500 mb-6"
             >
               <div className="relative h-[280px] md:h-[360px]">
@@ -275,7 +275,7 @@ export default function HomePage() {
               {displayCampaigns.map((campaign) => (
                 <Link
                   key={campaign.id}
-                  href={`/campaigns/${campaign.id}/canvas`}
+                  href={`/campaigns/${campaign.id}/dashboard`}
                   className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-blue-500/30 transition-all"
                 >
                   <div className="relative h-40">
@@ -651,7 +651,7 @@ export default function HomePage() {
                         <Link
                           href={
                             save.source_type === 'campaign'
-                              ? `/campaigns/${save.instance_id}/canvas`
+                              ? `/campaigns/${save.instance_id}/dashboard`
                               : save.source_type === 'character'
                               ? `/vault/${save.instance_id}`
                               : `/oneshots/${save.instance_id}`
