@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   Calendar,
   Sparkles,
@@ -14,15 +15,20 @@ import {
   ScrollText,
   AlertTriangle,
   RefreshCw,
+  ClipboardList,
+  Play,
+  CheckCircle2,
+  Lightbulb,
+  MessageSquare,
 } from 'lucide-react'
 import { sanitizeHtml } from '@/components/ui'
 import { RichTextEditor } from '@/components/editor'
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout } from '@/components/mobile'
-import { SessionWorkflow, PlayerNotes } from '@/components/sessions'
+import { SessionWorkflow, PlayerNotes, ThoughtsForNextCard } from '@/components/sessions'
 import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
-import type { Character, Session, Campaign } from '@/types/database'
+import type { Character, Session, Campaign, SessionPhase } from '@/types/database'
 
 export interface SessionDetailMobileProps {
   campaignId: string
@@ -43,7 +49,6 @@ export interface SessionDetailMobileProps {
   toggleAttendee: (id: string) => void
   characters: Character[]
   pcCharacters: Character[]
-  npcCharacters: Character[]
   showExpandedPreview: boolean
   expanding: boolean
   pendingSummary: string | null
@@ -58,11 +63,17 @@ export interface SessionDetailMobileProps {
   declineExpanded: () => void
   formatSummaryAsHtml: (summary: string) => string
   canUseAI: boolean
-  // New props for SessionWorkflow and PlayerNotes
+  // Props for SessionWorkflow and PlayerNotes
   session: Session | null
   campaign: Campaign | null
   userId: string
   onSessionUpdate: (session: Session) => void
+  // Phase-related props
+  currentPhase: SessionPhase
+  handlePhaseChange: (phase: SessionPhase) => void
+  locations: { id: string; name: string; type?: string }[]
+  previousSession: Session | null
+  previousThoughts: string
 }
 
 export function SessionDetailMobile({
@@ -78,7 +89,6 @@ export function SessionDetailMobile({
   toggleAttendee,
   characters,
   pcCharacters,
-  npcCharacters,
   showExpandedPreview,
   expanding,
   pendingSummary,
@@ -97,8 +107,16 @@ export function SessionDetailMobile({
   campaign,
   userId,
   onSessionUpdate,
+  // Phase-related props
+  currentPhase,
+  handlePhaseChange,
+  locations,
+  previousSession,
+  previousThoughts,
 }: SessionDetailMobileProps) {
   const isDM = campaign?.user_id === userId
+  const [openPlayerNotesModal, setOpenPlayerNotesModal] = useState(false)
+
   if (loading) {
     return (
       <AppLayout campaignId={campaignId}>
@@ -175,214 +193,395 @@ export function SessionDetailMobile({
             </div>
           </div>
 
-          {/* Attendance */}
-          <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
-            <div className="flex items-center gap-2 mb-3">
-              <Users className="w-4 h-4 text-[--arcane-purple]" />
-              <span className="text-sm font-medium text-white">Attendance</span>
-              <span className="text-xs text-gray-500">({attendees.length})</span>
-            </div>
-
-            {/* PCs */}
-            {pcCharacters.length > 0 && (
-              <div className="mb-3">
-                <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">Player Characters</p>
-                <div className="flex flex-wrap gap-2">
-                  {pcCharacters.map((char) => {
-                    const isAttending = attendees.includes(char.id)
-                    return (
-                      <button
-                        key={char.id}
-                        onClick={() => toggleAttendee(char.id)}
-                        className={cn(
-                          'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors',
-                          isAttending
-                            ? 'bg-[--arcane-purple]/20 border-[--arcane-purple] text-white'
-                            : 'bg-transparent border-white/10 text-gray-400 opacity-60'
-                        )}
-                      >
-                        <div className="w-5 h-5 rounded-full overflow-hidden bg-[--bg-surface] flex-shrink-0">
-                          {char.image_url ? (
-                            <Image src={char.image_url} alt={char.name} width={20} height={20} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[8px] font-bold">{getInitials(char.name)}</div>
-                          )}
-                        </div>
-                        <span className="text-xs font-medium">{char.name}</span>
-                        {isAttending && <Check className="w-3 h-3 text-[--arcane-purple]" />}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* NPCs */}
-            {npcCharacters.length > 0 && (
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">NPCs</p>
-                <div className="flex flex-wrap gap-2">
-                  {npcCharacters.map((char) => {
-                    const isAttending = attendees.includes(char.id)
-                    return (
-                      <button
-                        key={char.id}
-                        onClick={() => toggleAttendee(char.id)}
-                        className={cn(
-                          'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors',
-                          isAttending
-                            ? 'bg-[--arcane-gold]/20 border-[--arcane-gold] text-white'
-                            : 'bg-transparent border-white/10 text-gray-400 opacity-60'
-                        )}
-                      >
-                        <div className="w-5 h-5 rounded-full overflow-hidden bg-[--bg-surface] flex-shrink-0">
-                          {char.image_url ? (
-                            <Image src={char.image_url} alt={char.name} width={20} height={20} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[8px] font-bold">{getInitials(char.name)}</div>
-                          )}
-                        </div>
-                        <span className="text-xs font-medium">{char.name}</span>
-                        {isAttending && <Check className="w-3 h-3 text-[--arcane-gold]" />}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
-            {characters.length === 0 && (
-              <p className="text-xs text-gray-500 text-center py-2">No characters yet</p>
-            )}
-          </div>
-
-          {/* Summary Section */}
-          <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-white">Summary</span>
-              {canUseAI && !showExpandedPreview && (
-                <button
-                  onClick={handleExpandNotes}
-                  disabled={!formData.summary.trim() || expanding}
-                  className="flex items-center gap-1 px-2 py-1 text-xs bg-[--arcane-purple]/10 text-[--arcane-purple] rounded-lg active:bg-[--arcane-purple]/20 disabled:opacity-50"
-                >
-                  {expanding ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                  Expand
-                </button>
-              )}
-            </div>
-            <RichTextEditor
-              content={formData.summary}
-              onChange={(content) => setFormData({ ...formData, summary: content })}
-              placeholder="Bullet points of what happened..."
-              className="min-h-[150px]"
-            />
-          </div>
-
-          {/* AI Expansion Preview */}
-          {showExpandedPreview && (
-            <div className="mb-4 p-4 bg-[--arcane-purple]/5 rounded-xl border border-[--arcane-purple]/30">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="w-4 h-4 text-[--arcane-purple]" />
-                <span className="text-sm font-medium text-[--arcane-purple]">
-                  {expanding ? 'Processing...' : 'AI Preview'}
-                </span>
-                {expanding && <Loader2 className="w-3 h-3 animate-spin text-[--arcane-purple]" />}
-              </div>
-
-              {pendingSummary && (
-                <div className="mb-3">
-                  <p className="text-xs text-gray-500 mb-1">Cleaned Summary:</p>
-                  <div className="p-2 rounded-lg bg-white/[0.02] text-sm text-gray-300" dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatSummaryAsHtml(pendingSummary)) }} />
-                </div>
-              )}
-
-              {pendingTitle && !formData.title.trim() && (
-                <div className="mb-3">
-                  <p className="text-xs text-gray-500 mb-1">Suggested Title:</p>
-                  <p className="p-2 rounded-lg bg-[--arcane-gold]/5 text-sm font-medium text-[--arcane-gold]">{pendingTitle}</p>
-                </div>
-              )}
-
-              {pendingNotes && (
-                <div className="mb-3">
-                  <p className="text-xs text-gray-500 mb-1">Detailed Notes:</p>
-                  <div className="p-2 rounded-lg bg-white/[0.02] text-sm text-gray-300 prose prose-invert prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(pendingNotes) }} />
-                </div>
-              )}
-
-              {!expanding && (pendingNotes || pendingSummary) && (
-                <div className="flex gap-2">
-                  <button onClick={acceptExpanded} className="flex-1 py-2 rounded-lg bg-green-500/10 text-green-400 text-sm font-medium active:bg-green-500/20">
-                    <Check className="w-4 h-4 inline mr-1" />Accept
-                  </button>
-                  <button onClick={editExpanded} className="flex-1 py-2 rounded-lg bg-[--arcane-purple]/10 text-[--arcane-purple] text-sm font-medium active:bg-[--arcane-purple]/20">
-                    <Pencil className="w-4 h-4 inline mr-1" />Edit
-                  </button>
-                  <button onClick={declineExpanded} className="py-2 px-3 rounded-lg bg-red-500/10 text-red-400 text-sm font-medium active:bg-red-500/20">
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Detailed Notes Section */}
-          {(formData.notes || !detailedNotesCollapsed) && (
-            <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+          {/* Phase Toggle Bar - Mobile Optimized */}
+          <div className="mb-4 p-1 bg-white/[0.03] rounded-xl border border-white/[0.08]">
+            <div className="grid grid-cols-3 gap-1">
+              {/* Prep Phase */}
               <button
-                onClick={() => setDetailedNotesCollapsed(!detailedNotesCollapsed)}
-                className="w-full flex items-center justify-between mb-3"
+                onClick={() => handlePhaseChange('prep')}
+                className={cn(
+                  "flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg transition-all",
+                  currentPhase === 'prep'
+                    ? "bg-yellow-500/20 border border-yellow-500/50"
+                    : "border border-transparent active:bg-white/[0.04]"
+                )}
               >
-                <div className="flex items-center gap-2">
-                  <ScrollText className="w-4 h-4 text-[--arcane-purple]" />
-                  <span className="text-sm font-medium text-white">Detailed Notes</span>
-                </div>
-                {detailedNotesCollapsed ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronUp className="w-4 h-4 text-gray-500" />}
+                <ClipboardList className={cn(
+                  "w-5 h-5",
+                  currentPhase === 'prep' ? "text-yellow-400" : "text-gray-500"
+                )} />
+                <span className={cn(
+                  "text-xs font-semibold",
+                  currentPhase === 'prep' ? "text-yellow-400" : "text-gray-400"
+                )}>
+                  Prep
+                </span>
               </button>
 
-              {!detailedNotesCollapsed && (
+              {/* Live Phase */}
+              <button
+                onClick={() => handlePhaseChange('live')}
+                className={cn(
+                  "flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg transition-all",
+                  currentPhase === 'live'
+                    ? "bg-green-500/20 border border-green-500/50"
+                    : "border border-transparent active:bg-white/[0.04]"
+                )}
+              >
+                <Play className={cn(
+                  "w-5 h-5",
+                  currentPhase === 'live' ? "text-green-400" : "text-gray-500"
+                )} />
+                <span className={cn(
+                  "text-xs font-semibold",
+                  currentPhase === 'live' ? "text-green-400" : "text-gray-400"
+                )}>
+                  Live
+                </span>
+              </button>
+
+              {/* Completed Phase */}
+              <button
+                onClick={() => handlePhaseChange('completed')}
+                className={cn(
+                  "flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg transition-all",
+                  currentPhase === 'completed'
+                    ? "bg-purple-500/20 border border-purple-500/50"
+                    : "border border-transparent active:bg-white/[0.04]"
+                )}
+              >
+                <CheckCircle2 className={cn(
+                  "w-5 h-5",
+                  currentPhase === 'completed' ? "text-purple-400" : "text-gray-500"
+                )} />
+                <span className={cn(
+                  "text-xs font-semibold",
+                  currentPhase === 'completed' ? "text-purple-400" : "text-gray-400"
+                )}>
+                  Done
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Action: Add Player Notes - Always visible for existing sessions */}
+          {!isNew && session && (
+            <button
+              onClick={() => setOpenPlayerNotesModal(true)}
+              className="w-full mb-4 flex items-center justify-between p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl active:bg-blue-500/20"
+            >
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-blue-400" />
+                <span className="text-sm font-medium text-white">Player Perspectives</span>
+              </div>
+              <span className="text-xs text-blue-400">Add Notes →</span>
+            </button>
+          )}
+
+          {/* === PREP PHASE LAYOUT === */}
+          {currentPhase === 'prep' && (
+            <>
+              {/* Thoughts from Previous Session */}
+              {previousThoughts && (
+                <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Lightbulb className="w-4 h-4 text-purple-400" />
+                    <span className="text-sm font-medium text-purple-300">From Previous Session</span>
+                  </div>
+                  <p className="text-sm text-gray-300 whitespace-pre-wrap">{previousThoughts}</p>
+                </div>
+              )}
+
+              {/* Session Workflow for Prep mode */}
+              {!isNew && session && isDM && (
+                <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+                  <SessionWorkflow
+                    session={session}
+                    campaignId={campaignId}
+                    characters={characters}
+                    locations={locations}
+                    previousSession={previousSession}
+                    onUpdate={onSessionUpdate}
+                  />
+                </div>
+              )}
+
+              {/* Player Notes Section - Also in Prep mode */}
+              {!isNew && session && (
+                <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+                  <PlayerNotes
+                    sessionId={sessionId}
+                    campaignId={campaignId}
+                    characters={characters}
+                    autoOpenAdd={openPlayerNotesModal}
+                    onModalClose={() => setOpenPlayerNotesModal(false)}
+                  />
+                </div>
+              )}
+
+              {/* Create button for new sessions in Prep mode */}
+              {isNew && (
+                <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ClipboardList className="w-4 h-4 text-yellow-400" />
+                    <span className="text-sm font-medium text-white">Session Planning</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mb-3">
+                    You&apos;re in prep mode. Create the session to start planning.
+                  </p>
+                  <button
+                    onClick={handleCreate}
+                    className="w-full py-2.5 bg-yellow-500 text-black rounded-lg font-medium active:bg-yellow-400"
+                  >
+                    Create Session
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* === LIVE PHASE LAYOUT === */}
+          {currentPhase === 'live' && (
+            <>
+              {/* Session Workflow for Live mode */}
+              {!isNew && session && isDM && (
+                <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+                  <SessionWorkflow
+                    session={session}
+                    campaignId={campaignId}
+                    characters={characters}
+                    locations={locations}
+                    previousSession={previousSession}
+                    onUpdate={onSessionUpdate}
+                  />
+                </div>
+              )}
+
+              {/* Player Notes Section - Also in Live mode */}
+              {!isNew && session && (
+                <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+                  <PlayerNotes
+                    sessionId={sessionId}
+                    campaignId={campaignId}
+                    characters={characters}
+                    autoOpenAdd={openPlayerNotesModal}
+                    onModalClose={() => setOpenPlayerNotesModal(false)}
+                  />
+                </div>
+              )}
+
+              {/* Create button for new sessions in Live mode */}
+              {isNew && (
+                <div className="mb-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Play className="w-4 h-4 text-green-400" />
+                    <span className="text-sm font-medium text-white">Session in Progress</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mb-3">
+                    Create the session to access timer and quick reference.
+                  </p>
+                  <button
+                    onClick={handleCreate}
+                    className="w-full py-2.5 bg-green-500 text-black rounded-lg font-medium active:bg-green-400"
+                  >
+                    Create Session
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* === COMPLETED PHASE LAYOUT === */}
+          {currentPhase === 'completed' && (
+            <>
+              {/* Thoughts from Previous Session (for new completed sessions) */}
+              {isNew && previousThoughts && (
+                <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Lightbulb className="w-4 h-4 text-purple-400" />
+                    <span className="text-sm font-medium text-purple-300">From Previous Session</span>
+                  </div>
+                  <p className="text-sm text-gray-300 whitespace-pre-wrap">{previousThoughts}</p>
+                </div>
+              )}
+
+              {/* Attendance */}
+              <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="w-4 h-4 text-[--arcane-purple]" />
+                  <span className="text-sm font-medium text-white">Attendance</span>
+                  <span className="text-xs text-gray-500">({attendees.length})</span>
+                </div>
+
+                {/* PCs */}
+                {pcCharacters.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">Player Characters</p>
+                    <div className="flex flex-wrap gap-2">
+                      {pcCharacters.map((char) => {
+                        const isAttending = attendees.includes(char.id)
+                        return (
+                          <button
+                            key={char.id}
+                            onClick={() => toggleAttendee(char.id)}
+                            className={cn(
+                              'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors',
+                              isAttending
+                                ? 'bg-[--arcane-purple]/20 border-[--arcane-purple] text-white'
+                                : 'bg-transparent border-white/10 text-gray-400 opacity-60'
+                            )}
+                          >
+                            <div className="w-5 h-5 rounded-full overflow-hidden bg-[--bg-surface] flex-shrink-0">
+                              {char.image_url ? (
+                                <Image src={char.image_url} alt={char.name} width={20} height={20} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[8px] font-bold">{getInitials(char.name)}</div>
+                              )}
+                            </div>
+                            <span className="text-xs font-medium">{char.name}</span>
+                            {isAttending && <Check className="w-3 h-3 text-[--arcane-purple]" />}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {pcCharacters.length === 0 && (
+                  <p className="text-xs text-gray-500 text-center py-2">No characters yet</p>
+                )}
+              </div>
+
+              {/* Summary Section */}
+              <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-white">Summary</span>
+                  {canUseAI && !showExpandedPreview && (
+                    <button
+                      onClick={handleExpandNotes}
+                      disabled={!formData.summary.trim() || expanding}
+                      className="flex items-center gap-1 px-2 py-1 text-xs bg-[--arcane-purple]/10 text-[--arcane-purple] rounded-lg active:bg-[--arcane-purple]/20 disabled:opacity-50"
+                    >
+                      {expanding ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                      Expand
+                    </button>
+                  )}
+                </div>
                 <RichTextEditor
-                  content={formData.notes}
-                  onChange={(content) => setFormData({ ...formData, notes: content })}
-                  placeholder="Detailed notes..."
-                  className="min-h-[200px]"
+                  content={formData.summary}
+                  onChange={(content) => setFormData({ ...formData, summary: content })}
+                  placeholder="Bullet points of what happened..."
+                  className="min-h-[150px]"
+                />
+              </div>
+
+              {/* AI Expansion Preview */}
+              {showExpandedPreview && (
+                <div className="mb-4 p-4 bg-[--arcane-purple]/5 rounded-xl border border-[--arcane-purple]/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-4 h-4 text-[--arcane-purple]" />
+                    <span className="text-sm font-medium text-[--arcane-purple]">
+                      {expanding ? 'Processing...' : 'AI Preview'}
+                    </span>
+                    {expanding && <Loader2 className="w-3 h-3 animate-spin text-[--arcane-purple]" />}
+                  </div>
+
+                  {pendingSummary && (
+                    <div className="mb-3">
+                      <p className="text-xs text-gray-500 mb-1">Cleaned Summary:</p>
+                      <div className="p-2 rounded-lg bg-white/[0.02] text-sm text-gray-300" dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatSummaryAsHtml(pendingSummary)) }} />
+                    </div>
+                  )}
+
+                  {pendingTitle && !formData.title.trim() && (
+                    <div className="mb-3">
+                      <p className="text-xs text-gray-500 mb-1">Suggested Title:</p>
+                      <p className="p-2 rounded-lg bg-[--arcane-gold]/5 text-sm font-medium text-[--arcane-gold]">{pendingTitle}</p>
+                    </div>
+                  )}
+
+                  {pendingNotes && (
+                    <div className="mb-3">
+                      <p className="text-xs text-gray-500 mb-1">Detailed Notes:</p>
+                      <div className="p-2 rounded-lg bg-white/[0.02] text-sm text-gray-300 prose prose-invert prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(pendingNotes) }} />
+                    </div>
+                  )}
+
+                  {!expanding && (pendingNotes || pendingSummary) && (
+                    <div className="flex gap-2">
+                      <button onClick={acceptExpanded} className="flex-1 py-2 rounded-lg bg-green-500/10 text-green-400 text-sm font-medium active:bg-green-500/20">
+                        <Check className="w-4 h-4 inline mr-1" />Accept
+                      </button>
+                      <button onClick={editExpanded} className="flex-1 py-2 rounded-lg bg-[--arcane-purple]/10 text-[--arcane-purple] text-sm font-medium active:bg-[--arcane-purple]/20">
+                        <Pencil className="w-4 h-4 inline mr-1" />Edit
+                      </button>
+                      <button onClick={declineExpanded} className="py-2 px-3 rounded-lg bg-red-500/10 text-red-400 text-sm font-medium active:bg-red-500/20">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Detailed Notes Section */}
+              {(formData.notes || !detailedNotesCollapsed) && (
+                <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+                  <button
+                    onClick={() => setDetailedNotesCollapsed(!detailedNotesCollapsed)}
+                    className="w-full flex items-center justify-between mb-3"
+                  >
+                    <div className="flex items-center gap-2">
+                      <ScrollText className="w-4 h-4 text-[--arcane-purple]" />
+                      <span className="text-sm font-medium text-white">Detailed Notes</span>
+                    </div>
+                    {detailedNotesCollapsed ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronUp className="w-4 h-4 text-gray-500" />}
+                  </button>
+
+                  {!detailedNotesCollapsed && (
+                    <RichTextEditor
+                      content={formData.notes}
+                      onChange={(content) => setFormData({ ...formData, notes: content })}
+                      placeholder="Detailed notes..."
+                      className="min-h-[200px]"
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* Thoughts for Next - Standalone card for Completed mode */}
+              {!isNew && session && isDM && (
+                <ThoughtsForNextCard
+                  campaignId={campaignId}
+                  sessionId={session.id}
+                  initialValue={session.thoughts_for_next || ''}
+                  onSave={(value) => onSessionUpdate({ ...session, thoughts_for_next: value })}
                 />
               )}
-            </div>
-          )}
 
-          {/* Session Workflow - Prep/Recap Mode (DM only) */}
-          {!isNew && session && isDM && (
-            <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
-              <SessionWorkflow
-                session={session}
-                campaignId={campaignId}
-                onUpdate={onSessionUpdate}
-              />
-            </div>
-          )}
+              {/* Player Notes Section */}
+              {!isNew && session && (
+                <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+                  <PlayerNotes
+                    sessionId={sessionId}
+                    campaignId={campaignId}
+                    characters={characters}
+                    autoOpenAdd={openPlayerNotesModal}
+                    onModalClose={() => setOpenPlayerNotesModal(false)}
+                  />
+                </div>
+              )}
 
-          {/* Player Notes Section */}
-          {!isNew && session && (
-            <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
-              <PlayerNotes
-                sessionId={sessionId}
-                campaignId={campaignId}
-                characters={characters}
-              />
-            </div>
-          )}
-
-          {/* Create button for new sessions */}
-          {isNew && (
-            <button
-              onClick={handleCreate}
-              disabled={!formData.summary.trim()}
-              className="w-full py-3 bg-[--arcane-purple] text-white rounded-xl font-medium active:bg-[--arcane-purple]/80 disabled:opacity-50"
-            >
-              Create Session
-            </button>
+              {/* Create button for new sessions in Completed mode */}
+              {isNew && (
+                <button
+                  onClick={handleCreate}
+                  disabled={!formData.summary.trim()}
+                  className="w-full py-3 bg-[--arcane-purple] text-white rounded-xl font-medium active:bg-[--arcane-purple]/80 disabled:opacity-50"
+                >
+                  Create Session
+                </button>
+              )}
+            </>
           )}
         </div>
       </MobileLayout>

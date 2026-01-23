@@ -21,6 +21,7 @@ import {
   Lightbulb,
   ClipboardList,
   Play,
+  MessageSquare,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input, Button, sanitizeHtml } from '@/components/ui'
@@ -83,6 +84,7 @@ export default function SessionDetailPage() {
   const [aiReasoning, setAiReasoning] = useState<string>('')
   const [detailedNotesCollapsed, setDetailedNotesCollapsed] = useState(true)
   const [previousThoughts, setPreviousThoughts] = useState<string>('')
+  const [openPlayerNotesModal, setOpenPlayerNotesModal] = useState(false)
 
   // Phase management - for new sessions use URL param, for existing use session data
   const [currentPhase, setCurrentPhase] = useState<SessionPhase>(initialPhase || 'prep')
@@ -550,8 +552,12 @@ export default function SessionDetailPage() {
     setAiReasoning('')
   }
 
-  // Group characters by type
-  const pcCharacters = characters.filter(c => c.type === 'pc')
+  // Group characters by type - only show alive/active PCs for attendance
+  const INACTIVE_STATUSES = ['dead', 'deceased', 'killed', 'retired', 'left', 'gone']
+  const pcCharacters = characters.filter(c =>
+    c.type === 'pc' &&
+    (!c.status || !INACTIVE_STATUSES.includes(c.status.toLowerCase()))
+  )
   const npcCharacters = characters.filter(c => c.type === 'npc')
 
   // Mobile Layout
@@ -570,7 +576,6 @@ export default function SessionDetailPage() {
         toggleAttendee={toggleAttendee}
         characters={characters}
         pcCharacters={pcCharacters}
-        npcCharacters={npcCharacters}
         showExpandedPreview={showExpandedPreview}
         expanding={expanding}
         pendingSummary={pendingSummary}
@@ -589,6 +594,12 @@ export default function SessionDetailPage() {
         campaign={campaign}
         userId={user?.id || ''}
         onSessionUpdate={setSession}
+        // Phase-related props
+        currentPhase={currentPhase}
+        handlePhaseChange={handlePhaseChange}
+        locations={locations}
+        previousSession={previousSessionData}
+        previousThoughts={previousThoughts}
       />
     )
   }
@@ -779,6 +790,26 @@ export default function SessionDetailPage() {
           </div>
         </div>
 
+        {/* Quick Action: Add Player Notes - Always visible for existing sessions */}
+        {!isNew && session && (
+          <div className="mb-8 flex items-center justify-between p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl">
+            <div className="flex items-center gap-3">
+              <MessageSquare className="w-5 h-5 text-blue-400" />
+              <div>
+                <p className="text-sm font-medium text-white">Player Perspectives</p>
+                <p className="text-xs text-gray-400">Add notes from players or on their behalf</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setOpenPlayerNotesModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-colors text-sm font-medium"
+            >
+              <MessageSquare className="w-4 h-4" />
+              Add Notes
+            </button>
+          </div>
+        )}
+
         {/* === PREP PHASE LAYOUT === */}
         {currentPhase === 'prep' && (
           <>
@@ -808,6 +839,19 @@ export default function SessionDetailPage() {
                 previousSession={previousSessionData}
                 onUpdate={(updatedSession) => setSession(updatedSession)}
               />
+            )}
+
+            {/* Player Notes Section - Also in Prep mode */}
+            {!isNew && session && (
+              <div className="card p-6 mb-8">
+                <PlayerNotes
+                  sessionId={sessionId}
+                  campaignId={campaignId}
+                  characters={characters}
+                  autoOpenAdd={openPlayerNotesModal}
+                  onModalClose={() => setOpenPlayerNotesModal(false)}
+                />
+              </div>
             )}
 
             {/* Basic info for new sessions in Prep mode */}
@@ -844,6 +888,19 @@ export default function SessionDetailPage() {
                 previousSession={previousSessionData}
                 onUpdate={(updatedSession) => setSession(updatedSession)}
               />
+            )}
+
+            {/* Player Notes Section - Also in Live mode */}
+            {!isNew && session && (
+              <div className="card p-6 mb-8">
+                <PlayerNotes
+                  sessionId={sessionId}
+                  campaignId={campaignId}
+                  characters={characters}
+                  autoOpenAdd={openPlayerNotesModal}
+                  onModalClose={() => setOpenPlayerNotesModal(false)}
+                />
+              </div>
             )}
 
             {/* For new sessions in live mode, show a prompt */}
@@ -943,53 +1000,7 @@ export default function SessionDetailPage() {
                 </div>
               )}
 
-              {/* NPC Characters - Always expanded */}
-              {npcCharacters.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-semibold text-[--text-tertiary] uppercase tracking-wide mb-3">
-                    NPCs Present
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {npcCharacters.map((char) => {
-                      const isAttending = attendees.includes(char.id)
-                      return (
-                        <button
-                          key={char.id}
-                          onClick={() => toggleAttendee(char.id)}
-                          className={cn(
-                            'flex items-center gap-2 px-3 py-2 rounded-lg transition-all border-2',
-                            isAttending
-                              ? 'bg-[--arcane-gold]/20 border-[--arcane-gold] text-white'
-                              : 'bg-transparent border-white/10 text-[--text-secondary] hover:border-white/20 opacity-50 hover:opacity-75'
-                          )}
-                        >
-                          <div className="relative w-6 h-6 rounded-full overflow-hidden flex-shrink-0 bg-[--bg-surface]">
-                            {char.image_url ? (
-                              <Image
-                                src={char.image_url}
-                                alt={char.name}
-                                fill
-                                className="object-cover"
-                                sizes="24px"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-xs font-medium">
-                                {getInitials(char.name)}
-                              </div>
-                            )}
-                          </div>
-                          <span className="text-sm font-medium">{char.name}</span>
-                          {isAttending && (
-                            <CheckCircle2 className="w-4 h-4 text-[--arcane-gold]" />
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {characters.length === 0 && (
+              {pcCharacters.length === 0 && (
                 <p className="text-sm text-[--text-tertiary] text-center py-4">
                   No characters in this campaign yet.
                 </p>
@@ -1187,6 +1198,8 @@ export default function SessionDetailPage() {
                   sessionId={sessionId}
                   campaignId={campaignId}
                   characters={characters}
+                  autoOpenAdd={openPlayerNotesModal}
+                  onModalClose={() => setOpenPlayerNotesModal(false)}
                 />
               </div>
             )}

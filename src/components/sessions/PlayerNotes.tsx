@@ -44,6 +44,8 @@ interface PlayerNotesProps {
   campaignId: string
   sessionId: string
   characters?: Character[]
+  autoOpenAdd?: boolean
+  onModalClose?: () => void
 }
 
 interface NoteWithRelations extends PlayerSessionNote {
@@ -59,7 +61,7 @@ interface NoteWithRelations extends PlayerSessionNote {
   } | null
 }
 
-export function PlayerNotes({ campaignId, sessionId, characters = [] }: PlayerNotesProps) {
+export function PlayerNotes({ campaignId, sessionId, characters = [], autoOpenAdd, onModalClose }: PlayerNotesProps) {
   const [notes, setNotes] = useState<NoteWithRelations[]>([])
   const [loading, setLoading] = useState(true)
   const [isDm, setIsDm] = useState(false)
@@ -67,6 +69,16 @@ export function PlayerNotes({ campaignId, sessionId, characters = [] }: PlayerNo
   const [userCharacterId, setUserCharacterId] = useState<string | null>(null)
 
   const [addModalOpen, setAddModalOpen] = useState(false)
+
+  // Auto-open add modal when prop changes
+  useEffect(() => {
+    if (autoOpenAdd && canAddNotes && !loading) {
+      setNoteContent('')
+      setSelectedCharacterId(userCharacterId || '')
+      setIsShared(true)
+      setAddModalOpen(true)
+    }
+  }, [autoOpenAdd, canAddNotes, loading, userCharacterId])
   const [addOnBehalfModalOpen, setAddOnBehalfModalOpen] = useState(false)
   const [editingNote, setEditingNote] = useState<NoteWithRelations | null>(null)
   const [noteContent, setNoteContent] = useState('')
@@ -306,7 +318,10 @@ export function PlayerNotes({ campaignId, sessionId, characters = [] }: PlayerNo
       {/* Add Note Modal */}
       <Modal
         isOpen={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
+        onClose={() => {
+          setAddModalOpen(false)
+          onModalClose?.()
+        }}
         title="Add Session Notes"
         description="Record your perspective on this session"
         size="md"
