@@ -169,8 +169,11 @@ function LoginForm() {
               // If trust check fails, proceed to 2FA anyway
               console.error('Trust check failed:', trustErr)
             }
-            // Redirect to 2FA verification page
-            router.push('/login/verify')
+            // Redirect to 2FA verification page, preserving redirect URL
+            const verifyUrl = redirectUrl !== '/home'
+              ? `/login/verify?redirect=${encodeURIComponent(redirectUrl)}`
+              : '/login/verify'
+            router.push(verifyUrl)
           } else {
             // No 2FA, update last_login_at and go to home
             await supabase

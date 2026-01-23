@@ -1,14 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Shield, Loader2, Key, Check } from 'lucide-react'
 import { useSupabase } from '@/hooks'
 import { cn } from '@/lib/utils'
 
-export default function TwoFactorVerifyPage() {
+function TwoFactorVerifyForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = useSupabase()
+
+  // Get redirect URL from query params
+  const redirectUrl = searchParams.get('redirect') || '/home'
   const [code, setCode] = useState('')
   const [isBackupCode, setIsBackupCode] = useState(false)
   const [trustDevice, setTrustDevice] = useState(false)
@@ -34,8 +38,8 @@ export default function TwoFactorVerifyPage() {
         .single()
 
       if (!settings?.totp_enabled) {
-        // 2FA not enabled, go to home
-        router.push('/home')
+        // 2FA not enabled, go to destination
+        router.push(redirectUrl)
         return
       }
 
@@ -89,7 +93,7 @@ export default function TwoFactorVerifyPage() {
         }
       }
 
-      router.push('/home')
+      router.push(redirectUrl)
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to verify code')
       setLoading(false)
@@ -230,5 +234,17 @@ export default function TwoFactorVerifyPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function TwoFactorVerifyPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
+      </div>
+    }>
+      <TwoFactorVerifyForm />
+    </Suspense>
   )
 }
