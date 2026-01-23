@@ -43,19 +43,19 @@ export async function GET(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
-    // Get all members with user settings
+    // Get all members with related data
     // Use admin client to bypass RLS (we've already verified authorization above)
     const adminClient = createAdminClient()
+
+    // First, get all campaign members
     const { data: members, error } = await adminClient
       .from('campaign_members')
       .select(`
         *,
-        user_settings:user_settings(username, avatar_url),
         character:characters(id, name, image_url, type),
         vault_character:vault_characters(id, name, image_url)
       `)
       .eq('campaign_id', campaignId)
-      .order('role', { ascending: true })
       .order('invited_at', { ascending: false, nullsFirst: false })
 
     if (error) {
@@ -63,7 +63,34 @@ export async function GET(
       return NextResponse.json({ error: 'Failed to fetch members' }, { status: 500 })
     }
 
-    return NextResponse.json({ members, isOwner })
+    // Enrich members with user_settings for those who have user_id
+    const userIds = members
+      ?.filter(m => m.user_id)
+      .map(m => m.user_id) || []
+
+    let userSettingsMap: Record<string, { username: string | null; avatar_url: string | null }> = {}
+
+    if (userIds.length > 0) {
+      const { data: settings } = await adminClient
+        .from('user_settings')
+        .select('user_id, username, avatar_url')
+        .in('user_id', userIds)
+
+      if (settings) {
+        userSettingsMap = settings.reduce((acc, s) => {
+          acc[s.user_id] = { username: s.username, avatar_url: s.avatar_url }
+          return acc
+        }, {} as Record<string, { username: string | null; avatar_url: string | null }>)
+      }
+    }
+
+    // Merge user_settings into members
+    const enrichedMembers = members?.map(m => ({
+      ...m,
+      user_settings: m.user_id ? userSettingsMap[m.user_id] || null : null
+    })) || []
+
+    return NextResponse.json({ members: enrichedMembers, isOwner })
   } catch (error) {
     console.error('Get members error:', error)
     return NextResponse.json({ error: 'Failed to get members' }, { status: 500 })
