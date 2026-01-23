@@ -81,7 +81,7 @@ export function RelationshipDiagram({
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
   const [isSimulating, setIsSimulating] = useState(false)
-  const animationRef = useRef<number>()
+  const animationRef = useRef<number | undefined>(undefined)
 
   // Initialize nodes and edges
   useEffect(() => {
@@ -238,7 +238,7 @@ export function RelationshipDiagram({
       const target = nodes.find(n => n.id === edge.target)
       if (!source || !target) return
 
-      const relType = edge.relationship.type || 'acquaintance'
+      const relType = edge.relationship.relationship_type || 'acquaintance'
       const color = RELATIONSHIP_COLORS[relType] || RELATIONSHIP_COLORS.acquaintance
 
       ctx.beginPath()
@@ -504,7 +504,7 @@ export function RelationshipDiagram({
                   const otherId = edge.source === selectedNode ? edge.target : edge.source
                   const other = nodes.find(n => n.id === otherId)
                   if (!other) return null
-                  const relType = edge.relationship.type || 'acquaintance'
+                  const relType = edge.relationship.relationship_type || 'acquaintance'
                   const color = RELATIONSHIP_COLORS[relType] || RELATIONSHIP_COLORS.acquaintance
                   return (
                     <div key={i} className="flex items-center gap-2 text-xs">

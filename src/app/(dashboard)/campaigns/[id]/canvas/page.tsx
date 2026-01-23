@@ -7,7 +7,7 @@ import { Plus, FolderPlus, Scaling, Trash2, Brain, Share2, ChevronRight, Users, 
 import { Modal, Input, ColorPicker, IconPicker, getGroupIcon } from '@/components/ui'
 import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT, CONNECTION_FILTER_OPTIONS } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
-import { TagManager, FactionManager, RelationshipManager } from '@/components/campaign'
+import { TagManager, FactionManager, RelationshipManager, UnclaimedCharactersBanner, CampaignMemberManager } from '@/components/campaign'
 import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 import { TemplateStateBadge } from '@/components/templates/TemplateStateBadge'
 import { TemplateOnboardingModal } from '@/components/templates/TemplateOnboardingModal'
@@ -70,6 +70,7 @@ export default function CampaignCanvasPage() {
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false)
   const [isFactionManagerOpen, setIsFactionManagerOpen] = useState(false)
   const [isRelationshipManagerOpen, setIsRelationshipManagerOpen] = useState(false)
+  const [isMemberManagerOpen, setIsMemberManagerOpen] = useState(false)
   const [manageDropdownOpen, setManageDropdownOpen] = useState(false)
   const [addDropdownOpen, setAddDropdownOpen] = useState(false)
 
@@ -681,6 +682,13 @@ export default function CampaignCanvasPage() {
           <div className="absolute top-full right-0 mt-1 w-48 bg-[#12121a] border border-[--border] rounded-lg shadow-2xl z-50 py-1">
             <button
               className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
+              onClick={() => { setIsMemberManagerOpen(true); setManageDropdownOpen(false) }}
+            >
+              <Users className="w-4 h-4" />
+              Members
+            </button>
+            <button
+              className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
               onClick={() => { setIsTagManagerOpen(true); setManageDropdownOpen(false) }}
             >
               <Tags className="w-4 h-4" />
@@ -1134,6 +1142,14 @@ export default function CampaignCanvasPage() {
         campaignId={campaignId}
         isOpen={isRelationshipManagerOpen}
         onClose={() => setIsRelationshipManagerOpen(false)}
+      />
+
+      {/* Campaign Member Manager Modal */}
+      <CampaignMemberManager
+        campaignId={campaignId}
+        characters={characters}
+        isOpen={isMemberManagerOpen}
+        onClose={() => setIsMemberManagerOpen(false)}
       />
 
       {/* Template Onboarding Modal */}

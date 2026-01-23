@@ -31,6 +31,7 @@ import { useAppStore, useCanUseAI } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
 import type { Session, Campaign, Character } from '@/types/database'
+import { SessionWorkflow, PlayerNotes } from '@/components/sessions'
 
 export default function SessionDetailPage() {
   const params = useParams()
@@ -478,6 +479,7 @@ export default function SessionDetailPage() {
     return (
       <SessionDetailMobile
         campaignId={campaignId}
+        sessionId={sessionId}
         isNew={isNew}
         loading={loading}
         formData={formData}
@@ -503,6 +505,10 @@ export default function SessionDetailPage() {
         declineExpanded={declineExpanded}
         formatSummaryAsHtml={formatSummaryAsHtml}
         canUseAI={canUseAI}
+        session={session}
+        campaign={campaign}
+        userId={user?.id || ''}
+        onSessionUpdate={setSession}
       />
     )
   }
@@ -873,6 +879,26 @@ export default function SessionDetailPage() {
                 className="min-h-[300px]"
               />
             )}
+          </div>
+        )}
+
+        {/* Session Workflow - Prep/Recap Mode */}
+        {!isNew && session && campaign?.user_id === user?.id && (
+          <SessionWorkflow
+            session={session}
+            campaignId={campaignId}
+            onUpdate={(updatedSession) => setSession(updatedSession)}
+          />
+        )}
+
+        {/* Player Notes Section */}
+        {!isNew && session && (
+          <div className="card p-6 mb-8">
+            <PlayerNotes
+              sessionId={sessionId}
+              campaignId={campaignId}
+              characters={characters}
+            />
           </div>
         )}
 

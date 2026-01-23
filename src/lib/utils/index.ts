@@ -39,6 +39,9 @@ export function formatDistanceToNow(date: string | Date): string {
   return `${diffYears}y ago`
 }
 
+// Alias for formatDistanceToNow
+export const formatRelativeDate = formatDistanceToNow
+
 export function truncate(str: string, length: number): string {
   if (str.length <= length) return str
   return str.slice(0, length) + '...'

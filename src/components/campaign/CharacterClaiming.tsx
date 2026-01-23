@@ -159,8 +159,8 @@ export function CharacterClaiming({
             )}
             <div>
               <h4 className="font-medium text-white">{character.name}</h4>
-              {character.short_description && (
-                <p className="text-sm text-gray-400 mt-0.5">{character.short_description}</p>
+              {character.description && (
+                <p className="text-sm text-gray-400 mt-0.5 line-clamp-2">{character.description}</p>
               )}
             </div>
           </div>

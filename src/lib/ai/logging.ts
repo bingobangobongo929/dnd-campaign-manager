@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import type {
+  Json,
   AiUsageLogInsert,
   AiOperationType,
   AiOperationStatus,
@@ -50,7 +51,7 @@ export async function logAiUsage(params: LogAiUsageParams): Promise<string | nul
       campaign_id: params.campaignId || null,
       character_id: params.characterId || null,
       oneshot_id: params.oneshotId || null,
-      metadata: (params.metadata || {}) as Record<string, unknown>,
+      metadata: (params.metadata || {}) as Json,
     }
 
     const { data, error } = await supabase

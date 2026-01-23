@@ -208,8 +208,8 @@ export default function PresentPage({ params }: PresentPageProps) {
             Exit Present Mode
           </Link>
           <h1 className="font-bold text-white truncate">{oneshot.title}</h1>
-          {oneshot.system && (
-            <p className="text-xs text-gray-500 mt-1">{oneshot.system}</p>
+          {oneshot.game_system && (
+            <p className="text-xs text-gray-500 mt-1">{oneshot.game_system}</p>
           )}
         </div>
 

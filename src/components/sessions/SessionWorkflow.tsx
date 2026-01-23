@@ -36,7 +36,7 @@ interface SessionWorkflowProps {
 export function SessionWorkflow({ campaignId, session, onUpdate }: SessionWorkflowProps) {
   const [phase, setPhase] = useState<SessionPhase>((session.phase as SessionPhase) || 'planned')
   const [prepChecklist, setPrepChecklist] = useState<PrepItem[]>(
-    (session.prep_checklist as PrepItem[]) || []
+    (session.prep_checklist as unknown as PrepItem[]) || []
   )
   const [thoughtsForNext, setThoughtsForNext] = useState(session.thoughts_for_next || '')
   const [newPrepItem, setNewPrepItem] = useState('')

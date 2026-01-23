@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import type { VaultCharacterInsert, CharacterSnapshotInsert } from '@/types/database'
 
 // POST - Claim a campaign character to user's vault
 export async function POST(
@@ -73,7 +72,7 @@ export async function POST(
     }
 
     // Create the vault character
-    const vaultCharacterData: VaultCharacterInsert = {
+    const vaultCharacterData = {
       user_id: user.id,
       name: character.name,
       pronouns: character.pronouns,
@@ -114,7 +113,7 @@ export async function POST(
     }
 
     // Create Session 0 snapshot
-    const snapshotData: CharacterSnapshotInsert = {
+    const snapshotData = {
       vault_character_id: vaultCharacter.id,
       campaign_id: campaignId,
       snapshot_data: character,

@@ -19,12 +19,14 @@ import { sanitizeHtml } from '@/components/ui'
 import { RichTextEditor } from '@/components/editor'
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout } from '@/components/mobile'
+import { SessionWorkflow, PlayerNotes } from '@/components/sessions'
 import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
-import type { Character } from '@/types/database'
+import type { Character, Session, Campaign } from '@/types/database'
 
 export interface SessionDetailMobileProps {
   campaignId: string
+  sessionId: string
   isNew: boolean
   loading: boolean
   formData: {
@@ -56,10 +58,16 @@ export interface SessionDetailMobileProps {
   declineExpanded: () => void
   formatSummaryAsHtml: (summary: string) => string
   canUseAI: boolean
+  // New props for SessionWorkflow and PlayerNotes
+  session: Session | null
+  campaign: Campaign | null
+  userId: string
+  onSessionUpdate: (session: Session) => void
 }
 
 export function SessionDetailMobile({
   campaignId,
+  sessionId,
   isNew,
   loading,
   formData,
@@ -85,7 +93,12 @@ export function SessionDetailMobile({
   declineExpanded,
   formatSummaryAsHtml,
   canUseAI,
+  session,
+  campaign,
+  userId,
+  onSessionUpdate,
 }: SessionDetailMobileProps) {
+  const isDM = campaign?.user_id === userId
   if (loading) {
     return (
       <AppLayout campaignId={campaignId}>
@@ -336,6 +349,28 @@ export function SessionDetailMobile({
                   className="min-h-[200px]"
                 />
               )}
+            </div>
+          )}
+
+          {/* Session Workflow - Prep/Recap Mode (DM only) */}
+          {!isNew && session && isDM && (
+            <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+              <SessionWorkflow
+                session={session}
+                campaignId={campaignId}
+                onUpdate={onSessionUpdate}
+              />
+            </div>
+          )}
+
+          {/* Player Notes Section */}
+          {!isNew && session && (
+            <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+              <PlayerNotes
+                sessionId={sessionId}
+                campaignId={campaignId}
+                characters={characters}
+              />
             </div>
           )}
 

@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import type { EntitySecretInsert, EntitySecretUpdate } from '@/types/database'
 
 // GET - Get all secrets for a campaign (or filtered by entity)
 export async function GET(
@@ -110,7 +109,7 @@ export async function POST(
 
     const body = await request.json()
     const { entityType, entityId, fieldName, content, visibility } = body as {
-      entityType: string
+      entityType: 'character' | 'session' | 'timeline_event' | 'lore' | 'faction' | 'location' | 'artifact'
       entityId: string
       fieldName?: string
       content: string
@@ -121,7 +120,12 @@ export async function POST(
       return NextResponse.json({ error: 'entityType, entityId, and content are required' }, { status: 400 })
     }
 
-    const secretData: EntitySecretInsert = {
+    const validEntityTypes = ['character', 'session', 'timeline_event', 'lore', 'faction', 'location', 'artifact']
+    if (!validEntityTypes.includes(entityType)) {
+      return NextResponse.json({ error: 'Invalid entityType' }, { status: 400 })
+    }
+
+    const secretData = {
       campaign_id: campaignId,
       entity_type: entityType,
       entity_id: entityId,
@@ -210,7 +214,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'Secret not found' }, { status: 404 })
     }
 
-    const updateData: EntitySecretUpdate = {}
+    const updateData: {
+      content?: string
+      visibility?: 'dm_only' | 'party' | 'public'
+      revealed_at?: string
+      revealed_in_session_id?: string
+    } = {}
 
     if (content !== undefined) updateData.content = content
     if (visibility) updateData.visibility = visibility
