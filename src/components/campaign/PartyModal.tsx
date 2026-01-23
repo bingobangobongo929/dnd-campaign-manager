@@ -45,6 +45,7 @@ interface CampaignMember {
   vault_character_id: string | null
   joined_at: string | null
   invited_at: string | null
+  invite_url: string | null
   user_settings?: {
     username: string | null
     avatar_url: string | null
@@ -74,6 +75,7 @@ export function PartyModal({
   const [selectedMember, setSelectedMember] = useState<CampaignMember | null>(null)
   const [inviteUrl, setInviteUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [copiedMemberLink, setCopiedMemberLink] = useState(false)
   const [saving, setSaving] = useState(false)
 
   // Invite form state
@@ -167,6 +169,13 @@ export function PartyModal({
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }
+  }
+
+  const handleCopyMemberInviteLink = (url: string) => {
+    navigator.clipboard.writeText(url)
+    setCopiedMemberLink(true)
+    toast.success('Invite link copied!')
+    setTimeout(() => setCopiedMemberLink(false), 2000)
   }
 
   const handleSelectMember = (member: CampaignMember) => {
@@ -514,6 +523,39 @@ export function PartyModal({
                   )}
                 </div>
               </div>
+
+              {/* Invite Link for Pending Members */}
+              {selectedMember.status === 'pending' && selectedMember.invite_url && (
+                <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-amber-400 font-medium mb-1">Invite Link</p>
+                      <p className="text-sm text-gray-400 truncate font-mono">
+                        {selectedMember.invite_url}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleCopyMemberInviteLink(selectedMember.invite_url!)}
+                      className="btn btn-secondary btn-sm flex-shrink-0"
+                    >
+                      {copiedMemberLink ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 mr-1" />
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5 mr-1" />
+                          Copy
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Share this link via WhatsApp, Discord, or any other platform.
+                  </p>
+                </div>
+              )}
 
               {/* Role & Character */}
               <div className="space-y-4">

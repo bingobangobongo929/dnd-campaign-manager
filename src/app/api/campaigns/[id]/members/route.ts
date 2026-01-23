@@ -84,10 +84,20 @@ export async function GET(
       }
     }
 
-    // Merge user_settings into members
+    // Build app URL for invite links
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ||
+      request.headers.get('origin') ||
+      `https://${request.headers.get('host')}` ||
+      'https://multiloop.app'
+
+    // Merge user_settings and invite URLs into members
     const enrichedMembers = members?.map(m => ({
       ...m,
-      user_settings: m.user_id ? userSettingsMap[m.user_id] || null : null
+      user_settings: m.user_id ? userSettingsMap[m.user_id] || null : null,
+      // Include invite URL for pending members (only visible to owner/co-dm who can access this endpoint)
+      invite_url: m.status === 'pending' && m.invite_token
+        ? `${appUrl}/invite/${m.invite_token}`
+        : null
     })) || []
 
     return NextResponse.json({ members: enrichedMembers, isOwner })

@@ -28,6 +28,15 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid or expired invite' }, { status: 404 })
     }
 
+    // Check if the invited email already has an account
+    let hasExistingAccount = false
+    if (invite.email) {
+      const { data: users } = await adminClient.auth.admin.listUsers()
+      hasExistingAccount = users.users.some(
+        u => u.email?.toLowerCase() === invite.email?.toLowerCase()
+      )
+    }
+
     return NextResponse.json({
       invite: {
         id: invite.id,
@@ -35,6 +44,7 @@ export async function GET(
         email: invite.email,
         discordId: invite.discord_id,
         campaign: invite.campaign,
+        hasExistingAccount,
       },
     })
   } catch (error) {

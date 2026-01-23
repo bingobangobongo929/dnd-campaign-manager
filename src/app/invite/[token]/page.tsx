@@ -36,6 +36,7 @@ interface InviteData {
   character?: {
     name: string
   } | null
+  hasExistingAccount?: boolean
 }
 
 export default function InvitePage() {
@@ -276,41 +277,73 @@ export default function InvitePage() {
                   </p>
                 )}
 
-                {/* Auth Options */}
+                {/* Auth Options - Smart based on whether email has account */}
                 <div className="space-y-4">
-                  <div className="bg-white/[0.02] border border-[--border] rounded-xl p-5">
-                    <h3 className="text-white font-medium mb-2 flex items-center gap-2">
-                      <UserPlus className="w-4 h-4 text-purple-400" />
-                      New to Multiloop?
-                    </h3>
-                    <p className="text-gray-500 text-sm mb-4">
-                      Create a free account to join this campaign and start your adventure.
-                    </p>
-                    <Link
-                      href={`/login?redirect=/invite/${token}&mode=signup`}
-                      className="btn btn-primary w-full justify-center"
-                    >
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Create Account & Join
-                    </Link>
-                  </div>
+                  {invite?.hasExistingAccount ? (
+                    // Email has an existing account - prompt to sign in
+                    <>
+                      <div className="bg-purple-500/5 border border-purple-500/20 rounded-xl p-5">
+                        <h3 className="text-white font-medium mb-2 flex items-center gap-2">
+                          <LogIn className="w-4 h-4 text-purple-400" />
+                          Welcome Back!
+                        </h3>
+                        <p className="text-gray-500 text-sm mb-4">
+                          Sign in with <span className="text-white">{invite.email}</span> to accept this invite.
+                        </p>
+                        <Link
+                          href={`/login?redirect=/invite/${token}`}
+                          className="btn btn-primary w-full justify-center"
+                        >
+                          <LogIn className="w-4 h-4 mr-2" />
+                          Sign In to Join
+                        </Link>
+                      </div>
 
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-[--border]" />
-                    </div>
-                    <div className="relative flex justify-center text-xs">
-                      <span className="px-3 bg-[#12121a] text-gray-500">or</span>
-                    </div>
-                  </div>
+                      <p className="text-center text-xs text-gray-500">
+                        Not your account?{' '}
+                        <Link href={`/login?redirect=/invite/${token}&mode=signup`} className="text-purple-400 hover:text-purple-300">
+                          Create a new one
+                        </Link>
+                      </p>
+                    </>
+                  ) : (
+                    // No existing account - prompt to create one
+                    <>
+                      <div className="bg-white/[0.02] border border-[--border] rounded-xl p-5">
+                        <h3 className="text-white font-medium mb-2 flex items-center gap-2">
+                          <UserPlus className="w-4 h-4 text-purple-400" />
+                          New to Multiloop?
+                        </h3>
+                        <p className="text-gray-500 text-sm mb-4">
+                          Create a free account to join this campaign and start your adventure.
+                        </p>
+                        <Link
+                          href={`/login?redirect=/invite/${token}&mode=signup`}
+                          className="btn btn-primary w-full justify-center"
+                        >
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Create Account & Join
+                        </Link>
+                      </div>
 
-                  <Link
-                    href={`/login?redirect=/invite/${token}`}
-                    className="btn btn-secondary w-full justify-center"
-                  >
-                    <LogIn className="w-4 h-4 mr-2" />
-                    Sign In with Existing Account
-                  </Link>
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <div className="w-full border-t border-[--border]" />
+                        </div>
+                        <div className="relative flex justify-center text-xs">
+                          <span className="px-3 bg-[#12121a] text-gray-500">or</span>
+                        </div>
+                      </div>
+
+                      <Link
+                        href={`/login?redirect=/invite/${token}`}
+                        className="btn btn-secondary w-full justify-center"
+                      >
+                        <LogIn className="w-4 h-4 mr-2" />
+                        Sign In with Existing Account
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
