@@ -40,6 +40,19 @@ interface TemplateSnapshot {
   snapshot_data: any
 }
 
+interface JoinedCampaign {
+  membership: {
+    id: string
+    role: string
+    status: string
+    joined_at: string | null
+    invited_at: string | null
+    character_id: string | null
+    permissions: any
+  }
+  campaign: Campaign
+}
+
 const GAME_SYSTEMS = [
   { value: 'D&D 5e', label: 'D&D 5e' },
   { value: 'D&D 3.5e', label: 'D&D 3.5e' },
@@ -57,6 +70,7 @@ export default function CampaignsPage() {
   const isMobile = useIsMobile()
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [joinedCampaigns, setJoinedCampaigns] = useState<JoinedCampaign[]>([])
   const [savedCampaigns, setSavedCampaigns] = useState<ContentSave[]>([])
   const [templateSnapshots, setTemplateSnapshots] = useState<TemplateSnapshot[]>([])
   const [loading, setLoading] = useState(true)
@@ -109,6 +123,13 @@ export default function CampaignsPage() {
       setSavedCampaigns(savedData.saves || [])
     }
 
+    // Load joined campaigns (campaigns user is a member of but doesn't own)
+    const joinedResponse = await fetch('/api/campaigns/joined')
+    if (joinedResponse.ok) {
+      const joinedData = await joinedResponse.json()
+      setJoinedCampaigns(joinedData.joinedCampaigns || [])
+    }
+
     setLoading(false)
   }
 
@@ -126,6 +147,7 @@ export default function CampaignsPage() {
   // Get counts for tabs
   const tabCounts = {
     active: campaigns.filter(c => c.content_mode === 'active' || !c.content_mode).length,
+    joined: joinedCampaigns.length,
     inactive: campaigns.filter(c => c.content_mode === 'inactive').length,
     templates: uniqueTemplateContentIds.size,
     saved: savedCampaigns.length,
@@ -346,6 +368,78 @@ export default function CampaignsPage() {
                       )}
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Joined Campaigns Tab */}
+        {activeTab === 'joined' && (
+          <div className="space-y-6">
+            {joinedCampaigns.length === 0 ? (
+              <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
+                <Swords className="w-12 h-12 mx-auto mb-4 text-purple-400/50" />
+                <h3 className="text-lg font-medium text-white mb-2">No campaigns joined yet</h3>
+                <p className="text-gray-400 max-w-sm mx-auto">
+                  When you're invited to join a campaign, it will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {joinedCampaigns.map(({ membership, campaign }) => (
+                  <Link
+                    key={membership.id}
+                    href={`/campaigns/${campaign.id}/dashboard`}
+                    className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/40 transition-all"
+                  >
+                    <div className="relative h-48 overflow-hidden">
+                      {campaign.image_url ? (
+                        <>
+                          <Image
+                            src={campaign.image_url}
+                            alt={campaign.name}
+                            fill
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                          <Swords className="w-16 h-16 text-purple-400/30" />
+                        </div>
+                      )}
+                      <div className="absolute top-3 left-3 flex gap-2">
+                        <span className={`px-2.5 py-1 text-xs font-semibold rounded-lg border ${
+                          membership.status === 'pending'
+                            ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
+                            : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                        }`}>
+                          {membership.status === 'pending' ? 'Pending Invite' : membership.role.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <div className="absolute top-3 right-3">
+                        <span className="px-2.5 py-1 text-xs font-medium rounded-lg bg-black/60 backdrop-blur-sm text-gray-300">
+                          {campaign.game_system}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-5">
+                      <h4 className="font-display font-semibold text-lg text-white truncate group-hover:text-purple-400 transition-colors">
+                        {campaign.name}
+                      </h4>
+                      {campaign.description && (
+                        <p className="text-sm text-gray-400 mt-2 line-clamp-2">
+                          {campaign.description}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-3">
+                        {membership.joined_at
+                          ? `Joined ${formatDate(membership.joined_at)}`
+                          : `Invited ${formatDate(membership.invited_at!)}`}
+                      </p>
+                    </div>
+                  </Link>
                 ))}
               </div>
             )}

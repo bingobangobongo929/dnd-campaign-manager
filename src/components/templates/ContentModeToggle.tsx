@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils'
 import type { ContentMode } from '@/types/database'
 
-export type ContentModeTab = ContentMode | 'templates' | 'saved'
+export type ContentModeTab = ContentMode | 'templates' | 'saved' | 'joined'
 
 interface Tab {
   value: ContentModeTab
@@ -19,6 +19,7 @@ interface ContentModeToggleProps {
     inactive?: number
     templates?: number
     saved?: number
+    joined?: number
   }
   contentType: 'campaign' | 'character' | 'oneshot'
   className?: string
@@ -39,6 +40,9 @@ export function ContentModeToggle({
 
   const tabs: Tab[] = [
     { value: 'active', label: 'Active', count: counts.active },
+    ...(contentType === 'campaign' && typeof counts.joined === 'number'
+      ? [{ value: 'joined' as ContentModeTab, label: 'Joined', count: counts.joined }]
+      : []),
     { value: 'inactive', label: getInactiveLabel(), count: counts.inactive },
     { value: 'templates', label: 'My Templates', count: counts.templates },
     { value: 'saved', label: 'Saved', count: counts.saved },
@@ -93,6 +97,9 @@ export function MobileContentModeToggle({
 
   const tabs: Tab[] = [
     { value: 'active', label: 'Active', count: counts.active },
+    ...(contentType === 'campaign' && typeof counts.joined === 'number'
+      ? [{ value: 'joined' as ContentModeTab, label: 'Joined', count: counts.joined }]
+      : []),
     { value: 'inactive', label: getInactiveLabel(), count: counts.inactive },
     { value: 'templates', label: 'Templates', count: counts.templates },
     { value: 'saved', label: 'Saved', count: counts.saved },
