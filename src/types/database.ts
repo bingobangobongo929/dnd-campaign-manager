@@ -3906,7 +3906,7 @@ export const DEFAULT_PERMISSIONS: Record<CampaignMemberRole, MemberPermissions> 
 export type PlayerSessionNote = Database['public']['Tables']['player_session_notes']['Row']
 export type PlayerSessionNoteInsert = Database['public']['Tables']['player_session_notes']['Insert']
 export type PlayerSessionNoteUpdate = Database['public']['Tables']['player_session_notes']['Update']
-export type NoteSource = 'manual' | 'discord_import' | 'player_submitted'
+export type NoteSource = 'manual' | 'discord_import' | 'player_submitted' | 'whatsapp_import' | 'email_import' | 'other_import' | 'dm_added'
 
 // Entity secrets (visibility system)
 export type EntitySecret = Database['public']['Tables']['entity_secrets']['Row']

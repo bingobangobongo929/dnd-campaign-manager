@@ -14,11 +14,31 @@ import {
   User,
   Save,
   X,
+  UserPlus,
 } from 'lucide-react'
 import { Modal } from '@/components/ui'
 import { toast } from 'sonner'
 import { cn, getInitials, formatRelativeDate } from '@/lib/utils'
-import type { PlayerSessionNote, Character } from '@/types/database'
+import type { PlayerSessionNote, Character, NoteSource } from '@/types/database'
+
+// Source display labels
+const SOURCE_LABELS: Record<NoteSource, string> = {
+  player_submitted: 'Submitted',
+  dm_added: 'Added by DM',
+  discord_import: 'from Discord',
+  whatsapp_import: 'from WhatsApp',
+  email_import: 'from Email',
+  other_import: 'from External',
+  manual: 'Added',
+}
+
+// Source options for DMs adding on behalf
+const DM_SOURCE_OPTIONS: { value: NoteSource; label: string }[] = [
+  { value: 'discord_import', label: 'Discord' },
+  { value: 'whatsapp_import', label: 'WhatsApp' },
+  { value: 'email_import', label: 'Email' },
+  { value: 'other_import', label: 'Other Source' },
+]
 
 interface PlayerNotesProps {
   campaignId: string
@@ -31,6 +51,7 @@ interface NoteWithRelations extends PlayerSessionNote {
     id: string
     name: string
     image_url: string | null
+    status?: string
   } | null
   added_by_user?: {
     username: string | null
@@ -46,9 +67,11 @@ export function PlayerNotes({ campaignId, sessionId, characters = [] }: PlayerNo
   const [userCharacterId, setUserCharacterId] = useState<string | null>(null)
 
   const [addModalOpen, setAddModalOpen] = useState(false)
+  const [addOnBehalfModalOpen, setAddOnBehalfModalOpen] = useState(false)
   const [editingNote, setEditingNote] = useState<NoteWithRelations | null>(null)
   const [noteContent, setNoteContent] = useState('')
   const [selectedCharacterId, setSelectedCharacterId] = useState<string>('')
+  const [selectedSource, setSelectedSource] = useState<NoteSource>('discord_import')
   const [isShared, setIsShared] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -77,9 +100,14 @@ export function PlayerNotes({ campaignId, sessionId, characters = [] }: PlayerNo
     }
   }
 
-  const handleAddNote = async () => {
+  const handleAddNote = async (onBehalf = false) => {
     if (!noteContent.trim()) {
       toast.error('Please enter some notes')
+      return
+    }
+
+    if (onBehalf && !selectedCharacterId) {
+      toast.error('Please select a character')
       return
     }
 
@@ -93,6 +121,7 @@ export function PlayerNotes({ campaignId, sessionId, characters = [] }: PlayerNo
           body: JSON.stringify({
             notes: noteContent,
             characterId: selectedCharacterId || undefined,
+            source: onBehalf ? selectedSource : 'player_submitted',
             isSharedWithParty: isShared,
           }),
         }
@@ -105,11 +134,13 @@ export function PlayerNotes({ campaignId, sessionId, characters = [] }: PlayerNo
         return
       }
 
-      toast.success('Note added!')
+      toast.success(onBehalf ? 'Note added on behalf of player!' : 'Note added!')
       setNoteContent('')
       setSelectedCharacterId('')
+      setSelectedSource('discord_import')
       setIsShared(true)
       setAddModalOpen(false)
+      setAddOnBehalfModalOpen(false)
       loadNotes()
     } catch (error) {
       console.error('Failed to add note:', error)
@@ -186,6 +217,12 @@ export function PlayerNotes({ campaignId, sessionId, characters = [] }: PlayerNo
     setIsShared(note.is_shared_with_party !== false)
   }
 
+  // Filter characters to only active PCs for "add on behalf" (not deceased, not retired)
+  const activeCharacters = characters.filter(c =>
+    c.type === 'pc' &&
+    (!c.status || c.status === 'alive' || c.status === 'active')
+  )
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -200,25 +237,45 @@ export function PlayerNotes({ campaignId, sessionId, characters = [] }: PlayerNo
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MessageSquare className="w-5 h-5 text-blue-400" />
-          <h3 className="font-medium text-white">Player Notes</h3>
+          <h3 className="font-medium text-white">Player Perspectives</h3>
           {notes.length > 0 && (
             <span className="text-xs text-gray-500">({notes.length})</span>
           )}
         </div>
-        {canAddNotes && (
-          <button
-            onClick={() => {
-              setNoteContent('')
-              setSelectedCharacterId(userCharacterId || '')
-              setIsShared(true)
-              setAddModalOpen(true)
-            }}
-            className="btn btn-sm btn-primary"
-          >
-            <Plus className="w-3 h-3 mr-1" />
-            Add Notes
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* DM: Add on behalf button */}
+          {isDm && activeCharacters.length > 0 && (
+            <button
+              onClick={() => {
+                setNoteContent('')
+                setSelectedCharacterId('')
+                setSelectedSource('discord_import')
+                setIsShared(true)
+                setAddOnBehalfModalOpen(true)
+              }}
+              className="btn btn-sm btn-secondary"
+              title="Add notes on behalf of a player"
+            >
+              <UserPlus className="w-3 h-3 mr-1" />
+              On Behalf Of
+            </button>
+          )}
+          {/* Regular add notes button */}
+          {canAddNotes && (
+            <button
+              onClick={() => {
+                setNoteContent('')
+                setSelectedCharacterId(userCharacterId || '')
+                setIsShared(true)
+                setAddModalOpen(true)
+              }}
+              className="btn btn-sm btn-primary"
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              Add Notes
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Notes List */}
@@ -292,6 +349,30 @@ export function PlayerNotes({ campaignId, sessionId, characters = [] }: PlayerNo
           isEdit
         />
       </Modal>
+
+      {/* Add on Behalf Modal (DM only) */}
+      <Modal
+        isOpen={addOnBehalfModalOpen}
+        onClose={() => setAddOnBehalfModalOpen(false)}
+        title="Add Notes on Behalf of Player"
+        description="Add session notes from a player who doesn't use the site"
+        size="md"
+      >
+        <OnBehalfForm
+          noteContent={noteContent}
+          setNoteContent={setNoteContent}
+          selectedCharacterId={selectedCharacterId}
+          setSelectedCharacterId={setSelectedCharacterId}
+          selectedSource={selectedSource}
+          setSelectedSource={setSelectedSource}
+          isShared={isShared}
+          setIsShared={setIsShared}
+          characters={activeCharacters}
+          saving={saving}
+          onSave={() => handleAddNote(true)}
+          onCancel={() => setAddOnBehalfModalOpen(false)}
+        />
+      </Modal>
     </div>
   )
 }
@@ -312,6 +393,10 @@ function NoteCard({ note, isDm, onEdit, onDelete }: NoteCardProps) {
   const avatarUrl = note.character?.image_url ||
     note.added_by_user?.avatar_url
 
+  // Determine if this was added on behalf of someone
+  const isOnBehalf = note.source && ['discord_import', 'whatsapp_import', 'email_import', 'other_import', 'dm_added'].includes(note.source)
+  const sourceLabel = note.source ? SOURCE_LABELS[note.source as NoteSource] : null
+
   return (
     <div className={cn(
       "p-4 rounded-lg border",
@@ -327,7 +412,7 @@ function NoteCard({ note, isDm, onEdit, onDelete }: NoteCardProps) {
             alt={displayName}
             width={36}
             height={36}
-            className="rounded-full"
+            className="rounded-full object-cover"
           />
         ) : (
           <div className="w-9 h-9 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400 font-medium text-sm">
@@ -337,8 +422,14 @@ function NoteCard({ note, isDm, onEdit, onDelete }: NoteCardProps) {
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="font-medium text-white text-sm">{displayName}</span>
+            {/* Source indicator for notes added on behalf */}
+            {isOnBehalf && sourceLabel && (
+              <span className="text-xs text-amber-400/80">
+                (Added by DM • {sourceLabel})
+              </span>
+            )}
             {note.is_shared_with_party ? (
               <span className="inline-flex items-center gap-1 text-xs text-blue-400">
                 <Users className="w-3 h-3" />
@@ -488,6 +579,139 @@ function NoteForm({
             <>
               <Save className="w-4 h-4 mr-1" />
               {isEdit ? 'Update' : 'Save Notes'}
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// Form for DMs adding notes on behalf of players
+interface OnBehalfFormProps {
+  noteContent: string
+  setNoteContent: (value: string) => void
+  selectedCharacterId: string
+  setSelectedCharacterId: (value: string) => void
+  selectedSource: NoteSource
+  setSelectedSource: (value: NoteSource) => void
+  isShared: boolean
+  setIsShared: (value: boolean) => void
+  characters: Character[]
+  saving: boolean
+  onSave: () => void
+  onCancel: () => void
+}
+
+function OnBehalfForm({
+  noteContent,
+  setNoteContent,
+  selectedCharacterId,
+  setSelectedCharacterId,
+  selectedSource,
+  setSelectedSource,
+  isShared,
+  setIsShared,
+  characters,
+  saving,
+  onSave,
+  onCancel,
+}: OnBehalfFormProps) {
+  return (
+    <div className="space-y-4">
+      {/* Character selection - required for on behalf */}
+      <div className="form-group">
+        <label className="form-label">
+          Character <span className="text-red-400">*</span>
+        </label>
+        <select
+          value={selectedCharacterId}
+          onChange={(e) => setSelectedCharacterId(e.target.value)}
+          className="form-input"
+        >
+          <option value="">Select a character...</option>
+          {characters.map(char => (
+            <option key={char.id} value={char.id}>
+              {char.name}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-gray-500 mt-1">
+          Select whose perspective these notes are from
+        </p>
+      </div>
+
+      {/* Source selection */}
+      <div className="form-group">
+        <label className="form-label">Source</label>
+        <select
+          value={selectedSource}
+          onChange={(e) => setSelectedSource(e.target.value as NoteSource)}
+          className="form-input"
+        >
+          {DM_SOURCE_OPTIONS.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-gray-500 mt-1">
+          Where did these notes come from?
+        </p>
+      </div>
+
+      {/* Notes content */}
+      <div className="form-group">
+        <label className="form-label">Notes</label>
+        <textarea
+          value={noteContent}
+          onChange={(e) => setNoteContent(e.target.value)}
+          placeholder="Paste or type the player's session notes here..."
+          rows={8}
+          className="form-input"
+          autoFocus
+        />
+      </div>
+
+      {/* Visibility toggle */}
+      <div className="form-group">
+        <label className="form-label flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={isShared}
+            onChange={(e) => setIsShared(e.target.checked)}
+            className="form-checkbox"
+          />
+          <span>Share with party</span>
+        </label>
+        <p className="text-xs text-gray-500 mt-1 ml-6">
+          {isShared
+            ? "Other players can see these notes"
+            : "Only visible to you and the character's player"}
+        </p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-3 pt-2">
+        <button
+          onClick={onCancel}
+          disabled={saving}
+          className="btn btn-secondary flex-1"
+        >
+          <X className="w-4 h-4 mr-1" />
+          Cancel
+        </button>
+        <button
+          onClick={onSave}
+          disabled={saving || !noteContent.trim() || !selectedCharacterId}
+          className="btn btn-primary flex-1"
+        >
+          {saving ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <>
+              <UserPlus className="w-4 h-4 mr-1" />
+              Add Notes
             </>
           )}
         </button>

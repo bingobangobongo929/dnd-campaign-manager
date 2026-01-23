@@ -22,6 +22,7 @@ import { formatDate, cn, getInitials } from '@/lib/utils'
 import { logActivity } from '@/lib/activity-log'
 import Image from 'next/image'
 import type { Campaign, Session, Character, Tag, CharacterTag } from '@/types/database'
+import { MessageSquare } from 'lucide-react'
 
 // Convert basic markdown to HTML for display (or pass through if already HTML)
 function markdownToHtml(text: string): string {
@@ -37,8 +38,18 @@ function markdownToHtml(text: string): string {
   return sanitizeHtml(html)
 }
 
+interface NoteContributor {
+  character_id: string | null
+  character_name: string | null
+  character_image: string | null
+  user_id: string | null
+  username: string | null
+  user_avatar: string | null
+}
+
 interface SessionWithAttendees extends Session {
   attendees: Character[]
+  noteContributors?: NoteContributor[]
 }
 
 export default function SessionsPage() {
@@ -132,13 +143,46 @@ export default function SessionsPage() {
         .select('session_id, character_id')
         .in('session_id', sessionIds)
 
-      // Map attendees to each session
+      // Load player notes for all sessions to get contributors
+      const { data: playerNotes } = await supabase
+        .from('player_session_notes')
+        .select(`
+          session_id,
+          character_id,
+          added_by_user_id,
+          character:characters(id, name, image_url),
+          added_by_user:user_settings!player_session_notes_added_by_user_id_fkey(user_id, username, avatar_url)
+        `)
+        .in('session_id', sessionIds)
+        .eq('is_shared_with_party', true)
+
+      // Group player notes by session and deduplicate contributors
+      const notesBySession = new Map<string, NoteContributor[]>()
+      playerNotes?.forEach(note => {
+        const contributors = notesBySession.get(note.session_id) || []
+        // Only add if not already present (deduplicate by character or user)
+        const key = note.character_id || note.added_by_user_id
+        if (!contributors.find(c => (c.character_id || c.user_id) === key)) {
+          contributors.push({
+            character_id: note.character_id,
+            character_name: (note.character as any)?.name || null,
+            character_image: (note.character as any)?.image_url || null,
+            user_id: note.added_by_user_id,
+            username: (note.added_by_user as any)?.username || null,
+            user_avatar: (note.added_by_user as any)?.avatar_url || null,
+          })
+        }
+        notesBySession.set(note.session_id, contributors)
+      })
+
+      // Map attendees and note contributors to each session
       const sessionsWithAttendees = sessionsData.map(session => ({
         ...session,
         attendees: sessionCharacters
           ?.filter(sc => sc.session_id === session.id)
           .map(sc => charactersData?.find(c => c.id === sc.character_id))
-          .filter(Boolean) as Character[] || []
+          .filter(Boolean) as Character[] || [],
+        noteContributors: notesBySession.get(session.id) || [],
       }))
 
       setSessions(sessionsWithAttendees)
@@ -440,56 +484,121 @@ export default function SessionsPage() {
                         </div>
                       )}
 
-                      {/* Attendees Avatars */}
-                      {session.attendees.length > 0 && (
-                        <div className="flex items-center gap-3 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                          <Users className="w-4 h-4 text-[--text-tertiary]" />
-                          <div className="flex -space-x-2">
-                            {session.attendees.slice(0, 5).map((char) => (
-                              <Tooltip key={char.id} content={char.name} side="top" delay={200}>
-                                <div
-                                  className="relative w-8 h-8 rounded-full overflow-hidden hover:z-10 hover:scale-110 transition-transform cursor-pointer"
-                                  style={{
-                                    border: '2px solid #12121a',
-                                    backgroundColor: '#1a1a24',
-                                  }}
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleCharacterClick(char)
-                                  }}
-                                >
-                                  {char.image_url ? (
-                                    <Image
-                                      src={char.image_url}
-                                      alt={char.name}
-                                      fill
-                                      className="object-cover"
-                                      sizes="32px"
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-[--text-tertiary]">
-                                      {getInitials(char.name)}
+                      {/* Attendees and Player Notes Section */}
+                      {(session.attendees.length > 0 || (session.noteContributors && session.noteContributors.length > 0)) && (
+                        <div className="pt-4 space-y-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                          {/* Attendees Avatars */}
+                          {session.attendees.length > 0 && (
+                            <div className="flex items-center gap-3">
+                              <Tooltip content="Session Attendees" side="top" delay={200}>
+                                <Users className="w-4 h-4 text-[--text-tertiary]" />
+                              </Tooltip>
+                              <div className="flex -space-x-2">
+                                {session.attendees.slice(0, 5).map((char) => (
+                                  <Tooltip key={char.id} content={char.name} side="top" delay={200}>
+                                    <div
+                                      className="relative w-8 h-8 rounded-full overflow-hidden hover:z-10 hover:scale-110 transition-transform cursor-pointer"
+                                      style={{
+                                        border: '2px solid #12121a',
+                                        backgroundColor: '#1a1a24',
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleCharacterClick(char)
+                                      }}
+                                    >
+                                      {char.image_url ? (
+                                        <Image
+                                          src={char.image_url}
+                                          alt={char.name}
+                                          fill
+                                          className="object-cover"
+                                          sizes="32px"
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-[--text-tertiary]">
+                                          {getInitials(char.name)}
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
-                                </div>
+                                  </Tooltip>
+                                ))}
+                                {session.attendees.length > 5 && (
+                                  <Tooltip content={`${session.attendees.length - 5} more attendees`} side="top">
+                                    <div
+                                      className="relative w-8 h-8 rounded-full flex items-center justify-center"
+                                      style={{
+                                        border: '2px solid #12121a',
+                                        backgroundColor: '#1a1a24',
+                                      }}
+                                    >
+                                      <span className="text-[10px] font-bold text-[--text-tertiary]">
+                                        +{session.attendees.length - 5}
+                                      </span>
+                                    </div>
+                                  </Tooltip>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Player Perspectives Avatars */}
+                          {session.noteContributors && session.noteContributors.length > 0 && (
+                            <div className="flex items-center gap-3">
+                              <Tooltip content="Player Perspectives" side="top" delay={200}>
+                                <MessageSquare className="w-4 h-4 text-blue-400" />
                               </Tooltip>
-                            ))}
-                            {session.attendees.length > 5 && (
-                              <Tooltip content={`${session.attendees.length - 5} more attendees`} side="top">
-                                <div
-                                  className="relative w-8 h-8 rounded-full flex items-center justify-center"
-                                  style={{
-                                    border: '2px solid #12121a',
-                                    backgroundColor: '#1a1a24',
-                                  }}
-                                >
-                                  <span className="text-[10px] font-bold text-[--text-tertiary]">
-                                    +{session.attendees.length - 5}
-                                  </span>
-                                </div>
-                              </Tooltip>
-                            )}
-                          </div>
+                              <div className="flex -space-x-2">
+                                {session.noteContributors.slice(0, 5).map((contributor, idx) => {
+                                  const displayName = contributor.character_name || contributor.username || 'Player'
+                                  const avatarUrl = contributor.character_image || contributor.user_avatar
+                                  return (
+                                    <Tooltip key={contributor.character_id || contributor.user_id || idx} content={`${displayName}'s perspective`} side="top" delay={200}>
+                                      <div
+                                        className="relative w-8 h-8 rounded-full overflow-hidden hover:z-10 hover:scale-110 transition-transform"
+                                        style={{
+                                          border: '2px solid #12121a',
+                                          backgroundColor: '#1e3a5f',
+                                        }}
+                                      >
+                                        {avatarUrl ? (
+                                          <Image
+                                            src={avatarUrl}
+                                            alt={displayName}
+                                            fill
+                                            className="object-cover"
+                                            sizes="32px"
+                                          />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-blue-300">
+                                            {getInitials(displayName)}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </Tooltip>
+                                  )
+                                })}
+                                {session.noteContributors.length > 5 && (
+                                  <Tooltip content={`${session.noteContributors.length - 5} more perspectives`} side="top">
+                                    <div
+                                      className="relative w-8 h-8 rounded-full flex items-center justify-center"
+                                      style={{
+                                        border: '2px solid #12121a',
+                                        backgroundColor: '#1e3a5f',
+                                      }}
+                                    >
+                                      <span className="text-[10px] font-bold text-blue-300">
+                                        +{session.noteContributors.length - 5}
+                                      </span>
+                                    </div>
+                                  </Tooltip>
+                                )}
+                              </div>
+                              <span className="text-xs text-blue-400/70">
+                                {session.noteContributors.length} {session.noteContributors.length === 1 ? 'perspective' : 'perspectives'}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
