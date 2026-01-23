@@ -12,12 +12,12 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react'
-import { Input, Modal, Textarea, Tooltip, sanitizeHtml } from '@/components/ui'
+import { Input, Modal, Textarea, Tooltip, sanitizeHtml, AccessDeniedPage } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { SessionsPageMobile } from './page.mobile'
 import { CharacterViewModal } from '@/components/character'
-import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { formatDate, cn, getInitials } from '@/lib/utils'
 import { logActivity } from '@/lib/activity-log'
 import Image from 'next/image'
@@ -49,6 +49,9 @@ export default function SessionsPage() {
   const isMobile = useIsMobile()
 
   const campaignId = params.id as string
+
+  // Permissions
+  const { can, loading: permissionsLoading, isMember } = usePermissions(campaignId)
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [sessions, setSessions] = useState<SessionWithAttendees[]>([])
@@ -271,12 +274,24 @@ export default function SessionsPage() {
   }
 
   // Desktop Layout
-  if (loading) {
+  if (loading || permissionsLoading) {
     return (
       <AppLayout campaignId={campaignId}>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
         </div>
+      </AppLayout>
+    )
+  }
+
+  // Permission check - must be a member with view permission
+  if (!isMember || !can.viewSessions) {
+    return (
+      <AppLayout campaignId={campaignId}>
+        <AccessDeniedPage
+          campaignId={campaignId}
+          message="You don't have permission to view sessions for this campaign."
+        />
       </AppLayout>
     )
   }
@@ -290,10 +305,12 @@ export default function SessionsPage() {
             <h1 className="page-title">Session Notes</h1>
             <p className="page-subtitle">Record your campaign adventures</p>
           </div>
-          <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
-            <Plus className="w-4 h-4" />
-            New Session
-          </button>
+          {can.addSession && (
+            <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
+              <Plus className="w-4 h-4" />
+              New Session
+            </button>
+          )}
         </div>
 
         {/* Search */}
@@ -328,10 +345,12 @@ export default function SessionsPage() {
                 <p className="text-xs text-purple-400/80 mt-3 max-w-md italic">
                   Session notes power Campaign Intelligence - add detailed notes to get AI-powered timeline events, NPC suggestions, and relationship tracking.
                 </p>
-                <button className="btn btn-primary mt-4" onClick={() => setIsCreateModalOpen(true)}>
-                  <Plus className="w-5 h-5" />
-                  Create First Session
-                </button>
+                {can.addSession && (
+                  <button className="btn btn-primary mt-4" onClick={() => setIsCreateModalOpen(true)}>
+                    <Plus className="w-5 h-5" />
+                    Create First Session
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -474,15 +493,17 @@ export default function SessionsPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        className="w-9 h-9 rounded-lg flex items-center justify-center text-[--arcane-ember] hover:bg-[--arcane-ember]/10 transition-colors"
-                        onClick={(e) => handleDelete(session.id, e)}
-                        title="Delete session"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    {can.deleteSession && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          className="w-9 h-9 rounded-lg flex items-center justify-center text-[--arcane-ember] hover:bg-[--arcane-ember]/10 transition-colors"
+                          onClick={(e) => handleDelete(session.id, e)}
+                          title="Delete session"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -491,7 +512,7 @@ export default function SessionsPage() {
         )}
 
         {/* FAB for mobile */}
-        {filteredSessions.length > 0 && (
+        {filteredSessions.length > 0 && can.addSession && (
           <button
             className="fab"
             onClick={() => setIsCreateModalOpen(true)}

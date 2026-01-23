@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Plus, FolderPlus, Scaling, Trash2, Brain, Share2, ChevronRight, Users, Sparkles, ChevronDown, Loader2, Tags, Shield, Link2, ChevronUp, Settings2 } from 'lucide-react'
-import { Modal, Input, ColorPicker, IconPicker, getGroupIcon } from '@/components/ui'
+import { Modal, Input, ColorPicker, IconPicker, getGroupIcon, AccessDeniedPage } from '@/components/ui'
 import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT, CONNECTION_FILTER_OPTIONS } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
 import { TagManager, FactionManager, RelationshipManager, UnclaimedCharactersBanner, PartyModal } from '@/components/campaign'
@@ -13,7 +13,7 @@ import { TemplateStateBadge } from '@/components/templates/TemplateStateBadge'
 import { TemplateOnboardingModal } from '@/components/templates/TemplateOnboardingModal'
 import { toast } from 'sonner'
 import { AppLayout } from '@/components/layout/app-layout'
-import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { CampaignCanvasPageMobile } from './page.mobile'
 import { useAppStore, useCanUseAI } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
@@ -41,6 +41,9 @@ export default function CampaignCanvasPage() {
   const canUseAI = useCanUseAI()
 
   const campaignId = params.id as string
+
+  // Permissions
+  const { can, loading: permissionsLoading, isMember, isDm } = usePermissions(campaignId)
 
   // Check for new template onboarding
   const isNewTemplate = searchParams.get('newTemplate') === '1'
@@ -769,12 +772,24 @@ export default function CampaignCanvasPage() {
     { id: 'npc', name: 'NPCs', color: '#6B7280', icon: 'users', characters: npcCharacters },
   ].filter(col => col.characters.length > 0)
 
-  if (loading) {
+  if (loading || permissionsLoading) {
     return (
       <AppLayout campaignId={campaignId} fullBleed transparentTopBar>
         <div className="flex items-center justify-center h-screen">
           <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
         </div>
+      </AppLayout>
+    )
+  }
+
+  // Permission check - must be a member with view permission
+  if (!isMember || !can.viewCanvas) {
+    return (
+      <AppLayout campaignId={campaignId}>
+        <AccessDeniedPage
+          campaignId={campaignId}
+          message="You don't have permission to view the canvas for this campaign."
+        />
       </AppLayout>
     )
   }

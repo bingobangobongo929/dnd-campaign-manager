@@ -41,10 +41,10 @@ import {
   ThumbsUp,
   ThumbsDown,
 } from 'lucide-react'
-import { Modal } from '@/components/ui'
+import { Modal, AccessDeniedPage } from '@/components/ui'
 import { TimelineEventEditor, type TimelineEventFormData } from '@/components/timeline'
 import { AppLayout } from '@/components/layout/app-layout'
-import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { CampaignIntelligencePageMobile } from './page.mobile'
 import { useAppStore, useCanUseAI } from '@/store'
 import { AI_PROVIDERS, AIProvider } from '@/lib/ai/config'
@@ -158,6 +158,9 @@ export default function IntelligencePage() {
 
   const campaignId = params.id as string
   const isMobile = useIsMobile()
+
+  // Permissions
+  const { loading: permissionsLoading, isMember, isDm } = usePermissions(campaignId)
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [characters, setCharacters] = useState<Character[]>([])
@@ -527,12 +530,24 @@ export default function IntelligencePage() {
   }
 
   // ============ DESKTOP LAYOUT ============
-  if (loading) {
+  if (loading || permissionsLoading) {
     return (
       <AppLayout campaignId={campaignId}>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-[--arcane-purple]" />
         </div>
+      </AppLayout>
+    )
+  }
+
+  // Permission check - only DMs can access Campaign Intelligence
+  if (!isMember || !isDm) {
+    return (
+      <AppLayout campaignId={campaignId}>
+        <AccessDeniedPage
+          campaignId={campaignId}
+          message="Campaign Intelligence is only available to DMs and Co-DMs."
+        />
       </AppLayout>
     )
   }

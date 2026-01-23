@@ -3,10 +3,10 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Image as ImageIcon, Upload, Plus, Trash2, X, Loader2, Grid, LayoutGrid } from 'lucide-react'
-import { Modal, Input } from '@/components/ui'
+import { Modal, Input, AccessDeniedPage } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
-import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { CampaignGalleryPageMobile } from './page.mobile'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
@@ -22,6 +22,9 @@ export default function GalleryPage() {
 
   const campaignId = params.id as string
   const isMobile = useIsMobile()
+
+  // Permissions
+  const { can, loading: permissionsLoading, isMember } = usePermissions(campaignId)
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [items, setItems] = useState<MediaItem[]>([])
@@ -184,12 +187,24 @@ export default function GalleryPage() {
   }
 
   // ============ DESKTOP LAYOUT ============
-  if (loading) {
+  if (loading || permissionsLoading) {
     return (
       <AppLayout campaignId={campaignId}>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
         </div>
+      </AppLayout>
+    )
+  }
+
+  // Permission check - must be a member with view permission
+  if (!isMember || !can.viewGallery) {
+    return (
+      <AppLayout campaignId={campaignId}>
+        <AccessDeniedPage
+          campaignId={campaignId}
+          message="You don't have permission to view the gallery for this campaign."
+        />
       </AppLayout>
     )
   }
@@ -222,14 +237,16 @@ export default function GalleryPage() {
             <p className="text-xs text-purple-400/80 mb-6 max-w-sm mx-auto italic">
               Organize your campaign's visual references in one place for easy access during sessions.
             </p>
-            <button
-              onClick={handleFileSelect}
-              disabled={uploading}
-              className="btn btn-primary btn-lg"
-            >
-              <Upload className="w-5 h-5" />
-              Upload Images
-            </button>
+            {can.addGalleryItem && (
+              <button
+                onClick={handleFileSelect}
+                disabled={uploading}
+                className="btn btn-primary btn-lg"
+              >
+                <Upload className="w-5 h-5" />
+                Upload Images
+              </button>
+            )}
             {error && (
               <p className="mt-4 text-sm text-[--arcane-ember]">{error}</p>
             )}
@@ -268,23 +285,25 @@ export default function GalleryPage() {
                   <LayoutGrid className="w-4 h-4" />
                 </button>
               </div>
-              <button
-                onClick={handleFileSelect}
-                disabled={uploading}
-                className="btn btn-primary"
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-4 h-4" />
-                    Add Images
-                  </>
-                )}
-              </button>
+              {can.addGalleryItem && (
+                <button
+                  onClick={handleFileSelect}
+                  disabled={uploading}
+                  className="btn btn-primary"
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      Add Images
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
 
@@ -317,15 +336,17 @@ export default function GalleryPage() {
                   <div className="absolute bottom-0 left-0 right-0 p-3">
                     <p className="text-sm text-white truncate">{item.title}</p>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDelete(item)
-                    }}
-                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/50 text-white hover:bg-[--arcane-ember] transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {can.deleteGalleryItem && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete(item)
+                      }}
+                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/50 text-white hover:bg-[--arcane-ember] transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

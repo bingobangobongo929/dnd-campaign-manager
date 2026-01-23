@@ -24,12 +24,12 @@ import {
   UsersRound,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
-import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { useAppStore, useCanUseAI } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
 import type { Campaign, Character, Session, TimelineEvent, PlayerSessionNote, CampaignMember } from '@/types/database'
 import { PartyModal } from '@/components/campaign'
-import { Modal } from '@/components/ui'
+import { Modal, AccessDeniedPage } from '@/components/ui'
 
 // Widget component wrapper
 function DashboardWidget({
@@ -208,6 +208,9 @@ export default function CampaignDashboardPage() {
 
   const campaignId = params.id as string
 
+  // Permissions
+  const { can, loading: permissionsLoading, isMember, isDm } = usePermissions(campaignId)
+
   const [loading, setLoading] = useState(true)
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [characters, setCharacters] = useState<Character[]>([])
@@ -327,12 +330,24 @@ export default function CampaignDashboardPage() {
   // Get next session (most recent with future date or highest number)
   const nextSession = sessions[0]
 
-  if (loading) {
+  if (loading || permissionsLoading) {
     return (
       <AppLayout campaignId={campaignId}>
         <div className="flex items-center justify-center h-[60vh]">
           <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
         </div>
+      </AppLayout>
+    )
+  }
+
+  // Permission check - must be a member to view dashboard
+  if (!isMember) {
+    return (
+      <AppLayout campaignId={campaignId}>
+        <AccessDeniedPage
+          campaignId={campaignId}
+          message="You don't have permission to view this campaign."
+        />
       </AppLayout>
     )
   }

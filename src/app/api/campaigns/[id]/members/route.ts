@@ -160,7 +160,7 @@ export async function POST(
       invite_token: inviteToken,
       invited_at: new Date().toISOString(),
       status: 'pending',
-      permissions: memberPermissions,
+      permissions: JSON.parse(JSON.stringify(memberPermissions)),
     }
 
     const { data: member, error } = await supabase

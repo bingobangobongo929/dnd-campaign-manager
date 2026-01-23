@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import type { PlayerSessionNoteInsert } from '@/types/database'
+import type { PlayerSessionNoteInsert, MemberPermissions, CampaignMemberRole } from '@/types/database'
+import { checkPermission, isDmRole } from '@/lib/permissions'
 
 // GET - Get all player notes for a session
 export async function GET(
@@ -17,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check campaign access and get role
+    // Check campaign access and get role/permissions
     const { data: campaign } = await supabase
       .from('campaigns')
       .select('user_id, collaboration_settings')
@@ -28,7 +29,7 @@ export async function GET(
 
     const { data: membership } = await supabase
       .from('campaign_members')
-      .select('role, character_id')
+      .select('role, character_id, permissions')
       .eq('campaign_id', campaignId)
       .eq('user_id', user.id)
       .single()
@@ -37,8 +38,15 @@ export async function GET(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
-    const isDm = isOwner || membership?.role === 'co_dm'
+    const role = (membership?.role || (isOwner ? 'owner' : null)) as CampaignMemberRole | null
+    const permissions = membership?.permissions as MemberPermissions | null
+    const isDm = isDmRole(isOwner, role)
     const collaborationSettings = campaign?.collaboration_settings as Record<string, boolean> | null
+
+    // Check view permission
+    if (!isDm && !checkPermission(permissions, isOwner, 'sessionNotes', 'view')) {
+      return NextResponse.json({ error: 'No permission to view session notes' }, { status: 403 })
+    }
 
     // Build query
     let query = supabase
@@ -69,10 +77,13 @@ export async function GET(
       return NextResponse.json({ error: 'Failed to fetch notes' }, { status: 500 })
     }
 
+    // Determine if user can add notes based on permissions
+    const canAddNotes = isDm || checkPermission(permissions, isOwner, 'sessionNotes', 'add')
+
     return NextResponse.json({
       notes,
       isDm,
-      canAddNotes: isDm || membership?.role === 'player' || membership?.role === 'contributor',
+      canAddNotes,
       userCharacterId: membership?.character_id
     })
   } catch (error) {
@@ -96,7 +107,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check campaign access
+    // Check campaign access and get permissions
     const { data: campaign } = await supabase
       .from('campaigns')
       .select('user_id, collaboration_settings')
@@ -107,7 +118,7 @@ export async function POST(
 
     const { data: membership } = await supabase
       .from('campaign_members')
-      .select('role, character_id')
+      .select('role, character_id, permissions')
       .eq('campaign_id', campaignId)
       .eq('user_id', user.id)
       .single()
@@ -116,12 +127,13 @@ export async function POST(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
-    const isDm = isOwner || membership?.role === 'co_dm'
-    const collaborationSettings = campaign?.collaboration_settings as Record<string, boolean> | null
+    const role = (membership?.role || (isOwner ? 'owner' : null)) as CampaignMemberRole | null
+    const permissions = membership?.permissions as MemberPermissions | null
+    const isDm = isDmRole(isOwner, role)
 
-    // Check if players can add notes
-    if (!isDm && collaborationSettings?.players_can_add_notes === false) {
-      return NextResponse.json({ error: 'Players cannot add notes in this campaign' }, { status: 403 })
+    // Check add permission
+    if (!isDm && !checkPermission(permissions, isOwner, 'sessionNotes', 'add')) {
+      return NextResponse.json({ error: 'No permission to add session notes' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -228,7 +240,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Note not found' }, { status: 404 })
     }
 
-    // Check permissions - only the user who added it or DM can edit
+    // Check permissions - user needs edit permission (or editOwn for their own notes)
     const { data: campaign } = await supabase
       .from('campaigns')
       .select('user_id')
@@ -239,15 +251,18 @@ export async function PATCH(
 
     const { data: membership } = await supabase
       .from('campaign_members')
-      .select('role')
+      .select('role, permissions')
       .eq('campaign_id', campaignId)
       .eq('user_id', user.id)
       .single()
 
-    const isDm = isOwner || membership?.role === 'co_dm'
+    const role = (membership?.role || (isOwner ? 'owner' : null)) as CampaignMemberRole | null
+    const permissions = membership?.permissions as MemberPermissions | null
+    const isDm = isDmRole(isOwner, role)
     const isAuthor = existingNote.added_by_user_id === user.id
 
-    if (!isDm && !isAuthor) {
+    // Author can always edit their own notes, or need edit permission
+    if (!isDm && !isAuthor && !checkPermission(permissions, isOwner, 'sessionNotes', 'edit')) {
       return NextResponse.json({ error: 'You can only edit your own notes' }, { status: 403 })
     }
 
@@ -312,7 +327,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Note not found' }, { status: 404 })
     }
 
-    // Check permissions
+    // Check permissions - user needs delete permission (or can delete their own notes)
     const { data: campaign } = await supabase
       .from('campaigns')
       .select('user_id')
@@ -323,15 +338,18 @@ export async function DELETE(
 
     const { data: membership } = await supabase
       .from('campaign_members')
-      .select('role')
+      .select('role, permissions')
       .eq('campaign_id', campaignId)
       .eq('user_id', user.id)
       .single()
 
-    const isDm = isOwner || membership?.role === 'co_dm'
+    const role = (membership?.role || (isOwner ? 'owner' : null)) as CampaignMemberRole | null
+    const permissions = membership?.permissions as MemberPermissions | null
+    const isDm = isDmRole(isOwner, role)
     const isAuthor = existingNote.added_by_user_id === user.id
 
-    if (!isDm && !isAuthor) {
+    // Author can always delete their own notes, or need delete permission
+    if (!isDm && !isAuthor && !checkPermission(permissions, isOwner, 'sessionNotes', 'delete')) {
       return NextResponse.json({ error: 'You can only delete your own notes' }, { status: 403 })
     }
 

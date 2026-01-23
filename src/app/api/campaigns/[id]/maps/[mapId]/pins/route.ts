@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import type { MapPinInsert, MapPinUpdate } from '@/types/database'
+import type { MapPinInsert, MapPinUpdate, MemberPermissions, CampaignMemberRole } from '@/types/database'
+import { checkPermission, isDmRole } from '@/lib/permissions'
 
 // GET - Get all pins for a map
 export async function GET(
@@ -17,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check campaign access
+    // Check campaign access and get permissions
     const { data: campaign } = await supabase
       .from('campaigns')
       .select('user_id')
@@ -28,7 +29,7 @@ export async function GET(
 
     const { data: membership } = await supabase
       .from('campaign_members')
-      .select('role')
+      .select('role, permissions')
       .eq('campaign_id', campaignId)
       .eq('user_id', user.id)
       .single()
@@ -37,7 +38,14 @@ export async function GET(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
-    const isDm = isOwner || membership?.role === 'co_dm'
+    const role = (membership?.role || (isOwner ? 'owner' : null)) as CampaignMemberRole | null
+    const permissions = membership?.permissions as MemberPermissions | null
+    const isDm = isDmRole(isOwner, role)
+
+    // Check view permission
+    if (!isOwner && !isDm && !checkPermission(permissions, isOwner, 'mapPins', 'view')) {
+      return NextResponse.json({ error: 'No permission to view map pins' }, { status: 403 })
+    }
 
     // Build query for pins
     let query = supabase
@@ -80,7 +88,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user is owner or co_dm
+    // Check if user has permission to add pins
     const { data: campaign } = await supabase
       .from('campaigns')
       .select('user_id')
@@ -91,15 +99,18 @@ export async function POST(
 
     const { data: membership } = await supabase
       .from('campaign_members')
-      .select('role')
+      .select('role, permissions')
       .eq('campaign_id', campaignId)
       .eq('user_id', user.id)
       .single()
 
-    const isCoGm = membership?.role === 'co_dm'
+    const role = (membership?.role || (isOwner ? 'owner' : null)) as CampaignMemberRole | null
+    const permissions = membership?.permissions as MemberPermissions | null
+    const isDm = isDmRole(isOwner, role)
 
-    if (!isOwner && !isCoGm) {
-      return NextResponse.json({ error: 'Only DMs can add pins' }, { status: 403 })
+    // Check add permission
+    if (!isDm && !checkPermission(permissions, isOwner, 'mapPins', 'add')) {
+      return NextResponse.json({ error: 'No permission to add pins' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -179,7 +190,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user is owner or co_dm
+    // Check if user has permission to edit pins
     const { data: campaign } = await supabase
       .from('campaigns')
       .select('user_id')
@@ -190,15 +201,18 @@ export async function PATCH(
 
     const { data: membership } = await supabase
       .from('campaign_members')
-      .select('role')
+      .select('role, permissions')
       .eq('campaign_id', campaignId)
       .eq('user_id', user.id)
       .single()
 
-    const isCoGm = membership?.role === 'co_dm'
+    const role = (membership?.role || (isOwner ? 'owner' : null)) as CampaignMemberRole | null
+    const permissions = membership?.permissions as MemberPermissions | null
+    const isDm = isDmRole(isOwner, role)
 
-    if (!isOwner && !isCoGm) {
-      return NextResponse.json({ error: 'Only DMs can update pins' }, { status: 403 })
+    // Check edit permission
+    if (!isDm && !checkPermission(permissions, isOwner, 'mapPins', 'edit')) {
+      return NextResponse.json({ error: 'No permission to edit pins' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -285,7 +299,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user is owner or co_dm
+    // Check if user has permission to delete pins
     const { data: campaign } = await supabase
       .from('campaigns')
       .select('user_id')
@@ -296,15 +310,18 @@ export async function DELETE(
 
     const { data: membership } = await supabase
       .from('campaign_members')
-      .select('role')
+      .select('role, permissions')
       .eq('campaign_id', campaignId)
       .eq('user_id', user.id)
       .single()
 
-    const isCoGm = membership?.role === 'co_dm'
+    const role = (membership?.role || (isOwner ? 'owner' : null)) as CampaignMemberRole | null
+    const permissions = membership?.permissions as MemberPermissions | null
+    const isDm = isDmRole(isOwner, role)
 
-    if (!isOwner && !isCoGm) {
-      return NextResponse.json({ error: 'Only DMs can delete pins' }, { status: 403 })
+    // Check delete permission
+    if (!isDm && !checkPermission(permissions, isOwner, 'mapPins', 'delete')) {
+      return NextResponse.json({ error: 'No permission to delete pins' }, { status: 403 })
     }
 
     const { error } = await supabase

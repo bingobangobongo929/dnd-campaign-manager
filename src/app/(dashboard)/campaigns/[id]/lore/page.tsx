@@ -18,9 +18,9 @@ import {
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
-import { MarkdownContent } from '@/components/ui'
+import { MarkdownContent, AccessDeniedPage } from '@/components/ui'
 import { RelationshipDiagram } from '@/components/campaign'
-import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { CampaignLorePageMobile } from './page.mobile'
 import { useCanUseAI } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
@@ -56,6 +56,9 @@ export default function LorePage() {
 
   const campaignId = params.id as string
   const isMobile = useIsMobile()
+
+  // Permissions
+  const { can, loading: permissionsLoading, isMember } = usePermissions(campaignId)
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [characters, setCharacters] = useState<CharacterWithTags[]>([])
@@ -282,12 +285,24 @@ export default function LorePage() {
   }
 
   // ============ DESKTOP LAYOUT ============
-  if (loading) {
+  if (loading || permissionsLoading) {
     return (
       <AppLayout campaignId={campaignId}>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
         </div>
+      </AppLayout>
+    )
+  }
+
+  // Permission check - must be a member with view permission
+  if (!isMember || !can.viewLore) {
+    return (
+      <AppLayout campaignId={campaignId}>
+        <AccessDeniedPage
+          campaignId={campaignId}
+          message="You don't have permission to view lore for this campaign."
+        />
       </AppLayout>
     )
   }

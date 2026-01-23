@@ -20,7 +20,7 @@ import {
   ChevronDown,
   Sparkles,
 } from 'lucide-react'
-import { Input, Textarea, Modal, Dropdown } from '@/components/ui'
+import { Input, Textarea, Modal, Dropdown, AccessDeniedPage } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { CharacterViewModal } from '@/components/character'
@@ -34,7 +34,7 @@ import {
   VIEW_OPTIONS,
 } from '@/components/timeline'
 import type { TimelineViewType, TimelineEventWithCharacters } from '@/components/timeline'
-import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { CampaignTimelinePageMobile } from './page.mobile'
 import { getInitials, cn } from '@/lib/utils'
 import Image from 'next/image'
@@ -64,6 +64,9 @@ export default function TimelinePage() {
 
   const campaignId = params.id as string
   const isMobile = useIsMobile()
+
+  // Permissions
+  const { can, loading: permissionsLoading, isMember } = usePermissions(campaignId)
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [events, setEvents] = useState<TimelineEventWithCharacters[]>([])
@@ -447,12 +450,24 @@ export default function TimelinePage() {
   }
 
   // ============ DESKTOP LAYOUT ============
-  if (loading) {
+  if (loading || permissionsLoading) {
     return (
       <AppLayout campaignId={campaignId}>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
         </div>
+      </AppLayout>
+    )
+  }
+
+  // Permission check - must be a member with view permission
+  if (!isMember || !can.viewTimeline) {
+    return (
+      <AppLayout campaignId={campaignId}>
+        <AccessDeniedPage
+          campaignId={campaignId}
+          message="You don't have permission to view the timeline for this campaign."
+        />
       </AppLayout>
     )
   }
@@ -660,10 +675,12 @@ export default function TimelinePage() {
               </button>
             )}
 
-            <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
-              <Plus className="w-4 h-4" />
-              Add Event
-            </button>
+            {can.addTimeline && (
+              <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
+                <Plus className="w-4 h-4" />
+                Add Event
+              </button>
+            )}
           </div>
         </div>
 
@@ -679,11 +696,13 @@ export default function TimelinePage() {
               Add events manually, or use Campaign Intelligence to extract timeline events from your session notes automatically.
             </p>
             <div className="flex items-center gap-3 mt-4">
-              <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
-                <Plus className="w-5 h-5" />
-                Add First Event
-              </button>
-              {sessions.length > 0 && (
+              {can.addTimeline && (
+                <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
+                  <Plus className="w-5 h-5" />
+                  Add First Event
+                </button>
+              )}
+              {can.addTimeline && sessions.length > 0 && (
                 <button
                   className="btn btn-secondary flex items-center gap-2"
                   onClick={() => setIsAIGenerateModalOpen(true)}
@@ -714,7 +733,7 @@ export default function TimelinePage() {
         )}
 
         {/* FAB */}
-        {events.length > 0 && (
+        {events.length > 0 && can.addTimeline && (
           <button
             className="fab"
             onClick={() => setIsCreateModalOpen(true)}

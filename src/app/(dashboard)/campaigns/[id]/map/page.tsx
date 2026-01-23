@@ -3,10 +3,10 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Map, Upload, Plus, Trash2, Loader2 } from 'lucide-react'
-import { Modal, Input } from '@/components/ui'
+import { Modal, Input, AccessDeniedPage } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { InteractiveMap } from '@/components/maps'
-import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { CampaignMapPageMobile } from './page.mobile'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
@@ -22,6 +22,9 @@ export default function WorldMapPage() {
 
   const campaignId = params.id as string
   const isMobile = useIsMobile()
+
+  // Permissions
+  const { can, loading: permissionsLoading, isMember, isDm } = usePermissions(campaignId)
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [maps, setMaps] = useState<WorldMap[]>([])
@@ -188,12 +191,24 @@ export default function WorldMapPage() {
   }
 
   // ============ DESKTOP LAYOUT ============
-  if (loading) {
+  if (loading || permissionsLoading) {
     return (
       <AppLayout campaignId={campaignId}>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
         </div>
+      </AppLayout>
+    )
+  }
+
+  // Permission check - must be a member with view permission
+  if (!isMember || !can.viewMaps) {
+    return (
+      <AppLayout campaignId={campaignId}>
+        <AccessDeniedPage
+          campaignId={campaignId}
+          message="You don't have permission to view maps for this campaign."
+        />
       </AppLayout>
     )
   }
@@ -222,23 +237,25 @@ export default function WorldMapPage() {
               Upload maps of your campaign world, dungeons, cities, or regions.
               High-resolution images work best for zooming and panning.
             </p>
-            <button
-              onClick={handleFileSelect}
-              disabled={uploading}
-              className="btn btn-primary btn-lg"
-            >
-              {uploading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-5 h-5" />
-                  Upload Your First Map
-                </>
-              )}
-            </button>
+            {can.addMap && (
+              <button
+                onClick={handleFileSelect}
+                disabled={uploading}
+                className="btn btn-primary btn-lg"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-5 h-5" />
+                    Upload Your First Map
+                  </>
+                )}
+              </button>
+            )}
             {error && (
               <p className="mt-4 text-sm text-[--arcane-ember]">{error}</p>
             )}
@@ -266,15 +283,17 @@ export default function WorldMapPage() {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={handleFileSelect}
-                disabled={uploading}
-                className="btn btn-secondary btn-sm"
-              >
-                <Plus className="w-4 h-4" />
-                Add Map
-              </button>
-              {selectedMap && (
+              {can.addMap && (
+                <button
+                  onClick={handleFileSelect}
+                  disabled={uploading}
+                  className="btn btn-secondary btn-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Map
+                </button>
+              )}
+              {can.deleteMap && selectedMap && (
                 <button
                   onClick={() => handleDelete(selectedMap)}
                   className="btn-ghost btn-icon w-8 h-8 text-[--arcane-ember]"
@@ -293,7 +312,7 @@ export default function WorldMapPage() {
                 campaignId={campaignId}
                 mapId={selectedMap.id}
                 imageUrl={selectedMap.image_url}
-                isDm={true}
+                isDm={isDm}
                 className="h-full"
               />
             )}
