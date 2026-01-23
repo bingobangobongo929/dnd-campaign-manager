@@ -18,6 +18,7 @@ import {
   ScrollText,
   AlertTriangle,
   RefreshCw,
+  Lightbulb,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input, Button, sanitizeHtml } from '@/components/ui'
@@ -73,6 +74,7 @@ export default function SessionDetailPage() {
   const [showExpandedPreview, setShowExpandedPreview] = useState(false)
   const [aiReasoning, setAiReasoning] = useState<string>('')
   const [detailedNotesCollapsed, setDetailedNotesCollapsed] = useState(true)
+  const [previousThoughts, setPreviousThoughts] = useState<string>('')
 
   useEffect(() => {
     if (user && campaignId && sessionId) {
@@ -109,17 +111,22 @@ export default function SessionDetailPage() {
     setCharacters(charactersData || [])
 
     if (isNew) {
-      // Get next session number
+      // Get previous session for next session number and thoughts_for_next
       const { data: sessions } = await supabase
         .from('sessions')
-        .select('session_number')
+        .select('session_number, thoughts_for_next')
         .eq('campaign_id', campaignId)
         .order('session_number', { ascending: false })
         .limit(1)
 
-      const nextNumber = sessions && sessions.length > 0 && sessions[0].session_number !== null
-        ? sessions[0].session_number + 1
+      const previousSession = sessions && sessions.length > 0 ? sessions[0] : null
+      const nextNumber = previousSession?.session_number !== null && previousSession?.session_number !== undefined
+        ? previousSession.session_number + 1
         : 0
+
+      // Store thoughts from previous session
+      const thoughtsFromPrevious = previousSession?.thoughts_for_next || ''
+      setPreviousThoughts(thoughtsFromPrevious)
 
       setFormData({
         session_number: nextNumber.toString(),
@@ -614,6 +621,22 @@ export default function SessionDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Thoughts from Previous Session (only for new sessions) */}
+        {isNew && previousThoughts && (
+          <div className="card p-6 mb-8 border-purple-500/30 bg-purple-500/5">
+            <div className="flex items-center gap-3 mb-4">
+              <Lightbulb className="w-5 h-5 text-purple-400" />
+              <label className="text-lg font-semibold text-purple-300">
+                From Previous Session
+              </label>
+            </div>
+            <p className="text-gray-300 text-sm whitespace-pre-wrap">{previousThoughts}</p>
+            <p className="text-xs text-gray-500 mt-3">
+              These notes were left in the previous session for you to reference.
+            </p>
+          </div>
+        )}
 
         {/* Attendance Section */}
         <div className="card p-6 mb-8">

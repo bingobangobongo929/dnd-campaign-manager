@@ -36,6 +36,9 @@ export interface Database {
           inactive_reason: string | null
           // Collaboration settings (Multiloop upgrade)
           collaboration_settings: Json
+          // Session workflow defaults
+          default_session_sections: Json
+          default_prep_checklist: Json
           created_at: string
           updated_at: string
         }
@@ -65,6 +68,9 @@ export interface Database {
           inactive_reason?: string | null
           // Collaboration settings (Multiloop upgrade)
           collaboration_settings?: Json
+          // Session workflow defaults
+          default_session_sections?: Json
+          default_prep_checklist?: Json
           created_at?: string
           updated_at?: string
         }
@@ -94,6 +100,9 @@ export interface Database {
           inactive_reason?: string | null
           // Collaboration settings (Multiloop upgrade)
           collaboration_settings?: Json
+          // Session workflow defaults
+          default_session_sections?: Json
+          default_prep_checklist?: Json
           created_at?: string
           updated_at?: string
         }
@@ -345,10 +354,14 @@ export interface Database {
           date: string
           notes: string | null
           summary: string | null
-          // Multiloop upgrade: session workflow
-          phase: 'planned' | 'prep' | 'active' | 'recap' | 'complete'
+          // Session workflow
+          phase: 'prep' | 'live' | 'completed'
           prep_checklist: Json
           thoughts_for_next: string | null
+          enabled_sections: Json
+          session_timer: Json | null
+          pinned_references: Json
+          attendees: Json
           created_at: string
           updated_at: string
         }
@@ -360,10 +373,14 @@ export interface Database {
           date?: string
           notes?: string | null
           summary?: string | null
-          // Multiloop upgrade: session workflow
-          phase?: 'planned' | 'prep' | 'active' | 'recap' | 'complete'
+          // Session workflow
+          phase?: 'prep' | 'live' | 'completed'
           prep_checklist?: Json
           thoughts_for_next?: string | null
+          enabled_sections?: Json
+          session_timer?: Json | null
+          pinned_references?: Json
+          attendees?: Json
           created_at?: string
           updated_at?: string
         }
@@ -375,10 +392,14 @@ export interface Database {
           date?: string
           notes?: string | null
           summary?: string | null
-          // Multiloop upgrade: session workflow
-          phase?: 'planned' | 'prep' | 'active' | 'recap' | 'complete'
+          // Session workflow
+          phase?: 'prep' | 'live' | 'completed'
           prep_checklist?: Json
           thoughts_for_next?: string | null
+          enabled_sections?: Json
+          session_timer?: Json | null
+          pinned_references?: Json
+          attendees?: Json
           created_at?: string
           updated_at?: string
         }
@@ -3985,7 +4006,45 @@ export type UserGuidanceStateInsert = Database['public']['Tables']['user_guidanc
 export type UserGuidanceStateUpdate = Database['public']['Tables']['user_guidance_state']['Update']
 
 // Session workflow types
-export type SessionPhase = 'planned' | 'prep' | 'active' | 'recap' | 'complete'
+export type SessionPhase = 'prep' | 'live' | 'completed'
+
+// Session workflow section types
+export type SessionSection = 'prep_checklist' | 'thoughts_for_next' | 'quick_reference' | 'session_timer'
+
+// Prep checklist item
+export interface PrepChecklistItem {
+  id: string
+  text: string
+  checked: boolean
+}
+
+// Session timer state
+export interface SessionTimerState {
+  started_at: string | null
+  paused_at: string | null
+  elapsed_seconds: number
+  breaks: Array<{ start: string; end: string | null }>
+}
+
+// Pinned reference for quick access
+export interface PinnedReference {
+  entity_type: 'character' | 'npc' | 'location' | 'lore' | 'faction'
+  entity_id: string
+  label: string
+}
+
+// Session attendee tracking
+export interface SessionAttendee {
+  character_id: string
+  status: 'attended' | 'absent' | 'late'
+}
+
+// Default prep checklist item (for campaign settings)
+export interface DefaultPrepChecklistItem {
+  id: string
+  text: string
+  default_checked: boolean
+}
 
 // Extended types with relations
 export type CampaignMemberWithUser = CampaignMember & {

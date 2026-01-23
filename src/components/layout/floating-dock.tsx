@@ -74,6 +74,8 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
         ...(isDm || can.viewMaps ? [{ href: `/campaigns/${campaignId}/map`, label: 'World Map', icon: Map }] : []),
         // Gallery - based on gallery view permission
         ...(isDm || can.viewGallery ? [{ href: `/campaigns/${campaignId}/gallery`, label: 'Gallery', icon: Image }] : []),
+        // Settings - only for campaign owners
+        ...(isOwner ? [{ href: `/campaigns/${campaignId}/settings`, label: 'Settings', icon: Settings }] : []),
       ]
     : []
 

@@ -1,7 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import type {
+  SessionPhase,
+  SessionSection,
+  PrepChecklistItem,
+  SessionTimerState,
+  PinnedReference,
+  SessionAttendee,
+} from '@/types/database'
 
-// PATCH - Update session workflow (phase, prep_checklist, thoughts_for_next)
+// PATCH - Update session workflow
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; sessionId: string }> }
@@ -51,16 +59,33 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { phase, prepChecklist, thoughtsForNext } = body as {
-      phase?: 'planned' | 'prep' | 'active' | 'recap' | 'complete'
-      prepChecklist?: Array<{ text: string; completed: boolean }>
+    const {
+      phase,
+      prepChecklist,
+      thoughtsForNext,
+      enabledSections,
+      sessionTimer,
+      pinnedReferences,
+      attendees,
+    } = body as {
+      phase?: SessionPhase
+      prepChecklist?: PrepChecklistItem[]
       thoughtsForNext?: string
+      enabledSections?: SessionSection[]
+      sessionTimer?: SessionTimerState | null
+      pinnedReferences?: PinnedReference[]
+      attendees?: SessionAttendee[]
     }
 
     const updateData: Record<string, unknown> = {}
+
     if (phase !== undefined) updateData.phase = phase
     if (prepChecklist !== undefined) updateData.prep_checklist = prepChecklist
     if (thoughtsForNext !== undefined) updateData.thoughts_for_next = thoughtsForNext
+    if (enabledSections !== undefined) updateData.enabled_sections = enabledSections
+    if (sessionTimer !== undefined) updateData.session_timer = sessionTimer
+    if (pinnedReferences !== undefined) updateData.pinned_references = pinnedReferences
+    if (attendees !== undefined) updateData.attendees = attendees
 
     const { data: session, error } = await supabase
       .from('sessions')
