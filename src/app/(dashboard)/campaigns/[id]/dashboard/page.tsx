@@ -11,7 +11,6 @@ import {
   Clock,
   Brain,
   Plus,
-  ArrowRight,
   BookOpen,
   Sparkles,
   AlertCircle,
@@ -19,7 +18,6 @@ import {
   UserPlus,
   FileText,
   ChevronRight,
-  Settings,
   LayoutGrid,
   Loader2,
 } from 'lucide-react'
@@ -27,7 +25,7 @@ import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { useAppStore, useCanUseAI } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
-import type { Campaign, Character, Session, TimelineEvent, PlayerSessionNote } from '@/types/database'
+import type { Campaign, Character, Session, TimelineEvent, PlayerSessionNote, CampaignMember } from '@/types/database'
 
 // Widget component wrapper
 function DashboardWidget({
@@ -149,6 +147,52 @@ function PartyMemberCard({ character }: { character: Character }) {
   )
 }
 
+// My Character Card for Player Dashboard
+function MyCharacterCard({ character, campaignId }: { character: Character; campaignId: string }) {
+  return (
+    <Link
+      href={`/campaigns/${campaignId}/canvas`}
+      className="block p-4 bg-gradient-to-br from-purple-600/10 to-purple-600/5 border border-purple-500/20 rounded-xl hover:bg-purple-600/15 transition-colors"
+    >
+      <div className="flex items-center gap-4">
+        {character.image_url ? (
+          <Image
+            src={character.image_url}
+            alt={character.name}
+            width={64}
+            height={64}
+            className="rounded-xl object-cover"
+          />
+        ) : (
+          <div className="w-16 h-16 rounded-xl bg-purple-600/30 flex items-center justify-center text-purple-300 font-bold text-xl">
+            {getInitials(character.name)}
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-white text-lg truncate">{character.name}</p>
+          <p className="text-sm text-gray-400">
+            {character.race && character.class
+              ? `${character.race} ${character.class}`
+              : character.role || 'Player Character'}
+          </p>
+          {character.status && (
+            <span
+              className="inline-block mt-2 px-2 py-0.5 text-xs rounded-full"
+              style={{
+                backgroundColor: `${character.status_color || '#6B7280'}20`,
+                color: character.status_color || '#9CA3AF',
+              }}
+            >
+              {character.status}
+            </span>
+          )}
+        </div>
+        <ChevronRight className="w-5 h-5 text-purple-400" />
+      </div>
+    </Link>
+  )
+}
+
 export default function CampaignDashboardPage() {
   const params = useParams()
   const router = useRouter()
@@ -166,6 +210,12 @@ export default function CampaignDashboardPage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
   const [playerNotes, setPlayerNotes] = useState<PlayerSessionNote[]>([])
+
+  // Player/membership state
+  const [membership, setMembership] = useState<CampaignMember | null>(null)
+  const [myCharacter, setMyCharacter] = useState<Character | null>(null)
+  const isOwner = campaign?.user_id === user?.id
+  const isPlayer = membership && ['player', 'contributor'].includes(membership.role) && !isOwner
 
   // Load dashboard data
   useEffect(() => {
@@ -239,6 +289,27 @@ export default function CampaignDashboardPage() {
 
     setPlayerNotes(notesData || [])
 
+    // Load current user's membership (if they're a member)
+    const { data: membershipData } = await supabase
+      .from('campaign_members')
+      .select('*')
+      .eq('campaign_id', campaignId)
+      .eq('user_id', user!.id)
+      .eq('status', 'active')
+      .single()
+
+    if (membershipData) {
+      setMembership(membershipData)
+
+      // Load the player's linked character
+      if (membershipData.character_id) {
+        const playerChar = (charactersData || []).find(c => c.id === membershipData.character_id)
+        if (playerChar) {
+          setMyCharacter(playerChar)
+        }
+      }
+    }
+
     setLoading(false)
   }
 
@@ -268,51 +339,91 @@ export default function CampaignDashboardPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-white">{campaign?.name}</h1>
-            <p className="text-gray-400 text-sm mt-1">Campaign Dashboard</p>
+            <p className="text-gray-400 text-sm mt-1">
+              {isPlayer ? 'Player Dashboard' : 'Campaign Dashboard'}
+            </p>
           </div>
-          <div className="flex items-center gap-2">
+          {!isPlayer && (
             <Link
-              href={`/campaigns/${campaignId}/canvas`}
-              className="btn btn-secondary btn-sm"
-            >
-              <LayoutGrid className="w-4 h-4 mr-1.5" />
-              Canvas
-            </Link>
-            <Link
-              href={`/campaigns/${campaignId}/settings`}
-              className="btn btn-secondary btn-sm"
-            >
-              <Settings className="w-4 h-4" />
-            </Link>
-          </div>
+                href={`/campaigns/${campaignId}/canvas`}
+                className="btn btn-secondary btn-sm"
+              >
+                <LayoutGrid className="w-4 h-4 mr-1.5" />
+                Canvas
+              </Link>
+          )}
         </div>
+
+        {/* Player Dashboard - My Character */}
+        {isPlayer && (
+          <div className="mb-6">
+            <DashboardWidget
+              title="My Character"
+              icon={Users}
+              className="mb-4"
+            >
+              {myCharacter ? (
+                <MyCharacterCard character={myCharacter} campaignId={campaignId} />
+              ) : (
+                <div className="text-center py-6">
+                  <Users className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                  <p className="text-gray-500 text-sm">No character assigned yet</p>
+                  <p className="text-gray-600 text-xs mt-1">Ask your DM to assign you a character</p>
+                </div>
+              )}
+            </DashboardWidget>
+          </div>
+        )}
 
         {/* Dashboard Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Quick Actions */}
+          {/* Quick Actions - Different for players */}
           <DashboardWidget
             title="Quick Actions"
             icon={Sparkles}
             className="lg:col-span-1"
           >
             <div className="grid grid-cols-3 gap-2">
-              <QuickAction
-                icon={Plus}
-                label="New Session"
-                href={`/campaigns/${campaignId}/sessions`}
-                variant="primary"
-              />
-              <QuickAction
-                icon={UserPlus}
-                label="Add Character"
-                href={`/campaigns/${campaignId}/canvas`}
-              />
-              {canUseAI && (
-                <QuickAction
-                  icon={Brain}
-                  label="Intelligence"
-                  href={`/campaigns/${campaignId}/intelligence`}
-                />
+              {isPlayer ? (
+                <>
+                  <QuickAction
+                    icon={FileText}
+                    label="Add Notes"
+                    href={`/campaigns/${campaignId}/sessions`}
+                    variant="primary"
+                  />
+                  <QuickAction
+                    icon={Clock}
+                    label="Timeline"
+                    href={`/campaigns/${campaignId}/timeline`}
+                  />
+                  <QuickAction
+                    icon={BookOpen}
+                    label="Sessions"
+                    href={`/campaigns/${campaignId}/sessions`}
+                  />
+                </>
+              ) : (
+                <>
+                  <QuickAction
+                    icon={Plus}
+                    label="New Session"
+                    href={`/campaigns/${campaignId}/sessions`}
+                    variant="primary"
+                  />
+                  <QuickAction
+                    icon={UserPlus}
+                    label="Add Character"
+                    href={`/campaigns/${campaignId}/canvas`}
+                  />
+                  {canUseAI && (
+                    <QuickAction
+                      icon={Brain}
+                      label="Intelligence"
+                      href={`/campaigns/${campaignId}/intelligence`}
+                    />
+                  )}
+                </>
               )}
               <QuickAction
                 icon={Clock}
@@ -368,40 +479,50 @@ export default function CampaignDashboardPage() {
             )}
           </DashboardWidget>
 
-          {/* Campaign Health */}
+          {/* Campaign Health / Campaign Stats */}
           <DashboardWidget
-            title="Campaign Health"
-            icon={AlertCircle}
+            title={isPlayer ? "Campaign Stats" : "Campaign Health"}
+            icon={isPlayer ? CheckCircle2 : AlertCircle}
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-gray-400 text-sm">Total Characters</span>
-                <span className="text-white font-medium">{characters.length}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-400 text-sm">Player Characters</span>
+                <span className="text-gray-400 text-sm">Party Members</span>
                 <span className="text-white font-medium">{pcCharacters.length}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-400 text-sm">Sessions Recorded</span>
+                <span className="text-gray-400 text-sm">Sessions Played</span>
                 <span className="text-white font-medium">{sessions.length}</span>
               </div>
-              {npcsMissingDetails > 0 && (
-                <div className="flex items-center gap-2 p-2 bg-amber-500/10 rounded-lg">
-                  <AlertCircle className="w-4 h-4 text-amber-400" />
-                  <span className="text-amber-400 text-xs">{npcsMissingDetails} NPCs need more details</span>
-                </div>
+              {!isPlayer && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-400 text-sm">Total Characters</span>
+                    <span className="text-white font-medium">{characters.length}</span>
+                  </div>
+                  {npcsMissingDetails > 0 && (
+                    <div className="flex items-center gap-2 p-2 bg-amber-500/10 rounded-lg">
+                      <AlertCircle className="w-4 h-4 text-amber-400" />
+                      <span className="text-amber-400 text-xs">{npcsMissingDetails} NPCs need more details</span>
+                    </div>
+                  )}
+                  {sessionsWithoutNotes > 0 && (
+                    <div className="flex items-center gap-2 p-2 bg-amber-500/10 rounded-lg">
+                      <FileText className="w-4 h-4 text-amber-400" />
+                      <span className="text-amber-400 text-xs">{sessionsWithoutNotes} sessions need notes</span>
+                    </div>
+                  )}
+                  {npcsMissingDetails === 0 && sessionsWithoutNotes === 0 && (
+                    <div className="flex items-center gap-2 p-2 bg-green-500/10 rounded-lg">
+                      <CheckCircle2 className="w-4 h-4 text-green-400" />
+                      <span className="text-green-400 text-xs">Campaign is well documented!</span>
+                    </div>
+                  )}
+                </>
               )}
-              {sessionsWithoutNotes > 0 && (
-                <div className="flex items-center gap-2 p-2 bg-amber-500/10 rounded-lg">
-                  <FileText className="w-4 h-4 text-amber-400" />
-                  <span className="text-amber-400 text-xs">{sessionsWithoutNotes} sessions need notes</span>
-                </div>
-              )}
-              {npcsMissingDetails === 0 && sessionsWithoutNotes === 0 && (
-                <div className="flex items-center gap-2 p-2 bg-green-500/10 rounded-lg">
-                  <CheckCircle2 className="w-4 h-4 text-green-400" />
-                  <span className="text-green-400 text-xs">Campaign is well documented!</span>
+              {isPlayer && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400 text-sm">Timeline Events</span>
+                  <span className="text-white font-medium">{timelineEvents.length}</span>
                 </div>
               )}
             </div>

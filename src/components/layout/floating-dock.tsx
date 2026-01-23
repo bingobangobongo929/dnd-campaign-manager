@@ -70,7 +70,7 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
     ? [
         { href: `/oneshots/${oneshotId}`, label: 'Edit', icon: Edit3 },
         { href: `/oneshots/${oneshotId}/view`, label: 'View', icon: Eye },
-        { href: `/oneshots/${oneshotId}/run`, label: 'Run Mode', icon: Scroll },
+        { href: `/oneshots/${oneshotId}/present`, label: 'Present', icon: Scroll },
       ]
     : []
 

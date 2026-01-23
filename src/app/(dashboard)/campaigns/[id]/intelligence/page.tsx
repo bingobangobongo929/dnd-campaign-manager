@@ -38,6 +38,8 @@ import {
   MessageSquare,
   Link2,
   GitMerge,
+  ThumbsUp,
+  ThumbsDown,
 } from 'lucide-react'
 import { Modal } from '@/components/ui'
 import { TimelineEventEditor, type TimelineEventFormData } from '@/components/timeline'
@@ -178,6 +180,7 @@ export default function IntelligencePage() {
 
   // Action state
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set())
+  const [feedbackGiven, setFeedbackGiven] = useState<Record<string, 'positive' | 'negative'>>({})
 
   // Edit state for timeline suggestions
   const [editingSuggestion, setEditingSuggestion] = useState<IntelligenceSuggestion | null>(null)
@@ -304,6 +307,32 @@ export default function IntelligencePage() {
       console.error('Reset error:', err)
     } finally {
       setIsResetting(false)
+    }
+  }
+
+  // Handle suggestion feedback (thumbs up/down)
+  const handleFeedback = async (suggestionId: string, feedback: 'positive' | 'negative') => {
+    // Optimistically update UI
+    setFeedbackGiven(prev => ({ ...prev, [suggestionId]: feedback }))
+
+    try {
+      const suggestion = suggestions.find(s => s.id === suggestionId)
+
+      await fetch('/api/ai/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          suggestionId,
+          suggestionType: suggestion?.suggestion_type,
+          suggestionContent: typeof suggestion?.suggested_value === 'string'
+            ? suggestion.suggested_value
+            : JSON.stringify(suggestion?.suggested_value),
+          feedback,
+        }),
+      })
+    } catch (err) {
+      console.error('Failed to submit feedback:', err)
+      // Don't revert UI - feedback is non-critical
     }
   }
 
@@ -731,20 +760,39 @@ export default function IntelligencePage() {
                 <div
                   className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6"
                   style={{
-                    backgroundColor: suggestions.length === 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(107, 114, 128, 0.15)',
-                    border: suggestions.length === 0 ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(107, 114, 128, 0.3)',
+                    backgroundColor: suggestions.length === 0 ? 'rgba(139, 92, 246, 0.15)' : 'rgba(107, 114, 128, 0.15)',
+                    border: suggestions.length === 0 ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid rgba(107, 114, 128, 0.3)',
                   }}
                 >
-                  <CheckCircle2 className="w-8 h-8" style={{ color: suggestions.length === 0 ? '#34d399' : '#6b7280' }} />
+                  {suggestions.length === 0 ? (
+                    <Brain className="w-8 h-8" style={{ color: '#a78bfa' }} />
+                  ) : (
+                    <CheckCircle2 className="w-8 h-8" style={{ color: '#6b7280' }} />
+                  )}
                 </div>
                 <p className="text-lg font-semibold mb-2" style={{ color: '#f3f4f6' }}>
-                  {suggestions.length === 0 ? 'No Pending Suggestions' : 'No Matches'}
+                  {suggestions.length === 0 ? 'Ready to Analyze' : 'No Matches'}
                 </p>
                 <p className="text-sm text-center max-w-md" style={{ color: '#6b7280' }}>
                   {suggestions.length === 0
-                    ? 'Run an analysis to detect character updates from your session notes.'
+                    ? 'Campaign Intelligence scans your session notes to suggest timeline events, detect new NPCs, track relationships, and identify plot threads.'
                     : 'No suggestions match your current filters.'}
                 </p>
+                {suggestions.length === 0 && (
+                  <>
+                    <p className="text-xs text-purple-400/80 mt-3 max-w-md italic text-center">
+                      For best results, make sure your session notes are up-to-date with detailed summaries of what happened in each session.
+                    </p>
+                    <button
+                      className="btn btn-primary flex items-center gap-2 mt-6"
+                      onClick={handleAnalyze}
+                      disabled={isAnalyzing}
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      Analyze Campaign
+                    </button>
+                  </>
+                )}
               </div>
             )}
 
@@ -844,6 +892,34 @@ export default function IntelligencePage() {
                       {/* Actions */}
                       {suggestion.status === 'pending' && (
                         <div className="flex items-center gap-2 flex-shrink-0">
+                          {/* Feedback buttons */}
+                          <div className="flex items-center gap-1 mr-2 border-r border-white/10 pr-3">
+                            <button
+                              onClick={() => handleFeedback(suggestion.id, 'positive')}
+                              className={cn(
+                                "p-1.5 rounded transition-colors",
+                                feedbackGiven[suggestion.id] === 'positive'
+                                  ? "bg-green-500/20 text-green-400"
+                                  : "hover:bg-white/5 text-gray-500 hover:text-gray-400"
+                              )}
+                              title="Good suggestion"
+                            >
+                              <ThumbsUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleFeedback(suggestion.id, 'negative')}
+                              className={cn(
+                                "p-1.5 rounded transition-colors",
+                                feedbackGiven[suggestion.id] === 'negative'
+                                  ? "bg-red-500/20 text-red-400"
+                                  : "hover:bg-white/5 text-gray-500 hover:text-gray-400"
+                              )}
+                              title="Not helpful"
+                            >
+                              <ThumbsDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
                           <button
                             onClick={() => handleAction(suggestion.id, 'approve')}
                             disabled={isProcessing}

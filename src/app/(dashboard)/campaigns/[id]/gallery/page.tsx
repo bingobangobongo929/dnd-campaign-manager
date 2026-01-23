@@ -215,9 +215,12 @@ export default function GalleryPage() {
             <h2 className="text-2xl font-display font-semibold text-[--text-primary] mb-3">
               Your Gallery is Empty
             </h2>
-            <p className="text-[--text-secondary] mb-8 leading-relaxed">
+            <p className="text-[--text-secondary] mb-4 leading-relaxed">
               Upload reference images, character art, item illustrations, or any
               visual inspiration for your campaign. You can upload multiple images at once.
+            </p>
+            <p className="text-xs text-purple-400/80 mb-6 max-w-sm mx-auto italic">
+              Organize your campaign's visual references in one place for easy access during sessions.
             </p>
             <button
               onClick={handleFileSelect}

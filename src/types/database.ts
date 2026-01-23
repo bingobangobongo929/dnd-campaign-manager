@@ -420,6 +420,8 @@ export interface Database {
           // Multiloop upgrade: visibility
           dm_notes: string | null
           visibility: 'public' | 'party' | 'dm_only'
+          // Timeline eras/chapters
+          era_id: string | null
           created_at: string
         }
         Insert: {
@@ -438,6 +440,8 @@ export interface Database {
           // Multiloop upgrade: visibility
           dm_notes?: string | null
           visibility?: 'public' | 'party' | 'dm_only'
+          // Timeline eras/chapters
+          era_id?: string | null
           created_at?: string
         }
         Update: {
@@ -456,7 +460,56 @@ export interface Database {
           // Multiloop upgrade: visibility
           dm_notes?: string | null
           visibility?: 'public' | 'party' | 'dm_only'
+          // Timeline eras/chapters
+          era_id?: string | null
           created_at?: string
+        }
+      }
+      // =====================================================
+      // CAMPAIGN ERAS (Timeline Chapters)
+      // =====================================================
+      campaign_eras: {
+        Row: {
+          id: string
+          campaign_id: string
+          name: string
+          description: string | null
+          color: string
+          icon: string
+          start_date: string | null
+          end_date: string | null
+          sort_order: number
+          is_collapsed: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          campaign_id: string
+          name: string
+          description?: string | null
+          color?: string
+          icon?: string
+          start_date?: string | null
+          end_date?: string | null
+          sort_order?: number
+          is_collapsed?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          campaign_id?: string
+          name?: string
+          description?: string | null
+          color?: string
+          icon?: string
+          start_date?: string | null
+          end_date?: string | null
+          sort_order?: number
+          is_collapsed?: boolean
+          created_at?: string
+          updated_at?: string
         }
       }
       world_maps: {
@@ -3447,6 +3500,7 @@ export type CanvasGroup = Database['public']['Tables']['canvas_groups']['Row']
 export type Session = Database['public']['Tables']['sessions']['Row']
 export type SessionCharacter = Database['public']['Tables']['session_characters']['Row']
 export type TimelineEvent = Database['public']['Tables']['timeline_events']['Row']
+export type CampaignEra = Database['public']['Tables']['campaign_eras']['Row']
 export type WorldMap = Database['public']['Tables']['world_maps']['Row']
 export type MediaItem = Database['public']['Tables']['media_gallery']['Row']
 export type CharacterVersion = Database['public']['Tables']['character_versions']['Row']

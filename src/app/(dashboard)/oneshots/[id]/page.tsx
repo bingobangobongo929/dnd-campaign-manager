@@ -26,6 +26,7 @@ import {
   Copy,
   Check,
   Sparkles,
+  Swords,
 } from 'lucide-react'
 import { Modal, UnifiedImageModal } from '@/components/ui'
 import { LimitReachedModal } from '@/components/membership'
@@ -129,6 +130,8 @@ export default function OneshotEditorPage() {
   const [showTwists, setShowTwists] = useState(false)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
+  const [convertModalOpen, setConvertModalOpen] = useState(false)
+  const [converting, setConverting] = useState(false)
   const [runModalOpen, setRunModalOpen] = useState(false)
   const [addTagModalOpen, setAddTagModalOpen] = useState(false)
   const [promptModalOpen, setPromptModalOpen] = useState(false)
@@ -406,6 +409,32 @@ export default function OneshotEditorPage() {
     toast.success('Moved to recycle bin')
     router.push('/oneshots')
     setDeleteModalOpen(false)
+  }
+
+  const handleConvertToCampaign = async () => {
+    if (!oneshotId) return
+
+    setConverting(true)
+    try {
+      const response = await fetch(`/api/oneshots/${oneshotId}/convert`, {
+        method: 'POST',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to convert')
+      }
+
+      toast.success('Converted to campaign!')
+      setConvertModalOpen(false)
+      router.push(`/campaigns/${data.campaignId}/dashboard`)
+    } catch (error) {
+      console.error('Convert error:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to convert')
+    } finally {
+      setConverting(false)
+    }
   }
 
   const handleAddTag = async () => {
@@ -782,29 +811,40 @@ export default function OneshotEditorPage() {
 
             {/* Actions */}
             {!isNew && (
-              <div className="flex gap-3">
-                <button
-                  onClick={() => router.push(`/oneshots/${oneshotId}/view`)}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-gray-300 active:bg-white/[0.06] transition-colors"
-                >
-                  <Eye className="w-4 h-4" />
-                  View
-                </button>
-                <button
-                  onClick={() => setShareModalOpen(true)}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-gray-300 active:bg-white/[0.06] transition-colors"
-                >
-                  <Share2 className="w-4 h-4" />
-                  Share
-                </button>
-                {!fromTemplate && (
+              <div className="space-y-3">
+                <div className="flex gap-3">
                   <button
-                    onClick={() => setDeleteModalOpen(true)}
-                    className="flex items-center justify-center gap-2 py-3 px-5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 active:bg-red-500/20 transition-colors"
+                    onClick={() => router.push(`/oneshots/${oneshotId}/view`)}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-gray-300 active:bg-white/[0.06] transition-colors"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Eye className="w-4 h-4" />
+                    View
                   </button>
-                )}
+                  <button
+                    onClick={() => setShareModalOpen(true)}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-gray-300 active:bg-white/[0.06] transition-colors"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    Share
+                  </button>
+                  {!fromTemplate && (
+                    <button
+                      onClick={() => setDeleteModalOpen(true)}
+                      className="flex items-center justify-center gap-2 py-3 px-5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 active:bg-red-500/20 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Convert to Campaign */}
+                <button
+                  onClick={() => setConvertModalOpen(true)}
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-purple-500/10 border border-purple-500/30 rounded-xl text-purple-400 active:bg-purple-500/20 transition-colors"
+                >
+                  <Swords className="w-4 h-4" />
+                  Continue as Campaign
+                </button>
               </div>
             )}
           </div>
@@ -825,6 +865,56 @@ export default function OneshotEditorPage() {
             >
               Delete
             </button>
+          </div>
+        </Modal>
+
+        <Modal
+          isOpen={convertModalOpen}
+          onClose={() => !converting && setConvertModalOpen(false)}
+          title="Continue as Campaign"
+          description="Create a full campaign from this one-shot. This will copy all NPCs, locations, and session content."
+        >
+          <div className="space-y-4 pt-2">
+            <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+              <p className="text-sm text-gray-300">
+                The new campaign will include:
+              </p>
+              <ul className="mt-2 text-sm text-gray-400 list-disc list-inside space-y-1">
+                <li>All NPCs as campaign characters</li>
+                <li>All locations as lore entries</li>
+                <li>Session plan as Session 0 notes</li>
+                <li>Introduction and setting preserved</li>
+              </ul>
+            </div>
+            <p className="text-xs text-gray-500">
+              The original one-shot will remain unchanged.
+            </p>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setConvertModalOpen(false)}
+                disabled={converting}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary flex items-center gap-2"
+                onClick={handleConvertToCampaign}
+                disabled={converting}
+              >
+                {converting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Converting...
+                  </>
+                ) : (
+                  <>
+                    <Swords className="w-4 h-4" />
+                    Create Campaign
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </Modal>
 

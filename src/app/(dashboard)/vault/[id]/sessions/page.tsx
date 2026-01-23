@@ -174,8 +174,11 @@ export default function CharacterSessionsPage() {
                 <ScrollText className="w-8 h-8 text-purple-400" />
               </div>
               <h3 className="text-xl font-semibold text-[--text-primary] mb-3">Chronicle Your Journey</h3>
-              <p className="text-sm text-[--text-secondary] mb-6 max-w-sm mx-auto">
+              <p className="text-sm text-[--text-secondary] mb-4 max-w-sm mx-auto">
                 Record each session as your character's story unfolds. Track adventures, encounters, and memorable moments.
+              </p>
+              <p className="text-xs text-purple-400/80 mb-6 max-w-sm mx-auto italic">
+                Your session notes power Character Intelligence - helping track your character's growth and story arc.
               </p>
               <Button onClick={() => router.push(`/vault/${characterId}/sessions/new`)}>
                 <Plus className="w-4 h-4 mr-2" />

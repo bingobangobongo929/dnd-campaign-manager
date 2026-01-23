@@ -32,6 +32,7 @@ import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
 import type { Session, Campaign, Character } from '@/types/database'
 import { SessionWorkflow, PlayerNotes } from '@/components/sessions'
+import { DmNotesSection } from '@/components/dm-notes'
 
 export default function SessionDetailPage() {
   const params = useParams()
@@ -61,6 +62,7 @@ export default function SessionDetailPage() {
     date: '',
     summary: '',
     notes: '',
+    dm_notes: '',
   })
 
   // AI Expand Notes state
@@ -125,6 +127,7 @@ export default function SessionDetailPage() {
         date: new Date().toISOString().split('T')[0],
         summary: '',
         notes: '',
+        dm_notes: '',
       })
       setLoading(false)
       setHasLoadedOnce(true)
@@ -152,6 +155,7 @@ export default function SessionDetailPage() {
       date: sessionData.date || '',
       summary: sessionData.summary || '',
       notes: sessionData.notes || '',
+      dm_notes: sessionData.dm_notes || '',
     })
 
     // Load session attendees
@@ -226,6 +230,7 @@ export default function SessionDetailPage() {
       date: data.date || null,
       summary: data.summary || null,
       notes: data.notes || '',
+      dm_notes: data.dm_notes || null,
       version: newVersion,
       updated_at: new Date().toISOString(),
     }
@@ -879,6 +884,19 @@ export default function SessionDetailPage() {
                 className="min-h-[300px]"
               />
             )}
+          </div>
+        )}
+
+        {/* DM Notes Section */}
+        {!isNew && campaign?.user_id === user?.id && (
+          <div className="card p-6 mb-8">
+            <DmNotesSection
+              dmNotes={formData.dm_notes}
+              onDmNotesChange={(notes) => setFormData({ ...formData, dm_notes: notes })}
+              showVisibilityToggle={false}
+              placeholder="Private notes about this session. Plot threads to follow up, player behaviors, etc."
+              collapsed={!formData.dm_notes}
+            />
           </div>
         )}
 

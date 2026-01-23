@@ -8,6 +8,7 @@ import { RelationshipEditor } from './RelationshipEditor'
 import { FactionMembershipEditor } from './FactionMembershipEditor'
 import { LabelsEditor } from './LabelsEditor'
 import { RichTextEditor } from '@/components/editor/rich-text-editor'
+import { DmNotesSection, type VisibilityLevel } from '@/components/dm-notes'
 import { useSupabase } from '@/hooks'
 import { useAutoSave } from '@/hooks'
 import { cn } from '@/lib/utils'
@@ -103,6 +104,9 @@ export function CharacterModal({
     important_people: toStringArray(character?.important_people),
     story_hooks: toStringArray(character?.story_hooks),
     quotes: toStringArray(character?.quotes),
+    // DM Notes & Visibility
+    dm_notes: character?.dm_notes || '',
+    visibility: (character?.visibility || 'public') as VisibilityLevel,
   })
 
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
@@ -140,6 +144,8 @@ export function CharacterModal({
         important_people: toStringArray(character.important_people),
         story_hooks: toStringArray(character.story_hooks),
         quotes: toStringArray(character.quotes),
+        dm_notes: character.dm_notes || '',
+        visibility: (character.visibility || 'public') as VisibilityLevel,
       })
     }
   }, [character?.id])
@@ -201,6 +207,8 @@ export function CharacterModal({
           important_people: formData.important_people.length > 0 ? formData.important_people : null,
           story_hooks: formData.story_hooks.length > 0 ? formData.story_hooks : null,
           quotes: formData.quotes.length > 0 ? formData.quotes : null,
+          dm_notes: formData.dm_notes || null,
+          visibility: formData.visibility,
           position_x: 100,
           position_y: 100,
         })
@@ -241,6 +249,8 @@ export function CharacterModal({
         important_people: formData.important_people.length > 0 ? formData.important_people : null,
         story_hooks: formData.story_hooks.length > 0 ? formData.story_hooks : null,
         quotes: formData.quotes.length > 0 ? formData.quotes : null,
+        dm_notes: formData.dm_notes || null,
+        visibility: formData.visibility,
       })
       .eq('id', characterId)
       .select()
@@ -537,31 +547,44 @@ export function CharacterModal({
     </>
   )
 
-  // Secrets section (shared but with toggle)
-  const renderSecretsSection = () => (
-    <div className="space-y-4 p-4 bg-[--arcane-ember]/5 rounded-xl border border-[--arcane-ember]/20">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[--arcane-ember] uppercase tracking-wider flex items-center gap-2">
-          <EyeOff className="w-4 h-4" />
-          Secrets (DM Only)
-        </h3>
-        <button
-          onClick={() => setShowSecrets(!showSecrets)}
-          className="flex items-center gap-1 text-xs text-[--text-tertiary] hover:text-[--text-secondary]"
-        >
-          {showSecrets ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-          {showSecrets ? 'Hide' : 'Show'}
-        </button>
+  // DM Notes section with visibility controls
+  const renderDmNotesSection = () => (
+    <div className="space-y-4">
+      {/* Secrets field (legacy, simpler) */}
+      <div className="space-y-4 p-4 bg-[--arcane-ember]/5 rounded-xl border border-[--arcane-ember]/20">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-[--arcane-ember] uppercase tracking-wider flex items-center gap-2">
+            <EyeOff className="w-4 h-4" />
+            Secrets (DM Only)
+          </h3>
+          <button
+            onClick={() => setShowSecrets(!showSecrets)}
+            className="flex items-center gap-1 text-xs text-[--text-tertiary] hover:text-[--text-secondary]"
+          >
+            {showSecrets ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+            {showSecrets ? 'Hide' : 'Show'}
+          </button>
+        </div>
+        {showSecrets && (
+          <textarea
+            value={formData.secrets}
+            onChange={(e) => setFormData({ ...formData, secrets: e.target.value })}
+            placeholder="Hidden information players don't know yet..."
+            rows={3}
+            className="form-textarea"
+          />
+        )}
       </div>
-      {showSecrets && (
-        <textarea
-          value={formData.secrets}
-          onChange={(e) => setFormData({ ...formData, secrets: e.target.value })}
-          placeholder="Hidden information players don't know yet..."
-          rows={3}
-          className="form-textarea"
-        />
-      )}
+
+      {/* DM Notes with full visibility controls */}
+      <DmNotesSection
+        dmNotes={formData.dm_notes}
+        onDmNotesChange={(notes) => setFormData({ ...formData, dm_notes: notes })}
+        visibility={formData.visibility}
+        onVisibilityChange={(vis) => setFormData({ ...formData, visibility: vis })}
+        showVisibilityToggle={true}
+        collapsed={!formData.dm_notes}
+      />
     </div>
   )
 
@@ -740,7 +763,7 @@ export function CharacterModal({
                   {formData.type === 'pc' ? renderPCFields() : renderNPCFields()}
 
                   {/* Secrets section */}
-                  {renderSecretsSection()}
+                  {renderDmNotesSection()}
                 </div>
 
                 {/* Right Column: Notes */}
@@ -895,7 +918,7 @@ export function CharacterModal({
                 {formData.type === 'pc' ? renderPCFields() : renderNPCFields()}
 
                 {/* Secrets */}
-                {renderSecretsSection()}
+                {renderDmNotesSection()}
 
                 {/* Notes */}
                 <div className="form-group flex-1 flex flex-col min-h-0">

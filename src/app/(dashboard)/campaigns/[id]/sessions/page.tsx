@@ -324,10 +324,15 @@ export default function SessionsPage() {
                 : 'Document each session to track your campaign story. Add summaries, attendees, and detailed notes.'}
             </p>
             {!searchQuery && (
-              <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
-                <Plus className="w-5 h-5" />
-                Create First Session
-              </button>
+              <>
+                <p className="text-xs text-purple-400/80 mt-3 max-w-md italic">
+                  Session notes power Campaign Intelligence - add detailed notes to get AI-powered timeline events, NPC suggestions, and relationship tracking.
+                </p>
+                <button className="btn btn-primary mt-4" onClick={() => setIsCreateModalOpen(true)}>
+                  <Plus className="w-5 h-5" />
+                  Create First Session
+                </button>
+              </>
             )}
           </div>
         ) : (

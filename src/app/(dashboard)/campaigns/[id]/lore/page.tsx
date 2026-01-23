@@ -13,10 +13,13 @@ import {
   ChevronUp,
   GitBranch,
   Info,
+  List,
+  Share2,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { MarkdownContent } from '@/components/ui'
+import { RelationshipDiagram } from '@/components/campaign'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { CampaignLorePageMobile } from './page.mobile'
 import { useCanUseAI } from '@/store'
@@ -67,6 +70,9 @@ export default function LorePage() {
   const [familyTreeExpanded, setFamilyTreeExpanded] = useState(true)
   const [factionsExpanded, setFactionsExpanded] = useState(true)
   const [insightsExpanded, setInsightsExpanded] = useState(true)
+
+  // Relationship view mode: 'list' or 'diagram'
+  const [relationshipViewMode, setRelationshipViewMode] = useState<'list' | 'diagram'>('list')
 
   useEffect(() => {
     if (user && campaignId) {
@@ -355,12 +361,54 @@ export default function LorePage() {
                   <Network className="w-12 h-12 mx-auto mb-4 text-gray-600" />
                   <p className="text-gray-500 mb-2">No relationships defined yet</p>
                   <p className="text-sm text-gray-600">
-                    Add relationships to characters from the canvas editor to see them here
+                    Add relationships between characters from the Canvas editor to visualize your campaign's connections.
+                  </p>
+                  <p className="text-xs text-purple-400/80 mt-3 max-w-md mx-auto italic">
+                    Campaign Intelligence can also detect relationships from your session notes automatically.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-6">
+                  {/* View Mode Toggle */}
+                  <div className="flex items-center justify-end gap-2">
+                    <span className="text-xs text-gray-500 mr-2">View:</span>
+                    <button
+                      onClick={() => setRelationshipViewMode('list')}
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors",
+                        relationshipViewMode === 'list'
+                          ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
+                          : "bg-white/[0.02] text-gray-400 border border-white/[0.06] hover:bg-white/[0.05]"
+                      )}
+                    >
+                      <List className="w-4 h-4" />
+                      List
+                    </button>
+                    <button
+                      onClick={() => setRelationshipViewMode('diagram')}
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors",
+                        relationshipViewMode === 'diagram'
+                          ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
+                          : "bg-white/[0.02] text-gray-400 border border-white/[0.06] hover:bg-white/[0.05]"
+                      )}
+                    >
+                      <Share2 className="w-4 h-4" />
+                      Diagram
+                    </button>
+                  </div>
+
+                  {/* Diagram View */}
+                  {relationshipViewMode === 'diagram' && (
+                    <RelationshipDiagram
+                      characters={characters}
+                      relationships={relationships}
+                      className="min-h-[500px]"
+                    />
+                  )}
+
                   {/* Relationship List View */}
+                  {relationshipViewMode === 'list' && (
                   <div className="grid gap-4">
                     {familyTree.edges.map((edge, idx) => {
                       const source = familyTree.nodes.find(n => n.id === edge.source)
@@ -429,6 +477,7 @@ export default function LorePage() {
                       )
                     })}
                   </div>
+                  )}
                 </div>
               )}
             </div>
@@ -466,7 +515,10 @@ export default function LorePage() {
                   <Shield className="w-12 h-12 mx-auto mb-4 text-gray-600" />
                   <p className="text-gray-500 mb-2">No factions defined yet</p>
                   <p className="text-sm text-gray-600">
-                    Create faction tags from the character editor to organize your world
+                    Create faction tags from the Canvas character editor to organize your world's power structures.
+                  </p>
+                  <p className="text-xs text-purple-400/80 mt-3 max-w-md mx-auto italic">
+                    Use tags like "The Thieves Guild" or "Royal Court" to group characters by allegiance.
                   </p>
                 </div>
               ) : (
@@ -564,8 +616,11 @@ export default function LorePage() {
                   <div className="p-6 bg-white/[0.02] border border-white/[0.06] rounded-xl text-center">
                     <Sparkles className="w-12 h-12 mx-auto mb-4 text-gray-600" />
                     <p className="text-gray-500 mb-2">No AI insights yet</p>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Click "Analyze Lore" to generate insights about your campaign
+                    <p className="text-sm text-gray-600 mb-2">
+                      Analyze your campaign's lore to uncover hidden connections, potential plot hooks, and story opportunities.
+                    </p>
+                    <p className="text-xs text-purple-400/80 mb-4 max-w-md mx-auto italic">
+                      Add characters with detailed descriptions and relationships for richer insights.
                     </p>
                     <button
                       className="btn btn-secondary"
@@ -580,7 +635,7 @@ export default function LorePage() {
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4" />
-                          Generate Insights
+                          Analyze Lore
                         </>
                       )}
                     </button>

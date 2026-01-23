@@ -30,9 +30,9 @@ export async function POST(request: NextRequest) {
       editDetails?: string
     }
 
-    if (!suggestionType || !suggestionContent || !actionTaken) {
+    if (!suggestionType) {
       return NextResponse.json({
-        error: 'suggestionType, suggestionContent, and actionTaken are required'
+        error: 'suggestionType is required'
       }, { status: 400 })
     }
 

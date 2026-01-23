@@ -620,20 +620,39 @@ export default function CharacterIntelligencePage() {
                 <div
                   className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6"
                   style={{
-                    backgroundColor: suggestions.length === 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(107, 114, 128, 0.15)',
-                    border: suggestions.length === 0 ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(107, 114, 128, 0.3)',
+                    backgroundColor: suggestions.length === 0 ? 'rgba(139, 92, 246, 0.15)' : 'rgba(107, 114, 128, 0.15)',
+                    border: suggestions.length === 0 ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid rgba(107, 114, 128, 0.3)',
                   }}
                 >
-                  <CheckCircle2 className="w-8 h-8" style={{ color: suggestions.length === 0 ? '#34d399' : '#6b7280' }} />
+                  {suggestions.length === 0 ? (
+                    <Brain className="w-8 h-8" style={{ color: '#a78bfa' }} />
+                  ) : (
+                    <CheckCircle2 className="w-8 h-8" style={{ color: '#6b7280' }} />
+                  )}
                 </div>
                 <p className="text-lg font-semibold mb-2" style={{ color: '#f3f4f6' }}>
-                  {suggestions.length === 0 ? 'No Pending Suggestions' : 'No Matches'}
+                  {suggestions.length === 0 ? 'Ready to Analyze' : 'No Matches'}
                 </p>
                 <p className="text-sm text-center max-w-md" style={{ color: '#6b7280' }}>
                   {suggestions.length === 0
-                    ? 'Run an analysis to detect grammar issues, lore conflicts, and improvement opportunities.'
+                    ? 'Character Intelligence scans your backstory for grammar issues, lore conflicts, voice inconsistencies, and improvement opportunities.'
                     : 'No suggestions match your current filters.'}
                 </p>
+                {suggestions.length === 0 && (
+                  <>
+                    <p className="text-xs text-purple-400/80 mt-3 max-w-md italic text-center">
+                      For best results, fill out your character's backstory, personality, and session notes before analyzing.
+                    </p>
+                    <button
+                      className="btn btn-primary flex items-center gap-2 mt-6"
+                      onClick={handleAnalyze}
+                      disabled={isAnalyzing}
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      Analyze Character
+                    </button>
+                  </>
+                )}
               </div>
             )}
 

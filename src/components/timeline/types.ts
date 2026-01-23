@@ -1,14 +1,20 @@
-import type { TimelineEvent, Character } from '@/types/database'
+import type { TimelineEvent, Character, CampaignEra } from '@/types/database'
 import { LayoutGrid, BookOpen, ScrollText, PanelLeft, Film } from 'lucide-react'
 
 export interface TimelineEventWithCharacters extends TimelineEvent {
   characters: Character[]
+  era?: CampaignEra | null
 }
 
 export interface TimelineViewProps {
   events: TimelineEventWithCharacters[]
+  eras?: CampaignEra[]
   onEventClick: (event: TimelineEventWithCharacters) => void
   onCharacterClick: (character: Character, e: React.MouseEvent) => void
+  onEraCreate?: () => void
+  onEraEdit?: (era: CampaignEra) => void
+  onEraDelete?: (eraId: string) => void
+  onEventEraChange?: (eventId: string, eraId: string | null) => void
 }
 
 export type TimelineViewType = 'chapters' | 'journal' | 'browser' | 'storyboard' | 'feed'

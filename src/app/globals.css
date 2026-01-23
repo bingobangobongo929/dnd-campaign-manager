@@ -609,11 +609,6 @@
   max-width: none;
 }
 
-/* Content centering container */
-.main-content > div {
-  max-width: 100%;
-}
-
 .page-header {
   margin-bottom: 32px;
 }

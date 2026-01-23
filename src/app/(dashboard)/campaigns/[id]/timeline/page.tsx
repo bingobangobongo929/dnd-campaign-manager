@@ -38,7 +38,8 @@ import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { CampaignTimelinePageMobile } from './page.mobile'
 import { getInitials, cn } from '@/lib/utils'
 import Image from 'next/image'
-import type { Campaign, TimelineEvent, Character, Tag, CharacterTag, Session } from '@/types/database'
+import type { Campaign, TimelineEvent, Character, Tag, CharacterTag, Session, CampaignEra } from '@/types/database'
+import { toast } from 'sonner'
 
 const EVENT_TYPES = [
   { value: 'session', label: 'Session', icon: Scroll },
@@ -90,6 +91,20 @@ export default function TimelinePage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [isAIGenerateModalOpen, setIsAIGenerateModalOpen] = useState(false)
 
+  // Character filter state
+  const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null)
+  const [characterFilterMenuOpen, setCharacterFilterMenuOpen] = useState(false)
+
+  // Eras/Chapters state
+  const [eras, setEras] = useState<CampaignEra[]>([])
+  const [isEraModalOpen, setIsEraModalOpen] = useState(false)
+  const [editingEra, setEditingEra] = useState<CampaignEra | null>(null)
+  const [eraFormData, setEraFormData] = useState({
+    name: '',
+    description: '',
+    color: '#8B5CF6',
+  })
+
   // Load view preference from localStorage
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
@@ -104,6 +119,19 @@ export default function TimelinePage() {
     localStorage.setItem(STORAGE_KEY, view)
     setViewMenuOpen(false)
   }
+
+  // Filter events by selected character
+  const filteredEvents = selectedCharacterId
+    ? events.filter(event =>
+        event.characters.some(c => c.id === selectedCharacterId) ||
+        event.character_ids?.includes(selectedCharacterId) ||
+        event.character_id === selectedCharacterId
+      )
+    : events
+
+  const selectedCharacter = selectedCharacterId
+    ? characters.find(c => c.id === selectedCharacterId)
+    : null
 
   useEffect(() => {
     if (user && campaignId) {
@@ -144,6 +172,15 @@ export default function TimelinePage() {
       .order('session_date', { ascending: false })
 
     setSessions(sessionsData || [])
+
+    // Load eras/chapters
+    const { data: erasData } = await supabase
+      .from('campaign_eras')
+      .select('*')
+      .eq('campaign_id', campaignId)
+      .order('sort_order', { ascending: true })
+
+    setEras(erasData || [])
 
     const { data: eventsData } = await supabase
       .from('timeline_events')
@@ -265,10 +302,91 @@ export default function TimelinePage() {
   const pcCharacters = characters.filter(c => c.type === 'pc')
   const npcCharacters = characters.filter(c => c.type === 'npc')
 
+  // Era handlers
+  const handleEraCreate = () => {
+    setEditingEra(null)
+    setEraFormData({ name: '', description: '', color: '#8B5CF6' })
+    setIsEraModalOpen(true)
+  }
+
+  const handleEraEdit = (era: CampaignEra) => {
+    setEditingEra(era)
+    setEraFormData({
+      name: era.name,
+      description: era.description || '',
+      color: era.color || '#8B5CF6',
+    })
+    setIsEraModalOpen(true)
+  }
+
+  const handleEraSave = async () => {
+    if (!eraFormData.name.trim()) {
+      toast.error('Chapter name is required')
+      return
+    }
+
+    setSaving(true)
+    try {
+      if (editingEra) {
+        // Update existing era
+        const { error } = await supabase
+          .from('campaign_eras')
+          .update({
+            name: eraFormData.name,
+            description: eraFormData.description || null,
+            color: eraFormData.color,
+          })
+          .eq('id', editingEra.id)
+
+        if (error) throw error
+        toast.success('Chapter updated')
+      } else {
+        // Create new era
+        const { error } = await supabase
+          .from('campaign_eras')
+          .insert({
+            campaign_id: campaignId,
+            name: eraFormData.name,
+            description: eraFormData.description || null,
+            color: eraFormData.color,
+            sort_order: eras.length,
+          })
+
+        if (error) throw error
+        toast.success('Chapter created')
+      }
+
+      setIsEraModalOpen(false)
+      setEditingEra(null)
+      await loadData()
+    } catch (error) {
+      console.error('Failed to save era:', error)
+      toast.error('Failed to save chapter')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleEraDelete = async (eraId: string) => {
+    try {
+      const { error } = await supabase
+        .from('campaign_eras')
+        .delete()
+        .eq('id', eraId)
+
+      if (error) throw error
+      toast.success('Chapter deleted')
+      await loadData()
+    } catch (error) {
+      console.error('Failed to delete era:', error)
+      toast.error('Failed to delete chapter')
+    }
+  }
+
   // Render the current view
   const renderView = () => {
     const viewProps = {
-      events,
+      events: filteredEvents,
       onEventClick: handleEventClick,
       onCharacterClick: handleCharacterClick,
     }
@@ -277,7 +395,15 @@ export default function TimelinePage() {
       case 'feed':
         return <FeedView {...viewProps} />
       case 'chapters':
-        return <ChaptersView {...viewProps} />
+        return (
+          <ChaptersView
+            {...viewProps}
+            eras={eras}
+            onEraCreate={handleEraCreate}
+            onEraEdit={handleEraEdit}
+            onEraDelete={handleEraDelete}
+          />
+        )
       case 'journal':
         return <JournalView {...viewProps} />
       case 'browser':
@@ -338,7 +464,11 @@ export default function TimelinePage() {
         <div className="page-header flex items-center justify-between">
           <div>
             <h1 className="page-title">Campaign Timeline</h1>
-            <p className="page-subtitle">Chronicle your adventure's key moments</p>
+            <p className="page-subtitle">
+              {selectedCharacter
+                ? `${selectedCharacter.name}'s journey - ${filteredEvents.length} event${filteredEvents.length !== 1 ? 's' : ''}`
+                : 'Chronicle your adventure\'s key moments'}
+            </p>
           </div>
           <div className="flex items-center gap-3">
             {/* View Toggle */}
@@ -405,6 +535,117 @@ export default function TimelinePage() {
               )}
             </div>
 
+            {/* Character Filter */}
+            {characters.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={() => setCharacterFilterMenuOpen(!characterFilterMenuOpen)}
+                  className="btn btn-secondary flex items-center gap-2"
+                  style={{
+                    backgroundColor: selectedCharacterId ? 'rgba(139, 92, 246, 0.2)' : undefined,
+                    borderColor: selectedCharacterId ? 'rgba(139, 92, 246, 0.4)' : undefined,
+                  }}
+                >
+                  <User className="w-4 h-4" />
+                  <span className="max-w-24 truncate">
+                    {selectedCharacter ? selectedCharacter.name : 'All Characters'}
+                  </span>
+                  <ChevronDown className={cn("w-4 h-4 transition-transform", characterFilterMenuOpen && "rotate-180")} />
+                </button>
+
+                {characterFilterMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setCharacterFilterMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-2 w-64 rounded-xl shadow-2xl z-50 overflow-hidden max-h-80 overflow-y-auto" style={{ backgroundColor: '#1a1a24', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                        <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#9ca3af' }}>
+                          Filter by Character
+                        </p>
+                      </div>
+                      <div className="py-2">
+                        <button
+                          onClick={() => {
+                            setSelectedCharacterId(null)
+                            setCharacterFilterMenuOpen(false)
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
+                          style={{
+                            backgroundColor: !selectedCharacterId ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (selectedCharacterId) {
+                              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = !selectedCharacterId ? 'rgba(139, 92, 246, 0.15)' : 'transparent'
+                          }}
+                        >
+                          <Users className="w-5 h-5" style={{ color: !selectedCharacterId ? '#a78bfa' : '#9ca3af' }} />
+                          <span className="font-medium" style={{ color: !selectedCharacterId ? '#a78bfa' : '#f3f4f6' }}>
+                            All Characters
+                          </span>
+                        </button>
+
+                        {characters.map((character) => (
+                          <button
+                            key={character.id}
+                            onClick={() => {
+                              setSelectedCharacterId(character.id)
+                              setCharacterFilterMenuOpen(false)
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
+                            style={{
+                              backgroundColor: selectedCharacterId === character.id ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
+                            }}
+                            onMouseEnter={(e) => {
+                              if (selectedCharacterId !== character.id) {
+                                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = selectedCharacterId === character.id ? 'rgba(139, 92, 246, 0.15)' : 'transparent'
+                            }}
+                          >
+                            {character.image_url ? (
+                              <Image
+                                src={character.image_url}
+                                alt={character.name}
+                                width={24}
+                                height={24}
+                                className="rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full bg-purple-600/20 flex items-center justify-center text-purple-400 text-xs font-medium">
+                                {getInitials(character.name)}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p
+                                className="font-medium text-sm truncate"
+                                style={{ color: selectedCharacterId === character.id ? '#a78bfa' : '#f3f4f6' }}
+                              >
+                                {character.name}
+                              </p>
+                              <p className="text-xs capitalize" style={{ color: '#9ca3af' }}>
+                                {character.type}
+                              </p>
+                            </div>
+                            {selectedCharacterId === character.id && (
+                              <Check className="w-4 h-4 flex-shrink-0" style={{ color: '#a78bfa' }} />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             {sessions.length > 0 && (
               <button
                 className="btn btn-secondary flex items-center gap-2"
@@ -434,9 +675,38 @@ export default function TimelinePage() {
             <p className="empty-state-description">
               Start building your campaign timeline by adding key moments and events
             </p>
-            <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
-              <Plus className="w-5 h-5" />
-              Add First Event
+            <p className="text-xs text-purple-400/80 mt-3 max-w-md italic">
+              Add events manually, or use Campaign Intelligence to extract timeline events from your session notes automatically.
+            </p>
+            <div className="flex items-center gap-3 mt-4">
+              <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
+                <Plus className="w-5 h-5" />
+                Add First Event
+              </button>
+              {sessions.length > 0 && (
+                <button
+                  className="btn btn-secondary flex items-center gap-2"
+                  onClick={() => setIsAIGenerateModalOpen(true)}
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%)',
+                    border: '1px solid rgba(139, 92, 246, 0.3)',
+                  }}
+                >
+                  <Sparkles className="w-4 h-4" style={{ color: '#a78bfa' }} />
+                  <span style={{ color: '#a78bfa' }}>AI Generate</span>
+                </button>
+              )}
+            </div>
+          </div>
+        ) : filteredEvents.length === 0 ? (
+          <div className="empty-state">
+            <User className="empty-state-icon" />
+            <h2 className="empty-state-title">No events for {selectedCharacter?.name}</h2>
+            <p className="empty-state-description">
+              This character hasn't been involved in any timeline events yet
+            </p>
+            <button className="btn btn-secondary mt-4" onClick={() => setSelectedCharacterId(null)}>
+              Show All Events
             </button>
           </div>
         ) : (
@@ -660,6 +930,77 @@ export default function TimelinePage() {
           characters={characters}
           onEventsGenerated={handleAIGeneratedEvents}
         />
+
+        {/* Era/Chapter Modal */}
+        <Modal
+          isOpen={isEraModalOpen}
+          onClose={() => {
+            setIsEraModalOpen(false)
+            setEditingEra(null)
+          }}
+          title={editingEra ? 'Edit Chapter' : 'Create Chapter'}
+          description="Organize your timeline into story chapters"
+        >
+          <div className="space-y-4">
+            <div className="form-group">
+              <label className="form-label">Chapter Name</label>
+              <Input
+                className="form-input"
+                placeholder="e.g., The Gathering Storm, The Lost Mines, etc."
+                value={eraFormData.name}
+                onChange={(e) => setEraFormData({ ...eraFormData, name: e.target.value })}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Description (optional)</label>
+              <Textarea
+                className="form-textarea"
+                placeholder="What this chapter of the story is about..."
+                value={eraFormData.description}
+                onChange={(e) => setEraFormData({ ...eraFormData, description: e.target.value })}
+                rows={3}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Color</label>
+              <div className="flex gap-2">
+                {['#8B5CF6', '#EF4444', '#10B981', '#F59E0B', '#3B82F6', '#EC4899', '#6366F1', '#06B6D4'].map(color => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setEraFormData({ ...eraFormData, color })}
+                    className={cn(
+                      'w-8 h-8 rounded-lg transition-all',
+                      eraFormData.color === color ? 'ring-2 ring-white ring-offset-2 ring-offset-[--bg-surface]' : ''
+                    )}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setIsEraModalOpen(false)
+                  setEditingEra(null)
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleEraSave}
+                disabled={!eraFormData.name.trim() || saving}
+              >
+                {saving ? 'Saving...' : editingEra ? 'Update' : 'Create Chapter'}
+              </button>
+            </div>
+          </div>
+        </Modal>
       </div>
       <BackToTopButton />
     </AppLayout>

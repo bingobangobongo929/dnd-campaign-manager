@@ -18,11 +18,21 @@ import {
   X,
   Check,
   Move,
+  Cloud,
+  CircleDot,
 } from 'lucide-react'
 import { Modal, Input } from '@/components/ui'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import type { MapPin as MapPinType } from '@/types/database'
+
+export interface FogRegion {
+  id: string
+  x: number
+  y: number
+  radius: number
+  revealed: boolean
+}
 
 interface InteractiveMapProps {
   campaignId: string
@@ -31,6 +41,9 @@ interface InteractiveMapProps {
   isDm: boolean
   onPinClick?: (pin: MapPinType) => void
   className?: string
+  fogOfWar?: FogRegion[]
+  onFogChange?: (fog: FogRegion[]) => void
+  fogEnabled?: boolean
 }
 
 export function InteractiveMap({
@@ -40,8 +53,12 @@ export function InteractiveMap({
   isDm,
   onPinClick,
   className,
+  fogOfWar = [],
+  onFogChange,
+  fogEnabled = false,
 }: InteractiveMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const fogCanvasRef = useRef<HTMLCanvasElement>(null)
   const [pins, setPins] = useState<MapPinType[]>([])
   const [loading, setLoading] = useState(true)
   const [zoom, setZoom] = useState(1)
@@ -60,6 +77,11 @@ export function InteractiveMap({
   })
   const [saving, setSaving] = useState(false)
   const [pendingPinPosition, setPendingPinPosition] = useState<{ x: number; y: number } | null>(null)
+
+  // Fog of war state
+  const [isFogMode, setIsFogMode] = useState(false)
+  const [fogBrushSize, setFogBrushSize] = useState(50)
+  const [isRevealMode, setIsRevealMode] = useState(true) // true = reveal, false = hide
 
   // Load pins
   useEffect(() => {
@@ -117,6 +139,29 @@ export function InteractiveMap({
 
   // Place pin
   const handleMapClick = (e: React.MouseEvent) => {
+    // Handle fog click first
+    if (isFogMode && isDm && onFogChange) {
+      const rect = containerRef.current?.getBoundingClientRect()
+      if (!rect) return
+
+      const x = ((e.clientX - rect.left - position.x) / zoom) / rect.width * 100
+      const y = ((e.clientY - rect.top - position.y) / zoom) / rect.height * 100
+
+      // Add or toggle a fog region
+      const newRegion: FogRegion = {
+        id: `fog-${Date.now()}`,
+        x,
+        y,
+        radius: fogBrushSize,
+        revealed: isRevealMode,
+      }
+
+      const updatedFog = [...fogOfWar, newRegion]
+      onFogChange(updatedFog)
+      toast.success(isRevealMode ? 'Area revealed' : 'Area hidden')
+      return
+    }
+
     if (!isPlacingPin || !isDm) return
 
     const rect = containerRef.current?.getBoundingClientRect()
@@ -129,6 +174,29 @@ export function InteractiveMap({
     setPendingPinPosition({ x, y })
     setEditModalOpen(true)
     setIsPlacingPin(false)
+  }
+
+  // Clear all fog
+  const handleClearFog = () => {
+    if (onFogChange) {
+      onFogChange([])
+      toast.success('Fog cleared')
+    }
+  }
+
+  // Reveal all fog
+  const handleRevealAll = () => {
+    if (onFogChange) {
+      // Set entire map as revealed by creating one large region
+      onFogChange([{
+        id: 'reveal-all',
+        x: 50,
+        y: 50,
+        radius: 200,
+        revealed: true,
+      }])
+      toast.success('All areas revealed')
+    }
   }
 
   // Save pin
@@ -291,28 +359,113 @@ export function InteractiveMap({
 
       {/* DM Toolbar */}
       {isDm && (
-        <div className="absolute top-3 right-3 z-20 flex items-center gap-2 bg-[#12121a]/90 border border-[--border] rounded-lg p-1">
-          <button
-            onClick={() => setIsPlacingPin(!isPlacingPin)}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-2 rounded text-sm transition-colors",
-              isPlacingPin
-                ? "bg-purple-600 text-white"
-                : "hover:bg-white/[0.05] text-gray-400 hover:text-white"
-            )}
-          >
-            {isPlacingPin ? (
-              <>
-                <X className="w-4 h-4" />
-                Cancel
-              </>
-            ) : (
-              <>
-                <Plus className="w-4 h-4" />
-                Add Pin
-              </>
-            )}
-          </button>
+        <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+          {/* Fog of War Controls */}
+          {fogEnabled && onFogChange && (
+            <div className="flex items-center gap-1 bg-[#12121a]/90 border border-[--border] rounded-lg p-1">
+              <button
+                onClick={() => {
+                  setIsFogMode(!isFogMode)
+                  if (!isFogMode) setIsPlacingPin(false)
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-2 rounded text-sm transition-colors",
+                  isFogMode
+                    ? "bg-amber-600 text-white"
+                    : "hover:bg-white/[0.05] text-gray-400 hover:text-white"
+                )}
+                title="Toggle fog editing mode"
+              >
+                <Cloud className="w-4 h-4" />
+                {isFogMode ? 'Exit Fog' : 'Fog'}
+              </button>
+
+              {isFogMode && (
+                <>
+                  <div className="w-px h-6 bg-[--border]" />
+                  <button
+                    onClick={() => setIsRevealMode(true)}
+                    className={cn(
+                      "flex items-center gap-1 px-2 py-2 rounded text-xs transition-colors",
+                      isRevealMode
+                        ? "bg-green-600/80 text-white"
+                        : "hover:bg-white/[0.05] text-gray-400 hover:text-white"
+                    )}
+                    title="Reveal mode"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setIsRevealMode(false)}
+                    className={cn(
+                      "flex items-center gap-1 px-2 py-2 rounded text-xs transition-colors",
+                      !isRevealMode
+                        ? "bg-red-600/80 text-white"
+                        : "hover:bg-white/[0.05] text-gray-400 hover:text-white"
+                    )}
+                    title="Hide mode"
+                  >
+                    <EyeOff className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="w-px h-6 bg-[--border]" />
+                  <select
+                    value={fogBrushSize}
+                    onChange={(e) => setFogBrushSize(Number(e.target.value))}
+                    className="bg-transparent text-xs text-gray-300 px-1 py-1 rounded"
+                    title="Brush size"
+                  >
+                    <option value="25">S</option>
+                    <option value="50">M</option>
+                    <option value="100">L</option>
+                    <option value="200">XL</option>
+                  </select>
+                  <div className="w-px h-6 bg-[--border]" />
+                  <button
+                    onClick={handleRevealAll}
+                    className="px-2 py-2 rounded text-xs text-green-400 hover:bg-white/[0.05]"
+                    title="Reveal entire map"
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={handleClearFog}
+                    className="px-2 py-2 rounded text-xs text-red-400 hover:bg-white/[0.05]"
+                    title="Hide entire map"
+                  >
+                    Reset
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Pin Controls */}
+          <div className="flex items-center gap-1 bg-[#12121a]/90 border border-[--border] rounded-lg p-1">
+            <button
+              onClick={() => {
+                setIsPlacingPin(!isPlacingPin)
+                if (!isPlacingPin) setIsFogMode(false)
+              }}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-2 rounded text-sm transition-colors",
+                isPlacingPin
+                  ? "bg-purple-600 text-white"
+                  : "hover:bg-white/[0.05] text-gray-400 hover:text-white"
+              )}
+            >
+              {isPlacingPin ? (
+                <>
+                  <X className="w-4 h-4" />
+                  Cancel
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  Add Pin
+                </>
+              )}
+            </button>
+          </div>
         </div>
       )}
 
@@ -425,6 +578,81 @@ export function InteractiveMap({
               </div>
             )
           })}
+
+          {/* Fog of War Overlay */}
+          {fogEnabled && fogOfWar.length > 0 && (
+            <svg
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              style={{ mixBlendMode: isDm ? 'normal' : 'normal' }}
+            >
+              <defs>
+                <mask id="fog-mask">
+                  {/* Start with fog covering everything (white) */}
+                  <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                  {/* Cut out revealed areas (black) */}
+                  {fogOfWar.filter(r => r.revealed).map(region => (
+                    <circle
+                      key={region.id}
+                      cx={`${region.x}%`}
+                      cy={`${region.y}%`}
+                      r={`${region.radius}px`}
+                      fill="black"
+                    />
+                  ))}
+                  {/* Add hidden areas back (white) */}
+                  {fogOfWar.filter(r => !r.revealed).map(region => (
+                    <circle
+                      key={region.id}
+                      cx={`${region.x}%`}
+                      cy={`${region.y}%`}
+                      r={`${region.radius}px`}
+                      fill="white"
+                    />
+                  ))}
+                </mask>
+              </defs>
+              {/* Fog layer - only show to players */}
+              {!isDm && (
+                <rect
+                  x="0"
+                  y="0"
+                  width="100%"
+                  height="100%"
+                  fill="rgba(0, 0, 0, 0.85)"
+                  mask="url(#fog-mask)"
+                />
+              )}
+              {/* DM preview of fog (semi-transparent) */}
+              {isDm && (
+                <rect
+                  x="0"
+                  y="0"
+                  width="100%"
+                  height="100%"
+                  fill="rgba(255, 200, 50, 0.15)"
+                  mask="url(#fog-mask)"
+                />
+              )}
+            </svg>
+          )}
+
+          {/* Fog region markers (DM only) */}
+          {isDm && fogEnabled && isFogMode && fogOfWar.map(region => (
+            <div
+              key={region.id}
+              className="absolute pointer-events-none"
+              style={{
+                left: `${region.x}%`,
+                top: `${region.y}%`,
+                width: `${region.radius * 2}px`,
+                height: `${region.radius * 2}px`,
+                transform: 'translate(-50%, -50%)',
+                border: `2px dashed ${region.revealed ? '#22c55e' : '#ef4444'}`,
+                borderRadius: '50%',
+                opacity: 0.5,
+              }}
+            />
+          ))}
         </div>
 
         {/* Placing pin indicator */}
@@ -432,6 +660,20 @@ export function InteractiveMap({
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="bg-purple-600/90 text-white px-4 py-2 rounded-lg shadow-lg text-sm">
               Click on the map to place a pin
+            </div>
+          </div>
+        )}
+
+        {/* Fog mode indicator */}
+        {isFogMode && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className={cn(
+              "px-4 py-2 rounded-lg shadow-lg text-sm",
+              isRevealMode
+                ? "bg-green-600/90 text-white"
+                : "bg-red-600/90 text-white"
+            )}>
+              Click on the map to {isRevealMode ? 'reveal' : 'hide'} an area
             </div>
           </div>
         )}
