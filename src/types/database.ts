@@ -354,6 +354,7 @@ export interface Database {
           date: string
           notes: string | null
           summary: string | null
+          dm_notes: string | null
           // Session workflow
           phase: 'prep' | 'live' | 'completed'
           prep_checklist: Json
@@ -373,6 +374,7 @@ export interface Database {
           date?: string
           notes?: string | null
           summary?: string | null
+          dm_notes?: string | null
           // Session workflow
           phase?: 'prep' | 'live' | 'completed'
           prep_checklist?: Json
@@ -392,6 +394,7 @@ export interface Database {
           date?: string
           notes?: string | null
           summary?: string | null
+          dm_notes?: string | null
           // Session workflow
           phase?: 'prep' | 'live' | 'completed'
           prep_checklist?: Json
