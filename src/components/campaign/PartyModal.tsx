@@ -124,9 +124,8 @@ export function PartyModal({
   }
 
   const handleInvite = async () => {
-    const identifier = inviteMethod === 'email' ? inviteForm.email : inviteForm.discordId
-    if (!identifier) {
-      toast.error(`Please enter ${inviteMethod === 'email' ? 'an email address' : 'a Discord username'}`)
+    if (!inviteForm.email) {
+      toast.error('Please enter an email address')
       return
     }
 
@@ -136,8 +135,7 @@ export function PartyModal({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: inviteMethod === 'email' ? inviteForm.email : undefined,
-          discordId: inviteMethod === 'discord' ? inviteForm.discordId : undefined,
+          email: inviteForm.email,
           role: inviteForm.role,
           characterId: inviteForm.characterId || undefined,
           permissions: inviteForm.permissions,
@@ -886,52 +884,34 @@ export function PartyModal({
                       Email
                     </span>
                   </button>
-                  <button
-                    onClick={() => setInviteMethod('discord')}
-                    className={cn(
-                      "p-3 rounded-lg border text-left transition-colors flex items-center gap-3",
-                      inviteMethod === 'discord'
-                        ? "bg-purple-500/10 border-purple-500/30"
-                        : "bg-white/[0.02] border-[--border] hover:border-purple-500/20"
-                    )}
+                  <div
+                    className="p-3 rounded-lg border bg-white/[0.01] border-[--border] flex items-center gap-3 opacity-50 cursor-not-allowed relative"
                   >
-                    <LinkIcon className={cn("w-5 h-5", inviteMethod === 'discord' ? "text-purple-400" : "text-gray-500")} />
-                    <span className={cn("font-medium text-sm", inviteMethod === 'discord' ? "text-white" : "text-gray-400")}>
-                      Discord
-                    </span>
-                  </button>
+                    <LinkIcon className="w-5 h-5 text-gray-500" />
+                    <div className="flex flex-col">
+                      <span className="font-medium text-sm text-gray-500">
+                        Discord
+                      </span>
+                      <span className="text-xs text-gray-600">Coming Soon</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Email or Discord Input based on selection */}
-              {inviteMethod === 'email' ? (
-                <div className="form-group">
-                  <label className="form-label">Email Address</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                    <Input
-                      type="email"
-                      placeholder="player@example.com"
-                      value={inviteForm.email}
-                      onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
-                      className="pl-10"
-                    />
-                  </div>
+              {/* Email Input */}
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <Input
+                    type="email"
+                    placeholder="player@example.com"
+                    value={inviteForm.email}
+                    onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                    className="pl-10"
+                  />
                 </div>
-              ) : (
-                <div className="form-group">
-                  <label className="form-label">Discord Username</label>
-                  <div className="relative">
-                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                    <Input
-                      placeholder="username"
-                      value={inviteForm.discordId}
-                      onChange={(e) => setInviteForm({ ...inviteForm, discordId: e.target.value })}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-              )}
+              </div>
 
               {/* Role Selection */}
               <div className="form-group">
@@ -1100,7 +1080,7 @@ export function PartyModal({
                 </button>
                 <button
                   onClick={handleInvite}
-                  disabled={saving || (inviteMethod === 'email' ? !inviteForm.email : !inviteForm.discordId)}
+                  disabled={saving || !inviteForm.email}
                   className="btn btn-primary flex-1"
                 >
                   {saving ? (

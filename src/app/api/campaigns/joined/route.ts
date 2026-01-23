@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 
 // GET - Get all campaigns the user has joined (but doesn't own)
@@ -12,8 +13,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Use admin client to bypass RLS - we've verified the user above
+    const adminClient = createAdminClient()
+
     // Get campaign memberships for this user
-    const { data: memberships, error: membershipError } = await supabase
+    const { data: memberships, error: membershipError } = await adminClient
       .from('campaign_members')
       .select(`
         id,
@@ -35,7 +39,7 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq('user_id', user.id)
-      .neq('status', 'removed')
+      .eq('status', 'active')
       .order('joined_at', { ascending: false, nullsFirst: false })
 
     if (membershipError) {
