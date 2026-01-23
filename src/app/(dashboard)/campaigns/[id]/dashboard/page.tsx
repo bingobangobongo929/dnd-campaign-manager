@@ -397,40 +397,24 @@ export default function CampaignDashboardPage() {
 
         {/* Dashboard Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Quick Actions - Different for players */}
+          {/* Quick Actions - Permission-aware */}
           <DashboardWidget
             title="Quick Actions"
             icon={Sparkles}
             className="lg:col-span-1"
           >
             <div className="grid grid-cols-3 gap-2">
-              {isPlayer ? (
+              {/* DM Actions */}
+              {isDm && (
                 <>
-                  <QuickAction
-                    icon={FileText}
-                    label="Add Notes"
-                    href={`/campaigns/${campaignId}/sessions`}
-                    variant="primary"
-                  />
-                  <QuickAction
-                    icon={Clock}
-                    label="Timeline"
-                    href={`/campaigns/${campaignId}/timeline`}
-                  />
-                  <QuickAction
-                    icon={BookOpen}
-                    label="Sessions"
-                    href={`/campaigns/${campaignId}/sessions`}
-                  />
-                </>
-              ) : (
-                <>
-                  <QuickAction
-                    icon={Plus}
-                    label="New Session"
-                    href={`/campaigns/${campaignId}/sessions`}
-                    variant="primary"
-                  />
+                  {can.addSession && (
+                    <QuickAction
+                      icon={Plus}
+                      label="New Session"
+                      href={`/campaigns/${campaignId}/sessions`}
+                      variant="primary"
+                    />
+                  )}
                   <QuickAction
                     icon={UsersRound}
                     label="Members"
@@ -450,59 +434,90 @@ export default function CampaignDashboardPage() {
                   )}
                 </>
               )}
-              <QuickAction
-                icon={Clock}
-                label="Timeline"
-                href={`/campaigns/${campaignId}/timeline`}
-              />
-              <QuickAction
-                icon={BookOpen}
-                label="Lore"
-                href={`/campaigns/${campaignId}/lore`}
-              />
-              <QuickAction
-                icon={Map}
-                label="Map"
-                href={`/campaigns/${campaignId}/map`}
-              />
+              {/* Player Actions */}
+              {!isDm && (
+                <>
+                  {can.addOwnSessionNotes && (
+                    <QuickAction
+                      icon={FileText}
+                      label="Add Notes"
+                      href={`/campaigns/${campaignId}/sessions`}
+                      variant="primary"
+                    />
+                  )}
+                  {can.viewSessions && (
+                    <QuickAction
+                      icon={BookOpen}
+                      label="Sessions"
+                      href={`/campaigns/${campaignId}/sessions`}
+                    />
+                  )}
+                </>
+              )}
+              {/* Shared Actions */}
+              {can.viewTimeline && (
+                <QuickAction
+                  icon={Clock}
+                  label="Timeline"
+                  href={`/campaigns/${campaignId}/timeline`}
+                />
+              )}
+              {can.viewLore && (
+                <QuickAction
+                  icon={BookOpen}
+                  label="Lore"
+                  href={`/campaigns/${campaignId}/lore`}
+                />
+              )}
+              {can.viewMaps && (
+                <QuickAction
+                  icon={Map}
+                  label="Map"
+                  href={`/campaigns/${campaignId}/map`}
+                />
+              )}
             </div>
           </DashboardWidget>
 
-          {/* Next Session */}
-          <DashboardWidget
-            title="Next Session"
-            icon={Calendar}
-            action={nextSession ? { label: 'View All', href: `/campaigns/${campaignId}/sessions` } : undefined}
-          >
-            {nextSession ? (
-              <Link
-                href={`/campaigns/${campaignId}/sessions/${nextSession.id}`}
-                className="block p-3 bg-purple-600/10 border border-purple-500/20 rounded-lg hover:bg-purple-600/20 transition-colors"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-purple-400 font-medium">Session {nextSession.session_number}</span>
-                  <span className="text-xs text-gray-500">{new Date(nextSession.date).toLocaleDateString()}</span>
-                </div>
-                <p className="text-white font-medium text-sm">
-                  {nextSession.title || `Session ${nextSession.session_number}`}
-                </p>
-                {nextSession.summary && (
-                  <p className="text-gray-400 text-xs mt-1 line-clamp-2">{nextSession.summary}</p>
-                )}
-              </Link>
-            ) : (
-              <div className="text-center py-6">
-                <Calendar className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                <p className="text-gray-500 text-sm">No sessions yet</p>
+          {/* Next Session - only if can view sessions */}
+          {can.viewSessions && (
+            <DashboardWidget
+              title="Next Session"
+              icon={Calendar}
+              action={nextSession ? { label: 'View All', href: `/campaigns/${campaignId}/sessions` } : undefined}
+            >
+              {nextSession ? (
                 <Link
-                  href={`/campaigns/${campaignId}/sessions`}
-                  className="text-purple-400 text-sm hover:underline mt-2 inline-block"
+                  href={`/campaigns/${campaignId}/sessions/${nextSession.id}`}
+                  className="block p-3 bg-purple-600/10 border border-purple-500/20 rounded-lg hover:bg-purple-600/20 transition-colors"
                 >
-                  Create your first session
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-purple-400 font-medium">Session {nextSession.session_number}</span>
+                    <span className="text-xs text-gray-500">{new Date(nextSession.date).toLocaleDateString()}</span>
+                  </div>
+                  <p className="text-white font-medium text-sm">
+                    {nextSession.title || `Session ${nextSession.session_number}`}
+                  </p>
+                  {nextSession.summary && (
+                    <p className="text-gray-400 text-xs mt-1 line-clamp-2">{nextSession.summary}</p>
+                  )}
                 </Link>
-              </div>
-            )}
-          </DashboardWidget>
+              ) : (
+                <div className="text-center py-6">
+                  <Calendar className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                  <p className="text-gray-500 text-sm">No sessions yet</p>
+                  {isDm && (
+                    <Link
+                      href={`/campaigns/${campaignId}/sessions`}
+                      className="text-purple-400 text-sm hover:underline mt-2 inline-block"
+                    >
+                      Create your first session
+                    </Link>
+                  )}
+                </div>
+              )}
+            </DashboardWidget>
+          )}
 
           {/* Campaign Health / Campaign Stats */}
           <DashboardWidget
@@ -553,118 +568,130 @@ export default function CampaignDashboardPage() {
             </div>
           </DashboardWidget>
 
-          {/* Party Overview */}
-          <DashboardWidget
-            title="Party"
-            icon={Users}
-            action={{ label: 'View All', href: `/campaigns/${campaignId}/canvas` }}
-            className="lg:col-span-2"
-          >
-            {pcCharacters.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {pcCharacters.slice(0, 6).map(character => (
-                  <PartyMemberCard key={character.id} character={character} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <Users className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                <p className="text-gray-500 text-sm">No player characters yet</p>
-                <Link
-                  href={`/campaigns/${campaignId}/canvas`}
-                  className="text-purple-400 text-sm hover:underline mt-2 inline-block"
-                >
-                  Add your first PC
-                </Link>
-              </div>
-            )}
-          </DashboardWidget>
+          {/* Party Overview - only if can view party */}
+          {can.viewParty && (
+            <DashboardWidget
+              title="Party"
+              icon={Users}
+              action={{ label: 'View All', href: `/campaigns/${campaignId}/canvas` }}
+              className="lg:col-span-2"
+            >
+              {pcCharacters.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {pcCharacters.slice(0, 6).map(character => (
+                    <PartyMemberCard key={character.id} character={character} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <Users className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                  <p className="text-gray-500 text-sm">No player characters yet</p>
+                  {isDm && (
+                    <Link
+                      href={`/campaigns/${campaignId}/canvas`}
+                      className="text-purple-400 text-sm hover:underline mt-2 inline-block"
+                    >
+                      Add your first PC
+                    </Link>
+                  )}
+                </div>
+              )}
+            </DashboardWidget>
+          )}
 
-          {/* Recent Timeline */}
-          <DashboardWidget
-            title="Recent Events"
-            icon={Clock}
-            action={{ label: 'View Timeline', href: `/campaigns/${campaignId}/timeline` }}
-          >
-            {timelineEvents.length > 0 ? (
-              <div className="space-y-3">
-                {timelineEvents.slice(0, 4).map(event => (
-                  <div key={event.id} className="flex items-start gap-3">
-                    <div className={cn(
-                      "w-2 h-2 rounded-full mt-1.5",
-                      event.is_major ? "bg-purple-500" : "bg-gray-600"
-                    )} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-medium truncate">{event.title}</p>
-                      <p className="text-gray-500 text-xs">
-                        {new Date(event.event_date).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <Clock className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                <p className="text-gray-500 text-sm">No timeline events yet</p>
-                <Link
-                  href={`/campaigns/${campaignId}/timeline`}
-                  className="text-purple-400 text-sm hover:underline mt-2 inline-block"
-                >
-                  Add timeline events
-                </Link>
-              </div>
-            )}
-          </DashboardWidget>
-
-          {/* Recent Sessions */}
-          <DashboardWidget
-            title="Recent Sessions"
-            icon={BookOpen}
-            action={{ label: 'View All', href: `/campaigns/${campaignId}/sessions` }}
-            className="lg:col-span-2"
-          >
-            {sessions.length > 0 ? (
-              <div className="space-y-2">
-                {sessions.slice(0, 4).map(session => (
-                  <Link
-                    key={session.id}
-                    href={`/campaigns/${campaignId}/sessions/${session.id}`}
-                    className="flex items-center justify-between p-3 bg-white/[0.02] rounded-lg border border-[--border] hover:bg-white/[0.04] transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-purple-600/20 flex items-center justify-center text-purple-400 text-sm font-medium">
-                        {session.session_number}
-                      </div>
-                      <div>
-                        <p className="text-white text-sm font-medium">
-                          {session.title || `Session ${session.session_number}`}
-                        </p>
+          {/* Recent Timeline - only if can view timeline */}
+          {can.viewTimeline && (
+            <DashboardWidget
+              title="Recent Events"
+              icon={Clock}
+              action={{ label: 'View Timeline', href: `/campaigns/${campaignId}/timeline` }}
+            >
+              {timelineEvents.length > 0 ? (
+                <div className="space-y-3">
+                  {timelineEvents.slice(0, 4).map(event => (
+                    <div key={event.id} className="flex items-start gap-3">
+                      <div className={cn(
+                        "w-2 h-2 rounded-full mt-1.5",
+                        event.is_major ? "bg-purple-500" : "bg-gray-600"
+                      )} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-medium truncate">{event.title}</p>
                         <p className="text-gray-500 text-xs">
-                          {new Date(session.date).toLocaleDateString()}
+                          {new Date(event.event_date).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-gray-600" />
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <BookOpen className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                <p className="text-gray-500 text-sm">No sessions recorded yet</p>
-                <Link
-                  href={`/campaigns/${campaignId}/sessions`}
-                  className="text-purple-400 text-sm hover:underline mt-2 inline-block"
-                >
-                  Record your first session
-                </Link>
-              </div>
-            )}
-          </DashboardWidget>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <Clock className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                  <p className="text-gray-500 text-sm">No timeline events yet</p>
+                  {isDm && (
+                    <Link
+                      href={`/campaigns/${campaignId}/timeline`}
+                      className="text-purple-400 text-sm hover:underline mt-2 inline-block"
+                    >
+                      Add timeline events
+                    </Link>
+                  )}
+                </div>
+              )}
+            </DashboardWidget>
+          )}
 
-          {/* Player Notes (if any) */}
-          {playerNotes.length > 0 && (
+          {/* Recent Sessions - only if can view sessions */}
+          {can.viewSessions && (
+            <DashboardWidget
+              title="Recent Sessions"
+              icon={BookOpen}
+              action={{ label: 'View All', href: `/campaigns/${campaignId}/sessions` }}
+              className="lg:col-span-2"
+            >
+              {sessions.length > 0 ? (
+                <div className="space-y-2">
+                  {sessions.slice(0, 4).map(session => (
+                    <Link
+                      key={session.id}
+                      href={`/campaigns/${campaignId}/sessions/${session.id}`}
+                      className="flex items-center justify-between p-3 bg-white/[0.02] rounded-lg border border-[--border] hover:bg-white/[0.04] transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-purple-600/20 flex items-center justify-center text-purple-400 text-sm font-medium">
+                          {session.session_number}
+                        </div>
+                        <div>
+                          <p className="text-white text-sm font-medium">
+                            {session.title || `Session ${session.session_number}`}
+                          </p>
+                          <p className="text-gray-500 text-xs">
+                            {new Date(session.date).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-600" />
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <BookOpen className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                  <p className="text-gray-500 text-sm">No sessions recorded yet</p>
+                  {isDm && (
+                    <Link
+                      href={`/campaigns/${campaignId}/sessions`}
+                      className="text-purple-400 text-sm hover:underline mt-2 inline-block"
+                    >
+                      Record your first session
+                    </Link>
+                  )}
+                </div>
+              )}
+            </DashboardWidget>
+          )}
+
+          {/* Player Notes (if any and user can view recaps/notes) */}
+          {playerNotes.length > 0 && (isDm || can.viewRecaps) && (
             <DashboardWidget
               title="Player Notes"
               icon={FileText}
