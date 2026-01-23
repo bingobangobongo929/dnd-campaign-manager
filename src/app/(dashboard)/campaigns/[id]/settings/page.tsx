@@ -68,10 +68,10 @@ function SettingsSection({
 
   return (
     <div className={cn(
-      "border rounded-xl overflow-hidden",
+      "rounded-xl overflow-hidden",
       variant === 'danger'
-        ? "border-red-500/30 bg-red-500/5"
-        : "border-[--border] bg-[#0a0a0f]"
+        ? "border border-red-500/30 bg-red-500/5"
+        : "border border-white/[0.08] bg-[#0a0a0f]"
     )}>
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
@@ -106,7 +106,7 @@ function SettingsSection({
         )}
       </button>
       {!isCollapsed && (
-        <div className="px-6 pb-6 border-t border-[--border]">
+        <div className="px-6 pb-6 border-t border-white/[0.08]">
           {children}
         </div>
       )}
@@ -161,7 +161,7 @@ function ShareLinkRow({
       "flex items-center justify-between p-4 rounded-lg border",
       isExpired
         ? "bg-gray-800/30 border-gray-700 opacity-60"
-        : "bg-white/[0.02] border-[--border]"
+        : "bg-white/[0.02] border-white/[0.08]"
     )}>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -227,7 +227,7 @@ function ChecklistItemEditor({
   onDelete: () => void
 }) {
   return (
-    <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-[--border]">
+    <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.08]">
       <input
         type="checkbox"
         checked={item.default_checked}
@@ -548,7 +548,7 @@ export default function CampaignSettingsPage() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2 bg-[#0a0a0f] border border-[--border] rounded-lg text-white focus:outline-none focus:border-purple-500"
+                  className="w-full px-4 py-2 bg-[#0a0a0f] border border-white/[0.08] rounded-lg text-white focus:outline-none focus:border-purple-500"
                   placeholder="Enter campaign name..."
                 />
               </FormField>
@@ -559,7 +559,7 @@ export default function CampaignSettingsPage() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
-                  className="w-full px-4 py-2 bg-[#0a0a0f] border border-[--border] rounded-lg text-white focus:outline-none focus:border-purple-500 resize-none"
+                  className="w-full px-4 py-2 bg-[#0a0a0f] border border-white/[0.08] rounded-lg text-white focus:outline-none focus:border-purple-500 resize-none"
                   placeholder="Describe your campaign..."
                 />
               </FormField>
@@ -570,7 +570,7 @@ export default function CampaignSettingsPage() {
                   type="text"
                   value={gameSystem}
                   onChange={(e) => setGameSystem(e.target.value)}
-                  className="w-full px-4 py-2 bg-[#0a0a0f] border border-[--border] rounded-lg text-white focus:outline-none focus:border-purple-500"
+                  className="w-full px-4 py-2 bg-[#0a0a0f] border border-white/[0.08] rounded-lg text-white focus:outline-none focus:border-purple-500"
                   placeholder="e.g., D&D 5e, Pathfinder 2e..."
                 />
               </FormField>
@@ -580,7 +580,7 @@ export default function CampaignSettingsPage() {
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as Campaign['status'])}
-                  className="w-full px-4 py-2 bg-[#0a0a0f] border border-[--border] rounded-lg text-white focus:outline-none focus:border-purple-500"
+                  className="w-full px-4 py-2 bg-[#0a0a0f] border border-white/[0.08] rounded-lg text-white focus:outline-none focus:border-purple-500"
                 >
                   <option value="active">Active</option>
                   <option value="hiatus">On Hiatus</option>
@@ -591,7 +591,7 @@ export default function CampaignSettingsPage() {
 
               {/* Save Button */}
               {hasUnsavedChanges && (
-                <div className="flex justify-end pt-4 border-t border-[--border]">
+                <div className="flex justify-end pt-4 border-t border-white/[0.08]">
                   <button
                     onClick={saveGeneralSettings}
                     disabled={saving}
@@ -652,7 +652,7 @@ export default function CampaignSettingsPage() {
                   ].map(section => (
                     <label
                       key={section.id}
-                      className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-[--border] cursor-pointer hover:bg-white/[0.04] transition-colors"
+                      className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.08] cursor-pointer hover:bg-white/[0.04] transition-colors"
                     >
                       <input
                         type="checkbox"
@@ -685,7 +685,7 @@ export default function CampaignSettingsPage() {
                   ))}
                   <button
                     onClick={addChecklistItem}
-                    className="flex items-center gap-2 w-full p-3 text-gray-400 hover:text-white border border-dashed border-[--border] rounded-lg hover:bg-white/[0.02] transition-colors"
+                    className="flex items-center gap-2 w-full p-3 text-gray-400 hover:text-white border border-dashed border-white/[0.08] rounded-lg hover:bg-white/[0.02] transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                     <span className="text-sm">Add checklist item</span>
@@ -694,7 +694,7 @@ export default function CampaignSettingsPage() {
               </FormField>
 
               {/* Save Button */}
-              <div className="flex justify-end pt-4 border-t border-[--border]">
+              <div className="flex justify-end pt-4 border-t border-white/[0.08]">
                 <button
                   onClick={saveSessionDefaults}
                   disabled={saving}
@@ -755,7 +755,7 @@ export default function CampaignSettingsPage() {
             description="Connect external services"
           >
             <div className="pt-6">
-              <div className="flex items-center justify-between p-4 bg-white/[0.02] rounded-lg border border-[--border]">
+              <div className="flex items-center justify-between p-4 bg-white/[0.02] rounded-lg border border-white/[0.08]">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-[#5865F2]/20 flex items-center justify-center">
                     <svg className="w-6 h-6 text-[#5865F2]" viewBox="0 0 24 24" fill="currentColor">
@@ -888,7 +888,7 @@ export default function CampaignSettingsPage() {
                 type="text"
                 value={deleteConfirmation}
                 onChange={(e) => setDeleteConfirmation(e.target.value)}
-                className="w-full px-4 py-2 bg-[#0a0a0f] border border-[--border] rounded-lg text-white focus:outline-none focus:border-red-500"
+                className="w-full px-4 py-2 bg-[#0a0a0f] border border-white/[0.08] rounded-lg text-white focus:outline-none focus:border-red-500"
                 placeholder="Campaign name..."
               />
             </div>

@@ -46,8 +46,8 @@ function DashboardWidget({
   action?: { label: string; href: string } | { label: string; onClick: () => void }
 }) {
   return (
-    <div className={cn("bg-[#0a0a0f] border border-[--border] rounded-xl overflow-hidden", className)}>
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[--border]">
+    <div className={cn("bg-[#0a0a0f] border border-white/[0.08] rounded-xl overflow-hidden", className)}>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
         <div className="flex items-center gap-2">
           <Icon className="w-4 h-4 text-[--arcane-purple]" />
           <h3 className="font-medium text-white text-sm">{title}</h3>
@@ -91,7 +91,7 @@ function QuickAction({
     "flex flex-col items-center gap-2 p-4 rounded-lg transition-colors",
     variant === 'primary'
       ? "bg-purple-600/20 border border-purple-500/30 hover:bg-purple-600/30 text-purple-300"
-      : "bg-white/[0.02] border border-[--border] hover:bg-white/[0.05] text-gray-300"
+      : "bg-white/[0.02] border border-white/[0.08] hover:bg-white/[0.05] text-gray-300"
   )
 
   if (href) {
@@ -114,7 +114,7 @@ function QuickAction({
 // Character Card for Party Overview
 function PartyMemberCard({ character }: { character: Character }) {
   return (
-    <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-[--border]">
+    <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.08]">
       {character.image_url ? (
         <Image
           src={character.image_url}
@@ -654,7 +654,7 @@ export default function CampaignDashboardPage() {
                     <Link
                       key={session.id}
                       href={`/campaigns/${campaignId}/sessions/${session.id}`}
-                      className="flex items-center justify-between p-3 bg-white/[0.02] rounded-lg border border-[--border] hover:bg-white/[0.04] transition-colors"
+                      className="flex items-center justify-between p-3 bg-white/[0.02] rounded-lg border border-white/[0.08] hover:bg-white/[0.04] transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-purple-600/20 flex items-center justify-center text-purple-400 text-sm font-medium">
@@ -701,7 +701,7 @@ export default function CampaignDashboardPage() {
                 {playerNotes.map(note => (
                   <div
                     key={note.id}
-                    className="p-3 bg-white/[0.02] rounded-lg border border-[--border]"
+                    className="p-3 bg-white/[0.02] rounded-lg border border-white/[0.08]"
                   >
                     <p className="text-gray-300 text-sm line-clamp-3">{note.notes}</p>
                     <p className="text-gray-500 text-xs mt-2">
