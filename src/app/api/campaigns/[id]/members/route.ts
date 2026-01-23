@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { nanoid } from 'nanoid'
 import type { CampaignMemberInsert, CampaignMemberRole, MemberPermissions } from '@/types/database'
@@ -162,25 +161,10 @@ export async function POST(
     // Use provided permissions or default for role
     const memberPermissions = permissions || DEFAULT_PERMISSIONS[role]
 
-    // Check if email already has an account
-    let existingUserId: string | null = null
-    if (email) {
-      try {
-        const adminClient = createAdminClient()
-        const { data: existingUser } = await adminClient.auth.admin.getUserByEmail(email.toLowerCase())
-        if (existingUser?.user) {
-          existingUserId = existingUser.user.id
-        }
-      } catch (err) {
-        // User doesn't exist or error - continue with email-only invite
-        console.log('No existing user found for email:', email)
-      }
-    }
-
     // Create the member record
+    // Note: user_id will be set when the invited user accepts the invite
     const memberData: CampaignMemberInsert = {
       campaign_id: campaignId,
-      user_id: existingUserId, // Link to existing user if found
       email: email?.toLowerCase() || null,
       discord_id: discordId || null,
       role,
