@@ -28,6 +28,18 @@ import type { Campaign, ContentSave } from '@/types/database'
 import { CampaignsPageMobile } from './page.mobile'
 import { ContentModeToggle, TemplateStateBadge, type ContentModeTab } from '@/components/templates'
 
+// Helper to format role for display
+function formatRoleLabel(role: string): string {
+  switch (role) {
+    case 'owner': return 'Owner'
+    case 'co_dm': return 'Co-DM'
+    case 'player': return 'Player'
+    case 'contributor': return 'Contributor'
+    case 'guest': return 'Guest'
+    default: return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+  }
+}
+
 interface TemplateSnapshot {
   id: string
   content_id: string
@@ -415,7 +427,7 @@ export default function CampaignsPage() {
                             ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
                             : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                         }`}>
-                          {membership.status === 'pending' ? 'Pending Invite' : membership.role.replace('_', ' ')}
+                          {membership.status === 'pending' ? 'Pending Invite' : formatRoleLabel(membership.role)}
                         </span>
                       </div>
                       <div className="absolute top-3 right-3">
