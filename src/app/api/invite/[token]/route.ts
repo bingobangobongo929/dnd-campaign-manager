@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 
 // GET - Get invite details
@@ -8,10 +9,12 @@ export async function GET(
 ) {
   try {
     const { token } = await params
-    const supabase = await createClient()
+
+    // Use admin client to bypass RLS - pending invites have user_id=null
+    const adminClient = createAdminClient()
 
     // Find the invite
-    const { data: invite, error } = await supabase
+    const { data: invite, error } = await adminClient
       .from('campaign_members')
       .select(`
         *,
@@ -48,6 +51,7 @@ export async function POST(
   try {
     const { token } = await params
     const supabase = await createClient()
+    const adminClient = createAdminClient()
 
     // Verify user is authenticated
     const { data: { user } } = await supabase.auth.getUser()
@@ -55,8 +59,8 @@ export async function POST(
       return NextResponse.json({ error: 'Please sign in to accept this invite' }, { status: 401 })
     }
 
-    // Find the invite
-    const { data: invite, error: findError } = await supabase
+    // Find the invite using admin client (pending invites have user_id=null)
+    const { data: invite, error: findError } = await adminClient
       .from('campaign_members')
       .select('*, campaign:campaigns(id, name)')
       .eq('invite_token', token)
@@ -77,7 +81,7 @@ export async function POST(
     // TODO: Verify Discord ID if that was used for invite
 
     // Check if user is already a member
-    const { data: existingMember } = await supabase
+    const { data: existingMember } = await adminClient
       .from('campaign_members')
       .select('id')
       .eq('campaign_id', invite.campaign_id)
@@ -86,7 +90,7 @@ export async function POST(
 
     if (existingMember) {
       // Delete the pending invite and return
-      await supabase
+      await adminClient
         .from('campaign_members')
         .delete()
         .eq('id', invite.id)
@@ -98,7 +102,7 @@ export async function POST(
     }
 
     // Accept the invite
-    const { data: updatedMember, error: updateError } = await supabase
+    const { data: updatedMember, error: updateError } = await adminClient
       .from('campaign_members')
       .update({
         user_id: user.id,
@@ -134,10 +138,10 @@ export async function DELETE(
 ) {
   try {
     const { token } = await params
-    const supabase = await createClient()
+    const adminClient = createAdminClient()
 
-    // Find and delete the invite
-    const { data: invite, error: findError } = await supabase
+    // Find the invite using admin client (pending invites have user_id=null)
+    const { data: invite, error: findError } = await adminClient
       .from('campaign_members')
       .select('id')
       .eq('invite_token', token)
@@ -149,7 +153,7 @@ export async function DELETE(
     }
 
     // Mark as declined
-    const { error } = await supabase
+    const { error } = await adminClient
       .from('campaign_members')
       .update({
         status: 'declined',
