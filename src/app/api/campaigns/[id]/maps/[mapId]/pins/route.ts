@@ -123,6 +123,10 @@ export async function POST(
       color,
       linkedEntityType,
       linkedEntityId,
+      linkedMapId,
+      pinShape,
+      pinSize,
+      customIconUrl,
       visibility = 'public',
       sortOrder = 0,
     } = body as {
@@ -134,6 +138,10 @@ export async function POST(
       color?: string
       linkedEntityType?: string
       linkedEntityId?: string
+      linkedMapId?: string
+      pinShape?: 'marker' | 'circle' | 'square' | 'diamond' | 'star' | 'flag' | 'custom'
+      pinSize?: 'small' | 'medium' | 'large'
+      customIconUrl?: string
       visibility?: 'public' | 'party' | 'dm_only'
       sortOrder?: number
     }
@@ -153,6 +161,10 @@ export async function POST(
       color: color || '#9333ea',
       linked_entity_type: linkedEntityType || null,
       linked_entity_id: linkedEntityId || null,
+      linked_map_id: linkedMapId || null,
+      pin_shape: pinShape || 'marker',
+      pin_size: pinSize || 'medium',
+      custom_icon_url: customIconUrl || null,
       visibility,
       sort_order: sortOrder,
     }
@@ -226,6 +238,10 @@ export async function PATCH(
       color?: string
       linkedEntityType?: string
       linkedEntityId?: string
+      linkedMapId?: string
+      pinShape?: 'marker' | 'circle' | 'square' | 'diamond' | 'star' | 'flag' | 'custom'
+      pinSize?: 'small' | 'medium' | 'large'
+      customIconUrl?: string
       visibility?: 'public' | 'party' | 'dm_only'
       sortOrder?: number
     }
@@ -255,6 +271,10 @@ export async function PATCH(
     if (updates.color !== undefined) updateData.color = updates.color
     if (updates.linkedEntityType !== undefined) updateData.linked_entity_type = updates.linkedEntityType
     if (updates.linkedEntityId !== undefined) updateData.linked_entity_id = updates.linkedEntityId
+    if (updates.linkedMapId !== undefined) updateData.linked_map_id = updates.linkedMapId
+    if (updates.pinShape !== undefined) updateData.pin_shape = updates.pinShape
+    if (updates.pinSize !== undefined) updateData.pin_size = updates.pinSize
+    if (updates.customIconUrl !== undefined) updateData.custom_icon_url = updates.customIconUrl
     if (updates.visibility !== undefined) updateData.visibility = updates.visibility
     if (updates.sortOrder !== undefined) updateData.sort_order = updates.sortOrder
 

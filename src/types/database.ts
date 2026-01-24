@@ -542,9 +542,21 @@ export interface Database {
           campaign_id: string
           image_url: string
           name: string | null
+          description: string | null
           // Multiloop upgrade: interactive maps
           fog_of_war: Json
           layers: Json
+          // Enhanced maps: linking, terrain, grid
+          parent_map_id: string | null
+          map_type: 'world' | 'region' | 'city' | 'dungeon' | 'building' | 'encounter' | 'sketch'
+          grid_enabled: boolean
+          grid_size: number
+          grid_color: string
+          scale_unit: 'miles' | 'km' | 'feet' | 'meters'
+          scale_value: number | null
+          template_id: string | null
+          terrain_data: Json
+          stamps: Json
           created_at: string
         }
         Insert: {
@@ -552,9 +564,21 @@ export interface Database {
           campaign_id: string
           image_url: string
           name?: string | null
+          description?: string | null
           // Multiloop upgrade: interactive maps
           fog_of_war?: Json
           layers?: Json
+          // Enhanced maps: linking, terrain, grid
+          parent_map_id?: string | null
+          map_type?: 'world' | 'region' | 'city' | 'dungeon' | 'building' | 'encounter' | 'sketch'
+          grid_enabled?: boolean
+          grid_size?: number
+          grid_color?: string
+          scale_unit?: 'miles' | 'km' | 'feet' | 'meters'
+          scale_value?: number | null
+          template_id?: string | null
+          terrain_data?: Json
+          stamps?: Json
           created_at?: string
         }
         Update: {
@@ -562,9 +586,21 @@ export interface Database {
           campaign_id?: string
           image_url?: string
           name?: string | null
+          description?: string | null
           // Multiloop upgrade: interactive maps
           fog_of_war?: Json
           layers?: Json
+          // Enhanced maps: linking, terrain, grid
+          parent_map_id?: string | null
+          map_type?: 'world' | 'region' | 'city' | 'dungeon' | 'building' | 'encounter' | 'sketch'
+          grid_enabled?: boolean
+          grid_size?: number
+          grid_color?: string
+          scale_unit?: 'miles' | 'km' | 'feet' | 'meters'
+          scale_value?: number | null
+          template_id?: string | null
+          terrain_data?: Json
+          stamps?: Json
           created_at?: string
         }
       }
@@ -3082,6 +3118,11 @@ export interface Database {
           linked_entity_id: string | null
           visibility: 'public' | 'party' | 'dm_only'
           sort_order: number
+          // Enhanced: map linking and pin shapes
+          linked_map_id: string | null
+          pin_shape: 'marker' | 'circle' | 'square' | 'diamond' | 'star' | 'flag' | 'custom'
+          pin_size: 'small' | 'medium' | 'large'
+          custom_icon_url: string | null
           created_at: string
         }
         Insert: {
@@ -3098,6 +3139,11 @@ export interface Database {
           linked_entity_id?: string | null
           visibility?: 'public' | 'party' | 'dm_only'
           sort_order?: number
+          // Enhanced: map linking and pin shapes
+          linked_map_id?: string | null
+          pin_shape?: 'marker' | 'circle' | 'square' | 'diamond' | 'star' | 'flag' | 'custom'
+          pin_size?: 'small' | 'medium' | 'large'
+          custom_icon_url?: string | null
           created_at?: string
         }
         Update: {
@@ -3114,6 +3160,11 @@ export interface Database {
           linked_entity_id?: string | null
           visibility?: 'public' | 'party' | 'dm_only'
           sort_order?: number
+          // Enhanced: map linking and pin shapes
+          linked_map_id?: string | null
+          pin_shape?: 'marker' | 'circle' | 'square' | 'diamond' | 'star' | 'flag' | 'custom'
+          pin_size?: 'small' | 'medium' | 'large'
+          custom_icon_url?: string | null
           created_at?: string
         }
       }
@@ -3141,6 +3192,171 @@ export interface Database {
           layout?: Json
           created_at?: string
           updated_at?: string
+        }
+      }
+      map_drawings: {
+        Row: {
+          id: string
+          map_id: string
+          drawing_type: 'freehand' | 'line' | 'rectangle' | 'circle' | 'polygon' | 'text' | 'arrow'
+          points: Json
+          x: number | null
+          y: number | null
+          width: number | null
+          height: number | null
+          radius: number | null
+          stroke_color: string
+          stroke_width: number
+          fill_color: string | null
+          fill_opacity: number
+          text_content: string | null
+          font_size: number
+          font_family: string
+          layer_index: number
+          visibility: 'dm_only' | 'party' | 'public'
+          locked: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          map_id: string
+          drawing_type: 'freehand' | 'line' | 'rectangle' | 'circle' | 'polygon' | 'text' | 'arrow'
+          points?: Json
+          x?: number | null
+          y?: number | null
+          width?: number | null
+          height?: number | null
+          radius?: number | null
+          stroke_color?: string
+          stroke_width?: number
+          fill_color?: string | null
+          fill_opacity?: number
+          text_content?: string | null
+          font_size?: number
+          font_family?: string
+          layer_index?: number
+          visibility?: 'dm_only' | 'party' | 'public'
+          locked?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          map_id?: string
+          drawing_type?: 'freehand' | 'line' | 'rectangle' | 'circle' | 'polygon' | 'text' | 'arrow'
+          points?: Json
+          x?: number | null
+          y?: number | null
+          width?: number | null
+          height?: number | null
+          radius?: number | null
+          stroke_color?: string
+          stroke_width?: number
+          fill_color?: string | null
+          fill_opacity?: number
+          text_content?: string | null
+          font_size?: number
+          font_family?: string
+          layer_index?: number
+          visibility?: 'dm_only' | 'party' | 'public'
+          locked?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      map_templates: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          category: 'world' | 'region' | 'city' | 'dungeon' | 'building' | 'encounter' | 'custom'
+          thumbnail_url: string | null
+          template_data: Json
+          user_id: string | null
+          is_system: boolean
+          is_public: boolean
+          use_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          category: 'world' | 'region' | 'city' | 'dungeon' | 'building' | 'encounter' | 'custom'
+          thumbnail_url?: string | null
+          template_data?: Json
+          user_id?: string | null
+          is_system?: boolean
+          is_public?: boolean
+          use_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          category?: 'world' | 'region' | 'city' | 'dungeon' | 'building' | 'encounter' | 'custom'
+          thumbnail_url?: string | null
+          template_data?: Json
+          user_id?: string | null
+          is_system?: boolean
+          is_public?: boolean
+          use_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      map_assets: {
+        Row: {
+          id: string
+          name: string
+          category: 'terrain' | 'building' | 'nature' | 'icon' | 'decoration' | 'people' | 'creature' | 'effect'
+          subcategory: string | null
+          image_url: string
+          thumbnail_url: string | null
+          svg_data: string | null
+          default_width: number
+          default_height: number
+          tags: string[]
+          pack_name: string | null
+          is_premium: boolean
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          category: 'terrain' | 'building' | 'nature' | 'icon' | 'decoration' | 'people' | 'creature' | 'effect'
+          subcategory?: string | null
+          image_url: string
+          thumbnail_url?: string | null
+          svg_data?: string | null
+          default_width?: number
+          default_height?: number
+          tags?: string[]
+          pack_name?: string | null
+          is_premium?: boolean
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          category?: 'terrain' | 'building' | 'nature' | 'icon' | 'decoration' | 'people' | 'creature' | 'effect'
+          subcategory?: string | null
+          image_url?: string
+          thumbnail_url?: string | null
+          svg_data?: string | null
+          default_width?: number
+          default_height?: number
+          tags?: string[]
+          pack_name?: string | null
+          is_premium?: boolean
+          sort_order?: number
+          created_at?: string
         }
       }
       oneshot_npcs: {
@@ -3944,6 +4160,30 @@ export type MapPin = Database['public']['Tables']['map_pins']['Row']
 export type MapPinInsert = Database['public']['Tables']['map_pins']['Insert']
 export type MapPinUpdate = Database['public']['Tables']['map_pins']['Update']
 export type MapType = 'campaign' | 'oneshot'
+export type PinShape = 'marker' | 'circle' | 'square' | 'diamond' | 'star' | 'flag' | 'custom'
+export type PinSize = 'small' | 'medium' | 'large'
+
+// Map drawings (freehand, shapes, text annotations)
+export type MapDrawing = Database['public']['Tables']['map_drawings']['Row']
+export type MapDrawingInsert = Database['public']['Tables']['map_drawings']['Insert']
+export type MapDrawingUpdate = Database['public']['Tables']['map_drawings']['Update']
+export type DrawingType = 'freehand' | 'line' | 'rectangle' | 'circle' | 'polygon' | 'text' | 'arrow'
+
+// Map templates
+export type MapTemplate = Database['public']['Tables']['map_templates']['Row']
+export type MapTemplateInsert = Database['public']['Tables']['map_templates']['Insert']
+export type MapTemplateUpdate = Database['public']['Tables']['map_templates']['Update']
+export type MapTemplateCategory = 'world' | 'region' | 'city' | 'dungeon' | 'building' | 'encounter' | 'custom'
+
+// Map assets (stamps and terrain)
+export type MapAsset = Database['public']['Tables']['map_assets']['Row']
+export type MapAssetInsert = Database['public']['Tables']['map_assets']['Insert']
+export type MapAssetUpdate = Database['public']['Tables']['map_assets']['Update']
+export type AssetCategory = 'terrain' | 'building' | 'nature' | 'icon' | 'decoration' | 'people' | 'creature' | 'effect'
+
+// World map type enums
+export type WorldMapType = 'world' | 'region' | 'city' | 'dungeon' | 'building' | 'encounter' | 'sketch'
+export type ScaleUnit = 'miles' | 'km' | 'feet' | 'meters'
 
 // Dashboard layouts
 export type DashboardLayout = Database['public']['Tables']['dashboard_layouts']['Row']

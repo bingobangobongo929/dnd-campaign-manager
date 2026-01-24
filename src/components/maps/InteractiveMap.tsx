@@ -20,6 +20,8 @@ import {
   Move,
   Cloud,
   CircleDot,
+  ExternalLink,
+  Layers,
 } from 'lucide-react'
 import { Modal, Input } from '@/components/ui'
 import { toast } from 'sonner'
@@ -506,6 +508,7 @@ export function InteractiveMap({
           {/* Pins */}
           {pins.map(pin => {
             const VisIcon = getVisibilityIcon(pin.visibility || 'public')
+            const hasLinkedMap = !!pin.linked_map_id
             return (
               <div
                 key={pin.id}
@@ -522,7 +525,10 @@ export function InteractiveMap({
               >
                 {/* Pin marker */}
                 <div
-                  className="relative cursor-pointer"
+                  className={cn(
+                    "relative cursor-pointer transition-transform",
+                    hasLinkedMap && "hover:scale-110"
+                  )}
                   style={{ color: pin.color || '#9333ea' }}
                 >
                   <MapPin
@@ -532,9 +538,19 @@ export function InteractiveMap({
                     stroke="#000"
                   />
 
+                  {/* Linked map indicator */}
+                  {hasLinkedMap && (
+                    <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center ring-2 ring-white/50">
+                      <Layers className="w-2.5 h-2.5 text-white" />
+                    </div>
+                  )}
+
                   {/* Visibility indicator */}
                   {isDm && pin.visibility !== 'public' && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-black/80 flex items-center justify-center">
+                    <div className={cn(
+                      "absolute w-4 h-4 rounded-full bg-black/80 flex items-center justify-center",
+                      hasLinkedMap ? "-top-1 -right-1" : "-top-1 -right-1"
+                    )}>
                       <VisIcon className="w-2.5 h-2.5 text-white" />
                     </div>
                   )}
@@ -547,6 +563,12 @@ export function InteractiveMap({
                     {pin.description && (
                       <p className="text-xs text-gray-400 mt-0.5 max-w-[200px] truncate">
                         {pin.description}
+                      </p>
+                    )}
+                    {hasLinkedMap && (
+                      <p className="text-xs text-blue-400 mt-1 flex items-center gap-1">
+                        <Layers className="w-3 h-3" />
+                        Click to open map
                       </p>
                     )}
                   </div>
