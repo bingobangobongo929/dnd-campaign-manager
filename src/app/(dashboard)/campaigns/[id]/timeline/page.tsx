@@ -21,7 +21,15 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { Input, Textarea, Modal, Dropdown, AccessDeniedPage } from '@/components/ui'
-import { AppLayout } from '@/components/layout/app-layout'
+import { AppLayout, CampaignPageHeader } from '@/components/layout'
+import {
+  PartyModal,
+  TagManager,
+  FactionManager,
+  RelationshipManager,
+} from '@/components/campaign'
+import { ResizeToolbar } from '@/components/canvas'
+import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { CharacterViewModal } from '@/components/character'
 import {
@@ -66,7 +74,7 @@ export default function TimelinePage() {
   const isMobile = useIsMobile()
 
   // Permissions
-  const { can, loading: permissionsLoading, isMember } = usePermissions(campaignId)
+  const { can, loading: permissionsLoading, isMember, isOwner, isDm } = usePermissions(campaignId)
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [events, setEvents] = useState<TimelineEventWithCharacters[]>([])
@@ -107,6 +115,14 @@ export default function TimelinePage() {
     description: '',
     color: '#8B5CF6',
   })
+
+  // Modal state for burger menu
+  const [showMembersModal, setShowMembersModal] = useState(false)
+  const [showLabelsModal, setShowLabelsModal] = useState(false)
+  const [showFactionsModal, setShowFactionsModal] = useState(false)
+  const [showRelationshipsModal, setShowRelationshipsModal] = useState(false)
+  const [showResizeModal, setShowResizeModal] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
 
   // Load view preference from localStorage
   useEffect(() => {
@@ -492,17 +508,38 @@ export default function TimelinePage() {
   }
 
   return (
-    <AppLayout campaignId={campaignId}>
-      <div className="max-w-6xl mx-auto">
-        {/* Page Header */}
-        <div className="page-header flex items-center justify-between">
-          <div>
-            <h1 className="page-title">Campaign Timeline</h1>
-            <p className="page-subtitle">
-              {selectedCharacter
-                ? `${selectedCharacter.name}'s journey - ${filteredEvents.length} event${filteredEvents.length !== 1 ? 's' : ''}`
-                : 'Chronicle your adventure\'s key moments'}
-            </p>
+    <AppLayout campaignId={campaignId} hideHeader>
+      {/* Page Header with Burger Menu */}
+      <CampaignPageHeader
+        campaign={campaign}
+        campaignId={campaignId}
+        title="Timeline"
+        isOwner={isOwner}
+        isDm={isDm}
+        onOpenMembers={() => setShowMembersModal(true)}
+        onOpenLabels={() => setShowLabelsModal(true)}
+        onOpenFactions={() => setShowFactionsModal(true)}
+        onOpenRelationships={() => setShowRelationshipsModal(true)}
+        onOpenResize={() => setShowResizeModal(true)}
+        onOpenShare={() => setShowShareModal(true)}
+        actions={can.addTimeline && (
+          <button
+            className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Add</span>
+          </button>
+        )}
+      />
+
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        {/* Filter Toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div className="text-sm text-gray-400">
+            {selectedCharacter
+              ? `${selectedCharacter.name}'s journey - ${filteredEvents.length} event${filteredEvents.length !== 1 ? 's' : ''}`
+              : `${events.length} event${events.length !== 1 ? 's' : ''}`}
           </div>
           <div className="flex items-center gap-3">
             {/* View Toggle */}
@@ -691,13 +728,6 @@ export default function TimelinePage() {
               >
                 <Sparkles className="w-4 h-4" style={{ color: '#a78bfa' }} />
                 <span style={{ color: '#a78bfa' }}>AI Generate</span>
-              </button>
-            )}
-
-            {can.addTimeline && (
-              <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
-                <Plus className="w-4 h-4" />
-                Add Event
               </button>
             )}
           </div>
@@ -1041,6 +1071,58 @@ export default function TimelinePage() {
         </Modal>
       </div>
       <BackToTopButton />
+
+      {/* Modals */}
+      <PartyModal
+        campaignId={campaignId}
+        characters={characters}
+        isOpen={showMembersModal}
+        onClose={() => setShowMembersModal(false)}
+      />
+
+      {showLabelsModal && (
+        <TagManager
+          campaignId={campaignId}
+          isOpen={showLabelsModal}
+          onClose={() => setShowLabelsModal(false)}
+        />
+      )}
+
+      {showFactionsModal && (
+        <FactionManager
+          campaignId={campaignId}
+          characters={characters}
+          isOpen={showFactionsModal}
+          onClose={() => setShowFactionsModal(false)}
+        />
+      )}
+
+      {showRelationshipsModal && (
+        <RelationshipManager
+          campaignId={campaignId}
+          isOpen={showRelationshipsModal}
+          onClose={() => setShowRelationshipsModal(false)}
+        />
+      )}
+
+      {showResizeModal && (
+        <ResizeToolbar
+          onClose={() => setShowResizeModal(false)}
+          characters={characters}
+          onResize={async () => {}}
+        />
+      )}
+
+      {campaign && (
+        <UnifiedShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          contentType="campaign"
+          contentId={campaignId}
+          contentName={campaign.name}
+          contentMode="active"
+        />
+      )}
     </AppLayout>
   )
 }

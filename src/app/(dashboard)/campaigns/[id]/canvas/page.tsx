@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
-import { Plus, FolderPlus, Scaling, Trash2, Brain, Share2, ChevronRight, Users, Sparkles, ChevronDown, Loader2, Tags, Shield, Link2, ChevronUp, Settings2 } from 'lucide-react'
+import { Plus, FolderPlus, Scaling, Trash2, Brain, Share2, ChevronRight, Users, Sparkles, ChevronDown, Loader2, Tags, Shield, Link2, ChevronUp, Settings2, Menu } from 'lucide-react'
 import { Modal, Input, ColorPicker, IconPicker, getGroupIcon, AccessDeniedPage } from '@/components/ui'
 import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT, CONNECTION_FILTER_OPTIONS } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
@@ -13,6 +13,7 @@ import { TemplateStateBadge } from '@/components/templates/TemplateStateBadge'
 import { TemplateOnboardingModal } from '@/components/templates/TemplateOnboardingModal'
 import { toast } from 'sonner'
 import { AppLayout } from '@/components/layout/app-layout'
+import { CampaignMenuDrawer } from '@/components/layout'
 import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { CampaignCanvasPageMobile } from './page.mobile'
 import { useAppStore, useCanUseAI } from '@/store'
@@ -76,6 +77,7 @@ export default function CampaignCanvasPage() {
   const [isMemberManagerOpen, setIsMemberManagerOpen] = useState(false)
   const [manageDropdownOpen, setManageDropdownOpen] = useState(false)
   const [addDropdownOpen, setAddDropdownOpen] = useState(false)
+  const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false)
 
   // Connection lines state
   const [showConnections, setShowConnections] = useState(false)
@@ -586,7 +588,7 @@ export default function CampaignCanvasPage() {
 
   const isPublished = campaign?.is_published === true
 
-  // Canvas toolbar actions for the top bar
+  // Canvas toolbar actions - simplified, management moved to burger menu
   const canvasActions = (
     <>
       {/* State Badge */}
@@ -606,25 +608,6 @@ export default function CampaignCanvasPage() {
         </span>
       )}
 
-      {/* Share & Manage Button */}
-      <button
-        className="btn btn-secondary btn-sm"
-        onClick={() => setIsShareModalOpen(true)}
-        title="Share & Manage"
-      >
-        <Share2 className="w-4 h-4" />
-        <span className="hidden sm:inline ml-1.5">Share</span>
-      </button>
-      {canUseAI && (
-        <button
-          className="btn btn-secondary btn-sm"
-          onClick={() => router.push(`/campaigns/${campaignId}/intelligence`)}
-          title="Open Campaign Intelligence"
-        >
-          <Brain className="w-4 h-4" />
-          <span className="hidden sm:inline ml-1.5">Intelligence</span>
-        </button>
-      )}
       {/* Connection Lines Toggle */}
       <div className="relative">
         <button
@@ -634,7 +617,6 @@ export default function CampaignCanvasPage() {
           )}
           onClick={() => {
             setConnectionDropdownOpen(!connectionDropdownOpen)
-            setManageDropdownOpen(false)
             setAddDropdownOpen(false)
           }}
           title="Show relationship connections"
@@ -684,69 +666,6 @@ export default function CampaignCanvasPage() {
         )}
       </div>
 
-      {/* Manage Dropdown - Labels, Factions, Relationships, Resize */}
-      <div className="relative">
-        <button
-          className="btn btn-secondary btn-sm flex items-center gap-1.5"
-          onClick={() => {
-            setManageDropdownOpen(!manageDropdownOpen)
-            setConnectionDropdownOpen(false)
-            setAddDropdownOpen(false)
-          }}
-          title="Manage campaign data"
-        >
-          <Settings2 className="w-4 h-4" />
-          <span className="hidden sm:inline">Manage</span>
-          <ChevronDown className={cn("w-3 h-3 transition-transform", manageDropdownOpen && "rotate-180")} />
-        </button>
-        {manageDropdownOpen && (
-          <div className="absolute top-full right-0 mt-1 w-48 bg-[#12121a] border border-[--border] rounded-lg shadow-2xl z-50 py-1">
-            {isDm && (
-              <button
-                className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
-                onClick={() => { setIsMemberManagerOpen(true); setManageDropdownOpen(false) }}
-              >
-                <Users className="w-4 h-4" />
-                Members
-              </button>
-            )}
-            {can.editCanvasLayout && (
-              <>
-                <button
-                  className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
-                  onClick={() => { setIsTagManagerOpen(true); setManageDropdownOpen(false) }}
-                >
-                  <Tags className="w-4 h-4" />
-                  Labels
-                </button>
-                <button
-                  className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
-                  onClick={() => { setIsFactionManagerOpen(true); setManageDropdownOpen(false) }}
-                >
-                  <Shield className="w-4 h-4" />
-                  Factions
-                </button>
-                <button
-                  className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
-                  onClick={() => { setIsRelationshipManagerOpen(true); setManageDropdownOpen(false) }}
-                >
-                  <Users className="w-4 h-4" />
-                  Relationships
-                </button>
-                <div className="border-t border-[--border] my-1" />
-                <button
-                  className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
-                  onClick={() => { setIsResizeToolbarOpen(true); setManageDropdownOpen(false) }}
-                >
-                  <Scaling className="w-4 h-4" />
-                  Resize Cards
-                </button>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-
       {/* Add Dropdown - Group, Character (only show if user can edit) */}
       {can.editCanvasLayout && (
         <div className="relative">
@@ -755,7 +674,6 @@ export default function CampaignCanvasPage() {
             onClick={() => {
               setAddDropdownOpen(!addDropdownOpen)
               setConnectionDropdownOpen(false)
-              setManageDropdownOpen(false)
             }}
           >
             <Plus className="w-4 h-4" />
@@ -782,6 +700,15 @@ export default function CampaignCanvasPage() {
           )}
         </div>
       )}
+
+      {/* Menu Button */}
+      <button
+        className="btn btn-secondary btn-sm"
+        onClick={() => setIsMenuDrawerOpen(true)}
+        title="Campaign Menu"
+      >
+        <Menu className="w-4 h-4" />
+      </button>
     </>
   )
 
@@ -1203,6 +1130,22 @@ export default function CampaignCanvasPage() {
           contentName={campaign.name}
         />
       )}
+
+      {/* Campaign Menu Drawer */}
+      <CampaignMenuDrawer
+        isOpen={isMenuDrawerOpen}
+        onClose={() => setIsMenuDrawerOpen(false)}
+        campaign={campaign}
+        campaignId={campaignId}
+        isOwner={campaign?.user_id === user?.id}
+        isDm={isDm}
+        onOpenMembers={() => setIsMemberManagerOpen(true)}
+        onOpenLabels={() => setIsTagManagerOpen(true)}
+        onOpenFactions={() => setIsFactionManagerOpen(true)}
+        onOpenRelationships={() => setIsRelationshipManagerOpen(true)}
+        onOpenResize={() => setIsResizeToolbarOpen(true)}
+        onOpenShare={() => setIsShareModalOpen(true)}
+      />
 
     </AppLayout>
   )

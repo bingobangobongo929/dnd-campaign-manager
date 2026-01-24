@@ -4,7 +4,15 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Map, Trash2, Loader2, Pencil, Eye, ChevronLeft, Plus, Settings, Layers } from 'lucide-react'
 import { Modal, AccessDeniedPage } from '@/components/ui'
-import { AppLayout } from '@/components/layout/app-layout'
+import { AppLayout, CampaignPageHeader } from '@/components/layout'
+import {
+  PartyModal,
+  TagManager,
+  FactionManager,
+  RelationshipManager,
+} from '@/components/campaign'
+import { ResizeToolbar } from '@/components/canvas'
+import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 import { InteractiveMap, MapEditor, CreateMapModal } from '@/components/maps'
 import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { CampaignMapPageMobile } from './page.mobile'
@@ -24,7 +32,7 @@ export default function WorldMapPage() {
   const isMobile = useIsMobile()
 
   // Permissions
-  const { can, loading: permissionsLoading, isMember, isDm } = usePermissions(campaignId)
+  const { can, loading: permissionsLoading, isMember, isOwner, isDm } = usePermissions(campaignId)
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [maps, setMaps] = useState<WorldMap[]>([])
@@ -35,6 +43,14 @@ export default function WorldMapPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Modal state for burger menu
+  const [showMembersModal, setShowMembersModal] = useState(false)
+  const [showLabelsModal, setShowLabelsModal] = useState(false)
+  const [showFactionsModal, setShowFactionsModal] = useState(false)
+  const [showRelationshipsModal, setShowRelationshipsModal] = useState(false)
+  const [showResizeModal, setShowResizeModal] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
 
   useEffect(() => {
     if (user && campaignId) {
@@ -201,7 +217,31 @@ export default function WorldMapPage() {
   }
 
   return (
-    <AppLayout campaignId={campaignId}>
+    <AppLayout campaignId={campaignId} hideHeader fullBleed>
+      {/* Page Header with Burger Menu */}
+      <CampaignPageHeader
+        campaign={campaign}
+        campaignId={campaignId}
+        title="Maps"
+        isOwner={isOwner}
+        isDm={isDm}
+        onOpenMembers={() => setShowMembersModal(true)}
+        onOpenLabels={() => setShowLabelsModal(true)}
+        onOpenFactions={() => setShowFactionsModal(true)}
+        onOpenRelationships={() => setShowRelationshipsModal(true)}
+        onOpenResize={() => setShowResizeModal(true)}
+        onOpenShare={() => setShowShareModal(true)}
+        actions={can.addMap && (
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Add Map</span>
+          </button>
+        )}
+      />
+
       {maps.length === 0 ? (
         /* Empty State */
         <div className="flex items-center justify-center h-[70vh]">
@@ -560,6 +600,58 @@ export default function WorldMapPage() {
           </div>
         )}
       </Modal>
+
+      {/* Modals */}
+      <PartyModal
+        campaignId={campaignId}
+        characters={[]}
+        isOpen={showMembersModal}
+        onClose={() => setShowMembersModal(false)}
+      />
+
+      {showLabelsModal && (
+        <TagManager
+          campaignId={campaignId}
+          isOpen={showLabelsModal}
+          onClose={() => setShowLabelsModal(false)}
+        />
+      )}
+
+      {showFactionsModal && (
+        <FactionManager
+          campaignId={campaignId}
+          characters={[]}
+          isOpen={showFactionsModal}
+          onClose={() => setShowFactionsModal(false)}
+        />
+      )}
+
+      {showRelationshipsModal && (
+        <RelationshipManager
+          campaignId={campaignId}
+          isOpen={showRelationshipsModal}
+          onClose={() => setShowRelationshipsModal(false)}
+        />
+      )}
+
+      {showResizeModal && (
+        <ResizeToolbar
+          onClose={() => setShowResizeModal(false)}
+          characters={[]}
+          onResize={async () => {}}
+        />
+      )}
+
+      {campaign && (
+        <UnifiedShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          contentType="campaign"
+          contentId={campaignId}
+          contentName={campaign.name}
+          contentMode="active"
+        />
+      )}
     </AppLayout>
   )
 }

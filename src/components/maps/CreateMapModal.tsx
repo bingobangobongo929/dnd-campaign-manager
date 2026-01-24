@@ -154,23 +154,55 @@ export function CreateMapModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: `Fantasy map: ${conjurePrompt}. Style: ${conjureStyle}. Top-down view, detailed cartography.`,
-          type: 'map',
+          aspectRatio: '3:2', // Good aspect ratio for maps
         }),
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to generate map')
+        const errorData = await response.json()
+        throw new Error(errorData.error || errorData.details || 'Failed to generate map')
       }
 
-      const { imageUrl } = await response.json()
+      const result = await response.json()
+
+      // The API returns { image: { dataUrl } } for Gemini or { image: { data, mimeType } } for Imagen
+      const imageDataUrl = result.image?.dataUrl
+      if (!imageDataUrl) {
+        throw new Error('No image generated. Try a different description.')
+      }
+
+      // Upload the generated image to storage
+      // Convert base64 to blob
+      const base64Data = imageDataUrl.split(',')[1]
+      const mimeType = result.image?.mimeType || 'image/png'
+      const byteCharacters = atob(base64Data)
+      const byteNumbers = new Array(byteCharacters.length)
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i)
+      }
+      const byteArray = new Uint8Array(byteNumbers)
+      const blob = new Blob([byteArray], { type: mimeType })
+
+      // Upload to storage
+      const ext = mimeType === 'image/png' ? 'png' : 'jpg'
+      const path = `${campaignId}/${uuidv4()}.${ext}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('world-maps')
+        .upload(path, blob, { contentType: mimeType })
+
+      if (uploadError) throw uploadError
+
+      const { data: urlData } = supabase.storage
+        .from('world-maps')
+        .getPublicUrl(path)
 
       // Create the map record
       const { data: mapData, error: insertError } = await supabase
         .from('world_maps')
         .insert({
           campaign_id: campaignId,
-          image_url: imageUrl,
+          image_url: urlData.publicUrl,
           name: mapName.trim(),
           description: mapDescription.trim() || null,
           map_type: mapType,

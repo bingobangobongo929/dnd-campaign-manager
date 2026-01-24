@@ -19,6 +19,7 @@ interface AppLayoutProps {
   fullBleed?: boolean
   transparentTopBar?: boolean
   topBarActions?: React.ReactNode
+  hideHeader?: boolean
 }
 
 export function AppLayout({
@@ -29,6 +30,7 @@ export function AppLayout({
   fullBleed = false,
   transparentTopBar = false,
   topBarActions,
+  hideHeader = false,
 }: AppLayoutProps) {
   const supabase = useSupabase()
   const { user } = useUser()
@@ -226,15 +228,17 @@ export function AppLayout({
       {/* Desktop Navigation */}
       <div className="desktop-only">
         <FloatingDock campaignId={campaignId} characterId={characterId} oneshotId={oneshotId} />
-        <TopBar
-          campaigns={campaigns}
-          currentCampaignId={campaignId}
-          characters={vaultCharacters}
-          currentCharacterId={characterId}
-          transparent={transparentTopBar}
-          actions={topBarActions}
-          userSettings={settings}
-        />
+        {!hideHeader && (
+          <TopBar
+            campaigns={campaigns}
+            currentCampaignId={campaignId}
+            characters={vaultCharacters}
+            currentCharacterId={characterId}
+            transparent={transparentTopBar}
+            actions={topBarActions}
+            userSettings={settings}
+          />
+        )}
       </div>
 
 

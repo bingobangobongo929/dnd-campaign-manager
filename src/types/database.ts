@@ -39,6 +39,10 @@ export interface Database {
           // Session workflow defaults
           default_session_sections: Json
           default_prep_checklist: Json
+          // Session scheduling
+          next_session_date: string | null
+          next_session_location: string | null
+          next_session_notes: string | null
           created_at: string
           updated_at: string
         }
@@ -71,6 +75,10 @@ export interface Database {
           // Session workflow defaults
           default_session_sections?: Json
           default_prep_checklist?: Json
+          // Session scheduling
+          next_session_date?: string | null
+          next_session_location?: string | null
+          next_session_notes?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -103,6 +111,10 @@ export interface Database {
           // Session workflow defaults
           default_session_sections?: Json
           default_prep_checklist?: Json
+          // Session scheduling
+          next_session_date?: string | null
+          next_session_location?: string | null
+          next_session_notes?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -363,6 +375,9 @@ export interface Database {
           session_timer: Json | null
           pinned_references: Json
           attendees: Json
+          // Session scheduling
+          scheduled_date: string | null
+          duration_minutes: number | null
           created_at: string
           updated_at: string
         }
@@ -383,6 +398,9 @@ export interface Database {
           session_timer?: Json | null
           pinned_references?: Json
           attendees?: Json
+          // Session scheduling
+          scheduled_date?: string | null
+          duration_minutes?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -403,6 +421,9 @@ export interface Database {
           session_timer?: Json | null
           pinned_references?: Json
           attendees?: Json
+          // Session scheduling
+          scheduled_date?: string | null
+          duration_minutes?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -2992,6 +3013,7 @@ export interface Database {
           invited_at: string | null
           joined_at: string | null
           status: 'pending' | 'active' | 'declined' | 'removed'
+          next_session_status: 'confirmed' | 'unavailable' | 'maybe' | 'no_response'
           created_at: string
           updated_at: string
         }
@@ -3009,6 +3031,7 @@ export interface Database {
           invited_at?: string | null
           joined_at?: string | null
           status?: 'pending' | 'active' | 'declined' | 'removed'
+          next_session_status?: 'confirmed' | 'unavailable' | 'maybe' | 'no_response'
           created_at?: string
           updated_at?: string
         }
@@ -3026,6 +3049,7 @@ export interface Database {
           invited_at?: string | null
           joined_at?: string | null
           status?: 'pending' | 'active' | 'declined' | 'removed'
+          next_session_status?: 'confirmed' | 'unavailable' | 'maybe' | 'no_response'
           created_at?: string
           updated_at?: string
         }

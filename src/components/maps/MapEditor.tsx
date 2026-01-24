@@ -114,6 +114,8 @@ export function MapEditor({
 }: MapEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
+  const activeDrawingRef = useRef<ActiveDrawing | null>(null)
+  const saveDrawingRef = useRef<((drawing: ActiveDrawing) => Promise<void>) | null>(null)
 
   // Map state
   const [pins, setPins] = useState<MapPinType[]>([])
@@ -307,22 +309,51 @@ export function MapEditor({
   }, [activeTool, clientToMapCoords, isDm, position, selectedDrawingId])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    const point = clientToMapCoords(e.clientX, e.clientY)
-
+    // Only handle panning here - drawing is handled by global event listeners
     if (isDragging && (activeTool === 'pan' || activeTool === 'select')) {
       setPosition({
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y,
       })
-      return
+    }
+  }, [activeTool, dragStart, isDragging])
+
+  const handleMouseUp = useCallback(async () => {
+    setIsDragging(false)
+  }, [])
+
+  // Keep ref in sync with activeDrawing state for global event handlers
+  activeDrawingRef.current = activeDrawing
+
+  // Global mouse event listeners for drawing (prevents lost events)
+  useEffect(() => {
+    if (!activeDrawing) return
+
+    const handleGlobalMouseUp = async () => {
+      setIsDragging(false)
+      const drawing = activeDrawingRef.current
+      if (drawing && isDm && saveDrawingRef.current) {
+        await saveDrawingRef.current(drawing)
+        setActiveDrawing(null)
+      }
     }
 
-    if (activeDrawing) {
-      switch (activeDrawing.type) {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      const rect = containerRef.current?.getBoundingClientRect()
+      if (!rect) return
+
+      const x = ((e.clientX - rect.left - position.x) / zoom) / rect.width * 100
+      const y = ((e.clientY - rect.top - position.y) / zoom) / rect.height * 100
+      const point = { x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) }
+
+      const drawing = activeDrawingRef.current
+      if (!drawing) return
+
+      switch (drawing.type) {
         case 'freehand':
           setActiveDrawing({
-            ...activeDrawing,
-            points: [...activeDrawing.points, point],
+            ...drawing,
+            points: [...drawing.points, point],
           })
           break
 
@@ -331,22 +362,22 @@ export function MapEditor({
         case 'rectangle':
         case 'circle':
           setActiveDrawing({
-            ...activeDrawing,
+            ...drawing,
             endPoint: point,
           })
           break
       }
     }
-  }, [activeTool, activeDrawing, clientToMapCoords, dragStart, isDragging])
 
-  const handleMouseUp = useCallback(async () => {
-    setIsDragging(false)
+    // Add global listeners
+    window.addEventListener('mouseup', handleGlobalMouseUp)
+    window.addEventListener('mousemove', handleGlobalMouseMove)
 
-    if (activeDrawing && isDm) {
-      await saveDrawing(activeDrawing)
-      setActiveDrawing(null)
+    return () => {
+      window.removeEventListener('mouseup', handleGlobalMouseUp)
+      window.removeEventListener('mousemove', handleGlobalMouseMove)
     }
-  }, [activeDrawing, isDm])
+  }, [activeDrawing, isDm, position, zoom])
 
   // Save drawing to database
   const saveDrawing = async (drawing: ActiveDrawing) => {
@@ -399,6 +430,8 @@ export function MapEditor({
       toast.error('Failed to save drawing')
     }
   }
+  // Keep saveDrawing ref in sync for global event handlers
+  saveDrawingRef.current = saveDrawing
 
   // History management
   const addToHistory = (newDrawings: MapDrawing[]) => {
