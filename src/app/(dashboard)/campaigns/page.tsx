@@ -26,7 +26,8 @@ import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { v4 as uuidv4 } from 'uuid'
 import type { Campaign, ContentSave } from '@/types/database'
 import { CampaignsPageMobile } from './page.mobile'
-import { ContentModeToggle, TemplateStateBadge, type ContentModeTab } from '@/components/templates'
+import { TemplateStateBadge } from '@/components/templates'
+import { TabNavigation, type ContentTab, CAMPAIGNS_TABS } from '@/components/navigation'
 
 // Helper to format role for display
 function formatRoleLabel(role: string): string {
@@ -86,7 +87,8 @@ export default function CampaignsPage() {
   const [savedCampaigns, setSavedCampaigns] = useState<ContentSave[]>([])
   const [templateSnapshots, setTemplateSnapshots] = useState<TemplateSnapshot[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<ContentModeTab>('active')
+  const [activeTab, setActiveTab] = useState<ContentTab>('all')
+  const [subFilter, setSubFilter] = useState<ContentTab>('running')
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null)
   const [formData, setFormData] = useState({
     name: '',
@@ -145,25 +147,53 @@ export default function CampaignsPage() {
     setLoading(false)
   }
 
-  // Filter campaigns based on active tab
-  const filteredCampaigns = campaigns.filter(c => {
-    if (activeTab === 'active') return c.content_mode === 'active' || !c.content_mode
-    if (activeTab === 'inactive') return c.content_mode === 'inactive'
-    // Template tab uses templateSnapshots, not filtered campaigns
-    return false
-  })
+  // Filter campaigns based on active tab and sub-filter
+  const activeCampaigns = campaigns.filter(c => c.content_mode === 'active' || !c.content_mode)
+  const inactiveCampaigns = campaigns.filter(c => c.content_mode === 'inactive')
 
   // Group snapshots by content_id to get unique templates
   const uniqueTemplateContentIds = new Set(templateSnapshots.map(s => s.content_id))
+  const publishedSnapshots = templateSnapshots.filter(s => s.is_public)
+  const privateSnapshots = templateSnapshots.filter(s => !s.is_public)
 
-  // Get counts for tabs
-  const tabCounts = {
-    active: campaigns.filter(c => c.content_mode === 'active' || !c.content_mode).length,
-    joined: joinedCampaigns.length,
-    inactive: campaigns.filter(c => c.content_mode === 'inactive').length,
-    templates: uniqueTemplateContentIds.size,
-    saved: savedCampaigns.length,
+  // Get what campaigns to show based on tab + sub-filter
+  const getFilteredCampaigns = () => {
+    if (activeTab === 'all') return activeCampaigns
+    if (activeTab === 'active') {
+      if (subFilter === 'running') return activeCampaigns
+      if (subFilter === 'playing') return [] // Joined campaigns handled separately
+    }
+    if (activeTab === 'my-work') {
+      if (subFilter === 'drafts') return inactiveCampaigns
+      // Templates handled via templateSnapshots
+    }
+    return activeCampaigns
   }
+
+  const filteredCampaigns = getFilteredCampaigns()
+
+  // Build tabs with counts
+  const tabsWithCounts = CAMPAIGNS_TABS.map(tab => {
+    let count: number | undefined
+    if (tab.value === 'all') count = campaigns.length
+    else if (tab.value === 'active') count = activeCampaigns.length + joinedCampaigns.length
+    else if (tab.value === 'my-work') count = inactiveCampaigns.length + uniqueTemplateContentIds.size
+    else if (tab.value === 'collection') count = savedCampaigns.length
+    else if (tab.value === 'discover') count = undefined // Coming soon
+
+    // Update sub-filter counts
+    const subFilters = tab.subFilters?.map(sf => {
+      let sfCount: number | undefined
+      if (sf.value === 'running') sfCount = activeCampaigns.length
+      else if (sf.value === 'playing') sfCount = joinedCampaigns.length
+      else if (sf.value === 'drafts') sfCount = inactiveCampaigns.length
+      else if (sf.value === 'my-templates') sfCount = privateSnapshots.length
+      else if (sf.value === 'published') sfCount = publishedSnapshots.length
+      return { ...sf, count: sfCount }
+    })
+
+    return { ...tab, count, subFilters }
+  })
 
   const handleReactivate = async (campaignId: string) => {
     const response = await fetch('/api/content/reactivate', {
@@ -260,8 +290,11 @@ export default function CampaignsPage() {
   if (isMobile) {
     return (
       <CampaignsPageMobile
-        campaigns={filteredCampaigns}
+        campaigns={activeCampaigns}
+        joinedCampaigns={joinedCampaigns.map(j => j.campaign)}
+        inactiveCampaigns={inactiveCampaigns}
         savedCampaigns={savedCampaigns}
+        templateSnapshots={templateSnapshots}
         featuredCampaign={featuredCampaign}
         editingCampaign={editingCampaign}
         setEditingCampaign={setEditingCampaign}
@@ -272,7 +305,9 @@ export default function CampaignsPage() {
         onNavigate={(path) => router.push(path)}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        tabCounts={tabCounts}
+        subFilter={subFilter}
+        setSubFilter={setSubFilter}
+        tabsWithCounts={tabsWithCounts}
         onReactivate={handleReactivate}
       />
     )
@@ -298,15 +333,207 @@ export default function CampaignsPage() {
         </div>
 
         {/* Tabs */}
-        <ContentModeToggle
+        <TabNavigation
           value={activeTab}
           onChange={setActiveTab}
-          counts={tabCounts}
-          contentType="campaign"
+          tabs={tabsWithCounts}
+          subFilter={subFilter}
+          onSubFilterChange={setSubFilter}
         />
 
-        {/* Saved Campaigns Tab */}
-        {activeTab === 'saved' && (
+        {/* All Tab - Overview with smart grouping */}
+        {activeTab === 'all' && (
+          <div className="space-y-10">
+            {/* Active Games Section */}
+            {(activeCampaigns.length > 0 || joinedCampaigns.length > 0) && (
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white">Active Games</h3>
+                  <button
+                    onClick={() => { setActiveTab('active'); setSubFilter('running'); }}
+                    className="text-sm text-purple-400 hover:text-purple-300"
+                  >
+                    View all →
+                  </button>
+                </div>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {activeCampaigns.slice(0, 3).map((campaign) => (
+                    <Link
+                      key={campaign.id}
+                      href={`/campaigns/${campaign.id}/dashboard`}
+                      className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/40 transition-all"
+                    >
+                      <div className="relative h-32 overflow-hidden">
+                        {campaign.image_url ? (
+                          <>
+                            <Image
+                              src={campaign.image_url}
+                              alt={campaign.name}
+                              fill
+                              className="object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent" />
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                            <Swords className="w-10 h-10 text-purple-400/30" />
+                          </div>
+                        )}
+                        <span className="absolute top-2 left-2 px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          Running
+                        </span>
+                      </div>
+                      <div className="p-3">
+                        <h4 className="font-medium text-white truncate group-hover:text-purple-400 transition-colors">
+                          {campaign.name}
+                        </h4>
+                        <p className="text-xs text-gray-500">{campaign.game_system}</p>
+                      </div>
+                    </Link>
+                  ))}
+                  {joinedCampaigns.slice(0, 3 - Math.min(activeCampaigns.length, 3)).map(({ membership, campaign }) => (
+                    <Link
+                      key={membership.id}
+                      href={`/campaigns/${campaign.id}/dashboard`}
+                      className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/40 transition-all"
+                    >
+                      <div className="relative h-32 overflow-hidden">
+                        {campaign.image_url ? (
+                          <>
+                            <Image
+                              src={campaign.image_url}
+                              alt={campaign.name}
+                              fill
+                              className="object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent" />
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                            <Swords className="w-10 h-10 text-purple-400/30" />
+                          </div>
+                        )}
+                        <span className="absolute top-2 left-2 px-2 py-0.5 text-xs font-medium rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                          Playing
+                        </span>
+                      </div>
+                      <div className="p-3">
+                        <h4 className="font-medium text-white truncate group-hover:text-purple-400 transition-colors">
+                          {campaign.name}
+                        </h4>
+                        <p className="text-xs text-gray-500">{campaign.game_system}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* My Work Section */}
+            {(inactiveCampaigns.length > 0 || templateSnapshots.length > 0) && (
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white">My Work</h3>
+                  <button
+                    onClick={() => { setActiveTab('my-work'); setSubFilter('drafts'); }}
+                    className="text-sm text-purple-400 hover:text-purple-300"
+                  >
+                    View all →
+                  </button>
+                </div>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {inactiveCampaigns.slice(0, 2).map((campaign) => (
+                    <Link
+                      key={campaign.id}
+                      href={`/campaigns/${campaign.id}/canvas`}
+                      className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-purple-500/30 transition-all"
+                    >
+                      <span className="text-xs font-medium text-amber-400">Draft</span>
+                      <h4 className="font-medium text-white mt-1 truncate">{campaign.name}</h4>
+                      <p className="text-xs text-gray-500 mt-1">{campaign.game_system}</p>
+                    </Link>
+                  ))}
+                  {templateSnapshots.slice(0, 2).map((snapshot) => (
+                    <Link
+                      key={snapshot.id}
+                      href={`/campaigns/${snapshot.content_id}/canvas?fromTemplate=true`}
+                      className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-purple-500/30 transition-all"
+                    >
+                      <span className={`text-xs font-medium ${snapshot.is_public ? 'text-emerald-400' : 'text-purple-400'}`}>
+                        {snapshot.is_public ? 'Published' : 'Template'}
+                      </span>
+                      <h4 className="font-medium text-white mt-1 truncate">
+                        {snapshot.snapshot_data?.name || 'Untitled'}
+                      </h4>
+                      <p className="text-xs text-gray-500 mt-1">v{snapshot.version}</p>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Collection Section */}
+            {savedCampaigns.length > 0 && (
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white">Collection</h3>
+                  <button
+                    onClick={() => setActiveTab('collection')}
+                    className="text-sm text-purple-400 hover:text-purple-300"
+                  >
+                    View all →
+                  </button>
+                </div>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {savedCampaigns.slice(0, 4).map((save) => (
+                    <div
+                      key={save.id}
+                      className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-purple-500/30 transition-all"
+                    >
+                      <span className="text-xs font-medium text-purple-400">Saved</span>
+                      <h4 className="font-medium text-white mt-1 truncate">{save.source_name}</h4>
+                      <p className="text-xs text-gray-500 mt-1">v{save.saved_version}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Empty state when nothing */}
+            {campaigns.length === 0 && joinedCampaigns.length === 0 && savedCampaigns.length === 0 && (
+              <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-purple-900/20 via-gray-900 to-gray-950 border border-white/[0.06] p-16 text-center">
+                <Sparkles className="w-20 h-20 mx-auto mb-6 text-purple-400/50" />
+                <h2 className="text-2xl font-display font-bold text-white mb-3">
+                  Begin Your Adventure
+                </h2>
+                <p className="text-gray-400 mb-8 max-w-md mx-auto">
+                  Create your first campaign and start building an unforgettable story with your players.
+                </p>
+                <Link
+                  href="/campaigns/new"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-xl transition-colors"
+                >
+                  <Swords className="w-5 h-5" />
+                  Create Your First Campaign
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Discover Tab - Coming Soon */}
+        {activeTab === 'discover' && (
+          <div className="text-center py-20 bg-white/[0.02] border border-white/[0.06] rounded-xl">
+            <Sparkles className="w-16 h-16 mx-auto mb-6 text-purple-400/30" />
+            <h3 className="text-xl font-semibold text-white mb-2">Discover Coming Soon</h3>
+            <p className="text-gray-400 max-w-md mx-auto">
+              Browse campaigns shared by the community. Find your next adventure or share your creations with others.
+            </p>
+          </div>
+        )}
+
+        {/* Collection Tab (Saved Campaigns) */}
+        {activeTab === 'collection' && (
           <div className="space-y-6">
             {savedCampaigns.length === 0 ? (
               <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
@@ -386,8 +613,8 @@ export default function CampaignsPage() {
           </div>
         )}
 
-        {/* Joined Campaigns Tab */}
-        {activeTab === 'joined' && (
+        {/* Active - Playing (Joined Campaigns) */}
+        {activeTab === 'active' && subFilter === 'playing' && (
           <div className="space-y-6">
             {joinedCampaigns.length === 0 ? (
               <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
@@ -458,8 +685,8 @@ export default function CampaignsPage() {
           </div>
         )}
 
-        {/* Inactive Campaigns Tab */}
-        {activeTab === 'inactive' && (
+        {/* My Work - Drafts (Inactive Campaigns) */}
+        {activeTab === 'my-work' && subFilter === 'drafts' && (
           <div className="space-y-6">
             {filteredCampaigns.length === 0 ? (
               <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
@@ -516,8 +743,8 @@ export default function CampaignsPage() {
           </div>
         )}
 
-        {/* Templates Tab - Shows snapshots from template_snapshots table */}
-        {activeTab === 'templates' && (
+        {/* My Work - My Templates (Private Templates) */}
+        {activeTab === 'my-work' && (subFilter === 'my-templates' || subFilter === 'published') && (
           <div className="space-y-6">
             {templateSnapshots.length === 0 ? (
               <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
@@ -595,8 +822,8 @@ export default function CampaignsPage() {
           </div>
         )}
 
-        {/* Active Campaigns Tab */}
-        {activeTab === 'active' && (
+        {/* Active - Running (My Campaigns) */}
+        {(activeTab === 'active' && subFilter === 'running') && (
           filteredCampaigns.length === 0 ? (
             /* Empty State */
             <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-purple-900/20 via-gray-900 to-gray-950 border border-white/[0.06] p-16 text-center">

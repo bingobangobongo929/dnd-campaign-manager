@@ -336,3 +336,149 @@ export function ListEmpty({
     />
   )
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// Navigation Tab Empty States - for the new tabbed navigation
+// ═══════════════════════════════════════════════════════════════════
+
+// Collection tab - saved templates
+export function CollectionEmpty({
+  contentType,
+  onExplore,
+}: {
+  contentType: 'campaigns' | 'adventures' | 'oneshots' | 'characters'
+  onExplore?: () => void
+}) {
+  const labels = {
+    campaigns: { singular: 'campaign', plural: 'campaigns' },
+    adventures: { singular: 'adventure', plural: 'adventures' },
+    oneshots: { singular: 'one-shot', plural: 'one-shots' },
+    characters: { singular: 'character', plural: 'characters' },
+  }
+  const { singular, plural } = labels[contentType]
+
+  return (
+    <EmptyState
+      icon={<Folder className="w-8 h-8 text-gray-600" />}
+      title="Your Collection is Empty"
+      description={`Save ${plural} from the community to your collection for quick access.`}
+      guidance={`Browse the Discover tab to find ${plural} created by other DMs.`}
+      action={onExplore ? { label: 'Discover', onClick: onExplore } : undefined}
+    />
+  )
+}
+
+// Discover tab - community templates
+export function DiscoverEmpty({
+  contentType,
+}: {
+  contentType: 'campaigns' | 'adventures' | 'oneshots' | 'characters'
+}) {
+  const labels = {
+    campaigns: 'campaigns',
+    adventures: 'adventures',
+    oneshots: 'one-shots',
+    characters: 'characters',
+  }
+
+  return (
+    <EmptyState
+      icon={<Eye className="w-8 h-8 text-gray-600" />}
+      title="Nothing to Discover Yet"
+      description={`Community ${labels[contentType]} will appear here once they're published.`}
+      guidance="Be the first to share! Publish your content as a template."
+    />
+  )
+}
+
+// My Work tab - user's published templates
+export function MyWorkEmpty({
+  contentType,
+  onPublish,
+}: {
+  contentType: 'campaigns' | 'adventures' | 'oneshots' | 'characters'
+  onPublish?: () => void
+}) {
+  const labels = {
+    campaigns: 'campaigns',
+    adventures: 'adventures',
+    oneshots: 'one-shots',
+    characters: 'characters',
+  }
+
+  return (
+    <EmptyState
+      icon={<Share2 className="w-8 h-8 text-gray-600" />}
+      title="No Published Work"
+      description={`Your published ${labels[contentType]} will appear here.`}
+      guidance="Publishing creates a template others can use. Your original stays editable."
+      action={onPublish ? { label: 'Publish Something', onClick: onPublish } : undefined}
+    />
+  )
+}
+
+// Active tab - no active items
+export function ActiveEmpty({
+  contentType,
+  onCreate,
+}: {
+  contentType: 'campaigns' | 'adventures' | 'oneshots' | 'characters'
+  onCreate?: () => void
+}) {
+  const labels = {
+    campaigns: { singular: 'campaign', plural: 'campaigns', action: 'Create Campaign' },
+    adventures: { singular: 'adventure', plural: 'adventures', action: 'Create Adventure' },
+    oneshots: { singular: 'one-shot', plural: 'one-shots', action: 'Create One-Shot' },
+    characters: { singular: 'character', plural: 'characters', action: 'Create Character' },
+  }
+  const { singular, plural, action } = labels[contentType]
+
+  return (
+    <EmptyState
+      icon={<Zap className="w-8 h-8 text-gray-600" />}
+      title={`No Active ${plural.charAt(0).toUpperCase() + plural.slice(1)}`}
+      description={`Active ${plural} are the ones you're currently running or playing.`}
+      guidance={contentType === 'characters'
+        ? 'Characters become active when linked to a campaign.'
+        : `Archive old ${plural} to keep this view focused on current games.`}
+      action={onCreate ? { label: action, onClick: onCreate } : undefined}
+    />
+  )
+}
+
+// In-Play tab - for vault characters
+export function InPlayEmpty({
+  onJoinCampaign,
+}: {
+  onJoinCampaign?: () => void
+}) {
+  return (
+    <EmptyState
+      icon={<Users className="w-8 h-8 text-gray-600" />}
+      title="No Characters In Play"
+      description="Characters linked to active campaigns appear here."
+      guidance="Join a campaign or link an existing character to see them here."
+      action={onJoinCampaign ? { label: 'Join Campaign', onClick: onJoinCampaign } : undefined}
+    />
+  )
+}
+
+// Adventures tab intro
+export function AdventuresIntro({
+  onCreate,
+  onExplore,
+}: {
+  onCreate?: () => void
+  onExplore?: () => void
+}) {
+  return (
+    <EmptyState
+      icon={<Map className="w-8 h-8 text-gray-600" />}
+      title="Adventures"
+      description="Adventures are 3-9 session arcs - shorter than full campaigns but longer than one-shots."
+      guidance="Perfect for story arcs, side quests, or testing new campaign ideas."
+      action={onCreate ? { label: 'Create Adventure', onClick: onCreate } : undefined}
+      secondaryAction={onExplore ? { label: 'Explore Templates', onClick: onExplore } : undefined}
+    />
+  )
+}

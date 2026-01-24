@@ -134,6 +134,9 @@ export function CharacterModal({
     personality: character?.personality || '',
     goals: character?.goals || '',
     secrets: character?.secrets || '',
+    // New fields: backstory and motivations (rich text)
+    backstory: character?.backstory || '',
+    motivations: character?.motivations || '',
     // NPC fields
     role: character?.role || '',
     // List fields - use safe converter for JSONB data
@@ -176,6 +179,8 @@ export function CharacterModal({
         personality: character.personality || '',
         goals: character.goals || '',
         secrets: character.secrets || '',
+        backstory: character.backstory || '',
+        motivations: character.motivations || '',
         role: character.role || '',
         important_people: toStringArray(character.important_people),
         story_hooks: toStringArray(character.story_hooks),
@@ -239,6 +244,8 @@ export function CharacterModal({
           personality: formData.personality || null,
           goals: formData.goals || null,
           secrets: formData.secrets || null,
+          backstory: formData.backstory || null,
+          motivations: formData.motivations || null,
           role: formData.role || null,
           important_people: formData.important_people.length > 0 ? formData.important_people : null,
           story_hooks: formData.story_hooks.length > 0 ? formData.story_hooks : null,
@@ -281,6 +288,8 @@ export function CharacterModal({
         personality: formData.personality || null,
         goals: formData.goals || null,
         secrets: formData.secrets || null,
+        backstory: formData.backstory || null,
+        motivations: formData.motivations || null,
         role: formData.role || null,
         important_people: formData.important_people.length > 0 ? formData.important_people : null,
         story_hooks: formData.story_hooks.length > 0 ? formData.story_hooks : null,
@@ -425,13 +434,38 @@ export function CharacterModal({
           />
         </div>
         <div className="form-group">
-          <label className="form-label">Goals & Motivations</label>
+          <label className="form-label">Goals</label>
           <textarea
             value={formData.goals}
             onChange={(e) => setFormData({ ...formData, goals: e.target.value })}
-            placeholder="What drives this character? What do they want?"
+            placeholder="What does this character want to achieve?"
             rows={2}
             className="form-textarea"
+          />
+        </div>
+      </div>
+
+      {/* Backstory & Motivations */}
+      <div className="space-y-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+        <h3 className="text-sm font-semibold text-[--text-secondary] uppercase tracking-wider">Backstory & Motivations</h3>
+        <div className="form-group">
+          <label className="form-label">Backstory</label>
+          <p className="text-xs text-[--text-tertiary] mb-2">The character's history before the campaign began. This informs roleplay and feeds into Campaign Intelligence suggestions.</p>
+          <RichTextEditor
+            content={formData.backstory}
+            onChange={(content) => setFormData({ ...formData, backstory: content })}
+            placeholder="Write the character's backstory... Their origins, key life events, what shaped them into who they are today."
+            minHeight={150}
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Motivations</label>
+          <p className="text-xs text-[--text-tertiary] mb-2">What drives this character? Their deepest desires, fears, and the "why" behind their actions.</p>
+          <RichTextEditor
+            content={formData.motivations}
+            onChange={(content) => setFormData({ ...formData, motivations: content })}
+            placeholder="What truly motivates this character? Their inner drives, unspoken desires, what they would sacrifice anything for..."
+            minHeight={100}
           />
         </div>
       </div>

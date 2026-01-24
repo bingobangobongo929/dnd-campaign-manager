@@ -16,6 +16,10 @@ import {
   ArrowRight,
   Bookmark,
   X,
+  Compass,
+  Users,
+  Map,
+  Wand2,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
@@ -37,6 +41,7 @@ export default function HomePage() {
   const { isFounder, loading: membershipLoading } = useMembership()
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [adventures, setAdventures] = useState<Campaign[]>([])
   const [characters, setCharacters] = useState<VaultCharacter[]>([])
   const [oneshots, setOneshots] = useState<Oneshot[]>([])
   const [savedTemplates, setSavedTemplates] = useState<ContentSave[]>([])
@@ -83,15 +88,27 @@ export default function HomePage() {
   const loadData = async () => {
     if (!user) return
 
-    const [campaignsRes, charactersRes, oneshotsRes, savedRes] = await Promise.all([
+    const [campaignsRes, adventuresRes, charactersRes, oneshotsRes, savedRes] = await Promise.all([
+      // Campaigns: duration_type = 'campaign' or null (legacy)
       supabase
         .from('campaigns')
         .select('*')
         .eq('user_id', user.id)
         .is('deleted_at', null)
         .or('content_mode.eq.active,content_mode.is.null')
+        .or('duration_type.eq.campaign,duration_type.is.null')
         .order('updated_at', { ascending: false })
         .limit(6),
+      // Adventures: duration_type = 'adventure'
+      supabase
+        .from('campaigns')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('duration_type', 'adventure')
+        .is('deleted_at', null)
+        .or('content_mode.eq.active,content_mode.is.null')
+        .order('updated_at', { ascending: false })
+        .limit(4),
       supabase
         .from('vault_characters')
         .select('*')
@@ -118,6 +135,7 @@ export default function HomePage() {
     ])
 
     if (campaignsRes.data) setCampaigns(campaignsRes.data)
+    if (adventuresRes.data) setAdventures(adventuresRes.data)
     if (charactersRes.data) setCharacters(charactersRes.data)
     if (oneshotsRes.data) setOneshots(oneshotsRes.data)
     if (savedRes.data) setSavedTemplates(savedRes.data)
@@ -128,11 +146,16 @@ export default function HomePage() {
     return name.split(' ').map((word) => word[0]).slice(0, 2).join('').toUpperCase()
   }
 
+  // Check if this is a fresh user (no content at all)
+  const isFreshUser = !loading && campaigns.length === 0 && adventures.length === 0 && characters.length === 0 && oneshots.length === 0
+
   const featuredCampaign = campaigns[0]
+  const featuredAdventure = adventures[0]
   const featuredCharacter = characters[0]
   const featuredOneshot = oneshots[0]
   // Show all campaigns in the grid (including featured) - slice to limit display
   const displayCampaigns = campaigns.slice(0, 6)
+  const displayAdventures = adventures.slice(0, 4)
 
   // ============ MOBILE LAYOUT ============
   if (isMobile) {
@@ -140,6 +163,7 @@ export default function HomePage() {
       <>
         <HomePageMobile
           campaigns={campaigns}
+          adventures={adventures}
           characters={characters}
           oneshots={oneshots}
           savedTemplates={savedTemplates}
@@ -149,6 +173,7 @@ export default function HomePage() {
           isFounder={isFounder}
           founderBannerDismissed={founderBannerDismissed}
           onDismissFounderBanner={dismissFounderBanner}
+          isFreshUser={isFreshUser}
         />
         <OnboardingTour
           isOpen={showOnboarding}
@@ -183,6 +208,137 @@ export default function HomePage() {
           </div>
         )}
 
+        {/* Fresh User Welcome Experience */}
+        {isFreshUser && (
+          <div className="space-y-8">
+            {/* Welcome Hero */}
+            <div className="text-center py-8">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 flex items-center justify-center">
+                <Wand2 className="w-10 h-10 text-purple-400" />
+              </div>
+              <h1 className="text-4xl font-display font-bold text-white mb-3">
+                Welcome to Multiloop
+              </h1>
+              <p className="text-gray-400 text-lg max-w-xl mx-auto">
+                Your all-in-one platform for TTRPG campaign management. Let's get you started on your adventure.
+              </p>
+            </div>
+
+            {/* Getting Started Cards */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Start a Campaign */}
+              <div className="group relative rounded-2xl overflow-hidden bg-gradient-to-br from-blue-900/30 to-gray-900 border border-blue-500/20 hover:border-blue-500/40 transition-all p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                    <Swords className="w-7 h-7 text-blue-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-white mb-2">Start a Campaign</h3>
+                    <p className="text-gray-400 text-sm mb-4">
+                      Create an ongoing campaign for long-term storytelling. Perfect for epic adventures that span many sessions.
+                    </p>
+                    <Link
+                      href="/campaigns/new"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Create Campaign
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              {/* Start an Adventure */}
+              <div className="group relative rounded-2xl overflow-hidden bg-gradient-to-br from-amber-900/30 to-gray-900 border border-amber-500/20 hover:border-amber-500/40 transition-all p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                    <Compass className="w-7 h-7 text-amber-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-white mb-2">Start an Adventure</h3>
+                    <p className="text-gray-400 text-sm mb-4">
+                      Multi-session stories that span 3-9 sessions. Great for published modules or shorter arcs.
+                    </p>
+                    <Link
+                      href="/adventures/new"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Create Adventure
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              {/* Create a One-Shot */}
+              <div className="group relative rounded-2xl overflow-hidden bg-gradient-to-br from-green-900/30 to-gray-900 border border-green-500/20 hover:border-green-500/40 transition-all p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                    <Scroll className="w-7 h-7 text-green-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-white mb-2">Create a One-Shot</h3>
+                    <p className="text-gray-400 text-sm mb-4">
+                      Single-session adventures for quick games, convention play, or trying new systems.
+                    </p>
+                    <Link
+                      href="/oneshots/new"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Create One-Shot
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              {/* Character Vault */}
+              <div className="group relative rounded-2xl overflow-hidden bg-gradient-to-br from-purple-900/30 to-gray-900 border border-purple-500/20 hover:border-purple-500/40 transition-all p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 rounded-xl bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                    <BookOpen className="w-7 h-7 text-purple-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-white mb-2">Build Your Character</h3>
+                    <p className="text-gray-400 text-sm mb-4">
+                      Create detailed characters with backstories, motivations, and more. Use them across any campaign.
+                    </p>
+                    <Link
+                      href="/vault/new"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Create Character
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Explore Section */}
+            <div className="text-center py-6 border-t border-white/[0.06]">
+              <p className="text-gray-400 mb-4">Or explore what's already here</p>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Link href="/demo/campaign" className="btn btn-ghost text-sm">
+                  <Sparkles className="w-4 h-4" />
+                  Demo Campaign
+                </Link>
+                <Link href="/demo/character" className="btn btn-ghost text-sm">
+                  <Sparkles className="w-4 h-4" />
+                  Demo Character
+                </Link>
+                <Link href="/demo/oneshot" className="btn btn-ghost text-sm">
+                  <Sparkles className="w-4 h-4" />
+                  Demo One-Shot
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Returning User Content */}
+        {!isFreshUser && (
+          <>
         {/* Your Campaigns Section */}
         <section>
           <div className="flex items-center justify-between mb-6">
@@ -307,12 +463,113 @@ export default function HomePage() {
           )}
         </section>
 
+        {/* Adventures Section */}
+        {adventures.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-500/10">
+                  <Compass className="w-5 h-5 text-amber-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">Adventures</h3>
+              </div>
+              <Link href="/adventures" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
+                View All <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            {/* Featured Adventure Hero */}
+            {featuredAdventure && (
+              <Link
+                href={`/campaigns/${featuredAdventure.id}/dashboard`}
+                className="group relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-amber-500/30 transition-all duration-500 mb-6"
+              >
+                <div className="relative h-[200px] md:h-[280px]">
+                  {featuredAdventure.image_url ? (
+                    <>
+                      <Image
+                        src={featuredAdventure.image_url}
+                        alt={featuredAdventure.name}
+                        fill
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-900/20 via-gray-900 to-gray-950" />
+                  )}
+
+                  {/* Content Overlay */}
+                  <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-300">
+                        {(featuredAdventure as Campaign & { estimated_sessions?: number }).estimated_sessions || '3-9'} Sessions
+                      </span>
+                      <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300">
+                        {featuredAdventure.game_system}
+                      </span>
+                    </div>
+                    <h2 className="text-2xl md:text-3xl font-display font-bold text-white mb-2 group-hover:text-amber-400 transition-colors">
+                      {featuredAdventure.name}
+                    </h2>
+                    {featuredAdventure.description && (
+                      <p className="text-gray-400 text-sm max-w-2xl line-clamp-2 mb-3">
+                        {featuredAdventure.description}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-2 text-amber-400 font-medium">
+                      <Compass className="w-5 h-5" />
+                      <span>Continue Adventure</span>
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            )}
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {displayAdventures.map((adventure) => (
+                <Link
+                  key={adventure.id}
+                  href={`/campaigns/${adventure.id}/dashboard`}
+                  className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-amber-500/30 transition-all"
+                >
+                  <div className="relative h-32">
+                    {adventure.image_url ? (
+                      <>
+                        <Image
+                          src={adventure.image_url}
+                          alt={adventure.name}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
+                        <Compass className="w-10 h-10 text-amber-400/30" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <h4 className="font-semibold text-white truncate group-hover:text-amber-400 transition-colors text-sm">
+                      {adventure.name}
+                    </h4>
+                    <p className="text-xs text-gray-500 mt-1">{adventure.game_system}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* One-Shots - Cinematic Posters */}
         <section>
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10">
-                <Scroll className="w-5 h-5 text-amber-400" />
+              <div className="p-2 rounded-lg bg-green-500/10">
+                <Scroll className="w-5 h-5 text-green-400" />
               </div>
               <h3 className="text-xl font-semibold text-white">One-Shot Adventures</h3>
             </div>
@@ -324,9 +581,9 @@ export default function HomePage() {
           </div>
 
           {oneshots.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent p-12 text-center">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-amber-500/10 flex items-center justify-center">
-                <Scroll className="w-8 h-8 text-amber-400" />
+            <div className="rounded-2xl border border-dashed border-green-500/20 bg-gradient-to-br from-green-500/5 to-transparent p-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-green-500/10 flex items-center justify-center">
+                <Scroll className="w-8 h-8 text-green-400" />
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">Quick Adventures Await</h3>
               <p className="text-gray-400 mb-6 max-w-sm mx-auto">
@@ -349,7 +606,7 @@ export default function HomePage() {
               {featuredOneshot && (
               <Link
                 href={`/oneshots/${featuredOneshot.id}`}
-                className="group relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-amber-500/30 transition-all duration-500 mb-6"
+                className="group relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-green-500/30 transition-all duration-500 mb-6"
               >
                 <div className="relative h-[280px] md:h-[360px]">
                   {featuredOneshot.image_url ? (
@@ -364,20 +621,20 @@ export default function HomePage() {
                       <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
                     </>
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-900/20 via-gray-900 to-gray-950" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-900/20 via-gray-900 to-gray-950" />
                   )}
 
                   {/* Content Overlay */}
                   <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-10">
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-300">
-                        Continue Adventure
+                      <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-green-300">
+                        Continue One-Shot
                       </span>
                       <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300">
                         {featuredOneshot.game_system}
                       </span>
                     </div>
-                    <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-2 group-hover:text-amber-400 transition-colors">
+                    <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-2 group-hover:text-green-400 transition-colors">
                       {featuredOneshot.title}
                     </h2>
                     {featuredOneshot.tagline && (
@@ -385,9 +642,9 @@ export default function HomePage() {
                         {featuredOneshot.tagline}
                       </p>
                     )}
-                    <div className="flex items-center gap-2 text-amber-400 font-medium">
+                    <div className="flex items-center gap-2 text-green-400 font-medium">
                       <Scroll className="w-5 h-5" />
-                      <span>Open Adventure</span>
+                      <span>Open One-Shot</span>
                       <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                     </div>
                   </div>
@@ -400,7 +657,7 @@ export default function HomePage() {
                 <Link
                   key={oneshot.id}
                   href={`/oneshots/${oneshot.id}`}
-                  className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-amber-500/30 transition-all aspect-[2/3]"
+                  className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-green-500/30 transition-all aspect-[2/3]"
                 >
                   {oneshot.image_url ? (
                     <>
@@ -413,15 +670,15 @@ export default function HomePage() {
                       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
                     </>
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
-                      <Scroll className="w-16 h-16 text-amber-400/30" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-900/30 to-gray-900 flex items-center justify-center">
+                      <Scroll className="w-16 h-16 text-green-400/30" />
                     </div>
                   )}
                   <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <span className="inline-block px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-amber-500/20 text-amber-300 mb-2">
+                    <span className="inline-block px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-green-500/20 text-green-300 mb-2">
                       {oneshot.game_system}
                     </span>
-                    <h4 className="font-semibold text-white text-sm line-clamp-2 group-hover:text-amber-300 transition-colors">
+                    <h4 className="font-semibold text-white text-sm line-clamp-2 group-hover:text-green-300 transition-colors">
                       {oneshot.title}
                     </h4>
                     {oneshot.tagline && (
@@ -719,7 +976,11 @@ export default function HomePage() {
         <section className="flex flex-wrap justify-center gap-3 pt-4 pb-8">
           <Link href="/campaigns" className="btn btn-ghost text-sm">
             <Swords className="w-4 h-4" />
-            All Campaigns
+            Campaigns
+          </Link>
+          <Link href="/adventures" className="btn btn-ghost text-sm">
+            <Compass className="w-4 h-4" />
+            Adventures
           </Link>
           <Link href="/oneshots" className="btn btn-ghost text-sm">
             <Scroll className="w-4 h-4" />
@@ -730,6 +991,8 @@ export default function HomePage() {
             Character Vault
           </Link>
         </section>
+        </>
+        )}
       </div>
 
       <BackToTopButton />

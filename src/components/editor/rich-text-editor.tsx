@@ -44,6 +44,7 @@ interface RichTextEditorProps {
   aiContext?: string
   enableImageUpload?: boolean
   onImageUpload?: (file: File) => Promise<string | null>
+  minHeight?: number
 }
 
 export function RichTextEditor({
@@ -56,6 +57,7 @@ export function RichTextEditor({
   aiContext = '',
   enableImageUpload = false,
   onImageUpload,
+  minHeight = 200,
 }: RichTextEditorProps) {
   const [isAiLoading, setIsAiLoading] = useState(false)
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -148,7 +150,7 @@ export function RichTextEditor({
       attributes: {
         class: cn(
           'prose prose-invert prose-sm max-w-none',
-          'focus:outline-none min-h-[200px] p-4',
+          'focus:outline-none p-4',
           // Headings - match the preview styling
           'prose-headings:text-white prose-headings:font-semibold',
           '[&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold',
@@ -428,7 +430,9 @@ export function RichTextEditor({
       </div>
 
       {/* Editor Content */}
-      <EditorContent editor={editor} />
+      <div style={{ minHeight: `${minHeight}px` }}>
+        <EditorContent editor={editor} />
+      </div>
     </div>
   )
 }

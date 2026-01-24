@@ -11,6 +11,9 @@ import {
   Bookmark,
   Play,
   X,
+  Compass,
+  Wand2,
+  Sparkles,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout, MobileSectionHeader } from '@/components/mobile'
@@ -24,6 +27,7 @@ function getInitials(name: string): string {
 
 export interface HomePageMobileProps {
   campaigns: Campaign[]
+  adventures: Campaign[]
   characters: VaultCharacter[]
   oneshots: Oneshot[]
   savedTemplates: ContentSave[]
@@ -33,10 +37,12 @@ export interface HomePageMobileProps {
   isFounder?: boolean
   founderBannerDismissed?: boolean
   onDismissFounderBanner?: () => void
+  isFreshUser?: boolean
 }
 
 export function HomePageMobile({
   campaigns,
+  adventures,
   characters,
   oneshots,
   savedTemplates,
@@ -45,6 +51,7 @@ export function HomePageMobile({
   isFounder = false,
   founderBannerDismissed = false,
   onDismissFounderBanner,
+  isFreshUser = false,
 }: HomePageMobileProps) {
   // Combine recent items for activity section
   const recentActivity = [
@@ -115,6 +122,114 @@ export function HomePageMobile({
           </div>
         )}
 
+        {/* Fresh User Welcome Experience */}
+        {isFreshUser && (
+          <div className="px-4 space-y-6 pb-6">
+            {/* Welcome Header */}
+            <div className="text-center py-6">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 flex items-center justify-center">
+                <Wand2 className="w-8 h-8 text-purple-400" />
+              </div>
+              <h1 className="text-2xl font-display font-bold text-white mb-2">
+                Welcome to Multiloop
+              </h1>
+              <p className="text-gray-400 text-sm">
+                Your TTRPG campaign companion. Let's get started!
+              </p>
+            </div>
+
+            {/* Getting Started Cards */}
+            <div className="space-y-3">
+              <button
+                onClick={() => onNavigate('/campaigns/new')}
+                className="w-full flex items-center gap-4 p-4 bg-blue-600/10 border border-blue-500/30 rounded-xl active:bg-blue-600/20 transition-colors"
+              >
+                <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                  <Swords className="w-6 h-6 text-blue-400" />
+                </div>
+                <div className="flex-1 text-left">
+                  <h3 className="font-semibold text-white">Start a Campaign</h3>
+                  <p className="text-xs text-gray-400">Ongoing stories that span many sessions</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-blue-400" />
+              </button>
+
+              <button
+                onClick={() => onNavigate('/adventures/new')}
+                className="w-full flex items-center gap-4 p-4 bg-amber-600/10 border border-amber-500/30 rounded-xl active:bg-amber-600/20 transition-colors"
+              >
+                <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                  <Compass className="w-6 h-6 text-amber-400" />
+                </div>
+                <div className="flex-1 text-left">
+                  <h3 className="font-semibold text-white">Start an Adventure</h3>
+                  <p className="text-xs text-gray-400">3-9 session stories for shorter arcs</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-amber-400" />
+              </button>
+
+              <button
+                onClick={() => onNavigate('/oneshots/new')}
+                className="w-full flex items-center gap-4 p-4 bg-green-600/10 border border-green-500/30 rounded-xl active:bg-green-600/20 transition-colors"
+              >
+                <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                  <Scroll className="w-6 h-6 text-green-400" />
+                </div>
+                <div className="flex-1 text-left">
+                  <h3 className="font-semibold text-white">Create a One-Shot</h3>
+                  <p className="text-xs text-gray-400">Single-session adventures</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-green-400" />
+              </button>
+
+              <button
+                onClick={() => onNavigate('/vault/new')}
+                className="w-full flex items-center gap-4 p-4 bg-purple-600/10 border border-purple-500/30 rounded-xl active:bg-purple-600/20 transition-colors"
+              >
+                <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                  <BookOpen className="w-6 h-6 text-purple-400" />
+                </div>
+                <div className="flex-1 text-left">
+                  <h3 className="font-semibold text-white">Build Your Character</h3>
+                  <p className="text-xs text-gray-400">Create characters for any campaign</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-purple-400" />
+              </button>
+            </div>
+
+            {/* Explore Demos */}
+            <div className="text-center pt-4 border-t border-white/[0.06]">
+              <p className="text-gray-500 text-xs mb-3">Or explore the demos</p>
+              <div className="flex justify-center gap-2">
+                <button
+                  onClick={() => onNavigate('/demo/campaign')}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-white/[0.05] rounded-lg text-xs text-gray-300 active:bg-white/[0.08]"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  Campaign
+                </button>
+                <button
+                  onClick={() => onNavigate('/demo/character')}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-white/[0.05] rounded-lg text-xs text-gray-300 active:bg-white/[0.08]"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  Character
+                </button>
+                <button
+                  onClick={() => onNavigate('/demo/oneshot')}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-white/[0.05] rounded-lg text-xs text-gray-300 active:bg-white/[0.08]"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  One-Shot
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Returning User Content */}
+        {!isFreshUser && (
+          <>
         {/* Recent Activity Section */}
         {recentActivity.length > 0 && (
           <>
@@ -220,6 +335,51 @@ export function HomePageMobile({
           </div>
         )}
 
+        {/* Adventures Section */}
+        {adventures.length > 0 && (
+          <>
+            <MobileSectionHeader
+              title="Adventures"
+              action={
+                <button onClick={() => onNavigate('/adventures')} className="text-sm text-[--arcane-purple]">
+                  View All
+                </button>
+              }
+            />
+            <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
+              {adventures.slice(0, 5).map((adventure) => (
+                <button
+                  key={adventure.id}
+                  onClick={() => onNavigate(`/campaigns/${adventure.id}/dashboard`)}
+                  className="flex-shrink-0 w-44 aspect-[16/10] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative"
+                >
+                  {adventure.image_url ? (
+                    <>
+                      <Image
+                        src={adventure.image_url}
+                        alt={adventure.name}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
+                      <Compass className="w-10 h-10 text-amber-400/30" />
+                    </div>
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 p-3">
+                    <span className="inline-block px-2 py-0.5 text-[9px] font-semibold uppercase rounded bg-amber-500/20 text-amber-300 mb-1">
+                      {adventure.game_system}
+                    </span>
+                    <h4 className="font-semibold text-white text-sm line-clamp-1">{adventure.name}</h4>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
         {/* One-Shots Section */}
         <MobileSectionHeader
           title="One-Shots"
@@ -232,15 +392,15 @@ export function HomePageMobile({
           }
         />
         {oneshots.length === 0 ? (
-          <div className="mx-4 p-8 text-center bg-gradient-to-br from-amber-500/5 to-transparent rounded-xl border border-dashed border-amber-500/20">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-amber-500/10 flex items-center justify-center">
-              <Scroll className="w-7 h-7 text-amber-400" />
+          <div className="mx-4 p-8 text-center bg-gradient-to-br from-green-500/5 to-transparent rounded-xl border border-dashed border-green-500/20">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-green-500/10 flex items-center justify-center">
+              <Scroll className="w-7 h-7 text-green-400" />
             </div>
             <h3 className="text-base font-semibold text-white mb-1">Quick Adventures Await</h3>
             <p className="text-gray-400 text-sm mb-5">Create standalone one-shot adventures</p>
             <button
               onClick={() => onNavigate('/oneshots')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-600 text-white text-sm font-medium rounded-xl"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white text-sm font-medium rounded-xl"
             >
               <Plus className="w-4 h-4" />
               Create One-Shot
@@ -265,12 +425,12 @@ export function HomePageMobile({
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
                   </>
                 ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
-                    <Scroll className="w-10 h-10 text-amber-400/30" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-green-900/30 to-gray-900 flex items-center justify-center">
+                    <Scroll className="w-10 h-10 text-green-400/30" />
                   </div>
                 )}
                 <div className="absolute bottom-0 left-0 right-0 p-3">
-                  <span className="inline-block px-2 py-0.5 text-[9px] font-semibold uppercase rounded bg-amber-500/20 text-amber-300 mb-1">
+                  <span className="inline-block px-2 py-0.5 text-[9px] font-semibold uppercase rounded bg-green-500/20 text-green-300 mb-1">
                     {oneshot.game_system}
                   </span>
                   <h4 className="font-semibold text-white text-xs line-clamp-2">{oneshot.title}</h4>
@@ -432,17 +592,24 @@ export function HomePageMobile({
         {/* Quick Actions */}
         <div className="px-4 pt-6 pb-4 space-y-3">
           <button
-            onClick={() => onNavigate('/campaigns')}
+            onClick={() => onNavigate('/campaigns/new')}
             className="w-full flex items-center gap-3 p-4 bg-blue-600/10 border border-blue-500/30 rounded-xl active:bg-blue-600/20 transition-colors"
           >
             <Plus className="w-5 h-5 text-blue-400" />
             <span className="text-blue-400 font-medium">Start New Campaign</span>
           </button>
           <button
+            onClick={() => onNavigate('/adventures/new')}
+            className="w-full flex items-center gap-3 p-4 bg-[--bg-surface] border border-white/[0.06] rounded-xl active:bg-[--bg-hover] transition-colors"
+          >
+            <Compass className="w-5 h-5 text-amber-400" />
+            <span className="text-gray-300 font-medium">Start New Adventure</span>
+          </button>
+          <button
             onClick={() => onNavigate('/oneshots/new')}
             className="w-full flex items-center gap-3 p-4 bg-[--bg-surface] border border-white/[0.06] rounded-xl active:bg-[--bg-hover] transition-colors"
           >
-            <Scroll className="w-5 h-5 text-amber-400" />
+            <Scroll className="w-5 h-5 text-green-400" />
             <span className="text-gray-300 font-medium">Start New One-Shot</span>
           </button>
           <button
@@ -453,6 +620,8 @@ export function HomePageMobile({
             <span className="text-gray-300 font-medium">Create New Character</span>
           </button>
         </div>
+        </>
+        )}
       </MobileLayout>
     </AppLayout>
   )

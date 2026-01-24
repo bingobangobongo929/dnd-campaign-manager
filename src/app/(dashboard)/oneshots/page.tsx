@@ -22,7 +22,8 @@ import { OneshotsPageMobile } from './page.mobile'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { formatDate } from '@/lib/utils'
 import type { Oneshot, OneshotGenreTag, OneshotRun, ContentSave } from '@/types/database'
-import { ContentModeToggle, TemplateStateBadge, type ContentModeTab } from '@/components/templates'
+import { TemplateStateBadge } from '@/components/templates'
+import { TabNavigation, ONESHOTS_TABS, type ContentTab } from '@/components/navigation'
 
 interface TemplateSnapshot {
   id: string
@@ -48,7 +49,8 @@ export default function OneshotsPage() {
   const [genreTags, setGenreTags] = useState<OneshotGenreTag[]>([])
   const [oneshotRuns, setOneshotRuns] = useState<Record<string, OneshotRun[]>>({})
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<ContentModeTab>('active')
+  const [activeTab, setActiveTab] = useState<ContentTab>('all')
+  const [subFilter, setSubFilter] = useState<ContentTab>('running')
 
   useEffect(() => {
     if (user) {
@@ -117,24 +119,30 @@ export default function OneshotsPage() {
     setLoading(false)
   }
 
-  // Filter oneshots by content mode (tab)
-  const filteredOneshots = oneshots.filter(o => {
-    if (activeTab === 'active') return o.content_mode === 'active' || !o.content_mode
-    if (activeTab === 'inactive') return o.content_mode === 'inactive'
-    // Template tab uses templateSnapshots, not filtered oneshots
-    return false
-  })
+  // Filter oneshots by active status
+  const activeOneshots = oneshots.filter(o => o.content_mode === 'active' || !o.content_mode)
+  const inactiveOneshots = oneshots.filter(o => o.content_mode === 'inactive')
 
   // Group snapshots by content_id to get unique templates
   const uniqueTemplateContentIds = new Set(templateSnapshots.map(s => s.content_id))
 
   // Get counts for tabs
   const tabCounts = {
-    active: oneshots.filter(o => o.content_mode === 'active' || !o.content_mode).length,
-    inactive: oneshots.filter(o => o.content_mode === 'inactive').length,
-    templates: uniqueTemplateContentIds.size,
-    saved: savedOneshots.length,
+    all: activeOneshots.length + inactiveOneshots.length + templateSnapshots.length + savedOneshots.length,
+    active: activeOneshots.length,
+    'my-work': templateSnapshots.length + oneshots.filter(o => o.content_mode === 'inactive').length,
+    collection: savedOneshots.length,
   }
+
+  // Create tabs with counts
+  const tabsWithCounts = ONESHOTS_TABS.map(tab => ({
+    ...tab,
+    count: tabCounts[tab.value as keyof typeof tabCounts] ?? 0,
+    subFilters: tab.subFilters?.map(sf => ({
+      ...sf,
+      count: sf.value === 'running' ? activeOneshots.length : 0,
+    })),
+  }))
 
   const handleReactivate = async (oneshotId: string) => {
     const response = await fetch('/api/content/reactivate', {
@@ -165,21 +173,23 @@ export default function OneshotsPage() {
     )
   }
 
-  const featuredOneshot = activeTab === 'active' ? filteredOneshots[0] : null
+  const featuredOneshot = activeOneshots[0] || null
 
   // ============ MOBILE LAYOUT ============
   if (isMobile) {
     return (
       <OneshotsPageMobile
-        oneshots={filteredOneshots}
+        oneshots={activeOneshots}
+        inactiveOneshots={inactiveOneshots}
         savedOneshots={savedOneshots}
+        templateSnapshots={templateSnapshots}
         genreTags={genreTags}
         oneshotRuns={oneshotRuns}
         getTagsForOneshot={getTagsForOneshot}
         onNavigate={(path) => router.push(path)}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        tabCounts={tabCounts}
+        tabsWithCounts={tabsWithCounts}
         onReactivate={handleReactivate}
       />
     )
@@ -205,15 +215,16 @@ export default function OneshotsPage() {
         </div>
 
         {/* Tabs */}
-        <ContentModeToggle
+        <TabNavigation
           value={activeTab}
           onChange={setActiveTab}
-          counts={tabCounts}
-          contentType="oneshot"
+          tabs={tabsWithCounts}
+          subFilter={subFilter}
+          onSubFilterChange={setSubFilter}
         />
 
-        {/* Saved Oneshots Tab */}
-        {activeTab === 'saved' && (
+        {/* Collection Tab (Saved) */}
+        {activeTab === 'collection' && (
           <div className="space-y-6">
             {savedOneshots.length === 0 ? (
               <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
@@ -284,134 +295,235 @@ export default function OneshotsPage() {
           </div>
         )}
 
-        {/* Inactive Oneshots Tab */}
-        {activeTab === 'inactive' && (
-          <div className="space-y-6">
-            {filteredOneshots.length === 0 ? (
+        {/* My Work Tab - Drafts and Templates */}
+        {activeTab === 'my-work' && (
+          <div className="space-y-8">
+            {/* Drafts Section */}
+            {inactiveOneshots.length > 0 && (
+              <section>
+                <h3 className="text-lg font-semibold text-white mb-4">Drafts</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+                  {inactiveOneshots.map((oneshot) => (
+                    <div
+                      key={oneshot.id}
+                      className="group relative rounded-xl overflow-hidden bg-gray-900/30 border border-white/[0.04] opacity-75 hover:opacity-100 transition-all aspect-[2/3] flex flex-col"
+                    >
+                      <div className="relative flex-1">
+                        {oneshot.image_url ? (
+                          <>
+                            <Image
+                              src={oneshot.image_url}
+                              alt={oneshot.title}
+                              fill
+                              className="object-cover grayscale group-hover:grayscale-0 transition-all"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-gray-800/30 to-gray-900 flex items-center justify-center">
+                            <Scroll className="w-12 h-12 text-gray-500/30" />
+                          </div>
+                        )}
+                        <div className="absolute top-3 left-3">
+                          <TemplateStateBadge mode="inactive" inactiveReason={oneshot.inactive_reason} size="sm" />
+                        </div>
+                      </div>
+                      <div className="p-4 bg-gray-900/50">
+                        <h4 className="font-semibold text-gray-300 text-sm truncate">
+                          {oneshot.title}
+                        </h4>
+                        <button
+                          onClick={() => handleReactivate(oneshot.id)}
+                          className="mt-3 flex items-center justify-center gap-2 w-full px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-medium rounded-lg transition-colors"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          Reactivate
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* My Templates Section */}
+            {templateSnapshots.length > 0 && (
+              <section>
+                <h3 className="text-lg font-semibold text-white mb-4">My Templates</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+                  {templateSnapshots.map((snapshot) => {
+                    const snapshotData = snapshot.snapshot_data || {}
+                    const oneshot = oneshots.find(o => o.id === snapshot.content_id)
+                    const imageUrl = snapshotData.image_url || oneshot?.image_url
+                    const title = snapshotData.title || oneshot?.title || 'Untitled'
+
+                    return (
+                      <Link
+                        key={snapshot.id}
+                        href={`/oneshots/${snapshot.content_id}?fromTemplate=true`}
+                        className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-green-500/20 hover:border-green-500/40 transition-all aspect-[2/3]"
+                      >
+                        {imageUrl ? (
+                          <>
+                            <Image
+                              src={imageUrl}
+                              alt={title}
+                              fill
+                              className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-green-900/30 to-gray-900 flex items-center justify-center">
+                            <Scroll className="w-16 h-16 text-green-400/30" />
+                          </div>
+                        )}
+                        <div className="absolute top-3 left-3 flex gap-2">
+                          {snapshot.is_public ? (
+                            <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              Public
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-gray-500/20 text-gray-300 border border-gray-500/30">
+                              Private
+                            </span>
+                          )}
+                        </div>
+                        {snapshot.save_count > 0 && (
+                          <div className="absolute top-3 right-3 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-lg text-xs text-gray-300">
+                            {snapshot.save_count} saves
+                          </div>
+                        )}
+                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                          <h4 className="font-semibold text-white text-sm line-clamp-2 group-hover:text-green-300 transition-colors">
+                            {title}
+                          </h4>
+                          <p className="text-xs text-gray-500 mt-1">
+                            v{snapshot.version}
+                            {snapshot.version_name && ` "${snapshot.version_name}"`}
+                          </p>
+                          <p className="text-xs text-gray-600 mt-1">
+                            Published {formatDate(snapshot.published_at)}
+                          </p>
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* Empty state */}
+            {inactiveOneshots.length === 0 && templateSnapshots.length === 0 && (
               <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
-                <Scroll className="w-12 h-12 mx-auto mb-4 text-gray-400/50" />
-                <h3 className="text-lg font-medium text-white mb-2">No inactive one-shots</h3>
+                <Sparkles className="w-12 h-12 mx-auto mb-4 text-green-400/50" />
+                <h3 className="text-lg font-medium text-white mb-2">No work in progress</h3>
                 <p className="text-gray-400 max-w-sm mx-auto">
-                  Completed or archived one-shots will appear here.
+                  Drafts and templates you create will appear here.
                 </p>
               </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                {filteredOneshots.map((oneshot) => (
-                  <div
-                    key={oneshot.id}
-                    className="group relative rounded-xl overflow-hidden bg-gray-900/30 border border-white/[0.04] opacity-75 hover:opacity-100 transition-all aspect-[2/3] flex flex-col"
-                  >
-                    <div className="relative flex-1">
+            )}
+          </div>
+        )}
+
+        {/* All Tab - Overview */}
+        {activeTab === 'all' && (
+          <div className="space-y-8">
+            {/* Active One-Shots */}
+            {activeOneshots.length > 0 && (
+              <section>
+                <h3 className="text-lg font-semibold text-white mb-4">Active One-Shots</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+                  {activeOneshots.slice(0, 5).map((oneshot) => (
+                    <Link
+                      key={oneshot.id}
+                      href={`/oneshots/${oneshot.id}`}
+                      className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-green-500/40 transition-all aspect-[2/3]"
+                    >
                       {oneshot.image_url ? (
                         <>
                           <Image
                             src={oneshot.image_url}
                             alt={oneshot.title}
                             fill
-                            className="object-cover grayscale group-hover:grayscale-0 transition-all"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
-                        </>
-                      ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-gray-800/30 to-gray-900 flex items-center justify-center">
-                          <Scroll className="w-12 h-12 text-gray-500/30" />
-                        </div>
-                      )}
-                      <div className="absolute top-3 left-3">
-                        <TemplateStateBadge mode="inactive" inactiveReason={oneshot.inactive_reason} size="sm" />
-                      </div>
-                    </div>
-                    <div className="p-4 bg-gray-900/50">
-                      <h4 className="font-semibold text-gray-300 text-sm truncate">
-                        {oneshot.title}
-                      </h4>
-                      <button
-                        onClick={() => handleReactivate(oneshot.id)}
-                        className="mt-3 flex items-center justify-center gap-2 w-full px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-medium rounded-lg transition-colors"
-                      >
-                        <RotateCcw className="w-3 h-3" />
-                        Reactivate
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Templates Tab - Shows snapshots from template_snapshots table */}
-        {activeTab === 'templates' && (
-          <div className="space-y-6">
-            {templateSnapshots.length === 0 ? (
-              <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
-                <Sparkles className="w-12 h-12 mx-auto mb-4 text-amber-400/50" />
-                <h3 className="text-lg font-medium text-white mb-2">No templates yet</h3>
-                <p className="text-gray-400 max-w-sm mx-auto">
-                  Publish your one-shots as templates to share them with others.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                {templateSnapshots.map((snapshot) => {
-                  const snapshotData = snapshot.snapshot_data || {}
-                  const oneshot = oneshots.find(o => o.id === snapshot.content_id)
-                  const imageUrl = snapshotData.image_url || oneshot?.image_url
-                  const title = snapshotData.title || oneshot?.title || 'Untitled'
-
-                  return (
-                    <Link
-                      key={snapshot.id}
-                      href={`/oneshots/${snapshot.content_id}?fromTemplate=true`}
-                      className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-amber-500/20 hover:border-amber-500/40 transition-all aspect-[2/3]"
-                    >
-                      {imageUrl ? (
-                        <>
-                          <Image
-                            src={imageUrl}
-                            alt={title}
-                            fill
                             className="object-cover transition-transform duration-500 group-hover:scale-105"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
                         </>
                       ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
-                          <Scroll className="w-16 h-16 text-amber-400/30" />
-                        </div>
-                      )}
-                      <div className="absolute top-3 left-3 flex gap-2">
-                        {snapshot.is_public ? (
-                          <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                            Public
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-gray-500/20 text-gray-300 border border-gray-500/30">
-                            Private
-                          </span>
-                        )}
-                      </div>
-                      {snapshot.save_count > 0 && (
-                        <div className="absolute top-3 right-3 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-lg text-xs text-gray-300">
-                          {snapshot.save_count} saves
+                        <div className="absolute inset-0 bg-gradient-to-br from-green-900/30 to-gray-900 flex items-center justify-center">
+                          <Scroll className="w-16 h-16 text-green-400/30" />
                         </div>
                       )}
                       <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <h4 className="font-semibold text-white text-sm line-clamp-2 group-hover:text-amber-300 transition-colors">
-                          {title}
+                        <span className="inline-block px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-green-500/20 text-green-300 mb-2">
+                          {oneshot.game_system}
+                        </span>
+                        <h4 className="font-semibold text-white text-sm line-clamp-2 group-hover:text-green-300 transition-colors">
+                          {oneshot.title}
                         </h4>
-                        <p className="text-xs text-gray-500 mt-1">
-                          v{snapshot.version}
-                          {snapshot.version_name && ` "${snapshot.version_name}"`}
-                        </p>
-                        <p className="text-xs text-gray-600 mt-1">
-                          Published {formatDate(snapshot.published_at)}
-                        </p>
                       </div>
                     </Link>
-                  )
-                })}
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Saved Templates */}
+            {savedOneshots.length > 0 && (
+              <section>
+                <h3 className="text-lg font-semibold text-white mb-4">Saved from Community</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+                  {savedOneshots.slice(0, 5).map((save) => (
+                    <div
+                      key={save.id}
+                      className="relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-green-500/40 transition-all aspect-[2/3] flex flex-col"
+                    >
+                      <div className="relative flex-1">
+                        {save.source_image_url ? (
+                          <>
+                            <Image
+                              src={save.source_image_url}
+                              alt={save.source_name}
+                              fill
+                              className="object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-green-900/30 to-gray-900 flex items-center justify-center">
+                            <Scroll className="w-12 h-12 text-green-400/30" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-4 bg-gray-900">
+                        <h4 className="font-semibold text-white text-sm truncate">
+                          {save.source_name}
+                        </h4>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Empty state */}
+            {activeOneshots.length === 0 && savedOneshots.length === 0 && (
+              <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-green-900/20 via-gray-900 to-gray-950 border border-white/[0.06] p-16 text-center">
+                <Scroll className="w-20 h-20 mx-auto mb-6 text-green-400/50" />
+                <h2 className="text-2xl font-display font-bold text-white mb-3">
+                  No One-Shots Yet
+                </h2>
+                <p className="text-gray-400 mb-8 max-w-md mx-auto">
+                  Create your first one-shot adventure. Perfect for introducing new players or running a quick session.
+                </p>
+                <Link
+                  href="/oneshots/new"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-medium rounded-xl transition-colors"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  Create Your First One-Shot
+                </Link>
               </div>
             )}
           </div>
@@ -419,10 +531,10 @@ export default function OneshotsPage() {
 
         {/* Active Oneshots Tab */}
         {activeTab === 'active' && (
-        filteredOneshots.length === 0 ? (
+        activeOneshots.length === 0 ? (
           /* Empty State */
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-amber-900/20 via-gray-900 to-gray-950 border border-white/[0.06] p-16 text-center">
-            <Scroll className="w-20 h-20 mx-auto mb-6 text-amber-400/50" />
+          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-green-900/20 via-gray-900 to-gray-950 border border-white/[0.06] p-16 text-center">
+            <Scroll className="w-20 h-20 mx-auto mb-6 text-green-400/50" />
             <h2 className="text-2xl font-display font-bold text-white mb-3">
               No One-Shots Yet
             </h2>
@@ -431,7 +543,7 @@ export default function OneshotsPage() {
             </p>
             <Link
               href="/oneshots/new"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-amber-600 hover:bg-amber-500 text-white font-medium rounded-xl transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-medium rounded-xl transition-colors"
             >
               <Sparkles className="w-5 h-5" />
               Create Your First One-Shot
@@ -444,7 +556,7 @@ export default function OneshotsPage() {
               <section>
                 <Link
                   href={`/oneshots/${featuredOneshot.id}`}
-                  className="group relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-amber-500/30 transition-all duration-500"
+                  className="group relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-green-500/30 transition-all duration-500"
                 >
                   <div className="relative h-[350px] md:h-[450px]">
                     {featuredOneshot.image_url ? (
@@ -460,8 +572,8 @@ export default function OneshotsPage() {
                         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
                       </>
                     ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 via-gray-900 to-gray-950 flex items-center justify-center">
-                        <Scroll className="w-32 h-32 text-amber-400/20" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-green-900/30 via-gray-900 to-gray-950 flex items-center justify-center">
+                        <Scroll className="w-32 h-32 text-green-400/20" />
                       </div>
                     )}
 
@@ -469,7 +581,7 @@ export default function OneshotsPage() {
                     <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-12">
                       {/* Genre Tags */}
                       <div className="flex flex-wrap items-center gap-2 mb-4">
-                        <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-full bg-amber-500 text-black">
+                        <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-full bg-green-500 text-black">
                           Featured
                         </span>
                         <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300">
@@ -486,7 +598,7 @@ export default function OneshotsPage() {
                         ))}
                       </div>
 
-                      <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-3 group-hover:text-amber-400 transition-colors">
+                      <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-3 group-hover:text-green-400 transition-colors">
                         {featuredOneshot.title}
                       </h2>
 
@@ -508,13 +620,13 @@ export default function OneshotsPage() {
                             {featuredOneshot.estimated_duration}
                           </span>
                         )}
-                        <span className="text-amber-400">
+                        <span className="text-green-400">
                           Level {featuredOneshot.level || '?'}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-3">
-                        <span className="flex items-center gap-2 text-amber-400 font-medium">
+                        <span className="flex items-center gap-2 text-green-400 font-medium">
                           <Play className="w-5 h-5" />
                           Open Adventure
                           <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
@@ -532,15 +644,15 @@ export default function OneshotsPage() {
             )}
 
             {/* One-Shot Gallery (Movie Posters) */}
-            {filteredOneshots.length > 1 && (
+            {activeOneshots.length > 1 && (
               <section>
                 <h3 className="text-xl font-semibold text-white mb-6">All One-Shots</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                  {filteredOneshots.map((oneshot) => (
+                  {activeOneshots.map((oneshot) => (
                     <Link
                       key={oneshot.id}
                       href={`/oneshots/${oneshot.id}`}
-                      className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-amber-500/40 transition-all aspect-[2/3]"
+                      className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-green-500/40 transition-all aspect-[2/3]"
                     >
                       {oneshot.image_url ? (
                         <>
@@ -553,8 +665,8 @@ export default function OneshotsPage() {
                           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
                         </>
                       ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
-                          <Scroll className="w-16 h-16 text-amber-400/30" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-green-900/30 to-gray-900 flex items-center justify-center">
+                          <Scroll className="w-16 h-16 text-green-400/30" />
                         </div>
                       )}
 
@@ -584,10 +696,10 @@ export default function OneshotsPage() {
 
                       {/* Content at bottom */}
                       <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <span className="inline-block px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-amber-500/20 text-amber-300 mb-2">
+                        <span className="inline-block px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-green-500/20 text-green-300 mb-2">
                           {oneshot.game_system}
                         </span>
-                        <h4 className="font-semibold text-white text-sm line-clamp-2 group-hover:text-amber-300 transition-colors">
+                        <h4 className="font-semibold text-white text-sm line-clamp-2 group-hover:text-green-300 transition-colors">
                           {oneshot.title}
                         </h4>
                         {oneshot.tagline && (
@@ -607,25 +719,25 @@ export default function OneshotsPage() {
                   {/* Create New Card */}
                   <Link
                     href="/oneshots/new"
-                    className="group relative rounded-xl overflow-hidden bg-gradient-to-br from-amber-900/10 to-gray-900/50 border-2 border-dashed border-amber-500/20 hover:border-amber-500/50 transition-all aspect-[2/3] flex flex-col items-center justify-center gap-4"
+                    className="group relative rounded-xl overflow-hidden bg-gradient-to-br from-green-900/10 to-gray-900/50 border-2 border-dashed border-green-500/20 hover:border-green-500/50 transition-all aspect-[2/3] flex flex-col items-center justify-center gap-4"
                   >
-                    <div className="p-4 rounded-full bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
-                      <Plus className="w-8 h-8 text-amber-400" />
+                    <div className="p-4 rounded-full bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
+                      <Plus className="w-8 h-8 text-green-400" />
                     </div>
-                    <span className="text-sm font-medium text-amber-400">Create New</span>
+                    <span className="text-sm font-medium text-green-400">Create New</span>
                   </Link>
                 </div>
               </section>
             )}
 
             {/* Single oneshot - show create prompt */}
-            {filteredOneshots.length === 1 && (
+            {activeOneshots.length === 1 && (
               <section>
                 <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
                   <p className="text-gray-400 mb-4">Looking good! Add more adventures to your collection.</p>
                   <Link
                     href="/oneshots/new"
-                    className="flex items-center gap-2 px-4 py-2 bg-amber-600/80 hover:bg-amber-500 text-white font-medium rounded-lg transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600/80 hover:bg-green-500 text-white font-medium rounded-lg transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                     Create Another One-Shot

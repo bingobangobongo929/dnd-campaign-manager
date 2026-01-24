@@ -51,6 +51,9 @@ export interface Database {
           // Discord integration
           discord_webhook_url: string | null
           discord_settings: Json
+          // Navigation restructure: content type
+          duration_type: 'campaign' | 'adventure'
+          estimated_sessions: number | null
           created_at: string
           updated_at: string
         }
@@ -95,6 +98,9 @@ export interface Database {
           // Discord integration
           discord_webhook_url?: string | null
           discord_settings?: Json
+          // Navigation restructure: content type
+          duration_type?: 'campaign' | 'adventure'
+          estimated_sessions?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -139,6 +145,9 @@ export interface Database {
           // Discord integration
           discord_webhook_url?: string | null
           discord_settings?: Json
+          // Navigation restructure: content type
+          duration_type?: 'campaign' | 'adventure'
+          estimated_sessions?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -187,6 +196,11 @@ export interface Database {
           controlled_by_user_id: string | null
           controlled_by_email: string | null
           controlled_by_discord: string | null
+          // Navigation restructure: new character fields
+          backstory: string | null
+          motivations: string | null
+          play_status: 'active' | 'inactive' | 'hostage' | 'missing' | 'deceased' | 'retired'
+          is_party_member: boolean
           created_at: string
           updated_at: string
         }
@@ -228,6 +242,11 @@ export interface Database {
           controlled_by_user_id?: string | null
           controlled_by_email?: string | null
           controlled_by_discord?: string | null
+          // Navigation restructure: new character fields
+          backstory?: string | null
+          motivations?: string | null
+          play_status?: 'active' | 'inactive' | 'hostage' | 'missing' | 'deceased' | 'retired'
+          is_party_member?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -269,6 +288,11 @@ export interface Database {
           controlled_by_user_id?: string | null
           controlled_by_email?: string | null
           controlled_by_discord?: string | null
+          // Navigation restructure: new character fields
+          backstory?: string | null
+          motivations?: string | null
+          play_status?: 'active' | 'inactive' | 'hostage' | 'missing' | 'deceased' | 'retired'
+          is_party_member?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -852,6 +876,8 @@ export interface Database {
           inactive_reason: string | null
           // Multiloop upgrade: campaign linking
           campaign_links: Json
+          // Navigation restructure: private notes per campaign
+          private_campaign_notes: Json
           created_at: string
           updated_at: string
         }
@@ -992,6 +1018,8 @@ export interface Database {
           inactive_reason?: string | null
           // Multiloop upgrade: campaign linking
           campaign_links?: Json
+          // Navigation restructure: private notes per campaign
+          private_campaign_notes?: Json
           created_at?: string
           updated_at?: string
         }
@@ -1133,8 +1161,48 @@ export interface Database {
           inactive_reason?: string | null
           // Multiloop upgrade: campaign linking
           campaign_links?: Json
+          // Navigation restructure: private notes per campaign
+          private_campaign_notes?: Json
           created_at?: string
           updated_at?: string
+        }
+      }
+      // =====================================================
+      // CHARACTER SNAPSHOTS (Session 0, etc.)
+      // =====================================================
+      character_snapshots: {
+        Row: {
+          id: string
+          vault_character_id: string | null
+          campaign_character_id: string | null
+          campaign_id: string | null
+          snapshot_data: Json
+          snapshot_type: 'session_0' | 'current_state' | 'manual' | 'join'
+          snapshot_name: string | null
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          vault_character_id?: string | null
+          campaign_character_id?: string | null
+          campaign_id?: string | null
+          snapshot_data: Json
+          snapshot_type?: 'session_0' | 'current_state' | 'manual' | 'join'
+          snapshot_name?: string | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          vault_character_id?: string | null
+          campaign_character_id?: string | null
+          campaign_id?: string | null
+          snapshot_data?: Json
+          snapshot_type?: 'session_0' | 'current_state' | 'manual' | 'join'
+          snapshot_name?: string | null
+          created_at?: string
+          created_by?: string | null
         }
       }
       story_characters: {
@@ -3536,32 +3604,6 @@ export interface Database {
           created_at?: string
         }
       }
-      character_snapshots: {
-        Row: {
-          id: string
-          vault_character_id: string
-          campaign_id: string
-          snapshot_data: Json
-          snapshot_type: 'session_0' | 'milestone' | 'manual'
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          vault_character_id: string
-          campaign_id: string
-          snapshot_data: Json
-          snapshot_type?: 'session_0' | 'milestone' | 'manual'
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          vault_character_id?: string
-          campaign_id?: string
-          snapshot_data?: Json
-          snapshot_type?: 'session_0' | 'milestone' | 'manual'
-          created_at?: string
-        }
-      }
       ai_usage_logs: {
         Row: {
           id: string
@@ -3819,6 +3861,12 @@ export type CampaignLore = Database['public']['Tables']['campaign_lore']['Row']
 export type CampaignShare = Database['public']['Tables']['campaign_shares']['Row']
 export type ShareViewEvent = Database['public']['Tables']['share_view_events']['Row']
 export type IntelligenceSuggestion = Database['public']['Tables']['intelligence_suggestions']['Row']
+
+// Play status types for in-play characters
+export type PlayStatus = 'active' | 'inactive' | 'hostage' | 'missing' | 'deceased' | 'retired'
+
+// Duration type for campaigns/adventures
+export type DurationType = 'campaign' | 'adventure'
 
 // User tier type (renamed from free/standard/premium to adventurer/hero/legend)
 export type UserTier = 'adventurer' | 'hero' | 'legend'

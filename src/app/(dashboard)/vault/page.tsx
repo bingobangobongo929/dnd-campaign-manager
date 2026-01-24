@@ -14,7 +14,8 @@ import { useCanUseAI } from '@/store'
 import { VaultPageMobile } from './page.mobile'
 import { cn, getInitials, formatDate } from '@/lib/utils'
 import type { VaultCharacter, Campaign, ContentSave } from '@/types/database'
-import { ContentModeToggle, TemplateStateBadge, type ContentModeTab } from '@/components/templates'
+import { TemplateStateBadge } from '@/components/templates'
+import { TabNavigation, VAULT_TABS, type ContentTab } from '@/components/navigation'
 
 interface TemplateSnapshot {
   id: string
@@ -41,7 +42,8 @@ export default function VaultPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
-  const [activeTab, setActiveTab] = useState<ContentModeTab>('active')
+  const [activeTab, setActiveTab] = useState<ContentTab>('all')
+  const [subFilter, setSubFilter] = useState<ContentTab>('my-templates')
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'pc' | 'npc'>('all')
@@ -168,15 +170,22 @@ export default function VaultPage() {
     return Array.from(statuses)
   }, [vaultCharacters])
 
-  // Filter characters by content mode (tab)
-  const modeFilteredCharacters = useMemo(() => {
-    return vaultCharacters.filter(c => {
-      if (activeTab === 'active') return c.content_mode === 'active' || !c.content_mode
-      if (activeTab === 'inactive') return c.content_mode === 'inactive'
-      // Template tab uses templateSnapshots, not filtered characters
-      return false
-    })
-  }, [vaultCharacters, activeTab])
+  // Filter characters by tab
+  const activeCharacters = useMemo(() =>
+    vaultCharacters.filter(c => c.content_mode === 'active' || !c.content_mode),
+    [vaultCharacters]
+  )
+
+  const inactiveCharacters = useMemo(() =>
+    vaultCharacters.filter(c => c.content_mode === 'inactive'),
+    [vaultCharacters]
+  )
+
+  // In-play characters - characters linked to active campaigns
+  const inPlayCharacters = useMemo(() =>
+    vaultCharacters.filter(c => c.linked_campaign_id),
+    [vaultCharacters]
+  )
 
   // Group snapshots by content_id to get unique templates
   const uniqueTemplateContentIds = useMemo(() =>
@@ -186,11 +195,24 @@ export default function VaultPage() {
 
   // Get counts for tabs
   const tabCounts = useMemo(() => ({
-    active: vaultCharacters.filter(c => c.content_mode === 'active' || !c.content_mode).length,
-    inactive: vaultCharacters.filter(c => c.content_mode === 'inactive').length,
-    templates: uniqueTemplateContentIds.size,
-    saved: savedCharacters.length,
-  }), [vaultCharacters, uniqueTemplateContentIds, savedCharacters])
+    all: activeCharacters.length + inPlayCharacters.length + savedCharacters.length + templateSnapshots.length,
+    'my-characters': activeCharacters.length,
+    'in-play': inPlayCharacters.length,
+    collection: templateSnapshots.length + savedCharacters.length,
+  }), [activeCharacters, inPlayCharacters, savedCharacters, templateSnapshots])
+
+  // Create tabs with counts
+  const tabsWithCounts = useMemo(() =>
+    VAULT_TABS.map(tab => ({
+      ...tab,
+      count: tabCounts[tab.value as keyof typeof tabCounts] ?? 0,
+      subFilters: tab.subFilters?.map(sf => ({
+        ...sf,
+        count: sf.value === 'my-templates' ? templateSnapshots.length : savedCharacters.length,
+      })),
+    })),
+    [tabCounts, templateSnapshots, savedCharacters]
+  )
 
   const handleReactivate = async (characterId: string) => {
     const response = await fetch('/api/content/reactivate', {
@@ -207,9 +229,21 @@ export default function VaultPage() {
     }
   }
 
-  // Filter and sort characters (within the mode-filtered list)
+  // Get characters to display based on active tab
+  const getCharactersForTab = () => {
+    switch (activeTab) {
+      case 'my-characters':
+        return activeCharacters
+      case 'in-play':
+        return inPlayCharacters
+      default:
+        return activeCharacters
+    }
+  }
+
+  // Filter and sort characters (within the tab-filtered list)
   const filteredCharacters = useMemo(() => {
-    let filtered = modeFilteredCharacters.filter((char) => {
+    let filtered = getCharactersForTab().filter((char) => {
       // Text search
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
@@ -274,7 +308,7 @@ export default function VaultPage() {
     })
 
     return filtered
-  }, [vaultCharacters, searchQuery, statusFilter, typeFilter, sortBy, pinnedIds])
+  }, [activeTab, activeCharacters, inPlayCharacters, searchQuery, statusFilter, typeFilter, sortBy, pinnedIds])
 
   const hasActiveFilters = statusFilter !== 'all' || typeFilter !== 'all'
 
@@ -445,7 +479,9 @@ export default function VaultPage() {
     return (
       <VaultPageMobile
         filteredCharacters={filteredCharacters}
+        inPlayCharacters={inPlayCharacters}
         savedCharacters={savedCharacters}
+        templateSnapshots={templateSnapshots}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         typeFilter={typeFilter}
@@ -463,7 +499,9 @@ export default function VaultPage() {
         canUseAI={canUseAI}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        tabCounts={tabCounts}
+        subFilter={subFilter}
+        setSubFilter={setSubFilter}
+        tabsWithCounts={tabsWithCounts}
         onReactivate={handleReactivate}
       />
     )
@@ -534,185 +572,281 @@ export default function VaultPage() {
         </div>
 
         {/* Tabs */}
-        <ContentModeToggle
+        <TabNavigation
           value={activeTab}
           onChange={setActiveTab}
-          counts={tabCounts}
-          contentType="character"
+          tabs={tabsWithCounts}
+          subFilter={subFilter}
+          onSubFilterChange={setSubFilter}
         />
 
-        {/* Saved Characters Tab */}
-        {activeTab === 'saved' && (
+        {/* Discover Tab - Coming Soon */}
+        {activeTab === 'discover' && (
+          <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
+            <Sparkles className="w-12 h-12 mx-auto mb-4 text-purple-400/50" />
+            <h3 className="text-lg font-medium text-white mb-2">Community Coming Soon</h3>
+            <p className="text-gray-400 max-w-sm mx-auto">
+              Discover character templates shared by the community. Coming in a future update.
+            </p>
+          </div>
+        )}
+
+        {/* Collection Tab - My Templates and Saved */}
+        {activeTab === 'collection' && (
           <div className="space-y-6">
-            {savedCharacters.length === 0 ? (
-              <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
-                <Bookmark className="w-12 h-12 mx-auto mb-4 text-purple-400/50" />
-                <h3 className="text-lg font-medium text-white mb-2">No saved characters yet</h3>
-                <p className="text-gray-400 max-w-sm mx-auto">
-                  When you save character templates from share links, they'll appear here.
-                </p>
-              </div>
-            ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {savedCharacters.map((save) => (
-                  <div
-                    key={save.id}
-                    className="relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/40 transition-all"
-                  >
-                    <div className="relative h-40 overflow-hidden">
-                      {save.source_image_url ? (
-                        <>
-                          <Image
-                            src={save.source_image_url}
-                            alt={save.source_name}
-                            fill
-                            className="object-cover"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
-                        </>
-                      ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
-                          <User className="w-12 h-12 text-purple-400/30" />
+            {/* My Templates sub-filter */}
+            {subFilter === 'my-templates' && (
+              templateSnapshots.length === 0 ? (
+                <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
+                  <Sparkles className="w-12 h-12 mx-auto mb-4 text-purple-400/50" />
+                  <h3 className="text-lg font-medium text-white mb-2">No templates yet</h3>
+                  <p className="text-gray-400 max-w-sm mx-auto">
+                    Publish your characters as templates to share them with others.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {templateSnapshots.map((snapshot) => {
+                    const snapshotData = snapshot.snapshot_data || {}
+                    const character = vaultCharacters.find(c => c.id === snapshot.content_id)
+                    const imageUrl = snapshotData.image_url || character?.image_url
+                    const name = snapshotData.name || character?.name || 'Untitled'
+                    const race = snapshotData.race || character?.race
+                    const charClass = snapshotData.class || character?.class
+                    const charType = snapshotData.type || character?.type || 'pc'
+
+                    return (
+                      <button
+                        key={snapshot.id}
+                        onClick={() => router.push(`/vault/${snapshot.content_id}?fromTemplate=true`)}
+                        className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-purple-500/20 hover:border-purple-500/40 transition-all text-left"
+                      >
+                        <div className="relative h-48 overflow-hidden">
+                          {imageUrl ? (
+                            <>
+                              <Image
+                                src={imageUrl}
+                                alt={name}
+                                fill
+                                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
+                            </>
+                          ) : (
+                            <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                              <User className="w-16 h-16 text-purple-400/30" />
+                            </div>
+                          )}
+                          <div className="absolute top-3 left-3 flex gap-2">
+                            {snapshot.is_public ? (
+                              <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                Public
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-500/20 text-gray-300 border border-gray-500/30">
+                                Private
+                              </span>
+                            )}
+                          </div>
+                          {snapshot.save_count > 0 && (
+                            <div className="absolute top-3 right-3 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-lg text-xs text-gray-300">
+                              {snapshot.save_count} saves
+                            </div>
+                          )}
                         </div>
-                      )}
-                      <div className="absolute top-3 left-3">
-                        <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                          Saved Template
-                        </span>
+                        <div className="p-5">
+                          <h4 className="font-display font-semibold text-lg text-white truncate group-hover:text-purple-400 transition-colors">
+                            {name}
+                          </h4>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {[race, charClass].filter(Boolean).join(' • ') || (charType === 'pc' ? 'Player Character' : 'NPC')} • v{snapshot.version}
+                            {snapshot.version_name && ` "${snapshot.version_name}"`}
+                          </p>
+                          <p className="text-xs text-gray-600 mt-1">
+                            Published {formatDate(snapshot.published_at)}
+                          </p>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )
+            )}
+
+            {/* Saved sub-filter */}
+            {subFilter === 'saved' && (
+              savedCharacters.length === 0 ? (
+                <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
+                  <Bookmark className="w-12 h-12 mx-auto mb-4 text-purple-400/50" />
+                  <h3 className="text-lg font-medium text-white mb-2">No saved characters yet</h3>
+                  <p className="text-gray-400 max-w-sm mx-auto">
+                    When you save character templates from share links, they'll appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {savedCharacters.map((save) => (
+                    <div
+                      key={save.id}
+                      className="relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/40 transition-all"
+                    >
+                      <div className="relative h-40 overflow-hidden">
+                        {save.source_image_url ? (
+                          <>
+                            <Image
+                              src={save.source_image_url}
+                              alt={save.source_name}
+                              fill
+                              className="object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                            <User className="w-12 h-12 text-purple-400/30" />
+                          </div>
+                        )}
+                        <div className="absolute top-3 left-3">
+                          <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                            Saved Template
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-5">
+                        <h4 className="font-display font-semibold text-lg text-white truncate">
+                          {save.source_name}
+                        </h4>
+                        <p className="text-xs text-gray-500 mt-1">
+                          v{save.saved_version}
+                          {save.update_available && (
+                            <span className="ml-2 text-purple-400">Update available!</span>
+                          )}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Saved {formatDate(save.saved_at)}
+                        </p>
+                        {save.instance_id ? (
+                          <button
+                            onClick={() => router.push(`/vault/${save.instance_id}`)}
+                            className="mt-4 flex items-center justify-center gap-2 w-full px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-lg transition-colors"
+                          >
+                            <Play className="w-4 h-4" />
+                            Continue Playing
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => router.push(`/vault?startPlaying=${save.id}`)}
+                            className="mt-4 flex items-center justify-center gap-2 w-full px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg transition-colors"
+                          >
+                            <Play className="w-4 h-4" />
+                            Start Playing
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <div className="p-5">
-                      <h4 className="font-display font-semibold text-lg text-white truncate">
-                        {save.source_name}
-                      </h4>
-                      <p className="text-xs text-gray-500 mt-1">
-                        v{save.saved_version}
-                        {save.update_available && (
-                          <span className="ml-2 text-purple-400">Update available!</span>
-                        )}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Saved {formatDate(save.saved_at)}
-                      </p>
-                      {save.instance_id ? (
-                        <button
-                          onClick={() => router.push(`/vault/${save.instance_id}`)}
-                          className="mt-4 flex items-center justify-center gap-2 w-full px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-lg transition-colors"
-                        >
-                          <Play className="w-4 h-4" />
-                          Continue Playing
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => router.push(`/vault?startPlaying=${save.id}`)}
-                          className="mt-4 flex items-center justify-center gap-2 w-full px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg transition-colors"
-                        >
-                          <Play className="w-4 h-4" />
-                          Start Playing
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )
             )}
           </div>
         )}
 
-        {/* Inactive Characters Tab */}
-        {activeTab === 'inactive' && (
+        {/* In-Play Tab - Characters in active campaigns */}
+        {activeTab === 'in-play' && (
           <div className="space-y-6">
-            {modeFilteredCharacters.length === 0 ? (
+            {inPlayCharacters.length === 0 ? (
               <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
-                <User className="w-12 h-12 mx-auto mb-4 text-gray-400/50" />
-                <h3 className="text-lg font-medium text-white mb-2">No inactive characters</h3>
+                <Play className="w-12 h-12 mx-auto mb-4 text-purple-400/50" />
+                <h3 className="text-lg font-medium text-white mb-2">No characters in play</h3>
                 <p className="text-gray-400 max-w-sm mx-auto">
-                  Retired or deceased characters will appear here.
+                  When you join a campaign with a character, they'll appear here with their campaign info.
                 </p>
               </div>
             ) : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {modeFilteredCharacters.map((character) => (
-                  <div
+                {inPlayCharacters.map((character) => (
+                  <button
                     key={character.id}
-                    className="group relative rounded-xl overflow-hidden bg-gray-900/30 border border-white/[0.04] opacity-75 hover:opacity-100 transition-all"
+                    onClick={() => router.push(`/vault/${character.id}`)}
+                    className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-purple-500/20 hover:border-purple-500/40 transition-all text-left"
                   >
-                    <div className="relative h-40 overflow-hidden">
+                    <div className="relative h-48 overflow-hidden">
                       {character.image_url ? (
                         <>
                           <Image
                             src={character.image_url}
                             alt={character.name}
                             fill
-                            className="object-cover grayscale group-hover:grayscale-0 transition-all"
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
                         </>
                       ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-gray-800/30 to-gray-900 flex items-center justify-center">
-                          <User className="w-12 h-12 text-gray-500/30" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                          <User className="w-16 h-16 text-purple-400/30" />
                         </div>
                       )}
                       <div className="absolute top-3 left-3">
-                        <TemplateStateBadge mode="inactive" inactiveReason={character.inactive_reason} size="sm" />
+                        <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-green-500/20 text-green-300 border border-green-500/30">
+                          In Play
+                        </span>
                       </div>
                     </div>
                     <div className="p-5">
-                      <h4 className="font-display font-semibold text-lg text-gray-300 truncate">
+                      <h4 className="font-display font-semibold text-lg text-white truncate group-hover:text-purple-400 transition-colors">
                         {character.name}
                       </h4>
                       <p className="text-xs text-gray-500 mt-1">
-                        {[character.race, character.class].filter(Boolean).join(' • ') || character.type === 'pc' ? 'Player Character' : 'NPC'}
+                        {[character.race, character.class].filter(Boolean).join(' • ') || (character.type === 'pc' ? 'Player Character' : 'NPC')}
                       </p>
-                      <button
-                        onClick={() => handleReactivate(character.id)}
-                        className="mt-4 flex items-center justify-center gap-2 w-full px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-sm font-medium rounded-lg transition-colors"
-                      >
-                        <RotateCcw className="w-4 h-4" />
-                        Reactivate
-                      </button>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
           </div>
         )}
 
-        {/* Templates Tab - Shows snapshots from template_snapshots table */}
-        {activeTab === 'templates' && (
-          <div className="space-y-6">
-            {templateSnapshots.length === 0 ? (
-              <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
-                <Sparkles className="w-12 h-12 mx-auto mb-4 text-purple-400/50" />
-                <h3 className="text-lg font-medium text-white mb-2">No templates yet</h3>
-                <p className="text-gray-400 max-w-sm mx-auto">
-                  Publish your characters as templates to share them with others.
-                </p>
-              </div>
-            ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {templateSnapshots.map((snapshot) => {
-                  const snapshotData = snapshot.snapshot_data || {}
-                  const character = vaultCharacters.find(c => c.id === snapshot.content_id)
-                  const imageUrl = snapshotData.image_url || character?.image_url
-                  const name = snapshotData.name || character?.name || 'Untitled'
-                  const race = snapshotData.race || character?.race
-                  const charClass = snapshotData.class || character?.class
-                  const charType = snapshotData.type || character?.type || 'pc'
+        {/* All Tab - Overview */}
+        {activeTab === 'all' && (
+          <div className="space-y-8">
+            {/* My Characters Section */}
+            {activeCharacters.length > 0 && (
+              <section>
+                <h3 className="text-lg font-semibold text-white mb-4">My Characters</h3>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {activeCharacters.slice(0, 4).map((character) => (
+                    <CharacterCard
+                      key={character.id}
+                      character={character}
+                      isPinned={pinnedIds.has(character.id)}
+                      onClick={() => router.push(`/vault/${character.id}`)}
+                      onView={() => router.push(`/vault/${character.id}`)}
+                      onSessions={() => router.push(`/vault/${character.id}/sessions`)}
+                      onPin={() => togglePinned(character.id)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
 
-                  return (
+            {/* In-Play Section */}
+            {inPlayCharacters.length > 0 && (
+              <section>
+                <h3 className="text-lg font-semibold text-white mb-4">In Play</h3>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {inPlayCharacters.slice(0, 4).map((character) => (
                     <button
-                      key={snapshot.id}
-                      onClick={() => router.push(`/vault/${snapshot.content_id}?fromTemplate=true`)}
+                      key={character.id}
+                      onClick={() => router.push(`/vault/${character.id}`)}
                       className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-purple-500/20 hover:border-purple-500/40 transition-all text-left"
                     >
                       <div className="relative h-48 overflow-hidden">
-                        {imageUrl ? (
+                        {character.image_url ? (
                           <>
                             <Image
-                              src={imageUrl}
-                              alt={name}
+                              src={character.image_url}
+                              alt={character.name}
                               fill
                               className="object-cover transition-transform duration-500 group-hover:scale-105"
                             />
@@ -723,45 +857,88 @@ export default function VaultPage() {
                             <User className="w-16 h-16 text-purple-400/30" />
                           </div>
                         )}
-                        <div className="absolute top-3 left-3 flex gap-2">
-                          {snapshot.is_public ? (
-                            <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                              Public
-                            </span>
-                          ) : (
-                            <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-500/20 text-gray-300 border border-gray-500/30">
-                              Private
-                            </span>
-                          )}
+                        <div className="absolute top-3 left-3">
+                          <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-green-500/20 text-green-300 border border-green-500/30">
+                            In Play
+                          </span>
                         </div>
-                        {snapshot.save_count > 0 && (
-                          <div className="absolute top-3 right-3 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-lg text-xs text-gray-300">
-                            {snapshot.save_count} saves
+                      </div>
+                      <div className="p-5">
+                        <h4 className="font-display font-semibold text-lg text-white truncate group-hover:text-purple-400 transition-colors">
+                          {character.name}
+                        </h4>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {[character.race, character.class].filter(Boolean).join(' • ')}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Saved Section */}
+            {savedCharacters.length > 0 && (
+              <section>
+                <h3 className="text-lg font-semibold text-white mb-4">Saved from Community</h3>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {savedCharacters.slice(0, 4).map((save) => (
+                    <div
+                      key={save.id}
+                      className="relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/40 transition-all"
+                    >
+                      <div className="relative h-40 overflow-hidden">
+                        {save.source_image_url ? (
+                          <>
+                            <Image
+                              src={save.source_image_url}
+                              alt={save.source_name}
+                              fill
+                              className="object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                            <User className="w-12 h-12 text-purple-400/30" />
                           </div>
                         )}
                       </div>
                       <div className="p-5">
-                        <h4 className="font-display font-semibold text-lg text-white truncate group-hover:text-purple-400 transition-colors">
-                          {name}
+                        <h4 className="font-display font-semibold text-lg text-white truncate">
+                          {save.source_name}
                         </h4>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {[race, charClass].filter(Boolean).join(' • ') || (charType === 'pc' ? 'Player Character' : 'NPC')} • v{snapshot.version}
-                          {snapshot.version_name && ` "${snapshot.version_name}"`}
-                        </p>
-                        <p className="text-xs text-gray-600 mt-1">
-                          Published {formatDate(snapshot.published_at)}
-                        </p>
                       </div>
-                    </button>
-                  )
-                })}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Empty state */}
+            {activeCharacters.length === 0 && savedCharacters.length === 0 && (
+              <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-purple-900/20 via-gray-900 to-gray-950 border border-white/[0.06] p-16 text-center">
+                <Sparkles className="w-20 h-20 mx-auto mb-6 text-purple-400/50" />
+                <h2 className="text-2xl font-display font-bold text-white mb-3">
+                  Your Vault Awaits
+                </h2>
+                <p className="text-gray-400 mb-8 max-w-md mx-auto">
+                  Create characters once and reuse them across all your campaigns. Import from documents or build from scratch.
+                </p>
+                <button
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-xl transition-colors"
+                >
+                  <Plus className="w-5 h-5" />
+                  Add Your First Character
+                </button>
               </div>
             )}
           </div>
         )}
 
-        {/* Active Characters Tab */}
-        {activeTab === 'active' && (
+        {/* My Characters Tab */}
+        {activeTab === 'my-characters' && (
           <>
         {/* Bulk Actions Bar */}
         {selectionMode && selectedIds.size > 0 && (

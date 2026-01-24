@@ -17,6 +17,9 @@ import {
   Brain,
   Shield,
   Network,
+  Compass,
+  Dice1,
+  Home,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui'
@@ -50,7 +53,10 @@ export function Sidebar({ campaignId }: SidebarProps) {
     : []
 
   const globalLinks = [
+    { href: '/home', label: 'Home', icon: Home },
     { href: '/campaigns', label: 'Campaigns', icon: Users },
+    { href: '/adventures', label: 'Adventures', icon: Compass },
+    { href: '/oneshots', label: 'Oneshots', icon: Dice1 },
     { href: '/vault', label: 'Character Vault', icon: BookOpen },
     { href: '/settings', label: 'Settings', icon: Settings },
     ...(showAdmin ? [{ href: '/admin', label: 'Admin', icon: Shield }] : []),

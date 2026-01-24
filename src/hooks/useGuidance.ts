@@ -44,6 +44,34 @@ export type GuidanceTipId =
   | 'first_campaign'
   | 'first_character'
   | 'first_oneshot'
+  // Navigation Tabs - Campaigns
+  | 'campaigns_all_tab'
+  | 'campaigns_active_tab'
+  | 'campaigns_my_work_tab'
+  | 'campaigns_collection_tab'
+  | 'campaigns_discover_tab'
+  // Navigation Tabs - Adventures
+  | 'adventures_intro'
+  | 'adventures_all_tab'
+  | 'adventures_active_tab'
+  | 'adventures_my_work_tab'
+  | 'adventures_collection_tab'
+  | 'adventures_discover_tab'
+  // Navigation Tabs - One-Shots
+  | 'oneshots_all_tab'
+  | 'oneshots_active_tab'
+  | 'oneshots_my_work_tab'
+  | 'oneshots_collection_tab'
+  | 'oneshots_discover_tab'
+  // Navigation Tabs - Vault
+  | 'vault_all_tab'
+  | 'vault_my_characters_tab'
+  | 'vault_in_play_tab'
+  | 'vault_collection_tab'
+  | 'vault_discover_tab'
+  // Home Page
+  | 'home_quick_actions'
+  | 'home_recent_items'
 
 interface SeenGuidance {
   [key: string]: {
