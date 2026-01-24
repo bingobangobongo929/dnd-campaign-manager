@@ -20,6 +20,7 @@ import {
   Scroll,
   Home,
   Shield,
+  Compass,
 } from 'lucide-react'
 import { useCanUseAI } from '@/store'
 import { useUserSettings, usePermissions } from '@/hooks'
@@ -92,6 +93,7 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
   const globalLinks = [
     { href: '/home', label: 'Home', icon: Home },
     { href: '/campaigns', label: 'Campaigns', icon: Swords },
+    { href: '/adventures', label: 'Adventures', icon: Compass },
     { href: '/oneshots', label: 'One-Shots', icon: Scroll },
     { href: '/vault', label: 'Character Vault', icon: BookOpen },
     { href: '/settings', label: 'Settings', icon: Settings },
@@ -102,6 +104,10 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
     // Handle oneshots - match /oneshots or /oneshots/*
     if (href === '/oneshots') {
       return pathname === '/oneshots' || pathname.startsWith('/oneshots/')
+    }
+    // Handle adventures - match /adventures or /adventures/*
+    if (href === '/adventures') {
+      return pathname === '/adventures' || pathname.startsWith('/adventures/')
     }
     // Handle campaigns - match /campaigns or /campaigns/*
     if (href === '/campaigns') {

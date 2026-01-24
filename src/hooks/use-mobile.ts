@@ -1,32 +1,28 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useSyncExternalStore } from 'react'
 
 const MOBILE_BREAKPOINT = 768
+
+// Server snapshot - default to false (desktop) for SSR
+const getServerSnapshot = () => false
+
+// Client snapshot - check actual window width
+const getClientSnapshot = () => window.innerWidth <= MOBILE_BREAKPOINT
+
+// Subscribe to resize events
+const subscribe = (callback: () => void) => {
+  window.addEventListener('resize', callback)
+  return () => window.removeEventListener('resize', callback)
+}
 
 /**
  * Hook to detect if the current device is mobile (iPhone-sized)
  * Returns true for screens <= 768px width
+ * Uses useSyncExternalStore to avoid hydration mismatch flash
  */
 export function useIsMobile(): boolean {
-  const [isMobile, setIsMobile] = useState(false)
-
-  useEffect(() => {
-    // Check initial value
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT)
-    }
-
-    // Set initial value
-    checkMobile()
-
-    // Listen for resize events
-    window.addEventListener('resize', checkMobile)
-
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
-
-  return isMobile
+  return useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot)
 }
 
 /**

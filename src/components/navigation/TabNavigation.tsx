@@ -56,7 +56,7 @@ export function TabNavigation({
   tabs,
   subFilter,
   onSubFilterChange,
-  showHelpTips = true,
+  showHelpTips = false,
   className,
 }: TabNavigationProps) {
   const [helpTipOpen, setHelpTipOpen] = useState<string | null>(null)

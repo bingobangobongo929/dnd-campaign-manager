@@ -232,6 +232,21 @@ export async function POST(
       }, { status: 500 })
     }
 
+    // If a character was assigned, update the character to designate it for this email
+    // This enables the character claiming flow when the invited user joins
+    if (characterId && email) {
+      const { error: charUpdateError } = await adminClient
+        .from('characters')
+        .update({ controlled_by_email: email.toLowerCase() })
+        .eq('id', characterId)
+        .eq('campaign_id', campaignId)
+
+      if (charUpdateError) {
+        console.error('Failed to designate character for invite:', charUpdateError)
+        // Don't fail the invite - this is not critical
+      }
+    }
+
     // Build invite URL - prefer env var, fallback to request origin
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ||
       request.headers.get('origin') ||
@@ -367,12 +382,40 @@ export async function PATCH(
       .from('campaign_members')
       .update(updateData)
       .eq('id', memberId)
-      .select()
+      .select('*, email')
       .single()
 
     if (error) {
       console.error('Failed to update member:', error)
       return NextResponse.json({ error: 'Failed to update member' }, { status: 500 })
+    }
+
+    // If a character was assigned, update the character to designate it for this member
+    // Use the member's email or user_id to enable the claiming flow
+    if (characterId && updated) {
+      const memberEmail = updated.email
+      const memberUserId = updated.user_id
+
+      const charUpdateData: Record<string, unknown> = {}
+      if (memberEmail) {
+        charUpdateData.controlled_by_email = memberEmail.toLowerCase()
+      }
+      if (memberUserId) {
+        charUpdateData.controlled_by_user_id = memberUserId
+      }
+
+      if (Object.keys(charUpdateData).length > 0) {
+        const { error: charUpdateError } = await supabase
+          .from('characters')
+          .update(charUpdateData)
+          .eq('id', characterId)
+          .eq('campaign_id', campaignId)
+
+        if (charUpdateError) {
+          console.error('Failed to designate character for member:', charUpdateError)
+          // Don't fail the update - this is not critical
+        }
+      }
     }
 
     return NextResponse.json({ member: updated })

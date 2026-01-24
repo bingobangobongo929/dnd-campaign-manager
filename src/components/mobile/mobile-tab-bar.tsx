@@ -20,6 +20,7 @@ import {
   ChevronLeft,
   MoreHorizontal,
   Brain,
+  Compass,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCanUseAI } from '@/store'
@@ -81,6 +82,9 @@ export function MobileTabBar({ campaignId, characterId }: MobileTabBarProps) {
   const isActive = (href: string) => {
     if (href === '/oneshots') {
       return pathname === '/oneshots' || pathname.startsWith('/oneshots/')
+    }
+    if (href === '/adventures') {
+      return pathname === '/adventures' || pathname.startsWith('/adventures/')
     }
     if (href === '/campaigns' && !isInCampaign) {
       return pathname === '/campaigns'
@@ -186,6 +190,7 @@ function getGlobalTabs() {
   return [
     { href: '/home', label: 'Home', icon: Home },
     { href: '/campaigns', label: 'Campaigns', icon: Swords },
+    { href: '/adventures', label: 'Adventures', icon: Compass },
     { href: '/oneshots', label: 'One-Shots', icon: Scroll },
     { href: '/vault', label: 'Characters', icon: BookOpen },
     { href: '/settings', label: 'Settings', icon: Settings },

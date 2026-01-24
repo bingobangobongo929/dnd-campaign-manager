@@ -191,7 +191,7 @@ function BannerContent({
 }) {
   return (
     <div className={cn(
-      "relative p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl mb-6",
+      "relative p-4 bg-purple-900/40 border border-purple-500/30 rounded-xl mb-6",
       className
     )}>
       <button
@@ -239,7 +239,7 @@ function InlineContent({
 }) {
   return (
     <div className={cn(
-      "p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg",
+      "p-3 bg-blue-900/40 border border-blue-500/30 rounded-lg",
       className
     )}>
       <div className="flex items-start justify-between gap-3">
