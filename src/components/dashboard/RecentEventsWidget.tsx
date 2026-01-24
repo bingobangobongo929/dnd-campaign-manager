@@ -29,7 +29,7 @@ export function RecentEventsWidget({
         <WidgetEmptyState
           icon={Clock}
           title="No timeline events yet"
-          description="Add key moments, discoveries, and plot points to track your story's progress."
+          description="Add key moments, discoveries, and plot points to track your story's progress. Campaign Intelligence can also suggest events from your session notes!"
           action={isDm ? {
             label: 'Add First Event',
             href: `/campaigns/${campaignId}/timeline`,

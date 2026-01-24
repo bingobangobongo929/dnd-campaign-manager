@@ -12,6 +12,8 @@ import {
   Image as ImageIcon,
   FileText,
   User,
+  Calendar,
+  Scroll,
 } from 'lucide-react'
 import { DashboardWidget } from './DashboardWidget'
 import { Sparkles } from 'lucide-react'
@@ -65,6 +67,7 @@ interface QuickActionsWidgetProps {
   }
   onOpenMembers?: () => void
   onOpenShare?: () => void
+  onOpenSchedule?: () => void
   className?: string
 }
 
@@ -75,6 +78,7 @@ export function QuickActionsWidget({
   can,
   onOpenMembers,
   onOpenShare,
+  onOpenSchedule,
   className,
 }: QuickActionsWidgetProps) {
   return (
@@ -93,6 +97,13 @@ export function QuickActionsWidget({
                 label="New Session"
                 href={`/campaigns/${campaignId}/sessions`}
                 variant="primary"
+              />
+            )}
+            {onOpenSchedule && (
+              <QuickAction
+                icon={Calendar}
+                label="Schedule"
+                onClick={onOpenSchedule}
               />
             )}
             <QuickAction
@@ -121,7 +132,7 @@ export function QuickActionsWidget({
             )}
             {can.viewLore && (
               <QuickAction
-                icon={BookOpen}
+                icon={Scroll}
                 label="Lore"
                 href={`/campaigns/${campaignId}/lore`}
               />
@@ -173,7 +184,7 @@ export function QuickActionsWidget({
             )}
             {can.viewLore && (
               <QuickAction
-                icon={BookOpen}
+                icon={Scroll}
                 label="Lore"
                 href={`/campaigns/${campaignId}/lore`}
               />
@@ -183,6 +194,13 @@ export function QuickActionsWidget({
                 icon={Map}
                 label="Map"
                 href={`/campaigns/${campaignId}/map`}
+              />
+            )}
+            {can.viewGallery && (
+              <QuickAction
+                icon={ImageIcon}
+                label="Gallery"
+                href={`/campaigns/${campaignId}/gallery`}
               />
             )}
           </>

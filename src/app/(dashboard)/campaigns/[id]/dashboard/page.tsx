@@ -21,8 +21,17 @@ import {
   MyCharacterWidget,
   PreviouslyOnWidget,
   ScheduleSessionModal,
+  ScheduleSettingsModal,
+  NextSessionWidget,
   CustomizeDashboardModal,
 } from '@/components/dashboard'
+import {
+  type ScheduleSettings,
+  type SchedulePattern,
+  type ScheduleException,
+  getDefaultScheduleSettings,
+} from '@/lib/schedule-utils'
+import { getUserTimezone } from '@/lib/timezone-utils'
 import {
   PartyModal,
   TagManager,
@@ -78,6 +87,7 @@ export default function CampaignDashboardPage() {
   const [showResizeModal, setShowResizeModal] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [showScheduleSettings, setShowScheduleSettings] = useState(false)
   const [showCustomizeModal, setShowCustomizeModal] = useState(false)
 
   const isOwner = campaign?.user_id === user?.id
@@ -284,6 +294,80 @@ export default function CampaignDashboardPage() {
     toast.success('Status updated')
   }
 
+  // Schedule settings handler
+  const handleSaveScheduleSettings = async (data: {
+    settings: ScheduleSettings
+    pattern: SchedulePattern | null
+    nextDate?: string | null
+    nextTime?: string | null
+    nextLocation?: string | null
+    nextNotes?: string | null
+  }) => {
+    if (!campaign) return
+
+    const { error } = await supabase
+      .from('campaigns')
+      .update({
+        schedule_settings: data.settings,
+        schedule_pattern: data.pattern,
+        next_session_date: data.nextDate,
+        next_session_time: data.nextTime,
+        next_session_location: data.nextLocation,
+        next_session_notes: data.nextNotes,
+      })
+      .eq('id', campaignId)
+
+    if (error) throw error
+
+    // Reload campaign data
+    loadDashboardData()
+  }
+
+  // Player availability handler for NextSessionWidget
+  const handleUpdatePlayerAvailability = async (status: 'attending' | 'unavailable' | 'late', note?: string) => {
+    if (!membership) return
+
+    const { error } = await supabase
+      .from('campaign_members')
+      .update({
+        next_session_status: status === 'attending' ? 'confirmed' : status === 'unavailable' ? 'unavailable' : 'maybe',
+        next_session_note: note || null,
+      })
+      .eq('id', membership.id)
+
+    if (error) {
+      toast.error('Failed to update availability')
+      return
+    }
+
+    loadDashboardData()
+    toast.success('Availability updated')
+  }
+
+  // Parse schedule data from campaign
+  const scheduleSettings: ScheduleSettings = (campaign?.schedule_settings as unknown as ScheduleSettings) || getDefaultScheduleSettings()
+  const schedulePattern: SchedulePattern | null = (campaign?.schedule_pattern as unknown as SchedulePattern) || null
+  const scheduleExceptions: ScheduleException[] = (campaign?.schedule_exceptions as unknown as ScheduleException[]) || []
+  const userTimezone = getUserTimezone()
+
+  // Build party member statuses for NextSessionWidget
+  const partyMemberStatuses = pcCharacters.map(character => {
+    const member = members.find(m => m.character_id === character.id)
+    const memberStatus = (member as CampaignMember & { next_session_status?: string })?.next_session_status as string | undefined
+    let widgetStatus: 'attending' | 'unavailable' | 'late' = 'attending'
+    if (memberStatus === 'confirmed') widgetStatus = 'attending'
+    else if (memberStatus === 'unavailable') widgetStatus = 'unavailable'
+    else if (memberStatus === 'maybe') widgetStatus = 'late'
+
+    return {
+      id: character.id,
+      characterName: character.name,
+      imageUrl: character.image_url || undefined,
+      status: widgetStatus,
+      note: (member as CampaignMember & { next_session_note?: string })?.next_session_note || undefined,
+    }
+  })
+
   // Loading state
   if (loading || permissionsLoading) {
     return (
@@ -346,6 +430,32 @@ export default function CampaignDashboardPage() {
                 vaultCharacterId={membership?.vault_character_id}
               />
             )}
+
+            {/* Next Session */}
+            {isPlayerWidgetVisible('nextSession') && (() => {
+              const myStatus = (membership as CampaignMember & { next_session_status?: string })?.next_session_status as string | undefined
+              let currentStatus: 'attending' | 'unavailable' | 'late' = 'attending'
+              if (myStatus === 'confirmed') currentStatus = 'attending'
+              else if (myStatus === 'unavailable') currentStatus = 'unavailable'
+              else if (myStatus === 'maybe') currentStatus = 'late'
+
+              return (
+                <NextSessionWidget
+                  scheduleSettings={scheduleSettings}
+                  schedulePattern={schedulePattern}
+                  scheduleExceptions={scheduleExceptions}
+                  nextSessionDate={(campaign as Campaign & { next_session_date?: string })?.next_session_date}
+                  nextSessionTime={(campaign as Campaign & { next_session_time?: string })?.next_session_time}
+                  nextSessionLocation={(campaign as Campaign & { next_session_location?: string })?.next_session_location}
+                  partyMembers={partyMemberStatuses}
+                  userTimezone={userTimezone}
+                  isDm={false}
+                  currentUserStatus={currentStatus}
+                  currentUserNote={(membership as CampaignMember & { next_session_note?: string })?.next_session_note || undefined}
+                  onUpdateStatus={handleUpdatePlayerAvailability}
+                />
+              )
+            })()}
 
             {/* Previously On */}
             {isPlayerWidgetVisible('previouslyOn') && latestSession && (
@@ -412,6 +522,7 @@ export default function CampaignDashboardPage() {
                   can={can}
                   onOpenMembers={() => setShowMembersModal(true)}
                   onOpenShare={() => setShowShareModal(true)}
+                  onOpenSchedule={() => setShowScheduleSettings(true)}
                 />
               )}
               {isDmWidgetVisible('latestSession') && can.viewSessions && (
@@ -441,6 +552,22 @@ export default function CampaignDashboardPage() {
                 />
               )}
             </div>
+
+            {/* Row 1.5: Next Session (DM) */}
+            {isDmWidgetVisible('nextSession') && (
+              <NextSessionWidget
+                scheduleSettings={scheduleSettings}
+                schedulePattern={schedulePattern}
+                scheduleExceptions={scheduleExceptions}
+                nextSessionDate={(campaign as Campaign & { next_session_date?: string })?.next_session_date}
+                nextSessionTime={(campaign as Campaign & { next_session_time?: string })?.next_session_time}
+                nextSessionLocation={(campaign as Campaign & { next_session_location?: string })?.next_session_location}
+                partyMembers={partyMemberStatuses}
+                userTimezone={userTimezone}
+                isDm={true}
+                onEditSchedule={() => setShowScheduleSettings(true)}
+              />
+            )}
 
             {/* Row 2: Party Overview */}
             {isDmWidgetVisible('partyOverview') && (
@@ -485,7 +612,6 @@ export default function CampaignDashboardPage() {
                   campaignId={campaignId}
                   campaign={campaign}
                   pendingPlayerNotes={playerNotes.length}
-                  onScheduleSession={() => setShowScheduleModal(true)}
                 />
               )}
             </div>
@@ -554,6 +680,20 @@ export default function CampaignDashboardPage() {
         initialNotes={(campaign as Campaign & { next_session_notes?: string })?.next_session_notes}
         onSave={handleScheduleSession}
         onClear={handleClearSession}
+      />
+
+      <ScheduleSettingsModal
+        isOpen={showScheduleSettings}
+        onClose={() => setShowScheduleSettings(false)}
+        campaignId={campaignId}
+        userTimezone={userTimezone}
+        initialSettings={scheduleSettings}
+        initialPattern={schedulePattern}
+        initialNextDate={(campaign as Campaign & { next_session_date?: string })?.next_session_date}
+        initialNextTime={(campaign as Campaign & { next_session_time?: string })?.next_session_time}
+        initialNextLocation={(campaign as Campaign & { next_session_location?: string })?.next_session_location}
+        initialNextNotes={(campaign as Campaign & { next_session_notes?: string })?.next_session_notes}
+        onSave={handleSaveScheduleSettings}
       />
 
       <CustomizeDashboardModal
