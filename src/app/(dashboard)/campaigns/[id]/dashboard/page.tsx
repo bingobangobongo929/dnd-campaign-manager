@@ -74,6 +74,8 @@ export default function CampaignDashboardPage() {
   const [playerNotes, setPlayerNotes] = useState<PlayerSessionNote[]>([])
   const [members, setMembers] = useState<(CampaignMember & { user_settings?: { username: string | null } | null })[]>([])
   const [tags, setTags] = useState<Tag[]>([])
+  const [loreCount, setLoreCount] = useState(0)
+  const [mapsCount, setMapsCount] = useState(0)
 
   // User's membership and character
   const [membership, setMembership] = useState<CampaignMember | null>(null)
@@ -139,6 +141,8 @@ export default function CampaignDashboardPage() {
         timelineResult,
         membersResult,
         tagsResult,
+        loreCountResult,
+        mapsCountResult,
       ] = await Promise.all([
         supabase
           .from('characters')
@@ -168,6 +172,14 @@ export default function CampaignDashboardPage() {
           .select('*')
           .eq('campaign_id', campaignId)
           .order('name'),
+        supabase
+          .from('campaign_lore')
+          .select('id', { count: 'exact', head: true })
+          .eq('campaign_id', campaignId),
+        supabase
+          .from('world_maps')
+          .select('id', { count: 'exact', head: true })
+          .eq('campaign_id', campaignId),
       ])
 
       setCharacters(charactersResult.data || [])
@@ -175,6 +187,8 @@ export default function CampaignDashboardPage() {
       setTimelineEvents(timelineResult.data || [])
       setMembers(membersResult.data || [])
       setTags(tagsResult.data || [])
+      setLoreCount(loreCountResult.count || 0)
+      setMapsCount(mapsCountResult.count || 0)
 
       // Load player notes
       if (sessionsResult.data && sessionsResult.data.length > 0) {
@@ -541,8 +555,8 @@ export default function CampaignDashboardPage() {
                     totalCharacters: characters.length,
                     sessionCount: sessions.length,
                     timelineEventCount: timelineEvents.length,
-                    locationCount: 0, // TODO: Add location count
-                    loreEntryCount: 0, // TODO: Add lore count
+                    locationCount: mapsCount,
+                    loreEntryCount: loreCount,
                   }}
                   health={{
                     npcsMissingDetails,
