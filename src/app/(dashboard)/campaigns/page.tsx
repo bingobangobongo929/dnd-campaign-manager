@@ -293,7 +293,8 @@ export default function CampaignsPage() {
     )
   }
 
-  const featuredCampaign = activeTab === 'active' ? filteredCampaigns[0] : null
+  // Show featured campaign on both 'all' and 'active' tabs
+  const featuredCampaign = (activeTab === 'all' || activeTab === 'active') ? activeCampaigns[0] : null
 
   // ============ MOBILE LAYOUT ============
   if (isMobile) {
@@ -353,8 +354,61 @@ export default function CampaignsPage() {
         {/* All Tab - Overview with smart grouping */}
         {activeTab === 'all' && (
           <div className="space-y-10">
+            {/* Featured Campaign Hero */}
+            {featuredCampaign && (
+              <section className="group relative">
+                <Link
+                  href={`/campaigns/${featuredCampaign.id}/dashboard`}
+                  className="relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-purple-500/30 transition-all duration-500"
+                >
+                  <div className="relative h-[300px] md:h-[380px] overflow-hidden">
+                    {featuredCampaign.image_url ? (
+                      <>
+                        <Image
+                          src={featuredCampaign.image_url}
+                          alt={featuredCampaign.name}
+                          fill
+                          className="object-cover transition-transform duration-700 group-hover:scale-105"
+                          priority
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-gray-900 to-gray-950 flex items-center justify-center">
+                        <Swords className="w-32 h-32 text-purple-400/20" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-full bg-purple-600 text-white">
+                          Continue Playing
+                        </span>
+                        <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300">
+                          {featuredCampaign.game_system}
+                        </span>
+                      </div>
+                      <h2 className="text-2xl md:text-4xl font-display font-bold text-white mb-2 group-hover:text-purple-400 transition-colors">
+                        {featuredCampaign.name}
+                      </h2>
+                      {featuredCampaign.description && (
+                        <p className="text-gray-300 text-sm md:text-base max-w-2xl line-clamp-2 mb-3">
+                          {featuredCampaign.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 text-purple-400 font-medium">
+                        <Play className="w-5 h-5" />
+                        <span>Enter Campaign</span>
+                        <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              </section>
+            )}
+
             {/* Active Games Section */}
-            {(activeCampaigns.length > 0 || joinedCampaigns.length > 0) && (
+            {(activeCampaigns.length > 1 || joinedCampaigns.length > 0) && (
               <section>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-white">Active Games</h3>
@@ -366,7 +420,8 @@ export default function CampaignsPage() {
                   </button>
                 </div>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {activeCampaigns.slice(0, 3).map((campaign) => (
+                  {/* Skip first campaign as it's shown in the hero section */}
+                  {activeCampaigns.slice(1, 4).map((campaign) => (
                     <Link
                       key={campaign.id}
                       href={`/campaigns/${campaign.id}/dashboard`}
@@ -400,7 +455,7 @@ export default function CampaignsPage() {
                       </div>
                     </Link>
                   ))}
-                  {joinedCampaigns.slice(0, 3 - Math.min(activeCampaigns.length, 3)).map(({ membership, campaign }) => (
+                  {joinedCampaigns.slice(0, 3 - Math.min(activeCampaigns.length - 1, 3)).map(({ membership, campaign }) => (
                     <Link
                       key={membership.id}
                       href={`/campaigns/${campaign.id}/dashboard`}

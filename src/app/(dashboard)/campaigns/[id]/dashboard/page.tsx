@@ -93,7 +93,9 @@ export default function CampaignDashboardPage() {
   const [showCustomizeModal, setShowCustomizeModal] = useState(false)
 
   const isOwner = campaign?.user_id === user?.id
-  const isPlayer = membership && ['player', 'contributor'].includes(membership.role) && !isOwner
+  // Use isDm from usePermissions for layout decisions - it properly handles loading states
+  // isPlayer is true if user has a player/contributor role and is not a DM
+  const isPlayerLayout = !isDm && isMember
 
   // Dashboard widget preferences
   const {
@@ -434,7 +436,7 @@ export default function CampaignDashboardPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Player Dashboard Layout */}
-        {isPlayer ? (
+        {isPlayerLayout ? (
           <div className="space-y-6">
             {/* My Character - Full Width (required) */}
             {isPlayerWidgetVisible('myCharacter') && (
@@ -713,9 +715,9 @@ export default function CampaignDashboardPage() {
       <CustomizeDashboardModal
         isOpen={showCustomizeModal}
         onClose={() => setShowCustomizeModal(false)}
-        isDm={!isPlayer}
-        visibleWidgets={isPlayer ? preferences.playerWidgets : preferences.dmWidgets}
-        onToggleWidget={isPlayer ? togglePlayerWidget : toggleDmWidget}
+        isDm={isDm}
+        visibleWidgets={isPlayerLayout ? preferences.playerWidgets : preferences.dmWidgets}
+        onToggleWidget={isPlayerLayout ? togglePlayerWidget : toggleDmWidget}
         onResetToDefaults={resetToDefaults}
       />
     </AppLayout>

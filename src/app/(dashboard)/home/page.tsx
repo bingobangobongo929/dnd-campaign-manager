@@ -42,6 +42,7 @@ export default function HomePage() {
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [adventures, setAdventures] = useState<Campaign[]>([])
+  const [joinedCampaigns, setJoinedCampaigns] = useState<Campaign[]>([])
   const [characters, setCharacters] = useState<VaultCharacter[]>([])
   const [oneshots, setOneshots] = useState<Oneshot[]>([])
   const [savedTemplates, setSavedTemplates] = useState<ContentSave[]>([])
@@ -139,6 +140,14 @@ export default function HomePage() {
     if (charactersRes.data) setCharacters(charactersRes.data)
     if (oneshotsRes.data) setOneshots(oneshotsRes.data)
     if (savedRes.data) setSavedTemplates(savedRes.data)
+
+    // Load joined campaigns (campaigns user is a member of but doesn't own)
+    const joinedRes = await fetch('/api/campaigns/joined')
+    if (joinedRes.ok) {
+      const joinedData = await joinedRes.json()
+      setJoinedCampaigns((joinedData.joinedCampaigns || []).map((j: { campaign: Campaign }) => j.campaign))
+    }
+
     setLoading(false)
   }
 
@@ -146,8 +155,8 @@ export default function HomePage() {
     return name.split(' ').map((word) => word[0]).slice(0, 2).join('').toUpperCase()
   }
 
-  // Check if this is a fresh user (no content at all)
-  const isFreshUser = !loading && campaigns.length === 0 && adventures.length === 0 && characters.length === 0 && oneshots.length === 0
+  // Check if this is a fresh user (no content at all, including joined campaigns)
+  const isFreshUser = !loading && campaigns.length === 0 && adventures.length === 0 && joinedCampaigns.length === 0 && characters.length === 0 && oneshots.length === 0
 
   const featuredCampaign = campaigns[0]
   const featuredAdventure = adventures[0]
@@ -571,7 +580,7 @@ export default function HomePage() {
               <div className="p-2 rounded-lg bg-green-500/10">
                 <Scroll className="w-5 h-5 text-green-400" />
               </div>
-              <h3 className="text-xl font-semibold text-white">One-Shot Adventures</h3>
+              <h3 className="text-xl font-semibold text-white">One-Shots</h3>
             </div>
             {oneshots.length > 0 && (
               <Link href="/oneshots" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
