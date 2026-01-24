@@ -2,7 +2,7 @@
 -- Adds support for:
 -- 1. Campaign characters: backstory, motivations, play_status
 -- 2. Adventures (campaigns with duration_type)
--- 3. Character snapshots (Session 0)
+-- 3. Character snapshots enhancements (Session 0)
 -- 4. Help tips preferences
 
 -- =============================================================================
@@ -39,33 +39,47 @@ ADD COLUMN IF NOT EXISTS duration_type TEXT DEFAULT 'campaign';
 ALTER TABLE campaigns
 ADD COLUMN IF NOT EXISTS estimated_sessions INTEGER;
 
--- =============================================================================
--- CHARACTER SNAPSHOTS TABLE
--- =============================================================================
+-- Add inactive_reason for content_mode = 'inactive'
+ALTER TABLE campaigns
+ADD COLUMN IF NOT EXISTS inactive_reason TEXT;
 
-CREATE TABLE IF NOT EXISTS character_snapshots (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  -- Can reference either vault or campaign character
-  vault_character_id UUID REFERENCES vault_characters(id) ON DELETE CASCADE,
-  campaign_character_id UUID REFERENCES characters(id) ON DELETE CASCADE,
-  campaign_id UUID REFERENCES campaigns(id) ON DELETE CASCADE,
-  -- Snapshot data
-  snapshot_data JSONB NOT NULL,
-  snapshot_type TEXT DEFAULT 'session_0', -- 'session_0', 'current_state', 'manual', 'join'
-  snapshot_name TEXT, -- Optional custom name
-  -- Metadata
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  created_by UUID REFERENCES auth.users(id)
-);
+-- =============================================================================
+-- CHARACTER SNAPSHOTS TABLE UPDATES
+-- =============================================================================
+-- Note: character_snapshots was created in migration 059
+-- We just need to add the missing columns
 
--- Indexes for efficient lookups
-CREATE INDEX IF NOT EXISTS idx_character_snapshots_vault ON character_snapshots(vault_character_id);
-CREATE INDEX IF NOT EXISTS idx_character_snapshots_campaign ON character_snapshots(campaign_character_id);
+-- Add campaign_character_id if not exists (may have been added with different constraints)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'character_snapshots' AND column_name = 'campaign_character_id'
+  ) THEN
+    ALTER TABLE character_snapshots ADD COLUMN campaign_character_id UUID REFERENCES characters(id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
+-- Add snapshot_name for custom naming
+ALTER TABLE character_snapshots
+ADD COLUMN IF NOT EXISTS snapshot_name TEXT;
+
+-- Add created_by for ownership tracking
+ALTER TABLE character_snapshots
+ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES auth.users(id);
+
+-- Add index for created_by
+CREATE INDEX IF NOT EXISTS idx_character_snapshots_created_by ON character_snapshots(created_by);
 CREATE INDEX IF NOT EXISTS idx_character_snapshots_campaign_id ON character_snapshots(campaign_id);
 CREATE INDEX IF NOT EXISTS idx_character_snapshots_type ON character_snapshots(snapshot_type);
 
--- RLS for character_snapshots
+-- Enable RLS if not already enabled
 ALTER TABLE character_snapshots ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist (to recreate with correct logic)
+DROP POLICY IF EXISTS "Users can view their own character snapshots" ON character_snapshots;
+DROP POLICY IF EXISTS "Users can create their own character snapshots" ON character_snapshots;
+DROP POLICY IF EXISTS "Users can delete their own character snapshots" ON character_snapshots;
 
 -- Users can view snapshots for characters they own or campaigns they're in
 CREATE POLICY "Users can view their own character snapshots" ON character_snapshots
@@ -79,9 +93,11 @@ CREATE POLICY "Users can view their own character snapshots" ON character_snapsh
 -- Users can create snapshots for their own characters
 CREATE POLICY "Users can create their own character snapshots" ON character_snapshots
   FOR INSERT WITH CHECK (
-    created_by = auth.uid()
-    OR vault_character_id IN (SELECT id FROM vault_characters WHERE user_id = auth.uid())
-    OR campaign_id IN (SELECT id FROM campaigns WHERE user_id = auth.uid())
+    auth.uid() IS NOT NULL
+    AND (
+      vault_character_id IN (SELECT id FROM vault_characters WHERE user_id = auth.uid())
+      OR campaign_id IN (SELECT id FROM campaigns WHERE user_id = auth.uid())
+    )
   );
 
 -- Users can delete their own snapshots
@@ -145,6 +161,7 @@ COMMENT ON COLUMN characters.play_status IS 'Current status in the campaign: act
 COMMENT ON COLUMN characters.is_party_member IS 'Quick flag to identify party member PCs';
 COMMENT ON COLUMN campaigns.duration_type IS 'Type of content: campaign (ongoing), adventure (3-9 sessions)';
 COMMENT ON COLUMN campaigns.estimated_sessions IS 'Estimated number of sessions for adventures';
+COMMENT ON COLUMN campaigns.inactive_reason IS 'Reason for setting content to inactive mode';
 COMMENT ON TABLE character_snapshots IS 'Snapshots of character state at specific points (Session 0, etc.)';
 COMMENT ON COLUMN vault_characters.private_campaign_notes IS 'Player private notes per campaign, always editable';
 COMMENT ON COLUMN vault_characters.campaign_links IS 'Array of campaign links with metadata';

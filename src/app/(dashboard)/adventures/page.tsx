@@ -81,6 +81,17 @@ export default function AdventuresPage() {
       setTemplateSnapshots(adventureSnapshots)
     }
 
+    // Load saved adventures from others (campaigns with duration_type = 'adventure')
+    const savedResponse = await fetch('/api/templates/saved?type=campaign')
+    if (savedResponse.ok) {
+      const savedData = await savedResponse.json()
+      // Filter to only adventures based on snapshot_data.duration_type
+      const adventureSaves = (savedData.saves || []).filter((save: ContentSave & { snapshot?: { snapshot_data?: { duration_type?: string } } }) =>
+        save.snapshot?.snapshot_data?.duration_type === 'adventure'
+      )
+      setSavedAdventures(adventureSaves)
+    }
+
     setLoading(false)
   }
 

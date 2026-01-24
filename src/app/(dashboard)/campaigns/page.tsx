@@ -106,19 +106,20 @@ export default function CampaignsPage() {
   }, [user])
 
   const loadData = async () => {
-    // Load user's campaigns
+    // Load user's campaigns (excluding adventures which have duration_type = 'adventure')
     const { data: campaignsData } = await supabase
       .from('campaigns')
       .select('*')
       .eq('user_id', user!.id)
       .is('deleted_at', null)
+      .or('duration_type.is.null,duration_type.eq.campaign')
       .order('updated_at', { ascending: false })
 
     if (campaignsData) {
       setCampaigns(campaignsData)
     }
 
-    // Load template snapshots (My Templates tab)
+    // Load template snapshots (My Templates tab) - filter out adventures
     const { data: snapshotsData } = await supabase
       .from('template_snapshots')
       .select('*')
@@ -127,14 +128,22 @@ export default function CampaignsPage() {
       .order('published_at', { ascending: false })
 
     if (snapshotsData) {
-      setTemplateSnapshots(snapshotsData)
+      // Filter out adventures (they have duration_type = 'adventure' in snapshot_data)
+      const campaignSnapshots = snapshotsData.filter(s =>
+        !s.snapshot_data?.duration_type || s.snapshot_data?.duration_type === 'campaign'
+      )
+      setTemplateSnapshots(campaignSnapshots)
     }
 
-    // Load saved campaigns from others
+    // Load saved campaigns from others - filter out adventures
     const savedResponse = await fetch('/api/templates/saved?type=campaign')
     if (savedResponse.ok) {
       const savedData = await savedResponse.json()
-      setSavedCampaigns(savedData.saves || [])
+      // Filter out adventures based on snapshot_data.duration_type
+      const campaignSaves = (savedData.saves || []).filter((save: ContentSave & { snapshot?: { snapshot_data?: { duration_type?: string } } }) =>
+        !save.snapshot?.snapshot_data?.duration_type || save.snapshot?.snapshot_data?.duration_type === 'campaign'
+      )
+      setSavedCampaigns(campaignSaves)
     }
 
     // Load joined campaigns (campaigns user is a member of but doesn't own)

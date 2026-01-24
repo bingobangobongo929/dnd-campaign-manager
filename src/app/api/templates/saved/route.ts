@@ -29,7 +29,8 @@ export async function GET(request: Request) {
           attribution_name,
           template_description,
           template_tags,
-          published_at
+          published_at,
+          snapshot_data
         )
       `)
       .eq('user_id', user.id)
