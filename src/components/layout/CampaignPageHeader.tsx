@@ -13,6 +13,8 @@ interface CampaignPageHeaderProps {
   title: string
   isOwner: boolean
   isDm: boolean
+  // Current page for context-aware menu items
+  currentPage?: 'dashboard' | 'canvas' | 'sessions' | 'timeline' | 'lore' | 'map' | 'gallery' | 'intelligence' | 'view' | 'settings'
   // Optional page-specific actions
   actions?: React.ReactNode
   // Callbacks for various modals
@@ -31,6 +33,7 @@ export function CampaignPageHeader({
   title,
   isOwner,
   isDm,
+  currentPage,
   actions,
   onOpenMembers,
   onOpenLabels,
@@ -85,6 +88,7 @@ export function CampaignPageHeader({
         campaignId={campaignId}
         isOwner={isOwner}
         isDm={isDm}
+        currentPage={currentPage}
         onOpenMembers={onOpenMembers}
         onOpenLabels={onOpenLabels}
         onOpenFactions={onOpenFactions}

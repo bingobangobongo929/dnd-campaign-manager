@@ -2,10 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Settings2 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { CampaignPageHeader } from '@/components/layout'
-import { useSupabase, useUser, usePermissions } from '@/hooks'
+import { useSupabase, useUser, usePermissions, useDashboardPreferences } from '@/hooks'
 import { useAppStore, useCanUseAI } from '@/store'
 import {
   CampaignHeaderWidget,
@@ -21,6 +21,7 @@ import {
   MyCharacterWidget,
   PreviouslyOnWidget,
   ScheduleSessionModal,
+  CustomizeDashboardModal,
 } from '@/components/dashboard'
 import {
   PartyModal,
@@ -77,9 +78,21 @@ export default function CampaignDashboardPage() {
   const [showResizeModal, setShowResizeModal] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [showCustomizeModal, setShowCustomizeModal] = useState(false)
 
   const isOwner = campaign?.user_id === user?.id
   const isPlayer = membership && ['player', 'contributor'].includes(membership.role) && !isOwner
+
+  // Dashboard widget preferences
+  const {
+    preferences,
+    loaded: preferencesLoaded,
+    toggleDmWidget,
+    togglePlayerWidget,
+    resetToDefaults,
+    isDmWidgetVisible,
+    isPlayerWidgetVisible,
+  } = useDashboardPreferences(campaignId, user?.id)
 
   // Load dashboard data
   const loadDashboardData = useCallback(async () => {
@@ -303,27 +316,39 @@ export default function CampaignDashboardPage() {
         title="Dashboard"
         isOwner={isOwner}
         isDm={isDm}
+        currentPage="dashboard"
         onOpenMembers={() => setShowMembersModal(true)}
         onOpenLabels={() => setShowLabelsModal(true)}
         onOpenFactions={() => setShowFactionsModal(true)}
         onOpenRelationships={() => setShowRelationshipsModal(true)}
         onOpenResize={() => setShowResizeModal(true)}
         onOpenShare={() => setShowShareModal(true)}
+        actions={
+          <button
+            onClick={() => setShowCustomizeModal(true)}
+            className="p-2 text-gray-400 hover:text-white hover:bg-white/[0.05] rounded-lg transition-colors"
+            title="Customize dashboard"
+          >
+            <Settings2 className="w-5 h-5" />
+          </button>
+        }
       />
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Player Dashboard Layout */}
         {isPlayer ? (
           <div className="space-y-6">
-            {/* My Character - Full Width */}
-            <MyCharacterWidget
-              campaignId={campaignId}
-              character={myCharacter}
-              vaultCharacterId={membership?.vault_character_id}
-            />
+            {/* My Character - Full Width (required) */}
+            {isPlayerWidgetVisible('myCharacter') && (
+              <MyCharacterWidget
+                campaignId={campaignId}
+                character={myCharacter}
+                vaultCharacterId={membership?.vault_character_id}
+              />
+            )}
 
             {/* Previously On */}
-            {latestSession && (
+            {isPlayerWidgetVisible('previouslyOn') && latestSession && (
               <PreviouslyOnWidget
                 campaignId={campaignId}
                 campaignName={campaign?.name || 'Campaign'}
@@ -333,24 +358,28 @@ export default function CampaignDashboardPage() {
             )}
 
             {/* Party with Attendance */}
-            <PartyOverviewWidget
-              campaignId={campaignId}
-              partyMembers={partyMembers}
-              campaign={campaign}
-              currentUserMemberId={membership?.id}
-              isDm={false}
-              onUpdateStatus={handleUpdateSessionStatus}
-            />
+            {isPlayerWidgetVisible('partyOverview') && (
+              <PartyOverviewWidget
+                campaignId={campaignId}
+                partyMembers={partyMembers}
+                campaign={campaign}
+                currentUserMemberId={membership?.id}
+                isDm={false}
+                onUpdateStatus={handleUpdateSessionStatus}
+              />
+            )}
 
             {/* Quick Actions + Recent Sessions */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <QuickActionsWidget
-                campaignId={campaignId}
-                isDm={false}
-                canUseAI={canUseAI}
-                can={can}
-              />
-              {can.viewSessions && (
+              {isPlayerWidgetVisible('quickActions') && (
+                <QuickActionsWidget
+                  campaignId={campaignId}
+                  isDm={false}
+                  canUseAI={canUseAI}
+                  can={can}
+                />
+              )}
+              {isPlayerWidgetVisible('recentSessions') && can.viewSessions && (
                 <RecentSessionsWidget
                   campaignId={campaignId}
                   sessions={sessions}
@@ -362,26 +391,30 @@ export default function CampaignDashboardPage() {
         ) : (
           /* DM Dashboard Layout */
           <div className="space-y-6">
-            {/* Campaign Header */}
-            <CampaignHeaderWidget
-              campaign={campaign!}
-              sessionCount={sessions.length}
-              memberCount={memberCount}
-              isDm={true}
-              onShare={() => setShowShareModal(true)}
-            />
+            {/* Campaign Header (required) */}
+            {isDmWidgetVisible('campaignHeader') && (
+              <CampaignHeaderWidget
+                campaign={campaign!}
+                sessionCount={sessions.length}
+                memberCount={memberCount}
+                isDm={true}
+                onShare={() => setShowShareModal(true)}
+              />
+            )}
 
             {/* Row 1: Quick Actions, Latest Session, Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <QuickActionsWidget
-                campaignId={campaignId}
-                isDm={true}
-                canUseAI={canUseAI}
-                can={can}
-                onOpenMembers={() => setShowMembersModal(true)}
-                onOpenShare={() => setShowShareModal(true)}
-              />
-              {can.viewSessions && (
+              {isDmWidgetVisible('quickActions') && (
+                <QuickActionsWidget
+                  campaignId={campaignId}
+                  isDm={true}
+                  canUseAI={canUseAI}
+                  can={can}
+                  onOpenMembers={() => setShowMembersModal(true)}
+                  onOpenShare={() => setShowShareModal(true)}
+                />
+              )}
+              {isDmWidgetVisible('latestSession') && can.viewSessions && (
                 <LatestSessionWidget
                   campaignId={campaignId}
                   session={latestSession}
@@ -389,43 +422,47 @@ export default function CampaignDashboardPage() {
                   isDm={true}
                 />
               )}
-              <CampaignStatsWidget
-                campaignId={campaignId}
-                stats={{
-                  partyCount: pcCharacters.length,
-                  totalCharacters: characters.length,
-                  sessionCount: sessions.length,
-                  timelineEventCount: timelineEvents.length,
-                  locationCount: 0, // TODO: Add location count
-                  loreEntryCount: 0, // TODO: Add lore count
-                }}
-                health={{
-                  npcsMissingDetails,
-                  sessionsWithoutNotes,
-                }}
-                isDm={true}
-              />
+              {isDmWidgetVisible('campaignStats') && (
+                <CampaignStatsWidget
+                  campaignId={campaignId}
+                  stats={{
+                    partyCount: pcCharacters.length,
+                    totalCharacters: characters.length,
+                    sessionCount: sessions.length,
+                    timelineEventCount: timelineEvents.length,
+                    locationCount: 0, // TODO: Add location count
+                    loreEntryCount: 0, // TODO: Add lore count
+                  }}
+                  health={{
+                    npcsMissingDetails,
+                    sessionsWithoutNotes,
+                  }}
+                  isDm={true}
+                />
+              )}
             </div>
 
             {/* Row 2: Party Overview */}
-            <PartyOverviewWidget
-              campaignId={campaignId}
-              partyMembers={partyMembers}
-              campaign={campaign}
-              isDm={true}
-              onSendReminder={() => toast.info('Reminder feature coming soon!')}
-            />
+            {isDmWidgetVisible('partyOverview') && (
+              <PartyOverviewWidget
+                campaignId={campaignId}
+                partyMembers={partyMembers}
+                campaign={campaign}
+                isDm={true}
+                onSendReminder={() => toast.info('Reminder feature coming soon!')}
+              />
+            )}
 
             {/* Row 3: Recent Events + Recent Sessions */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {can.viewTimeline && (
+              {isDmWidgetVisible('recentEvents') && can.viewTimeline && (
                 <RecentEventsWidget
                   campaignId={campaignId}
                   events={timelineEvents}
                   isDm={true}
                 />
               )}
-              {can.viewSessions && (
+              {isDmWidgetVisible('recentSessions') && can.viewSessions && (
                 <RecentSessionsWidget
                   campaignId={campaignId}
                   sessions={sessions}
@@ -437,18 +474,20 @@ export default function CampaignDashboardPage() {
 
             {/* Row 4: Intelligence Status + DM Toolbox */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {canUseAI && (
+              {isDmWidgetVisible('intelligenceStatus') && canUseAI && (
                 <IntelligenceStatusWidget
                   campaignId={campaignId}
                   lastRunAt={campaign?.last_intelligence_run || null}
                 />
               )}
-              <DmToolboxWidget
-                campaignId={campaignId}
-                campaign={campaign}
-                pendingPlayerNotes={playerNotes.length}
-                onScheduleSession={() => setShowScheduleModal(true)}
-              />
+              {isDmWidgetVisible('dmToolbox') && (
+                <DmToolboxWidget
+                  campaignId={campaignId}
+                  campaign={campaign}
+                  pendingPlayerNotes={playerNotes.length}
+                  onScheduleSession={() => setShowScheduleModal(true)}
+                />
+              )}
             </div>
           </div>
         )}
@@ -515,6 +554,15 @@ export default function CampaignDashboardPage() {
         initialNotes={(campaign as Campaign & { next_session_notes?: string })?.next_session_notes}
         onSave={handleScheduleSession}
         onClear={handleClearSession}
+      />
+
+      <CustomizeDashboardModal
+        isOpen={showCustomizeModal}
+        onClose={() => setShowCustomizeModal(false)}
+        isDm={!isPlayer}
+        visibleWidgets={isPlayer ? preferences.playerWidgets : preferences.dmWidgets}
+        onToggleWidget={isPlayer ? togglePlayerWidget : toggleDmWidget}
+        onResetToDefaults={resetToDefaults}
       />
     </AppLayout>
   )

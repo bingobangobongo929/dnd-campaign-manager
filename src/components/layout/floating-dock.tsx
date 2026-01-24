@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutGrid,
+  PanelTop,
   LayoutDashboard,
   ScrollText,
   Clock,
@@ -54,14 +54,15 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
 
   // Build campaign links based on permissions
   // Owners and DMs see everything, others see based on their permissions
+  // Order: Dashboard → Canvas → View → Sessions → Timeline → Intelligence → Lore → Map → Gallery → Settings
   const campaignLinks = campaignId
     ? [
-        // View page - always visible to members
-        { href: `/campaigns/${campaignId}/view`, label: 'View', icon: Eye },
-        // Dashboard - visible to DMs and those with canvas access
+        // Dashboard - visible to DMs and those with canvas access (primary entry point)
         ...(isDm || can.viewCanvas ? [{ href: `/campaigns/${campaignId}/dashboard`, label: 'Dashboard', icon: LayoutDashboard }] : []),
         // Canvas - only for DMs or those with canvas permission
-        ...(isDm || can.viewCanvas ? [{ href: `/campaigns/${campaignId}/canvas`, label: 'Canvas', icon: LayoutGrid }] : []),
+        ...(isDm || can.viewCanvas ? [{ href: `/campaigns/${campaignId}/canvas`, label: 'Canvas', icon: PanelTop }] : []),
+        // View page - always visible to members (read-only preview)
+        { href: `/campaigns/${campaignId}/view`, label: 'View', icon: Eye },
         // Sessions - based on session view permission
         ...(isDm || can.viewSessions ? [{ href: `/campaigns/${campaignId}/sessions`, label: 'Session Notes', icon: ScrollText }] : []),
         // Timeline - based on timeline view permission

@@ -1139,6 +1139,7 @@ export default function CampaignCanvasPage() {
         campaignId={campaignId}
         isOwner={campaign?.user_id === user?.id}
         isDm={isDm}
+        currentPage="canvas"
         onOpenMembers={() => setIsMemberManagerOpen(true)}
         onOpenLabels={() => setIsTagManagerOpen(true)}
         onOpenFactions={() => setIsFactionManagerOpen(true)}

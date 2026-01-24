@@ -39,10 +39,18 @@ export interface Database {
           // Session workflow defaults
           default_session_sections: Json
           default_prep_checklist: Json
-          // Session scheduling
+          // Session scheduling (simple mode)
           next_session_date: string | null
+          next_session_time: string | null
           next_session_location: string | null
           next_session_notes: string | null
+          // Session scheduling (full mode)
+          schedule_pattern: Json | null
+          schedule_settings: Json
+          schedule_exceptions: Json
+          // Discord integration
+          discord_webhook_url: string | null
+          discord_settings: Json
           created_at: string
           updated_at: string
         }
@@ -75,10 +83,18 @@ export interface Database {
           // Session workflow defaults
           default_session_sections?: Json
           default_prep_checklist?: Json
-          // Session scheduling
+          // Session scheduling (simple mode)
           next_session_date?: string | null
+          next_session_time?: string | null
           next_session_location?: string | null
           next_session_notes?: string | null
+          // Session scheduling (full mode)
+          schedule_pattern?: Json | null
+          schedule_settings?: Json
+          schedule_exceptions?: Json
+          // Discord integration
+          discord_webhook_url?: string | null
+          discord_settings?: Json
           created_at?: string
           updated_at?: string
         }
@@ -111,10 +127,18 @@ export interface Database {
           // Session workflow defaults
           default_session_sections?: Json
           default_prep_checklist?: Json
-          // Session scheduling
+          // Session scheduling (simple mode)
           next_session_date?: string | null
+          next_session_time?: string | null
           next_session_location?: string | null
           next_session_notes?: string | null
+          // Session scheduling (full mode)
+          schedule_pattern?: Json | null
+          schedule_settings?: Json
+          schedule_exceptions?: Json
+          // Discord integration
+          discord_webhook_url?: string | null
+          discord_settings?: Json
           created_at?: string
           updated_at?: string
         }
@@ -1630,6 +1654,7 @@ export interface Database {
           username_set_at: string | null
           ai_provider: 'anthropic' | 'google'
           theme: 'dark' | 'light' | 'system'
+          timezone: string
           tier: 'adventurer' | 'hero' | 'legend'
           role: 'user' | 'moderator' | 'super_admin'
           avatar_url: string | null
@@ -1663,6 +1688,7 @@ export interface Database {
           username_set_at?: string | null
           ai_provider?: 'anthropic' | 'google'
           theme?: 'dark' | 'light' | 'system'
+          timezone?: string
           tier?: 'adventurer' | 'hero' | 'legend'
           role?: 'user' | 'moderator' | 'super_admin'
           avatar_url?: string | null
@@ -1692,6 +1718,7 @@ export interface Database {
           username_set_at?: string | null
           ai_provider?: 'anthropic' | 'google'
           theme?: 'dark' | 'light' | 'system'
+          timezone?: string
           tier?: 'adventurer' | 'hero' | 'legend'
           role?: 'user' | 'moderator' | 'super_admin'
           avatar_url?: string | null
@@ -3013,7 +3040,8 @@ export interface Database {
           invited_at: string | null
           joined_at: string | null
           status: 'pending' | 'active' | 'declined' | 'removed'
-          next_session_status: 'confirmed' | 'unavailable' | 'maybe' | 'no_response'
+          next_session_status: 'attending' | 'unavailable' | 'late'
+          next_session_note: string | null
           created_at: string
           updated_at: string
         }
@@ -3031,7 +3059,8 @@ export interface Database {
           invited_at?: string | null
           joined_at?: string | null
           status?: 'pending' | 'active' | 'declined' | 'removed'
-          next_session_status?: 'confirmed' | 'unavailable' | 'maybe' | 'no_response'
+          next_session_status?: 'attending' | 'unavailable' | 'late'
+          next_session_note?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -3049,7 +3078,8 @@ export interface Database {
           invited_at?: string | null
           joined_at?: string | null
           status?: 'pending' | 'active' | 'declined' | 'removed'
-          next_session_status?: 'confirmed' | 'unavailable' | 'maybe' | 'no_response'
+          next_session_status?: 'attending' | 'unavailable' | 'late'
+          next_session_note?: string | null
           created_at?: string
           updated_at?: string
         }

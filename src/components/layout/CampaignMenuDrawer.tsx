@@ -38,6 +38,7 @@ interface CampaignMenuDrawerProps {
   campaignId: string
   isOwner: boolean
   isDm: boolean
+  currentPage?: 'dashboard' | 'canvas' | 'sessions' | 'timeline' | 'lore' | 'map' | 'gallery' | 'intelligence' | 'view' | 'settings'
   // Callbacks for opening various modals/managers
   onOpenMembers?: () => void
   onOpenLabels?: () => void
@@ -101,6 +102,7 @@ export function CampaignMenuDrawer({
   campaignId,
   isOwner,
   isDm,
+  currentPage,
   onOpenMembers,
   onOpenLabels,
   onOpenFactions,
@@ -257,11 +259,14 @@ export function CampaignMenuDrawer({
                   label="Character Relationships"
                   onClick={() => handleNavClick(onOpenRelationships)}
                 />
-                <NavItem
-                  icon={Scaling}
-                  label="Card Sizing"
-                  onClick={() => handleNavClick(onOpenResize)}
-                />
+                {/* Card Sizing only shows on Canvas page */}
+                {currentPage === 'canvas' && (
+                  <NavItem
+                    icon={Scaling}
+                    label="Card Sizing"
+                    onClick={() => handleNavClick(onOpenResize)}
+                  />
+                )}
               </div>
             </div>
           )}

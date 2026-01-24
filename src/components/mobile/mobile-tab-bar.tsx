@@ -7,7 +7,8 @@ import {
   Swords,
   Scroll,
   Settings,
-  LayoutGrid,
+  PanelTop,
+  LayoutDashboard,
   ScrollText,
   Clock,
   Network,
@@ -192,17 +193,23 @@ function getGlobalTabs() {
 }
 
 // Campaign context tabs - filtered based on permissions
+// Order: Dashboard → Canvas → View → Sessions → Timeline → Intelligence → Lore → Map → Gallery
 function getCampaignTabs(campaignId: string, canUseAI: boolean, permissions: UsePermissionsReturn) {
   const { can, isDm } = permissions
-  const tabs: Array<{ href: string; label: string; icon: typeof LayoutGrid }> = []
+  const tabs: Array<{ href: string; label: string; icon: typeof PanelTop }> = []
 
-  // View is always visible
-  tabs.push({ href: `/campaigns/${campaignId}/view`, label: 'View', icon: Eye })
+  // Dashboard - visible to DMs and those with canvas access (primary entry point)
+  if (isDm || can.viewCanvas) {
+    tabs.push({ href: `/campaigns/${campaignId}/dashboard`, label: 'Dashboard', icon: LayoutDashboard })
+  }
 
   // Canvas - only for DMs or those with canvas permission
   if (isDm || can.viewCanvas) {
-    tabs.push({ href: `/campaigns/${campaignId}/canvas`, label: 'Characters', icon: LayoutGrid })
+    tabs.push({ href: `/campaigns/${campaignId}/canvas`, label: 'Characters', icon: PanelTop })
   }
+
+  // View is always visible (read-only preview)
+  tabs.push({ href: `/campaigns/${campaignId}/view`, label: 'View', icon: Eye })
 
   // Sessions - based on session view permission
   if (isDm || can.viewSessions) {
@@ -214,14 +221,14 @@ function getCampaignTabs(campaignId: string, canUseAI: boolean, permissions: Use
     tabs.push({ href: `/campaigns/${campaignId}/timeline`, label: 'Timeline', icon: Clock })
   }
 
-  // Lore - based on lore view permission
-  if (isDm || can.viewLore) {
-    tabs.push({ href: `/campaigns/${campaignId}/lore`, label: 'Lore', icon: Network })
-  }
-
   // Intelligence - only for DMs with AI access
   if (isDm && canUseAI) {
     tabs.push({ href: `/campaigns/${campaignId}/intelligence`, label: 'AI', icon: Brain })
+  }
+
+  // Lore - based on lore view permission
+  if (isDm || can.viewLore) {
+    tabs.push({ href: `/campaigns/${campaignId}/lore`, label: 'Lore', icon: Network })
   }
 
   // Map - based on maps view permission

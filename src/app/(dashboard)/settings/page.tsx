@@ -28,6 +28,8 @@ import {
   X,
   Lightbulb,
   RefreshCw,
+  Globe,
+  Clock,
 } from 'lucide-react'
 import Image from 'next/image'
 import { v4 as uuidv4 } from 'uuid'
@@ -43,6 +45,8 @@ import Link from 'next/link'
 import { formatDate } from '@/lib/utils'
 import { LegalFooter } from '@/components/ui/legal-footer'
 import { FounderBadge, UsageBar } from '@/components/membership'
+import { TimezoneSelector } from '@/components/scheduling'
+import { getUserTimezone, formatCurrentTime, getTimezoneAbbreviation } from '@/lib/timezone-utils'
 
 // App version - using date-based versioning
 const APP_VERSION = '2025.01.17'
@@ -109,29 +113,55 @@ export default function SettingsPage() {
   const resetTips = useResetTips()
   const toggleTips = useToggleTips()
 
+  // Timezone state
+  const [userTimezone, setUserTimezone] = useState(() => getUserTimezone())
+  const [savingTimezone, setSavingTimezone] = useState(false)
+
   // Load user stats
   useEffect(() => {
     if (user) {
       loadStats()
       loadSharesSummary()
-      loadTipsSettings()
+      loadUserSettings()
     }
   }, [user])
 
-  const loadTipsSettings = async () => {
+  const loadUserSettings = async () => {
     if (!user) return
     try {
       const { data } = await supabase
         .from('user_settings')
-        .select('show_tips')
+        .select('show_tips, timezone')
         .eq('user_id', user.id)
         .single()
 
       if (data) {
         setShowTips(data.show_tips !== false)
+        if (data.timezone) {
+          setUserTimezone(data.timezone)
+        }
       }
     } catch {
       // Column might not exist yet
+    }
+  }
+
+  const handleTimezoneChange = async (newTimezone: string) => {
+    setUserTimezone(newTimezone)
+    setSavingTimezone(true)
+    try {
+      const { error } = await supabase
+        .from('user_settings')
+        .update({ timezone: newTimezone })
+        .eq('user_id', user!.id)
+
+      if (error) throw error
+      toast.success('Timezone updated')
+    } catch (error) {
+      console.error('Failed to save timezone:', error)
+      toast.error('Failed to save timezone')
+    } finally {
+      setSavingTimezone(false)
     }
   }
 
@@ -392,6 +422,34 @@ export default function SettingsPage() {
                   </div>
                 </div>
               )}
+            </div>
+          </section>
+
+          {/* Preferences */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
+                <Globe className="w-4 h-4 text-white" />
+              </div>
+              <h2 className="text-base font-semibold text-white">Preferences</h2>
+            </div>
+
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wide">Timezone</label>
+                  <p className="text-xs text-gray-500 mt-0.5">For session time conversion</p>
+                </div>
+                {savingTimezone && (
+                  <Loader2 className="w-4 h-4 text-[--arcane-purple] animate-spin" />
+                )}
+              </div>
+              <TimezoneSelector
+                value={userTimezone}
+                onChange={handleTimezoneChange}
+                label=""
+                showCurrentTime={true}
+              />
             </div>
           </section>
 
@@ -850,7 +908,49 @@ export default function SettingsPage() {
         </section>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            SECTION 2: AI & INTELLIGENCE - only show for users who can access AI
+            SECTION: PREFERENCES
+            ═══════════════════════════════════════════════════════════════════ */}
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
+              <Globe className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-[--text-primary]">Preferences</h2>
+              <p className="text-sm text-[--text-tertiary]">Localization and display settings</p>
+            </div>
+          </div>
+
+          <div className="card p-5 space-y-5">
+            {/* Timezone Setting */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-xs text-[--text-tertiary] uppercase tracking-wide">Your Timezone</label>
+                  <p className="text-xs text-[--text-tertiary] mt-0.5">
+                    Session times will be converted to your local time
+                  </p>
+                </div>
+                {savingTimezone && (
+                  <Loader2 className="w-4 h-4 text-[--arcane-purple] animate-spin" />
+                )}
+              </div>
+              <TimezoneSelector
+                value={userTimezone}
+                onChange={handleTimezoneChange}
+                label=""
+                showCurrentTime={true}
+              />
+              <div className="flex items-center gap-2 text-xs text-[--text-tertiary]">
+                <Clock className="w-3 h-3" />
+                <span>Current time: {formatCurrentTime(userTimezone)} {getTimezoneAbbreviation(userTimezone)}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            SECTION: AI & INTELLIGENCE - only show for users who can access AI
             ═══════════════════════════════════════════════════════════════════ */}
         {tierHasAI && (
         <section>

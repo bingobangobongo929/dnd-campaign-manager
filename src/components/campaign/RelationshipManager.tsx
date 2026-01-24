@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import {
-  X, Search, Trash2, Users, Heart, Swords, Briefcase, Crown,
+  Search, Trash2, Users, Heart, Swords, Briefcase, Crown,
   ArrowRight, ArrowLeftRight, Link2, Filter
 } from 'lucide-react'
+import { Modal, Input } from '@/components/ui'
 import { useSupabase } from '@/hooks'
 import { cn } from '@/lib/utils'
 import type {
@@ -123,47 +124,31 @@ export function RelationshipManager({ campaignId, isOpen, onClose }: Relationshi
     return acc
   }, {} as Record<RelationshipCategory, RelationshipWithDetails[]>)
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-3xl max-h-[85vh] bg-[#12121a] border border-[--border] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[--border]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
-              <Link2 className="w-5 h-5 text-purple-400" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-white">Relationships</h2>
-              <p className="text-sm text-[--text-tertiary]">
-                {relationships.length} relationship{relationships.length !== 1 ? 's' : ''} in campaign
-              </p>
-            </div>
-          </div>
-          <button onClick={onClose} className="btn-ghost btn-icon">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Character Relationships"
+      description={`${relationships.length} relationship${relationships.length !== 1 ? 's' : ''} in campaign`}
+      size="lg"
+    >
+      <div className="space-y-4">
         {/* Search & Filter */}
-        <div className="p-4 border-b border-[--border] flex gap-3">
+        <div className="flex gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[--text-tertiary]" />
-            <input
-              type="text"
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              className="pl-10"
               placeholder="Search relationships..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white/[0.03] border border-white/[0.08] rounded-lg text-sm text-white placeholder:text-[--text-tertiary] focus:outline-none focus:border-purple-500/50"
             />
           </div>
           <div className="relative">
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value as RelationshipCategory | 'all')}
-              className="appearance-none pl-10 pr-8 py-2 bg-white/[0.03] border border-white/[0.08] rounded-lg text-sm text-white focus:outline-none focus:border-purple-500/50 cursor-pointer"
+              className="form-input pl-10 pr-8"
             >
               <option value="all">All Categories</option>
               <option value="family">Family</option>
@@ -173,118 +158,116 @@ export function RelationshipManager({ campaignId, isOpen, onClose }: Relationshi
               <option value="social">Social</option>
               <option value="other">Other</option>
             </select>
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[--text-tertiary]" />
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : filteredRelationships.length === 0 ? (
-            <div className="text-center py-12">
-              <Link2 className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-              <p className="text-[--text-secondary]">No relationships found</p>
-              <p className="text-sm text-[--text-tertiary] mt-1">
-                Add relationships from character edit modals
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {(Object.entries(groupedRelationships) as [RelationshipCategory, RelationshipWithDetails[]][])
-                .filter(([_, rels]) => rels.length > 0)
-                .map(([category, categoryRelationships]) => (
-                  <div key={category}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span style={{ color: CATEGORY_COLORS[category] }}>
-                        {CATEGORY_ICONS[category]}
-                      </span>
-                      <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: CATEGORY_COLORS[category] }}>
-                        {category}
-                      </h3>
-                      <span className="text-xs text-[--text-tertiary]">
-                        ({categoryRelationships.length})
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {categoryRelationships.map(rel => (
-                        <div
-                          key={rel.id}
-                          className="group flex items-center gap-4 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-all"
-                        >
-                          {/* From Character */}
-                          <div className="flex items-center gap-2 min-w-[140px]">
-                            <div className="w-8 h-8 rounded-lg bg-[--bg-elevated] overflow-hidden">
-                              {rel.from_character.image_url ? (
-                                <img
-                                  src={rel.from_character.image_url}
-                                  alt={rel.from_character.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-[--text-tertiary]">
-                                  <Users className="w-4 h-4" />
-                                </div>
-                              )}
-                            </div>
-                            <span className="text-sm font-medium text-white truncate">
-                              {rel.from_character.name}
-                            </span>
-                          </div>
-
-                          {/* Relationship Type */}
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.03]">
-                            {getModeIcon(rel)}
-                            <span
-                              className="text-sm font-medium"
-                              style={{ color: rel.template?.color || CATEGORY_COLORS[category] }}
-                            >
-                              {rel.custom_label || rel.template?.name || 'Related'}
-                            </span>
-                          </div>
-
-                          {/* To Character */}
-                          <div className="flex items-center gap-2 min-w-[140px]">
-                            <div className="w-8 h-8 rounded-lg bg-[--bg-elevated] overflow-hidden">
-                              {rel.to_character.image_url ? (
-                                <img
-                                  src={rel.to_character.image_url}
-                                  alt={rel.to_character.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-[--text-tertiary]">
-                                  <Users className="w-4 h-4" />
-                                </div>
-                              )}
-                            </div>
-                            <span className="text-sm font-medium text-white truncate">
-                              {rel.to_character.name}
-                            </span>
-                          </div>
-
-                          {/* Spacer */}
-                          <div className="flex-1" />
-
-                          {/* Delete */}
-                          <button
-                            onClick={() => handleDelete(rel)}
-                            className="p-2 rounded-lg text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10 transition-all"
-                            title="Delete relationship"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : filteredRelationships.length === 0 ? (
+          <div className="text-center py-12">
+            <Link2 className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-400">No relationships found</p>
+            <p className="text-sm text-gray-500 mt-1">
+              Add relationships from character edit modals
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+            {(Object.entries(groupedRelationships) as [RelationshipCategory, RelationshipWithDetails[]][])
+              .filter(([_, rels]) => rels.length > 0)
+              .map(([category, categoryRelationships]) => (
+                <div key={category}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span style={{ color: CATEGORY_COLORS[category] }}>
+                      {CATEGORY_ICONS[category]}
+                    </span>
+                    <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: CATEGORY_COLORS[category] }}>
+                      {category}
+                    </h3>
+                    <span className="text-xs text-gray-500">
+                      ({categoryRelationships.length})
+                    </span>
                   </div>
-                ))}
-            </div>
-          )}
-        </div>
+                  <div className="space-y-2">
+                    {categoryRelationships.map(rel => (
+                      <div
+                        key={rel.id}
+                        className="group flex items-center gap-4 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-all"
+                      >
+                        {/* From Character */}
+                        <div className="flex items-center gap-2 min-w-[140px]">
+                          <div className="w-8 h-8 rounded-lg bg-[--bg-elevated] overflow-hidden">
+                            {rel.from_character.image_url ? (
+                              <img
+                                src={rel.from_character.image_url}
+                                alt={rel.from_character.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-500">
+                                <Users className="w-4 h-4" />
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-sm font-medium text-white truncate">
+                            {rel.from_character.name}
+                          </span>
+                        </div>
+
+                        {/* Relationship Type */}
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.03]">
+                          {getModeIcon(rel)}
+                          <span
+                            className="text-sm font-medium"
+                            style={{ color: rel.template?.color || CATEGORY_COLORS[category] }}
+                          >
+                            {rel.custom_label || rel.template?.name || 'Related'}
+                          </span>
+                        </div>
+
+                        {/* To Character */}
+                        <div className="flex items-center gap-2 min-w-[140px]">
+                          <div className="w-8 h-8 rounded-lg bg-[--bg-elevated] overflow-hidden">
+                            {rel.to_character.image_url ? (
+                              <img
+                                src={rel.to_character.image_url}
+                                alt={rel.to_character.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-500">
+                                <Users className="w-4 h-4" />
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-sm font-medium text-white truncate">
+                            {rel.to_character.name}
+                          </span>
+                        </div>
+
+                        {/* Spacer */}
+                        <div className="flex-1" />
+
+                        {/* Delete */}
+                        <button
+                          onClick={() => handleDelete(rel)}
+                          className="p-2 rounded-lg text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                          title="Delete relationship"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
       </div>
-    </div>
+    </Modal>
   )
 }
