@@ -9,6 +9,10 @@ export interface TimelineEventWithCharacters extends TimelineEvent {
 export interface TimelineViewProps {
   events: TimelineEventWithCharacters[]
   eras?: CampaignEra[]
+  // Permission flags
+  canAdd?: boolean
+  canEdit?: boolean
+  canDelete?: boolean
   onEventClick: (event: TimelineEventWithCharacters) => void
   onCharacterClick: (character: Character, e: React.MouseEvent) => void
   onEraCreate?: () => void

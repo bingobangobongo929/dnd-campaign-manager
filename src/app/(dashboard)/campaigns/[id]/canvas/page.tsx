@@ -219,6 +219,9 @@ export default function CampaignCanvasPage() {
   }, [setSelectedCharacterId])
 
   const handleCharacterPositionChange = useCallback(async (id: string, x: number, y: number) => {
+    // Check permission before allowing edit
+    if (!can.editCanvasLayout) return
+
     // Update local state
     setCharacters(prev => prev.map(c =>
       c.id === id ? { ...c, position_x: x, position_y: y } : c
@@ -229,10 +232,13 @@ export default function CampaignCanvasPage() {
       .from('characters')
       .update({ position_x: x, position_y: y })
       .eq('id', id)
-  }, [supabase])
+  }, [supabase, can.editCanvasLayout])
 
   // Handle individual card resize (from hover icon)
   const handleCharacterSizeChange = useCallback(async (id: string, width: number, height: number) => {
+    // Check permission before allowing edit
+    if (!can.editCanvasLayout) return
+
     // Update local state
     setCharacters(prev => prev.map(c =>
       c.id === id ? { ...c, canvas_width: width, canvas_height: height } : c
@@ -243,7 +249,7 @@ export default function CampaignCanvasPage() {
       .from('characters')
       .update({ canvas_width: width, canvas_height: height })
       .eq('id', id)
-  }, [supabase])
+  }, [supabase, can.editCanvasLayout])
 
   // Handle batch resize from toolbar - updates state for live preview
   // width/height can be null to indicate "don't change this dimension"
@@ -288,6 +294,9 @@ export default function CampaignCanvasPage() {
   }, [characterSizeOverrides, supabase])
 
   const handleGroupUpdate = useCallback(async (id: string, updates: Partial<CanvasGroup>) => {
+    // Check permission before allowing edit
+    if (!can.editCanvasLayout) return
+
     setGroups(prev => prev.map(g =>
       g.id === id ? { ...g, ...updates } : g
     ))
@@ -296,16 +305,19 @@ export default function CampaignCanvasPage() {
       .from('canvas_groups')
       .update(updates)
       .eq('id', id)
-  }, [supabase])
+  }, [supabase, can.editCanvasLayout])
 
   const handleGroupDelete = useCallback(async (id: string) => {
+    // Check permission before allowing edit
+    if (!can.editCanvasLayout) return
+
     setGroups(prev => prev.filter(g => g.id !== id))
 
     await supabase
       .from('canvas_groups')
       .delete()
       .eq('id', id)
-  }, [supabase])
+  }, [supabase, can.editCanvasLayout])
 
   const handleGroupEdit = useCallback((id: string) => {
     const group = groups.find(g => g.id === id)
@@ -345,6 +357,9 @@ export default function CampaignCanvasPage() {
   }
 
   const handleGroupPositionChange = useCallback(async (id: string, x: number, y: number) => {
+    // Check permission before allowing edit
+    if (!can.editCanvasLayout) return
+
     setGroups(prev => prev.map(g =>
       g.id === id ? { ...g, position_x: x, position_y: y } : g
     ))
@@ -353,7 +368,7 @@ export default function CampaignCanvasPage() {
       .from('canvas_groups')
       .update({ position_x: x, position_y: y })
       .eq('id', id)
-  }, [supabase])
+  }, [supabase, can.editCanvasLayout])
 
   // Handle character creation from CharacterModal in create mode
   const handleCharacterCreate = useCallback((newCharacter: Character) => {
@@ -414,6 +429,9 @@ export default function CampaignCanvasPage() {
 
   // Handle delete request from canvas (triggered by DEL key)
   const handleDeleteSelected = useCallback((characterIds: string[], groupIds: string[]) => {
+    // Check permission before allowing delete
+    if (!can.editCanvasLayout) return
+
     const totalCount = characterIds.length + groupIds.length
     if (totalCount === 0) return
 
@@ -425,7 +443,7 @@ export default function CampaignCanvasPage() {
       // Directly delete without confirmation
       performDelete(characterIds, groupIds)
     }
-  }, [])
+  }, [can.editCanvasLayout])
 
   // Actually perform the deletion
   const performDelete = useCallback(async (characterIds: string[], groupIds: string[]) => {
@@ -683,79 +701,87 @@ export default function CampaignCanvasPage() {
         </button>
         {manageDropdownOpen && (
           <div className="absolute top-full right-0 mt-1 w-48 bg-[#12121a] border border-[--border] rounded-lg shadow-2xl z-50 py-1">
-            <button
-              className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
-              onClick={() => { setIsMemberManagerOpen(true); setManageDropdownOpen(false) }}
-            >
-              <Users className="w-4 h-4" />
-              Members
-            </button>
-            <button
-              className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
-              onClick={() => { setIsTagManagerOpen(true); setManageDropdownOpen(false) }}
-            >
-              <Tags className="w-4 h-4" />
-              Labels
-            </button>
-            <button
-              className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
-              onClick={() => { setIsFactionManagerOpen(true); setManageDropdownOpen(false) }}
-            >
-              <Shield className="w-4 h-4" />
-              Factions
-            </button>
-            <button
-              className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
-              onClick={() => { setIsRelationshipManagerOpen(true); setManageDropdownOpen(false) }}
-            >
-              <Users className="w-4 h-4" />
-              Relationships
-            </button>
-            <div className="border-t border-[--border] my-1" />
-            <button
-              className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
-              onClick={() => { setIsResizeToolbarOpen(true); setManageDropdownOpen(false) }}
-            >
-              <Scaling className="w-4 h-4" />
-              Resize Cards
-            </button>
+            {isDm && (
+              <button
+                className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
+                onClick={() => { setIsMemberManagerOpen(true); setManageDropdownOpen(false) }}
+              >
+                <Users className="w-4 h-4" />
+                Members
+              </button>
+            )}
+            {can.editCanvasLayout && (
+              <>
+                <button
+                  className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
+                  onClick={() => { setIsTagManagerOpen(true); setManageDropdownOpen(false) }}
+                >
+                  <Tags className="w-4 h-4" />
+                  Labels
+                </button>
+                <button
+                  className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
+                  onClick={() => { setIsFactionManagerOpen(true); setManageDropdownOpen(false) }}
+                >
+                  <Shield className="w-4 h-4" />
+                  Factions
+                </button>
+                <button
+                  className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
+                  onClick={() => { setIsRelationshipManagerOpen(true); setManageDropdownOpen(false) }}
+                >
+                  <Users className="w-4 h-4" />
+                  Relationships
+                </button>
+                <div className="border-t border-[--border] my-1" />
+                <button
+                  className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
+                  onClick={() => { setIsResizeToolbarOpen(true); setManageDropdownOpen(false) }}
+                >
+                  <Scaling className="w-4 h-4" />
+                  Resize Cards
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
 
-      {/* Add Dropdown - Group, Character */}
-      <div className="relative">
-        <button
-          className="btn btn-primary btn-sm flex items-center gap-1.5"
-          onClick={() => {
-            setAddDropdownOpen(!addDropdownOpen)
-            setConnectionDropdownOpen(false)
-            setManageDropdownOpen(false)
-          }}
-        >
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Add</span>
-          <ChevronDown className={cn("w-3 h-3 transition-transform", addDropdownOpen && "rotate-180")} />
-        </button>
-        {addDropdownOpen && (
-          <div className="absolute top-full right-0 mt-1 w-44 bg-[#12121a] border border-[--border] rounded-lg shadow-2xl z-50 py-1">
-            <button
-              className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
-              onClick={() => { setIsCreateCharacterModalOpen(true); setAddDropdownOpen(false) }}
-            >
-              <Plus className="w-4 h-4" />
-              Add Character
-            </button>
-            <button
-              className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
-              onClick={() => { setIsCreateGroupOpen(true); setAddDropdownOpen(false) }}
-            >
-              <FolderPlus className="w-4 h-4" />
-              Add Group
-            </button>
-          </div>
-        )}
-      </div>
+      {/* Add Dropdown - Group, Character (only show if user can edit) */}
+      {can.editCanvasLayout && (
+        <div className="relative">
+          <button
+            className="btn btn-primary btn-sm flex items-center gap-1.5"
+            onClick={() => {
+              setAddDropdownOpen(!addDropdownOpen)
+              setConnectionDropdownOpen(false)
+              setManageDropdownOpen(false)
+            }}
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Add</span>
+            <ChevronDown className={cn("w-3 h-3 transition-transform", addDropdownOpen && "rotate-180")} />
+          </button>
+          {addDropdownOpen && (
+            <div className="absolute top-full right-0 mt-1 w-44 bg-[#12121a] border border-[--border] rounded-lg shadow-2xl z-50 py-1">
+              <button
+                className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
+                onClick={() => { setIsCreateCharacterModalOpen(true); setAddDropdownOpen(false) }}
+              >
+                <Plus className="w-4 h-4" />
+                Add Character
+              </button>
+              <button
+                className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
+                onClick={() => { setIsCreateGroupOpen(true); setAddDropdownOpen(false) }}
+              >
+                <FolderPlus className="w-4 h-4" />
+                Add Group
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </>
   )
 
@@ -845,6 +871,7 @@ export default function CampaignCanvasPage() {
           factionMemberships={factionMemberships}
           showConnections={showConnections}
           connectionFilter={connectionFilter}
+          canEdit={can.editCanvasLayout}
           onCharacterPreview={handleCharacterPreview}
           onCharacterEdit={handleCharacterEdit}
           onCharacterPositionChange={handleCharacterPositionChange}

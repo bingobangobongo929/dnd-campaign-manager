@@ -9,13 +9,14 @@ import type { CanvasGroup } from '@/types/database'
 
 export interface GroupNodeData extends Record<string, unknown> {
   group: CanvasGroup
+  canEdit?: boolean
   onUpdate: (id: string, updates: Partial<CanvasGroup>) => void
   onDelete: (id: string) => void
   onEdit: (id: string) => void
 }
 
 function GroupNodeComponent({ data, selected }: { data: GroupNodeData; selected?: boolean }) {
-  const { group, onUpdate, onDelete, onEdit } = data
+  const { group, canEdit = true, onUpdate, onDelete, onEdit } = data
 
   const GroupIcon = getGroupIcon(group.icon)
 
@@ -24,11 +25,13 @@ function GroupNodeComponent({ data, selected }: { data: GroupNodeData; selected?
       <NodeResizer
         minWidth={300}
         minHeight={200}
-        isVisible={selected}
+        isVisible={canEdit && selected}
         lineClassName="!border-[--arcane-purple]"
         handleClassName="!w-3 !h-3 !bg-[--arcane-purple] !border-none"
         onResize={(_, params) => {
-          onUpdate(group.id, { width: params.width, height: params.height })
+          if (canEdit) {
+            onUpdate(group.id, { width: params.width, height: params.height })
+          }
         }}
       />
       <div
@@ -68,8 +71,8 @@ function GroupNodeComponent({ data, selected }: { data: GroupNodeData; selected?
               </h2>
             </div>
 
-            {/* Edit/Delete buttons - only show when selected */}
-            {selected && (
+            {/* Edit/Delete buttons - only show when selected and user can edit */}
+            {canEdit && selected && (
               <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"

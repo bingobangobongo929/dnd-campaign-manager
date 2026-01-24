@@ -323,6 +323,16 @@ export default function TimelinePage() {
   }
 
   const handleEraSave = async () => {
+    // Check permission - creating new requires addTimeline, editing requires editTimeline
+    if (editingEra && !can.editTimeline) {
+      toast.error('You do not have permission to edit chapters')
+      return
+    }
+    if (!editingEra && !can.addTimeline) {
+      toast.error('You do not have permission to add chapters')
+      return
+    }
+
     if (!eraFormData.name.trim()) {
       toast.error('Chapter name is required')
       return
@@ -371,6 +381,12 @@ export default function TimelinePage() {
   }
 
   const handleEraDelete = async (eraId: string) => {
+    // Check delete permission
+    if (!can.deleteTimeline) {
+      toast.error('You do not have permission to delete chapters')
+      return
+    }
+
     try {
       const { error } = await supabase
         .from('campaign_eras')
@@ -402,6 +418,9 @@ export default function TimelinePage() {
           <ChaptersView
             {...viewProps}
             eras={eras}
+            canAdd={can.addTimeline}
+            canEdit={can.editTimeline}
+            canDelete={can.deleteTimeline}
             onEraCreate={handleEraCreate}
             onEraEdit={handleEraEdit}
             onEraDelete={handleEraDelete}

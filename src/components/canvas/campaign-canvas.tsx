@@ -51,6 +51,8 @@ interface CampaignCanvasProps {
   factionMemberships?: FactionMembershipWithFaction[]
   showConnections?: boolean
   connectionFilter?: RelationshipCategory | null
+  // Permission control
+  canEdit?: boolean
   onCharacterPreview: (id: string) => void
   onCharacterEdit: (id: string) => void
   onCharacterPositionChange: (id: string, x: number, y: number) => void
@@ -81,6 +83,7 @@ function CampaignCanvasInner({
   factionMemberships,
   showConnections,
   connectionFilter,
+  canEdit = true,
   onCharacterPreview,
   onCharacterEdit,
   onCharacterPositionChange,
@@ -141,6 +144,7 @@ function CampaignCanvasInner({
           relationships: charRelationships,
           factionMemberships: charFactionMemberships,
           isSelected: char.id === selectedCharacterId,
+          canEdit,
           onPreview: onCharacterPreview,
           onEdit: onCharacterEdit,
           onResize: onCharacterSizeChange,
@@ -156,6 +160,7 @@ function CampaignCanvasInner({
       zIndex: -1,
       data: {
         group,
+        canEdit,
         onUpdate: onGroupUpdate,
         onDelete: onGroupDelete,
         onEdit: onGroupEdit,
@@ -164,7 +169,7 @@ function CampaignCanvasInner({
 
     // Groups should render behind characters
     return [...groupNodes, ...characterNodes] as unknown as Node[]
-  }, [characters, characterTags, groups, selectedCharacterId, characterSizeOverrides, relationships, factionMemberships, onCharacterPreview, onCharacterEdit, onCharacterSizeChange, onGroupUpdate, onGroupDelete, onGroupEdit])
+  }, [characters, characterTags, groups, selectedCharacterId, characterSizeOverrides, relationships, factionMemberships, canEdit, onCharacterPreview, onCharacterEdit, onCharacterSizeChange, onGroupUpdate, onGroupDelete, onGroupEdit])
 
   // Initialize nodes
   const [nodes, setNodes] = useNodesState(createNodes())
@@ -415,15 +420,18 @@ function CampaignCanvasInner({
         maxZoom={2}
         snapToGrid
         snapGrid={[SNAP_GRID, SNAP_GRID]}
+        nodesDraggable={canEdit}
+        nodesConnectable={canEdit}
+        elementsSelectable={canEdit}
         zoomOnScroll={true}
         zoomOnPinch={true}
         zoomOnDoubleClick={true}
         panOnScroll={false} // Scroll zooms, not pans
         panOnDrag={[0, 2]} // Left click (when not on node) or right click to pan
-        selectionOnDrag={true} // Enable selection box with left click drag on empty space
+        selectionOnDrag={canEdit} // Enable selection box with left click drag on empty space
         selectionMode={SelectionMode.Partial} // Select when touching the box
-        selectNodesOnDrag={true}
-        multiSelectionKeyCode={['Shift', 'Control', 'Meta']} // Hold shift/ctrl/cmd to add to selection
+        selectNodesOnDrag={canEdit}
+        multiSelectionKeyCode={canEdit ? ['Shift', 'Control', 'Meta'] : null} // Hold shift/ctrl/cmd to add to selection
         zoomActivationKeyCode={['Meta', 'Control']} // CMD/CTRL + scroll to zoom (alternative)
         deleteKeyCode={null} // We handle delete ourselves
         className="bg-[--bg-base]"

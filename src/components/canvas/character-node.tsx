@@ -31,6 +31,7 @@ export interface CharacterNodeData extends Record<string, unknown> {
   relationships: RelationshipWithDetails[]
   factionMemberships: FactionMembershipWithFaction[]
   isSelected: boolean
+  canEdit?: boolean
   onPreview: (id: string) => void
   onEdit: (id: string) => void
   onResize?: (id: string, width: number, height: number) => void
@@ -44,7 +45,7 @@ function CharacterNodeComponent({
   data: CharacterNodeData
   selected?: boolean
 }) {
-  const { character, tags, relationships, factionMemberships, onPreview, onEdit, onResize } = data
+  const { character, tags, relationships, factionMemberships, canEdit = true, onPreview, onEdit, onResize } = data
   const isPC = character.type === 'pc'
   const isActive = selected || data.isSelected
 
@@ -163,20 +164,24 @@ function CharacterNodeComponent({
               >
                 <Eye className="w-5 h-5 text-[--text-secondary] group-hover/btn:text-white transition-colors" />
               </button>
-              <button
-                onClick={handleEdit}
-                className="w-12 h-12 flex items-center justify-center rounded-xl bg-[--bg-surface] border border-[--border] hover:bg-[--arcane-purple] hover:border-[--arcane-purple] transition-all shadow-lg group/btn"
-                title="Edit"
-              >
-                <Pencil className="w-5 h-5 text-[--text-secondary] group-hover/btn:text-white transition-colors" />
-              </button>
-              <button
-                onClick={handleEnterResize}
-                className="w-12 h-12 flex items-center justify-center rounded-xl bg-[--bg-surface] border border-[--border] hover:bg-[--arcane-purple] hover:border-[--arcane-purple] transition-all shadow-lg group/btn"
-                title="Resize"
-              >
-                <Move className="w-5 h-5 text-[--text-secondary] group-hover/btn:text-white transition-colors" />
-              </button>
+              {canEdit && (
+                <>
+                  <button
+                    onClick={handleEdit}
+                    className="w-12 h-12 flex items-center justify-center rounded-xl bg-[--bg-surface] border border-[--border] hover:bg-[--arcane-purple] hover:border-[--arcane-purple] transition-all shadow-lg group/btn"
+                    title="Edit"
+                  >
+                    <Pencil className="w-5 h-5 text-[--text-secondary] group-hover/btn:text-white transition-colors" />
+                  </button>
+                  <button
+                    onClick={handleEnterResize}
+                    className="w-12 h-12 flex items-center justify-center rounded-xl bg-[--bg-surface] border border-[--border] hover:bg-[--arcane-purple] hover:border-[--arcane-purple] transition-all shadow-lg group/btn"
+                    title="Resize"
+                  >
+                    <Move className="w-5 h-5 text-[--text-secondary] group-hover/btn:text-white transition-colors" />
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}

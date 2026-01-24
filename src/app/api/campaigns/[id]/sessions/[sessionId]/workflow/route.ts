@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { checkPermission, isDmRole } from '@/lib/permissions'
 import type {
   SessionPhase,
   SessionSection,
@@ -7,6 +8,8 @@ import type {
   SessionTimerState,
   PinnedReference,
   SessionAttendee,
+  MemberPermissions,
+  CampaignMemberRole,
 } from '@/types/database'
 
 // PATCH - Update session workflow
@@ -24,7 +27,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user is owner or co_dm
+    // Check campaign access and permissions
     const { data: campaign } = await supabase
       .from('campaigns')
       .select('user_id')
@@ -35,15 +38,18 @@ export async function PATCH(
 
     const { data: membership } = await supabase
       .from('campaign_members')
-      .select('role')
+      .select('role, permissions')
       .eq('campaign_id', campaignId)
       .eq('user_id', user.id)
       .single()
 
-    const isCoGm = membership?.role === 'co_dm'
+    const role = (membership?.role || (isOwner ? 'owner' : null)) as CampaignMemberRole | null
+    const permissions = membership?.permissions as MemberPermissions | null
+    const isDm = isDmRole(isOwner, role)
 
-    if (!isOwner && !isCoGm) {
-      return NextResponse.json({ error: 'Only DMs can update session workflow' }, { status: 403 })
+    // Check edit permission - DMs always have access, others need explicit permission
+    if (!isDm && !checkPermission(permissions, isOwner, 'sessions', 'edit')) {
+      return NextResponse.json({ error: 'No permission to edit sessions' }, { status: 403 })
     }
 
     // Verify session belongs to campaign

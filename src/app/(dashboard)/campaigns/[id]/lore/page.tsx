@@ -186,6 +186,10 @@ export default function LorePage() {
   // Generate AI lore analysis
   const handleGenerateLore = async () => {
     if (!canUseAI) return
+    if (!can.addLore) {
+      setError('You do not have permission to generate lore')
+      return
+    }
 
     setGeneratingLore(true)
     setError(null)
@@ -318,7 +322,7 @@ export default function LorePage() {
               Explore relationships, factions, and AI-generated insights
             </p>
           </div>
-          {canUseAI && (
+          {canUseAI && can.addLore && (
             <button
               className="btn btn-primary"
               onClick={handleGenerateLore}
@@ -637,23 +641,25 @@ export default function LorePage() {
                     <p className="text-xs text-purple-400/80 mb-4 max-w-md mx-auto italic">
                       Add characters with detailed descriptions and relationships for richer insights.
                     </p>
-                    <button
-                      className="btn btn-secondary"
-                      onClick={handleGenerateLore}
-                      disabled={generatingLore}
-                    >
-                      {generatingLore ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Analyzing...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4" />
-                          Analyze Lore
-                        </>
-                      )}
-                    </button>
+                    {can.addLore && (
+                      <button
+                        className="btn btn-secondary"
+                        onClick={handleGenerateLore}
+                        disabled={generatingLore}
+                      >
+                        {generatingLore ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Analyzing...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4" />
+                            Analyze Lore
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-4">

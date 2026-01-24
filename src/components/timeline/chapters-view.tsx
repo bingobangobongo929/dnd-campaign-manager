@@ -45,6 +45,9 @@ const EVENT_CONFIG: Record<string, { icon: typeof Calendar; label: string; color
 export function ChaptersView({
   events,
   eras = [],
+  canAdd = true,
+  canEdit = true,
+  canDelete = true,
   onEventClick,
   onCharacterClick,
   onEraCreate,
@@ -169,8 +172,8 @@ export function ChaptersView({
                   />
                 </button>
 
-                {/* Era Actions Menu */}
-                {(onEraEdit || onEraDelete) && (
+                {/* Era Actions Menu - only show if user has edit or delete permission */}
+                {((canEdit && onEraEdit) || (canDelete && onEraDelete)) && (
                   <div className="absolute right-14 top-1/2 -translate-y-1/2">
                     <button
                       onClick={(e) => {
@@ -188,7 +191,7 @@ export function ChaptersView({
                           onClick={() => setEraMenuOpen(null)}
                         />
                         <div className="absolute right-0 top-full mt-1 w-40 rounded-lg shadow-xl z-50 overflow-hidden bg-[#1a1a24] border border-white/10">
-                          {onEraEdit && (
+                          {canEdit && onEraEdit && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -201,7 +204,7 @@ export function ChaptersView({
                               Edit Chapter
                             </button>
                           )}
-                          {onEraDelete && (
+                          {canDelete && onEraDelete && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -303,8 +306,8 @@ export function ChaptersView({
           </section>
         )}
 
-        {/* Add Chapter Button */}
-        {onEraCreate && (
+        {/* Add Chapter Button - only show if user has add permission */}
+        {canAdd && onEraCreate && (
           <button
             onClick={onEraCreate}
             className="w-full p-4 rounded-xl border-2 border-dashed border-gray-700 hover:border-purple-500/50 transition-colors flex items-center justify-center gap-2 text-gray-500 hover:text-purple-400"
@@ -334,8 +337,8 @@ export function ChaptersView({
 
   return (
     <div className="max-w-4xl mx-auto space-y-4">
-      {/* Hint to create chapters */}
-      {onEraCreate && (
+      {/* Hint to create chapters - only show if user has add permission */}
+      {canAdd && onEraCreate && (
         <div className="flex items-center justify-between p-4 rounded-xl bg-purple-500/5 border border-purple-500/20 mb-6">
           <div className="flex items-center gap-3">
             <FolderPlus className="w-5 h-5 text-purple-400" />
