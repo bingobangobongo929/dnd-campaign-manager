@@ -23,7 +23,7 @@ import {
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
-import { OnboardingTour, ContentBadge } from '@/components/ui'
+import { OnboardingTour, ContentBadge, StatusIndicator, determineCampaignStatus, getStatusCardClass } from '@/components/ui'
 import { FounderBadge } from '@/components/membership'
 import { getCampaignBadge, getOneshotBadge, getCharacterBadge } from '@/lib/content-badges'
 import { MobileLayout, MobileSectionHeader, MobileSearchBar } from '@/components/mobile'
@@ -51,6 +51,12 @@ export default function HomePage() {
   const [pendingInvites, setPendingInvites] = useState<{ id: string; campaign: Campaign; inviter_name?: string }[]>([])
   const [drafts, setDrafts] = useState<{ type: 'campaign' | 'adventure' | 'oneshot' | 'character'; item: Campaign | Oneshot | VaultCharacter; progress: number }[]>([])
   const [loading, setLoading] = useState(true)
+  // Additional stats for cards
+  const [sessionCounts, setSessionCounts] = useState<Record<string, number>>({})
+  const [playerCounts, setPlayerCounts] = useState<Record<string, number>>({})
+  const [characterNames, setCharacterNames] = useState<Record<string, string>>({}) // For joined campaigns: campaign_id -> character name
+  const [oneshotRunCounts, setOneshotRunCounts] = useState<Record<string, number>>({})
+  const [characterCampaignCounts, setCharacterCampaignCounts] = useState<Record<string, number>>({})
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [founderBannerDismissed, setFounderBannerDismissed] = useState(true) // Start true to prevent flash
   const [roleSelected, setRoleSelected] = useState<'dm' | 'player' | 'exploring' | null>(null)
@@ -254,17 +260,18 @@ export default function HomePage() {
 
     // Load joined campaigns (campaigns user is a member of but doesn't own)
     const joinedRes = await fetch('/api/campaigns/joined')
+    let joinedCampaignsList: Campaign[] = []
     if (joinedRes.ok) {
       const joinedData = await joinedRes.json()
-      const joined = (joinedData.joinedCampaigns || []).map((j: { campaign: Campaign }) => j.campaign)
-      setJoinedCampaigns(joined)
+      joinedCampaignsList = (joinedData.joinedCampaigns || []).map((j: { campaign: Campaign }) => j.campaign)
+      setJoinedCampaigns(joinedCampaignsList)
 
       // Find claimable characters in joined campaigns
       // Characters designated for user but not yet claimed to vault
-      if (joined.length > 0 && user) {
+      if (joinedCampaignsList.length > 0 && user) {
         const claimable: { character: Character; campaign: Campaign }[] = []
 
-        for (const campaign of joined) {
+        for (const campaign of joinedCampaignsList) {
           // Get user's membership in this campaign
           const { data: membership } = await supabase
             .from('campaign_members')
@@ -295,6 +302,104 @@ export default function HomePage() {
         }
 
         setClaimableCharacters(claimable)
+      }
+    }
+
+    // Load additional stats for card display (include joined campaigns)
+    const allCampaignIds = [
+      ...campaignsRes.data?.map(c => c.id) || [],
+      ...adventuresRes.data?.map(c => c.id) || [],
+      ...joinedCampaignsList.map(c => c.id)
+    ]
+
+    if (allCampaignIds.length > 0) {
+      // Load session counts
+      const { data: sessions } = await supabase
+        .from('sessions')
+        .select('campaign_id')
+        .in('campaign_id', allCampaignIds)
+
+      if (sessions) {
+        const counts: Record<string, number> = {}
+        sessions.forEach(s => {
+          counts[s.campaign_id] = (counts[s.campaign_id] || 0) + 1
+        })
+        setSessionCounts(counts)
+      }
+
+      // Load player counts (active members)
+      const { data: members } = await supabase
+        .from('campaign_members')
+        .select('campaign_id')
+        .in('campaign_id', allCampaignIds)
+        .eq('status', 'active')
+
+      if (members) {
+        const counts: Record<string, number> = {}
+        members.forEach(m => {
+          counts[m.campaign_id] = (counts[m.campaign_id] || 0) + 1
+        })
+        setPlayerCounts(counts)
+      }
+    }
+
+    // Load character names for joined campaigns (user's character in each)
+    if (joinedCampaignsList.length > 0 && user) {
+      const charNames: Record<string, string> = {}
+
+      for (const campaign of joinedCampaignsList) {
+        // Get user's membership with character
+        const { data: membership } = await supabase
+          .from('campaign_members')
+          .select('character:characters(name)')
+          .eq('campaign_id', campaign.id)
+          .eq('user_id', user.id)
+          .single()
+
+        if (membership?.character && typeof membership.character === 'object' && 'name' in membership.character) {
+          charNames[campaign.id] = membership.character.name as string
+        }
+      }
+
+      setCharacterNames(charNames)
+    }
+
+    // Load oneshot run counts (if oneshot_runs table exists)
+    if (oneshotsRes.data && oneshotsRes.data.length > 0) {
+      try {
+        const { data: runs } = await supabase
+          .from('oneshot_runs')
+          .select('oneshot_id')
+          .in('oneshot_id', oneshotsRes.data.map(o => o.id))
+
+        if (runs) {
+          const counts: Record<string, number> = {}
+          runs.forEach(r => {
+            counts[r.oneshot_id] = (counts[r.oneshot_id] || 0) + 1
+          })
+          setOneshotRunCounts(counts)
+        }
+      } catch {
+        // Table might not exist yet
+      }
+    }
+
+    // Load character campaign counts (how many campaigns each character is in)
+    if (charactersRes.data && charactersRes.data.length > 0) {
+      const { data: charLinks } = await supabase
+        .from('characters')
+        .select('vault_character_id')
+        .in('vault_character_id', charactersRes.data.map(c => c.id))
+        .not('vault_character_id', 'is', null)
+
+      if (charLinks) {
+        const counts: Record<string, number> = {}
+        charLinks.forEach(c => {
+          if (c.vault_character_id) {
+            counts[c.vault_character_id] = (counts[c.vault_character_id] || 0) + 1
+          }
+        })
+        setCharacterCampaignCounts(counts)
       }
     }
 
@@ -341,6 +446,11 @@ export default function HomePage() {
           onDismissFounderBanner={dismissFounderBanner}
           isFreshUser={isFreshUser}
           userId={user?.id || ''}
+          sessionCounts={sessionCounts}
+          playerCounts={playerCounts}
+          characterNames={characterNames}
+          oneshotRunCounts={oneshotRunCounts}
+          characterCampaignCounts={characterCampaignCounts}
         />
         <OnboardingTour
           isOpen={showOnboarding}
@@ -872,10 +982,20 @@ export default function HomePage() {
                     {featuredCampaign.name}
                   </h2>
                   {featuredCampaign.description && (
-                    <p className="text-gray-400 text-sm md:text-base max-w-2xl line-clamp-2 mb-4">
+                    <p className="text-gray-400 text-sm md:text-base max-w-2xl line-clamp-2 mb-3">
                       {featuredCampaign.description}
                     </p>
                   )}
+                  {/* Meta line with status, sessions, players, recency */}
+                  <div className="flex items-center gap-3 text-sm text-gray-400 mb-4">
+                    <StatusIndicator status={determineCampaignStatus(featuredCampaign)} />
+                    <span>·</span>
+                    <span>{sessionCounts[featuredCampaign.id] || 0} sessions</span>
+                    <span>·</span>
+                    <span>{playerCounts[featuredCampaign.id] || 0} players</span>
+                    <span>·</span>
+                    <span>{formatDistanceToNow(featuredCampaign.updated_at)}</span>
+                  </div>
                   <div className="flex items-center gap-2 text-blue-400 font-medium">
                     <Play className="w-5 h-5" />
                     <span>Enter Campaign</span>
@@ -910,11 +1030,17 @@ export default function HomePage() {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {displayCampaigns.map((campaign) => {
                 const badge = getCampaignBadge(campaign, user?.id || '')
+                const status = determineCampaignStatus(campaign)
+                const sessions = sessionCounts[campaign.id] || 0
+                const players = playerCounts[campaign.id] || 0
                 return (
                   <Link
                     key={campaign.id}
                     href={`/campaigns/${campaign.id}/dashboard`}
-                    className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-blue-500/30 transition-all"
+                    className={cn(
+                      "group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-blue-500/30 transition-all",
+                      getStatusCardClass(status)
+                    )}
                   >
                     <div className="relative h-40">
                       {campaign.image_url ? (
@@ -943,7 +1069,13 @@ export default function HomePage() {
                       <h4 className="font-semibold text-white truncate group-hover:text-blue-400 transition-colors">
                         {campaign.name}
                       </h4>
-                      <p className="text-xs text-gray-500 mt-1">{campaign.game_system}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {campaign.game_system} · {sessions} session{sessions !== 1 ? 's' : ''} · {players} player{players !== 1 ? 's' : ''}
+                      </p>
+                      <div className="flex items-center justify-between mt-2">
+                        <StatusIndicator status={status} size="sm" />
+                        <span className="text-xs text-gray-600">{formatDistanceToNow(campaign.updated_at)}</span>
+                      </div>
                     </div>
                   </Link>
                 )
@@ -968,42 +1100,60 @@ export default function HomePage() {
             </div>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {joinedCampaigns.slice(0, 6).map((campaign) => (
-                <Link
-                  key={campaign.id}
-                  href={`/campaigns/${campaign.id}/dashboard`}
-                  className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-blue-500/30 transition-all"
-                >
-                  <div className="relative h-32">
-                    {campaign.image_url ? (
-                      <>
-                        <Image
-                          src={campaign.image_url}
-                          alt={campaign.name}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
-                      </>
-                    ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 to-gray-900 flex items-center justify-center">
-                        <Swords className="w-12 h-12 text-blue-400/30" />
-                      </div>
+              {joinedCampaigns.slice(0, 6).map((campaign) => {
+                const status = determineCampaignStatus(campaign)
+                const sessions = sessionCounts[campaign.id] || 0
+                const myCharacter = characterNames[campaign.id]
+                return (
+                  <Link
+                    key={campaign.id}
+                    href={`/campaigns/${campaign.id}/dashboard`}
+                    className={cn(
+                      "group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-emerald-500/30 transition-all",
+                      getStatusCardClass(status)
                     )}
-                    <ContentBadge
-                      variant="playing"
-                      size="sm"
-                      className="absolute top-2 left-2"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <h4 className="font-semibold text-white truncate group-hover:text-blue-400 transition-colors">
-                      {campaign.name}
-                    </h4>
-                    <p className="text-xs text-gray-500 mt-1">{campaign.game_system}</p>
-                  </div>
-                </Link>
-              ))}
+                  >
+                    <div className="relative h-32">
+                      {campaign.image_url ? (
+                        <>
+                          <Image
+                            src={campaign.image_url}
+                            alt={campaign.name}
+                            fill
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/30 to-gray-900 flex items-center justify-center">
+                          <Swords className="w-12 h-12 text-emerald-400/30" />
+                        </div>
+                      )}
+                      <ContentBadge
+                        variant="playing"
+                        size="sm"
+                        className="absolute top-2 left-2"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <h4 className="font-semibold text-white truncate group-hover:text-emerald-400 transition-colors">
+                        {campaign.name}
+                      </h4>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {campaign.game_system} · {sessions} session{sessions !== 1 ? 's' : ''}
+                      </p>
+                      <div className="flex items-center justify-between mt-2">
+                        {myCharacter ? (
+                          <span className="text-xs text-emerald-400">Playing as {myCharacter}</span>
+                        ) : (
+                          <StatusIndicator status={status} size="sm" />
+                        )}
+                        <span className="text-xs text-gray-600">{formatDistanceToNow(campaign.updated_at)}</span>
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
           </section>
         )}
@@ -1068,6 +1218,16 @@ export default function HomePage() {
                         {featuredAdventure.description}
                       </p>
                     )}
+                    {/* Meta line with status, sessions, players, recency */}
+                    <div className="flex items-center gap-3 text-sm text-gray-400 mb-4">
+                      <StatusIndicator status={determineCampaignStatus(featuredAdventure)} />
+                      <span>·</span>
+                      <span>{sessionCounts[featuredAdventure.id] || 0} sessions</span>
+                      <span>·</span>
+                      <span>{playerCounts[featuredAdventure.id] || 0} players</span>
+                      <span>·</span>
+                      <span>{formatDistanceToNow(featuredAdventure.updated_at)}</span>
+                    </div>
                     <div className="flex items-center gap-2 text-amber-400 font-medium">
                       <Compass className="w-5 h-5" />
                       <span>Continue Adventure</span>
@@ -1081,11 +1241,17 @@ export default function HomePage() {
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {displayAdventures.map((adventure) => {
                 const badge = getCampaignBadge(adventure, user?.id || '')
+                const status = determineCampaignStatus(adventure)
+                const sessions = sessionCounts[adventure.id] || 0
+                const players = playerCounts[adventure.id] || 0
                 return (
                   <Link
                     key={adventure.id}
                     href={`/campaigns/${adventure.id}/dashboard`}
-                    className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-amber-500/30 transition-all"
+                    className={cn(
+                      "group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-amber-500/30 transition-all",
+                      getStatusCardClass(status)
+                    )}
                   >
                     <div className="relative h-32">
                       {adventure.image_url ? (
@@ -1114,7 +1280,13 @@ export default function HomePage() {
                       <h4 className="font-semibold text-white truncate group-hover:text-amber-400 transition-colors text-sm">
                         {adventure.name}
                       </h4>
-                      <p className="text-xs text-gray-500 mt-1">{adventure.game_system}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {adventure.game_system} · {sessions} session{sessions !== 1 ? 's' : ''} · {players} player{players !== 1 ? 's' : ''}
+                      </p>
+                      <div className="flex items-center justify-between mt-2">
+                        <StatusIndicator status={status} size="sm" />
+                        <span className="text-xs text-gray-600">{formatDistanceToNow(adventure.updated_at)}</span>
+                      </div>
                     </div>
                   </Link>
                 )
@@ -1199,10 +1371,16 @@ export default function HomePage() {
                       {featuredOneshot.title}
                     </h2>
                     {featuredOneshot.tagline && (
-                      <p className="text-gray-400 text-sm md:text-base mb-4">
+                      <p className="text-gray-400 text-sm md:text-base mb-3">
                         {featuredOneshot.tagline}
                       </p>
                     )}
+                    {/* Meta line with run count and recency */}
+                    <div className="flex items-center gap-3 text-sm text-gray-400 mb-4">
+                      <span>{oneshotRunCounts[featuredOneshot.id] || 0} run{(oneshotRunCounts[featuredOneshot.id] || 0) !== 1 ? 's' : ''}</span>
+                      <span>·</span>
+                      <span>{formatDistanceToNow(featuredOneshot.updated_at)}</span>
+                    </div>
                     <div className="flex items-center gap-2 text-green-400 font-medium">
                       <Scroll className="w-5 h-5" />
                       <span>Open One-Shot</span>
@@ -1216,6 +1394,7 @@ export default function HomePage() {
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {oneshots.map((oneshot) => {
                 const badge = getOneshotBadge(oneshot, user?.id || '')
+                const runs = oneshotRunCounts[oneshot.id] || 0
                 return (
                   <Link
                     key={oneshot.id}
@@ -1250,9 +1429,10 @@ export default function HomePage() {
                       <h4 className="font-semibold text-white text-sm line-clamp-2 group-hover:text-green-300 transition-colors">
                         {oneshot.title}
                       </h4>
-                      {oneshot.tagline && (
-                        <p className="text-xs text-gray-400 mt-1 line-clamp-1">{oneshot.tagline}</p>
-                      )}
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-xs text-gray-500">{runs} run{runs !== 1 ? 's' : ''}</span>
+                        <span className="text-xs text-gray-600">{formatDistanceToNow(oneshot.updated_at)}</span>
+                      </div>
                     </div>
                   </Link>
                 )
@@ -1317,9 +1497,15 @@ export default function HomePage() {
                   <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-2 group-hover:text-purple-400 transition-colors">
                     {featuredCharacter.name}
                   </h2>
-                  <p className="text-gray-400 text-sm md:text-base mb-4">
+                  <p className="text-gray-400 text-sm md:text-base mb-3">
                     {[featuredCharacter.race, featuredCharacter.class].filter(Boolean).join(' ') || 'Adventurer'}
                   </p>
+                  {/* Meta line with campaign count and recency */}
+                  <div className="flex items-center gap-3 text-sm text-gray-400 mb-4">
+                    <span>{characterCampaignCounts[featuredCharacter.id] || 0} campaign{(characterCampaignCounts[featuredCharacter.id] || 0) !== 1 ? 's' : ''}</span>
+                    <span>·</span>
+                    <span>{formatDistanceToNow(featuredCharacter.updated_at)}</span>
+                  </div>
                   <div className="flex items-center gap-2 text-purple-400 font-medium">
                     <BookOpen className="w-5 h-5" />
                     <span>Open Character</span>
@@ -1354,6 +1540,7 @@ export default function HomePage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {characters.map((character) => {
                 const badge = getCharacterBadge(character)
+                const campaigns = characterCampaignCounts[character.id] || 0
                 return (
                   <Link
                     key={character.id}
@@ -1389,6 +1576,10 @@ export default function HomePage() {
                       <p className="text-xs text-gray-400 truncate">
                         {[character.race, character.class].filter(Boolean).join(' ') || 'Adventurer'}
                       </p>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-xs text-gray-500">{campaigns} campaign{campaigns !== 1 ? 's' : ''}</span>
+                        <span className="text-xs text-gray-600">{formatDistanceToNow(character.updated_at)}</span>
+                      </div>
                     </div>
                   </Link>
                 )

@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils'
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout, MobileSectionHeader } from '@/components/mobile'
 import { FounderBadge } from '@/components/membership'
-import { ContentBadge } from '@/components/ui'
+import { ContentBadge, StatusIndicator, determineCampaignStatus, getStatusCardClass } from '@/components/ui'
 import { formatDistanceToNow } from '@/lib/utils'
 import { getCampaignBadge, getOneshotBadge, getCharacterBadge } from '@/lib/content-badges'
 import type { Campaign, VaultCharacter, Oneshot, ContentSave } from '@/types/database'
@@ -54,6 +54,12 @@ export interface HomePageMobileProps {
   onDismissFounderBanner?: () => void
   isFreshUser?: boolean
   userId?: string
+  // Card stats
+  sessionCounts?: Record<string, number>
+  playerCounts?: Record<string, number>
+  characterNames?: Record<string, string>
+  oneshotRunCounts?: Record<string, number>
+  characterCampaignCounts?: Record<string, number>
 }
 
 export function HomePageMobile({
@@ -77,6 +83,11 @@ export function HomePageMobile({
   onDismissFounderBanner,
   isFreshUser = false,
   userId = '',
+  sessionCounts = {},
+  playerCounts = {},
+  characterNames = {},
+  oneshotRunCounts = {},
+  characterCampaignCounts = {},
 }: HomePageMobileProps) {
   // Combine recent items for activity section
   const recentActivity = [
@@ -509,11 +520,15 @@ export function HomePageMobile({
                 <h2 className="text-xl font-display font-bold text-white mb-1">
                   {featuredCampaign.name}
                 </h2>
-                {featuredCampaign.description && (
-                  <p className="text-gray-400 text-xs line-clamp-2 mb-2">
-                    {featuredCampaign.description}
-                  </p>
-                )}
+                {/* Meta line */}
+                <div className="flex items-center gap-2 text-[10px] text-gray-400 mb-2">
+                  <StatusIndicator status={determineCampaignStatus(featuredCampaign)} size="sm" showLabel={false} />
+                  <span>{sessionCounts[featuredCampaign.id] || 0} sessions</span>
+                  <span>·</span>
+                  <span>{playerCounts[featuredCampaign.id] || 0} players</span>
+                  <span>·</span>
+                  <span>{formatDistanceToNow(featuredCampaign.updated_at)}</span>
+                </div>
                 <div className="flex items-center gap-1.5 text-blue-400 text-sm font-medium">
                   <Play className="w-4 h-4" />
                   <span>Enter Campaign</span>
@@ -551,36 +566,50 @@ export function HomePageMobile({
           <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
             {campaigns.slice(0, 5).map((campaign) => {
               const badge = getCampaignBadge(campaign, userId)
+              const status = determineCampaignStatus(campaign)
+              const sessions = sessionCounts[campaign.id] || 0
+              const players = playerCounts[campaign.id] || 0
               return (
                 <button
                   key={campaign.id}
                   onClick={() => onNavigate(`/campaigns/${campaign.id}/dashboard`)}
-                  className="flex-shrink-0 w-52 aspect-[16/10] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative"
-                >
-                  {campaign.image_url ? (
-                    <>
-                      <Image
-                        src={campaign.image_url}
-                        alt={campaign.name}
-                        fill
-                        className="object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-                    </>
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 to-gray-900 flex items-center justify-center">
-                      <Swords className="w-10 h-10 text-blue-400/30" />
-                    </div>
+                  className={cn(
+                    "flex-shrink-0 w-52 rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative",
+                    getStatusCardClass(status)
                   )}
-                  <ContentBadge
-                    variant={badge.primary}
-                    size="sm"
-                    progress={badge.progress}
-                    className="absolute top-2 left-2"
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 p-3">
+                >
+                  <div className="relative h-28">
+                    {campaign.image_url ? (
+                      <>
+                        <Image
+                          src={campaign.image_url}
+                          alt={campaign.name}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 to-gray-900 flex items-center justify-center">
+                        <Swords className="w-10 h-10 text-blue-400/30" />
+                      </div>
+                    )}
+                    <ContentBadge
+                      variant={badge.primary}
+                      size="sm"
+                      progress={badge.progress}
+                      className="absolute top-2 left-2"
+                    />
+                  </div>
+                  <div className="p-3">
                     <h4 className="font-semibold text-white text-sm line-clamp-1">{campaign.name}</h4>
-                    <p className="text-[10px] text-gray-400">{campaign.game_system}</p>
+                    <p className="text-[10px] text-gray-500 mt-0.5">
+                      {campaign.game_system} · {sessions} session{sessions !== 1 ? 's' : ''} · {players} player{players !== 1 ? 's' : ''}
+                    </p>
+                    <div className="flex items-center justify-between mt-1.5">
+                      <StatusIndicator status={status} size="sm" />
+                      <span className="text-[9px] text-gray-600">{formatDistanceToNow(campaign.updated_at)}</span>
+                    </div>
                   </div>
                 </button>
               )
@@ -600,37 +629,58 @@ export function HomePageMobile({
               }
             />
             <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
-              {joinedCampaigns.slice(0, 5).map((campaign) => (
-                <button
-                  key={campaign.id}
-                  onClick={() => onNavigate(`/campaigns/${campaign.id}/dashboard`)}
-                  className="flex-shrink-0 w-44 aspect-[16/10] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative"
-                >
-                  {campaign.image_url ? (
-                    <>
-                      <Image
-                        src={campaign.image_url}
-                        alt={campaign.name}
-                        fill
-                        className="object-cover"
+              {joinedCampaigns.slice(0, 5).map((campaign) => {
+                const status = determineCampaignStatus(campaign)
+                const sessions = sessionCounts[campaign.id] || 0
+                const myCharacter = characterNames[campaign.id]
+                return (
+                  <button
+                    key={campaign.id}
+                    onClick={() => onNavigate(`/campaigns/${campaign.id}/dashboard`)}
+                    className={cn(
+                      "flex-shrink-0 w-48 rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative",
+                      getStatusCardClass(status)
+                    )}
+                  >
+                    <div className="relative h-24">
+                      {campaign.image_url ? (
+                        <>
+                          <Image
+                            src={campaign.image_url}
+                            alt={campaign.name}
+                            fill
+                            className="object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/30 to-gray-900 flex items-center justify-center">
+                          <Users className="w-10 h-10 text-emerald-400/30" />
+                        </div>
+                      )}
+                      <ContentBadge
+                        variant="playing"
+                        size="sm"
+                        className="absolute top-2 left-2"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-                    </>
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/30 to-gray-900 flex items-center justify-center">
-                      <Users className="w-10 h-10 text-emerald-400/30" />
                     </div>
-                  )}
-                  <ContentBadge
-                    variant="playing"
-                    size="sm"
-                    className="absolute top-2 left-2"
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <h4 className="font-semibold text-white text-sm line-clamp-1">{campaign.name}</h4>
-                  </div>
-                </button>
-              ))}
+                    <div className="p-3">
+                      <h4 className="font-semibold text-white text-sm line-clamp-1">{campaign.name}</h4>
+                      <p className="text-[10px] text-gray-500 mt-0.5">
+                        {campaign.game_system} · {sessions} session{sessions !== 1 ? 's' : ''}
+                      </p>
+                      <div className="flex items-center justify-between mt-1.5">
+                        {myCharacter ? (
+                          <span className="text-[10px] text-emerald-400 truncate max-w-[80%]">Playing as {myCharacter}</span>
+                        ) : (
+                          <StatusIndicator status={status} size="sm" />
+                        )}
+                        <span className="text-[9px] text-gray-600">{formatDistanceToNow(campaign.updated_at)}</span>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           </>
         )}
@@ -681,6 +731,13 @@ export function HomePageMobile({
                     <h2 className="text-lg font-display font-bold text-white mb-1">
                       {featuredAdventure.name}
                     </h2>
+                    {/* Meta line */}
+                    <div className="flex items-center gap-2 text-[10px] text-gray-400 mb-2">
+                      <StatusIndicator status={determineCampaignStatus(featuredAdventure)} size="sm" showLabel={false} />
+                      <span>{sessionCounts[featuredAdventure.id] || 0} sessions</span>
+                      <span>·</span>
+                      <span>{playerCounts[featuredAdventure.id] || 0} players</span>
+                    </div>
                     <div className="flex items-center gap-1.5 text-amber-400 text-sm font-medium">
                       <Compass className="w-4 h-4" />
                       <span>Continue Adventure</span>
@@ -693,36 +750,50 @@ export function HomePageMobile({
             <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
               {adventures.slice(0, 5).map((adventure) => {
                 const badge = getCampaignBadge(adventure, userId)
+                const status = determineCampaignStatus(adventure)
+                const sessions = sessionCounts[adventure.id] || 0
+                const players = playerCounts[adventure.id] || 0
                 return (
                   <button
                     key={adventure.id}
                     onClick={() => onNavigate(`/campaigns/${adventure.id}/dashboard`)}
-                    className="flex-shrink-0 w-44 aspect-[16/10] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative"
-                  >
-                    {adventure.image_url ? (
-                      <>
-                        <Image
-                          src={adventure.image_url}
-                          alt={adventure.name}
-                          fill
-                          className="object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-                      </>
-                    ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
-                        <Compass className="w-10 h-10 text-amber-400/30" />
-                      </div>
+                    className={cn(
+                      "flex-shrink-0 w-48 rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative",
+                      getStatusCardClass(status)
                     )}
-                    <ContentBadge
-                      variant={badge.primary}
-                      size="sm"
-                      progress={badge.progress}
-                      className="absolute top-2 left-2"
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                  >
+                    <div className="relative h-24">
+                      {adventure.image_url ? (
+                        <>
+                          <Image
+                            src={adventure.image_url}
+                            alt={adventure.name}
+                            fill
+                            className="object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
+                          <Compass className="w-10 h-10 text-amber-400/30" />
+                        </div>
+                      )}
+                      <ContentBadge
+                        variant={badge.primary}
+                        size="sm"
+                        progress={badge.progress}
+                        className="absolute top-2 left-2"
+                      />
+                    </div>
+                    <div className="p-3">
                       <h4 className="font-semibold text-white text-sm line-clamp-1">{adventure.name}</h4>
-                      <p className="text-[10px] text-gray-400">{adventure.game_system}</p>
+                      <p className="text-[10px] text-gray-500 mt-0.5">
+                        {adventure.game_system} · {sessions} session{sessions !== 1 ? 's' : ''} · {players} player{players !== 1 ? 's' : ''}
+                      </p>
+                      <div className="flex items-center justify-between mt-1.5">
+                        <StatusIndicator status={status} size="sm" />
+                        <span className="text-[9px] text-gray-600">{formatDistanceToNow(adventure.updated_at)}</span>
+                      </div>
                     </div>
                   </button>
                 )
@@ -777,11 +848,12 @@ export function HomePageMobile({
                 <h2 className="text-xl font-display font-bold text-white mb-1">
                   {featuredOneshot.title}
                 </h2>
-                {featuredOneshot.tagline && (
-                  <p className="text-gray-400 text-xs line-clamp-1 mb-2">
-                    {featuredOneshot.tagline}
-                  </p>
-                )}
+                {/* Meta line */}
+                <div className="flex items-center gap-2 text-[10px] text-gray-400 mb-2">
+                  <span>{oneshotRunCounts[featuredOneshot.id] || 0} run{(oneshotRunCounts[featuredOneshot.id] || 0) !== 1 ? 's' : ''}</span>
+                  <span>·</span>
+                  <span>{formatDistanceToNow(featuredOneshot.updated_at)}</span>
+                </div>
                 <div className="flex items-center gap-1.5 text-green-400 text-sm font-medium">
                   <Scroll className="w-4 h-4" />
                   <span>Open One-Shot</span>
@@ -819,6 +891,7 @@ export function HomePageMobile({
           <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
             {oneshots.map((oneshot) => {
               const badge = getOneshotBadge(oneshot, userId)
+              const runs = oneshotRunCounts[oneshot.id] || 0
               return (
                 <button
                   key={oneshot.id}
@@ -848,7 +921,10 @@ export function HomePageMobile({
                   />
                   <div className="absolute bottom-0 left-0 right-0 p-3">
                     <h4 className="font-semibold text-white text-xs line-clamp-2">{oneshot.title}</h4>
-                    <p className="text-[9px] text-gray-400">{oneshot.game_system}</p>
+                    <div className="flex items-center justify-between mt-0.5">
+                      <span className="text-[9px] text-gray-500">{runs} run{runs !== 1 ? 's' : ''}</span>
+                      <span className="text-[9px] text-gray-600">{formatDistanceToNow(oneshot.updated_at)}</span>
+                    </div>
                   </div>
                 </button>
               )
@@ -994,9 +1070,15 @@ export function HomePageMobile({
                 <h2 className="text-xl font-display font-bold text-white mb-1">
                   {featuredCharacter.name}
                 </h2>
-                <p className="text-gray-400 text-xs mb-2">
+                <p className="text-gray-400 text-xs mb-1">
                   {[featuredCharacter.race, featuredCharacter.class].filter(Boolean).join(' ') || 'Adventurer'}
                 </p>
+                {/* Meta line */}
+                <div className="flex items-center gap-2 text-[10px] text-gray-400 mb-2">
+                  <span>{characterCampaignCounts[featuredCharacter.id] || 0} campaign{(characterCampaignCounts[featuredCharacter.id] || 0) !== 1 ? 's' : ''}</span>
+                  <span>·</span>
+                  <span>{formatDistanceToNow(featuredCharacter.updated_at)}</span>
+                </div>
                 <div className="flex items-center gap-1.5 text-purple-400 text-sm font-medium">
                   <BookOpen className="w-4 h-4" />
                   <span>Open Character</span>
@@ -1034,6 +1116,7 @@ export function HomePageMobile({
           <div className="px-4 grid grid-cols-2 gap-3">
             {characters.slice(0, 6).map((character) => {
               const badge = getCharacterBadge(character)
+              const campaigns = characterCampaignCounts[character.id] || 0
               return (
                 <button
                   key={character.id}
@@ -1067,6 +1150,10 @@ export function HomePageMobile({
                     <p className="text-[11px] text-gray-400 truncate">
                       {[character.race, character.class].filter(Boolean).join(' ')}
                     </p>
+                    <div className="flex items-center justify-between mt-0.5">
+                      <span className="text-[9px] text-gray-500">{campaigns} campaign{campaigns !== 1 ? 's' : ''}</span>
+                      <span className="text-[9px] text-gray-600">{formatDistanceToNow(character.updated_at)}</span>
+                    </div>
                   </div>
                 </button>
               )
