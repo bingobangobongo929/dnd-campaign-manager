@@ -522,6 +522,8 @@ export default function HomePage() {
           characterNames={characterNames}
           oneshotRunCounts={oneshotRunCounts}
           characterCampaignCounts={characterCampaignCounts}
+          isSectionVisible={isSectionVisible}
+          onDismissSection={handleDismissSection}
         />
         <OnboardingTour
           isOpen={showOnboarding}
@@ -1154,7 +1156,7 @@ export default function HomePage() {
         </section>
 
         {/* Joined Campaigns Section - Campaigns where user is a player */}
-        {joinedCampaigns.length > 0 && (
+        {(joinedCampaigns.length > 0 || isSectionVisible('playing')) && (
           <section>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -1163,11 +1165,32 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl font-semibold text-white">Playing In</h3>
               </div>
-              <Link href="/campaigns" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
-                View All <ChevronRight className="w-4 h-4" />
-              </Link>
+              {joinedCampaigns.length > 0 && (
+                <Link href="/campaigns" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
+                  View All <ChevronRight className="w-4 h-4" />
+                </Link>
+              )}
             </div>
 
+            {joinedCampaigns.length === 0 && isSectionVisible('playing') ? (
+              <DismissibleEmptyState
+                sectionId="playing"
+                icon={<Users className="w-7 h-7" />}
+                title={EMPTY_STATE_CONTENT.playing.title}
+                description={EMPTY_STATE_CONTENT.playing.description}
+                primaryAction={{
+                  label: EMPTY_STATE_CONTENT.playing.primaryLabel,
+                  href: EMPTY_STATE_CONTENT.playing.primaryHref,
+                  icon: <Plus className="w-4 h-4" />
+                }}
+                secondaryAction={{
+                  label: "Explore Demo",
+                  href: EMPTY_STATE_CONTENT.playing.demoHref
+                }}
+                colorScheme={getSectionColorScheme('playing')}
+                onDismiss={handleDismissSection}
+              />
+            ) : joinedCampaigns.length > 0 ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {joinedCampaigns.slice(0, 6).map((campaign) => {
                 const status = determineCampaignStatus(campaign)
@@ -1224,6 +1247,7 @@ export default function HomePage() {
                 )
               })}
             </div>
+            ) : null}
           </section>
         )}
 

@@ -22,7 +22,8 @@ import { cn } from '@/lib/utils'
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout, MobileSectionHeader } from '@/components/mobile'
 import { FounderBadge } from '@/components/membership'
-import { ContentBadge, StatusIndicator, determineCampaignStatus, getStatusCardClass } from '@/components/ui'
+import { ContentBadge, StatusIndicator, determineCampaignStatus, getStatusCardClass, DismissibleEmptyState, getSectionColorScheme, EMPTY_STATE_CONTENT } from '@/components/ui'
+import type { SectionId } from '@/components/ui'
 import { formatDistanceToNow } from '@/lib/utils'
 import { getCampaignBadge, getOneshotBadge, getCharacterBadge } from '@/lib/content-badges'
 import type { Campaign, VaultCharacter, Oneshot, ContentSave } from '@/types/database'
@@ -60,6 +61,9 @@ export interface HomePageMobileProps {
   characterNames?: Record<string, string>
   oneshotRunCounts?: Record<string, number>
   characterCampaignCounts?: Record<string, number>
+  // Section visibility
+  isSectionVisible?: (sectionId: SectionId) => boolean
+  onDismissSection?: (sectionId: SectionId, permanent: boolean) => void
 }
 
 export function HomePageMobile({
@@ -88,6 +92,8 @@ export function HomePageMobile({
   characterNames = {},
   oneshotRunCounts = {},
   characterCampaignCounts = {},
+  isSectionVisible = () => true,
+  onDismissSection,
 }: HomePageMobileProps) {
   // Combine recent items for activity section
   const recentActivity = [
@@ -538,29 +544,26 @@ export function HomePageMobile({
           </button>
         )}
 
-        {campaigns.length === 0 && !featuredCampaign ? (
-          <div className="mx-4 p-8 text-center bg-gradient-to-br from-blue-500/5 to-transparent rounded-xl border border-dashed border-blue-500/20">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-blue-500/10 flex items-center justify-center">
-              <Swords className="w-7 h-7 text-blue-400" />
-            </div>
-            <h3 className="text-base font-semibold text-white mb-1">Begin Your Adventure</h3>
-            <p className="text-gray-400 text-sm mb-5">Create your first campaign and start building your world</p>
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => onNavigate('/campaigns')}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl"
-              >
-                <Plus className="w-4 h-4" />
-                Create Campaign
-              </button>
-              <button
-                onClick={() => onNavigate('/demo/campaign')}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 text-gray-400 text-sm"
-              >
-                <Sparkles className="w-4 h-4" />
-                Explore Demo
-              </button>
-            </div>
+        {campaigns.length === 0 && !featuredCampaign && isSectionVisible('campaigns') ? (
+          <div className="mx-4">
+            <DismissibleEmptyState
+              sectionId="campaigns"
+              icon={<Swords className="w-7 h-7" />}
+              title={EMPTY_STATE_CONTENT.campaigns.title}
+              description={EMPTY_STATE_CONTENT.campaigns.description}
+              primaryAction={{
+                label: EMPTY_STATE_CONTENT.campaigns.primaryLabel,
+                href: EMPTY_STATE_CONTENT.campaigns.primaryHref,
+                icon: <Plus className="w-4 h-4" />
+              }}
+              secondaryAction={{
+                label: "Explore Demo",
+                href: EMPTY_STATE_CONTENT.campaigns.demoHref
+              }}
+              colorScheme={getSectionColorScheme('campaigns')}
+              onDismiss={onDismissSection}
+              compact
+            />
           </div>
         ) : campaigns.length > 0 ? (
           <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
@@ -618,16 +621,44 @@ export function HomePageMobile({
         ) : null}
 
         {/* Joined Campaigns Section - Campaigns where user is a player */}
-        {joinedCampaigns.length > 0 && (
+        {(joinedCampaigns.length > 0 || isSectionVisible('playing')) && (
           <>
             <MobileSectionHeader
               title="Playing In"
               action={
-                <button onClick={() => onNavigate('/campaigns')} className="text-sm text-[--arcane-purple]">
-                  View All
-                </button>
+                joinedCampaigns.length > 0 ? (
+                  <button onClick={() => onNavigate('/campaigns')} className="text-sm text-[--arcane-purple]">
+                    View All
+                  </button>
+                ) : undefined
               }
             />
+
+            {/* Empty State */}
+            {joinedCampaigns.length === 0 && isSectionVisible('playing') && (
+              <div className="mx-4 mb-4">
+                <DismissibleEmptyState
+                  sectionId="playing"
+                  icon={<Users className="w-7 h-7" />}
+                  title={EMPTY_STATE_CONTENT.playing.title}
+                  description={EMPTY_STATE_CONTENT.playing.description}
+                  primaryAction={{
+                    label: EMPTY_STATE_CONTENT.playing.primaryLabel,
+                    href: EMPTY_STATE_CONTENT.playing.primaryHref,
+                    icon: <Plus className="w-4 h-4" />
+                  }}
+                  secondaryAction={{
+                    label: "Explore Demo",
+                    href: EMPTY_STATE_CONTENT.playing.demoHref
+                  }}
+                  colorScheme={getSectionColorScheme('playing')}
+                  onDismiss={onDismissSection}
+                  compact
+                />
+              </div>
+            )}
+
+            {joinedCampaigns.length > 0 && (
             <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
               {joinedCampaigns.slice(0, 5).map((campaign) => {
                 const status = determineCampaignStatus(campaign)
@@ -682,20 +713,47 @@ export function HomePageMobile({
                 )
               })}
             </div>
+            )}
           </>
         )}
 
         {/* Adventures Section */}
-        {adventures.length > 0 && (
+        {(adventures.length > 0 || isSectionVisible('adventures')) && (
           <>
             <MobileSectionHeader
               title="Adventures"
               action={
-                <button onClick={() => onNavigate('/adventures')} className="text-sm text-[--arcane-purple]">
-                  View All
-                </button>
+                adventures.length > 0 ? (
+                  <button onClick={() => onNavigate('/adventures')} className="text-sm text-[--arcane-purple]">
+                    View All
+                  </button>
+                ) : undefined
               }
             />
+
+            {/* Empty State */}
+            {adventures.length === 0 && isSectionVisible('adventures') && (
+              <div className="mx-4 mb-4">
+                <DismissibleEmptyState
+                  sectionId="adventures"
+                  icon={<Compass className="w-7 h-7" />}
+                  title={EMPTY_STATE_CONTENT.adventures.title}
+                  description={EMPTY_STATE_CONTENT.adventures.description}
+                  primaryAction={{
+                    label: EMPTY_STATE_CONTENT.adventures.primaryLabel,
+                    href: EMPTY_STATE_CONTENT.adventures.primaryHref,
+                    icon: <Plus className="w-4 h-4" />
+                  }}
+                  secondaryAction={{
+                    label: "Explore Demo",
+                    href: EMPTY_STATE_CONTENT.adventures.demoHref
+                  }}
+                  colorScheme={getSectionColorScheme('adventures')}
+                  onDismiss={onDismissSection}
+                  compact
+                />
+              </div>
+            )}
 
             {/* Featured Adventure Hero */}
             {featuredAdventure && (
@@ -863,31 +921,28 @@ export function HomePageMobile({
           </button>
         )}
 
-        {oneshots.length === 0 ? (
-          <div className="mx-4 p-8 text-center bg-gradient-to-br from-green-500/5 to-transparent rounded-xl border border-dashed border-green-500/20">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-green-500/10 flex items-center justify-center">
-              <Scroll className="w-7 h-7 text-green-400" />
-            </div>
-            <h3 className="text-base font-semibold text-white mb-1">Quick Adventures Await</h3>
-            <p className="text-gray-400 text-sm mb-5">Create standalone one-shot adventures</p>
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => onNavigate('/oneshots')}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white text-sm font-medium rounded-xl"
-              >
-                <Plus className="w-4 h-4" />
-                Create One-Shot
-              </button>
-              <button
-                onClick={() => onNavigate('/demo/oneshot')}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 text-gray-400 text-sm"
-              >
-                <Sparkles className="w-4 h-4" />
-                Explore Demo
-              </button>
-            </div>
+        {oneshots.length === 0 && isSectionVisible('oneshots') ? (
+          <div className="mx-4">
+            <DismissibleEmptyState
+              sectionId="oneshots"
+              icon={<Scroll className="w-7 h-7" />}
+              title={EMPTY_STATE_CONTENT.oneshots.title}
+              description={EMPTY_STATE_CONTENT.oneshots.description}
+              primaryAction={{
+                label: EMPTY_STATE_CONTENT.oneshots.primaryLabel,
+                href: EMPTY_STATE_CONTENT.oneshots.primaryHref,
+                icon: <Plus className="w-4 h-4" />
+              }}
+              secondaryAction={{
+                label: "Explore Demo",
+                href: EMPTY_STATE_CONTENT.oneshots.demoHref
+              }}
+              colorScheme={getSectionColorScheme('oneshots')}
+              onDismiss={onDismissSection}
+              compact
+            />
           </div>
-        ) : (
+        ) : oneshots.length > 0 ? (
           <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
             {oneshots.map((oneshot) => {
               const badge = getOneshotBadge(oneshot, userId)
@@ -930,7 +985,7 @@ export function HomePageMobile({
               )
             })}
           </div>
-        )}
+        ) : null}
 
         {/* Saved from Community Section */}
         {savedTemplates.length > 0 && (
@@ -1088,31 +1143,28 @@ export function HomePageMobile({
           </button>
         )}
 
-        {characters.length === 0 ? (
-          <div className="mx-4 p-8 text-center bg-gradient-to-br from-purple-500/5 to-transparent rounded-xl border border-dashed border-purple-500/20">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-purple-500/10 flex items-center justify-center">
-              <BookOpen className="w-7 h-7 text-purple-400" />
-            </div>
-            <h3 className="text-base font-semibold text-white mb-1">Your Vault Awaits</h3>
-            <p className="text-gray-400 text-sm mb-5">Create characters to track their journeys</p>
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => onNavigate('/vault')}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 text-white text-sm font-medium rounded-xl"
-              >
-                <Plus className="w-4 h-4" />
-                Add Your First Character
-              </button>
-              <button
-                onClick={() => onNavigate('/demo/character')}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 text-gray-400 text-sm"
-              >
-                <Sparkles className="w-4 h-4" />
-                Explore Demo
-              </button>
-            </div>
+        {characters.length === 0 && isSectionVisible('characters') ? (
+          <div className="mx-4">
+            <DismissibleEmptyState
+              sectionId="characters"
+              icon={<BookOpen className="w-7 h-7" />}
+              title={EMPTY_STATE_CONTENT.characters.title}
+              description={EMPTY_STATE_CONTENT.characters.description}
+              primaryAction={{
+                label: EMPTY_STATE_CONTENT.characters.primaryLabel,
+                href: EMPTY_STATE_CONTENT.characters.primaryHref,
+                icon: <Plus className="w-4 h-4" />
+              }}
+              secondaryAction={{
+                label: "Explore Demo",
+                href: EMPTY_STATE_CONTENT.characters.demoHref
+              }}
+              colorScheme={getSectionColorScheme('characters')}
+              onDismiss={onDismissSection}
+              compact
+            />
           </div>
-        ) : (
+        ) : characters.length > 0 ? (
           <div className="px-4 grid grid-cols-2 gap-3">
             {characters.slice(0, 6).map((character) => {
               const badge = getCharacterBadge(character)
@@ -1159,7 +1211,7 @@ export function HomePageMobile({
               )
             })}
           </div>
-        )}
+        ) : null}
 
         {/* Community Discovery - Coming Soon */}
         <div className="mx-4 mt-6 rounded-xl bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5 border border-white/[0.06] p-6 text-center">
