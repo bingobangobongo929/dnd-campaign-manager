@@ -193,6 +193,12 @@ export function PartyModal({
   const handleUpdateMember = async () => {
     if (!selectedMember || !editForm) return
 
+    // Debug logging for character assignment
+    console.log('[PartyModal Debug] Saving member update:')
+    console.log('[PartyModal Debug] selectedMember.id:', selectedMember.id)
+    console.log('[PartyModal Debug] editForm.characterId:', editForm.characterId)
+    console.log('[PartyModal Debug] characterId being sent:', editForm.characterId || null)
+
     setSaving(true)
     try {
       const response = await fetch(`/api/campaigns/${campaignId}/members`, {

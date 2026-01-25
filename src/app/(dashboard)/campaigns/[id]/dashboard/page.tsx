@@ -204,8 +204,26 @@ export default function CampaignDashboardPage() {
         .order('name')
       setUserVaultCharacters(vaultCharsData || [])
 
-      // Load current user's membership
-      const userMembership = (membersResult.data || []).find(m => m.user_id === user.id)
+      // Load current user's membership - check by user_id first, then by email as fallback
+      const userEmail = user.email?.toLowerCase()
+      let userMembership = (membersResult.data || []).find(m => m.user_id === user.id)
+
+      // Fallback: if not found by user_id, try finding by email (handles case where user_id wasn't set)
+      if (!userMembership && userEmail) {
+        userMembership = (membersResult.data || []).find(
+          m => m.email?.toLowerCase() === userEmail
+        )
+      }
+
+      // Debug logging for character assignment issue
+      console.log('[Dashboard Debug] user.id:', user.id)
+      console.log('[Dashboard Debug] user.email:', user.email)
+      console.log('[Dashboard Debug] membersResult.data:', membersResult.data)
+      console.log('[Dashboard Debug] userMembership found:', userMembership)
+      console.log('[Dashboard Debug] found by:', userMembership?.user_id === user.id ? 'user_id' : 'email')
+      console.log('[Dashboard Debug] userMembership.character_id:', userMembership?.character_id)
+      console.log('[Dashboard Debug] charactersResult.data:', charactersResult.data?.map(c => ({ id: c.id, name: c.name })))
+
       if (userMembership) {
         setMembership(userMembership)
         // Load player's character
@@ -213,6 +231,7 @@ export default function CampaignDashboardPage() {
           const playerChar = (charactersResult.data || []).find(
             c => c.id === userMembership.character_id
           )
+          console.log('[Dashboard Debug] playerChar found:', playerChar?.name || 'NOT FOUND')
           if (playerChar) {
             setMyCharacter(playerChar)
           }

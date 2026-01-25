@@ -185,14 +185,46 @@ export function usePermissions(campaignId: string | null): UsePermissionsReturn 
         return
       }
 
-      // Not owner, fetch membership
-      const { data: membership, error: memberError } = await supabase
+      // Not owner, fetch membership - first try by user_id
+      let membership = null
+      let memberError = null
+
+      const { data: memberByUserId, error: userIdError } = await supabase
         .from('campaign_members')
         .select('*')
         .eq('campaign_id', campaignId)
         .eq('user_id', user.id)
         .eq('status', 'active')
         .single()
+
+      if (memberByUserId) {
+        membership = memberByUserId
+      } else if (user.email) {
+        // Fallback: try finding by email (handles case where user_id wasn't set during invite acceptance)
+        const { data: memberByEmail, error: emailError } = await supabase
+          .from('campaign_members')
+          .select('*')
+          .eq('campaign_id', campaignId)
+          .eq('email', user.email.toLowerCase())
+          .eq('status', 'active')
+          .single()
+
+        if (memberByEmail) {
+          membership = memberByEmail
+          // If found by email but user_id not set, update it
+          if (!memberByEmail.user_id) {
+            console.log('[usePermissions] Fixing missing user_id on membership record')
+            await supabase
+              .from('campaign_members')
+              .update({ user_id: user.id })
+              .eq('id', memberByEmail.id)
+          }
+        } else {
+          memberError = userIdError || emailError
+        }
+      } else {
+        memberError = userIdError
+      }
 
       if (memberError || !membership) {
         // User is not a member of this campaign

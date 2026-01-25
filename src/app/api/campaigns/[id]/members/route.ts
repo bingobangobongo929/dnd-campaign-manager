@@ -378,12 +378,20 @@ export async function PATCH(
     if (status) updateData.status = status
     if (characterId !== undefined) updateData.character_id = characterId
 
+    // Debug logging for character assignment
+    console.log('[Members PATCH Debug] memberId:', memberId)
+    console.log('[Members PATCH Debug] characterId from body:', characterId)
+    console.log('[Members PATCH Debug] updateData:', updateData)
+
     const { data: updated, error } = await supabase
       .from('campaign_members')
       .update(updateData)
       .eq('id', memberId)
       .select('*, email')
       .single()
+
+    console.log('[Members PATCH Debug] updated result:', updated)
+    console.log('[Members PATCH Debug] error:', error)
 
     if (error) {
       console.error('Failed to update member:', error)
