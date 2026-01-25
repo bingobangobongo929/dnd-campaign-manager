@@ -334,6 +334,7 @@ export default function HomePage() {
           founderBannerDismissed={founderBannerDismissed}
           onDismissFounderBanner={dismissFounderBanner}
           isFreshUser={isFreshUser}
+          userId={user?.id || ''}
         />
         <OnboardingTour
           isOpen={showOnboarding}

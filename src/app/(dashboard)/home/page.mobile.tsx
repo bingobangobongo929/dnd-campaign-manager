@@ -19,7 +19,9 @@ import {
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout, MobileSectionHeader } from '@/components/mobile'
 import { FounderBadge } from '@/components/membership'
+import { ContentBadge } from '@/components/ui'
 import { formatDistanceToNow } from '@/lib/utils'
+import { getCampaignBadge, getOneshotBadge, getCharacterBadge } from '@/lib/content-badges'
 import type { Campaign, VaultCharacter, Oneshot, ContentSave } from '@/types/database'
 
 function getInitials(name: string): string {
@@ -40,6 +42,7 @@ export interface HomePageMobileProps {
   founderBannerDismissed?: boolean
   onDismissFounderBanner?: () => void
   isFreshUser?: boolean
+  userId?: string
 }
 
 export function HomePageMobile({
@@ -55,6 +58,7 @@ export function HomePageMobile({
   founderBannerDismissed = false,
   onDismissFounderBanner,
   isFreshUser = false,
+  userId = '',
 }: HomePageMobileProps) {
   // Combine recent items for activity section
   const recentActivity = [
@@ -306,35 +310,42 @@ export function HomePageMobile({
           </div>
         ) : (
           <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
-            {campaigns.slice(0, 5).map((campaign) => (
-              <button
-                key={campaign.id}
-                onClick={() => onNavigate(`/campaigns/${campaign.id}/dashboard`)}
-                className="flex-shrink-0 w-52 aspect-[16/10] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative"
-              >
-                {campaign.image_url ? (
-                  <>
-                    <Image
-                      src={campaign.image_url}
-                      alt={campaign.name}
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-                  </>
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 to-gray-900 flex items-center justify-center">
-                    <Swords className="w-10 h-10 text-blue-400/30" />
+            {campaigns.slice(0, 5).map((campaign) => {
+              const badge = getCampaignBadge(campaign, userId)
+              return (
+                <button
+                  key={campaign.id}
+                  onClick={() => onNavigate(`/campaigns/${campaign.id}/dashboard`)}
+                  className="flex-shrink-0 w-52 aspect-[16/10] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative"
+                >
+                  {campaign.image_url ? (
+                    <>
+                      <Image
+                        src={campaign.image_url}
+                        alt={campaign.name}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 to-gray-900 flex items-center justify-center">
+                      <Swords className="w-10 h-10 text-blue-400/30" />
+                    </div>
+                  )}
+                  <ContentBadge
+                    variant={badge.primary}
+                    size="sm"
+                    progress={badge.progress}
+                    className="absolute top-2 left-2"
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 p-3">
+                    <h4 className="font-semibold text-white text-sm line-clamp-1">{campaign.name}</h4>
+                    <p className="text-[10px] text-gray-400">{campaign.game_system}</p>
                   </div>
-                )}
-                <div className="absolute bottom-0 left-0 right-0 p-3">
-                  <span className="inline-block px-2 py-0.5 text-[9px] font-semibold uppercase rounded bg-blue-500/20 text-blue-300 mb-1">
-                    {campaign.game_system}
-                  </span>
-                  <h4 className="font-semibold text-white text-sm line-clamp-1">{campaign.name}</h4>
-                </div>
-              </button>
-            ))}
+                </button>
+              )
+            })}
           </div>
         )}
 
@@ -371,10 +382,12 @@ export function HomePageMobile({
                       <Users className="w-10 h-10 text-emerald-400/30" />
                     </div>
                   )}
+                  <ContentBadge
+                    variant="playing"
+                    size="sm"
+                    className="absolute top-2 left-2"
+                  />
                   <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <span className="inline-block px-2 py-0.5 text-[9px] font-semibold uppercase rounded bg-emerald-500/20 text-emerald-300 mb-1">
-                      Playing
-                    </span>
                     <h4 className="font-semibold text-white text-sm line-clamp-1">{campaign.name}</h4>
                   </div>
                 </button>
@@ -395,35 +408,42 @@ export function HomePageMobile({
               }
             />
             <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
-              {adventures.slice(0, 5).map((adventure) => (
-                <button
-                  key={adventure.id}
-                  onClick={() => onNavigate(`/campaigns/${adventure.id}/dashboard`)}
-                  className="flex-shrink-0 w-44 aspect-[16/10] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative"
-                >
-                  {adventure.image_url ? (
-                    <>
-                      <Image
-                        src={adventure.image_url}
-                        alt={adventure.name}
-                        fill
-                        className="object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-                    </>
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
-                      <Compass className="w-10 h-10 text-amber-400/30" />
+              {adventures.slice(0, 5).map((adventure) => {
+                const badge = getCampaignBadge(adventure, userId)
+                return (
+                  <button
+                    key={adventure.id}
+                    onClick={() => onNavigate(`/campaigns/${adventure.id}/dashboard`)}
+                    className="flex-shrink-0 w-44 aspect-[16/10] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative"
+                  >
+                    {adventure.image_url ? (
+                      <>
+                        <Image
+                          src={adventure.image_url}
+                          alt={adventure.name}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
+                        <Compass className="w-10 h-10 text-amber-400/30" />
+                      </div>
+                    )}
+                    <ContentBadge
+                      variant={badge.primary}
+                      size="sm"
+                      progress={badge.progress}
+                      className="absolute top-2 left-2"
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <h4 className="font-semibold text-white text-sm line-clamp-1">{adventure.name}</h4>
+                      <p className="text-[10px] text-gray-400">{adventure.game_system}</p>
                     </div>
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <span className="inline-block px-2 py-0.5 text-[9px] font-semibold uppercase rounded bg-amber-500/20 text-amber-300 mb-1">
-                      {adventure.game_system}
-                    </span>
-                    <h4 className="font-semibold text-white text-sm line-clamp-1">{adventure.name}</h4>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                )
+              })}
             </div>
           </>
         )}
@@ -456,35 +476,42 @@ export function HomePageMobile({
           </div>
         ) : (
           <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
-            {oneshots.map((oneshot) => (
-              <button
-                key={oneshot.id}
-                onClick={() => onNavigate(`/oneshots/${oneshot.id}`)}
-                className="flex-shrink-0 w-36 aspect-[2/3] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative"
-              >
-                {oneshot.image_url ? (
-                  <>
-                    <Image
-                      src={oneshot.image_url}
-                      alt={oneshot.title}
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-                  </>
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-green-900/30 to-gray-900 flex items-center justify-center">
-                    <Scroll className="w-10 h-10 text-green-400/30" />
+            {oneshots.map((oneshot) => {
+              const badge = getOneshotBadge(oneshot, userId)
+              return (
+                <button
+                  key={oneshot.id}
+                  onClick={() => onNavigate(`/oneshots/${oneshot.id}`)}
+                  className="flex-shrink-0 w-36 aspect-[2/3] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative"
+                >
+                  {oneshot.image_url ? (
+                    <>
+                      <Image
+                        src={oneshot.image_url}
+                        alt={oneshot.title}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-900/30 to-gray-900 flex items-center justify-center">
+                      <Scroll className="w-10 h-10 text-green-400/30" />
+                    </div>
+                  )}
+                  <ContentBadge
+                    variant={badge.primary}
+                    size="sm"
+                    progress={badge.progress}
+                    className="absolute top-2 left-2"
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 p-3">
+                    <h4 className="font-semibold text-white text-xs line-clamp-2">{oneshot.title}</h4>
+                    <p className="text-[9px] text-gray-400">{oneshot.game_system}</p>
                   </div>
-                )}
-                <div className="absolute bottom-0 left-0 right-0 p-3">
-                  <span className="inline-block px-2 py-0.5 text-[9px] font-semibold uppercase rounded bg-green-500/20 text-green-300 mb-1">
-                    {oneshot.game_system}
-                  </span>
-                  <h4 className="font-semibold text-white text-xs line-clamp-2">{oneshot.title}</h4>
-                </div>
-              </button>
-            ))}
+                </button>
+              )
+            })}
           </div>
         )}
 
@@ -603,37 +630,45 @@ export function HomePageMobile({
           </div>
         ) : (
           <div className="px-4 grid grid-cols-2 gap-3">
-            {characters.slice(0, 6).map((character) => (
-              <button
-                key={character.id}
-                onClick={() => onNavigate(`/vault/${character.id}`)}
-                className="relative aspect-[3/4] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform"
-              >
-                {character.detail_image_url || character.image_url ? (
-                  <>
-                    <Image
-                      src={character.detail_image_url || character.image_url!}
-                      alt={character.name}
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                  </>
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-purple-400/40">
-                      {getInitials(character.name)}
-                    </span>
+            {characters.slice(0, 6).map((character) => {
+              const badge = getCharacterBadge(character)
+              return (
+                <button
+                  key={character.id}
+                  onClick={() => onNavigate(`/vault/${character.id}`)}
+                  className="relative aspect-[3/4] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform"
+                >
+                  {character.detail_image_url || character.image_url ? (
+                    <>
+                      <Image
+                        src={character.detail_image_url || character.image_url!}
+                        alt={character.name}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                      <span className="text-2xl font-bold text-purple-400/40">
+                        {getInitials(character.name)}
+                      </span>
+                    </div>
+                  )}
+                  <ContentBadge
+                    variant={badge.primary}
+                    size="sm"
+                    className="absolute top-2 left-2"
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 p-3">
+                    <h4 className="font-semibold text-white text-sm truncate">{character.name}</h4>
+                    <p className="text-[11px] text-gray-400 truncate">
+                      {[character.race, character.class].filter(Boolean).join(' ')}
+                    </p>
                   </div>
-                )}
-                <div className="absolute bottom-0 left-0 right-0 p-3">
-                  <h4 className="font-semibold text-white text-sm truncate">{character.name}</h4>
-                  <p className="text-[11px] text-gray-400 truncate">
-                    {[character.race, character.class].filter(Boolean).join(' ')}
-                  </p>
-                </div>
-              </button>
-            ))}
+                </button>
+              )
+            })}
           </div>
         )}
 
