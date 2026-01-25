@@ -3220,6 +3220,7 @@ export interface Database {
       entity_secrets: {
         Row: {
           id: string
+          campaign_id: string
           entity_type: 'character' | 'session' | 'timeline_event' | 'lore' | 'faction' | 'location' | 'artifact'
           entity_id: string
           field_name: string | null
@@ -3231,6 +3232,7 @@ export interface Database {
         }
         Insert: {
           id?: string
+          campaign_id: string
           entity_type: 'character' | 'session' | 'timeline_event' | 'lore' | 'faction' | 'location' | 'artifact'
           entity_id: string
           field_name?: string | null
@@ -3242,6 +3244,7 @@ export interface Database {
         }
         Update: {
           id?: string
+          campaign_id?: string
           entity_type?: 'character' | 'session' | 'timeline_event' | 'lore' | 'faction' | 'location' | 'artifact'
           entity_id?: string
           field_name?: string | null

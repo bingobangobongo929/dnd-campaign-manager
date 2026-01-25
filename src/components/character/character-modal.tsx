@@ -9,6 +9,7 @@ import { FactionMembershipEditor } from './FactionMembershipEditor'
 import { LabelsEditor } from './LabelsEditor'
 import { RichTextEditor } from '@/components/editor/rich-text-editor'
 import { DmNotesSection, type VisibilityLevel } from '@/components/dm-notes'
+import { EntitySecretsManager } from '@/components/secrets'
 import { CharacterClaiming } from '@/components/campaign'
 import { useSupabase, useUser } from '@/hooks'
 import { useAutoSave } from '@/hooks'
@@ -655,6 +656,16 @@ export function CharacterModal({
         showVisibilityToggle={true}
         collapsed={!formData.dm_notes}
       />
+
+      {/* Entity Secrets Manager - only for existing characters */}
+      {currentCharacterId && (
+        <EntitySecretsManager
+          campaignId={campaignId}
+          entityType="character"
+          entityId={currentCharacterId}
+          collapsed={true}
+        />
+      )}
     </div>
   )
 

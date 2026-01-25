@@ -36,6 +36,7 @@ import Image from 'next/image'
 import type { Session, Campaign, Character, SessionPhase } from '@/types/database'
 import { SessionWorkflow, PlayerNotes, ThoughtsForNextCard } from '@/components/sessions'
 import { DmNotesSection } from '@/components/dm-notes'
+import { EntitySecretsManager } from '@/components/secrets'
 
 export default function SessionDetailPage() {
   const params = useParams()
@@ -1142,6 +1143,18 @@ export default function SessionDetailPage() {
                   showVisibilityToggle={false}
                   placeholder="Private notes about this session. Plot threads to follow up, player behaviors, etc."
                   collapsed={!formData.dm_notes}
+                />
+              </div>
+            )}
+
+            {/* Entity Secrets Manager for Sessions */}
+            {!isNew && session && campaign?.user_id === user?.id && (
+              <div className="card p-6 mb-8">
+                <EntitySecretsManager
+                  campaignId={campaignId}
+                  entityType="session"
+                  entityId={session.id}
+                  collapsed={true}
                 />
               </div>
             )}
