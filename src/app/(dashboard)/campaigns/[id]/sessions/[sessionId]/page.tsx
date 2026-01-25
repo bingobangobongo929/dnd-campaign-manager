@@ -34,7 +34,7 @@ import { useAppStore, useCanUseAI } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
 import type { Session, Campaign, Character, SessionPhase } from '@/types/database'
-import { SessionWorkflow, PlayerNotes, ThoughtsForNextCard } from '@/components/sessions'
+import { SessionWorkflow, PlayerNotes, ThoughtsForNextCard, MergedNotesView } from '@/components/sessions'
 import { DmNotesSection } from '@/components/dm-notes'
 import { EntitySecretsManager } from '@/components/secrets'
 
@@ -1155,6 +1155,24 @@ export default function SessionDetailPage() {
                   entityType="session"
                   entityId={session.id}
                   collapsed={true}
+                />
+              </div>
+            )}
+
+            {/* Merged Notes View - Combine DM + Player Notes */}
+            {!isNew && session && campaign?.user_id === user?.id && (
+              <div className="card p-6 mb-8">
+                <MergedNotesView
+                  campaignId={campaignId}
+                  sessionId={session.id}
+                  sessionNumber={session.session_number}
+                  sessionTitle={session.title || undefined}
+                  dmSummary={formData.summary}
+                  dmDetailedNotes={formData.notes}
+                  onMergedContent={(content) => {
+                    // Optionally update the summary with merged content
+                    setFormData(prev => ({ ...prev, summary: content }))
+                  }}
                 />
               </div>
             )}
