@@ -405,6 +405,14 @@ export default function CampaignDashboardPage() {
   })
 
   // Determine if current character is designated for the current user
+  // Debug logging for character claiming flow
+  if (myCharacter) {
+    console.log('[Dashboard Debug] Character claiming check:')
+    console.log('[Dashboard Debug] myCharacter.controlled_by_user_id:', myCharacter.controlled_by_user_id)
+    console.log('[Dashboard Debug] myCharacter.controlled_by_email:', myCharacter.controlled_by_email)
+    console.log('[Dashboard Debug] user.id:', user?.id)
+    console.log('[Dashboard Debug] user.email:', user?.email)
+  }
   const isCharacterDesignatedForUser = myCharacter ? (
     myCharacter.controlled_by_user_id === user?.id ||
     (myCharacter.controlled_by_email?.toLowerCase() === user?.email?.toLowerCase())
