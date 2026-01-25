@@ -476,6 +476,44 @@ export default function SettingsPage() {
     }
   }
 
+  const handleApplyDiscordAvatar = async () => {
+    if (!user || !settings) return
+
+    const discordAvatar = (settings as { discord_avatar?: string | null }).discord_avatar
+    if (!discordAvatar) {
+      toast.error('No Discord avatar available')
+      return
+    }
+
+    setUploadingAvatar(true)
+    try {
+      // If there's an existing uploaded avatar, delete it from storage
+      if (settings.avatar_url && settings.avatar_url.includes('/avatars/')) {
+        const path = settings.avatar_url.split('/avatars/')[1]
+        if (path) {
+          await supabase.storage.from('avatars').remove([path])
+        }
+      }
+
+      // Update user settings to use Discord avatar
+      const { error } = await supabase
+        .from('user_settings')
+        .update({ avatar_url: discordAvatar })
+        .eq('user_id', user.id)
+
+      if (error) throw error
+
+      // Update local state
+      setSettings({ ...settings, avatar_url: discordAvatar })
+      toast.success('Discord avatar applied')
+    } catch (error) {
+      console.error('Apply Discord avatar failed:', error)
+      toast.error('Failed to apply Discord avatar')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
   const KEYBOARD_SHORTCUTS = [
     { keys: ['G', 'H'], description: 'Go to Home' },
     { keys: ['G', 'C'], description: 'Go to Campaigns' },
@@ -985,7 +1023,7 @@ export default function SettingsPage() {
               <div className="flex-1">
                 <label className="text-xs text-[--text-tertiary] uppercase tracking-wide">Profile Picture</label>
                 <p className="text-sm text-[--text-secondary] mt-0.5">1:1 square image, max 5MB</p>
-                <div className="flex gap-2 mt-2">
+                <div className="flex gap-2 mt-2 flex-wrap">
                   <label className="btn btn-secondary text-sm cursor-pointer">
                     <Camera className="w-4 h-4" />
                     {settings?.avatar_url ? 'Change' : 'Upload'}
@@ -997,6 +1035,16 @@ export default function SettingsPage() {
                       disabled={uploadingAvatar}
                     />
                   </label>
+                  {(settings as { discord_avatar?: string | null })?.discord_avatar && (
+                    <button
+                      onClick={handleApplyDiscordAvatar}
+                      disabled={uploadingAvatar}
+                      className="btn btn-secondary text-sm text-[#5865F2] hover:bg-[#5865F2]/10"
+                    >
+                      <DiscordIcon className="w-4 h-4" />
+                      Use Discord
+                    </button>
+                  )}
                   {settings?.avatar_url && (
                     <button
                       onClick={handleRemoveAvatar}

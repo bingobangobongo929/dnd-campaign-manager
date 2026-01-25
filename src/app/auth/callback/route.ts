@@ -84,6 +84,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Create user_settings for new Discord user (they have a valid invite)
+      // Use Discord avatar as their profile avatar
       const now = new Date().toISOString()
       await supabase.from('user_settings').insert({
         user_id: user.id,
@@ -93,6 +94,7 @@ export async function GET(request: NextRequest) {
         discord_username: discordUsername,
         discord_avatar: discordMetadata.avatar_url,
         discord_linked_at: now,
+        avatar_url: discordMetadata.avatar_url || null, // Use Discord avatar as profile avatar
         terms_accepted_at: now,
         privacy_accepted_at: now,
         last_login_at: now,
@@ -100,6 +102,20 @@ export async function GET(request: NextRequest) {
     } else if (!existingSettings.discord_id) {
       // User exists but Discord not linked - link it now
       await saveDiscordToUserSettings(supabase, user.id, discordMetadata)
+
+      // If user has no avatar, apply Discord avatar
+      const { data: currentSettings } = await supabase
+        .from('user_settings')
+        .select('avatar_url')
+        .eq('user_id', user.id)
+        .single()
+
+      if (!currentSettings?.avatar_url && discordMetadata.avatar_url) {
+        await supabase
+          .from('user_settings')
+          .update({ avatar_url: discordMetadata.avatar_url })
+          .eq('user_id', user.id)
+      }
     }
 
     // Activate any pending campaign memberships for this Discord user
