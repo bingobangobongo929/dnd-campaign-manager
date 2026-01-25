@@ -11,7 +11,9 @@ import {
   CheckCircle2,
   Edit2,
   History,
+  Clock,
 } from 'lucide-react'
+import NextLink from 'next/link'
 import { Modal } from '@/components/ui'
 import { TimelineEventEditor, type TimelineEventFormData } from '@/components/timeline'
 import { AppLayout } from '@/components/layout/app-layout'
@@ -147,6 +149,12 @@ export interface CampaignIntelligencePageMobileProps {
   setEditFormData: (data: TimelineEventFormData) => void
   openEditModal: (suggestion: IntelligenceSuggestion) => void
   handleSaveEdit: () => void
+  // Cooldown state
+  cooldownStatus?: {
+    isOnCooldown: boolean
+    remainingFormatted: string
+    availableAt: string | null
+  } | null
 }
 
 export function CampaignIntelligencePageMobile({
@@ -181,6 +189,7 @@ export function CampaignIntelligencePageMobile({
   setEditFormData,
   openEditModal,
   handleSaveEdit,
+  cooldownStatus,
 }: CampaignIntelligencePageMobileProps) {
   if (loading) {
     return (
@@ -219,11 +228,18 @@ export function CampaignIntelligencePageMobile({
             </button>
             <button
               onClick={handleAnalyze}
-              disabled={isAnalyzing}
-              className="p-2 rounded-lg bg-[--arcane-purple] active:bg-[--arcane-purple]/80 transition-colors"
+              disabled={isAnalyzing || cooldownStatus?.isOnCooldown}
+              className={cn(
+                "p-2 rounded-lg transition-colors",
+                cooldownStatus?.isOnCooldown
+                  ? "bg-amber-500/20 text-amber-400"
+                  : "bg-[--arcane-purple] active:bg-[--arcane-purple]/80"
+              )}
             >
               {isAnalyzing ? (
                 <Loader2 className="w-5 h-5 text-white animate-spin" />
+              ) : cooldownStatus?.isOnCooldown ? (
+                <Clock className="w-5 h-5" />
               ) : (
                 <Sparkles className="w-5 h-5 text-white" />
               )}
@@ -244,6 +260,40 @@ export function CampaignIntelligencePageMobile({
                 : 'Never analyzed'}
             </span>
           </div>
+
+          {/* Cooldown Banner */}
+          {cooldownStatus?.isOnCooldown && (
+            <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-amber-300 text-sm">
+                    Available in {cooldownStatus.remainingFormatted}
+                  </p>
+                  <p className="text-xs text-amber-400/70 mt-1">
+                    Update session notes while you wait for best results.
+                  </p>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <button
+                      onClick={() => setShowHistory(true)}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-amber-300 bg-amber-500/20 active:bg-amber-500/30 rounded-lg transition-colors"
+                    >
+                      <History className="w-3.5 h-3.5" />
+                      Previous Suggestions
+                    </button>
+                    <NextLink
+                      href={`/campaigns/${campaignId}/sessions`}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-gray-400 active:text-gray-300 transition-colors"
+                    >
+                      Update Notes
+                    </NextLink>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Error */}
           {analysisError && (

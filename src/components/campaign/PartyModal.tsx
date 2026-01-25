@@ -41,6 +41,7 @@ interface CampaignMember {
   user_id: string | null
   email: string | null
   discord_id: string | null
+  discord_username: string | null
   role: CampaignMemberRole
   permissions: MemberPermissions | null
   status: 'pending' | 'active' | 'declined' | 'removed'
@@ -129,8 +130,12 @@ export function PartyModal({
   }
 
   const handleInvite = async () => {
-    if (!inviteForm.email) {
+    if (inviteMethod === 'email' && !inviteForm.email) {
       toast.error('Please enter an email address')
+      return
+    }
+    if (inviteMethod === 'discord' && !inviteForm.discordId) {
+      toast.error('Please enter a Discord username')
       return
     }
 
@@ -140,7 +145,8 @@ export function PartyModal({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: inviteForm.email,
+          email: inviteMethod === 'email' ? inviteForm.email : undefined,
+          discordUsername: inviteMethod === 'discord' ? inviteForm.discordId : undefined,
           role: inviteForm.role,
           characterId: inviteForm.characterId || undefined,
           permissions: inviteForm.permissions,
@@ -317,6 +323,7 @@ export function PartyModal({
   const getDisplayName = (member: CampaignMember) => {
     return member.user_settings?.username ||
       member.email ||
+      member.discord_username ||
       member.discord_id ||
       'Unknown'
   }
@@ -541,7 +548,15 @@ export function PartyModal({
                   {selectedMember.email && (
                     <p className="text-sm text-gray-500">{selectedMember.email}</p>
                   )}
-                  {selectedMember.discord_id && (
+                  {selectedMember.discord_username && (
+                    <p className="text-sm text-gray-500 flex items-center gap-1.5">
+                      <svg className="w-3.5 h-3.5 text-[#5865F2]" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                      </svg>
+                      {selectedMember.discord_username}
+                    </p>
+                  )}
+                  {selectedMember.discord_id && !selectedMember.discord_username && (
                     <p className="text-sm text-gray-500">Discord: {selectedMember.discord_id}</p>
                   )}
                   {selectedMember.status === 'pending' && selectedMember.invited_at ? (
@@ -997,34 +1012,68 @@ export function PartyModal({
                       Email
                     </span>
                   </button>
-                  <div
-                    className="p-3 rounded-lg border bg-white/[0.01] border-[--border] flex items-center gap-3 opacity-50 cursor-not-allowed relative"
+                  <button
+                    onClick={() => setInviteMethod('discord')}
+                    className={cn(
+                      "p-3 rounded-lg border text-left transition-colors flex items-center gap-3",
+                      inviteMethod === 'discord'
+                        ? "bg-purple-500/10 border-purple-500/30"
+                        : "bg-white/[0.02] border-[--border] hover:border-purple-500/20"
+                    )}
                   >
-                    <LinkIcon className="w-5 h-5 text-gray-500" />
-                    <div className="flex flex-col">
-                      <span className="font-medium text-sm text-gray-500">
-                        Discord
-                      </span>
-                      <span className="text-xs text-gray-600">Coming Soon</span>
-                    </div>
-                  </div>
+                    <svg
+                      className={cn("w-5 h-5", inviteMethod === 'discord' ? "text-purple-400" : "text-gray-500")}
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                    </svg>
+                    <span className={cn("font-medium text-sm", inviteMethod === 'discord' ? "text-white" : "text-gray-400")}>
+                      Discord
+                    </span>
+                  </button>
                 </div>
               </div>
 
-              {/* Email Input */}
-              <div className="form-group">
-                <label className="form-label">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <Input
-                    type="email"
-                    placeholder="player@example.com"
-                    value={inviteForm.email}
-                    onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
-                    className="pl-10"
-                  />
+              {/* Email/Discord Input */}
+              {inviteMethod === 'email' ? (
+                <div className="form-group">
+                  <label className="form-label">Email Address</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                    <Input
+                      type="email"
+                      placeholder="player@example.com"
+                      value={inviteForm.email}
+                      onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                      className="pl-10"
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="form-group">
+                  <label className="form-label">Discord Username</label>
+                  <div className="relative">
+                    <svg
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                    </svg>
+                    <Input
+                      type="text"
+                      placeholder="username or username#1234"
+                      value={inviteForm.discordId}
+                      onChange={(e) => setInviteForm({ ...inviteForm, discordId: e.target.value })}
+                      className="pl-10"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter their Discord username. When they link their Discord account, they'll automatically join.
+                  </p>
+                </div>
+              )}
 
               {/* Role Selection */}
               <div className="form-group">
@@ -1193,7 +1242,7 @@ export function PartyModal({
                 </button>
                 <button
                   onClick={handleInvite}
-                  disabled={saving || !inviteForm.email}
+                  disabled={saving || (inviteMethod === 'email' ? !inviteForm.email : !inviteForm.discordId)}
                   className="btn btn-primary flex-1"
                 >
                   {saving ? (

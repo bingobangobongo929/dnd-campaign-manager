@@ -42,7 +42,7 @@ export async function GET(
         id: invite.id,
         role: invite.role,
         email: invite.email,
-        discordId: invite.discord_id,
+        discordUsername: invite.discord_username,
         campaign: invite.campaign,
         hasExistingAccount,
       },
@@ -88,7 +88,33 @@ export async function POST(
       }, { status: 403 })
     }
 
-    // TODO: Verify Discord ID if that was used for invite
+    // Verify Discord username if that was used for invite
+    if (invite.discord_username) {
+      // Get user's Discord info from user_settings
+      const { data: userSettings } = await adminClient
+        .from('user_settings')
+        .select('discord_username')
+        .eq('user_id', user.id)
+        .single()
+
+      const userDiscordUsername = userSettings?.discord_username
+
+      // If invite was Discord-based, user must have linked their Discord
+      if (!userDiscordUsername) {
+        return NextResponse.json({
+          error: 'Please link your Discord account first to accept this invite',
+          requiresDiscord: true,
+        }, { status: 403 })
+      }
+
+      // Check if Discord usernames match (case-insensitive)
+      if (userDiscordUsername.toLowerCase() !== invite.discord_username.toLowerCase()) {
+        return NextResponse.json({
+          error: 'This invite was sent to a different Discord account',
+          expectedDiscord: invite.discord_username,
+        }, { status: 403 })
+      }
+    }
 
     // Check if user is already a member
     const { data: existingMember } = await adminClient

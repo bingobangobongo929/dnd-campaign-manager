@@ -1772,6 +1772,11 @@ export interface Database {
           show_tips: boolean
           tips_dismissed: Json
           homepage_preferences: Json
+          // Discord integration
+          discord_id: string | null
+          discord_username: string | null
+          discord_avatar: string | null
+          discord_linked_at: string | null
           created_at: string
           updated_at: string
         }
@@ -1803,6 +1808,10 @@ export interface Database {
           show_tips?: boolean
           tips_dismissed?: Json
           homepage_preferences?: Json
+          discord_id?: string | null
+          discord_username?: string | null
+          discord_avatar?: string | null
+          discord_linked_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1834,6 +1843,10 @@ export interface Database {
           show_tips?: boolean
           tips_dismissed?: Json
           homepage_preferences?: Json
+          discord_id?: string | null
+          discord_username?: string | null
+          discord_avatar?: string | null
+          discord_linked_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -3127,6 +3140,7 @@ export interface Database {
           user_id: string | null
           email: string | null
           discord_id: string | null
+          discord_username: string | null
           role: 'owner' | 'co_dm' | 'player' | 'contributor' | 'guest'
           permissions: Json
           character_id: string | null
@@ -3146,6 +3160,7 @@ export interface Database {
           user_id?: string | null
           email?: string | null
           discord_id?: string | null
+          discord_username?: string | null
           role?: 'owner' | 'co_dm' | 'player' | 'contributor' | 'guest'
           permissions?: Json
           character_id?: string | null
@@ -3165,6 +3180,7 @@ export interface Database {
           user_id?: string | null
           email?: string | null
           discord_id?: string | null
+          discord_username?: string | null
           role?: 'owner' | 'co_dm' | 'player' | 'contributor' | 'guest'
           permissions?: Json
           character_id?: string | null

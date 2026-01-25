@@ -561,6 +561,7 @@ export default function IntelligencePage() {
         setEditFormData={setEditFormData}
         openEditModal={openEditModal}
         handleSaveEdit={handleSaveEdit}
+        cooldownStatus={cooldownStatus}
       />
     )
   }

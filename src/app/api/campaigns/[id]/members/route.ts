@@ -154,9 +154,9 @@ export async function POST(
     const campaignName = campaign?.name || 'a campaign'
 
     const body = await request.json()
-    const { email, discordId, role, characterId, permissions } = body as {
+    const { email, discordUsername, role, characterId, permissions } = body as {
       email?: string
-      discordId?: string
+      discordUsername?: string
       role: CampaignMemberRole
       characterId?: string
       permissions?: MemberPermissions
@@ -172,9 +172,9 @@ export async function POST(
       return NextResponse.json({ error: 'Only owners can add co-DMs' }, { status: 403 })
     }
 
-    // Must have email or discordId
-    if (!email && !discordId) {
-      return NextResponse.json({ error: 'Email or Discord ID required' }, { status: 400 })
+    // Must have email or discordUsername
+    if (!email && !discordUsername) {
+      return NextResponse.json({ error: 'Email or Discord username required' }, { status: 400 })
     }
 
     // Check if already a member
@@ -185,8 +185,8 @@ export async function POST(
 
     if (email) {
       existingQuery = existingQuery.eq('email', email.toLowerCase())
-    } else if (discordId) {
-      existingQuery = existingQuery.eq('discord_id', discordId)
+    } else if (discordUsername) {
+      existingQuery = existingQuery.ilike('discord_username', discordUsername)
     }
 
     const { data: existing } = await existingQuery.single()
@@ -206,7 +206,7 @@ export async function POST(
     const memberData: CampaignMemberInsert = {
       campaign_id: campaignId,
       email: email?.toLowerCase() || null,
-      discord_id: discordId || null,
+      discord_username: discordUsername || null,
       role,
       character_id: characterId || null,
       invite_token: inviteToken,
@@ -232,18 +232,28 @@ export async function POST(
       }, { status: 500 })
     }
 
-    // If a character was assigned, update the character to designate it for this email
+    // If a character was assigned, update the character to designate it for this email or Discord
     // This enables the character claiming flow when the invited user joins
-    if (characterId && email) {
-      const { error: charUpdateError } = await adminClient
-        .from('characters')
-        .update({ controlled_by_email: email.toLowerCase() })
-        .eq('id', characterId)
-        .eq('campaign_id', campaignId)
+    if (characterId) {
+      const charUpdateData: Record<string, unknown> = {}
+      if (email) {
+        charUpdateData.controlled_by_email = email.toLowerCase()
+      }
+      if (discordUsername) {
+        charUpdateData.controlled_by_discord = discordUsername
+      }
 
-      if (charUpdateError) {
-        console.error('Failed to designate character for invite:', charUpdateError)
-        // Don't fail the invite - this is not critical
+      if (Object.keys(charUpdateData).length > 0) {
+        const { error: charUpdateError } = await adminClient
+          .from('characters')
+          .update(charUpdateData)
+          .eq('id', characterId)
+          .eq('campaign_id', campaignId)
+
+        if (charUpdateError) {
+          console.error('Failed to designate character for invite:', charUpdateError)
+          // Don't fail the invite - this is not critical
+        }
       }
     }
 
