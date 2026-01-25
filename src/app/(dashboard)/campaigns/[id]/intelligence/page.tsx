@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import NextLink from 'next/link'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import {
@@ -185,6 +186,13 @@ export default function IntelligencePage() {
   const [analysisError, setAnalysisError] = useState<string | null>(null)
   const [selectedProvider, setSelectedProvider] = useState<AIProvider>(aiProvider)
 
+  // Cooldown state
+  const [cooldownStatus, setCooldownStatus] = useState<{
+    isOnCooldown: boolean
+    remainingFormatted: string
+    availableAt: string | null
+  } | null>(null)
+
   // Filter state
   const [showHistory, setShowHistory] = useState(false)
   const [typeFilters, setTypeFilters] = useState<Set<SuggestionType>>(new Set())
@@ -263,6 +271,17 @@ export default function IntelligencePage() {
 
     setSuggestions(data.suggestions || [])
     setCounts(data.counts || { pending: 0, applied: 0, rejected: 0 })
+
+    // Check cooldown status
+    try {
+      const cooldownResponse = await fetch(`/api/ai/cooldown?type=campaign_intelligence&entityId=${campaignId}`)
+      if (cooldownResponse.ok) {
+        const cooldownData = await cooldownResponse.json()
+        setCooldownStatus(cooldownData)
+      }
+    } catch (err) {
+      console.error('Failed to check cooldown:', err)
+    }
 
     setLoading(false)
     setHasLoadedOnce(true)
@@ -592,14 +611,19 @@ export default function IntelligencePage() {
           <button
             className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium disabled:opacity-50"
             onClick={handleAnalyze}
-            disabled={isAnalyzing}
+            disabled={isAnalyzing || cooldownStatus?.isOnCooldown}
+            title={cooldownStatus?.isOnCooldown ? `Available in ${cooldownStatus.remainingFormatted}` : undefined}
           >
             {isAnalyzing ? (
               <Loader2 className="w-4 h-4 animate-spin" />
+            ) : cooldownStatus?.isOnCooldown ? (
+              <Clock className="w-4 h-4" />
             ) : (
               <Sparkles className="w-4 h-4" />
             )}
-            <span className="hidden sm:inline">{isAnalyzing ? 'Analyzing...' : 'Analyze'}</span>
+            <span className="hidden sm:inline">
+              {isAnalyzing ? 'Analyzing...' : cooldownStatus?.isOnCooldown ? cooldownStatus.remainingFormatted : 'Analyze'}
+            </span>
           </button>
         }
       />
@@ -617,6 +641,40 @@ export default function IntelligencePage() {
             onClick: () => handleAnalyze(),
           }}
         />
+
+        {/* Cooldown Banner */}
+        {cooldownStatus?.isOnCooldown && (
+          <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                <Clock className="w-5 h-5 text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-medium text-amber-300">
+                  Available in {cooldownStatus.remainingFormatted}
+                </h3>
+                <p className="text-sm text-amber-400/70 mt-1">
+                  While you wait, you can review your previous suggestions or make sure session notes are up to date.
+                </p>
+                <div className="flex flex-wrap gap-3 mt-3">
+                  <button
+                    onClick={() => setShowHistory(true)}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-amber-300 bg-amber-500/20 hover:bg-amber-500/30 rounded-lg transition-colors"
+                  >
+                    <History className="w-4 h-4" />
+                    View Previous Suggestions
+                  </button>
+                  <NextLink
+                    href={`/campaigns/${campaignId}/sessions`}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-gray-400 hover:text-gray-300 transition-colors"
+                  >
+                    Update Session Notes
+                  </NextLink>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Status Bar */}
         <div className="flex items-center justify-between mb-6">
@@ -662,10 +720,17 @@ export default function IntelligencePage() {
             <button
               className="btn btn-primary flex items-center gap-2"
               onClick={handleAnalyze}
-              disabled={isAnalyzing}
+              disabled={isAnalyzing || cooldownStatus?.isOnCooldown}
+              title={cooldownStatus?.isOnCooldown ? `Available in ${cooldownStatus.remainingFormatted}` : undefined}
             >
-              {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              {isAnalyzing ? 'Analyzing...' : 'Analyze Campaign'}
+              {isAnalyzing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : cooldownStatus?.isOnCooldown ? (
+                <Clock className="w-4 h-4" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+              {isAnalyzing ? 'Analyzing...' : cooldownStatus?.isOnCooldown ? `Available in ${cooldownStatus.remainingFormatted}` : 'Analyze Campaign'}
             </button>
           </div>
         </div>
@@ -844,14 +909,29 @@ export default function IntelligencePage() {
                     <p className="text-xs text-purple-400/80 mt-3 max-w-md italic text-center">
                       For best results, make sure your session notes are up-to-date with detailed summaries of what happened in each session.
                     </p>
-                    <button
-                      className="btn btn-primary flex items-center gap-2 mt-6"
-                      onClick={handleAnalyze}
-                      disabled={isAnalyzing}
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      Analyze Campaign
-                    </button>
+                    {cooldownStatus?.isOnCooldown ? (
+                      <div className="mt-6 text-center">
+                        <p className="text-sm text-amber-400 mb-3">
+                          Available in {cooldownStatus.remainingFormatted}
+                        </p>
+                        <button
+                          onClick={() => setShowHistory(true)}
+                          className="btn btn-secondary flex items-center gap-2"
+                        >
+                          <History className="w-4 h-4" />
+                          View Previous Suggestions
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        className="btn btn-primary flex items-center gap-2 mt-6"
+                        onClick={handleAnalyze}
+                        disabled={isAnalyzing}
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        Analyze Campaign
+                      </button>
+                    )}
                   </>
                 )}
               </div>
