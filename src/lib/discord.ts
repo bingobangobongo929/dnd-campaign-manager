@@ -51,13 +51,15 @@ export async function saveDiscordToUserSettings(
   discordMetadata: DiscordUserMetadata
 ): Promise<{ success: boolean; error?: string }> {
   const discordUsername = getDiscordDisplayName(discordMetadata)
+  // Always use PNG format for avatars (no GIF support)
+  const avatarUrl = ensurePngAvatarUrl(discordMetadata.avatar_url)
 
   const { error } = await supabase
     .from('user_settings')
     .update({
       discord_id: discordMetadata.provider_id,
       discord_username: discordUsername,
-      discord_avatar: discordMetadata.avatar_url || null,
+      discord_avatar: avatarUrl,
       discord_linked_at: new Date().toISOString(),
     })
     .eq('user_id', userId)
@@ -140,7 +142,7 @@ export async function activatePendingDiscordMemberships(
 }
 
 /**
- * Construct Discord avatar URL from hash
+ * Construct Discord avatar URL from hash (always PNG, no GIF support)
  */
 export function getDiscordAvatarUrl(discordId: string, avatarHash: string | null): string {
   if (!avatarHash) {
@@ -149,6 +151,21 @@ export function getDiscordAvatarUrl(discordId: string, avatarHash: string | null
     return `https://cdn.discordapp.com/embed/avatars/${defaultIndex}.png`
   }
 
-  const extension = avatarHash.startsWith('a_') ? 'gif' : 'png'
-  return `https://cdn.discordapp.com/avatars/${discordId}/${avatarHash}.${extension}`
+  // Always use PNG format - Discord CDN will convert animated avatars to static PNG
+  return `https://cdn.discordapp.com/avatars/${discordId}/${avatarHash}.png`
+}
+
+/**
+ * Ensure Discord avatar URL uses PNG format (converts GIF URLs to PNG)
+ * Discord CDN serves static PNG even for animated avatars when .png is requested
+ */
+export function ensurePngAvatarUrl(url: string | null | undefined): string | null {
+  if (!url) return null
+
+  // If it's a Discord CDN URL ending in .gif, replace with .png
+  if (url.includes('cdn.discordapp.com') && url.endsWith('.gif')) {
+    return url.replace(/\.gif$/, '.png')
+  }
+
+  return url
 }

@@ -7,6 +7,7 @@ import {
   activatePendingDiscordMemberships,
   getDiscordDisplayName,
   findPendingDiscordMemberships,
+  ensurePngAvatarUrl,
 } from '@/lib/discord'
 
 // OAuth callback route - handles Discord (and future OAuth providers)
@@ -84,17 +85,18 @@ export async function GET(request: NextRequest) {
       }
 
       // Create user_settings for new Discord user (they have a valid invite)
-      // Use Discord avatar as their profile avatar
+      // Use Discord avatar as their profile avatar (always PNG, no GIF)
       const now = new Date().toISOString()
+      const avatarUrl = ensurePngAvatarUrl(discordMetadata.avatar_url)
       await supabase.from('user_settings').insert({
         user_id: user.id,
         tier: 'adventurer',
         role: 'user',
         discord_id: discordMetadata.provider_id,
         discord_username: discordUsername,
-        discord_avatar: discordMetadata.avatar_url,
+        discord_avatar: avatarUrl,
         discord_linked_at: now,
-        avatar_url: discordMetadata.avatar_url || null, // Use Discord avatar as profile avatar
+        avatar_url: avatarUrl, // Use Discord avatar as profile avatar
         terms_accepted_at: now,
         privacy_accepted_at: now,
         last_login_at: now,
@@ -109,8 +111,9 @@ export async function GET(request: NextRequest) {
 
       // Redirect to Discord link confirmation page instead of the intended destination
       // This lets the user confirm the link and choose avatar preferences
+      const pngAvatarUrl = ensurePngAvatarUrl(discordMetadata.avatar_url) || ''
       return NextResponse.redirect(
-        `${origin}/settings/discord-linked?avatar=${encodeURIComponent(discordMetadata.avatar_url || '')}&username=${encodeURIComponent(discordUsername)}`
+        `${origin}/settings/discord-linked?avatar=${encodeURIComponent(pngAvatarUrl)}&username=${encodeURIComponent(discordUsername)}`
       )
     }
 
