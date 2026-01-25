@@ -100,22 +100,18 @@ export async function GET(request: NextRequest) {
         last_login_at: now,
       })
     } else if (!existingSettings.discord_id) {
-      // User exists but Discord not linked - link it now
+      // User exists but Discord not linked - this is an AUTO-LINK situation
+      // Supabase linked the Discord identity to this account automatically
+      // We need to ask for user consent before saving Discord info
+
+      // Save Discord metadata temporarily but redirect to confirmation page
       await saveDiscordToUserSettings(supabase, user.id, discordMetadata)
 
-      // If user has no avatar, apply Discord avatar
-      const { data: currentSettings } = await supabase
-        .from('user_settings')
-        .select('avatar_url')
-        .eq('user_id', user.id)
-        .single()
-
-      if (!currentSettings?.avatar_url && discordMetadata.avatar_url) {
-        await supabase
-          .from('user_settings')
-          .update({ avatar_url: discordMetadata.avatar_url })
-          .eq('user_id', user.id)
-      }
+      // Redirect to Discord link confirmation page instead of the intended destination
+      // This lets the user confirm the link and choose avatar preferences
+      return NextResponse.redirect(
+        `${origin}/settings/discord-linked?avatar=${encodeURIComponent(discordMetadata.avatar_url || '')}&username=${encodeURIComponent(discordUsername)}`
+      )
     }
 
     // Activate any pending campaign memberships for this Discord user
