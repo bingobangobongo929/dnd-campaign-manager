@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { generateText } from 'ai'
 import { getAIModel } from '@/lib/ai/config'
 import { createClient } from '@/lib/supabase/server'
+import { startImportSession, updateImportSession } from '@/lib/ai'
 
 export const runtime = 'edge'
 export const maxDuration = 120 // Allow more time for comprehensive parsing
@@ -202,6 +203,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Document text required' }, { status: 400 })
     }
 
+    // Start import session tracking
+    const parseStartTime = Date.now()
+    const importSessionId = await startImportSession({
+      userId: user.id,
+      importType: 'text',
+      targetType: 'vault_character',
+      fileSizeBytes: new TextEncoder().encode(documentText).length,
+    })
+
     const model = getAIModel('googlePro')
 
     const { text } = await generateText({
@@ -242,11 +252,21 @@ export async function POST(req: Request) {
       hasTldr: !!parsedData.character?.tldr,
     }
 
+    // Update import session to parsed status
+    if (importSessionId) {
+      await updateImportSession({
+        sessionId: importSessionId,
+        status: 'parsed',
+        parseDurationMs: Date.now() - parseStartTime,
+      })
+    }
+
     return NextResponse.json({
       success: true,
       parsed: parsedData,
       stats,
       inputLength: documentText.length,
+      importSessionId, // Include for frontend to pass to save endpoint
     })
   } catch (error) {
     console.error('Vault document parse error:', error)

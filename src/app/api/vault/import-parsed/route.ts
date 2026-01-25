@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { updateImportSession } from '@/lib/ai'
 
 export const runtime = 'edge'
 
@@ -100,6 +101,7 @@ interface ImportParsedRequest {
   sourceFile?: string
   rawDocumentText?: string
   imageUrls?: { index: number; url: string }[]
+  importSessionId?: string // For tracking import funnel
 }
 
 export async function POST(req: Request) {
@@ -116,6 +118,7 @@ export async function POST(req: Request) {
       sourceFile,
       rawDocumentText,
       imageUrls = [],
+      importSessionId,
     }: ImportParsedRequest = await req.json()
 
     if (!parsed?.character?.name) {
@@ -328,6 +331,14 @@ export async function POST(req: Request) {
       if (writingError) {
         console.error('Error inserting writings:', writingError)
       }
+    }
+
+    // Update import session to saved status
+    if (importSessionId) {
+      await updateImportSession({
+        sessionId: importSessionId,
+        status: 'saved',
+      })
     }
 
     // Return success with import stats
