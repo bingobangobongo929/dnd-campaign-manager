@@ -26,6 +26,7 @@ import type { Character, VaultCharacter } from '@/types/database'
 interface ExportStatus {
   session0Available: boolean
   session0Reason?: string
+  session0FromSnapshot?: boolean
   currentSessionNumber: number
   existingExports: Array<{
     id: string
@@ -404,6 +405,7 @@ function ClaimModal({
   onLink,
 }: ClaimModalProps) {
   const session0Available = exportStatus?.session0Available ?? false
+  const session0FromSnapshot = exportStatus?.session0FromSnapshot ?? false
   const hasLinkedCharacter = exportStatus?.hasLinkedCharacter ?? false
 
   return (
@@ -527,7 +529,7 @@ function ClaimModal({
                       </span>
                       {session0Available ? (
                         <span className="text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded">
-                          Available
+                          {session0FromSnapshot ? 'Saved' : 'Available'}
                         </span>
                       ) : (
                         <span className="text-xs text-gray-500 bg-gray-500/10 px-2 py-0.5 rounded">
@@ -536,7 +538,9 @@ function ClaimModal({
                       )}
                     </div>
                     <p className={cn("text-sm mt-1", !session0Available ? "text-gray-600" : "text-gray-400")}>
-                      Character state before campaign began.
+                      {session0FromSnapshot
+                        ? 'Pre-campaign state was saved - get your copy.'
+                        : 'Character state before campaign began.'}
                     </p>
                     {!session0Available && exportStatus?.session0Reason && (
                       <div className="flex items-start gap-2 mt-2 p-2 bg-amber-500/5 rounded text-xs text-amber-400">

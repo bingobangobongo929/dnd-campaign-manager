@@ -256,13 +256,45 @@ export function getSyncedFieldsFromCampaign(
 }
 
 /**
- * Checks if a campaign has session notes (determines Session 0 availability).
- * Session 0 is only available if no session notes exist yet.
+ * Checks Session 0 availability for a character.
+ *
+ * Session 0 is available if:
+ * 1. A Session 0 snapshot already exists (can always retrieve it), OR
+ * 2. No session notes exist yet (can still capture current state as Session 0)
+ *
+ * Session 0 is NOT available if:
+ * - No snapshot was ever taken AND the campaign already has session history
+ *   (the window to capture the pre-campaign state has passed)
  */
 export async function checkSession0Availability(
   supabase: ReturnType<typeof import('@supabase/supabase-js').createClient<Database>>,
-  campaignId: string
-): Promise<{ available: boolean; reason?: string }> {
+  campaignId: string,
+  characterId?: string
+): Promise<{ available: boolean; reason?: string; existingSnapshotId?: string }> {
+  // First, check if a Session 0 snapshot already exists for this character
+  if (characterId) {
+    const { data: existingSnapshot } = await supabase
+      .from('character_snapshots')
+      .select('id')
+      .eq('campaign_id', campaignId)
+      .eq('campaign_character_id', characterId)
+      .eq('snapshot_type', 'session_0')
+      .limit(1)
+      .single()
+
+    if (existingSnapshot) {
+      // Session 0 snapshot exists - always available to retrieve
+      return {
+        available: true,
+        existingSnapshotId: (existingSnapshot as { id: string }).id,
+        reason: 'Session 0 snapshot is saved and available.'
+      }
+    }
+  }
+
+  // No existing snapshot - check if we can still create one
+  // (only possible if no session notes exist yet)
+
   // Check if any sessions have notes
   const { data: sessions, error } = await supabase
     .from('sessions')
@@ -279,7 +311,7 @@ export async function checkSession0Availability(
   if (sessions && sessions.length > 0) {
     return {
       available: false,
-      reason: 'Campaign already has session history. Session 0 snapshot is only available before the first session notes are created.'
+      reason: 'No Session 0 snapshot was captured before the campaign began. The window to save the pre-campaign character state has passed.'
     }
   }
 
@@ -308,17 +340,18 @@ export async function checkSession0Availability(
       if (notes && notes.length > 0) {
         return {
           available: false,
-          reason: 'Campaign already has player session notes.'
+          reason: 'No Session 0 snapshot was captured before the campaign began. The window to save the pre-campaign character state has passed.'
         }
       }
     }
   } else if (playerNotes && playerNotes.length > 0) {
     return {
       available: false,
-      reason: 'Campaign already has player session notes.'
+      reason: 'No Session 0 snapshot was captured before the campaign began. The window to save the pre-campaign character state has passed.'
     }
   }
 
+  // No session history - can still capture Session 0
   return { available: true }
 }
 

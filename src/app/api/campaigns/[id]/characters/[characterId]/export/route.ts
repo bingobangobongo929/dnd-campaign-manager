@@ -75,7 +75,7 @@ export async function GET(
     }
 
     // Check Session 0 availability
-    const session0Check = await checkSession0Availability(supabase, campaignId)
+    const session0Check = await checkSession0Availability(supabase, campaignId, characterId)
 
     // Get current session number
     const currentSessionNumber = await getCurrentSessionNumber(supabase, campaignId)
@@ -99,6 +99,7 @@ export async function GET(
     return NextResponse.json({
       session0Available: session0Check.available,
       session0Reason: session0Check.reason,
+      session0FromSnapshot: !!session0Check.existingSnapshotId,
       currentSessionNumber,
       existingExports,
       hasLinkedCharacter: !!linkedVaultChar,
@@ -180,14 +181,28 @@ export async function POST(
       return NextResponse.json({ error: 'You cannot export this character' }, { status: 403 })
     }
 
-    // For session_0, verify it's still available
+    // For session_0, verify it's still available and get snapshot data if exists
+    let session0SnapshotData: typeof character | null = null
     if (exportType === 'session_0') {
-      const session0Check = await checkSession0Availability(supabase, campaignId)
+      const session0Check = await checkSession0Availability(supabase, campaignId, characterId)
       if (!session0Check.available) {
         return NextResponse.json({
           error: 'Session 0 snapshot is no longer available',
           reason: session0Check.reason,
         }, { status: 400 })
+      }
+
+      // If there's an existing snapshot, use its data instead of current character state
+      if (session0Check.existingSnapshotId) {
+        const { data: snapshot } = await supabase
+          .from('character_snapshots')
+          .select('snapshot_data')
+          .eq('id', session0Check.existingSnapshotId)
+          .single()
+
+        if (snapshot?.snapshot_data) {
+          session0SnapshotData = snapshot.snapshot_data as typeof character
+        }
       }
     }
 
@@ -265,7 +280,12 @@ export async function POST(
     // - Otherwise, we'll set lineage to the new character's own ID after creation
     const lineageId = existingLinked?.character_lineage_id || null
 
-    const vaultData = campaignToVaultCharacter(character, {
+    // Use Session 0 snapshot data if available, otherwise current character
+    const characterDataToExport = (exportType === 'session_0' && session0SnapshotData)
+      ? session0SnapshotData
+      : character
+
+    const vaultData = campaignToVaultCharacter(characterDataToExport, {
       userId: user.id,
       sourceType,
       campaignId,
@@ -332,7 +352,7 @@ export async function POST(
       vault_character_id: newVaultChar.id,
       campaign_id: campaignId,
       campaign_character_id: characterId,
-      snapshot_data: character,
+      snapshot_data: characterDataToExport,
       snapshot_type: exportType === 'session_0' ? 'session_0' :
                      exportType === 'linked' ? 'join' : 'current_state',
       snapshot_name: exportType === 'session_0' ? 'Session 0 - Character State Before Campaign' :
