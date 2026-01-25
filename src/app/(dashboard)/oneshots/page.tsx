@@ -18,6 +18,8 @@ import {
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
+import { ContentBadge } from '@/components/ui'
+import { getOneshotBadge } from '@/lib/content-badges'
 import { OneshotsPageMobile } from './page.mobile'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { formatDate } from '@/lib/utils'
@@ -434,37 +436,46 @@ export default function OneshotsPage() {
               <section>
                 <h3 className="text-lg font-semibold text-white mb-4">Active One-Shots</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                  {activeOneshots.slice(0, 5).map((oneshot) => (
-                    <Link
-                      key={oneshot.id}
-                      href={`/oneshots/${oneshot.id}`}
-                      className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-green-500/40 transition-all aspect-[2/3]"
-                    >
-                      {oneshot.image_url ? (
-                        <>
-                          <Image
-                            src={oneshot.image_url}
-                            alt={oneshot.title}
-                            fill
-                            className="object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-                        </>
-                      ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-green-900/30 to-gray-900 flex items-center justify-center">
-                          <Scroll className="w-16 h-16 text-green-400/30" />
+                  {activeOneshots.slice(0, 5).map((oneshot) => {
+                    const badge = getOneshotBadge(oneshot, user?.id || '')
+                    return (
+                      <Link
+                        key={oneshot.id}
+                        href={`/oneshots/${oneshot.id}`}
+                        className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-green-500/40 transition-all aspect-[2/3]"
+                      >
+                        {oneshot.image_url ? (
+                          <>
+                            <Image
+                              src={oneshot.image_url}
+                              alt={oneshot.title}
+                              fill
+                              className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-green-900/30 to-gray-900 flex items-center justify-center">
+                            <Scroll className="w-16 h-16 text-green-400/30" />
+                          </div>
+                        )}
+                        <ContentBadge
+                          variant={badge.primary}
+                          size="sm"
+                          progress={badge.progress}
+                          className="absolute top-3 left-3"
+                        />
+                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                          <span className="inline-block px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-green-500/20 text-green-300 mb-2">
+                            {oneshot.game_system}
+                          </span>
+                          <h4 className="font-semibold text-white text-sm line-clamp-2 group-hover:text-green-300 transition-colors">
+                            {oneshot.title}
+                          </h4>
                         </div>
-                      )}
-                      <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <span className="inline-block px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-green-500/20 text-green-300 mb-2">
-                          {oneshot.game_system}
-                        </span>
-                        <h4 className="font-semibold text-white text-sm line-clamp-2 group-hover:text-green-300 transition-colors">
-                          {oneshot.title}
-                        </h4>
-                      </div>
-                    </Link>
-                  ))}
+                      </Link>
+                    )
+                  })}
                 </div>
               </section>
             )}
@@ -581,9 +592,11 @@ export default function OneshotsPage() {
                     <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-12">
                       {/* Genre Tags */}
                       <div className="flex flex-wrap items-center gap-2 mb-4">
-                        <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-full bg-green-500 text-black">
-                          Featured
-                        </span>
+                        <ContentBadge
+                          variant={getOneshotBadge(featuredOneshot, user?.id || '').primary}
+                          size="lg"
+                          progress={getOneshotBadge(featuredOneshot, user?.id || '').progress}
+                        />
                         <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300">
                           {featuredOneshot.game_system}
                         </span>
@@ -648,73 +661,69 @@ export default function OneshotsPage() {
               <section>
                 <h3 className="text-xl font-semibold text-white mb-6">All One-Shots</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                  {activeOneshots.map((oneshot) => (
-                    <Link
-                      key={oneshot.id}
-                      href={`/oneshots/${oneshot.id}`}
-                      className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-green-500/40 transition-all aspect-[2/3]"
-                    >
-                      {oneshot.image_url ? (
-                        <>
-                          <Image
-                            src={oneshot.image_url}
-                            alt={oneshot.title}
-                            fill
-                            className="object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-                        </>
-                      ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-green-900/30 to-gray-900 flex items-center justify-center">
-                          <Scroll className="w-16 h-16 text-green-400/30" />
-                        </div>
-                      )}
-
-                      {/* Genre tag at top */}
-                      {getTagsForOneshot(oneshot)[0] && (
-                        <div className="absolute top-3 left-3">
-                          <span
-                            className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded"
-                            style={{
-                              backgroundColor: `${getTagsForOneshot(oneshot)[0].color}40`,
-                              color: getTagsForOneshot(oneshot)[0].color
-                            }}
-                          >
-                            {getTagsForOneshot(oneshot)[0].name}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Run count badge */}
-                      {oneshotRuns[oneshot.id]?.length > 0 && (
-                        <div className="absolute top-3 right-3">
-                          <span className="px-2 py-0.5 text-[10px] font-medium bg-black/60 text-white rounded">
-                            {oneshotRuns[oneshot.id].length}x run
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Content at bottom */}
-                      <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <span className="inline-block px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-green-500/20 text-green-300 mb-2">
-                          {oneshot.game_system}
-                        </span>
-                        <h4 className="font-semibold text-white text-sm line-clamp-2 group-hover:text-green-300 transition-colors">
-                          {oneshot.title}
-                        </h4>
-                        {oneshot.tagline && (
-                          <p className="text-[11px] text-gray-400 mt-1 line-clamp-1 italic">
-                            {oneshot.tagline}
-                          </p>
+                  {activeOneshots.map((oneshot) => {
+                    const badge = getOneshotBadge(oneshot, user?.id || '')
+                    return (
+                      <Link
+                        key={oneshot.id}
+                        href={`/oneshots/${oneshot.id}`}
+                        className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-green-500/40 transition-all aspect-[2/3]"
+                      >
+                        {oneshot.image_url ? (
+                          <>
+                            <Image
+                              src={oneshot.image_url}
+                              alt={oneshot.title}
+                              fill
+                              className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-green-900/30 to-gray-900 flex items-center justify-center">
+                            <Scroll className="w-16 h-16 text-green-400/30" />
+                          </div>
                         )}
-                        <div className="flex items-center gap-2 mt-2 text-[10px] text-gray-500">
-                          <span>Lvl {oneshot.level || '?'}</span>
-                          <span>•</span>
-                          <span>{oneshot.player_count_min}-{oneshot.player_count_max} players</span>
+
+                        {/* Badge at top left */}
+                        <ContentBadge
+                          variant={badge.primary}
+                          size="sm"
+                          progress={badge.progress}
+                          className="absolute top-3 left-3"
+                        />
+
+                        {/* Run count badge */}
+                        {oneshotRuns[oneshot.id]?.length > 0 && (
+                          <div className="absolute top-3 right-3">
+                            <span className="px-2 py-0.5 text-[10px] font-medium bg-black/60 text-white rounded">
+                              {oneshotRuns[oneshot.id].length}x run
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Content at bottom */}
+                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                          <span className="inline-block px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-green-500/20 text-green-300 mb-2">
+                            {oneshot.game_system}
+                          </span>
+                          <h4 className="font-semibold text-white text-sm line-clamp-2 group-hover:text-green-300 transition-colors">
+                            {oneshot.title}
+                          </h4>
+                          {oneshot.tagline && (
+                            <p className="text-[11px] text-gray-400 mt-1 line-clamp-1 italic">
+                              {oneshot.tagline}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 mt-2 text-[10px] text-gray-500">
+                            <span>Lvl {oneshot.level || '?'}</span>
+                            <span>•</span>
+                            <span>{oneshot.player_count_min}-{oneshot.player_count_max} players</span>
+                          </div>
                         </div>
-                      </div>
-                    </Link>
-                  ))}
+                      </Link>
+                    )
+                  })}
 
                   {/* Create New Card */}
                   <Link

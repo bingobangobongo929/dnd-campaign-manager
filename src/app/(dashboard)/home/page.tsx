@@ -23,8 +23,9 @@ import {
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
-import { OnboardingTour } from '@/components/ui'
+import { OnboardingTour, ContentBadge } from '@/components/ui'
 import { FounderBadge } from '@/components/membership'
+import { getCampaignBadge, getOneshotBadge, getCharacterBadge } from '@/lib/content-badges'
 import { MobileLayout, MobileSectionHeader, MobileSearchBar } from '@/components/mobile'
 import { useSupabase, useUser, useIsMobile, useMembership } from '@/hooks'
 import { useAppStore } from '@/store'
@@ -851,9 +852,11 @@ export default function HomePage() {
                 {/* Content Overlay */}
                 <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-10">
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-blue-300">
-                      Continue Playing
-                    </span>
+                    <ContentBadge
+                      variant={getCampaignBadge(featuredCampaign, user?.id || '').primary}
+                      size="lg"
+                      progress={getCampaignBadge(featuredCampaign, user?.id || '').progress}
+                    />
                     <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300">
                       {featuredCampaign.game_system}
                     </span>
@@ -898,37 +901,46 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {displayCampaigns.map((campaign) => (
-                <Link
-                  key={campaign.id}
-                  href={`/campaigns/${campaign.id}/dashboard`}
-                  className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-blue-500/30 transition-all"
-                >
-                  <div className="relative h-40">
-                    {campaign.image_url ? (
-                      <>
-                        <Image
-                          src={campaign.image_url}
-                          alt={campaign.name}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
-                      </>
-                    ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 to-gray-900 flex items-center justify-center">
-                        <Swords className="w-12 h-12 text-blue-400/30" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <h4 className="font-semibold text-white truncate group-hover:text-blue-400 transition-colors">
-                      {campaign.name}
-                    </h4>
-                    <p className="text-xs text-gray-500 mt-1">{campaign.game_system}</p>
-                  </div>
-                </Link>
-              ))}
+              {displayCampaigns.map((campaign) => {
+                const badge = getCampaignBadge(campaign, user?.id || '')
+                return (
+                  <Link
+                    key={campaign.id}
+                    href={`/campaigns/${campaign.id}/dashboard`}
+                    className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-blue-500/30 transition-all"
+                  >
+                    <div className="relative h-40">
+                      {campaign.image_url ? (
+                        <>
+                          <Image
+                            src={campaign.image_url}
+                            alt={campaign.name}
+                            fill
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 to-gray-900 flex items-center justify-center">
+                          <Swords className="w-12 h-12 text-blue-400/30" />
+                        </div>
+                      )}
+                      <ContentBadge
+                        variant={badge.primary}
+                        size="sm"
+                        progress={badge.progress}
+                        className="absolute top-2 left-2"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <h4 className="font-semibold text-white truncate group-hover:text-blue-400 transition-colors">
+                        {campaign.name}
+                      </h4>
+                      <p className="text-xs text-gray-500 mt-1">{campaign.game_system}</p>
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
           )}
         </section>
@@ -953,7 +965,7 @@ export default function HomePage() {
                 <Link
                   key={campaign.id}
                   href={`/campaigns/${campaign.id}/dashboard`}
-                  className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-emerald-500/30 transition-all"
+                  className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-blue-500/30 transition-all"
                 >
                   <div className="relative h-32">
                     {campaign.image_url ? (
@@ -967,16 +979,18 @@ export default function HomePage() {
                         <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
                       </>
                     ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/30 to-gray-900 flex items-center justify-center">
-                        <Swords className="w-12 h-12 text-emerald-400/30" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 to-gray-900 flex items-center justify-center">
+                        <Swords className="w-12 h-12 text-blue-400/30" />
                       </div>
                     )}
-                    <span className="absolute top-2 left-2 px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      Playing
-                    </span>
+                    <ContentBadge
+                      variant="playing"
+                      size="sm"
+                      className="absolute top-2 left-2"
+                    />
                   </div>
                   <div className="p-4">
-                    <h4 className="font-semibold text-white truncate group-hover:text-emerald-400 transition-colors">
+                    <h4 className="font-semibold text-white truncate group-hover:text-blue-400 transition-colors">
                       {campaign.name}
                     </h4>
                     <p className="text-xs text-gray-500 mt-1">{campaign.game_system}</p>
@@ -1027,6 +1041,11 @@ export default function HomePage() {
                   {/* Content Overlay */}
                   <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
                     <div className="flex items-center gap-2 mb-2">
+                      <ContentBadge
+                        variant={getCampaignBadge(featuredAdventure, user?.id || '').primary}
+                        size="lg"
+                        progress={getCampaignBadge(featuredAdventure, user?.id || '').progress}
+                      />
                       <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-300">
                         {(featuredAdventure as Campaign & { estimated_sessions?: number }).estimated_sessions || '3-9'} Sessions
                       </span>
@@ -1053,37 +1072,46 @@ export default function HomePage() {
             )}
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {displayAdventures.map((adventure) => (
-                <Link
-                  key={adventure.id}
-                  href={`/campaigns/${adventure.id}/dashboard`}
-                  className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-amber-500/30 transition-all"
-                >
-                  <div className="relative h-32">
-                    {adventure.image_url ? (
-                      <>
-                        <Image
-                          src={adventure.image_url}
-                          alt={adventure.name}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
-                      </>
-                    ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
-                        <Compass className="w-10 h-10 text-amber-400/30" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-3">
-                    <h4 className="font-semibold text-white truncate group-hover:text-amber-400 transition-colors text-sm">
-                      {adventure.name}
-                    </h4>
-                    <p className="text-xs text-gray-500 mt-1">{adventure.game_system}</p>
-                  </div>
-                </Link>
-              ))}
+              {displayAdventures.map((adventure) => {
+                const badge = getCampaignBadge(adventure, user?.id || '')
+                return (
+                  <Link
+                    key={adventure.id}
+                    href={`/campaigns/${adventure.id}/dashboard`}
+                    className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-amber-500/30 transition-all"
+                  >
+                    <div className="relative h-32">
+                      {adventure.image_url ? (
+                        <>
+                          <Image
+                            src={adventure.image_url}
+                            alt={adventure.name}
+                            fill
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
+                          <Compass className="w-10 h-10 text-amber-400/30" />
+                        </div>
+                      )}
+                      <ContentBadge
+                        variant={badge.primary}
+                        size="sm"
+                        progress={badge.progress}
+                        className="absolute top-2 left-2"
+                      />
+                    </div>
+                    <div className="p-3">
+                      <h4 className="font-semibold text-white truncate group-hover:text-amber-400 transition-colors text-sm">
+                        {adventure.name}
+                      </h4>
+                      <p className="text-xs text-gray-500 mt-1">{adventure.game_system}</p>
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
           </section>
         )}
@@ -1151,9 +1179,11 @@ export default function HomePage() {
                   {/* Content Overlay */}
                   <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-10">
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-green-300">
-                        Continue One-Shot
-                      </span>
+                      <ContentBadge
+                        variant={getOneshotBadge(featuredOneshot, user?.id || '').primary}
+                        size="lg"
+                        progress={getOneshotBadge(featuredOneshot, user?.id || '').progress}
+                      />
                       <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300">
                         {featuredOneshot.game_system}
                       </span>
@@ -1177,40 +1207,49 @@ export default function HomePage() {
             )}
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {oneshots.map((oneshot) => (
-                <Link
-                  key={oneshot.id}
-                  href={`/oneshots/${oneshot.id}`}
-                  className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-green-500/30 transition-all aspect-[2/3]"
-                >
-                  {oneshot.image_url ? (
-                    <>
-                      <Image
-                        src={oneshot.image_url}
-                        alt={oneshot.title}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-                    </>
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-green-900/30 to-gray-900 flex items-center justify-center">
-                      <Scroll className="w-16 h-16 text-green-400/30" />
-                    </div>
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <span className="inline-block px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-green-500/20 text-green-300 mb-2">
-                      {oneshot.game_system}
-                    </span>
-                    <h4 className="font-semibold text-white text-sm line-clamp-2 group-hover:text-green-300 transition-colors">
-                      {oneshot.title}
-                    </h4>
-                    {oneshot.tagline && (
-                      <p className="text-xs text-gray-400 mt-1 line-clamp-1">{oneshot.tagline}</p>
+              {oneshots.map((oneshot) => {
+                const badge = getOneshotBadge(oneshot, user?.id || '')
+                return (
+                  <Link
+                    key={oneshot.id}
+                    href={`/oneshots/${oneshot.id}`}
+                    className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-green-500/30 transition-all aspect-[2/3]"
+                  >
+                    {oneshot.image_url ? (
+                      <>
+                        <Image
+                          src={oneshot.image_url}
+                          alt={oneshot.title}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-green-900/30 to-gray-900 flex items-center justify-center">
+                        <Scroll className="w-16 h-16 text-green-400/30" />
+                      </div>
                     )}
-                  </div>
-                </Link>
-              ))}
+                    <ContentBadge
+                      variant={badge.primary}
+                      size="sm"
+                      progress={badge.progress}
+                      className="absolute top-2 left-2"
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                      <span className="inline-block px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-green-500/20 text-green-300 mb-2">
+                        {oneshot.game_system}
+                      </span>
+                      <h4 className="font-semibold text-white text-sm line-clamp-2 group-hover:text-green-300 transition-colors">
+                        {oneshot.title}
+                      </h4>
+                      {oneshot.tagline && (
+                        <p className="text-xs text-gray-400 mt-1 line-clamp-1">{oneshot.tagline}</p>
+                      )}
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
             </>
           )}
@@ -1255,9 +1294,10 @@ export default function HomePage() {
                 {/* Content Overlay */}
                 <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-10">
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-purple-300">
-                      Continue Your Story
-                    </span>
+                    <ContentBadge
+                      variant={getCharacterBadge(featuredCharacter).primary}
+                      size="lg"
+                    />
                     {featuredCharacter.status && (
                       <span
                         className="px-3 py-1 text-xs font-medium rounded-full text-white"
@@ -1305,39 +1345,47 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {characters.map((character) => (
-                <Link
-                  key={character.id}
-                  href={`/vault/${character.id}`}
-                  className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/30 transition-all aspect-[3/4]"
-                >
-                  {character.detail_image_url || character.image_url ? (
-                    <>
-                      <Image
-                        src={character.detail_image_url || character.image_url!}
-                        alt={character.name}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                    </>
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
-                      <span className="text-4xl font-bold text-purple-400/40">
-                        {getInitials(character.name)}
-                      </span>
+              {characters.map((character) => {
+                const badge = getCharacterBadge(character)
+                return (
+                  <Link
+                    key={character.id}
+                    href={`/vault/${character.id}`}
+                    className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/30 transition-all aspect-[3/4]"
+                  >
+                    {character.detail_image_url || character.image_url ? (
+                      <>
+                        <Image
+                          src={character.detail_image_url || character.image_url!}
+                          alt={character.name}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                        <span className="text-4xl font-bold text-purple-400/40">
+                          {getInitials(character.name)}
+                        </span>
+                      </div>
+                    )}
+                    <ContentBadge
+                      variant={badge.primary}
+                      size="sm"
+                      className="absolute top-2 left-2"
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                      <h4 className="font-semibold text-white truncate text-sm group-hover:text-purple-300 transition-colors">
+                        {character.name}
+                      </h4>
+                      <p className="text-xs text-gray-400 truncate">
+                        {[character.race, character.class].filter(Boolean).join(' ') || 'Adventurer'}
+                      </p>
                     </div>
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <h4 className="font-semibold text-white truncate text-sm group-hover:text-purple-300 transition-colors">
-                      {character.name}
-                    </h4>
-                    <p className="text-xs text-gray-400 truncate">
-                      {[character.race, character.class].filter(Boolean).join(' ') || 'Adventurer'}
-                    </p>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                )
+              })}
             </div>
           )}
         </section>

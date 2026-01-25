@@ -14,6 +14,8 @@ import {
 import { formatDate } from '@/lib/utils'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
+import { ContentBadge } from '@/components/ui'
+import { getCampaignBadge } from '@/lib/content-badges'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import type { Campaign, ContentSave } from '@/types/database'
 import { TabNavigation, type ContentTab, ADVENTURES_TABS } from '@/components/navigation'
@@ -224,52 +226,57 @@ export default function AdventuresPage() {
                   </button>
                 </div>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {activeAdventures.slice(0, 3).map((adventure) => (
-                    <Link
-                      key={adventure.id}
-                      href={`/campaigns/${adventure.id}/dashboard`}
-                      className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/40 transition-all"
-                    >
-                      <div className="relative h-40 overflow-hidden">
-                        {adventure.image_url ? (
-                          <>
-                            <Image
-                              src={adventure.image_url}
-                              alt={adventure.name}
-                              fill
-                              className="object-cover"
+                  {activeAdventures.slice(0, 3).map((adventure) => {
+                    const badge = getCampaignBadge(adventure, user?.id || '')
+                    return (
+                      <Link
+                        key={adventure.id}
+                        href={`/campaigns/${adventure.id}/dashboard`}
+                        className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-amber-500/40 transition-all"
+                      >
+                        <div className="relative h-40 overflow-hidden">
+                          {adventure.image_url ? (
+                            <>
+                              <Image
+                                src={adventure.image_url}
+                                alt={adventure.name}
+                                fill
+                                className="object-cover"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent" />
+                            </>
+                          ) : (
+                            <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
+                              <Compass className="w-12 h-12 text-amber-400/30" />
+                            </div>
+                          )}
+                          <div className="absolute top-2 left-2 flex gap-2">
+                            <ContentBadge
+                              variant={badge.primary}
+                              size="sm"
+                              progress={badge.progress}
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent" />
-                          </>
-                        ) : (
-                          <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
-                            <Compass className="w-12 h-12 text-amber-400/30" />
+                            {adventure.estimated_sessions && (
+                              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-black/60 text-gray-300">
+                                ~{adventure.estimated_sessions} sessions
+                              </span>
+                            )}
                           </div>
-                        )}
-                        <div className="absolute top-2 left-2 flex gap-2">
-                          <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                            Adventure
-                          </span>
-                          {adventure.estimated_sessions && (
-                            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-black/60 text-gray-300">
-                              ~{adventure.estimated_sessions} sessions
-                            </span>
+                        </div>
+                        <div className="p-4">
+                          <h4 className="font-semibold text-white truncate group-hover:text-amber-400 transition-colors">
+                            {adventure.name}
+                          </h4>
+                          <p className="text-xs text-gray-500 mt-1">{adventure.game_system}</p>
+                          {adventure.description && (
+                            <p className="text-sm text-gray-400 mt-2 line-clamp-2">
+                              {adventure.description}
+                            </p>
                           )}
                         </div>
-                      </div>
-                      <div className="p-4">
-                        <h4 className="font-semibold text-white truncate group-hover:text-purple-400 transition-colors">
-                          {adventure.name}
-                        </h4>
-                        <p className="text-xs text-gray-500 mt-1">{adventure.game_system}</p>
-                        {adventure.description && (
-                          <p className="text-sm text-gray-400 mt-2 line-clamp-2">
-                            {adventure.description}
-                          </p>
-                        )}
-                      </div>
-                    </Link>
-                  ))}
+                      </Link>
+                    )
+                  })}
                 </div>
               </section>
             )}
@@ -316,50 +323,54 @@ export default function AdventuresPage() {
               </div>
             ) : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredAdventures.map((adventure) => (
-                  <Link
-                    key={adventure.id}
-                    href={`/campaigns/${adventure.id}/dashboard`}
-                    className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-amber-500/40 transition-all"
-                  >
-                    <div className="relative h-48 overflow-hidden">
-                      {adventure.image_url ? (
-                        <>
-                          <Image
-                            src={adventure.image_url}
-                            alt={adventure.name}
-                            fill
-                            className="object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
-                        </>
-                      ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
-                          <Compass className="w-16 h-16 text-amber-400/30" />
-                        </div>
-                      )}
-                      <div className="absolute top-3 left-3 flex gap-2">
-                        <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                          Adventure
-                        </span>
+                {filteredAdventures.map((adventure) => {
+                  const badge = getCampaignBadge(adventure, user?.id || '')
+                  return (
+                    <Link
+                      key={adventure.id}
+                      href={`/campaigns/${adventure.id}/dashboard`}
+                      className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-amber-500/40 transition-all"
+                    >
+                      <div className="relative h-48 overflow-hidden">
+                        {adventure.image_url ? (
+                          <>
+                            <Image
+                              src={adventure.image_url}
+                              alt={adventure.name}
+                              fill
+                              className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 to-gray-900 flex items-center justify-center">
+                            <Compass className="w-16 h-16 text-amber-400/30" />
+                          </div>
+                        )}
+                        <ContentBadge
+                          variant={badge.primary}
+                          size="sm"
+                          progress={badge.progress}
+                          className="absolute top-3 left-3"
+                        />
                       </div>
-                    </div>
-                    <div className="p-5">
-                      <h4 className="font-display font-semibold text-lg text-white truncate group-hover:text-amber-400 transition-colors">
-                        {adventure.name}
-                      </h4>
-                      <p className="text-xs text-gray-500 mt-1">{adventure.game_system}</p>
-                      {adventure.description && (
-                        <p className="text-sm text-gray-400 mt-2 line-clamp-2">
-                          {adventure.description}
+                      <div className="p-5">
+                        <h4 className="font-display font-semibold text-lg text-white truncate group-hover:text-amber-400 transition-colors">
+                          {adventure.name}
+                        </h4>
+                        <p className="text-xs text-gray-500 mt-1">{adventure.game_system}</p>
+                        {adventure.description && (
+                          <p className="text-sm text-gray-400 mt-2 line-clamp-2">
+                            {adventure.description}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500 mt-3">
+                          Updated {formatDate(adventure.updated_at)}
                         </p>
-                      )}
-                      <p className="text-xs text-gray-500 mt-3">
-                        Updated {formatDate(adventure.updated_at)}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
+                      </div>
+                    </Link>
+                  )
+                })}
               </div>
             )}
           </div>

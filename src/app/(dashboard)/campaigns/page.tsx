@@ -18,7 +18,8 @@ import {
   Bookmark,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
-import { Modal, Input, Textarea, Dropdown, UnifiedImageModal } from '@/components/ui'
+import { Modal, Input, Textarea, Dropdown, UnifiedImageModal, ContentBadge } from '@/components/ui'
+import { getCampaignBadge } from '@/lib/content-badges'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { MobileLayout, MobileSectionHeader, MobileFAB } from '@/components/mobile'
@@ -381,9 +382,11 @@ export default function CampaignsPage() {
                     )}
                     <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-10">
                       <div className="flex items-center gap-2 mb-3">
-                        <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-full bg-purple-600 text-white">
-                          Continue Playing
-                        </span>
+                        <ContentBadge
+                          variant={getCampaignBadge(featuredCampaign, user?.id || '').primary}
+                          size="lg"
+                          progress={getCampaignBadge(featuredCampaign, user?.id || '').progress}
+                        />
                         <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300">
                           {featuredCampaign.game_system}
                         </span>
@@ -429,40 +432,46 @@ export default function CampaignsPage() {
                 </div>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* Skip first campaign as it's shown in the hero section */}
-                  {activeCampaigns.slice(1, 4).map((campaign) => (
-                    <Link
-                      key={campaign.id}
-                      href={`/campaigns/${campaign.id}/dashboard`}
-                      className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/40 transition-all"
-                    >
-                      <div className="relative h-32 overflow-hidden">
-                        {campaign.image_url ? (
-                          <>
-                            <Image
-                              src={campaign.image_url}
-                              alt={campaign.name}
-                              fill
-                              className="object-cover"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent" />
-                          </>
-                        ) : (
-                          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
-                            <Swords className="w-10 h-10 text-purple-400/30" />
-                          </div>
-                        )}
-                        <span className="absolute top-2 left-2 px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                          Running
-                        </span>
-                      </div>
-                      <div className="p-3">
-                        <h4 className="font-medium text-white truncate group-hover:text-purple-400 transition-colors">
-                          {campaign.name}
-                        </h4>
-                        <p className="text-xs text-gray-500">{campaign.game_system}</p>
-                      </div>
-                    </Link>
-                  ))}
+                  {activeCampaigns.slice(1, 4).map((campaign) => {
+                    const badge = getCampaignBadge(campaign, user?.id || '')
+                    return (
+                      <Link
+                        key={campaign.id}
+                        href={`/campaigns/${campaign.id}/dashboard`}
+                        className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/40 transition-all"
+                      >
+                        <div className="relative h-32 overflow-hidden">
+                          {campaign.image_url ? (
+                            <>
+                              <Image
+                                src={campaign.image_url}
+                                alt={campaign.name}
+                                fill
+                                className="object-cover"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent" />
+                            </>
+                          ) : (
+                            <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                              <Swords className="w-10 h-10 text-purple-400/30" />
+                            </div>
+                          )}
+                          <ContentBadge
+                            variant={badge.primary}
+                            size="sm"
+                            progress={badge.progress}
+                            className="absolute top-2 left-2"
+                          />
+                        </div>
+                        <div className="p-3">
+                          <h4 className="font-medium text-white truncate group-hover:text-purple-400 transition-colors">
+                            {campaign.name}
+                          </h4>
+                          <p className="text-xs text-gray-500">{campaign.game_system}</p>
+                        </div>
+                      </Link>
+                    )
+                  })}
                   {joinedCampaigns.slice(0, 3 - Math.min(activeCampaigns.length - 1, 3)).map(({ membership, campaign }) => (
                     <Link
                       key={membership.id}
@@ -485,9 +494,11 @@ export default function CampaignsPage() {
                             <Swords className="w-10 h-10 text-purple-400/30" />
                           </div>
                         )}
-                        <span className="absolute top-2 left-2 px-2 py-0.5 text-xs font-medium rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                          Playing
-                        </span>
+                        <ContentBadge
+                          variant="playing"
+                          size="sm"
+                          className="absolute top-2 left-2"
+                        />
                       </div>
                       <div className="p-3">
                         <h4 className="font-medium text-white truncate group-hover:text-purple-400 transition-colors">
@@ -959,9 +970,11 @@ export default function CampaignsPage() {
                     {/* Content Overlay */}
                     <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-12">
                       <div className="flex items-center gap-2 mb-4">
-                        <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-full bg-purple-600 text-white">
-                          Continue Playing
-                        </span>
+                        <ContentBadge
+                          variant={getCampaignBadge(featuredCampaign, user?.id || '').primary}
+                          size="lg"
+                          progress={getCampaignBadge(featuredCampaign, user?.id || '').progress}
+                        />
                         <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300">
                           {featuredCampaign.game_system}
                         </span>
@@ -1011,73 +1024,83 @@ export default function CampaignsPage() {
               <section>
                 <h3 className="text-xl font-semibold text-white mb-6">All Campaigns</h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredCampaigns.map((campaign) => (
-                    <div key={campaign.id} className="group relative">
-                      <Link
-                        href={`/campaigns/${campaign.id}/dashboard`}
-                        className="relative block rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/40 transition-all"
-                      >
-                        {/* Large Image */}
-                        <div className="relative h-48 sm:h-56 overflow-hidden">
-                          {campaign.image_url ? (
-                            <>
-                              <Image
-                                src={campaign.image_url}
-                                alt={campaign.name}
-                                fill
-                                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  {filteredCampaigns.map((campaign) => {
+                    const badge = getCampaignBadge(campaign, user?.id || '')
+                    return (
+                      <div key={campaign.id} className="group relative">
+                        <Link
+                          href={`/campaigns/${campaign.id}/dashboard`}
+                          className="relative block rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/40 transition-all"
+                        >
+                          {/* Large Image */}
+                          <div className="relative h-48 sm:h-56 overflow-hidden">
+                            {campaign.image_url ? (
+                              <>
+                                <Image
+                                  src={campaign.image_url}
+                                  alt={campaign.name}
+                                  fill
+                                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
+                              </>
+                            ) : (
+                              <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                                <Swords className="w-16 h-16 text-purple-400/30" />
+                              </div>
+                            )}
+
+                            {/* Badge and game system */}
+                            <div className="absolute top-3 left-3 flex gap-2">
+                              <ContentBadge
+                                variant={badge.primary}
+                                size="sm"
+                                progress={badge.progress}
                               />
-                              <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
-                            </>
-                          ) : (
-                            <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
-                              <Swords className="w-16 h-16 text-purple-400/30" />
                             </div>
-                          )}
-
-                          {/* Game system badge */}
-                          <div className="absolute top-3 left-3">
-                            <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-black/60 backdrop-blur-sm text-purple-300 border border-purple-500/30">
-                              {campaign.game_system}
-                            </span>
+                            <div className="absolute top-3 right-12">
+                              <span className="px-2.5 py-1 text-xs font-medium rounded-lg bg-black/60 backdrop-blur-sm text-gray-300">
+                                {campaign.game_system}
+                              </span>
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Content */}
-                        <div className="p-5">
-                          <h4 className="font-display font-semibold text-lg text-white truncate group-hover:text-purple-400 transition-colors">
-                            {campaign.name}
-                          </h4>
-                          {campaign.description && (
-                            <p className="text-sm text-gray-400 mt-2 line-clamp-2">
-                              {campaign.description}
+                          {/* Content */}
+                          <div className="p-5">
+                            <h4 className="font-display font-semibold text-lg text-white truncate group-hover:text-purple-400 transition-colors">
+                              {campaign.name}
+                            </h4>
+                            {campaign.description && (
+                              <p className="text-sm text-gray-400 mt-2 line-clamp-2">
+                                {campaign.description}
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-500 mt-3">
+                              Updated {formatDate(campaign.updated_at)}
                             </p>
-                          )}
-                          <p className="text-xs text-gray-500 mt-3">
-                            Updated {formatDate(campaign.updated_at)}
-                          </p>
-                        </div>
-                      </Link>
+                          </div>
+                        </Link>
 
-                      {/* Edit/Delete buttons */}
-                      <div className="absolute top-3 right-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        <button
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditModal(campaign) }}
-                          className="p-2 bg-black/70 backdrop-blur-sm rounded-lg hover:bg-purple-500 transition-colors"
-                          title="Edit"
-                        >
-                          <Edit className="w-3.5 h-3.5 text-white" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(campaign.id) }}
-                          className="p-2 bg-black/70 backdrop-blur-sm rounded-lg hover:bg-red-500 transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 text-white" />
-                        </button>
+                        {/* Edit/Delete buttons */}
+                        <div className="absolute top-3 right-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                          <button
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditModal(campaign) }}
+                            className="p-2 bg-black/70 backdrop-blur-sm rounded-lg hover:bg-purple-500 transition-colors"
+                            title="Edit"
+                          >
+                            <Edit className="w-3.5 h-3.5 text-white" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(campaign.id) }}
+                            className="p-2 bg-black/70 backdrop-blur-sm rounded-lg hover:bg-red-500 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-white" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
 
                   {/* Create New Card */}
                   <Link
