@@ -179,9 +179,10 @@ export default function HomePage() {
       .is('user_id', null)
 
     if (invites) {
-      const validInvites = invites
-        .filter((i: { campaign: Campaign | null }) => i.campaign)
-        .map((i: { id: string; campaign: Campaign }) => ({ id: i.id, campaign: i.campaign }))
+      type InviteRow = { id: string; campaign: Campaign | null }
+      const validInvites = (invites as unknown as InviteRow[])
+        .filter((i) => i.campaign !== null)
+        .map((i) => ({ id: i.id, campaign: i.campaign as Campaign }))
       setPendingInvites(validInvites)
     }
 
@@ -730,7 +731,15 @@ export default function HomePage() {
 
                 const name = 'title' in item ? item.title : item.name
                 const Icon = type === 'character' ? BookOpen : type === 'oneshot' ? Scroll : type === 'adventure' ? Compass : Swords
-                const colorClass = type === 'character' ? 'purple' : type === 'oneshot' ? 'green' : type === 'adventure' ? 'amber' : 'blue'
+
+                // Use explicit classes for Tailwind to include them
+                const colors = {
+                  character: { bg: 'bg-purple-500/20', text: 'text-purple-400', hover: 'hover:border-purple-500/30', bar: 'bg-purple-500/60' },
+                  oneshot: { bg: 'bg-green-500/20', text: 'text-green-400', hover: 'hover:border-green-500/30', bar: 'bg-green-500/60' },
+                  adventure: { bg: 'bg-amber-500/20', text: 'text-amber-400', hover: 'hover:border-amber-500/30', bar: 'bg-amber-500/60' },
+                  campaign: { bg: 'bg-blue-500/20', text: 'text-blue-400', hover: 'hover:border-blue-500/30', bar: 'bg-blue-500/60' },
+                }
+                const color = colors[type]
 
                 return (
                   <Link
@@ -738,15 +747,15 @@ export default function HomePage() {
                     href={href}
                     className={cn(
                       "group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] transition-all p-4",
-                      `hover:border-${colorClass}-500/30`
+                      color.hover
                     )}
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 rounded-lg bg-${colorClass}-500/20 flex items-center justify-center flex-shrink-0`}>
-                        <Icon className={`w-5 h-5 text-${colorClass}-400`} />
+                      <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0", color.bg)}>
+                        <Icon className={cn("w-5 h-5", color.text)} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <span className={`text-[10px] uppercase tracking-wider text-${colorClass}-400 font-medium`}>
+                        <span className={cn("text-[10px] uppercase tracking-wider font-medium", color.text)}>
                           {type === 'adventure' ? 'Adventure' : type.charAt(0).toUpperCase() + type.slice(1)} • Draft
                         </span>
                         <h4 className="font-medium text-white truncate mt-1 group-hover:text-white transition-colors">
@@ -755,7 +764,7 @@ export default function HomePage() {
                         <div className="mt-2">
                           <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
                             <div
-                              className={`h-full bg-${colorClass}-500/60 rounded-full`}
+                              className={cn("h-full rounded-full", color.bar)}
                               style={{ width: `${progress}%` }}
                             />
                           </div>
