@@ -152,29 +152,46 @@ export function useMembership() {
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId)
 
-      // Count active share links
-      const [campaignShares, characterShares, oneshotShares] = await Promise.all([
-        supabase
-          .from('campaign_shares')
-          .select('id, campaigns!inner(user_id)', { count: 'exact', head: true })
-          .eq('campaigns.user_id', userId)
-          .eq('is_active', true),
-        supabase
-          .from('character_shares')
-          .select('id, vault_characters!inner(user_id)', { count: 'exact', head: true })
-          .eq('vault_characters.user_id', userId)
-          .eq('is_active', true),
-        supabase
-          .from('oneshot_shares')
-          .select('id, oneshots!inner(user_id)', { count: 'exact', head: true })
-          .eq('oneshots.user_id', userId)
-          .eq('is_active', true),
+      // Count active share links - first get user's item IDs, then count shares
+      const [userCampaigns, userCharacters, userOneshots] = await Promise.all([
+        supabase.from('campaigns').select('id').eq('user_id', userId),
+        supabase.from('vault_characters').select('id').eq('user_id', userId),
+        supabase.from('oneshots').select('id').eq('user_id', userId),
       ])
 
-      const shareLinksCount =
-        (campaignShares.count || 0) +
-        (characterShares.count || 0) +
-        (oneshotShares.count || 0)
+      const campaignIds = (userCampaigns.data || []).map(c => c.id)
+      const vaultCharacterIds = (userCharacters.data || []).map(c => c.id)
+      const oneshotIds = (userOneshots.data || []).map(o => o.id)
+
+      // Now count shares for those items
+      let shareLinksCount = 0
+
+      if (campaignIds.length > 0) {
+        const { count } = await supabase
+          .from('campaign_shares')
+          .select('id', { count: 'exact', head: true })
+          .in('campaign_id', campaignIds)
+          .or('status.is.null,status.neq.deleted')
+        shareLinksCount += count || 0
+      }
+
+      if (vaultCharacterIds.length > 0) {
+        const { count } = await supabase
+          .from('character_shares')
+          .select('id', { count: 'exact', head: true })
+          .in('character_id', vaultCharacterIds)
+          .or('status.is.null,status.neq.deleted')
+        shareLinksCount += count || 0
+      }
+
+      if (oneshotIds.length > 0) {
+        const { count } = await supabase
+          .from('oneshot_shares')
+          .select('id', { count: 'exact', head: true })
+          .in('oneshot_id', oneshotIds)
+          .or('status.is.null,status.neq.deleted')
+        shareLinksCount += count || 0
+      }
 
       // Count public templates
       const { count: templateCount } = await supabase

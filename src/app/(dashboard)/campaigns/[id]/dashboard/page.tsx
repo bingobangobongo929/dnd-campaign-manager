@@ -62,7 +62,7 @@ export default function CampaignDashboardPage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
   const [playerNotes, setPlayerNotes] = useState<PlayerSessionNote[]>([])
-  const [members, setMembers] = useState<(CampaignMember & { user_settings?: { username: string | null } | null })[]>([])
+  const [members, setMembers] = useState<CampaignMember[]>([])
   const [tags, setTags] = useState<Tag[]>([])
   const [loreCount, setLoreCount] = useState(0)
   const [mapsCount, setMapsCount] = useState(0)
@@ -159,7 +159,7 @@ export default function CampaignDashboardPage() {
           .limit(10),
         supabase
           .from('campaign_members')
-          .select('*, user_settings(username)')
+          .select('*')
           .eq('campaign_id', campaignId)
           .eq('status', 'active'),
         supabase
