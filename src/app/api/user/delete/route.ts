@@ -21,15 +21,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Please type DELETE to confirm' }, { status: 400 })
     }
 
-    // Verify password by attempting to sign in
-    const { error: passwordError } = await supabase.auth.signInWithPassword({
-      email: user.email!,
-      password,
-    })
+    // Check if user is OAuth-only (no password identity)
+    const isOAuthOnly = user.app_metadata?.provider === 'discord' ||
+      (user.identities && user.identities.every(i => i.provider !== 'email'))
 
-    if (passwordError) {
-      return NextResponse.json({ error: 'Invalid password' }, { status: 401 })
+    // For users with passwords, require password verification
+    if (!isOAuthOnly) {
+      if (!password) {
+        return NextResponse.json({ error: 'Password is required' }, { status: 400 })
+      }
+
+      const { error: passwordError } = await supabase.auth.signInWithPassword({
+        email: user.email!,
+        password,
+      })
+
+      if (passwordError) {
+        return NextResponse.json({ error: 'Invalid password' }, { status: 401 })
+      }
     }
+    // For OAuth-only users, they're already authenticated via their provider
 
     // Check if 2FA is enabled and verify TOTP code if so
     const { data: userSettings } = await supabase

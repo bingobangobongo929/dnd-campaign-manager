@@ -5,10 +5,10 @@ import { sendEmail, twoFactorDisabledEmail } from '@/lib/email'
 import { checkRateLimit, rateLimits, getClientIP } from '@/lib/rate-limit'
 import { z } from 'zod'
 
-// Input validation schema
+// Input validation schema - password optional for OAuth-only users
 const disableSchema = z.object({
   code: z.string().length(6, 'Code must be 6 digits'),
-  password: z.string().min(1, 'Password is required'),
+  password: z.string().optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -50,20 +50,32 @@ export async function POST(request: NextRequest) {
 
     const { code, password } = parseResult.data
 
-    // Verify password
-    const { error: passwordError } = await supabase.auth.signInWithPassword({
-      email: user.email!,
-      password,
-    })
+    // Check if user is OAuth-only (no password identity)
+    // OAuth users have identities like 'discord', email/password users have 'email' identity
+    const isOAuthOnly = user.app_metadata?.provider === 'discord' ||
+      (user.identities && user.identities.every(i => i.provider !== 'email'))
 
-    if (passwordError) {
-      // Log failed password attempt
-      await logAuditEvent(supabase, user.id, '2fa_disable_password_failed', {
-        ip: getClientIP(request),
+    // For users with passwords, require password verification
+    if (!isOAuthOnly) {
+      if (!password) {
+        return NextResponse.json({ error: 'Password is required' }, { status: 400 })
+      }
+
+      const { error: passwordError } = await supabase.auth.signInWithPassword({
+        email: user.email!,
+        password,
       })
 
-      return NextResponse.json({ error: 'Invalid password' }, { status: 401 })
+      if (passwordError) {
+        // Log failed password attempt
+        await logAuditEvent(supabase, user.id, '2fa_disable_password_failed', {
+          ip: getClientIP(request),
+        })
+
+        return NextResponse.json({ error: 'Invalid password' }, { status: 401 })
+      }
     }
+    // For OAuth-only users, we just require the TOTP code (verified below)
 
     // Get current 2FA settings
     const { data: userSettings } = await supabase

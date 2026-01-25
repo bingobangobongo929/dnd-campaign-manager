@@ -14,6 +14,10 @@ export default function SecuritySettingsPage() {
   const { user } = useUser()
   const { settings, refreshSettings } = useUserSettings()
 
+  // Check if user is OAuth-only (no password, signed up via Discord/Google/etc)
+  const isOAuthOnly = user?.app_metadata?.provider === 'discord' ||
+    (user?.identities && user.identities.every(i => i.provider !== 'email'))
+
   // 2FA Setup state
   const [showSetupModal, setShowSetupModal] = useState(false)
   const [setupStep, setSetupStep] = useState<'qr' | 'verify' | 'backup'>('qr')
@@ -484,7 +488,9 @@ export default function SecuritySettingsPage() {
           >
             <div className="space-y-4">
               <p className="text-sm text-gray-400">
-                To disable 2FA, enter your password and a verification code from your authenticator app.
+                {isOAuthOnly
+                  ? 'To disable 2FA, enter a verification code from your authenticator app.'
+                  : 'To disable 2FA, enter your password and a verification code from your authenticator app.'}
               </p>
 
               {disableError && (
@@ -493,16 +499,18 @@ export default function SecuritySettingsPage() {
                 </div>
               )}
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Password</label>
-                <input
-                  type="password"
-                  value={disablePassword}
-                  onChange={(e) => setDisablePassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50"
-                />
-              </div>
+              {!isOAuthOnly && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-300">Password</label>
+                  <input
+                    type="password"
+                    value={disablePassword}
+                    onChange={(e) => setDisablePassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50"
+                  />
+                </div>
+              )}
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-300">2FA Code</label>
@@ -527,7 +535,7 @@ export default function SecuritySettingsPage() {
                 </Button>
                 <button
                   onClick={handleDisable2FA}
-                  disabled={disableLoading || !disablePassword || disableCode.length !== 6}
+                  disabled={disableLoading || (!isOAuthOnly && !disablePassword) || disableCode.length !== 6}
                   className="flex-1 py-2.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
                 >
                   {disableLoading ? (
@@ -571,16 +579,18 @@ export default function SecuritySettingsPage() {
                 </div>
               )}
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Password</label>
-                <input
-                  type="password"
-                  value={deletePassword}
-                  onChange={(e) => setDeletePassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50"
-                />
-              </div>
+              {!isOAuthOnly && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-300">Password</label>
+                  <input
+                    type="password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50"
+                  />
+                </div>
+              )}
 
               {is2FAEnabled && (
                 <div className="space-y-2">
@@ -620,7 +630,7 @@ export default function SecuritySettingsPage() {
                 </Button>
                 <button
                   onClick={handleDeleteAccount}
-                  disabled={deleteLoading || deleteConfirmation !== 'DELETE' || !deletePassword || (is2FAEnabled && deleteTotpCode.length !== 6)}
+                  disabled={deleteLoading || deleteConfirmation !== 'DELETE' || (!isOAuthOnly && !deletePassword) || (is2FAEnabled && deleteTotpCode.length !== 6)}
                   className="flex-1 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
                 >
                   {deleteLoading ? (
