@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import {
   extractDiscordMetadata,
   saveDiscordToUserSettings,
   activatePendingDiscordMemberships,
   getDiscordDisplayName,
+  findPendingDiscordMemberships,
 } from '@/lib/discord'
 
 // OAuth callback route - handles Discord (and future OAuth providers)
@@ -30,6 +32,7 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = await createClient()
+  const adminClient = createAdminClient()
 
   // Exchange code for session
   const { data: authData, error: authError } = await supabase.auth.exchangeCodeForSession(code)
@@ -58,7 +61,29 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (!existingSettings) {
-      // Create user_settings for new Discord user
+      // NEW USER via Discord OAuth
+      // Check if they have a pending campaign invite for this Discord
+      const pendingMemberships = await findPendingDiscordMemberships(
+        adminClient,
+        discordMetadata.provider_id,
+        discordUsername
+      )
+
+      // If no pending campaign invite, check if this is an invite page redirect
+      // (which means they're accepting a campaign invite link)
+      const isInviteRedirect = next.startsWith('/invite/')
+
+      if (pendingMemberships.length === 0 && !isInviteRedirect) {
+        // No pending invite and not coming from an invite link
+        // Block new signups - require invite code
+        // Sign them out and redirect to login with error
+        await supabase.auth.signOut()
+        return NextResponse.redirect(
+          `${origin}/login?error=${encodeURIComponent('Discord signup requires an invite code or campaign invite. Please sign up with email first, then link Discord.')}`
+        )
+      }
+
+      // Create user_settings for new Discord user (they have a valid invite)
       const now = new Date().toISOString()
       await supabase.from('user_settings').insert({
         user_id: user.id,
