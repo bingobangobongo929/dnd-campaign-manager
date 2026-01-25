@@ -1,5 +1,8 @@
 export { CharacterCard } from './CharacterCard'
 export { CharacterEditor } from './CharacterEditor'
+export { InPlayCharacterView } from './InPlayCharacterView'
+export { InPlayTabView } from './InPlayTabView'
+export { Session0SnapshotModal } from './Session0SnapshotModal'
 export { VaultImageCropModal } from './VaultImageCropModal'
 export { VaultImageUpload } from './VaultImageUpload'
 export { NPCCard } from './NPCCard'

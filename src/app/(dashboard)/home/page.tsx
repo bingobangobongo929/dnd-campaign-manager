@@ -29,7 +29,7 @@ import { MobileLayout, MobileSectionHeader, MobileSearchBar } from '@/components
 import { useSupabase, useUser, useIsMobile, useMembership } from '@/hooks'
 import { useAppStore } from '@/store'
 import { formatDistanceToNow, cn } from '@/lib/utils'
-import type { Campaign, VaultCharacter, Oneshot, ContentSave } from '@/types/database'
+import type { Campaign, VaultCharacter, Oneshot, ContentSave, Character } from '@/types/database'
 import { HomePageMobile } from './page.mobile'
 
 export default function HomePage() {
@@ -46,6 +46,7 @@ export default function HomePage() {
   const [characters, setCharacters] = useState<VaultCharacter[]>([])
   const [oneshots, setOneshots] = useState<Oneshot[]>([])
   const [savedTemplates, setSavedTemplates] = useState<ContentSave[]>([])
+  const [claimableCharacters, setClaimableCharacters] = useState<{ character: Character; campaign: Campaign }[]>([])
   const [loading, setLoading] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [founderBannerDismissed, setFounderBannerDismissed] = useState(true) // Start true to prevent flash
@@ -145,7 +146,46 @@ export default function HomePage() {
     const joinedRes = await fetch('/api/campaigns/joined')
     if (joinedRes.ok) {
       const joinedData = await joinedRes.json()
-      setJoinedCampaigns((joinedData.joinedCampaigns || []).map((j: { campaign: Campaign }) => j.campaign))
+      const joined = (joinedData.joinedCampaigns || []).map((j: { campaign: Campaign }) => j.campaign)
+      setJoinedCampaigns(joined)
+
+      // Find claimable characters in joined campaigns
+      // Characters designated for user but not yet claimed to vault
+      if (joined.length > 0 && user) {
+        const claimable: { character: Character; campaign: Campaign }[] = []
+
+        for (const campaign of joined) {
+          // Get user's membership in this campaign
+          const { data: membership } = await supabase
+            .from('campaign_members')
+            .select('character_id')
+            .eq('campaign_id', campaign.id)
+            .eq('user_id', user.id)
+            .single()
+
+          if (membership?.character_id) {
+            // Get the character
+            const { data: character } = await supabase
+              .from('characters')
+              .select('*')
+              .eq('id', membership.character_id)
+              .single()
+
+            // Check if claimable: designated for user, not yet claimed
+            if (character && !character.vault_character_id) {
+              const isDesignatedForUser =
+                character.controlled_by_user_id === user.id ||
+                (character.controlled_by_email?.toLowerCase() === user.email?.toLowerCase())
+
+              if (isDesignatedForUser) {
+                claimable.push({ character, campaign })
+              }
+            }
+          }
+        }
+
+        setClaimableCharacters(claimable)
+      }
     }
 
     setLoading(false)
@@ -215,6 +255,64 @@ export default function HomePage() {
             >
               <X className="w-4 h-4" />
             </button>
+          </div>
+        )}
+
+        {/* Claimable Characters Notification */}
+        {claimableCharacters.length > 0 && (
+          <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-5">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-purple-600/20 flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-6 h-6 text-purple-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-white">
+                  {claimableCharacters.length === 1
+                    ? 'A character is waiting for you!'
+                    : `${claimableCharacters.length} characters are waiting for you!`}
+                </h3>
+                <p className="text-sm text-gray-400 mt-1">
+                  {claimableCharacters.length === 1
+                    ? 'Your DM created a character for you. Add them to your vault to track their journey.'
+                    : 'Your DMs created characters for you. Add them to your vault to track their journeys.'}
+                </p>
+                <div className="flex flex-wrap gap-3 mt-4">
+                  {claimableCharacters.slice(0, 3).map(({ character, campaign }) => (
+                    <Link
+                      key={character.id}
+                      href={`/campaigns/${campaign.id}/dashboard`}
+                      className="group flex items-center gap-3 p-3 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] hover:border-purple-500/30 rounded-lg transition-all"
+                    >
+                      {character.image_url ? (
+                        <Image
+                          src={character.image_url}
+                          alt={character.name}
+                          width={40}
+                          height={40}
+                          className="rounded-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-purple-600/20 flex items-center justify-center text-purple-400 font-bold">
+                          {getInitials(character.name)}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium text-white group-hover:text-purple-400 transition-colors">
+                          {character.name}
+                        </p>
+                        <p className="text-xs text-gray-500">{campaign.name}</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-purple-400 transition-colors ml-2" />
+                    </Link>
+                  ))}
+                  {claimableCharacters.length > 3 && (
+                    <div className="flex items-center text-sm text-gray-400">
+                      +{claimableCharacters.length - 3} more
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

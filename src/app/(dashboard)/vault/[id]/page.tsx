@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
-import { CharacterEditor } from '@/components/vault/CharacterEditor'
+import { CharacterEditor, InPlayCharacterView } from '@/components/vault'
 import { Button } from '@/components/ui'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { createClient } from '@/lib/supabase/client'
@@ -12,12 +12,19 @@ import { useAppStore } from '@/store'
 import { useIsMobile } from '@/hooks'
 import type { VaultCharacter } from '@/types/database'
 
+interface CampaignLink {
+  campaign_id: string
+  character_id: string
+  joined_at: string
+}
+
 export default function EditVaultCharacterPage() {
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
   const isMobile = useIsMobile()
   const fromTemplate = searchParams.get('fromTemplate') === 'true'
+  const viewMode = searchParams.get('view') // 'inplay' to force in-play view
   // Memoize supabase client to prevent recreation on each render
   const supabase = useMemo(() => createClient(), [])
   const { trackRecentItem } = useAppStore()
@@ -26,6 +33,7 @@ export default function EditVaultCharacterPage() {
   const [character, setCharacter] = useState<VaultCharacter | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [showInPlayView, setShowInPlayView] = useState(false)
 
   useEffect(() => {
     const loadCharacter = async () => {
@@ -47,12 +55,18 @@ export default function EditVaultCharacterPage() {
           href: `/vault/${data.id}`,
           imageUrl: data.image_url || data.detail_image_url,
         })
+
+        // Check if this is an in-play character (linked to campaigns)
+        const campaignLinks = data.campaign_links as CampaignLink[] | null
+        if (campaignLinks && campaignLinks.length > 0 && viewMode === 'inplay') {
+          setShowInPlayView(true)
+        }
       }
       setLoading(false)
     }
 
     loadCharacter()
-  }, [characterId, supabase, trackRecentItem])
+  }, [characterId, supabase, trackRecentItem, viewMode])
 
   if (loading) {
     return (
@@ -78,6 +92,24 @@ export default function EditVaultCharacterPage() {
             </Button>
           </div>
         </div>
+      </AppLayout>
+    )
+  }
+
+  // Get the first campaign link for in-play view
+  const campaignLinks = character.campaign_links as CampaignLink[] | null
+  const firstCampaignLink = campaignLinks && campaignLinks.length > 0 ? campaignLinks[0] : null
+
+  // Show in-play view if requested and character is linked
+  if (showInPlayView && firstCampaignLink) {
+    return (
+      <AppLayout characterId={characterId}>
+        <InPlayCharacterView
+          character={character}
+          campaignLink={firstCampaignLink}
+          onSwitch={() => setShowInPlayView(false)}
+        />
+        <BackToTopButton />
       </AppLayout>
     )
   }

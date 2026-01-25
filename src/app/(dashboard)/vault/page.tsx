@@ -9,6 +9,7 @@ import { Modal, Dropdown } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { CharacterCard } from '@/components/vault/CharacterCard'
+import { InPlayTabView } from '@/components/vault/InPlayTabView'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { useCanUseAI } from '@/store'
 import { VaultPageMobile } from './page.mobile'
@@ -751,60 +752,9 @@ export default function VaultPage() {
           </div>
         )}
 
-        {/* In-Play Tab - Characters in active campaigns */}
+        {/* In-Play Tab - Characters in active campaigns (grouped by campaign) */}
         {activeTab === 'in-play' && (
-          <div className="space-y-6">
-            {inPlayCharacters.length === 0 ? (
-              <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
-                <Play className="w-12 h-12 mx-auto mb-4 text-purple-400/50" />
-                <h3 className="text-lg font-medium text-white mb-2">No characters in play</h3>
-                <p className="text-gray-400 max-w-sm mx-auto">
-                  When you join a campaign with a character, they'll appear here with their campaign info.
-                </p>
-              </div>
-            ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {inPlayCharacters.map((character) => (
-                  <button
-                    key={character.id}
-                    onClick={() => router.push(`/vault/${character.id}`)}
-                    className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-purple-500/20 hover:border-purple-500/40 transition-all text-left"
-                  >
-                    <div className="relative h-48 overflow-hidden">
-                      {character.image_url ? (
-                        <>
-                          <Image
-                            src={character.image_url}
-                            alt={character.name}
-                            fill
-                            className="object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
-                        </>
-                      ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
-                          <User className="w-16 h-16 text-purple-400/30" />
-                        </div>
-                      )}
-                      <div className="absolute top-3 left-3">
-                        <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-green-500/20 text-green-300 border border-green-500/30">
-                          In Play
-                        </span>
-                      </div>
-                    </div>
-                    <div className="p-5">
-                      <h4 className="font-display font-semibold text-lg text-white truncate group-hover:text-purple-400 transition-colors">
-                        {character.name}
-                      </h4>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {[character.race, character.class].filter(Boolean).join(' • ') || (character.type === 'pc' ? 'Player Character' : 'NPC')}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <InPlayTabView inPlayCharacters={inPlayCharacters} />
         )}
 
         {/* All Tab - Overview */}

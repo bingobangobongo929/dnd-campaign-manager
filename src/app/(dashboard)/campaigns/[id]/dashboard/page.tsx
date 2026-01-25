@@ -39,6 +39,7 @@ import type {
   PlayerSessionNote,
   CampaignMember,
   Tag,
+  VaultCharacter,
 } from '@/types/database'
 
 export default function CampaignDashboardPage() {
@@ -69,6 +70,7 @@ export default function CampaignDashboardPage() {
   // User's membership and character
   const [membership, setMembership] = useState<CampaignMember | null>(null)
   const [myCharacter, setMyCharacter] = useState<Character | null>(null)
+  const [userVaultCharacters, setUserVaultCharacters] = useState<Pick<VaultCharacter, 'id' | 'name' | 'image_url'>[]>([])
 
   // Modal state
   const [showMembersModal, setShowMembersModal] = useState(false)
@@ -193,6 +195,14 @@ export default function CampaignDashboardPage() {
           .limit(10)
         setPlayerNotes(notesData || [])
       }
+
+      // Load user's vault characters (for character claiming)
+      const { data: vaultCharsData } = await supabase
+        .from('vault_characters')
+        .select('id, name, image_url')
+        .eq('user_id', user.id)
+        .order('name')
+      setUserVaultCharacters(vaultCharsData || [])
 
       // Load current user's membership
       const userMembership = (membersResult.data || []).find(m => m.user_id === user.id)
@@ -375,6 +385,19 @@ export default function CampaignDashboardPage() {
     }
   })
 
+  // Determine if current character is designated for the current user
+  const isCharacterDesignatedForUser = myCharacter ? (
+    myCharacter.controlled_by_user_id === user?.id ||
+    (myCharacter.controlled_by_email?.toLowerCase() === user?.email?.toLowerCase())
+  ) : false
+
+  // Handler for when a character is claimed to vault
+  const handleCharacterClaimed = (vaultCharacterId: string) => {
+    // Reload data to reflect the new vault link
+    loadDashboardData()
+    toast.success('Character added to your vault!')
+  }
+
   // Loading state
   if (loading || permissionsLoading) {
     return (
@@ -435,6 +458,8 @@ export default function CampaignDashboardPage() {
             isVisible={isPlayerWidgetVisible}
             myCharacter={myCharacter}
             membership={membership}
+            isCharacterDesignatedForUser={isCharacterDesignatedForUser}
+            userVaultCharacters={userVaultCharacters}
             latestSession={latestSession}
             latestSessionEvents={latestSessionEvents}
             partyMembers={partyMembers}
@@ -448,6 +473,7 @@ export default function CampaignDashboardPage() {
             can={can}
             onUpdateSessionStatus={handleUpdateSessionStatus}
             onUpdatePlayerAvailability={handleUpdatePlayerAvailability}
+            onCharacterClaimed={handleCharacterClaimed}
           />
         ) : (
           /* DM Dashboard Layout */

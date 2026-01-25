@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { LogOut, Moon, Sun, ChevronDown } from 'lucide-react'
 import { Button, Dropdown, Avatar } from '@/components/ui'
+import { NotificationCenter } from '@/components/notifications'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore } from '@/store'
 import { useState, useEffect } from 'react'
@@ -80,6 +81,9 @@ export function Header({ campaigns = [], currentCampaignId }: HeaderProps) {
         <Button variant="ghost" size="icon" onClick={toggleTheme}>
           {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
+
+        {/* Notification Center */}
+        {user && <NotificationCenter userId={user.id} />}
 
         <div className="flex items-center gap-2 pl-2 border-l border-[--border]">
           <Avatar name={user?.email || 'User'} size="sm" />

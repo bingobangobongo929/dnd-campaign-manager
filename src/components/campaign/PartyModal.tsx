@@ -21,6 +21,9 @@ import {
   RotateCcw,
   Trash2,
   Lock,
+  Sparkles,
+  Clock,
+  Send,
 } from 'lucide-react'
 import { Modal, Input } from '@/components/ui'
 import { toast } from 'sonner'
@@ -88,6 +91,7 @@ export function PartyModal({
     permissions: DEFAULT_PERMISSIONS['player'] as MemberPermissions,
   })
   const [showAdvancedPermissions, setShowAdvancedPermissions] = useState(false)
+  const [sendingReminder, setSendingReminder] = useState(false)
 
   // Member edit state
   const [editForm, setEditForm] = useState<{
@@ -459,6 +463,20 @@ export function PartyModal({
                               as {member.character.name}
                             </span>
                           )}
+                          {/* Claim Status */}
+                          {member.character && member.status === 'active' && (
+                            member.vault_character_id ? (
+                              <span className="inline-flex items-center gap-1 text-xs text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded">
+                                <Sparkles className="w-3 h-3" />
+                                Claimed
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-xs text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                                <Clock className="w-3 h-3" />
+                                Not claimed
+                              </span>
+                            )
+                          )}
                         </div>
                       </div>
 
@@ -552,6 +570,85 @@ export function PartyModal({
                   <p className="text-xs text-gray-500 mt-2">
                     Share this link via WhatsApp, Discord, or any other platform.
                   </p>
+                </div>
+              )}
+
+              {/* Claim Status for Active Members with Characters */}
+              {selectedMember.status === 'active' && selectedMember.character && (
+                <div className={cn(
+                  "rounded-lg p-4",
+                  selectedMember.vault_character_id
+                    ? "bg-green-500/5 border border-green-500/20"
+                    : "bg-amber-500/5 border border-amber-500/20"
+                )}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className={cn(
+                        "text-sm font-medium flex items-center gap-2",
+                        selectedMember.vault_character_id ? "text-green-400" : "text-amber-400"
+                      )}>
+                        {selectedMember.vault_character_id ? (
+                          <>
+                            <Sparkles className="w-4 h-4" />
+                            Character claimed to vault
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="w-4 h-4" />
+                            Character not yet claimed
+                          </>
+                        )}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {selectedMember.vault_character_id
+                          ? `${selectedMember.character.name} is linked to the player's personal vault`
+                          : `${selectedMember.character.name} is waiting to be claimed by the player`
+                        }
+                      </p>
+                    </div>
+                    {!selectedMember.vault_character_id && (selectedMember.email || selectedMember.user_id) && (
+                      <button
+                        onClick={async () => {
+                          setSendingReminder(true)
+                          try {
+                            const response = await fetch(`/api/campaigns/${campaignId}/members/remind`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                memberId: selectedMember.id,
+                                characterId: selectedMember.character_id,
+                              }),
+                            })
+
+                            const data = await response.json()
+
+                            if (!response.ok) {
+                              throw new Error(data.error || 'Failed to send reminder')
+                            }
+
+                            toast.success(data.message || 'Reminder sent!')
+                          } catch (error) {
+                            console.error('Remind error:', error)
+                            // Fallback: copy reminder message
+                            const reminderText = `Hey! Don't forget to claim ${selectedMember.character?.name} to your Character Vault on Multiloop. This lets you track your character's journey and keep them after the campaign ends.`
+                            navigator.clipboard.writeText(reminderText)
+                            toast.info('Email sending unavailable - reminder message copied to clipboard')
+                          } finally {
+                            setSendingReminder(false)
+                          }
+                        }}
+                        disabled={sendingReminder}
+                        className="btn btn-secondary btn-sm flex-shrink-0"
+                      >
+                        {sendingReminder ? (
+                          <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                        ) : (
+                          <Send className="w-3.5 h-3.5 mr-1" />
+                        )}
+                        {sendingReminder ? 'Sending...' : 'Send Reminder'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -12,6 +12,10 @@ import {
   BookOpen,
   Users,
   Sparkles,
+  Clock,
+  Play,
+  Copy,
+  CheckCircle,
 } from 'lucide-react'
 import { Modal } from '@/components/ui'
 import { toast } from 'sonner'
@@ -24,6 +28,8 @@ interface CharacterClaimingProps {
   isDesignatedForUser: boolean
   userVaultCharacters?: Pick<VaultCharacter, 'id' | 'name' | 'image_url'>[]
   onClaimed?: (vaultCharacterId: string) => void
+  // Optional render prop for custom trigger button
+  renderTrigger?: (onClick: () => void) => ReactNode
 }
 
 export function CharacterClaiming({
@@ -32,18 +38,29 @@ export function CharacterClaiming({
   isDesignatedForUser,
   userVaultCharacters = [],
   onClaimed,
+  renderTrigger,
 }: CharacterClaimingProps) {
   const [modalOpen, setModalOpen] = useState(false)
+  const [successModalOpen, setSuccessModalOpen] = useState(false)
   const [claimMode, setClaimMode] = useState<'new' | 'link'>('new')
   const [selectedVaultCharacterId, setSelectedVaultCharacterId] = useState('')
   const [processing, setProcessing] = useState(false)
+  // What to add to vault
+  const [addInPlay, setAddInPlay] = useState(true)
+  const [addSession0Copy, setAddSession0Copy] = useState(false)
+  // Result tracking for success modal
+  const [claimResult, setClaimResult] = useState<{
+    vaultCharacterId: string
+    inPlayAdded: boolean
+    session0Added: boolean
+  } | null>(null)
 
-  // Don't show if already claimed
+  // Don't render anything if already claimed
   if (character.vault_character_id) {
     return null
   }
 
-  // Show claim prompt if designated for this user
+  // Don't render if not designated for this user
   if (!isDesignatedForUser) {
     return null
   }
@@ -53,7 +70,14 @@ export function CharacterClaiming({
     try {
       const response = await fetch(
         `/api/campaigns/${campaignId}/characters/${character.id}/claim`,
-        { method: 'POST' }
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            addInPlay,
+            addSession0Copy,
+          }),
+        }
       )
 
       const data = await response.json()
@@ -63,8 +87,13 @@ export function CharacterClaiming({
         return
       }
 
-      toast.success('Character claimed to your vault!')
+      setClaimResult({
+        vaultCharacterId: data.vaultCharacterId,
+        inPlayAdded: addInPlay,
+        session0Added: addSession0Copy,
+      })
       setModalOpen(false)
+      setSuccessModalOpen(true)
       onClaimed?.(data.vaultCharacterId)
     } catch (error) {
       console.error('Failed to claim character:', error)
@@ -98,8 +127,13 @@ export function CharacterClaiming({
         return
       }
 
-      toast.success('Character linked to your vault!')
+      setClaimResult({
+        vaultCharacterId: selectedVaultCharacterId,
+        inPlayAdded: true,
+        session0Added: false,
+      })
       setModalOpen(false)
+      setSuccessModalOpen(true)
       onClaimed?.(selectedVaultCharacterId)
     } catch (error) {
       console.error('Failed to link character:', error)
@@ -109,6 +143,40 @@ export function CharacterClaiming({
     }
   }
 
+  // If renderTrigger is provided, only render the modal (trigger is handled externally)
+  if (renderTrigger) {
+    return (
+      <>
+        {renderTrigger(() => setModalOpen(true))}
+        <ClaimModal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          character={character}
+          claimMode={claimMode}
+          setClaimMode={setClaimMode}
+          userVaultCharacters={userVaultCharacters}
+          selectedVaultCharacterId={selectedVaultCharacterId}
+          setSelectedVaultCharacterId={setSelectedVaultCharacterId}
+          addInPlay={addInPlay}
+          setAddInPlay={setAddInPlay}
+          addSession0Copy={addSession0Copy}
+          setAddSession0Copy={setAddSession0Copy}
+          processing={processing}
+          onClaim={handleClaim}
+          onLink={handleLink}
+        />
+        <SuccessModal
+          isOpen={successModalOpen}
+          onClose={() => setSuccessModalOpen(false)}
+          character={character}
+          result={claimResult}
+          campaignId={campaignId}
+        />
+      </>
+    )
+  }
+
+  // Default: render banner with modal
   return (
     <>
       {/* Claim Banner */}
@@ -133,179 +201,316 @@ export function CharacterClaiming({
         </div>
       </div>
 
-      {/* Claim Modal */}
-      <Modal
+      <ClaimModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title="Claim Character"
-        description={`Add ${character.name} to your character vault`}
-        size="md"
-      >
-        <div className="space-y-6">
-          {/* Character Preview */}
-          <div className="flex items-center gap-4 p-4 bg-white/[0.02] rounded-lg border border-[--border]">
-            {character.image_url ? (
-              <Image
-                src={character.image_url}
-                alt={character.name}
-                width={64}
-                height={64}
-                className="rounded-lg object-cover"
-              />
-            ) : (
-              <div className="w-16 h-16 rounded-lg bg-purple-600/20 flex items-center justify-center text-purple-400 font-bold text-xl">
-                {getInitials(character.name)}
-              </div>
-            )}
-            <div>
-              <h4 className="font-medium text-white">{character.name}</h4>
-              {character.description && (
-                <p className="text-sm text-gray-400 mt-0.5 line-clamp-2">{character.description}</p>
-              )}
-            </div>
-          </div>
+        character={character}
+        claimMode={claimMode}
+        setClaimMode={setClaimMode}
+        userVaultCharacters={userVaultCharacters}
+        selectedVaultCharacterId={selectedVaultCharacterId}
+        setSelectedVaultCharacterId={setSelectedVaultCharacterId}
+        addInPlay={addInPlay}
+        setAddInPlay={setAddInPlay}
+        addSession0Copy={addSession0Copy}
+        setAddSession0Copy={setAddSession0Copy}
+        processing={processing}
+        onClaim={handleClaim}
+        onLink={handleLink}
+      />
+      <SuccessModal
+        isOpen={successModalOpen}
+        onClose={() => setSuccessModalOpen(false)}
+        character={character}
+        result={claimResult}
+        campaignId={campaignId}
+      />
+    </>
+  )
+}
 
-          {/* Options */}
-          <div className="space-y-3">
-            <label className="form-label">How would you like to claim?</label>
+// Claim Modal Component
+interface ClaimModalProps {
+  isOpen: boolean
+  onClose: () => void
+  character: Character
+  claimMode: 'new' | 'link'
+  setClaimMode: (mode: 'new' | 'link') => void
+  userVaultCharacters: Pick<VaultCharacter, 'id' | 'name' | 'image_url'>[]
+  selectedVaultCharacterId: string
+  setSelectedVaultCharacterId: (id: string) => void
+  addInPlay: boolean
+  setAddInPlay: (v: boolean) => void
+  addSession0Copy: boolean
+  setAddSession0Copy: (v: boolean) => void
+  processing: boolean
+  onClaim: () => void
+  onLink: () => void
+}
 
-            {/* Option 1: New vault character */}
-            <button
-              onClick={() => setClaimMode('new')}
-              className={cn(
-                "w-full p-4 rounded-lg border text-left transition-colors",
-                claimMode === 'new'
-                  ? "bg-purple-500/10 border-purple-500/30"
-                  : "bg-white/[0.02] border-[--border] hover:border-purple-500/30"
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center",
-                  claimMode === 'new' ? "bg-purple-600/20" : "bg-white/[0.05]"
-                )}>
-                  <UserPlus className={cn(
-                    "w-5 h-5",
-                    claimMode === 'new' ? "text-purple-400" : "text-gray-400"
-                  )} />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-white">Create new vault character</p>
-                  <p className="text-sm text-gray-500">
-                    Start fresh with a copy of this character in your vault
-                  </p>
-                </div>
-                {claimMode === 'new' && <Check className="w-5 h-5 text-purple-400" />}
-              </div>
-            </button>
-
-            {/* Option 2: Link existing */}
-            {userVaultCharacters.length > 0 && (
-              <button
-                onClick={() => setClaimMode('link')}
-                className={cn(
-                  "w-full p-4 rounded-lg border text-left transition-colors",
-                  claimMode === 'link'
-                    ? "bg-blue-500/10 border-blue-500/30"
-                    : "bg-white/[0.02] border-[--border] hover:border-blue-500/30"
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center",
-                    claimMode === 'link' ? "bg-blue-600/20" : "bg-white/[0.05]"
-                  )}>
-                    <LinkIcon className={cn(
-                      "w-5 h-5",
-                      claimMode === 'link' ? "text-blue-400" : "text-gray-400"
-                    )} />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-white">Link existing vault character</p>
-                    <p className="text-sm text-gray-500">
-                      Connect to a character already in your vault
-                    </p>
-                  </div>
-                  {claimMode === 'link' && <Check className="w-5 h-5 text-blue-400" />}
-                </div>
-              </button>
-            )}
-          </div>
-
-          {/* Vault character selector (for link mode) */}
-          {claimMode === 'link' && userVaultCharacters.length > 0 && (
-            <div className="form-group">
-              <label className="form-label">Select vault character</label>
-              <select
-                value={selectedVaultCharacterId}
-                onChange={(e) => setSelectedVaultCharacterId(e.target.value)}
-                className="form-input"
-              >
-                <option value="">Choose a character...</option>
-                {userVaultCharacters.map(vc => (
-                  <option key={vc.id} value={vc.id}>
-                    {vc.name}
-                  </option>
-                ))}
-              </select>
+function ClaimModal({
+  isOpen,
+  onClose,
+  character,
+  claimMode,
+  setClaimMode,
+  userVaultCharacters,
+  selectedVaultCharacterId,
+  setSelectedVaultCharacterId,
+  addInPlay,
+  setAddInPlay,
+  addSession0Copy,
+  setAddSession0Copy,
+  processing,
+  onClaim,
+  onLink,
+}: ClaimModalProps) {
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`Add ${character.name} to Your Vault`}
+      size="md"
+    >
+      <div className="space-y-6">
+        {/* Character Preview */}
+        <div className="flex items-center gap-4 p-4 bg-white/[0.02] rounded-lg border border-[--border]">
+          {character.image_url ? (
+            <Image
+              src={character.image_url}
+              alt={character.name}
+              width={64}
+              height={64}
+              className="rounded-lg object-cover"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-lg bg-purple-600/20 flex items-center justify-center text-purple-400 font-bold text-xl">
+              {getInitials(character.name)}
             </div>
           )}
-
-          {/* Benefits info */}
-          <div className="bg-white/[0.02] rounded-lg p-4 space-y-2">
-            <p className="text-sm font-medium text-gray-300">What you get:</p>
-            <ul className="text-sm text-gray-400 space-y-1.5">
-              <li className="flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-purple-400" />
-                Full character vault with detailed backstory, phases, and relationships
-              </li>
-              <li className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-purple-400" />
-                Session 0 snapshot preserved for reference
-              </li>
-              <li className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-400" />
-                AI-powered character intelligence and suggestions
-              </li>
-            </ul>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3">
-            <button
-              onClick={() => setModalOpen(false)}
-              disabled={processing}
-              className="btn btn-secondary flex-1"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={claimMode === 'new' ? handleClaim : handleLink}
-              disabled={processing || (claimMode === 'link' && !selectedVaultCharacterId)}
-              className="btn btn-primary flex-1"
-            >
-              {processing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  {claimMode === 'new' ? (
-                    <>
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Claim to Vault
-                    </>
-                  ) : (
-                    <>
-                      <LinkIcon className="w-4 h-4 mr-2" />
-                      Link Character
-                    </>
-                  )}
-                </>
-              )}
-            </button>
+          <div>
+            <h4 className="font-medium text-white">{character.name}</h4>
+            {character.summary && (
+              <p className="text-sm text-gray-400 mt-0.5 line-clamp-2">{character.summary}</p>
+            )}
           </div>
         </div>
-      </Modal>
-    </>
+
+        <div className="border-t border-[--border]" />
+
+        {/* What to add */}
+        <div className="space-y-4">
+          <label className="form-label">What would you like to add to your vault?</label>
+
+          {/* In-Play Version Option */}
+          <label
+            className={cn(
+              "block p-4 rounded-lg border cursor-pointer transition-colors",
+              addInPlay
+                ? "bg-purple-500/10 border-purple-500/30"
+                : "bg-white/[0.02] border-[--border] hover:border-purple-500/30"
+            )}
+          >
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                checked={addInPlay}
+                onChange={(e) => setAddInPlay(e.target.checked)}
+                className="mt-1 accent-purple-500"
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <Play className="w-4 h-4 text-purple-400" />
+                  <span className="font-medium text-white">In-Play Version</span>
+                </div>
+                <p className="text-sm text-gray-400 mt-1">
+                  A synced copy connected to this campaign.
+                </p>
+                <ul className="text-xs text-gray-500 mt-2 space-y-1">
+                  <li>• View your character anytime from your vault</li>
+                  <li>• Automatically updates as the campaign progresses</li>
+                  <li>• Most fields managed in campaign (view-only in vault)</li>
+                  <li>• Private notes section that's just for you</li>
+                </ul>
+              </div>
+            </div>
+          </label>
+
+          {/* Session 0 Copy Option */}
+          <label
+            className={cn(
+              "block p-4 rounded-lg border cursor-pointer transition-colors",
+              addSession0Copy
+                ? "bg-blue-500/10 border-blue-500/30"
+                : "bg-white/[0.02] border-[--border] hover:border-blue-500/30"
+            )}
+          >
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                checked={addSession0Copy}
+                onChange={(e) => setAddSession0Copy(e.target.checked)}
+                className="mt-1 accent-blue-500"
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-blue-400" />
+                  <span className="font-medium text-white">Session 0 Copy</span>
+                  <span className="text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded">Available</span>
+                </div>
+                <p className="text-sm text-gray-400 mt-1">
+                  A separate copy from before the campaign began.
+                </p>
+                <ul className="text-xs text-gray-500 mt-2 space-y-1">
+                  <li>• Fully editable - entirely yours</li>
+                  <li>• No connection to this campaign</li>
+                  <li>• Use in other games or expand with more details</li>
+                  <li>• Perfect for bringing to another campaign later</li>
+                </ul>
+              </div>
+            </div>
+          </label>
+
+          {/* Tip */}
+          <p className="text-xs text-gray-500 bg-white/[0.02] rounded-lg p-3">
+            💡 You can select both! Many players keep an in-play version to track their journey AND a Session 0 copy for future adventures.
+          </p>
+        </div>
+
+        {/* Link existing character option (if they have vault characters) */}
+        {userVaultCharacters.length > 0 && (
+          <>
+            <div className="border-t border-[--border]" />
+            <div className="space-y-3">
+              <button
+                onClick={() => setClaimMode(claimMode === 'link' ? 'new' : 'link')}
+                className="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-2"
+              >
+                <LinkIcon className="w-4 h-4" />
+                {claimMode === 'link' ? 'Create new instead' : 'Or link to existing vault character'}
+              </button>
+
+              {claimMode === 'link' && (
+                <div className="form-group">
+                  <label className="form-label">Select vault character to link</label>
+                  <select
+                    value={selectedVaultCharacterId}
+                    onChange={(e) => setSelectedVaultCharacterId(e.target.value)}
+                    className="form-input"
+                  >
+                    <option value="">Choose a character...</option>
+                    {userVaultCharacters.map(vc => (
+                      <option key={vc.id} value={vc.id}>
+                        {vc.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-3 pt-2">
+          <button
+            onClick={onClose}
+            disabled={processing}
+            className="btn btn-secondary flex-1"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={claimMode === 'link' ? onLink : onClaim}
+            disabled={processing || (!addInPlay && !addSession0Copy && claimMode === 'new') || (claimMode === 'link' && !selectedVaultCharacterId)}
+            className="btn btn-primary flex-1"
+          >
+            {processing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Add to Vault
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+// Success Modal Component
+interface SuccessModalProps {
+  isOpen: boolean
+  onClose: () => void
+  character: Character
+  result: {
+    vaultCharacterId: string
+    inPlayAdded: boolean
+    session0Added: boolean
+  } | null
+  campaignId: string
+}
+
+function SuccessModal({ isOpen, onClose, character, result, campaignId }: SuccessModalProps) {
+  if (!result) return null
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Added to Your Vault!"
+      size="sm"
+    >
+      <div className="space-y-6 text-center">
+        {/* Success Icon */}
+        <div className="flex justify-center">
+          <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
+            <CheckCircle className="w-8 h-8 text-green-400" />
+          </div>
+        </div>
+
+        <p className="text-gray-300">
+          {character.name} has been added to your vault
+        </p>
+
+        {/* What was added */}
+        <div className="bg-white/[0.02] rounded-lg p-4 text-left space-y-2">
+          {result.inPlayAdded && (
+            <div className="flex items-center gap-2 text-sm">
+              <Check className="w-4 h-4 text-green-400" />
+              <span className="text-gray-300">In-Play version added</span>
+              <span className="text-xs text-gray-500 ml-auto">Vault → In-Play</span>
+            </div>
+          )}
+          {result.session0Added && (
+            <div className="flex items-center gap-2 text-sm">
+              <Check className="w-4 h-4 text-green-400" />
+              <span className="text-gray-300">Session 0 copy added</span>
+              <span className="text-xs text-gray-500 ml-auto">Vault → My Characters</span>
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="btn btn-secondary flex-1"
+          >
+            Stay in Campaign
+          </button>
+          <Link
+            href={`/vault/${result.vaultCharacterId}`}
+            className="btn btn-primary flex-1"
+            onClick={onClose}
+          >
+            View in Vault
+          </Link>
+        </div>
+      </div>
+    </Modal>
   )
 }
 

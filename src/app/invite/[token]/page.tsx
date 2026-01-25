@@ -21,6 +21,7 @@ import {
   ArrowRight,
 } from 'lucide-react'
 import { useUser } from '@/hooks'
+import { JoinWithCharacterModal } from '@/components/campaign'
 
 interface InviteData {
   id: string
@@ -51,6 +52,8 @@ export default function InvitePage() {
   const [accepting, setAccepting] = useState(false)
   const [declining, setDeclining] = useState(false)
   const [accepted, setAccepted] = useState(false)
+  const [showCharacterModal, setShowCharacterModal] = useState(false)
+  const [joinedCampaignId, setJoinedCampaignId] = useState<string | null>(null)
 
   // Fetch invite details
   useEffect(() => {
@@ -88,17 +91,32 @@ export default function InvitePage() {
         return
       }
 
-      setAccepted(true)
+      setJoinedCampaignId(data.campaignId)
 
-      // Redirect to campaign after a brief delay
-      setTimeout(() => {
-        router.push(`/campaigns/${data.campaignId}/dashboard`)
-      }, 2000)
+      // For player role, show character selection modal
+      const role = invite?.role || 'player'
+      if (role === 'player' || role === 'contributor') {
+        setShowCharacterModal(true)
+      } else {
+        // For DM roles, go straight to campaign
+        setAccepted(true)
+        setTimeout(() => {
+          router.push(`/campaigns/${data.campaignId}/dashboard`)
+        }, 2000)
+      }
     } catch {
       setError('Failed to accept invite')
     } finally {
       setAccepting(false)
     }
+  }
+
+  const handleCharacterJoinComplete = () => {
+    setShowCharacterModal(false)
+    setAccepted(true)
+    setTimeout(() => {
+      router.push(`/campaigns/${joinedCampaignId}/dashboard`)
+    }, 2000)
   }
 
   const handleDecline = async () => {
@@ -525,6 +543,17 @@ export default function InvitePage() {
       </main>
 
       <InviteFooter />
+
+      {/* Character Selection Modal */}
+      {joinedCampaignId && invite && (
+        <JoinWithCharacterModal
+          isOpen={showCharacterModal}
+          onClose={() => setShowCharacterModal(false)}
+          campaignId={joinedCampaignId}
+          campaignName={invite.campaign.name}
+          onJoinComplete={handleCharacterJoinComplete}
+        />
+      )}
     </div>
   )
 }

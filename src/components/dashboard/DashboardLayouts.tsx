@@ -1,7 +1,7 @@
 'use client'
 
 import { ReactNode } from 'react'
-import type { Campaign, Character, Session, TimelineEvent, PlayerSessionNote, CampaignMember } from '@/types/database'
+import type { Campaign, Character, Session, TimelineEvent, PlayerSessionNote, CampaignMember, VaultCharacter } from '@/types/database'
 import type { DmWidgetId, PlayerWidgetId } from '@/hooks/useDashboardPreferences'
 import type { PermissionCan } from '@/hooks/usePermissions'
 import type { ScheduleSettings, SchedulePattern, ScheduleException } from '@/lib/schedule-utils'
@@ -297,6 +297,8 @@ interface PlayerDashboardLayoutProps {
   isVisible: (widgetId: PlayerWidgetId) => boolean
   myCharacter: Character | null
   membership: CampaignMember | null
+  isCharacterDesignatedForUser: boolean
+  userVaultCharacters: Pick<VaultCharacter, 'id' | 'name' | 'image_url'>[]
   latestSession: Session | null
   latestSessionEvents: TimelineEvent[]
   partyMembers: PartyMember[]
@@ -310,6 +312,7 @@ interface PlayerDashboardLayoutProps {
   can: PermissionCan
   onUpdateSessionStatus: (memberId: string, status: 'confirmed' | 'unavailable' | 'maybe' | 'no_response') => Promise<void>
   onUpdatePlayerAvailability: (status: 'attending' | 'unavailable' | 'late', note?: string) => Promise<void>
+  onCharacterClaimed?: (vaultCharacterId: string) => void
 }
 
 export function PlayerDashboardLayout({
@@ -319,6 +322,8 @@ export function PlayerDashboardLayout({
   isVisible,
   myCharacter,
   membership,
+  isCharacterDesignatedForUser,
+  userVaultCharacters,
   latestSession,
   latestSessionEvents,
   partyMembers,
@@ -332,6 +337,7 @@ export function PlayerDashboardLayout({
   can,
   onUpdateSessionStatus,
   onUpdatePlayerAvailability,
+  onCharacterClaimed,
 }: PlayerDashboardLayoutProps) {
   // Compute player status
   const myStatus = (membership as CampaignMember & { next_session_status?: string })?.next_session_status as string | undefined
@@ -347,6 +353,9 @@ export function PlayerDashboardLayout({
         campaignId={campaignId}
         character={myCharacter}
         vaultCharacterId={membership?.vault_character_id}
+        isDesignatedForUser={isCharacterDesignatedForUser}
+        userVaultCharacters={userVaultCharacters}
+        onCharacterClaimed={onCharacterClaimed}
       />
     ),
     nextSession: (
