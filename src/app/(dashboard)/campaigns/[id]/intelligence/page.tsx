@@ -42,6 +42,7 @@ import {
   ThumbsDown,
 } from 'lucide-react'
 import { Modal, AccessDeniedPage } from '@/components/ui'
+import { GuidanceTip } from '@/components/guidance/GuidanceTip'
 import { TimelineEventEditor, type TimelineEventFormData } from '@/components/timeline'
 import { AppLayout, CampaignPageHeader } from '@/components/layout'
 import {
@@ -604,6 +605,19 @@ export default function IntelligencePage() {
       />
 
       <div className="max-w-6xl mx-auto px-4 py-6">
+        {/* First-time guidance */}
+        <GuidanceTip
+          tipId="campaign_intelligence_intro"
+          title="Welcome to Campaign Intelligence"
+          description="AI analyzes your session notes to suggest timeline events, detect new NPCs, track relationships, and identify plot threads. For best results, make sure your session notes are up to date before running analysis."
+          variant="banner"
+          showOnce
+          action={{
+            label: 'Run Your First Analysis',
+            onClick: () => handleAnalyze(),
+          }}
+        />
+
         {/* Status Bar */}
         <div className="flex items-center justify-between mb-6">
           <p className="text-sm" style={{ color: '#6b7280' }}>

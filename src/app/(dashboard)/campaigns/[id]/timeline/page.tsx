@@ -21,6 +21,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { Input, Textarea, Modal, Dropdown, AccessDeniedPage } from '@/components/ui'
+import { GuidanceTip } from '@/components/guidance/GuidanceTip'
 import { AppLayout, CampaignPageHeader } from '@/components/layout'
 import {
   PartyModal,
@@ -534,6 +535,15 @@ export default function TimelinePage() {
       />
 
       <div className="max-w-6xl mx-auto px-4 py-6">
+        {/* First-time guidance */}
+        <GuidanceTip
+          tipId="campaign_timeline_intro"
+          title="Track Your Story's Key Moments"
+          description="Add timeline events manually, or let Campaign Intelligence extract them from your session notes. Events can be filtered by character to see their personal journey."
+          variant="banner"
+          showOnce
+        />
+
         {/* Filter Toolbar */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div className="text-sm text-gray-400">

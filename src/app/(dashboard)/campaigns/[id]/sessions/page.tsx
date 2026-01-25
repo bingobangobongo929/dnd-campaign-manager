@@ -15,6 +15,7 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 import { Tooltip, sanitizeHtml, AccessDeniedPage } from '@/components/ui'
+import { GuidanceTip } from '@/components/guidance/GuidanceTip'
 import { AppLayout, CampaignPageHeader } from '@/components/layout'
 import {
   PartyModal,
@@ -344,6 +345,14 @@ export default function SessionsPage() {
       />
 
       <div className="max-w-4xl mx-auto px-4 py-6">
+        {/* First-time guidance */}
+        <GuidanceTip
+          tipId="campaign_sessions_intro"
+          title="Session Notes Power Your Campaign"
+          description="Document your sessions with detailed notes. Campaign Intelligence uses these notes to suggest timeline events, detect new NPCs, and track relationships automatically."
+          variant="banner"
+          showOnce
+        />
 
         {/* Search */}
         <div className="relative mb-6" style={{ marginBottom: '40px' }}>
