@@ -9,7 +9,11 @@ import {
   X,
   Download,
   FileText,
+  Copy,
+  Sparkles,
 } from 'lucide-react'
+import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 import { cn, getInitials, formatDate } from '@/lib/utils'
 import { Modal } from '@/components/ui'
 import type { VaultCharacter, CharacterSnapshot } from '@/types/database'
@@ -29,9 +33,11 @@ export function Session0SnapshotModal({
   campaignId,
   characterName,
 }: Session0SnapshotModalProps) {
+  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [snapshot, setSnapshot] = useState<CharacterSnapshot | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [forking, setForking] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -67,6 +73,38 @@ export function Session0SnapshotModal({
   }
 
   const snapshotData = snapshot?.snapshot_data as VaultCharacter | null
+
+  const handleForkFromSnapshot = async () => {
+    setForking(true)
+    try {
+      const response = await fetch('/api/vault/copy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'session_0',
+          vaultCharacterId,
+          campaignId,
+          newName: `${characterName} (Session 0)`,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create character copy')
+      }
+
+      toast.success(`Created "${data.character.name}" in your vault`)
+      onClose()
+      // Navigate to the new character
+      router.push(`/vault/${data.character.id}`)
+    } catch (err) {
+      console.error('Fork error:', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to fork character')
+    } finally {
+      setForking(false)
+    }
+  }
 
   return (
     <Modal
@@ -215,13 +253,36 @@ export function Session0SnapshotModal({
             </div>
 
             {/* Actions */}
-            <div className="flex justify-end gap-3 pt-2 border-t border-white/[0.06]">
-              <button
-                onClick={onClose}
-                className="btn btn-secondary"
-              >
-                Close
-              </button>
+            <div className="flex justify-between items-center pt-4 border-t border-white/[0.06]">
+              <div className="text-xs text-gray-500">
+                <Sparkles className="w-3.5 h-3.5 inline-block mr-1" />
+                Fork to start fresh in a new campaign
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={onClose}
+                  className="btn btn-secondary"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleForkFromSnapshot}
+                  disabled={forking}
+                  className="btn btn-primary"
+                >
+                  {forking ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Forking...
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Fork to New Character
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </>
         )}
