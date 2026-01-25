@@ -14,6 +14,7 @@ import {
   Compass,
   Wand2,
   Sparkles,
+  Users,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout, MobileSectionHeader } from '@/components/mobile'
@@ -28,6 +29,7 @@ function getInitials(name: string): string {
 export interface HomePageMobileProps {
   campaigns: Campaign[]
   adventures: Campaign[]
+  joinedCampaigns: Campaign[]
   characters: VaultCharacter[]
   oneshots: Oneshot[]
   savedTemplates: ContentSave[]
@@ -43,6 +45,7 @@ export interface HomePageMobileProps {
 export function HomePageMobile({
   campaigns,
   adventures,
+  joinedCampaigns,
   characters,
   oneshots,
   savedTemplates,
@@ -333,6 +336,51 @@ export function HomePageMobile({
               </button>
             ))}
           </div>
+        )}
+
+        {/* Joined Campaigns Section - Campaigns where user is a player */}
+        {joinedCampaigns.length > 0 && (
+          <>
+            <MobileSectionHeader
+              title="Playing In"
+              action={
+                <button onClick={() => onNavigate('/campaigns')} className="text-sm text-[--arcane-purple]">
+                  View All
+                </button>
+              }
+            />
+            <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
+              {joinedCampaigns.slice(0, 5).map((campaign) => (
+                <button
+                  key={campaign.id}
+                  onClick={() => onNavigate(`/campaigns/${campaign.id}/dashboard`)}
+                  className="flex-shrink-0 w-44 aspect-[16/10] rounded-xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform relative"
+                >
+                  {campaign.image_url ? (
+                    <>
+                      <Image
+                        src={campaign.image_url}
+                        alt={campaign.name}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/30 to-gray-900 flex items-center justify-center">
+                      <Users className="w-10 h-10 text-emerald-400/30" />
+                    </div>
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 p-3">
+                    <span className="inline-block px-2 py-0.5 text-[9px] font-semibold uppercase rounded bg-emerald-500/20 text-emerald-300 mb-1">
+                      Playing
+                    </span>
+                    <h4 className="font-semibold text-white text-sm line-clamp-1">{campaign.name}</h4>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </>
         )}
 
         {/* Adventures Section */}

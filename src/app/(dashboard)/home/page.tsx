@@ -173,6 +173,7 @@ export default function HomePage() {
         <HomePageMobile
           campaigns={campaigns}
           adventures={adventures}
+          joinedCampaigns={joinedCampaigns}
           characters={characters}
           oneshots={oneshots}
           savedTemplates={savedTemplates}
@@ -471,6 +472,60 @@ export default function HomePage() {
             </div>
           )}
         </section>
+
+        {/* Joined Campaigns Section - Campaigns where user is a player */}
+        {joinedCampaigns.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-emerald-500/10">
+                  <Users className="w-5 h-5 text-emerald-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">Playing In</h3>
+              </div>
+              <Link href="/campaigns" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
+                View All <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {joinedCampaigns.slice(0, 6).map((campaign) => (
+                <Link
+                  key={campaign.id}
+                  href={`/campaigns/${campaign.id}/dashboard`}
+                  className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-emerald-500/30 transition-all"
+                >
+                  <div className="relative h-32">
+                    {campaign.image_url ? (
+                      <>
+                        <Image
+                          src={campaign.image_url}
+                          alt={campaign.name}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/30 to-gray-900 flex items-center justify-center">
+                        <Swords className="w-12 h-12 text-emerald-400/30" />
+                      </div>
+                    )}
+                    <span className="absolute top-2 left-2 px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      Playing
+                    </span>
+                  </div>
+                  <div className="p-4">
+                    <h4 className="font-semibold text-white truncate group-hover:text-emerald-400 transition-colors">
+                      {campaign.name}
+                    </h4>
+                    <p className="text-xs text-gray-500 mt-1">{campaign.game_system}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Adventures Section */}
         {adventures.length > 0 && (
