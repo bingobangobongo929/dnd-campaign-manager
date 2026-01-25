@@ -14,6 +14,11 @@ const nextConfig: NextConfig = {
         hostname: 'api.dicebear.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'cdn.discordapp.com',
+        pathname: '/**',
+      },
     ],
   },
 };

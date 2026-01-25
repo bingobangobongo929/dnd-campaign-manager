@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { FeedbackProvider } from '@/components/feedback'
+import { KeyboardShortcutsProvider } from '@/components/keyboard-shortcuts'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false)
@@ -34,7 +35,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <FeedbackProvider>
-      {children}
+      <KeyboardShortcutsProvider>
+        {children}
+      </KeyboardShortcutsProvider>
     </FeedbackProvider>
   )
 }

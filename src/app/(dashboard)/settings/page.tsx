@@ -62,6 +62,7 @@ import { LegalFooter } from '@/components/ui/legal-footer'
 import { FounderBadge, UsageBar } from '@/components/membership'
 import { TimezoneSelector } from '@/components/scheduling'
 import { getUserTimezone, formatCurrentTime, getTimezoneAbbreviation } from '@/lib/timezone-utils'
+import { isAdmin } from '@/lib/admin'
 
 // App version - using date-based versioning
 const APP_VERSION = '2025.01.17'
@@ -144,6 +145,16 @@ export default function SettingsPage() {
     community_updates: false,
   })
   const [savingEmailPrefs, setSavingEmailPrefs] = useState(false)
+
+  // Check if user is admin
+  const showAdmin = settings?.role && isAdmin(settings.role)
+
+  // Listen for keyboard shortcut help event
+  useEffect(() => {
+    const handleShowHelp = () => setShowKeyboardShortcuts(true)
+    window.addEventListener('show-keyboard-help', handleShowHelp)
+    return () => window.removeEventListener('show-keyboard-help', handleShowHelp)
+  }, [])
 
   // Load user stats
   useEffect(() => {
@@ -514,11 +525,14 @@ export default function SettingsPage() {
     }
   }
 
-  const KEYBOARD_SHORTCUTS = [
+  const KEYBOARD_SHORTCUTS: Array<{ keys: string[]; description: string; adminOnly?: boolean }> = [
     { keys: ['G', 'H'], description: 'Go to Home' },
     { keys: ['G', 'C'], description: 'Go to Campaigns' },
-    { keys: ['G', 'V'], description: 'Go to Vault' },
+    { keys: ['G', 'A'], description: 'Go to Adventures' },
     { keys: ['G', 'O'], description: 'Go to One-Shots' },
+    { keys: ['G', 'V'], description: 'Go to Vault' },
+    { keys: ['G', 'S'], description: 'Go to Settings' },
+    { keys: ['G', 'D'], description: 'Go to Admin', adminOnly: true },
     { keys: ['Ctrl/Cmd', 'K'], description: 'Quick search' },
     { keys: ['?'], description: 'Show this help' },
     { keys: ['Esc'], description: 'Close modal / Cancel' },
@@ -892,7 +906,9 @@ export default function SettingsPage() {
           title="Keyboard Shortcuts"
         >
           <div className="space-y-2">
-            {KEYBOARD_SHORTCUTS.map((shortcut, i) => (
+            {KEYBOARD_SHORTCUTS
+              .filter((shortcut) => !shortcut.adminOnly || showAdmin)
+              .map((shortcut, i) => (
               <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-[--bg-elevated]">
                 <span className="text-sm text-gray-400">{shortcut.description}</span>
                 <div className="flex items-center gap-1">
@@ -1042,7 +1058,7 @@ export default function SettingsPage() {
                       className="btn btn-secondary text-sm text-[#5865F2] hover:bg-[#5865F2]/10"
                     >
                       <DiscordIcon className="w-4 h-4" />
-                      Use Discord
+                      Apply Discord
                     </button>
                   )}
                   {settings?.avatar_url && (
@@ -1136,14 +1152,6 @@ export default function SettingsPage() {
                 </button>
               )}
             </div>
-
-            <button
-              className="btn btn-secondary w-full justify-center text-[--arcane-ember] hover:bg-red-500/10"
-              onClick={handleLogout}
-            >
-              <LogOut className="w-4 h-4" />
-              Sign Out
-            </button>
           </div>
         </section>
 
@@ -1157,7 +1165,7 @@ export default function SettingsPage() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-[--text-primary]">Preferences</h2>
-              <p className="text-sm text-[--text-tertiary]">Localization and display settings</p>
+              <p className="text-sm text-[--text-tertiary]">Localization, tips, and shortcuts</p>
             </div>
           </div>
 
@@ -1186,6 +1194,76 @@ export default function SettingsPage() {
                 <span>Current time: {formatCurrentTime(userTimezone)} {getTimezoneAbbreviation(userTimezone)}</span>
               </div>
             </div>
+
+            {/* Divider */}
+            <div className="border-t border-[--border]" />
+
+            {/* Contextual Tips Toggle */}
+            <div className="flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border]">
+              <div className="flex-1">
+                <p className="font-medium text-[--text-primary]">Show Contextual Tips</p>
+                <p className="text-xs text-[--text-tertiary] mt-0.5">
+                  Helpful hints that appear near UI elements
+                </p>
+              </div>
+              <button
+                onClick={handleToggleTips}
+                className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 ml-4 ${
+                  showTips ? 'bg-purple-600' : 'bg-gray-600'
+                }`}
+              >
+                <div
+                  className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-md transition-transform ${
+                    showTips ? 'translate-x-7' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Keyboard Shortcuts */}
+            <button
+              className="w-full flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 transition-colors group"
+              onClick={() => setShowKeyboardShortcuts(true)}
+            >
+              <div className="flex items-center gap-3">
+                <Keyboard className="w-5 h-5 text-[--text-secondary] group-hover:text-[--arcane-purple]" />
+                <div className="text-left">
+                  <p className="font-medium text-[--text-primary]">Keyboard Shortcuts</p>
+                  <p className="text-xs text-[--text-tertiary]">Navigate faster with hotkeys</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
+            </button>
+
+            {/* Restart Tour Button */}
+            <button
+              onClick={handleRestartTour}
+              className="w-full flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <RefreshCw className="w-5 h-5 text-[--text-secondary] group-hover:text-[--arcane-purple]" />
+                <div className="text-left">
+                  <p className="font-medium text-[--text-primary]">Restart Welcome Tour</p>
+                  <p className="text-xs text-[--text-tertiary]">See the app introduction again</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
+            </button>
+
+            {/* Reset Tips Button */}
+            <button
+              onClick={handleResetTips}
+              className="w-full flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <Lightbulb className="w-5 h-5 text-[--text-secondary] group-hover:text-[--arcane-purple]" />
+                <div className="text-left">
+                  <p className="font-medium text-[--text-primary]">Reset All Tips</p>
+                  <p className="text-xs text-[--text-tertiary]">Show dismissed tips again</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
+            </button>
           </div>
         </section>
 
@@ -1503,90 +1581,6 @@ export default function SettingsPage() {
         </section>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            SECTION: PREFERENCES
-            ═══════════════════════════════════════════════════════════════════ */}
-        <section>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center">
-              <Lightbulb className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-[--text-primary]">Preferences</h2>
-              <p className="text-sm text-[--text-tertiary]">Tips, shortcuts, and guidance</p>
-            </div>
-          </div>
-
-          <div className="card p-5 space-y-4">
-            {/* Contextual Tips Toggle */}
-            <div className="flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border]">
-              <div className="flex-1">
-                <p className="font-medium text-[--text-primary]">Show Contextual Tips</p>
-                <p className="text-xs text-[--text-tertiary] mt-0.5">
-                  Helpful hints that appear near UI elements
-                </p>
-              </div>
-              <button
-                onClick={handleToggleTips}
-                className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 ml-4 ${
-                  showTips ? 'bg-purple-600' : 'bg-gray-600'
-                }`}
-              >
-                <div
-                  className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-md transition-transform ${
-                    showTips ? 'translate-x-7' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* Keyboard Shortcuts */}
-            <button
-              className="w-full flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 transition-colors group"
-              onClick={() => setShowKeyboardShortcuts(true)}
-            >
-              <div className="flex items-center gap-3">
-                <Keyboard className="w-5 h-5 text-[--text-secondary] group-hover:text-[--arcane-purple]" />
-                <div className="text-left">
-                  <p className="font-medium text-[--text-primary]">Keyboard Shortcuts</p>
-                  <p className="text-xs text-[--text-tertiary]">Navigate faster with hotkeys</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
-            </button>
-
-            {/* Restart Tour Button */}
-            <button
-              onClick={handleRestartTour}
-              className="w-full flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 transition-colors group"
-            >
-              <div className="flex items-center gap-3">
-                <RefreshCw className="w-5 h-5 text-[--text-secondary] group-hover:text-[--arcane-purple]" />
-                <div className="text-left">
-                  <p className="font-medium text-[--text-primary]">Restart Welcome Tour</p>
-                  <p className="text-xs text-[--text-tertiary]">See the app introduction again</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
-            </button>
-
-            {/* Reset Tips Button */}
-            <button
-              onClick={handleResetTips}
-              className="w-full flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border] hover:border-[--arcane-purple]/50 transition-colors group"
-            >
-              <div className="flex items-center gap-3">
-                <Lightbulb className="w-5 h-5 text-[--text-secondary] group-hover:text-[--arcane-purple]" />
-                <div className="text-left">
-                  <p className="font-medium text-[--text-primary]">Reset All Tips</p>
-                  <p className="text-xs text-[--text-tertiary]">Show dismissed tips again</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
-            </button>
-          </div>
-        </section>
-
-        {/* ═══════════════════════════════════════════════════════════════════
             SECTION: NOTIFICATIONS
             ═══════════════════════════════════════════════════════════════════ */}
         <section>
@@ -1760,6 +1754,19 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* ═══════════════════════════════════════════════════════════════════
+            SECTION: SIGN OUT
+            ═══════════════════════════════════════════════════════════════════ */}
+        <section>
+          <button
+            className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-white/[0.02] border border-[--border] hover:border-red-500/30 text-[--arcane-ember] hover:bg-red-500/10 transition-colors"
+            onClick={handleLogout}
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="font-medium">Sign Out</span>
+          </button>
+        </section>
+
         {/* Legal Footer */}
         <LegalFooter className="mt-12" />
       </div>
@@ -1776,7 +1783,9 @@ export default function SettingsPage() {
         description="Navigate faster with these hotkeys"
       >
         <div className="space-y-2">
-          {KEYBOARD_SHORTCUTS.map((shortcut, i) => (
+          {KEYBOARD_SHORTCUTS
+            .filter((shortcut) => !shortcut.adminOnly || showAdmin)
+            .map((shortcut, i) => (
             <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-[--bg-elevated]">
               <span className="text-[--text-secondary]">{shortcut.description}</span>
               <div className="flex items-center gap-1">
