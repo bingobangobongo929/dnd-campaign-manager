@@ -3,9 +3,48 @@
 import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import Image from 'next/image'
-import { Eye, Share2, Star, MoreHorizontal, BookOpen } from 'lucide-react'
+import { Eye, Share2, Star, MoreHorizontal, BookOpen, Link, Clock, Download, Sparkles } from 'lucide-react'
 import { cn, getInitials } from '@/lib/utils'
 import type { VaultCharacter } from '@/types/database'
+
+type CharacterSourceType = 'original' | 'linked' | 'session_0' | 'export'
+
+const SOURCE_TYPE_CONFIG: Record<CharacterSourceType, {
+  icon: typeof Link
+  label: string
+  shortLabel: string
+  color: string
+  bgColor: string
+}> = {
+  original: {
+    icon: Sparkles,
+    label: 'Original',
+    shortLabel: 'Original',
+    color: 'text-purple-400',
+    bgColor: 'bg-purple-500/10',
+  },
+  linked: {
+    icon: Link,
+    label: 'In-Play',
+    shortLabel: 'In-Play',
+    color: 'text-blue-400',
+    bgColor: 'bg-blue-500/10',
+  },
+  session_0: {
+    icon: Clock,
+    label: 'Session 0',
+    shortLabel: 'S0',
+    color: 'text-cyan-400',
+    bgColor: 'bg-cyan-500/10',
+  },
+  export: {
+    icon: Download,
+    label: 'Export',
+    shortLabel: 'Export',
+    color: 'text-emerald-400',
+    bgColor: 'bg-emerald-500/10',
+  },
+}
 
 interface CharacterCardProps {
   character: VaultCharacter
@@ -143,6 +182,29 @@ export function CharacterCard({
             </div>
           )}
 
+          {/* Source type badge - top left of image (below pinned ribbon) */}
+          {character.source_type && character.source_type !== 'original' && (
+            <div className="absolute top-3 left-3 z-10">
+              {(() => {
+                const config = SOURCE_TYPE_CONFIG[character.source_type as CharacterSourceType]
+                const Icon = config.icon
+                return (
+                  <span
+                    className={cn(
+                      'flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium backdrop-blur-sm shadow-lg',
+                      config.bgColor,
+                      config.color
+                    )}
+                    title={character.source_campaign_name ? `${config.label} • ${character.source_campaign_name}` : config.label}
+                  >
+                    <Icon className="w-3 h-3" />
+                    {config.shortLabel}
+                  </span>
+                )
+              })()}
+            </div>
+          )}
+
           {/* Status badge - bottom right of image */}
           {character.status && (
             <div className="absolute bottom-3 right-3">
@@ -183,8 +245,18 @@ export function CharacterCard({
             </p>
           )}
 
+          {/* Campaign source info */}
+          {character.source_campaign_name && character.source_type !== 'original' && (
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] text-gray-500">
+              <span>From: {character.source_campaign_name}</span>
+              {character.source_session_number != null && (
+                <span className="text-gray-600">• Session {character.source_session_number}</span>
+              )}
+            </div>
+          )}
+
           {/* Date - more subtle */}
-          <p className="text-[11px] text-gray-600 mt-3">
+          <p className="text-[11px] text-gray-600 mt-2">
             Updated {formatDistanceToNow(new Date(character.updated_at), { addSuffix: true })}
           </p>
         </div>

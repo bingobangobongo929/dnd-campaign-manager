@@ -878,6 +878,14 @@ export interface Database {
           campaign_links: Json
           // Navigation restructure: private notes per campaign
           private_campaign_notes: Json
+          // Character source tracking (for vault ↔ campaign sync)
+          source_type: 'original' | 'linked' | 'session_0' | 'export'
+          source_campaign_id: string | null
+          source_campaign_name: string | null
+          source_campaign_character_id: string | null
+          source_snapshot_date: string | null
+          source_session_number: number | null
+          character_lineage_id: string | null
           created_at: string
           updated_at: string
         }
@@ -1020,6 +1028,14 @@ export interface Database {
           campaign_links?: Json
           // Navigation restructure: private notes per campaign
           private_campaign_notes?: Json
+          // Character source tracking (for vault ↔ campaign sync)
+          source_type?: 'original' | 'linked' | 'session_0' | 'export'
+          source_campaign_id?: string | null
+          source_campaign_name?: string | null
+          source_campaign_character_id?: string | null
+          source_snapshot_date?: string | null
+          source_session_number?: number | null
+          character_lineage_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1163,6 +1179,14 @@ export interface Database {
           campaign_links?: Json
           // Navigation restructure: private notes per campaign
           private_campaign_notes?: Json
+          // Character source tracking (for vault ↔ campaign sync)
+          source_type?: 'original' | 'linked' | 'session_0' | 'export'
+          source_campaign_id?: string | null
+          source_campaign_name?: string | null
+          source_campaign_character_id?: string | null
+          source_snapshot_date?: string | null
+          source_session_number?: number | null
+          character_lineage_id?: string | null
           created_at?: string
           updated_at?: string
         }

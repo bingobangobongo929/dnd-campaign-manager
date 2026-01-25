@@ -92,6 +92,7 @@ export function PartyModal({
   })
   const [showAdvancedPermissions, setShowAdvancedPermissions] = useState(false)
   const [sendingReminder, setSendingReminder] = useState(false)
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
 
   // Member edit state
   const [editForm, setEditForm] = useState<{
@@ -232,9 +233,17 @@ export function PartyModal({
   const handleRemoveMember = async () => {
     if (!selectedMember) return
 
-    if (!confirm(`Remove ${getDisplayName(selectedMember)} from the campaign?`)) {
+    // Show confirmation modal for linked characters
+    if (selectedMember.vault_character_id || selectedMember.character) {
+      setShowRemoveConfirm(true)
       return
     }
+
+    await executeRemoveMember()
+  }
+
+  const executeRemoveMember = async () => {
+    if (!selectedMember) return
 
     setSaving(true)
     try {
@@ -250,6 +259,7 @@ export function PartyModal({
       }
 
       toast.success('Member removed')
+      setShowRemoveConfirm(false)
       loadMembers()
       setView('list')
     } catch (error) {
@@ -1252,6 +1262,85 @@ export function PartyModal({
             </div>
           )}
         </>
+      )}
+
+      {/* ============================================ */}
+      {/* REMOVE MEMBER CONFIRMATION MODAL */}
+      {/* ============================================ */}
+      {showRemoveConfirm && selectedMember && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60">
+          <div className="bg-[--background] border border-[--border] rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-400" />
+              </div>
+              <h3 className="text-lg font-medium text-white">
+                Remove {getDisplayName(selectedMember)}?
+              </h3>
+            </div>
+
+            <p className="text-sm text-gray-400 mb-4">
+              This will remove them from the campaign.
+            </p>
+
+            {/* Character Impact Warning */}
+            {selectedMember.character && (
+              <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-4 mb-4">
+                <h4 className="text-sm font-medium text-amber-400 mb-2 flex items-center gap-2">
+                  <LinkIcon className="w-4 h-4" />
+                  Character Impact
+                </h4>
+                <p className="text-xs text-gray-400 mb-2">
+                  {selectedMember.character.name} is {selectedMember.vault_character_id ? 'linked to' : 'designated for'} this player's vault.
+                </p>
+                <ul className="text-xs text-gray-500 space-y-1">
+                  <li className="flex items-start gap-2">
+                    <span className="text-gray-600">•</span>
+                    <span>Player keeps any vault copies already taken</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-gray-600">•</span>
+                    <span>Player loses ability to export new snapshots</span>
+                  </li>
+                  {selectedMember.vault_character_id && (
+                    <li className="flex items-start gap-2">
+                      <span className="text-gray-600">•</span>
+                      <span>Their linked (In-Play) copy becomes read-only archive</span>
+                    </li>
+                  )}
+                  <li className="flex items-start gap-2">
+                    <span className="text-gray-600">•</span>
+                    <span>The character remains in your campaign</span>
+                  </li>
+                </ul>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowRemoveConfirm(false)}
+                disabled={saving}
+                className="btn btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeRemoveMember}
+                disabled={saving}
+                className="btn bg-red-500 hover:bg-red-600 text-white flex-1"
+              >
+                {saving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Remove Player
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </Modal>
   )

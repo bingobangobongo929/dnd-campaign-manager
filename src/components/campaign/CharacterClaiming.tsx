@@ -9,18 +9,35 @@ import {
   Loader2,
   Check,
   ArrowRight,
-  BookOpen,
   Users,
   Sparkles,
   Clock,
   Play,
-  Copy,
   CheckCircle,
+  Download,
+  AlertCircle,
+  Info,
 } from 'lucide-react'
 import { Modal } from '@/components/ui'
 import { toast } from 'sonner'
 import { cn, getInitials } from '@/lib/utils'
 import type { Character, VaultCharacter } from '@/types/database'
+
+interface ExportStatus {
+  session0Available: boolean
+  session0Reason?: string
+  currentSessionNumber: number
+  existingExports: Array<{
+    id: string
+    name: string
+    source_snapshot_date: string
+    source_session_number: number | null
+    source_type: 'session_0' | 'export'
+  }>
+  hasLinkedCharacter: boolean
+  linkedVaultCharacterId: string | null
+  campaignName?: string
+}
 
 interface CharacterClaimingProps {
   campaignId: string
@@ -42,21 +59,57 @@ export function CharacterClaiming({
 }: CharacterClaimingProps) {
   const [modalOpen, setModalOpen] = useState(false)
   const [successModalOpen, setSuccessModalOpen] = useState(false)
-  const [claimMode, setClaimMode] = useState<'new' | 'link'>('new')
-  const [selectedVaultCharacterId, setSelectedVaultCharacterId] = useState('')
   const [processing, setProcessing] = useState(false)
+  const [loadingStatus, setLoadingStatus] = useState(false)
+  const [exportStatus, setExportStatus] = useState<ExportStatus | null>(null)
+
   // What to add to vault
-  const [addInPlay, setAddInPlay] = useState(true)
-  const [addSession0Copy, setAddSession0Copy] = useState(false)
+  const [addLinked, setAddLinked] = useState(true)
+  const [addSession0, setAddSession0] = useState(false)
+  const [addCurrentExport, setAddCurrentExport] = useState(false)
+
   // Result tracking for success modal
   const [claimResult, setClaimResult] = useState<{
     vaultCharacterId: string
-    inPlayAdded: boolean
+    linkedAdded: boolean
     session0Added: boolean
+    currentExportAdded: boolean
   } | null>(null)
 
-  // Don't render anything if already claimed
-  if (character.vault_character_id) {
+  // Link to existing character mode
+  const [claimMode, setClaimMode] = useState<'new' | 'link'>('new')
+  const [selectedVaultCharacterId, setSelectedVaultCharacterId] = useState('')
+
+  // Fetch export status when modal opens
+  useEffect(() => {
+    if (modalOpen && !exportStatus) {
+      fetchExportStatus()
+    }
+  }, [modalOpen])
+
+  const fetchExportStatus = async () => {
+    setLoadingStatus(true)
+    try {
+      const response = await fetch(
+        `/api/campaigns/${campaignId}/characters/${character.id}/export`
+      )
+      if (response.ok) {
+        const data = await response.json()
+        setExportStatus(data)
+        // If already has linked character, don't default to adding linked
+        if (data.hasLinkedCharacter) {
+          setAddLinked(false)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch export status:', error)
+    } finally {
+      setLoadingStatus(false)
+    }
+  }
+
+  // Don't render anything if already claimed and has linked character
+  if (character.vault_character_id && !renderTrigger) {
     return null
   }
 
@@ -65,39 +118,96 @@ export function CharacterClaiming({
     return null
   }
 
-  const handleClaim = async () => {
+  const handleExport = async () => {
     setProcessing(true)
+    const results: {
+      vaultCharacterId: string | null
+      linkedAdded: boolean
+      session0Added: boolean
+      currentExportAdded: boolean
+    } = {
+      vaultCharacterId: null,
+      linkedAdded: false,
+      session0Added: false,
+      currentExportAdded: false,
+    }
+
     try {
-      const response = await fetch(
-        `/api/campaigns/${campaignId}/characters/${character.id}/claim`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            addInPlay,
-            addSession0Copy,
-          }),
+      // Create linked version
+      if (addLinked && !exportStatus?.hasLinkedCharacter) {
+        const response = await fetch(
+          `/api/campaigns/${campaignId}/characters/${character.id}/export`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ exportType: 'linked' }),
+          }
+        )
+        const data = await response.json()
+        if (response.ok) {
+          results.linkedAdded = true
+          results.vaultCharacterId = data.vaultCharacterId
+        } else {
+          toast.error(data.error || 'Failed to create linked version')
         }
-      )
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        toast.error(data.error || 'Failed to claim character')
-        return
       }
 
-      setClaimResult({
-        vaultCharacterId: data.vaultCharacterId,
-        inPlayAdded: addInPlay,
-        session0Added: addSession0Copy,
-      })
-      setModalOpen(false)
-      setSuccessModalOpen(true)
-      onClaimed?.(data.vaultCharacterId)
+      // Create Session 0 snapshot
+      if (addSession0 && exportStatus?.session0Available) {
+        const response = await fetch(
+          `/api/campaigns/${campaignId}/characters/${character.id}/export`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ exportType: 'session_0' }),
+          }
+        )
+        const data = await response.json()
+        if (response.ok) {
+          results.session0Added = true
+          if (!results.vaultCharacterId) {
+            results.vaultCharacterId = data.vaultCharacterId
+          }
+        } else {
+          toast.error(data.error || 'Failed to create Session 0 snapshot')
+        }
+      }
+
+      // Create current state export
+      if (addCurrentExport) {
+        const response = await fetch(
+          `/api/campaigns/${campaignId}/characters/${character.id}/export`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ exportType: 'current' }),
+          }
+        )
+        const data = await response.json()
+        if (response.ok) {
+          results.currentExportAdded = true
+          if (!results.vaultCharacterId) {
+            results.vaultCharacterId = data.vaultCharacterId
+          }
+        } else {
+          toast.error(data.error || 'Failed to create export')
+        }
+      }
+
+      if (results.vaultCharacterId) {
+        setClaimResult({
+          vaultCharacterId: results.vaultCharacterId,
+          linkedAdded: results.linkedAdded,
+          session0Added: results.session0Added,
+          currentExportAdded: results.currentExportAdded,
+        })
+        setModalOpen(false)
+        setSuccessModalOpen(true)
+        onClaimed?.(results.vaultCharacterId)
+      }
     } catch (error) {
-      console.error('Failed to claim character:', error)
-      toast.error('Failed to claim character')
+      console.error('Failed to export character:', error)
+      toast.error('Failed to add character to vault')
     } finally {
       setProcessing(false)
     }
@@ -129,8 +239,9 @@ export function CharacterClaiming({
 
       setClaimResult({
         vaultCharacterId: selectedVaultCharacterId,
-        inPlayAdded: true,
+        linkedAdded: true,
         session0Added: false,
+        currentExportAdded: false,
       })
       setModalOpen(false)
       setSuccessModalOpen(true)
@@ -143,6 +254,13 @@ export function CharacterClaiming({
     }
   }
 
+  const canSubmit = () => {
+    if (claimMode === 'link') {
+      return !!selectedVaultCharacterId
+    }
+    return addLinked || addSession0 || addCurrentExport
+  }
+
   // If renderTrigger is provided, only render the modal (trigger is handled externally)
   if (renderTrigger) {
     return (
@@ -152,17 +270,22 @@ export function CharacterClaiming({
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
           character={character}
+          exportStatus={exportStatus}
+          loadingStatus={loadingStatus}
           claimMode={claimMode}
           setClaimMode={setClaimMode}
           userVaultCharacters={userVaultCharacters}
           selectedVaultCharacterId={selectedVaultCharacterId}
           setSelectedVaultCharacterId={setSelectedVaultCharacterId}
-          addInPlay={addInPlay}
-          setAddInPlay={setAddInPlay}
-          addSession0Copy={addSession0Copy}
-          setAddSession0Copy={setAddSession0Copy}
+          addLinked={addLinked}
+          setAddLinked={setAddLinked}
+          addSession0={addSession0}
+          setAddSession0={setAddSession0}
+          addCurrentExport={addCurrentExport}
+          setAddCurrentExport={setAddCurrentExport}
           processing={processing}
-          onClaim={handleClaim}
+          canSubmit={canSubmit}
+          onExport={handleExport}
           onLink={handleLink}
         />
         <SuccessModal
@@ -188,14 +311,14 @@ export function CharacterClaiming({
           <div className="flex-1">
             <h3 className="font-medium text-white">This character was created for you!</h3>
             <p className="text-sm text-gray-400 mt-1">
-              Claim {character.name} to your vault to manage their story, add details, and track their journey across campaigns.
+              Add {character.name} to your vault to manage their story, add details, and track their journey across campaigns.
             </p>
             <button
               onClick={() => setModalOpen(true)}
               className="btn btn-primary mt-3"
             >
               <Sparkles className="w-4 h-4 mr-2" />
-              Claim Character
+              Add to Vault
             </button>
           </div>
         </div>
@@ -205,17 +328,22 @@ export function CharacterClaiming({
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         character={character}
+        exportStatus={exportStatus}
+        loadingStatus={loadingStatus}
         claimMode={claimMode}
         setClaimMode={setClaimMode}
         userVaultCharacters={userVaultCharacters}
         selectedVaultCharacterId={selectedVaultCharacterId}
         setSelectedVaultCharacterId={setSelectedVaultCharacterId}
-        addInPlay={addInPlay}
-        setAddInPlay={setAddInPlay}
-        addSession0Copy={addSession0Copy}
-        setAddSession0Copy={setAddSession0Copy}
+        addLinked={addLinked}
+        setAddLinked={setAddLinked}
+        addSession0={addSession0}
+        setAddSession0={setAddSession0}
+        addCurrentExport={addCurrentExport}
+        setAddCurrentExport={setAddCurrentExport}
         processing={processing}
-        onClaim={handleClaim}
+        canSubmit={canSubmit}
+        onExport={handleExport}
         onLink={handleLink}
       />
       <SuccessModal
@@ -234,17 +362,22 @@ interface ClaimModalProps {
   isOpen: boolean
   onClose: () => void
   character: Character
+  exportStatus: ExportStatus | null
+  loadingStatus: boolean
   claimMode: 'new' | 'link'
   setClaimMode: (mode: 'new' | 'link') => void
   userVaultCharacters: Pick<VaultCharacter, 'id' | 'name' | 'image_url'>[]
   selectedVaultCharacterId: string
   setSelectedVaultCharacterId: (id: string) => void
-  addInPlay: boolean
-  setAddInPlay: (v: boolean) => void
-  addSession0Copy: boolean
-  setAddSession0Copy: (v: boolean) => void
+  addLinked: boolean
+  setAddLinked: (v: boolean) => void
+  addSession0: boolean
+  setAddSession0: (v: boolean) => void
+  addCurrentExport: boolean
+  setAddCurrentExport: (v: boolean) => void
   processing: boolean
-  onClaim: () => void
+  canSubmit: () => boolean
+  onExport: () => void
   onLink: () => void
 }
 
@@ -252,19 +385,27 @@ function ClaimModal({
   isOpen,
   onClose,
   character,
+  exportStatus,
+  loadingStatus,
   claimMode,
   setClaimMode,
   userVaultCharacters,
   selectedVaultCharacterId,
   setSelectedVaultCharacterId,
-  addInPlay,
-  setAddInPlay,
-  addSession0Copy,
-  setAddSession0Copy,
+  addLinked,
+  setAddLinked,
+  addSession0,
+  setAddSession0,
+  addCurrentExport,
+  setAddCurrentExport,
   processing,
-  onClaim,
+  canSubmit,
+  onExport,
   onLink,
 }: ClaimModalProps) {
+  const session0Available = exportStatus?.session0Available ?? false
+  const hasLinkedCharacter = exportStatus?.hasLinkedCharacter ?? false
+
   return (
     <Modal
       isOpen={isOpen}
@@ -293,148 +434,228 @@ function ClaimModal({
             {character.summary && (
               <p className="text-sm text-gray-400 mt-0.5 line-clamp-2">{character.summary}</p>
             )}
+            {exportStatus?.campaignName && (
+              <p className="text-xs text-gray-500 mt-1">
+                From: {exportStatus.campaignName}
+                {exportStatus.currentSessionNumber > 0 && ` • Session ${exportStatus.currentSessionNumber}`}
+              </p>
+            )}
           </div>
         </div>
 
-        <div className="border-t border-[--border]" />
-
-        {/* What to add */}
-        <div className="space-y-4">
-          <label className="form-label">What would you like to add to your vault?</label>
-
-          {/* In-Play Version Option */}
-          <label
-            className={cn(
-              "block p-4 rounded-lg border cursor-pointer transition-colors",
-              addInPlay
-                ? "bg-purple-500/10 border-purple-500/30"
-                : "bg-white/[0.02] border-[--border] hover:border-purple-500/30"
-            )}
-          >
-            <div className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                checked={addInPlay}
-                onChange={(e) => setAddInPlay(e.target.checked)}
-                className="mt-1 accent-purple-500"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <Play className="w-4 h-4 text-purple-400" />
-                  <span className="font-medium text-white">In-Play Version</span>
-                </div>
-                <p className="text-sm text-gray-400 mt-1">
-                  A synced copy connected to this campaign.
-                </p>
-                <ul className="text-xs text-gray-500 mt-2 space-y-1">
-                  <li>• View your character anytime from your vault</li>
-                  <li>• Automatically updates as the campaign progresses</li>
-                  <li>• Most fields managed in campaign (view-only in vault)</li>
-                  <li>• Private notes section that's just for you</li>
-                </ul>
-              </div>
-            </div>
-          </label>
-
-          {/* Session 0 Copy Option */}
-          <label
-            className={cn(
-              "block p-4 rounded-lg border cursor-pointer transition-colors",
-              addSession0Copy
-                ? "bg-blue-500/10 border-blue-500/30"
-                : "bg-white/[0.02] border-[--border] hover:border-blue-500/30"
-            )}
-          >
-            <div className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                checked={addSession0Copy}
-                onChange={(e) => setAddSession0Copy(e.target.checked)}
-                className="mt-1 accent-blue-500"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-blue-400" />
-                  <span className="font-medium text-white">Session 0 Copy</span>
-                  <span className="text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded">Available</span>
-                </div>
-                <p className="text-sm text-gray-400 mt-1">
-                  A separate copy from before the campaign began.
-                </p>
-                <ul className="text-xs text-gray-500 mt-2 space-y-1">
-                  <li>• Fully editable - entirely yours</li>
-                  <li>• No connection to this campaign</li>
-                  <li>• Use in other games or expand with more details</li>
-                  <li>• Perfect for bringing to another campaign later</li>
-                </ul>
-              </div>
-            </div>
-          </label>
-
-          {/* Tip */}
-          <p className="text-xs text-gray-500 bg-white/[0.02] rounded-lg p-3">
-            💡 You can select both! Many players keep an in-play version to track their journey AND a Session 0 copy for future adventures.
-          </p>
-        </div>
-
-        {/* Link existing character option (if they have vault characters) */}
-        {userVaultCharacters.length > 0 && (
+        {loadingStatus ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+          </div>
+        ) : (
           <>
             <div className="border-t border-[--border]" />
-            <div className="space-y-3">
-              <button
-                onClick={() => setClaimMode(claimMode === 'link' ? 'new' : 'link')}
-                className="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-2"
-              >
-                <LinkIcon className="w-4 h-4" />
-                {claimMode === 'link' ? 'Create new instead' : 'Or link to existing vault character'}
-              </button>
 
-              {claimMode === 'link' && (
-                <div className="form-group">
-                  <label className="form-label">Select vault character to link</label>
-                  <select
-                    value={selectedVaultCharacterId}
-                    onChange={(e) => setSelectedVaultCharacterId(e.target.value)}
-                    className="form-input"
-                  >
-                    <option value="">Choose a character...</option>
-                    {userVaultCharacters.map(vc => (
-                      <option key={vc.id} value={vc.id}>
-                        {vc.name}
-                      </option>
-                    ))}
-                  </select>
+            {/* What to add */}
+            <div className="space-y-4">
+              <label className="form-label">What would you like to add?</label>
+
+              {/* In-Play Version (Linked) Option */}
+              <label
+                className={cn(
+                  "block p-4 rounded-lg border cursor-pointer transition-colors",
+                  hasLinkedCharacter
+                    ? "bg-gray-500/5 border-gray-500/20 cursor-not-allowed"
+                    : addLinked
+                      ? "bg-purple-500/10 border-purple-500/30"
+                      : "bg-white/[0.02] border-[--border] hover:border-purple-500/30"
+                )}
+              >
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={addLinked}
+                    onChange={(e) => setAddLinked(e.target.checked)}
+                    disabled={hasLinkedCharacter}
+                    className="mt-1 accent-purple-500"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <Play className="w-4 h-4 text-purple-400" />
+                      <span className={cn("font-medium", hasLinkedCharacter ? "text-gray-500" : "text-white")}>
+                        In-Play Version (Linked)
+                      </span>
+                      {hasLinkedCharacter && (
+                        <span className="text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded">
+                          Already Added
+                        </span>
+                      )}
+                    </div>
+                    <p className={cn("text-sm mt-1", hasLinkedCharacter ? "text-gray-600" : "text-gray-400")}>
+                      Synced with this campaign. Updates as the campaign progresses.
+                    </p>
+                    {!hasLinkedCharacter && (
+                      <ul className="text-xs text-gray-500 mt-2 space-y-1">
+                        <li>• View-only in vault (campaign controls it)</li>
+                        <li>• See updates made by the DM</li>
+                        <li>• Private notes section just for you</li>
+                      </ul>
+                    )}
+                  </div>
                 </div>
-              )}
+              </label>
+
+              {/* Session 0 Snapshot Option */}
+              <label
+                className={cn(
+                  "block p-4 rounded-lg border transition-colors",
+                  !session0Available
+                    ? "bg-gray-500/5 border-gray-500/20 cursor-not-allowed"
+                    : addSession0
+                      ? "bg-blue-500/10 border-blue-500/30 cursor-pointer"
+                      : "bg-white/[0.02] border-[--border] hover:border-blue-500/30 cursor-pointer"
+                )}
+              >
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={addSession0}
+                    onChange={(e) => setAddSession0(e.target.checked)}
+                    disabled={!session0Available}
+                    className="mt-1 accent-blue-500"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-blue-400" />
+                      <span className={cn("font-medium", !session0Available ? "text-gray-500" : "text-white")}>
+                        Session 0 Snapshot
+                      </span>
+                      {session0Available ? (
+                        <span className="text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded">
+                          Available
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-500 bg-gray-500/10 px-2 py-0.5 rounded">
+                          Not Available
+                        </span>
+                      )}
+                    </div>
+                    <p className={cn("text-sm mt-1", !session0Available ? "text-gray-600" : "text-gray-400")}>
+                      Character state before campaign began.
+                    </p>
+                    {!session0Available && exportStatus?.session0Reason && (
+                      <div className="flex items-start gap-2 mt-2 p-2 bg-amber-500/5 rounded text-xs text-amber-400">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <span>{exportStatus.session0Reason}</span>
+                      </div>
+                    )}
+                    {session0Available && (
+                      <ul className="text-xs text-gray-500 mt-2 space-y-1">
+                        <li>• Fully editable, not connected to campaign</li>
+                        <li>• Use in other games or keep as backup</li>
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              </label>
+
+              {/* Current State Export Option */}
+              <label
+                className={cn(
+                  "block p-4 rounded-lg border cursor-pointer transition-colors",
+                  addCurrentExport
+                    ? "bg-emerald-500/10 border-emerald-500/30"
+                    : "bg-white/[0.02] border-[--border] hover:border-emerald-500/30"
+                )}
+              >
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={addCurrentExport}
+                    onChange={(e) => setAddCurrentExport(e.target.checked)}
+                    className="mt-1 accent-emerald-500"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <Download className="w-4 h-4 text-emerald-400" />
+                      <span className="font-medium text-white">Current State Export</span>
+                    </div>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Snapshot of character as they are now.
+                    </p>
+                    <ul className="text-xs text-gray-500 mt-2 space-y-1">
+                      <li>• Fully editable, not connected to campaign</li>
+                      <li>• Take their journey to another game</li>
+                    </ul>
+                  </div>
+                </div>
+              </label>
+
+              {/* Educational Tip */}
+              <div className="flex items-start gap-2 p-3 bg-white/[0.02] rounded-lg text-xs text-gray-400">
+                <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-blue-400" />
+                <span>
+                  You can take exports anytime - now, later, or when the campaign ends.
+                  Many players wait until the end to capture their character's complete journey.
+                </span>
+              </div>
+            </div>
+
+            {/* Link existing character option (if they have vault characters) */}
+            {userVaultCharacters.length > 0 && (
+              <>
+                <div className="border-t border-[--border]" />
+                <div className="space-y-3">
+                  <button
+                    onClick={() => setClaimMode(claimMode === 'link' ? 'new' : 'link')}
+                    className="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-2"
+                  >
+                    <LinkIcon className="w-4 h-4" />
+                    {claimMode === 'link' ? 'Create new instead' : 'Or link to existing vault character'}
+                  </button>
+
+                  {claimMode === 'link' && (
+                    <div className="form-group">
+                      <label className="form-label">Select vault character to link</label>
+                      <select
+                        value={selectedVaultCharacterId}
+                        onChange={(e) => setSelectedVaultCharacterId(e.target.value)}
+                        className="form-input"
+                      >
+                        <option value="">Choose a character...</option>
+                        {userVaultCharacters.map(vc => (
+                          <option key={vc.id} value={vc.id}>
+                            {vc.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={onClose}
+                disabled={processing}
+                className="btn btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={claimMode === 'link' ? onLink : onExport}
+                disabled={processing || !canSubmit()}
+                className="btn btn-primary flex-1"
+              >
+                {processing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Add to Vault
+                  </>
+                )}
+              </button>
             </div>
           </>
         )}
-
-        {/* Actions */}
-        <div className="flex gap-3 pt-2">
-          <button
-            onClick={onClose}
-            disabled={processing}
-            className="btn btn-secondary flex-1"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={claimMode === 'link' ? onLink : onClaim}
-            disabled={processing || (!addInPlay && !addSession0Copy && claimMode === 'new') || (claimMode === 'link' && !selectedVaultCharacterId)}
-            className="btn btn-primary flex-1"
-          >
-            {processing ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Add to Vault
-              </>
-            )}
-          </button>
-        </div>
       </div>
     </Modal>
   )
@@ -447,8 +668,9 @@ interface SuccessModalProps {
   character: Character
   result: {
     vaultCharacterId: string
-    inPlayAdded: boolean
+    linkedAdded: boolean
     session0Added: boolean
+    currentExportAdded: boolean
   } | null
   campaignId: string
 }
@@ -477,18 +699,22 @@ function SuccessModal({ isOpen, onClose, character, result, campaignId }: Succes
 
         {/* What was added */}
         <div className="bg-white/[0.02] rounded-lg p-4 text-left space-y-2">
-          {result.inPlayAdded && (
+          {result.linkedAdded && (
             <div className="flex items-center gap-2 text-sm">
               <Check className="w-4 h-4 text-green-400" />
-              <span className="text-gray-300">In-Play version added</span>
-              <span className="text-xs text-gray-500 ml-auto">Vault → In-Play</span>
+              <span className="text-gray-300">In-Play version (linked)</span>
             </div>
           )}
           {result.session0Added && (
             <div className="flex items-center gap-2 text-sm">
               <Check className="w-4 h-4 text-green-400" />
-              <span className="text-gray-300">Session 0 copy added</span>
-              <span className="text-xs text-gray-500 ml-auto">Vault → My Characters</span>
+              <span className="text-gray-300">Session 0 snapshot</span>
+            </div>
+          )}
+          {result.currentExportAdded && (
+            <div className="flex items-center gap-2 text-sm">
+              <Check className="w-4 h-4 text-green-400" />
+              <span className="text-gray-300">Current state export</span>
             </div>
           )}
         </div>
