@@ -16,7 +16,17 @@ import {
   Eye,
   Loader2,
   Link as LinkIcon,
+  MessageCircle,
 } from 'lucide-react'
+
+// Discord icon SVG component
+function DiscordIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+    </svg>
+  )
+}
 import { Modal, Input } from '@/components/ui'
 import { toast } from 'sonner'
 import { cn, getInitials } from '@/lib/utils'
@@ -58,6 +68,7 @@ export function CampaignMemberManager({
   const [loading, setLoading] = useState(true)
   const [isOwner, setIsOwner] = useState(false)
   const [inviteModalOpen, setInviteModalOpen] = useState(false)
+  const [inviteMethod, setInviteMethod] = useState<'email' | 'discord'>('email')
   const [inviteForm, setInviteForm] = useState({
     email: '',
     discordId: '',
@@ -255,6 +266,7 @@ export function CampaignMemberManager({
         {/* Invite Button */}
         <button
           onClick={() => {
+            setInviteMethod('email')
             setInviteForm({ email: '', discordId: '', role: 'player', characterId: '' })
             setInviteUrl(null)
             setInviteModalOpen(true)
@@ -315,6 +327,9 @@ export function CampaignMemberManager({
                       <p className="font-medium text-white text-sm truncate">
                         {displayName}
                       </p>
+                      {member.discord_id && !member.email && (
+                        <DiscordIcon className="w-3.5 h-3.5 text-[#5865F2]" />
+                      )}
                       {member.status === 'pending' && (
                         <span className="text-xs text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
                           Pending
@@ -436,36 +451,80 @@ export function CampaignMemberManager({
           ) : (
             // Show invite form
             <>
-              {/* Email */}
-              <div className="form-group">
-                <label className="form-label">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <Input
-                    type="email"
-                    placeholder="player@example.com"
-                    value={inviteForm.email}
-                    onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
-                    className="pl-10"
-                  />
-                </div>
+              {/* Invite Method Tabs */}
+              <div className="flex gap-2 p-1 bg-white/[0.02] rounded-lg border border-[--border]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInviteMethod('email')
+                    setInviteForm({ ...inviteForm, discordId: '' })
+                  }}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors",
+                    inviteMethod === 'email'
+                      ? "bg-purple-500/20 text-purple-300"
+                      : "text-gray-400 hover:text-white hover:bg-white/[0.05]"
+                  )}
+                >
+                  <Mail className="w-4 h-4" />
+                  Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInviteMethod('discord')
+                    setInviteForm({ ...inviteForm, email: '' })
+                  }}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors",
+                    inviteMethod === 'discord'
+                      ? "bg-[#5865F2]/20 text-[#5865F2]"
+                      : "text-gray-400 hover:text-white hover:bg-white/[0.05]"
+                  )}
+                >
+                  <DiscordIcon className="w-4 h-4" />
+                  Discord
+                </button>
               </div>
 
-              {/* Discord ID (optional) */}
-              <div className="form-group">
-                <label className="form-label">
-                  Or Discord ID <span className="text-gray-500 text-xs">(optional)</span>
-                </label>
-                <div className="relative">
-                  <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <Input
-                    placeholder="username#1234"
-                    value={inviteForm.discordId}
-                    onChange={(e) => setInviteForm({ ...inviteForm, discordId: e.target.value })}
-                    className="pl-10"
-                  />
+              {/* Email Input */}
+              {inviteMethod === 'email' && (
+                <div className="form-group">
+                  <label className="form-label">Email Address</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                    <Input
+                      type="email"
+                      placeholder="player@example.com"
+                      value={inviteForm.email}
+                      onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                      className="pl-10"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    They'll receive an email with a link to join your campaign.
+                  </p>
                 </div>
-              </div>
+              )}
+
+              {/* Discord ID Input */}
+              {inviteMethod === 'discord' && (
+                <div className="form-group">
+                  <label className="form-label">Discord Username</label>
+                  <div className="relative">
+                    <DiscordIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5865F2]" />
+                    <Input
+                      placeholder="username or username#1234"
+                      value={inviteForm.discordId}
+                      onChange={(e) => setInviteForm({ ...inviteForm, discordId: e.target.value })}
+                      className="pl-10"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Share the invite link with them on Discord. They'll need to use this username when joining.
+                  </p>
+                </div>
+              )}
 
               {/* Role */}
               <div className="form-group">
