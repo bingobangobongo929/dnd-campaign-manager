@@ -1777,6 +1777,13 @@ export interface Database {
           discord_username: string | null
           discord_avatar: string | null
           discord_linked_at: string | null
+          // Email preferences
+          email_prefs: {
+            campaign_invites?: boolean
+            session_reminders?: boolean
+            character_claims?: boolean
+            community_updates?: boolean
+          } | null
           created_at: string
           updated_at: string
         }
@@ -1812,6 +1819,12 @@ export interface Database {
           discord_username?: string | null
           discord_avatar?: string | null
           discord_linked_at?: string | null
+          email_prefs?: {
+            campaign_invites?: boolean
+            session_reminders?: boolean
+            character_claims?: boolean
+            community_updates?: boolean
+          } | null
           created_at?: string
           updated_at?: string
         }
@@ -1847,6 +1860,12 @@ export interface Database {
           discord_username?: string | null
           discord_avatar?: string | null
           discord_linked_at?: string | null
+          email_prefs?: {
+            campaign_invites?: boolean
+            session_reminders?: boolean
+            character_claims?: boolean
+            community_updates?: boolean
+          } | null
           created_at?: string
           updated_at?: string
         }
