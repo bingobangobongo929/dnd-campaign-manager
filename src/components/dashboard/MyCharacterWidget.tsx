@@ -60,7 +60,7 @@ export function MyCharacterWidget({
     if (character?.id) {
       localStorage.setItem(getClaimDismissKey(character.id), 'true')
     }
-    handleDismiss()
+    setDismissedClaim(true)
   }
 
   // Use the claimed ID if we just claimed, otherwise use the passed prop

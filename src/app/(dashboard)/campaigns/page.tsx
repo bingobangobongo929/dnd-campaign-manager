@@ -411,7 +411,15 @@ export default function CampaignsPage() {
             {(activeCampaigns.length > 1 || joinedCampaigns.length > 0) && (
               <section>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white">Active Games</h3>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                      <Play className="w-4 h-4 text-emerald-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">Active Games</h3>
+                    <span className="text-xs text-gray-500">
+                      {activeCampaigns.length + joinedCampaigns.length}
+                    </span>
+                  </div>
                   <button
                     onClick={() => { setActiveTab('active'); setSubFilter('running'); }}
                     className="text-sm text-purple-400 hover:text-purple-300"
@@ -497,7 +505,15 @@ export default function CampaignsPage() {
             {(inactiveCampaigns.length > 0 || templateSnapshots.length > 0) && (
               <section>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white">My Work</h3>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                      <Edit className="w-4 h-4 text-amber-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">My Work</h3>
+                    <span className="text-xs text-gray-500">
+                      {inactiveCampaigns.length + uniqueTemplateContentIds.size}
+                    </span>
+                  </div>
                   <button
                     onClick={() => { setActiveTab('my-work'); setSubFilter('drafts'); }}
                     className="text-sm text-purple-400 hover:text-purple-300"
@@ -540,7 +556,13 @@ export default function CampaignsPage() {
             {savedCampaigns.length > 0 && (
               <section>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white">Collection</h3>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                      <Bookmark className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">Saved From Community</h3>
+                    <span className="text-xs text-gray-500">{savedCampaigns.length}</span>
+                  </div>
                   <button
                     onClick={() => setActiveTab('collection')}
                     className="text-sm text-purple-400 hover:text-purple-300"

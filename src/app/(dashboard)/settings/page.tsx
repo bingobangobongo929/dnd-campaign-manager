@@ -30,6 +30,10 @@ import {
   RefreshCw,
   Globe,
   Clock,
+  Mail,
+  Bell,
+  Calendar,
+  Users,
 } from 'lucide-react'
 import Image from 'next/image'
 import { v4 as uuidv4 } from 'uuid'
@@ -117,6 +121,15 @@ export default function SettingsPage() {
   const [userTimezone, setUserTimezone] = useState(() => getUserTimezone())
   const [savingTimezone, setSavingTimezone] = useState(false)
 
+  // Email notification preferences
+  const [emailPrefs, setEmailPrefs] = useState({
+    campaign_invites: true,
+    session_reminders: true,
+    character_claims: true,
+    community_updates: false,
+  })
+  const [savingEmailPrefs, setSavingEmailPrefs] = useState(false)
+
   // Load user stats
   useEffect(() => {
     if (user) {
@@ -131,7 +144,7 @@ export default function SettingsPage() {
     try {
       const { data } = await supabase
         .from('user_settings')
-        .select('show_tips, timezone')
+        .select('show_tips, timezone, email_prefs')
         .eq('user_id', user.id)
         .single()
 
@@ -139,6 +152,14 @@ export default function SettingsPage() {
         setShowTips(data.show_tips !== false)
         if (data.timezone) {
           setUserTimezone(data.timezone)
+        }
+        if (data.email_prefs) {
+          setEmailPrefs({
+            campaign_invites: data.email_prefs.campaign_invites !== false,
+            session_reminders: data.email_prefs.session_reminders !== false,
+            character_claims: data.email_prefs.character_claims !== false,
+            community_updates: data.email_prefs.community_updates === true,
+          })
         }
       }
     } catch {
@@ -179,6 +200,28 @@ export default function SettingsPage() {
 
   const handleRestartTour = () => {
     setShowOnboarding(true)
+  }
+
+  const handleEmailPrefChange = async (key: keyof typeof emailPrefs) => {
+    const newPrefs = { ...emailPrefs, [key]: !emailPrefs[key] }
+    setEmailPrefs(newPrefs)
+    setSavingEmailPrefs(true)
+    try {
+      const { error } = await supabase
+        .from('user_settings')
+        .update({ email_prefs: newPrefs })
+        .eq('user_id', user!.id)
+
+      if (error) throw error
+      toast.success('Email preferences updated')
+    } catch (error) {
+      console.error('Failed to save email preferences:', error)
+      // Revert on error
+      setEmailPrefs(emailPrefs)
+      toast.error('Failed to save preferences')
+    } finally {
+      setSavingEmailPrefs(false)
+    }
   }
 
   const loadStats = async () => {
@@ -1343,6 +1386,119 @@ export default function SettingsPage() {
               </div>
               <ChevronRight className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
             </button>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            SECTION: NOTIFICATIONS
+            ═══════════════════════════════════════════════════════════════════ */}
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center">
+              <Bell className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-[--text-primary]">Email Notifications</h2>
+              <p className="text-sm text-[--text-tertiary]">Choose what emails you receive</p>
+            </div>
+          </div>
+
+          <div className="card p-5 space-y-1">
+            {/* Campaign Invites */}
+            <div className="flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border]">
+              <div className="flex items-center gap-3">
+                <Users className="w-5 h-5 text-[--text-secondary]" />
+                <div>
+                  <p className="font-medium text-[--text-primary]">Campaign Invites</p>
+                  <p className="text-xs text-[--text-tertiary]">When you're invited to join a campaign</p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleEmailPrefChange('campaign_invites')}
+                disabled={savingEmailPrefs}
+                className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 ml-4 ${
+                  emailPrefs.campaign_invites ? 'bg-purple-600' : 'bg-gray-600'
+                }`}
+              >
+                <div
+                  className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-md transition-transform ${
+                    emailPrefs.campaign_invites ? 'translate-x-7' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Session Reminders */}
+            <div className="flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border]">
+              <div className="flex items-center gap-3">
+                <Calendar className="w-5 h-5 text-[--text-secondary]" />
+                <div>
+                  <p className="font-medium text-[--text-primary]">Session Reminders</p>
+                  <p className="text-xs text-[--text-tertiary]">Reminders before upcoming sessions</p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleEmailPrefChange('session_reminders')}
+                disabled={savingEmailPrefs}
+                className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 ml-4 ${
+                  emailPrefs.session_reminders ? 'bg-purple-600' : 'bg-gray-600'
+                }`}
+              >
+                <div
+                  className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-md transition-transform ${
+                    emailPrefs.session_reminders ? 'translate-x-7' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Character Claims */}
+            <div className="flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border]">
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-5 h-5 text-[--text-secondary]" />
+                <div>
+                  <p className="font-medium text-[--text-primary]">Character Claims</p>
+                  <p className="text-xs text-[--text-tertiary]">When a character is assigned to you</p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleEmailPrefChange('character_claims')}
+                disabled={savingEmailPrefs}
+                className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 ml-4 ${
+                  emailPrefs.character_claims ? 'bg-purple-600' : 'bg-gray-600'
+                }`}
+              >
+                <div
+                  className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-md transition-transform ${
+                    emailPrefs.character_claims ? 'translate-x-7' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Community Updates */}
+            <div className="flex items-center justify-between p-4 rounded-xl bg-[--bg-elevated] border border-[--border]">
+              <div className="flex items-center gap-3">
+                <Mail className="w-5 h-5 text-[--text-secondary]" />
+                <div>
+                  <p className="font-medium text-[--text-primary]">Community Updates</p>
+                  <p className="text-xs text-[--text-tertiary]">New features and occasional updates</p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleEmailPrefChange('community_updates')}
+                disabled={savingEmailPrefs}
+                className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 ml-4 ${
+                  emailPrefs.community_updates ? 'bg-purple-600' : 'bg-gray-600'
+                }`}
+              >
+                <div
+                  className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-md transition-transform ${
+                    emailPrefs.community_updates ? 'translate-x-7' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
           </div>
         </section>
 

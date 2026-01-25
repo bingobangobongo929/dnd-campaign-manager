@@ -47,19 +47,47 @@ export default function HomePage() {
   const [oneshots, setOneshots] = useState<Oneshot[]>([])
   const [savedTemplates, setSavedTemplates] = useState<ContentSave[]>([])
   const [claimableCharacters, setClaimableCharacters] = useState<{ character: Character; campaign: Campaign }[]>([])
+  const [pendingInvites, setPendingInvites] = useState<{ id: string; campaign: Campaign; inviter_name?: string }[]>([])
+  const [drafts, setDrafts] = useState<{ type: 'campaign' | 'adventure' | 'oneshot' | 'character'; item: Campaign | Oneshot | VaultCharacter; progress: number }[]>([])
   const [loading, setLoading] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [founderBannerDismissed, setFounderBannerDismissed] = useState(true) // Start true to prevent flash
+  const [roleSelected, setRoleSelected] = useState<'dm' | 'player' | 'exploring' | null>(null)
+  const [inviteCode, setInviteCode] = useState('')
+  const [joiningWithCode, setJoiningWithCode] = useState(false)
 
-  // Check if founder banner was dismissed
+  // Check if founder banner was dismissed and if role was selected
   useEffect(() => {
     const dismissed = localStorage.getItem('founder-banner-dismissed')
     setFounderBannerDismissed(dismissed === 'true')
+    const savedRole = localStorage.getItem('multiloop-user-role')
+    if (savedRole === 'dm' || savedRole === 'player' || savedRole === 'exploring') {
+      setRoleSelected(savedRole)
+    }
   }, [])
 
   const dismissFounderBanner = () => {
     localStorage.setItem('founder-banner-dismissed', 'true')
     setFounderBannerDismissed(true)
+  }
+
+  const selectRole = (role: 'dm' | 'player' | 'exploring') => {
+    localStorage.setItem('multiloop-user-role', role)
+    setRoleSelected(role)
+  }
+
+  const handleJoinWithCode = async () => {
+    if (!inviteCode.trim()) return
+    setJoiningWithCode(true)
+    try {
+      // Check if it's a full URL or just a token
+      const token = inviteCode.includes('/')
+        ? inviteCode.split('/').pop()
+        : inviteCode.trim()
+      router.push(`/invite/${token}`)
+    } catch {
+      setJoiningWithCode(false)
+    }
   }
 
   useEffect(() => {
@@ -141,6 +169,86 @@ export default function HomePage() {
     if (charactersRes.data) setCharacters(charactersRes.data)
     if (oneshotsRes.data) setOneshots(oneshotsRes.data)
     if (savedRes.data) setSavedTemplates(savedRes.data)
+
+    // Load pending invites
+    const { data: invites } = await supabase
+      .from('campaign_members')
+      .select('id, campaign:campaigns(*)')
+      .eq('email', user.email)
+      .eq('status', 'pending')
+      .is('user_id', null)
+
+    if (invites) {
+      const validInvites = invites
+        .filter((i: { campaign: Campaign | null }) => i.campaign)
+        .map((i: { id: string; campaign: Campaign }) => ({ id: i.id, campaign: i.campaign }))
+      setPendingInvites(validInvites)
+    }
+
+    // Load drafts (content_mode = 'draft' or incomplete content)
+    const [draftCampaigns, draftOneshots, draftCharacters] = await Promise.all([
+      supabase
+        .from('campaigns')
+        .select('*')
+        .eq('user_id', user.id)
+        .is('deleted_at', null)
+        .eq('content_mode', 'draft')
+        .order('updated_at', { ascending: false })
+        .limit(4),
+      supabase
+        .from('oneshots')
+        .select('*')
+        .eq('user_id', user.id)
+        .is('deleted_at', null)
+        .eq('content_mode', 'draft')
+        .order('updated_at', { ascending: false })
+        .limit(4),
+      supabase
+        .from('vault_characters')
+        .select('*')
+        .eq('user_id', user.id)
+        .is('deleted_at', null)
+        .eq('content_mode', 'draft')
+        .order('updated_at', { ascending: false })
+        .limit(4),
+    ])
+
+    const allDrafts: { type: 'campaign' | 'adventure' | 'oneshot' | 'character'; item: Campaign | Oneshot | VaultCharacter; progress: number }[] = []
+
+    if (draftCampaigns.data) {
+      draftCampaigns.data.forEach((c: Campaign) => {
+        // Calculate progress based on filled fields
+        const fields = [c.name, c.description, c.image_url, c.game_system]
+        const progress = Math.round((fields.filter(Boolean).length / fields.length) * 100)
+        allDrafts.push({
+          type: c.duration_type === 'adventure' ? 'adventure' : 'campaign',
+          item: c,
+          progress
+        })
+      })
+    }
+    if (draftOneshots.data) {
+      draftOneshots.data.forEach((o: Oneshot) => {
+        const fields = [o.title, o.tagline, o.image_url, o.game_system, o.introduction]
+        const progress = Math.round((fields.filter(Boolean).length / fields.length) * 100)
+        allDrafts.push({ type: 'oneshot', item: o, progress })
+      })
+    }
+    if (draftCharacters.data) {
+      draftCharacters.data.forEach((c: VaultCharacter) => {
+        const fields = [c.name, c.race, c.class, c.image_url, c.backstory]
+        const progress = Math.round((fields.filter(Boolean).length / fields.length) * 100)
+        allDrafts.push({ type: 'character', item: c, progress })
+      })
+    }
+
+    // Sort by updated_at and take top 4
+    allDrafts.sort((a, b) => {
+      const aDate = new Date(a.item.updated_at || a.item.created_at).getTime()
+      const bDate = new Date(b.item.updated_at || b.item.created_at).getTime()
+      return bDate - aDate
+    })
+    setDrafts(allDrafts.slice(0, 4))
 
     // Load joined campaigns (campaigns user is a member of but doesn't own)
     const joinedRes = await fetch('/api/campaigns/joined')
@@ -332,6 +440,104 @@ export default function HomePage() {
               </p>
             </div>
 
+            {/* Role Selection - Only show if no role selected */}
+            {!roleSelected && (
+              <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-8">
+                <h2 className="text-xl font-semibold text-white text-center mb-6">
+                  What brings you here today?
+                </h2>
+                <div className="grid md:grid-cols-3 gap-4">
+                  {/* DM/GM Option */}
+                  <button
+                    onClick={() => selectRole('dm')}
+                    className="group p-6 rounded-xl bg-blue-500/5 border border-blue-500/20 hover:border-blue-500/40 hover:bg-blue-500/10 transition-all text-left"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center mb-4">
+                      <Swords className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <h3 className="font-semibold text-white mb-2 group-hover:text-blue-400 transition-colors">
+                      I'm a DM/GM
+                    </h3>
+                    <p className="text-sm text-gray-400">
+                      Create campaigns, run adventures, build your world
+                    </p>
+                  </button>
+
+                  {/* Player Option */}
+                  <button
+                    onClick={() => selectRole('player')}
+                    className="group p-6 rounded-xl bg-purple-500/5 border border-purple-500/20 hover:border-purple-500/40 hover:bg-purple-500/10 transition-all text-left"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center mb-4">
+                      <Users className="w-6 h-6 text-purple-400" />
+                    </div>
+                    <h3 className="font-semibold text-white mb-2 group-hover:text-purple-400 transition-colors">
+                      I'm a Player
+                    </h3>
+                    <p className="text-sm text-gray-400">
+                      Join campaigns, manage characters, track your journey
+                    </p>
+                  </button>
+
+                  {/* Just Looking Option */}
+                  <button
+                    onClick={() => selectRole('exploring')}
+                    className="group p-6 rounded-xl bg-gray-500/5 border border-gray-500/20 hover:border-gray-500/40 hover:bg-gray-500/10 transition-all text-left"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-gray-500/20 flex items-center justify-center mb-4">
+                      <BookOpen className="w-6 h-6 text-gray-400" />
+                    </div>
+                    <h3 className="font-semibold text-white mb-2 group-hover:text-gray-300 transition-colors">
+                      Just Looking
+                    </h3>
+                    <p className="text-sm text-gray-400">
+                      Browse what's possible first
+                    </p>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Quick Start - Show different options based on role */}
+            {roleSelected && (
+              <>
+                {/* Join a Game section - prominently shown for players */}
+                {roleSelected === 'player' && (
+                  <div className="bg-purple-500/10 border border-purple-500/30 rounded-2xl p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-purple-600/20 flex items-center justify-center flex-shrink-0">
+                        <Users className="w-6 h-6 text-purple-400" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-white mb-2">
+                          Joining a Game?
+                        </h3>
+                        <p className="text-sm text-gray-400 mb-4">
+                          If your DM sent you an invite link, click it to join their campaign.
+                          Or paste your invite code here:
+                        </p>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={inviteCode}
+                            onChange={(e) => setInviteCode(e.target.value)}
+                            placeholder="Paste invite link or code"
+                            className="flex-1 px-4 py-2 bg-white/[0.05] border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50"
+                            onKeyDown={(e) => e.key === 'Enter' && handleJoinWithCode()}
+                          />
+                          <button
+                            onClick={handleJoinWithCode}
+                            disabled={joiningWithCode || !inviteCode.trim()}
+                            className="px-6 py-2 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+                          >
+                            {joiningWithCode ? 'Joining...' : 'Join'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
             {/* Getting Started Cards */}
             <div className="grid md:grid-cols-2 gap-6">
               {/* Start a Campaign */}
@@ -441,12 +647,159 @@ export default function HomePage() {
                 </Link>
               </div>
             </div>
+              </>
+            )}
           </div>
         )}
 
         {/* Returning User Content */}
         {!isFreshUser && (
           <>
+        {/* Pending Invites Notification */}
+        {pendingInvites.length > 0 && (
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-5">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-blue-600/20 flex items-center justify-center flex-shrink-0">
+                <Users className="w-6 h-6 text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-white">
+                  {pendingInvites.length === 1
+                    ? 'You have a campaign invite!'
+                    : `You have ${pendingInvites.length} campaign invites!`}
+                </h3>
+                <div className="flex flex-wrap gap-3 mt-4">
+                  {pendingInvites.slice(0, 3).map(({ id, campaign }) => (
+                    <Link
+                      key={id}
+                      href={`/campaigns/${campaign.id}/dashboard`}
+                      className="group flex items-center gap-3 p-3 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] hover:border-blue-500/30 rounded-lg transition-all"
+                    >
+                      {campaign.image_url ? (
+                        <Image
+                          src={campaign.image_url}
+                          alt={campaign.name}
+                          width={40}
+                          height={40}
+                          className="rounded-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-blue-600/20 flex items-center justify-center text-blue-400">
+                          <Swords className="w-5 h-5" />
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium text-white group-hover:text-blue-400 transition-colors">
+                          {campaign.name}
+                        </p>
+                        <p className="text-xs text-gray-500">Click to view invite</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-blue-400 transition-colors ml-2" />
+                    </Link>
+                  ))}
+                  {pendingInvites.length > 3 && (
+                    <div className="flex items-center text-sm text-gray-400">
+                      +{pendingInvites.length - 3} more
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Continue Working On - Drafts */}
+        {drafts.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-500/10">
+                  <Clock className="w-5 h-5 text-amber-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">Continue Working On</h3>
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {drafts.map(({ type, item, progress }) => {
+                const href = type === 'character'
+                  ? `/vault/${item.id}`
+                  : type === 'oneshot'
+                  ? `/oneshots/${item.id}`
+                  : `/campaigns/${item.id}/dashboard`
+
+                const name = 'title' in item ? item.title : item.name
+                const Icon = type === 'character' ? BookOpen : type === 'oneshot' ? Scroll : type === 'adventure' ? Compass : Swords
+                const colorClass = type === 'character' ? 'purple' : type === 'oneshot' ? 'green' : type === 'adventure' ? 'amber' : 'blue'
+
+                return (
+                  <Link
+                    key={`${type}-${item.id}`}
+                    href={href}
+                    className={cn(
+                      "group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] transition-all p-4",
+                      `hover:border-${colorClass}-500/30`
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-lg bg-${colorClass}-500/20 flex items-center justify-center flex-shrink-0`}>
+                        <Icon className={`w-5 h-5 text-${colorClass}-400`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className={`text-[10px] uppercase tracking-wider text-${colorClass}-400 font-medium`}>
+                          {type === 'adventure' ? 'Adventure' : type.charAt(0).toUpperCase() + type.slice(1)} • Draft
+                        </span>
+                        <h4 className="font-medium text-white truncate mt-1 group-hover:text-white transition-colors">
+                          {name || 'Untitled'}
+                        </h4>
+                        <div className="mt-2">
+                          <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                            <div
+                              className={`h-full bg-${colorClass}-500/60 rounded-full`}
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                          <p className="text-[10px] text-gray-500 mt-1">{progress}% complete</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="absolute top-2 right-2">
+                      <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-white transition-colors" />
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Join a Game - For returning users */}
+        <div className="bg-gray-800/30 border border-white/[0.06] rounded-xl p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex items-center gap-3">
+              <Map className="w-5 h-5 text-gray-400" />
+              <span className="text-gray-300">Joining a game?</span>
+            </div>
+            <div className="flex gap-2 flex-1 w-full sm:w-auto">
+              <input
+                type="text"
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+                placeholder="Paste invite link or code"
+                className="flex-1 sm:w-64 px-3 py-1.5 bg-white/[0.05] border border-white/10 rounded-lg text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50"
+                onKeyDown={(e) => e.key === 'Enter' && handleJoinWithCode()}
+              />
+              <button
+                onClick={handleJoinWithCode}
+                disabled={joiningWithCode || !inviteCode.trim()}
+                className="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                {joiningWithCode ? '...' : 'Join'}
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Your Campaigns Section */}
         <section>
           <div className="flex items-center justify-between mb-6">

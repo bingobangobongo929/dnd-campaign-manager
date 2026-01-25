@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, Trash2, Copy, X, CheckSquare, Square, CopyPlus, Check, LayoutGrid, Grid3X3, PenLine, Sparkles, Star, Play, ChevronRight, User, Eye, BookOpen, Filter, Bookmark, RotateCcw } from 'lucide-react'
+import { Plus, Search, Trash2, Copy, X, CheckSquare, Square, CopyPlus, Check, LayoutGrid, Grid3X3, PenLine, Sparkles, Star, Play, ChevronRight, User, Eye, BookOpen, Filter, Bookmark, RotateCcw, Swords, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import { Modal, Dropdown } from '@/components/ui'
@@ -763,7 +763,23 @@ export default function VaultPage() {
             {/* My Characters Section */}
             {activeCharacters.length > 0 && (
               <section>
-                <h3 className="text-lg font-semibold text-white mb-4">My Characters</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                      <User className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">My Characters</h3>
+                    <span className="text-xs text-gray-500">{activeCharacters.length}</span>
+                  </div>
+                  {activeCharacters.length > 4 && (
+                    <button
+                      onClick={() => setActiveTab('my-characters')}
+                      className="text-sm text-purple-400 hover:text-purple-300"
+                    >
+                      View all →
+                    </button>
+                  )}
+                </div>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {activeCharacters.slice(0, 4).map((character) => (
                     <CharacterCard
@@ -783,7 +799,23 @@ export default function VaultPage() {
             {/* In-Play Section */}
             {inPlayCharacters.length > 0 && (
               <section>
-                <h3 className="text-lg font-semibold text-white mb-4">In Play</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                      <Swords className="w-4 h-4 text-emerald-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">In Play</h3>
+                    <span className="text-xs text-gray-500">{inPlayCharacters.length}</span>
+                  </div>
+                  {inPlayCharacters.length > 4 && (
+                    <button
+                      onClick={() => setActiveTab('in-play')}
+                      className="text-sm text-purple-400 hover:text-purple-300"
+                    >
+                      View all →
+                    </button>
+                  )}
+                </div>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {inPlayCharacters.slice(0, 4).map((character) => (
                     <button
@@ -830,7 +862,23 @@ export default function VaultPage() {
             {/* Saved Section */}
             {savedCharacters.length > 0 && (
               <section>
-                <h3 className="text-lg font-semibold text-white mb-4">Saved from Community</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                      <Bookmark className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">Saved From Community</h3>
+                    <span className="text-xs text-gray-500">{savedCharacters.length}</span>
+                  </div>
+                  {savedCharacters.length > 4 && (
+                    <button
+                      onClick={() => setActiveTab('collection')}
+                      className="text-sm text-purple-400 hover:text-purple-300"
+                    >
+                      View all →
+                    </button>
+                  )}
+                </div>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {savedCharacters.slice(0, 4).map((save) => (
                     <div
