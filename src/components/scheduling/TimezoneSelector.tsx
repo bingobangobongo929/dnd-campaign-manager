@@ -72,8 +72,8 @@ export function TimezoneSelector({
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
             'w-full flex items-center justify-between gap-3 px-4 py-3',
-            'bg-white/[0.02] border border-white/[0.06] rounded-xl',
-            'hover:bg-white/[0.04] hover:border-white/10 transition-all',
+            'bg-[--bg-elevated] border border-[--border] rounded-xl',
+            'hover:border-[--border-hover] transition-all',
             'text-left',
             isOpen && 'ring-2 ring-[--arcane-purple]/30 border-[--arcane-purple]/50'
           )}
@@ -124,12 +124,12 @@ export function TimezoneSelector({
             {/* Dropdown menu */}
             <div className={cn(
               'absolute z-50 w-full mt-2',
-              'bg-[--bg-secondary] border border-white/[0.06] rounded-xl',
+              'bg-[--bg-secondary] border border-[--border] rounded-xl',
               'shadow-xl shadow-black/30',
               'max-h-[400px] overflow-hidden flex flex-col'
             )}>
               {/* Search */}
-              <div className="p-3 border-b border-white/[0.06]">
+              <div className="p-3 border-b border-[--border]">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[--text-tertiary]" />
                   <input
@@ -139,7 +139,7 @@ export function TimezoneSelector({
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className={cn(
                       'w-full pl-9 pr-4 py-2',
-                      'bg-white/[0.02] border border-white/[0.06] rounded-lg',
+                      'bg-[--bg-surface] border border-[--border] rounded-lg',
                       'text-sm text-white placeholder:text-[--text-tertiary]',
                       'focus:outline-none focus:ring-2 focus:ring-[--arcane-purple]/30 focus:border-[--arcane-purple]/50'
                     )}
@@ -178,7 +178,7 @@ export function TimezoneSelector({
                               'text-left transition-all',
                               isSelected
                                 ? 'bg-[--arcane-purple]/10 text-[--arcane-purple]'
-                                : 'hover:bg-white/[0.04] text-[--text-secondary]'
+                                : 'hover:bg-[--bg-hover] text-[--text-secondary]'
                             )}
                           >
                             <div>
