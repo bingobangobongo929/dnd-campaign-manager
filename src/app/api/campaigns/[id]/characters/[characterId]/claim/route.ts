@@ -116,8 +116,11 @@ export async function POST(
     const snapshotData = {
       vault_character_id: vaultCharacter.id,
       campaign_id: campaignId,
+      campaign_character_id: characterId,
       snapshot_data: character,
       snapshot_type: 'session_0',
+      snapshot_name: 'Session 0 - Character Joined',
+      created_by: user.id,
     }
 
     const { error: snapshotError } = await supabase
