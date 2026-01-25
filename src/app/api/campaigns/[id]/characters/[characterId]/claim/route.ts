@@ -44,7 +44,7 @@ export async function POST(
     // 1. Check if user is a campaign member
     const { data: membership } = await supabase
       .from('campaign_members')
-      .select('id, role, character_id')
+      .select('id, role, character_id, discord_id')
       .eq('campaign_id', campaignId)
       .eq('user_id', user.id)
       .single()
@@ -54,9 +54,19 @@ export async function POST(
     }
 
     // 2. Check if the character is designated for this user
+    // Check email match
+    const emailMatch = character.controlled_by_email &&
+      character.controlled_by_email.toLowerCase() === user.email?.toLowerCase()
+
+    // Check Discord match (user's membership has discord_id from Discord invite)
+    const discordMatch = character.controlled_by_discord &&
+      membership.discord_id &&
+      character.controlled_by_discord.toLowerCase() === membership.discord_id.toLowerCase()
+
     const isDesignatedForUser =
       character.controlled_by_user_id === user.id ||
-      (character.controlled_by_email && character.controlled_by_email.toLowerCase() === user.email?.toLowerCase())
+      emailMatch ||
+      discordMatch
 
     // 3. Check if character is already claimed
     if (character.vault_character_id) {

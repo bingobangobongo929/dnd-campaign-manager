@@ -16,6 +16,7 @@ import {
   RecentSessionsWidget,
   DmToolboxWidget,
   IntelligenceStatusWidget,
+  PlayerNotesReviewWidget,
   MyCharacterWidget,
   PreviouslyOnWidget,
   NextSessionWidget,
@@ -48,6 +49,7 @@ const WIDGET_SIZES: { [key: string]: 'full' | 'half' | 'third' } = {
   upcomingPlot: 'third',
   recentSessions: 'full',
   intelligenceStatus: 'half',
+  playerNotesReview: 'half',
   dmToolbox: 'half',
   // Player widgets
   myCharacter: 'full',
@@ -206,6 +208,11 @@ export function DmDashboardLayout({
       <IntelligenceStatusWidget
         campaignId={campaignId}
         lastRunAt={campaign?.last_intelligence_run || null}
+      />
+    ),
+    playerNotesReview: (
+      <PlayerNotesReviewWidget
+        campaignId={campaignId}
       />
     ),
     dmToolbox: (

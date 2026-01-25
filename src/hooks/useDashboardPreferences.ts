@@ -14,6 +14,7 @@ export const DM_WIDGETS = [
   { id: 'upcomingPlot', label: 'Upcoming Plot', required: false },
   { id: 'recentSessions', label: 'Recent Sessions', required: false },
   { id: 'intelligenceStatus', label: 'AI Intelligence', required: false },
+  { id: 'playerNotesReview', label: 'Player Notes', required: false },
   { id: 'dmToolbox', label: 'DM Toolbox', required: false },
 ] as const
 
@@ -45,6 +46,7 @@ const DEFAULT_DM_WIDGETS: DmWidgetId[] = [
   'upcomingPlot',
   'recentSessions',
   'intelligenceStatus',
+  'playerNotesReview',
   'dmToolbox',
 ]
 

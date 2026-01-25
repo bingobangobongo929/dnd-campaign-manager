@@ -413,9 +413,13 @@ export default function CampaignDashboardPage() {
     console.log('[Dashboard Debug] user.id:', user?.id)
     console.log('[Dashboard Debug] user.email:', user?.email)
   }
-  const isCharacterDesignatedForUser = myCharacter ? (
+  // Check if character is designated for this user (by user_id, email, or Discord)
+  const memberDiscordId = (membership as CampaignMember & { discord_id?: string | null })?.discord_id
+  const isCharacterDesignatedForUser = myCharacter ? !!(
     myCharacter.controlled_by_user_id === user?.id ||
-    (myCharacter.controlled_by_email?.toLowerCase() === user?.email?.toLowerCase())
+    (myCharacter.controlled_by_email?.toLowerCase() === user?.email?.toLowerCase()) ||
+    (myCharacter.controlled_by_discord && memberDiscordId &&
+      myCharacter.controlled_by_discord.toLowerCase() === memberDiscordId.toLowerCase())
   ) : false
 
   // Handler for when a character is claimed to vault
