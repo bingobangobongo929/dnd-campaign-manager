@@ -23,7 +23,7 @@ import {
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
-import { OnboardingTour, ContentBadge, StatusIndicator, determineCampaignStatus, getStatusCardClass } from '@/components/ui'
+import { OnboardingTour, ContentBadge, StatusIndicator, determineCampaignStatus, getStatusCardClass, DismissibleEmptyState, getSectionColorScheme, EMPTY_STATE_CONTENT } from '@/components/ui'
 import { FounderBadge } from '@/components/membership'
 import { getCampaignBadge, getOneshotBadge, getCharacterBadge } from '@/lib/content-badges'
 import { MobileLayout, MobileSectionHeader, MobileSearchBar } from '@/components/mobile'
@@ -1077,27 +1077,25 @@ export default function HomePage() {
             </Link>
           )}
 
-          {campaigns.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-transparent p-12 text-center">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-blue-500/10 flex items-center justify-center">
-                <Swords className="w-8 h-8 text-blue-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Begin Your Adventure</h3>
-              <p className="text-gray-400 mb-6 max-w-sm mx-auto">
-                Create your first campaign and start building your world
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link href="/campaigns" className="btn btn-secondary">
-                  <Plus className="w-4 h-4" />
-                  Create Campaign
-                </Link>
-                <Link href="/demo/campaign" className="btn btn-ghost text-sm">
-                  <Sparkles className="w-4 h-4" />
-                  Explore Demo
-                </Link>
-              </div>
-            </div>
-          ) : (
+          {campaigns.length === 0 && isSectionVisible('campaigns') ? (
+            <DismissibleEmptyState
+              sectionId="campaigns"
+              icon={<Swords className="w-7 h-7" />}
+              title={EMPTY_STATE_CONTENT.campaigns.title}
+              description={EMPTY_STATE_CONTENT.campaigns.description}
+              primaryAction={{
+                label: EMPTY_STATE_CONTENT.campaigns.primaryLabel,
+                href: EMPTY_STATE_CONTENT.campaigns.primaryHref,
+                icon: <Plus className="w-4 h-4" />
+              }}
+              secondaryAction={{
+                label: "Explore Demo",
+                href: EMPTY_STATE_CONTENT.campaigns.demoHref
+              }}
+              colorScheme={getSectionColorScheme('campaigns')}
+              onDismiss={handleDismissSection}
+            />
+          ) : campaigns.length > 0 ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {displayCampaigns.map((campaign) => {
                 const badge = getCampaignBadge(campaign, user?.id || '')
@@ -1152,7 +1150,7 @@ export default function HomePage() {
                 )
               })}
             </div>
-          )}
+          ) : null}
         </section>
 
         {/* Joined Campaigns Section - Campaigns where user is a player */}
@@ -1230,7 +1228,7 @@ export default function HomePage() {
         )}
 
         {/* Adventures Section */}
-        {adventures.length > 0 && (
+        {(adventures.length > 0 || isSectionVisible('adventures')) && (
           <section>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -1239,10 +1237,33 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl font-semibold text-white">Adventures</h3>
               </div>
-              <Link href="/adventures" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
-                View All <ChevronRight className="w-4 h-4" />
-              </Link>
+              {adventures.length > 0 && (
+                <Link href="/adventures" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
+                  View All <ChevronRight className="w-4 h-4" />
+                </Link>
+              )}
             </div>
+
+            {/* Empty State */}
+            {adventures.length === 0 && isSectionVisible('adventures') && (
+              <DismissibleEmptyState
+                sectionId="adventures"
+                icon={<Compass className="w-7 h-7" />}
+                title={EMPTY_STATE_CONTENT.adventures.title}
+                description={EMPTY_STATE_CONTENT.adventures.description}
+                primaryAction={{
+                  label: EMPTY_STATE_CONTENT.adventures.primaryLabel,
+                  href: EMPTY_STATE_CONTENT.adventures.primaryHref,
+                  icon: <Plus className="w-4 h-4" />
+                }}
+                secondaryAction={{
+                  label: "Explore Demo",
+                  href: EMPTY_STATE_CONTENT.adventures.demoHref
+                }}
+                colorScheme={getSectionColorScheme('adventures')}
+                onDismiss={handleDismissSection}
+              />
+            )}
 
             {/* Featured Adventure Hero */}
             {featuredAdventure && (
@@ -1367,42 +1388,41 @@ export default function HomePage() {
         )}
 
         {/* One-Shots - Cinematic Posters */}
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-500/10">
-                <Scroll className="w-5 h-5 text-green-400" />
+        {(oneshots.length > 0 || isSectionVisible('oneshots')) && (
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-green-500/10">
+                  <Scroll className="w-5 h-5 text-green-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">One-Shots</h3>
               </div>
-              <h3 className="text-xl font-semibold text-white">One-Shots</h3>
+              {oneshots.length > 0 && (
+                <Link href="/oneshots" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
+                  View All <ChevronRight className="w-4 h-4" />
+                </Link>
+              )}
             </div>
-            {oneshots.length > 0 && (
-              <Link href="/oneshots" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
-                View All <ChevronRight className="w-4 h-4" />
-              </Link>
-            )}
-          </div>
 
-          {oneshots.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-green-500/20 bg-gradient-to-br from-green-500/5 to-transparent p-12 text-center">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-green-500/10 flex items-center justify-center">
-                <Scroll className="w-8 h-8 text-green-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Quick Adventures Await</h3>
-              <p className="text-gray-400 mb-6 max-w-sm mx-auto">
-                Create standalone one-shot adventures for quick games or convention play.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link href="/oneshots" className="btn btn-secondary">
-                  <Plus className="w-4 h-4" />
-                  Create One-Shot
-                </Link>
-                <Link href="/demo/oneshot" className="btn btn-ghost text-sm">
-                  <Sparkles className="w-4 h-4" />
-                  Explore Demo
-                </Link>
-              </div>
-            </div>
-          ) : (
+            {oneshots.length === 0 && isSectionVisible('oneshots') ? (
+              <DismissibleEmptyState
+                sectionId="oneshots"
+                icon={<Scroll className="w-7 h-7" />}
+                title={EMPTY_STATE_CONTENT.oneshots.title}
+                description={EMPTY_STATE_CONTENT.oneshots.description}
+                primaryAction={{
+                  label: EMPTY_STATE_CONTENT.oneshots.primaryLabel,
+                  href: EMPTY_STATE_CONTENT.oneshots.primaryHref,
+                  icon: <Plus className="w-4 h-4" />
+                }}
+                secondaryAction={{
+                  label: "Explore Demo",
+                  href: EMPTY_STATE_CONTENT.oneshots.demoHref
+                }}
+                colorScheme={getSectionColorScheme('oneshots')}
+                onDismiss={handleDismissSection}
+              />
+            ) : oneshots.length > 0 ? (
             <>
               {/* Featured One-Shot Hero */}
               {featuredOneshot && (
@@ -1510,22 +1530,26 @@ export default function HomePage() {
               })}
             </div>
             </>
-          )}
-        </section>
+          ) : null}
+          </section>
+        )}
 
         {/* Character Vault - Portrait Gallery */}
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-500/10">
-                <BookOpen className="w-5 h-5 text-purple-400" />
+        {(characters.length > 0 || isSectionVisible('characters')) && (
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-500/10">
+                  <BookOpen className="w-5 h-5 text-purple-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">Character Vault</h3>
               </div>
-              <h3 className="text-xl font-semibold text-white">Character Vault</h3>
+              {characters.length > 0 && (
+                <Link href="/vault" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
+                  View All <ChevronRight className="w-4 h-4" />
+                </Link>
+              )}
             </div>
-            <Link href="/vault" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
-              View All <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
 
           {/* Featured Character Hero */}
           {featuredCharacter && (
@@ -1587,27 +1611,25 @@ export default function HomePage() {
             </Link>
           )}
 
-          {characters.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent p-12 text-center">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-purple-500/10 flex items-center justify-center">
-                <BookOpen className="w-8 h-8 text-purple-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Your Vault Awaits</h3>
-              <p className="text-gray-400 mb-6 max-w-sm mx-auto">
-                Create characters once and reuse them across campaigns. Build detailed backstories and track their journeys.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link href="/vault" className="btn btn-secondary">
-                  <Plus className="w-4 h-4" />
-                  Add Your First Character
-                </Link>
-                <Link href="/demo/character" className="btn btn-ghost text-sm">
-                  <Sparkles className="w-4 h-4" />
-                  Explore Demo
-                </Link>
-              </div>
-            </div>
-          ) : (
+          {characters.length === 0 && isSectionVisible('characters') ? (
+            <DismissibleEmptyState
+              sectionId="characters"
+              icon={<BookOpen className="w-7 h-7" />}
+              title={EMPTY_STATE_CONTENT.characters.title}
+              description={EMPTY_STATE_CONTENT.characters.description}
+              primaryAction={{
+                label: EMPTY_STATE_CONTENT.characters.primaryLabel,
+                href: EMPTY_STATE_CONTENT.characters.primaryHref,
+                icon: <Plus className="w-4 h-4" />
+              }}
+              secondaryAction={{
+                label: "Explore Demo",
+                href: EMPTY_STATE_CONTENT.characters.demoHref
+              }}
+              colorScheme={getSectionColorScheme('characters')}
+              onDismiss={handleDismissSection}
+            />
+          ) : characters.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {characters.map((character) => {
                 const badge = getCharacterBadge(character)
@@ -1656,8 +1678,9 @@ export default function HomePage() {
                 )
               })}
             </div>
-          )}
-        </section>
+          ) : null}
+          </section>
+        )}
 
         {/* Saved from Community */}
         {savedTemplates.length > 0 && (
