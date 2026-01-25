@@ -24,8 +24,8 @@ export async function POST(request: NextRequest) {
     } = body as {
       usageLogId?: string
       suggestionType: string
-      suggestionContent: string
-      actionTaken: 'accepted' | 'edited' | 'dismissed'
+      suggestionContent?: string
+      actionTaken?: 'accepted' | 'edited' | 'dismissed'
       feedback?: 'positive' | 'negative'
       editDetails?: string
     }
@@ -36,12 +36,19 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    // Must have either feedback or actionTaken (or both)
+    if (!feedback && !actionTaken) {
+      return NextResponse.json({
+        error: 'Either feedback or actionTaken is required'
+      }, { status: 400 })
+    }
+
     const feedbackData: AiSuggestionFeedbackInsert = {
       user_id: user.id,
       usage_log_id: usageLogId || null,
       suggestion_type: suggestionType,
-      suggestion_content: suggestionContent,
-      action_taken: actionTaken,
+      suggestion_content: suggestionContent || null,
+      action_taken: actionTaken || null,
       feedback: feedback || null,
       edit_details: editDetails || null,
     }

@@ -3720,7 +3720,7 @@ export interface Database {
           usage_log_id: string | null
           suggestion_type: string
           suggestion_content: string | null
-          action_taken: 'accepted' | 'edited' | 'dismissed'
+          action_taken: 'accepted' | 'edited' | 'dismissed' | null
           feedback: 'positive' | 'negative' | null
           edit_details: string | null
           created_at: string
@@ -3731,7 +3731,7 @@ export interface Database {
           usage_log_id?: string | null
           suggestion_type: string
           suggestion_content?: string | null
-          action_taken: 'accepted' | 'edited' | 'dismissed'
+          action_taken?: 'accepted' | 'edited' | 'dismissed' | null
           feedback?: 'positive' | 'negative' | null
           edit_details?: string | null
           created_at?: string
@@ -3742,7 +3742,7 @@ export interface Database {
           usage_log_id?: string | null
           suggestion_type?: string
           suggestion_content?: string | null
-          action_taken?: 'accepted' | 'edited' | 'dismissed'
+          action_taken?: 'accepted' | 'edited' | 'dismissed' | null
           feedback?: 'positive' | 'negative' | null
           edit_details?: string | null
           created_at?: string
@@ -4356,7 +4356,7 @@ export type CooldownType = 'campaign_intelligence' | 'character_intelligence'
 export type AiSuggestionFeedback = Database['public']['Tables']['ai_suggestion_feedback']['Row']
 export type AiSuggestionFeedbackInsert = Database['public']['Tables']['ai_suggestion_feedback']['Insert']
 export type AiSuggestionFeedbackUpdate = Database['public']['Tables']['ai_suggestion_feedback']['Update']
-export type SuggestionAction = 'accepted' | 'edited' | 'dismissed'
+export type SuggestionAction = 'accepted' | 'edited' | 'dismissed' | null
 export type SuggestionFeedback = 'positive' | 'negative'
 
 // Import sessions (funnel tracking)
