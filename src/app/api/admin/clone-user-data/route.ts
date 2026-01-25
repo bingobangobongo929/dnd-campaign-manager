@@ -1,22 +1,27 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 /**
- * Clone all content from a source user to the admin's account
+ * Clone all content from a source user to a target user's account
  * Super admin only - used for testing with real data without risking the original
+ *
+ * @param sourceUserId - The user ID to clone data FROM
+ * @param targetUserId - The user ID to clone data TO (optional, defaults to admin's account)
  */
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
+    const adminClient = createAdminClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Verify super admin
-    const { data: adminSettings } = await supabase
+    // Verify super admin using admin client to bypass RLS
+    const { data: adminSettings } = await adminClient
       .from('user_settings')
       .select('role')
       .eq('user_id', user.id)
@@ -26,14 +31,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Super admin access required' }, { status: 403 })
     }
 
-    const { sourceUserId } = await request.json()
+    const { sourceUserId, targetUserId } = await request.json()
 
     if (!sourceUserId) {
       return NextResponse.json({ error: 'Source user ID required' }, { status: 400 })
     }
 
+    // Use targetUserId if provided, otherwise clone to admin's own account
+    const destinationUserId = targetUserId || user.id
+
     // Get source user info for naming
-    const { data: sourceSettings } = await supabase
+    const { data: sourceSettings } = await adminClient
       .from('user_settings')
       .select('username')
       .eq('user_id', sourceUserId)
@@ -48,8 +56,8 @@ export async function POST(request: Request) {
       errors: [] as string[],
     }
 
-    // Clone campaigns
-    const { data: campaigns } = await supabase
+    // Clone campaigns - use adminClient to bypass RLS
+    const { data: campaigns } = await adminClient
       .from('campaigns')
       .select('*')
       .eq('user_id', sourceUserId)
@@ -59,11 +67,11 @@ export async function POST(request: Request) {
       for (const campaign of campaigns) {
         try {
           const { id, user_id, created_at, updated_at, deleted_at, ...campaignData } = campaign
-          const { data: newCampaign, error } = await supabase
+          const { data: newCampaign, error } = await adminClient
             .from('campaigns')
             .insert({
               ...campaignData,
-              user_id: user.id,
+              user_id: destinationUserId,
               name: `${campaign.name} (from ${sourceLabel})`,
               content_mode: 'active',
               is_published: false,
@@ -74,15 +82,15 @@ export async function POST(request: Request) {
           if (error) throw error
           if (newCampaign) {
             // Copy campaign characters
-            await copyCampaignCharacters(supabase, id, newCampaign.id)
+            await copyCampaignCharacters(adminClient, id, newCampaign.id)
             // Copy campaign lore
-            await copyCampaignLore(supabase, id, newCampaign.id)
+            await copyCampaignLore(adminClient, id, newCampaign.id)
             // Copy canvas groups
-            await copyCanvasGroups(supabase, id, newCampaign.id)
+            await copyCanvasGroups(adminClient, id, newCampaign.id)
             // Copy sessions
-            await copyCampaignSessions(supabase, id, newCampaign.id)
+            await copyCampaignSessions(adminClient, id, newCampaign.id)
             // Copy world maps
-            await copyWorldMaps(supabase, id, newCampaign.id)
+            await copyWorldMaps(adminClient, id, newCampaign.id)
             results.campaigns++
           }
         } catch (err: any) {
@@ -91,8 +99,8 @@ export async function POST(request: Request) {
       }
     }
 
-    // Clone oneshots
-    const { data: oneshots } = await supabase
+    // Clone oneshots - use adminClient to bypass RLS
+    const { data: oneshots } = await adminClient
       .from('oneshots')
       .select('*')
       .eq('user_id', sourceUserId)
@@ -102,11 +110,11 @@ export async function POST(request: Request) {
       for (const oneshot of oneshots) {
         try {
           const { id, user_id, created_at, updated_at, deleted_at, ...oneshotData } = oneshot
-          const { error } = await supabase
+          const { error } = await adminClient
             .from('oneshots')
             .insert({
               ...oneshotData,
-              user_id: user.id,
+              user_id: destinationUserId,
               title: `${oneshot.title} (from ${sourceLabel})`,
               content_mode: 'active',
               is_published: false,
@@ -120,8 +128,8 @@ export async function POST(request: Request) {
       }
     }
 
-    // Clone vault characters
-    const { data: characters } = await supabase
+    // Clone vault characters - use adminClient to bypass RLS
+    const { data: characters } = await adminClient
       .from('vault_characters')
       .select('*')
       .eq('user_id', sourceUserId)
@@ -131,14 +139,17 @@ export async function POST(request: Request) {
       for (const character of characters) {
         try {
           const { id: oldId, user_id, created_at, updated_at, deleted_at, ...charData } = character
-          const { data: newChar, error } = await supabase
+          const { data: newChar, error } = await adminClient
             .from('vault_characters')
             .insert({
               ...charData,
-              user_id: user.id,
+              user_id: destinationUserId,
               name: `${character.name} (from ${sourceLabel})`,
               content_mode: 'active',
               is_published: false,
+              // Clear campaign links since this is a copy
+              campaign_links: [],
+              linked_campaign_id: null,
             })
             .select()
             .single()
@@ -146,13 +157,13 @@ export async function POST(request: Request) {
           if (error) throw error
           if (newChar) {
             // Copy character images
-            await copyCharacterImages(supabase, oldId, newChar.id)
+            await copyCharacterImages(adminClient, oldId, newChar.id)
             // Copy character relationships
-            await copyCharacterRelationships(supabase, oldId, newChar.id)
+            await copyCharacterRelationships(adminClient, oldId, newChar.id)
             // Copy character spells
-            await copyCharacterSpells(supabase, oldId, newChar.id)
+            await copyCharacterSpells(adminClient, oldId, newChar.id)
             // Copy character writings
-            await copyCharacterWritings(supabase, oldId, newChar.id)
+            await copyCharacterWritings(adminClient, oldId, newChar.id)
             results.characters++
           }
         } catch (err: any) {
@@ -162,11 +173,12 @@ export async function POST(request: Request) {
     }
 
     // Log the action
-    await supabase.from('admin_activity_log').insert({
+    await adminClient.from('admin_activity_log').insert({
       admin_id: user.id,
       action: 'clone_user_data',
       target_user_id: sourceUserId,
       details: {
+        destination_user_id: destinationUserId,
         campaigns_cloned: results.campaigns,
         oneshots_cloned: results.oneshots,
         characters_cloned: results.characters,

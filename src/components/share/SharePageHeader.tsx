@@ -158,13 +158,13 @@ export function SharePageHeader({
                   Settings
                 </Link>
                 <div className="border-t border-white/[0.06] my-1" />
-                <Link
+                <a
                   href="/api/auth/logout"
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left text-red-400 hover:bg-red-500/10"
                 >
                   <LogOut className="w-4 h-4" />
                   Sign Out
-                </Link>
+                </a>
               </DropdownMenu>
             )}
           </div>

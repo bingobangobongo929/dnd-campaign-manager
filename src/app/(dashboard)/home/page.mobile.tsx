@@ -46,6 +46,9 @@ export interface HomePageMobileProps {
   featuredCharacter: VaultCharacter | undefined
   featuredOneshot: Oneshot | undefined
   displayCampaigns: Campaign[]
+  displayAdventures: Campaign[]
+  displayOneshots: Oneshot[]
+  displayCharacters: VaultCharacter[]
   drafts: { type: 'campaign' | 'adventure' | 'oneshot' | 'character'; item: Campaign | Oneshot | VaultCharacter; progress: number }[]
   pendingInvites: { id: string; campaign: Campaign; inviter_name?: string }[]
   claimableCharacters: { character: Character; campaign: Campaign }[]
@@ -78,6 +81,9 @@ export function HomePageMobile({
   featuredCharacter,
   featuredOneshot,
   displayCampaigns,
+  displayAdventures,
+  displayOneshots,
+  displayCharacters,
   drafts,
   pendingInvites,
   claimableCharacters,
@@ -627,7 +633,7 @@ export function HomePageMobile({
               title="Playing In"
               action={
                 joinedCampaigns.length > 0 ? (
-                  <button onClick={() => onNavigate('/campaigns')} className="text-sm text-[--arcane-purple]">
+                  <button onClick={() => onNavigate('/campaigns?tab=active&filter=playing')} className="text-sm text-[--arcane-purple]">
                     View All
                   </button>
                 ) : undefined
@@ -806,7 +812,7 @@ export function HomePageMobile({
             )}
 
             <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
-              {adventures.slice(0, 5).map((adventure) => {
+              {displayAdventures.slice(0, 5).map((adventure) => {
                 const badge = getCampaignBadge(adventure, userId)
                 const status = determineCampaignStatus(adventure)
                 const sessions = sessionCounts[adventure.id] || 0
@@ -944,7 +950,7 @@ export function HomePageMobile({
           </div>
         ) : oneshots.length > 0 ? (
           <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
-            {oneshots.map((oneshot) => {
+            {displayOneshots.map((oneshot) => {
               const badge = getOneshotBadge(oneshot, userId)
               const runs = oneshotRunCounts[oneshot.id] || 0
               return (
@@ -1166,7 +1172,7 @@ export function HomePageMobile({
           </div>
         ) : characters.length > 0 ? (
           <div className="px-4 grid grid-cols-2 gap-3">
-            {characters.slice(0, 6).map((character) => {
+            {displayCharacters.slice(0, 6).map((character) => {
               const badge = getCharacterBadge(character)
               const campaigns = characterCampaignCounts[character.id] || 0
               return (

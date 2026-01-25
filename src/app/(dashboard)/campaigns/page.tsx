@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -79,17 +79,22 @@ const GAME_SYSTEMS = [
 
 export default function CampaignsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = useSupabase()
   const { user, loading: userLoading } = useUser()
   const isMobile = useIsMobile()
+
+  // Read initial tab/filter from URL params
+  const initialTab = (searchParams.get('tab') as ContentTab) || 'all'
+  const initialFilter = (searchParams.get('filter') as ContentTab) || 'running'
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [joinedCampaigns, setJoinedCampaigns] = useState<JoinedCampaign[]>([])
   const [savedCampaigns, setSavedCampaigns] = useState<ContentSave[]>([])
   const [templateSnapshots, setTemplateSnapshots] = useState<TemplateSnapshot[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<ContentTab>('all')
-  const [subFilter, setSubFilter] = useState<ContentTab>('running')
+  const [activeTab, setActiveTab] = useState<ContentTab>(initialTab)
+  const [subFilter, setSubFilter] = useState<ContentTab>(initialFilter)
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null)
   const [formData, setFormData] = useState({
     name: '',

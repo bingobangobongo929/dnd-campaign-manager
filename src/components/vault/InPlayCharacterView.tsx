@@ -163,18 +163,25 @@ export function InPlayCharacterView({
         Back to Vault
       </Link>
 
-      {/* Sync Banner */}
-      <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+      {/* Linked Character Banner */}
+      <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
         <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center flex-shrink-0">
-            <Link2 className="w-5 h-5 text-blue-400" />
+          <div className="w-10 h-10 rounded-full bg-purple-600/20 flex items-center justify-center flex-shrink-0">
+            <Link2 className="w-5 h-5 text-purple-400" />
           </div>
           <div className="flex-1">
-            <h3 className="font-medium text-white">
-              This character is synced with "{campaign?.name || 'Campaign'}"
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-medium text-white">
+                Linked to "{campaign?.name || 'Campaign'}"
+              </h3>
+              <span className="flex items-center gap-1 text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">
+                <Lock className="w-3 h-3" />
+                Read-only
+              </span>
+            </div>
             <p className="text-sm text-gray-400 mt-1">
-              Most fields are managed in the campaign. You can view everything here, but edits happen in the game.
+              This character is actively being used in a campaign. The DM manages the character data in the game.
+              You can view your character details here, add private notes, and access session history.
             </p>
             <div className="flex flex-wrap gap-2 mt-3">
               <Link
@@ -182,17 +189,8 @@ export function InPlayCharacterView({
                 className="btn btn-sm btn-primary"
               >
                 <ExternalLink className="w-4 h-4 mr-1.5" />
-                View in Campaign
+                Go to Campaign
               </Link>
-              {onSwitch && (
-                <button
-                  onClick={onSwitch}
-                  className="btn btn-sm btn-secondary"
-                >
-                  <Pencil className="w-4 h-4 mr-1.5" />
-                  View Original Character
-                </button>
-              )}
               <button
                 onClick={() => setShowUnlinkModal(true)}
                 className="btn btn-sm btn-ghost text-gray-400"

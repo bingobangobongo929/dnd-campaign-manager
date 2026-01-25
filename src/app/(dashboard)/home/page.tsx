@@ -159,6 +159,13 @@ export default function HomePage() {
            !dismissedTemporarilyLocal.includes(sectionId)
   }
 
+  // Get the order index for a section (used for CSS order property)
+  const getSectionOrderIndex = (sectionId: HomepageSectionId): number => {
+    const order = getSectionOrder()
+    const index = order.indexOf(sectionId)
+    return index === -1 ? 999 : index // Hidden sections get high order value
+  }
+
   useEffect(() => {
     if (user) {
       loadData()
@@ -488,9 +495,11 @@ export default function HomePage() {
   const featuredAdventure = adventures[0]
   const featuredCharacter = characters[0]
   const featuredOneshot = oneshots[0]
-  // Show all campaigns in the grid (including featured) - slice to limit display
-  const displayCampaigns = campaigns.slice(0, 6)
-  const displayAdventures = adventures.slice(0, 4)
+  // Skip the featured item in grids to avoid showing it twice
+  const displayCampaigns = campaigns.slice(1, 7)
+  const displayAdventures = adventures.slice(1, 5)
+  const displayOneshots = oneshots.slice(1, 5)
+  const displayCharacters = characters.slice(1, 9)
 
   // ============ MOBILE LAYOUT ============
   if (isMobile) {
@@ -508,6 +517,9 @@ export default function HomePage() {
           featuredCharacter={featuredCharacter}
           featuredOneshot={featuredOneshot}
           displayCampaigns={displayCampaigns}
+          displayAdventures={displayAdventures}
+          displayOneshots={displayOneshots}
+          displayCharacters={displayCharacters}
           drafts={drafts}
           pendingInvites={pendingInvites}
           claimableCharacters={claimableCharacters}
@@ -1000,9 +1012,13 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* Dynamic Sections - Ordered by user preference or auto-sorted */}
+        <div className="flex flex-col gap-12">
+
         {/* Your Campaigns Section */}
-        <section>
-          <div className="flex items-center justify-between mb-6">
+        {(campaigns.length > 0 || isSectionVisible('campaigns')) && (
+          <section style={{ order: getSectionOrderIndex('campaigns') }}>
+            <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-blue-500/10">
                 <Swords className="w-5 h-5 text-blue-400" />
@@ -1153,11 +1169,12 @@ export default function HomePage() {
               })}
             </div>
           ) : null}
-        </section>
+          </section>
+        )}
 
         {/* Joined Campaigns Section - Campaigns where user is a player */}
         {(joinedCampaigns.length > 0 || isSectionVisible('playing')) && (
-          <section>
+          <section style={{ order: getSectionOrderIndex('playing') }}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-emerald-500/10">
@@ -1166,7 +1183,7 @@ export default function HomePage() {
                 <h3 className="text-xl font-semibold text-white">Playing In</h3>
               </div>
               {joinedCampaigns.length > 0 && (
-                <Link href="/campaigns" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
+                <Link href="/campaigns?tab=active&filter=playing" className="text-sm text-[--arcane-purple] hover:underline flex items-center gap-1">
                   View All <ChevronRight className="w-4 h-4" />
                 </Link>
               )}
@@ -1253,7 +1270,7 @@ export default function HomePage() {
 
         {/* Adventures Section */}
         {(adventures.length > 0 || isSectionVisible('adventures')) && (
-          <section>
+          <section style={{ order: getSectionOrderIndex('adventures') }}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-amber-500/10">
@@ -1413,7 +1430,7 @@ export default function HomePage() {
 
         {/* One-Shots - Cinematic Posters */}
         {(oneshots.length > 0 || isSectionVisible('oneshots')) && (
-          <section>
+          <section style={{ order: getSectionOrderIndex('oneshots') }}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-green-500/10">
@@ -1507,7 +1524,7 @@ export default function HomePage() {
             )}
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {oneshots.map((oneshot) => {
+              {displayOneshots.map((oneshot) => {
                 const badge = getOneshotBadge(oneshot, user?.id || '')
                 const runs = oneshotRunCounts[oneshot.id] || 0
                 return (
@@ -1560,7 +1577,7 @@ export default function HomePage() {
 
         {/* Character Vault - Portrait Gallery */}
         {(characters.length > 0 || isSectionVisible('characters')) && (
-          <section>
+          <section style={{ order: getSectionOrderIndex('characters') }}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-purple-500/10">
@@ -1655,7 +1672,7 @@ export default function HomePage() {
             />
           ) : characters.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {characters.map((character) => {
+              {displayCharacters.map((character) => {
                 const badge = getCharacterBadge(character)
                 const campaigns = characterCampaignCounts[character.id] || 0
                 return (
@@ -1705,6 +1722,9 @@ export default function HomePage() {
           ) : null}
           </section>
         )}
+
+        </div>
+        {/* End Dynamic Sections */}
 
         {/* Saved from Community */}
         {savedTemplates.length > 0 && (

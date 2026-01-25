@@ -56,9 +56,10 @@ export default function EditVaultCharacterPage() {
           imageUrl: data.image_url || data.detail_image_url,
         })
 
-        // Check if this is an in-play character (linked to campaigns)
+        // ALWAYS show InPlayCharacterView when character is linked to campaigns
+        // This prevents players from editing characters that belong to a campaign
         const campaignLinks = data.campaign_links as CampaignLink[] | null
-        if (campaignLinks && campaignLinks.length > 0 && viewMode === 'inplay') {
+        if (campaignLinks && campaignLinks.length > 0) {
           setShowInPlayView(true)
         }
       }
@@ -66,7 +67,7 @@ export default function EditVaultCharacterPage() {
     }
 
     loadCharacter()
-  }, [characterId, supabase, trackRecentItem, viewMode])
+  }, [characterId, supabase, trackRecentItem])
 
   if (loading) {
     return (
@@ -100,14 +101,15 @@ export default function EditVaultCharacterPage() {
   const campaignLinks = character.campaign_links as CampaignLink[] | null
   const firstCampaignLink = campaignLinks && campaignLinks.length > 0 ? campaignLinks[0] : null
 
-  // Show in-play view if requested and character is linked
+  // Show in-play view when character is linked to a campaign
+  // Linked characters cannot be edited directly - edits happen in the campaign
   if (showInPlayView && firstCampaignLink) {
     return (
       <AppLayout characterId={characterId}>
         <InPlayCharacterView
           character={character}
           campaignLink={firstCampaignLink}
-          onSwitch={() => setShowInPlayView(false)}
+          // No onSwitch - linked characters cannot access the editor
         />
         <BackToTopButton />
       </AppLayout>

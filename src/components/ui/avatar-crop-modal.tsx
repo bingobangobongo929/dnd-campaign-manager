@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css'
 import { X, RotateCcw, Check, Loader2 } from 'lucide-react'
@@ -125,12 +126,48 @@ export function AvatarCropModal({
     }
   }
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isOpen])
+
   if (!isOpen) return null
 
-  return (
-    <div className="modal-backdrop">
+  // Track if mouse was pressed inside the modal to prevent closing on drag-release outside
+  const isDraggingRef = useRef(false)
+
+  const handleBackdropMouseDown = (e: React.MouseEvent) => {
+    // Only set dragging if click started on the backdrop itself
+    if (e.target === e.currentTarget) {
+      isDraggingRef.current = true
+    }
+  }
+
+  const handleBackdropMouseUp = (e: React.MouseEvent) => {
+    // Only close if click started AND ended on backdrop (not dragged from inside)
+    if (e.target === e.currentTarget && isDraggingRef.current) {
+      // Don't close - we want to keep the modal open for cropping
+      // The user must explicitly click Cancel or the X button
+    }
+    isDraggingRef.current = false
+  }
+
+  const modalContent = (
+    <div
+      className="modal-backdrop"
+      onMouseDown={handleBackdropMouseDown}
+      onMouseUp={handleBackdropMouseUp}
+    >
       <div
         className="w-[600px] max-w-[95vw] max-h-[90vh] bg-[--bg-surface] border border-[--border] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+        onMouseDown={(e) => e.stopPropagation()}
+        onMouseUp={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[--border]">
@@ -253,4 +290,6 @@ export function AvatarCropModal({
       </div>
     </div>
   )
+
+  return createPortal(modalContent, document.body)
 }

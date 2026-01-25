@@ -54,6 +54,8 @@ export default function AdminUsersPage() {
   const [showChangeUsernameModal, setShowChangeUsernameModal] = useState(false)
   const [showCloneModal, setShowCloneModal] = useState(false)
   const [cloneResults, setCloneResults] = useState<{ campaigns: number; oneshots: number; characters: number; errors: string[] } | null>(null)
+  const [cloneTargetUser, setCloneTargetUser] = useState<UserWithSettings | null>(null)
+  const [cloneTargetSearch, setCloneTargetSearch] = useState('')
   const [suspendReason, setSuspendReason] = useState('')
   const [newTier, setNewTier] = useState('')
   const [newRole, setNewRole] = useState<UserRole>('user')
@@ -360,7 +362,10 @@ export default function AdminUsersPage() {
       const res = await fetch('/api/admin/clone-user-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceUserId: selectedUser.id }),
+        body: JSON.stringify({
+          sourceUserId: selectedUser.id,
+          targetUserId: cloneTargetUser?.id || null, // null = clone to admin's own account
+        }),
       })
 
       const data = await res.json()
@@ -368,7 +373,8 @@ export default function AdminUsersPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to clone data')
 
       setCloneResults(data.results)
-      toast.success('User data cloned to your account')
+      const targetLabel = cloneTargetUser ? cloneTargetUser.settings?.username || cloneTargetUser.email : 'your account'
+      toast.success(`User data cloned to ${targetLabel}`)
     } catch (error: any) {
       toast.error(error.message || 'Failed to clone user data')
     } finally {
@@ -829,6 +835,8 @@ export default function AdminUsersPage() {
         onClose={() => {
           setShowCloneModal(false)
           setCloneResults(null)
+          setCloneTargetUser(null)
+          setCloneTargetSearch('')
         }}
         title="Clone User Data"
       >
@@ -837,15 +845,99 @@ export default function AdminUsersPage() {
             <>
               <div className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-xl">
                 <p className="text-sm text-cyan-200">
-                  This will copy all campaigns, oneshots, and vault characters from this user to your account.
+                  Copy all campaigns, oneshots, and vault characters from this user to another account.
                 </p>
                 <p className="text-xs text-cyan-200/70 mt-2">
                   Items will be named with "(from username)" suffix. Original data is not affected.
                 </p>
               </div>
 
-              <div className="text-sm text-gray-400">
-                <p>User ID: <span className="text-white font-mono">{selectedUser?.id.slice(0, 8)}...</span></p>
+              <div className="space-y-3">
+                <div className="text-sm">
+                  <p className="text-gray-400 mb-1">Source User:</p>
+                  <p className="text-white font-medium">
+                    {selectedUser?.settings?.username || selectedUser?.email || 'Unknown'}
+                    <span className="text-gray-500 font-mono text-xs ml-2">({selectedUser?.id.slice(0, 8)}...)</span>
+                  </p>
+                </div>
+
+                <div className="text-sm">
+                  <p className="text-gray-400 mb-2">Clone To:</p>
+                  <div className="space-y-2">
+                    {/* Search for target user */}
+                    <input
+                      type="text"
+                      placeholder="Search user by email or username..."
+                      value={cloneTargetSearch}
+                      onChange={(e) => setCloneTargetSearch(e.target.value)}
+                      className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-cyan-500/50 text-sm"
+                    />
+
+                    {/* Show matching users */}
+                    {cloneTargetSearch.length >= 2 && (
+                      <div className="max-h-40 overflow-y-auto space-y-1 bg-white/[0.02] rounded-lg p-2">
+                        {users
+                          .filter(u => {
+                            const search = cloneTargetSearch.toLowerCase()
+                            return (
+                              u.id !== selectedUser?.id &&
+                              (u.email?.toLowerCase().includes(search) ||
+                               u.settings?.username?.toLowerCase().includes(search))
+                            )
+                          })
+                          .slice(0, 10)
+                          .map(u => (
+                            <button
+                              key={u.id}
+                              onClick={() => {
+                                setCloneTargetUser(u)
+                                setCloneTargetSearch('')
+                              }}
+                              className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/[0.04] text-sm transition-colors"
+                            >
+                              <span className="text-white">{u.settings?.username || u.email}</span>
+                              {u.settings?.username && u.email && (
+                                <span className="text-gray-500 ml-2 text-xs">{u.email}</span>
+                              )}
+                            </button>
+                          ))}
+                        {users.filter(u => {
+                          const search = cloneTargetSearch.toLowerCase()
+                          return (
+                            u.id !== selectedUser?.id &&
+                            (u.email?.toLowerCase().includes(search) ||
+                             u.settings?.username?.toLowerCase().includes(search))
+                          )
+                        }).length === 0 && (
+                          <p className="text-gray-500 text-sm px-3 py-2">No users found</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Selected target user or default */}
+                    <div className="p-3 bg-white/[0.04] rounded-lg border border-white/[0.08]">
+                      {cloneTargetUser ? (
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-white font-medium">{cloneTargetUser.settings?.username || cloneTargetUser.email}</p>
+                            <p className="text-gray-500 text-xs">{cloneTargetUser.email}</p>
+                          </div>
+                          <button
+                            onClick={() => setCloneTargetUser(null)}
+                            className="text-gray-400 hover:text-white text-xs"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-cyan-400">
+                          <span className="font-medium">My Account</span>
+                          <span className="text-cyan-400/60 text-xs ml-2">(default - clone to your own account)</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="flex gap-3">

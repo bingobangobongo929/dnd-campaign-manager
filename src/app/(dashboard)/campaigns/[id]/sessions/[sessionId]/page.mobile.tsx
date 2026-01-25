@@ -73,6 +73,9 @@ export interface SessionDetailMobileProps {
   locations: { id: string; name: string; type?: string }[]
   previousSession: Session | null
   previousThoughts: string
+  // Permission props
+  isDm: boolean
+  canEditSession: boolean
 }
 
 export function SessionDetailMobile({
@@ -112,8 +115,11 @@ export function SessionDetailMobile({
   locations,
   previousSession,
   previousThoughts,
+  // Permission props
+  isDm,
+  canEditSession,
 }: SessionDetailMobileProps) {
-  const isDM = campaign?.user_id === userId
+  // Note: isDm and canEditSession come from the parent component's usePermissions hook
   const [openPlayerNotesModal, setOpenPlayerNotesModal] = useState(false)
 
   if (loading) {
@@ -135,7 +141,7 @@ export function SessionDetailMobile({
         showBackButton
         backHref={`/campaigns/${campaignId}/sessions`}
         actions={
-          isNew ? (
+          isNew && isDm ? (
             <button
               onClick={handleCreate}
               disabled={!formData.summary.trim()}
@@ -143,19 +149,19 @@ export function SessionDetailMobile({
             >
               Create
             </button>
-          ) : (
+          ) : canEditSession ? (
             <span className={cn(
               "text-xs",
               status === 'saving' ? 'text-gray-400' : status === 'conflict' ? 'text-amber-400' : 'text-gray-500'
             )}>
               {status === 'saving' ? 'Saving...' : status === 'conflict' ? 'Conflict!' : 'Saved'}
             </span>
-          )
+          ) : null
         }
       >
         <div className="px-4 pb-24">
-          {/* Conflict Warning */}
-          {hasConflict && (
+          {/* Conflict Warning - Only show for editors */}
+          {canEditSession && hasConflict && (
             <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
               <div className="flex items-center gap-2 mb-2">
                 <AlertTriangle className="w-4 h-4 text-amber-400" />
@@ -173,98 +179,112 @@ export function SessionDetailMobile({
 
           {/* Title & Date */}
           <div className="mb-4">
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full text-xl font-semibold bg-transparent border-none text-white placeholder-gray-500 focus:outline-none mb-2"
-              placeholder="Session title..."
-            />
+            {canEditSession ? (
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="w-full text-xl font-semibold bg-transparent border-none text-white placeholder-gray-500 focus:outline-none mb-2"
+                placeholder="Session title..."
+              />
+            ) : (
+              <h1 className="text-xl font-semibold text-white mb-2">
+                {formData.title || `Session ${formData.session_number}`}
+              </h1>
+            )}
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-gray-500" />
-              <input
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="bg-transparent border-none text-sm text-gray-400 focus:outline-none"
-                style={{ colorScheme: 'dark' }}
-              />
+              {canEditSession ? (
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className="bg-transparent border-none text-sm text-gray-400 focus:outline-none"
+                  style={{ colorScheme: 'dark' }}
+                />
+              ) : (
+                <span className="text-sm text-gray-400">
+                  {formData.date ? new Date(formData.date).toLocaleDateString() : 'No date'}
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Phase Toggle Bar - Mobile Optimized */}
-          <div className="mb-4 p-1 bg-white/[0.03] rounded-xl border border-white/[0.08]">
-            <div className="grid grid-cols-3 gap-1">
-              {/* Prep Phase */}
-              <button
-                onClick={() => handlePhaseChange('prep')}
-                className={cn(
-                  "flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg transition-all",
-                  currentPhase === 'prep'
-                    ? "bg-yellow-500/20 border border-yellow-500/50"
-                    : "border border-transparent active:bg-white/[0.04]"
-                )}
-              >
-                <ClipboardList className={cn(
-                  "w-5 h-5",
-                  currentPhase === 'prep' ? "text-yellow-400" : "text-gray-500"
-                )} />
-                <span className={cn(
-                  "text-xs font-semibold",
-                  currentPhase === 'prep' ? "text-yellow-400" : "text-gray-400"
-                )}>
-                  Prep
-                </span>
-              </button>
+          {/* Phase Toggle Bar - Mobile Optimized - DM only */}
+          {isDm && (
+            <div className="mb-4 p-1 bg-white/[0.03] rounded-xl border border-white/[0.08]">
+              <div className="grid grid-cols-3 gap-1">
+                {/* Prep Phase */}
+                <button
+                  onClick={() => handlePhaseChange('prep')}
+                  className={cn(
+                    "flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg transition-all",
+                    currentPhase === 'prep'
+                      ? "bg-yellow-500/20 border border-yellow-500/50"
+                      : "border border-transparent active:bg-white/[0.04]"
+                  )}
+                >
+                  <ClipboardList className={cn(
+                    "w-5 h-5",
+                    currentPhase === 'prep' ? "text-yellow-400" : "text-gray-500"
+                  )} />
+                  <span className={cn(
+                    "text-xs font-semibold",
+                    currentPhase === 'prep' ? "text-yellow-400" : "text-gray-400"
+                  )}>
+                    Prep
+                  </span>
+                </button>
 
-              {/* Live Phase */}
-              <button
-                onClick={() => handlePhaseChange('live')}
-                className={cn(
-                  "flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg transition-all",
-                  currentPhase === 'live'
-                    ? "bg-green-500/20 border border-green-500/50"
-                    : "border border-transparent active:bg-white/[0.04]"
-                )}
-              >
-                <Play className={cn(
-                  "w-5 h-5",
-                  currentPhase === 'live' ? "text-green-400" : "text-gray-500"
-                )} />
-                <span className={cn(
-                  "text-xs font-semibold",
-                  currentPhase === 'live' ? "text-green-400" : "text-gray-400"
-                )}>
-                  Live
-                </span>
-              </button>
+                {/* Live Phase */}
+                <button
+                  onClick={() => handlePhaseChange('live')}
+                  className={cn(
+                    "flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg transition-all",
+                    currentPhase === 'live'
+                      ? "bg-green-500/20 border border-green-500/50"
+                      : "border border-transparent active:bg-white/[0.04]"
+                  )}
+                >
+                  <Play className={cn(
+                    "w-5 h-5",
+                    currentPhase === 'live' ? "text-green-400" : "text-gray-500"
+                  )} />
+                  <span className={cn(
+                    "text-xs font-semibold",
+                    currentPhase === 'live' ? "text-green-400" : "text-gray-400"
+                  )}>
+                    Live
+                  </span>
+                </button>
 
-              {/* Completed Phase */}
-              <button
-                onClick={() => handlePhaseChange('completed')}
-                className={cn(
-                  "flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg transition-all",
-                  currentPhase === 'completed'
-                    ? "bg-purple-500/20 border border-purple-500/50"
-                    : "border border-transparent active:bg-white/[0.04]"
-                )}
-              >
-                <CheckCircle2 className={cn(
-                  "w-5 h-5",
-                  currentPhase === 'completed' ? "text-purple-400" : "text-gray-500"
-                )} />
-                <span className={cn(
-                  "text-xs font-semibold",
-                  currentPhase === 'completed' ? "text-purple-400" : "text-gray-400"
-                )}>
-                  Done
-                </span>
-              </button>
+                {/* Completed Phase */}
+                <button
+                  onClick={() => handlePhaseChange('completed')}
+                  className={cn(
+                    "flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg transition-all",
+                    currentPhase === 'completed'
+                      ? "bg-purple-500/20 border border-purple-500/50"
+                      : "border border-transparent active:bg-white/[0.04]"
+                  )}
+                >
+                  <CheckCircle2 className={cn(
+                    "w-5 h-5",
+                    currentPhase === 'completed' ? "text-purple-400" : "text-gray-500"
+                  )} />
+                  <span className={cn(
+                    "text-xs font-semibold",
+                    currentPhase === 'completed' ? "text-purple-400" : "text-gray-400"
+                  )}>
+                    Done
+                  </span>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* === PREP PHASE LAYOUT === */}
-          {currentPhase === 'prep' && (
+          {/* === PREP PHASE LAYOUT === (DM only) */}
+          {isDm && currentPhase === 'prep' && (
             <>
               {/* Thoughts from Previous Session */}
               {previousThoughts && (
@@ -278,7 +298,7 @@ export function SessionDetailMobile({
               )}
 
               {/* Session Workflow for Prep mode */}
-              {!isNew && session && isDM && (
+              {!isNew && session && isDm && (
                 <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
                   <SessionWorkflow
                     session={session}
@@ -325,11 +345,11 @@ export function SessionDetailMobile({
             </>
           )}
 
-          {/* === LIVE PHASE LAYOUT === */}
-          {currentPhase === 'live' && (
+          {/* === LIVE PHASE LAYOUT === (DM only) */}
+          {isDm && currentPhase === 'live' && (
             <>
               {/* Session Workflow for Live mode */}
-              {!isNew && session && isDM && (
+              {!isNew && session && isDm && (
                 <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
                   <SessionWorkflow
                     session={session}
@@ -376,11 +396,11 @@ export function SessionDetailMobile({
             </>
           )}
 
-          {/* === COMPLETED PHASE LAYOUT === */}
-          {currentPhase === 'completed' && (
+          {/* === COMPLETED PHASE LAYOUT === (shown for all users, players always see this) */}
+          {(currentPhase === 'completed' || !isDm) && (
             <>
-              {/* Thoughts from Previous Session (for new completed sessions) */}
-              {isNew && previousThoughts && (
+              {/* Thoughts from Previous Session (for new completed sessions - DM only) */}
+              {isDm && isNew && previousThoughts && (
                 <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-xl">
                   <div className="flex items-center gap-2 mb-2">
                     <Lightbulb className="w-4 h-4 text-purple-400" />
@@ -394,7 +414,7 @@ export function SessionDetailMobile({
               <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-medium text-white">Summary</span>
-                  {canUseAI && !showExpandedPreview && (
+                  {canEditSession && canUseAI && !showExpandedPreview && (
                     <button
                       onClick={handleExpandNotes}
                       disabled={!formData.summary.trim() || expanding}
@@ -405,16 +425,27 @@ export function SessionDetailMobile({
                     </button>
                   )}
                 </div>
-                <RichTextEditor
-                  content={formData.summary}
-                  onChange={(content) => setFormData({ ...formData, summary: content })}
-                  placeholder="Bullet points of what happened..."
-                  className="min-h-[150px]"
-                />
+                {canEditSession ? (
+                  <RichTextEditor
+                    content={formData.summary}
+                    onChange={(content) => setFormData({ ...formData, summary: content })}
+                    placeholder="Bullet points of what happened..."
+                    className="min-h-[150px]"
+                  />
+                ) : (
+                  /* Read-only summary for players */
+                  <div className="prose prose-invert prose-sm max-w-none">
+                    {formData.summary ? (
+                      <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.summary) }} />
+                    ) : (
+                      <p className="text-gray-500 italic">No summary available yet.</p>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* AI Expansion Preview */}
-              {showExpandedPreview && (
+              {/* AI Expansion Preview - DM only */}
+              {canEditSession && showExpandedPreview && (
                 <div className="mb-4 p-4 bg-[--arcane-purple]/5 rounded-xl border border-[--arcane-purple]/30">
                   <div className="flex items-center gap-2 mb-3">
                     <Sparkles className="w-4 h-4 text-[--arcane-purple]" />
@@ -476,6 +507,26 @@ export function SessionDetailMobile({
                     <div className="flex flex-wrap gap-2">
                       {pcCharacters.map((char) => {
                         const isAttending = attendees.includes(char.id)
+                        // Players see read-only display (only attending characters)
+                        if (!canEditSession) {
+                          if (!isAttending) return null
+                          return (
+                            <div
+                              key={char.id}
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[--arcane-purple]/20 border border-[--arcane-purple]"
+                            >
+                              <div className="w-5 h-5 rounded-full overflow-hidden bg-[--bg-surface] flex-shrink-0">
+                                {char.image_url ? (
+                                  <Image src={char.image_url} alt={char.name} width={20} height={20} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-[8px] font-bold">{getInitials(char.name)}</div>
+                                )}
+                              </div>
+                              <span className="text-xs font-medium text-white">{char.name}</span>
+                            </div>
+                          )
+                        }
+                        // DMs can toggle attendance
                         return (
                           <button
                             key={char.id}
@@ -503,38 +554,57 @@ export function SessionDetailMobile({
                   </div>
                 )}
 
-                {pcCharacters.length === 0 && (
+                {!canEditSession && attendees.length === 0 && (
+                  <p className="text-xs text-gray-500 text-center py-2">No attendance recorded</p>
+                )}
+                {canEditSession && pcCharacters.length === 0 && (
                   <p className="text-xs text-gray-500 text-center py-2">No characters yet</p>
                 )}
               </div>
 
               {/* Detailed Notes Section */}
-              {(formData.notes || !detailedNotesCollapsed) && (
+              {(formData.notes || (!detailedNotesCollapsed && canEditSession)) && (
                 <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
-                  <button
-                    onClick={() => setDetailedNotesCollapsed(!detailedNotesCollapsed)}
-                    className="w-full flex items-center justify-between mb-3"
-                  >
-                    <div className="flex items-center gap-2">
-                      <ScrollText className="w-4 h-4 text-[--arcane-purple]" />
-                      <span className="text-sm font-medium text-white">Detailed Notes</span>
-                    </div>
-                    {detailedNotesCollapsed ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronUp className="w-4 h-4 text-gray-500" />}
-                  </button>
+                  {canEditSession ? (
+                    /* DM can toggle and edit */
+                    <>
+                      <button
+                        onClick={() => setDetailedNotesCollapsed(!detailedNotesCollapsed)}
+                        className="w-full flex items-center justify-between mb-3"
+                      >
+                        <div className="flex items-center gap-2">
+                          <ScrollText className="w-4 h-4 text-[--arcane-purple]" />
+                          <span className="text-sm font-medium text-white">Detailed Notes</span>
+                        </div>
+                        {detailedNotesCollapsed ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronUp className="w-4 h-4 text-gray-500" />}
+                      </button>
 
-                  {!detailedNotesCollapsed && (
-                    <RichTextEditor
-                      content={formData.notes}
-                      onChange={(content) => setFormData({ ...formData, notes: content })}
-                      placeholder="Detailed notes..."
-                      className="min-h-[200px]"
-                    />
+                      {!detailedNotesCollapsed && (
+                        <RichTextEditor
+                          content={formData.notes}
+                          onChange={(content) => setFormData({ ...formData, notes: content })}
+                          placeholder="Detailed notes..."
+                          className="min-h-[200px]"
+                        />
+                      )}
+                    </>
+                  ) : (
+                    /* Players see read-only view */
+                    <>
+                      <div className="flex items-center gap-2 mb-3">
+                        <ScrollText className="w-4 h-4 text-[--arcane-purple]" />
+                        <span className="text-sm font-medium text-white">Detailed Notes</span>
+                      </div>
+                      <div className="prose prose-invert prose-sm max-w-none">
+                        <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.notes) }} />
+                      </div>
+                    </>
                   )}
                 </div>
               )}
 
-              {/* Thoughts for Next - Standalone card for Completed mode */}
-              {!isNew && session && isDM && (
+              {/* Thoughts for Next - Standalone card for Completed mode - DM only */}
+              {!isNew && session && isDm && (
                 <ThoughtsForNextCard
                   campaignId={campaignId}
                   sessionId={session.id}
@@ -556,8 +626,8 @@ export function SessionDetailMobile({
                 </div>
               )}
 
-              {/* Create button for new sessions in Completed mode */}
-              {isNew && (
+              {/* Create button for new sessions in Completed mode - DM only */}
+              {isNew && isDm && (
                 <button
                   onClick={handleCreate}
                   disabled={!formData.summary.trim()}

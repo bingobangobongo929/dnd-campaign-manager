@@ -26,7 +26,7 @@ import { toast } from 'sonner'
 import { Input, Button, sanitizeHtml } from '@/components/ui'
 import { RichTextEditor } from '@/components/editor'
 import { AppLayout } from '@/components/layout/app-layout'
-import { useSupabase, useUser, useIsMobile } from '@/hooks'
+import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { SessionDetailMobile } from './page.mobile'
 import { useVersionedAutoSave } from '@/hooks/useAutoSave'
 import { logActivity, diffChanges } from '@/lib/activity-log'
@@ -49,6 +49,7 @@ export default function SessionDetailPage() {
   const canUseAI = useCanUseAI()
 
   const campaignId = params.id as string
+  const { isDm, can, loading: permissionsLoading } = usePermissions(campaignId)
   const sessionId = params.sessionId as string
   const isNew = sessionId === 'new'
 
@@ -345,7 +346,7 @@ export default function SessionDetailPage() {
     version: sessionVersion,
     onSave: saveSession,
     delay: 1500,
-    enabled: !isNew && !!session,
+    enabled: !isNew && !!session && can.editSession,
     showToast: false,
   })
 
@@ -600,12 +601,15 @@ export default function SessionDetailPage() {
         locations={locations}
         previousSession={previousSessionData}
         previousThoughts={previousThoughts}
+        // Permission props
+        isDm={isDm}
+        canEditSession={can.editSession}
       />
     )
   }
 
   // Desktop Layout
-  if (loading) {
+  if (loading || permissionsLoading) {
     return (
       <AppLayout campaignId={campaignId}>
         <div className="flex items-center justify-center h-[60vh]">
@@ -665,23 +669,33 @@ export default function SessionDetailPage() {
                 </span>
                 <div className="flex items-center gap-1.5 text-sm text-[--text-tertiary]">
                   <Calendar className="w-4 h-4" />
-                  <Input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="h-7 px-2 py-0 text-sm border-none bg-transparent hover:bg-[--bg-elevated] focus:bg-[--bg-elevated] rounded cursor-pointer"
-                  />
+                  {can.editSession ? (
+                    <Input
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      className="h-7 px-2 py-0 text-sm border-none bg-transparent hover:bg-[--bg-elevated] focus:bg-[--bg-elevated] rounded cursor-pointer"
+                    />
+                  ) : (
+                    <span>{formData.date ? new Date(formData.date).toLocaleDateString() : 'No date'}</span>
+                  )}
                 </div>
               </div>
-              <Input
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="text-2xl font-display font-semibold border-none bg-transparent px-0 h-auto focus:ring-0 placeholder:text-[--text-tertiary]"
-                placeholder="Session title (AI will suggest one)..."
-              />
+              {can.editSession ? (
+                <Input
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="text-2xl font-display font-semibold border-none bg-transparent px-0 h-auto focus:ring-0 placeholder:text-[--text-tertiary]"
+                  placeholder="Session title (AI will suggest one)..."
+                />
+              ) : (
+                <h1 className="text-2xl font-display font-semibold text-[--text-primary]">
+                  {formData.title || `Session ${formData.session_number}`}
+                </h1>
+              )}
             </div>
             <div className="flex items-center gap-3">
-              {!isNew && (
+              {!isNew && can.editSession && (
                 <span className={cn(
                   "text-sm transition-opacity",
                   status === 'conflict' ? 'text-amber-400' : status === 'saving' ? 'text-[--text-tertiary]' : 'text-[--text-tertiary] opacity-60'
@@ -692,7 +706,7 @@ export default function SessionDetailPage() {
                   {status === 'idle' && 'All changes saved'}
                 </span>
               )}
-              {isNew && (
+              {isNew && isDm && (
                 <Button onClick={handleCreate}>
                   Create Session
                 </Button>
@@ -701,97 +715,99 @@ export default function SessionDetailPage() {
           </div>
         </div>
 
-        {/* Phase Toggle Bar - Prominent at top */}
-        <div className="mb-8 p-1.5 bg-white/[0.03] rounded-xl border border-white/[0.08]">
-          <div className="grid grid-cols-3 gap-1.5">
-            {/* Prep Phase */}
-            <button
-              onClick={() => handlePhaseChange('prep')}
-              className={cn(
-                "flex flex-col items-center gap-1.5 py-4 px-4 rounded-lg transition-all",
-                currentPhase === 'prep'
-                  ? "bg-yellow-500/20 border-2 border-yellow-500/50 shadow-lg shadow-yellow-500/10"
-                  : "border-2 border-transparent hover:bg-white/[0.04]"
-              )}
-            >
-              <ClipboardList className={cn(
-                "w-6 h-6",
-                currentPhase === 'prep' ? "text-yellow-400" : "text-gray-500"
-              )} />
-              <span className={cn(
-                "text-sm font-semibold",
-                currentPhase === 'prep' ? "text-yellow-400" : "text-gray-400"
-              )}>
-                Prep
-              </span>
-              <span className={cn(
-                "text-xs",
-                currentPhase === 'prep' ? "text-yellow-400/70" : "text-gray-600"
-              )}>
-                Planning ahead
-              </span>
-            </button>
+        {/* Phase Toggle Bar - Only shown to DMs */}
+        {isDm && (
+          <div className="mb-8 p-1.5 bg-white/[0.03] rounded-xl border border-white/[0.08]">
+            <div className="grid grid-cols-3 gap-1.5">
+              {/* Prep Phase */}
+              <button
+                onClick={() => handlePhaseChange('prep')}
+                className={cn(
+                  "flex flex-col items-center gap-1.5 py-4 px-4 rounded-lg transition-all",
+                  currentPhase === 'prep'
+                    ? "bg-yellow-500/20 border-2 border-yellow-500/50 shadow-lg shadow-yellow-500/10"
+                    : "border-2 border-transparent hover:bg-white/[0.04]"
+                )}
+              >
+                <ClipboardList className={cn(
+                  "w-6 h-6",
+                  currentPhase === 'prep' ? "text-yellow-400" : "text-gray-500"
+                )} />
+                <span className={cn(
+                  "text-sm font-semibold",
+                  currentPhase === 'prep' ? "text-yellow-400" : "text-gray-400"
+                )}>
+                  Prep
+                </span>
+                <span className={cn(
+                  "text-xs",
+                  currentPhase === 'prep' ? "text-yellow-400/70" : "text-gray-600"
+                )}>
+                  Planning ahead
+                </span>
+              </button>
 
-            {/* Live Phase */}
-            <button
-              onClick={() => handlePhaseChange('live')}
-              className={cn(
-                "flex flex-col items-center gap-1.5 py-4 px-4 rounded-lg transition-all",
-                currentPhase === 'live'
-                  ? "bg-green-500/20 border-2 border-green-500/50 shadow-lg shadow-green-500/10"
-                  : "border-2 border-transparent hover:bg-white/[0.04]"
-              )}
-            >
-              <Play className={cn(
-                "w-6 h-6",
-                currentPhase === 'live' ? "text-green-400" : "text-gray-500"
-              )} />
-              <span className={cn(
-                "text-sm font-semibold",
-                currentPhase === 'live' ? "text-green-400" : "text-gray-400"
-              )}>
-                Live
-              </span>
-              <span className={cn(
-                "text-xs",
-                currentPhase === 'live' ? "text-green-400/70" : "text-gray-600"
-              )}>
-                Session active
-              </span>
-            </button>
+              {/* Live Phase */}
+              <button
+                onClick={() => handlePhaseChange('live')}
+                className={cn(
+                  "flex flex-col items-center gap-1.5 py-4 px-4 rounded-lg transition-all",
+                  currentPhase === 'live'
+                    ? "bg-green-500/20 border-2 border-green-500/50 shadow-lg shadow-green-500/10"
+                    : "border-2 border-transparent hover:bg-white/[0.04]"
+                )}
+              >
+                <Play className={cn(
+                  "w-6 h-6",
+                  currentPhase === 'live' ? "text-green-400" : "text-gray-500"
+                )} />
+                <span className={cn(
+                  "text-sm font-semibold",
+                  currentPhase === 'live' ? "text-green-400" : "text-gray-400"
+                )}>
+                  Live
+                </span>
+                <span className={cn(
+                  "text-xs",
+                  currentPhase === 'live' ? "text-green-400/70" : "text-gray-600"
+                )}>
+                  Session active
+                </span>
+              </button>
 
-            {/* Completed Phase */}
-            <button
-              onClick={() => handlePhaseChange('completed')}
-              className={cn(
-                "flex flex-col items-center gap-1.5 py-4 px-4 rounded-lg transition-all",
-                currentPhase === 'completed'
-                  ? "bg-purple-500/20 border-2 border-purple-500/50 shadow-lg shadow-purple-500/10"
-                  : "border-2 border-transparent hover:bg-white/[0.04]"
-              )}
-            >
-              <CheckCircle2 className={cn(
-                "w-6 h-6",
-                currentPhase === 'completed' ? "text-purple-400" : "text-gray-500"
-              )} />
-              <span className={cn(
-                "text-sm font-semibold",
-                currentPhase === 'completed' ? "text-purple-400" : "text-gray-400"
-              )}>
-                Completed
-              </span>
-              <span className={cn(
-                "text-xs",
-                currentPhase === 'completed' ? "text-purple-400/70" : "text-gray-600"
-              )}>
-                Session done
-              </span>
-            </button>
+              {/* Completed Phase */}
+              <button
+                onClick={() => handlePhaseChange('completed')}
+                className={cn(
+                  "flex flex-col items-center gap-1.5 py-4 px-4 rounded-lg transition-all",
+                  currentPhase === 'completed'
+                    ? "bg-purple-500/20 border-2 border-purple-500/50 shadow-lg shadow-purple-500/10"
+                    : "border-2 border-transparent hover:bg-white/[0.04]"
+                )}
+              >
+                <CheckCircle2 className={cn(
+                  "w-6 h-6",
+                  currentPhase === 'completed' ? "text-purple-400" : "text-gray-500"
+                )} />
+                <span className={cn(
+                  "text-sm font-semibold",
+                  currentPhase === 'completed' ? "text-purple-400" : "text-gray-400"
+                )}>
+                  Completed
+                </span>
+                <span className={cn(
+                  "text-xs",
+                  currentPhase === 'completed' ? "text-purple-400/70" : "text-gray-600"
+                )}>
+                  Session done
+                </span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* === PREP PHASE LAYOUT === */}
-        {currentPhase === 'prep' && (
+        {/* === PREP PHASE LAYOUT === (DM only) */}
+        {isDm && currentPhase === 'prep' && (
           <>
             {/* Thoughts from Previous Session (shown in Prep mode) */}
             {previousThoughts && (
@@ -855,8 +871,8 @@ export default function SessionDetailPage() {
           </>
         )}
 
-        {/* === LIVE PHASE LAYOUT === */}
-        {currentPhase === 'live' && (
+        {/* === LIVE PHASE LAYOUT === (DM only) */}
+        {isDm && currentPhase === 'live' && (
           <>
             {/* Session Workflow for Live mode */}
             {!isNew && session && campaign?.user_id === user?.id && (
@@ -904,10 +920,10 @@ export default function SessionDetailPage() {
         )}
 
         {/* === COMPLETED PHASE LAYOUT === */}
-        {currentPhase === 'completed' && (
+        {(currentPhase === 'completed' || !isDm) && (
           <>
-            {/* 1. Thoughts from Previous Session (context for new sessions) */}
-            {isNew && previousThoughts && (
+            {/* 1. Thoughts from Previous Session (context for new sessions - DM only) */}
+            {isDm && isNew && previousThoughts && (
               <div className="card p-6 mb-8 border-purple-500/30 bg-purple-500/5">
                 <div className="flex items-center gap-3 mb-4">
                   <Lightbulb className="w-5 h-5 text-purple-400" />
@@ -929,11 +945,13 @@ export default function SessionDetailPage() {
                   <label className="text-lg font-semibold text-[--text-primary] block">
                     Summary
                   </label>
-                  <span className="text-sm text-[--text-tertiary]">
-                    Write bullet points of what happened, then expand with AI
-                  </span>
+                  {can.editSession && (
+                    <span className="text-sm text-[--text-tertiary]">
+                      Write bullet points of what happened, then expand with AI
+                    </span>
+                  )}
                 </div>
-                {canUseAI && !showExpandedPreview && (
+                {can.editSession && canUseAI && !showExpandedPreview && (
                   <button
                     onClick={handleExpandNotes}
                     disabled={!formData.summary.trim() || expanding}
@@ -954,16 +972,27 @@ export default function SessionDetailPage() {
                 )}
               </div>
 
-              <RichTextEditor
-                content={formData.summary}
-                onChange={(content) => setFormData({ ...formData, summary: content })}
-                placeholder="Write your session notes as bullet points..."
-                className="min-h-[200px]"
-              />
+              {can.editSession ? (
+                <RichTextEditor
+                  content={formData.summary}
+                  onChange={(content) => setFormData({ ...formData, summary: content })}
+                  placeholder="Write your session notes as bullet points..."
+                  className="min-h-[200px]"
+                />
+              ) : (
+                /* Read-only summary for players */
+                <div className="prose prose-invert prose-sm max-w-none [&>ul]:mt-1 [&>ul]:mb-2 [&>li]:my-0.5">
+                  {formData.summary ? (
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.summary) }} />
+                  ) : (
+                    <p className="text-[--text-tertiary] italic">No summary available yet.</p>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* AI Expansion Preview */}
-            {showExpandedPreview && (
+            {/* AI Expansion Preview - DM only */}
+            {can.editSession && showExpandedPreview && (
               <div className="card p-6 mb-8 border-[--arcane-purple]/30 bg-[--arcane-purple]/5">
                 <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="w-5 h-5 text-[--arcane-purple]" />
@@ -1056,80 +1085,135 @@ export default function SessionDetailPage() {
                     Attendance
                   </label>
                   <span className="text-sm text-[--text-tertiary]">
-                    Who was present this session?
+                    {can.editSession ? 'Who was present this session?' : 'Characters present this session'}
                   </span>
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {pcCharacters.map((char) => (
-                  <button
-                    key={char.id}
-                    onClick={() => toggleAttendee(char.id)}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-lg border transition-all",
-                      attendees.includes(char.id)
-                        ? "bg-[--arcane-purple]/20 border-[--arcane-purple]/50 text-white"
-                        : "border-white/10 text-[--text-secondary] hover:border-white/20"
-                    )}
-                  >
-                    {char.image_url ? (
-                      <Image
-                        src={char.image_url}
-                        alt={char.name}
-                        width={24}
-                        height={24}
-                        className="w-6 h-6 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-6 h-6 rounded-full bg-[--bg-elevated] flex items-center justify-center text-xs font-medium">
-                        {getInitials(char.name)}
+                {pcCharacters.map((char) => {
+                  const isAttending = attendees.includes(char.id)
+                  // Players see read-only display
+                  if (!can.editSession) {
+                    if (!isAttending) return null
+                    return (
+                      <div
+                        key={char.id}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[--arcane-purple]/20 border border-[--arcane-purple]/50"
+                      >
+                        {char.image_url ? (
+                          <Image
+                            src={char.image_url}
+                            alt={char.name}
+                            width={24}
+                            height={24}
+                            className="w-6 h-6 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-[--bg-elevated] flex items-center justify-center text-xs font-medium">
+                            {getInitials(char.name)}
+                          </div>
+                        )}
+                        <span className="text-sm font-medium text-white">{char.name}</span>
                       </div>
-                    )}
-                    <span className="text-sm font-medium">{char.name}</span>
-                    {attendees.includes(char.id) && (
-                      <Check className="w-4 h-4 text-[--arcane-purple]" />
-                    )}
-                  </button>
-                ))}
-                {pcCharacters.length === 0 && (
+                    )
+                  }
+                  // DMs can toggle attendance
+                  return (
+                    <button
+                      key={char.id}
+                      onClick={() => toggleAttendee(char.id)}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 rounded-lg border transition-all",
+                        isAttending
+                          ? "bg-[--arcane-purple]/20 border-[--arcane-purple]/50 text-white"
+                          : "border-white/10 text-[--text-secondary] hover:border-white/20"
+                      )}
+                    >
+                      {char.image_url ? (
+                        <Image
+                          src={char.image_url}
+                          alt={char.name}
+                          width={24}
+                          height={24}
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-[--bg-elevated] flex items-center justify-center text-xs font-medium">
+                          {getInitials(char.name)}
+                        </div>
+                      )}
+                      <span className="text-sm font-medium">{char.name}</span>
+                      {isAttending && (
+                        <Check className="w-4 h-4 text-[--arcane-purple]" />
+                      )}
+                    </button>
+                  )
+                })}
+                {!can.editSession && attendees.length === 0 && (
+                  <p className="text-sm text-[--text-tertiary]">No attendance recorded.</p>
+                )}
+                {can.editSession && pcCharacters.length === 0 && (
                   <p className="text-sm text-[--text-tertiary]">No player characters in this campaign yet.</p>
                 )}
               </div>
             </div>
 
             {/* Detailed Notes Section */}
-            {(formData.notes || !detailedNotesCollapsed) && (
+            {(formData.notes || (!detailedNotesCollapsed && can.editSession)) && (
               <div className="card p-6 mb-8">
-                <button
-                  onClick={() => setDetailedNotesCollapsed(!detailedNotesCollapsed)}
-                  className="w-full flex items-center justify-between mb-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <ScrollText className="w-5 h-5 text-[--arcane-purple]" />
-                    <div className="text-left">
-                      <label className="text-lg font-semibold text-[--text-primary] block">
-                        Detailed Notes
-                      </label>
-                      <span className="text-sm text-[--text-tertiary]">
-                        Expanded session narrative
-                      </span>
-                    </div>
-                  </div>
-                  {detailedNotesCollapsed ? (
-                    <ChevronDown className="w-5 h-5 text-[--text-tertiary]" />
-                  ) : (
-                    <ChevronUp className="w-5 h-5 text-[--text-tertiary]" />
-                  )}
-                </button>
+                {can.editSession ? (
+                  /* DM can toggle and edit */
+                  <>
+                    <button
+                      onClick={() => setDetailedNotesCollapsed(!detailedNotesCollapsed)}
+                      className="w-full flex items-center justify-between mb-4"
+                    >
+                      <div className="flex items-center gap-3">
+                        <ScrollText className="w-5 h-5 text-[--arcane-purple]" />
+                        <div className="text-left">
+                          <label className="text-lg font-semibold text-[--text-primary] block">
+                            Detailed Notes
+                          </label>
+                          <span className="text-sm text-[--text-tertiary]">
+                            Expanded session narrative
+                          </span>
+                        </div>
+                      </div>
+                      {detailedNotesCollapsed ? (
+                        <ChevronDown className="w-5 h-5 text-[--text-tertiary]" />
+                      ) : (
+                        <ChevronUp className="w-5 h-5 text-[--text-tertiary]" />
+                      )}
+                    </button>
 
-                {!detailedNotesCollapsed && (
-                  <RichTextEditor
-                    content={formData.notes}
-                    onChange={(content) => setFormData({ ...formData, notes: content })}
-                    placeholder="Detailed session notes..."
-                    className="min-h-[300px]"
-                  />
+                    {!detailedNotesCollapsed && (
+                      <RichTextEditor
+                        content={formData.notes}
+                        onChange={(content) => setFormData({ ...formData, notes: content })}
+                        placeholder="Detailed session notes..."
+                        className="min-h-[300px]"
+                      />
+                    )}
+                  </>
+                ) : (
+                  /* Players see read-only view */
+                  <>
+                    <div className="flex items-center gap-3 mb-4">
+                      <ScrollText className="w-5 h-5 text-[--arcane-purple]" />
+                      <div>
+                        <label className="text-lg font-semibold text-[--text-primary] block">
+                          Detailed Notes
+                        </label>
+                        <span className="text-sm text-[--text-tertiary]">
+                          Expanded session narrative
+                        </span>
+                      </div>
+                    </div>
+                    <div className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4">
+                      <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.notes) }} />
+                    </div>
+                  </>
                 )}
               </div>
             )}
@@ -1200,8 +1284,8 @@ export default function SessionDetailPage() {
               </div>
             )}
 
-            {/* Create button for new sessions in Completed mode */}
-            {isNew && (
+            {/* Create button for new sessions in Completed mode - DM only */}
+            {isNew && isDm && (
               <div className="flex justify-end">
                 <Button onClick={handleCreate} size="lg">
                   Create Session

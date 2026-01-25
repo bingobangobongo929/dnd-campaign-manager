@@ -14,7 +14,7 @@ import {
   ClipboardList,
   CheckCircle2,
 } from 'lucide-react'
-import { Tooltip, sanitizeHtml, AccessDeniedPage } from '@/components/ui'
+import { Tooltip, sanitizeHtml, AccessDeniedPage, Modal } from '@/components/ui'
 import { GuidanceTip } from '@/components/guidance/GuidanceTip'
 import { AppLayout, CampaignPageHeader } from '@/components/layout'
 import {
@@ -96,6 +96,9 @@ export default function SessionsPage() {
   const [showRelationshipsModal, setShowRelationshipsModal] = useState(false)
   const [showResizeModal, setShowResizeModal] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [sessionToDelete, setSessionToDelete] = useState<SessionWithAttendees | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const toggleExpanded = (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -223,25 +226,40 @@ export default function SessionsPage() {
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!confirm('Are you sure you want to delete this session? This cannot be undone.')) return
+    const session = sessions.find(s => s.id === id)
+    if (session) {
+      setSessionToDelete(session)
+      setShowDeleteModal(true)
+    }
+  }
 
-    const sessionToDelete = sessions.find(s => s.id === id)
-    await supabase.from('sessions').delete().eq('id', id)
-    setSessions(sessions.filter((s) => s.id !== id))
+  const confirmDelete = async () => {
+    if (!sessionToDelete) return
 
-    // Log activity
-    if (user && sessionToDelete) {
-      await logActivity(supabase, user.id, {
-        action: 'session.delete',
-        entity_type: 'session',
-        entity_id: id,
-        entity_name: `Session ${sessionToDelete.session_number}: ${sessionToDelete.title || 'Untitled'}`,
-        metadata: {
-          campaign_id: campaignId,
-          campaign_name: campaign?.name,
-          session_number: sessionToDelete.session_number,
-        },
-      })
+    setDeleting(true)
+    try {
+      await supabase.from('sessions').delete().eq('id', sessionToDelete.id)
+      setSessions(sessions.filter((s) => s.id !== sessionToDelete.id))
+
+      // Log activity
+      if (user) {
+        await logActivity(supabase, user.id, {
+          action: 'session.delete',
+          entity_type: 'session',
+          entity_id: sessionToDelete.id,
+          entity_name: `Session ${sessionToDelete.session_number}: ${sessionToDelete.title || 'Untitled'}`,
+          metadata: {
+            campaign_id: campaignId,
+            campaign_name: campaign?.name,
+            session_number: sessionToDelete.session_number,
+          },
+        })
+      }
+
+      setShowDeleteModal(false)
+      setSessionToDelete(null)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -696,6 +714,56 @@ export default function SessionsPage() {
           contentMode="active"
         />
       )}
+
+      {/* Delete Session Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false)
+          setSessionToDelete(null)
+        }}
+        title="Delete Session"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-[--text-secondary]">
+            Are you sure you want to delete{' '}
+            <span className="font-semibold text-[--text-primary]">
+              Session {sessionToDelete?.session_number}: {sessionToDelete?.title || 'Untitled'}
+            </span>
+            ? This action cannot be undone.
+          </p>
+          <div className="flex gap-3 justify-end">
+            <button
+              onClick={() => {
+                setShowDeleteModal(false)
+                setSessionToDelete(null)
+              }}
+              className="px-4 py-2 text-sm font-medium text-[--text-secondary] bg-[--bg-elevated] border border-[--border] rounded-lg hover:bg-[--bg-hover] transition-colors"
+              disabled={deleting}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDelete}
+              disabled={deleting}
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-500 transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              {deleting ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4" />
+                  Delete Session
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </AppLayout>
   )
 }

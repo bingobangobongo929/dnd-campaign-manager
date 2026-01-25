@@ -308,6 +308,12 @@ export function CampaignShareClient({
         Object.entries(groupedNpcs).map(([group, chars]) => [
           group,
           (chars as any[]).filter(npc => {
+            // Check if filter matches a faction (from faction_memberships)
+            const npcFactions = getCharacterFactions(npc.id)
+            const hasFaction = npcFactions.some((fm: any) => fm.faction?.name === castFilter)
+            if (hasFaction) return true
+
+            // Check if filter matches a tag (from character_tags)
             const tags = characterTags[npc.id] || []
             return tags.some((t: any) => t.tag?.name === castFilter)
           })
@@ -899,6 +905,36 @@ export function CampaignShareClient({
             {/* Sessions View - All expanded by default */}
             {(timelineView === 'feed' || !sections.timeline || timelineEvents.length === 0) && sections.sessionRecaps && (
               <div className="space-y-6">
+                {/* Session Quick Navigation */}
+                {sessions.length > 3 && (
+                  <div className="sticky top-[56px] z-30 bg-[#0a0a0f]/95 backdrop-blur-xl py-3 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 border-b border-white/[0.06]">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-gray-500 flex-shrink-0">Jump to:</span>
+                      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                        {sessions.map((session, index) => (
+                          <button
+                            key={session.id}
+                            onClick={() => {
+                              const element = document.getElementById(`session-${session.id}`)
+                              if (element) {
+                                element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                              }
+                            }}
+                            className="flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg bg-white/[0.04] border border-white/[0.08] text-gray-400 hover:text-white hover:bg-purple-500/20 hover:border-purple-500/30 transition-colors"
+                          >
+                            #{session.session_number || index + 1}
+                            {session.title && (
+                              <span className="ml-1.5 text-gray-500 max-w-[100px] truncate hidden sm:inline">
+                                {session.title}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {sessions.map((session, index) => {
                   const attendees = sessionAttendees[session.id] || []
                   const sessionEvents = eventsBySession[session.id] || []
@@ -906,7 +942,8 @@ export function CampaignShareClient({
                   return (
                     <div
                       key={session.id}
-                      className="bg-white/[0.02] rounded-2xl border border-white/[0.06] overflow-hidden"
+                      id={`session-${session.id}`}
+                      className="bg-white/[0.02] rounded-2xl border border-white/[0.06] overflow-hidden scroll-mt-24"
                     >
                       {/* Session Header */}
                       <div className="p-5 sm:p-6 border-b border-white/[0.06]">
