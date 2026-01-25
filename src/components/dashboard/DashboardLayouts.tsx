@@ -12,6 +12,7 @@ import {
   CampaignStatsWidget,
   PartyOverviewWidget,
   RecentEventsWidget,
+  UpcomingPlotWidget,
   RecentSessionsWidget,
   DmToolboxWidget,
   IntelligenceStatusWidget,
@@ -44,6 +45,7 @@ const WIDGET_SIZES: { [key: string]: 'full' | 'half' | 'third' } = {
   nextSession: 'full',
   partyOverview: 'full',
   recentEvents: 'third',
+  upcomingPlot: 'third',
   recentSessions: 'full',
   intelligenceStatus: 'half',
   dmToolbox: 'half',
@@ -185,6 +187,12 @@ export function DmDashboardLayout({
         campaignId={campaignId}
         events={timelineEvents}
         isDm={true}
+      />
+    ),
+    upcomingPlot: can.viewFutureTimeline && (
+      <UpcomingPlotWidget
+        campaignId={campaignId}
+        events={timelineEvents}
       />
     ),
     recentSessions: can.viewSessions && (
