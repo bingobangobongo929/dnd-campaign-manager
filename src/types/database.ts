@@ -1771,6 +1771,7 @@ export interface Database {
           onboarding_completed_at: string | null
           show_tips: boolean
           tips_dismissed: Json
+          homepage_preferences: Json
           created_at: string
           updated_at: string
         }
@@ -1801,6 +1802,7 @@ export interface Database {
           onboarding_completed_at?: string | null
           show_tips?: boolean
           tips_dismissed?: Json
+          homepage_preferences?: Json
           created_at?: string
           updated_at?: string
         }
@@ -1831,6 +1833,7 @@ export interface Database {
           onboarding_completed_at?: string | null
           show_tips?: boolean
           tips_dismissed?: Json
+          homepage_preferences?: Json
           created_at?: string
           updated_at?: string
         }
@@ -4464,4 +4467,21 @@ export interface SuggestionEffectivenessStats {
   acceptanceRate: number
   positiveRatio: number
   negativeRatio: number
+}
+
+// Homepage preferences types
+export type HomepageSectionId = 'campaigns' | 'adventures' | 'oneshots' | 'characters' | 'playing'
+
+export interface HomepagePreferences {
+  auto_order: boolean // true = automatic by content count, false = manual ordering
+  section_order: HomepageSectionId[] // manual section order when auto_order is false
+  hidden_sections: HomepageSectionId[] // permanently hidden sections ("Don't show again")
+  dismissed_temporarily: HomepageSectionId[] // sections hidden for this session ("Hide for now")
+}
+
+export const DEFAULT_HOMEPAGE_PREFERENCES: HomepagePreferences = {
+  auto_order: true,
+  section_order: [],
+  hidden_sections: [],
+  dismissed_temporarily: []
 }

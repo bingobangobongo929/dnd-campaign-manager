@@ -30,7 +30,8 @@ import { MobileLayout, MobileSectionHeader, MobileSearchBar } from '@/components
 import { useSupabase, useUser, useIsMobile, useMembership } from '@/hooks'
 import { useAppStore } from '@/store'
 import { formatDistanceToNow, cn } from '@/lib/utils'
-import type { Campaign, VaultCharacter, Oneshot, ContentSave, Character } from '@/types/database'
+import type { Campaign, VaultCharacter, Oneshot, ContentSave, Character, HomepagePreferences, HomepageSectionId } from '@/types/database'
+import { DEFAULT_HOMEPAGE_PREFERENCES } from '@/types/database'
 import { HomePageMobile } from './page.mobile'
 
 export default function HomePage() {
@@ -62,6 +63,10 @@ export default function HomePage() {
   const [roleSelected, setRoleSelected] = useState<'dm' | 'player' | 'exploring' | null>(null)
   const [inviteCode, setInviteCode] = useState('')
   const [joiningWithCode, setJoiningWithCode] = useState(false)
+
+  // Homepage preferences
+  const [homepagePreferences, setHomepagePreferences] = useState<HomepagePreferences>(DEFAULT_HOMEPAGE_PREFERENCES)
+  const [dismissedTemporarilyLocal, setDismissedTemporarilyLocal] = useState<HomepageSectionId[]>([])
 
   // Check if founder banner was dismissed and if role was selected
   useEffect(() => {
@@ -97,6 +102,63 @@ export default function HomePage() {
     }
   }
 
+  // Section ordering logic
+  const getSectionOrder = (): HomepageSectionId[] => {
+    const allSections: { id: HomepageSectionId; count: number }[] = [
+      { id: 'campaigns', count: campaigns.length },
+      { id: 'adventures', count: adventures.length },
+      { id: 'playing', count: joinedCampaigns.length },
+      { id: 'oneshots', count: oneshots.length },
+      { id: 'characters', count: characters.length },
+    ]
+
+    // Filter out hidden sections
+    const visibleSections = allSections.filter(s =>
+      !homepagePreferences.hidden_sections.includes(s.id) &&
+      !dismissedTemporarilyLocal.includes(s.id)
+    )
+
+    if (!homepagePreferences.auto_order && homepagePreferences.section_order.length > 0) {
+      // Use manual order, but only for sections that still exist and are visible
+      return homepagePreferences.section_order.filter(id =>
+        visibleSections.some(s => s.id === id)
+      )
+    }
+
+    // Automatic ordering: non-empty sections first (by count desc), then empty
+    return visibleSections
+      .sort((a, b) => {
+        if (a.count === 0 && b.count > 0) return 1
+        if (a.count > 0 && b.count === 0) return -1
+        return b.count - a.count
+      })
+      .map(s => s.id)
+  }
+
+  const handleDismissSection = async (sectionId: HomepageSectionId, permanent: boolean) => {
+    if (permanent) {
+      // Update in database
+      const newHiddenSections = [...homepagePreferences.hidden_sections, sectionId]
+      const newPrefs = { ...homepagePreferences, hidden_sections: newHiddenSections }
+      setHomepagePreferences(newPrefs)
+
+      if (user) {
+        await supabase
+          .from('user_settings')
+          .update({ homepage_preferences: newPrefs })
+          .eq('user_id', user.id)
+      }
+    } else {
+      // Only dismiss for this session (local state only)
+      setDismissedTemporarilyLocal([...dismissedTemporarilyLocal, sectionId])
+    }
+  }
+
+  const isSectionVisible = (sectionId: HomepageSectionId): boolean => {
+    return !homepagePreferences.hidden_sections.includes(sectionId) &&
+           !dismissedTemporarilyLocal.includes(sectionId)
+  }
+
   useEffect(() => {
     if (user) {
       loadData()
@@ -109,13 +171,22 @@ export default function HomePage() {
     try {
       const { data } = await supabase
         .from('user_settings')
-        .select('onboarding_completed')
+        .select('onboarding_completed, homepage_preferences')
         .eq('user_id', user.id)
         .single()
 
       // Show tour if onboarding not completed (and column exists)
       if (data && data.onboarding_completed === false) {
         setShowOnboarding(true)
+      }
+
+      // Load homepage preferences
+      if (data?.homepage_preferences) {
+        const prefs = data.homepage_preferences as unknown as HomepagePreferences
+        setHomepagePreferences({
+          ...DEFAULT_HOMEPAGE_PREFERENCES,
+          ...prefs
+        })
       }
     } catch {
       // Column might not exist yet, ignore errors
