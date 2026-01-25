@@ -63,6 +63,7 @@ import { FounderBadge, UsageBar } from '@/components/membership'
 import { TimezoneSelector } from '@/components/scheduling'
 import { getUserTimezone, formatCurrentTime, getTimezoneAbbreviation } from '@/lib/timezone-utils'
 import { isAdmin } from '@/lib/admin'
+import { ensurePngAvatarUrl } from '@/lib/discord'
 
 // App version - using date-based versioning
 const APP_VERSION = '2025.01.17'
@@ -490,7 +491,9 @@ export default function SettingsPage() {
   const handleApplyDiscordAvatar = async () => {
     if (!user || !settings) return
 
-    const discordAvatar = (settings as { discord_avatar?: string | null }).discord_avatar
+    const rawDiscordAvatar = (settings as { discord_avatar?: string | null }).discord_avatar
+    // Force PNG format - Discord CDN converts GIFs to static PNG when .png is requested
+    const discordAvatar = ensurePngAvatarUrl(rawDiscordAvatar)
     if (!discordAvatar) {
       toast.error('No Discord avatar available')
       return
@@ -1058,7 +1061,7 @@ export default function SettingsPage() {
                       className="btn btn-secondary text-sm text-[#5865F2] hover:bg-[#5865F2]/10"
                     >
                       <DiscordIcon className="w-4 h-4" />
-                      Apply Discord
+                      Use Discord Avatar
                     </button>
                   )}
                   {settings?.avatar_url && (
