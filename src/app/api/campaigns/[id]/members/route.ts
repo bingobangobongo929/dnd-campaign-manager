@@ -383,11 +383,13 @@ export async function PATCH(
     console.log('[Members PATCH Debug] characterId from body:', characterId)
     console.log('[Members PATCH Debug] updateData:', updateData)
 
-    const { data: updated, error } = await supabase
+    // Use admin client to bypass RLS - we've already verified permission above
+    const adminClient = createAdminClient()
+    const { data: updated, error } = await adminClient
       .from('campaign_members')
       .update(updateData)
       .eq('id', memberId)
-      .select('*, email')
+      .select('*')
       .single()
 
     console.log('[Members PATCH Debug] updated result:', updated)
@@ -395,7 +397,8 @@ export async function PATCH(
 
     if (error) {
       console.error('Failed to update member:', error)
-      return NextResponse.json({ error: 'Failed to update member' }, { status: 500 })
+      console.error('Error details:', JSON.stringify(error, null, 2))
+      return NextResponse.json({ error: `Failed to update member: ${error.message}` }, { status: 500 })
     }
 
     // If a character was assigned, update the character to designate it for this member
@@ -413,7 +416,7 @@ export async function PATCH(
       }
 
       if (Object.keys(charUpdateData).length > 0) {
-        const { error: charUpdateError } = await supabase
+        const { error: charUpdateError } = await adminClient
           .from('characters')
           .update(charUpdateData)
           .eq('id', characterId)
