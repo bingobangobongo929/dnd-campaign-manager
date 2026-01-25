@@ -8,22 +8,11 @@ import { CampaignPageHeader } from '@/components/layout'
 import { useSupabase, useUser, usePermissions, useDashboardPreferences } from '@/hooks'
 import { useAppStore, useCanUseAI } from '@/store'
 import {
-  CampaignHeaderWidget,
-  QuickActionsWidget,
-  LatestSessionWidget,
-  CampaignStatsWidget,
-  PartyOverviewWidget,
-  RecentEventsWidget,
-  RecentSessionsWidget,
-  RecentActivityWidget,
-  DmToolboxWidget,
-  IntelligenceStatusWidget,
-  MyCharacterWidget,
-  PreviouslyOnWidget,
   ScheduleSessionModal,
   ScheduleSettingsModal,
-  NextSessionWidget,
   CustomizeDashboardModal,
+  DmDashboardLayout,
+  PlayerDashboardLayout,
 } from '@/components/dashboard'
 import {
   type ScheduleSettings,
@@ -103,6 +92,8 @@ export default function CampaignDashboardPage() {
     loaded: preferencesLoaded,
     toggleDmWidget,
     togglePlayerWidget,
+    reorderDmWidgets,
+    reorderPlayerWidgets,
     resetToDefaults,
     isDmWidgetVisible,
     isPlayerWidgetVisible,
@@ -437,201 +428,58 @@ export default function CampaignDashboardPage() {
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Player Dashboard Layout */}
         {isPlayerLayout ? (
-          <div className="space-y-6">
-            {/* My Character - Full Width (required) */}
-            {isPlayerWidgetVisible('myCharacter') && (
-              <MyCharacterWidget
-                campaignId={campaignId}
-                character={myCharacter}
-                vaultCharacterId={membership?.vault_character_id}
-              />
-            )}
-
-            {/* Next Session */}
-            {isPlayerWidgetVisible('nextSession') && (() => {
-              const myStatus = (membership as CampaignMember & { next_session_status?: string })?.next_session_status as string | undefined
-              let currentStatus: 'attending' | 'unavailable' | 'late' = 'attending'
-              if (myStatus === 'confirmed') currentStatus = 'attending'
-              else if (myStatus === 'unavailable') currentStatus = 'unavailable'
-              else if (myStatus === 'maybe') currentStatus = 'late'
-
-              return (
-                <NextSessionWidget
-                  scheduleSettings={scheduleSettings}
-                  schedulePattern={schedulePattern}
-                  scheduleExceptions={scheduleExceptions}
-                  nextSessionDate={(campaign as Campaign & { next_session_date?: string })?.next_session_date}
-                  nextSessionTime={(campaign as Campaign & { next_session_time?: string })?.next_session_time}
-                  nextSessionLocation={(campaign as Campaign & { next_session_location?: string })?.next_session_location}
-                  partyMembers={partyMemberStatuses}
-                  userTimezone={userTimezone}
-                  isDm={false}
-                  currentUserStatus={currentStatus}
-                  currentUserNote={(membership as CampaignMember & { next_session_note?: string })?.next_session_note || undefined}
-                  onUpdateStatus={handleUpdatePlayerAvailability}
-                />
-              )
-            })()}
-
-            {/* Previously On */}
-            {isPlayerWidgetVisible('previouslyOn') && latestSession && (
-              <PreviouslyOnWidget
-                campaignId={campaignId}
-                campaignName={campaign?.name || 'Campaign'}
-                session={latestSession}
-                sessionEvents={latestSessionEvents}
-              />
-            )}
-
-            {/* Party with Attendance */}
-            {isPlayerWidgetVisible('partyOverview') && (
-              <PartyOverviewWidget
-                campaignId={campaignId}
-                partyMembers={partyMembers}
-                campaign={campaign}
-                currentUserMemberId={membership?.id}
-                isDm={false}
-                onUpdateStatus={handleUpdateSessionStatus}
-              />
-            )}
-
-            {/* Quick Actions + Recent Sessions */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {isPlayerWidgetVisible('quickActions') && (
-                <QuickActionsWidget
-                  campaignId={campaignId}
-                  isDm={false}
-                  canUseAI={canUseAI}
-                  can={can}
-                />
-              )}
-              {isPlayerWidgetVisible('recentSessions') && can.viewSessions && (
-                <RecentSessionsWidget
-                  campaignId={campaignId}
-                  sessions={sessions}
-                  isDm={false}
-                />
-              )}
-            </div>
-          </div>
+          <PlayerDashboardLayout
+            campaignId={campaignId}
+            campaign={campaign}
+            widgetOrder={preferences.playerWidgets}
+            isVisible={isPlayerWidgetVisible}
+            myCharacter={myCharacter}
+            membership={membership}
+            latestSession={latestSession}
+            latestSessionEvents={latestSessionEvents}
+            partyMembers={partyMembers}
+            partyMemberStatuses={partyMemberStatuses}
+            sessions={sessions}
+            scheduleSettings={scheduleSettings}
+            schedulePattern={schedulePattern}
+            scheduleExceptions={scheduleExceptions}
+            userTimezone={userTimezone}
+            canUseAI={canUseAI}
+            can={can}
+            onUpdateSessionStatus={handleUpdateSessionStatus}
+            onUpdatePlayerAvailability={handleUpdatePlayerAvailability}
+          />
         ) : (
           /* DM Dashboard Layout */
-          <div className="space-y-6">
-            {/* Campaign Header (required) */}
-            {isDmWidgetVisible('campaignHeader') && (
-              <CampaignHeaderWidget
-                campaign={campaign!}
-                sessionCount={sessions.length}
-                memberCount={memberCount}
-                isDm={true}
-                onShare={() => setShowShareModal(true)}
-              />
-            )}
-
-            {/* Row 1: Quick Actions, Latest Session, Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {isDmWidgetVisible('quickActions') && (
-                <QuickActionsWidget
-                  campaignId={campaignId}
-                  isDm={true}
-                  canUseAI={canUseAI}
-                  can={can}
-                  onOpenMembers={() => setShowMembersModal(true)}
-                  onOpenShare={() => setShowShareModal(true)}
-                  onOpenSchedule={() => setShowScheduleSettings(true)}
-                />
-              )}
-              {isDmWidgetVisible('latestSession') && can.viewSessions && (
-                <LatestSessionWidget
-                  campaignId={campaignId}
-                  session={latestSession}
-                  campaign={campaign}
-                  isDm={true}
-                />
-              )}
-              {isDmWidgetVisible('campaignStats') && (
-                <CampaignStatsWidget
-                  campaignId={campaignId}
-                  stats={{
-                    partyCount: pcCharacters.length,
-                    totalCharacters: characters.length,
-                    sessionCount: sessions.length,
-                    timelineEventCount: timelineEvents.length,
-                    locationCount: mapsCount,
-                    loreEntryCount: loreCount,
-                  }}
-                  health={{
-                    npcsMissingDetails,
-                    sessionsWithoutNotes,
-                  }}
-                  isDm={true}
-                />
-              )}
-            </div>
-
-            {/* Row 1.5: Next Session (DM) */}
-            {isDmWidgetVisible('nextSession') && (
-              <NextSessionWidget
-                scheduleSettings={scheduleSettings}
-                schedulePattern={schedulePattern}
-                scheduleExceptions={scheduleExceptions}
-                nextSessionDate={(campaign as Campaign & { next_session_date?: string })?.next_session_date}
-                nextSessionTime={(campaign as Campaign & { next_session_time?: string })?.next_session_time}
-                nextSessionLocation={(campaign as Campaign & { next_session_location?: string })?.next_session_location}
-                partyMembers={partyMemberStatuses}
-                userTimezone={userTimezone}
-                isDm={true}
-                onEditSchedule={() => setShowScheduleSettings(true)}
-              />
-            )}
-
-            {/* Row 2: Party Overview */}
-            {isDmWidgetVisible('partyOverview') && (
-              <PartyOverviewWidget
-                campaignId={campaignId}
-                partyMembers={partyMembers}
-                campaign={campaign}
-                isDm={true}
-                onSendReminder={() => toast.info('Reminder feature coming soon!')}
-              />
-            )}
-
-            {/* Row 3: Recent Events + Recent Sessions */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {isDmWidgetVisible('recentEvents') && can.viewTimeline && (
-                <RecentEventsWidget
-                  campaignId={campaignId}
-                  events={timelineEvents}
-                  isDm={true}
-                />
-              )}
-              {isDmWidgetVisible('recentSessions') && can.viewSessions && (
-                <RecentSessionsWidget
-                  campaignId={campaignId}
-                  sessions={sessions}
-                  isDm={true}
-                  className="lg:col-span-2"
-                />
-              )}
-            </div>
-
-            {/* Row 4: Intelligence Status + DM Toolbox */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {isDmWidgetVisible('intelligenceStatus') && canUseAI && (
-                <IntelligenceStatusWidget
-                  campaignId={campaignId}
-                  lastRunAt={campaign?.last_intelligence_run || null}
-                />
-              )}
-              {isDmWidgetVisible('dmToolbox') && (
-                <DmToolboxWidget
-                  campaignId={campaignId}
-                  campaign={campaign}
-                  pendingPlayerNotes={playerNotes.length}
-                />
-              )}
-            </div>
-          </div>
+          <DmDashboardLayout
+            campaignId={campaignId}
+            campaign={campaign}
+            widgetOrder={preferences.dmWidgets}
+            isVisible={isDmWidgetVisible}
+            sessions={sessions}
+            characters={characters}
+            pcCharacters={pcCharacters}
+            npcCharacters={npcCharacters}
+            timelineEvents={timelineEvents}
+            partyMembers={partyMembers}
+            partyMemberStatuses={partyMemberStatuses}
+            playerNotes={playerNotes}
+            memberCount={memberCount}
+            mapsCount={mapsCount}
+            loreCount={loreCount}
+            latestSession={latestSession}
+            npcsMissingDetails={npcsMissingDetails}
+            sessionsWithoutNotes={sessionsWithoutNotes}
+            scheduleSettings={scheduleSettings}
+            schedulePattern={schedulePattern}
+            scheduleExceptions={scheduleExceptions}
+            userTimezone={userTimezone}
+            canUseAI={canUseAI}
+            can={can}
+            onOpenMembersModal={() => setShowMembersModal(true)}
+            onOpenShareModal={() => setShowShareModal(true)}
+            onOpenScheduleSettings={() => setShowScheduleSettings(true)}
+          />
         )}
       </div>
 
@@ -717,7 +565,12 @@ export default function CampaignDashboardPage() {
         onClose={() => setShowCustomizeModal(false)}
         isDm={isDm}
         visibleWidgets={isPlayerLayout ? preferences.playerWidgets : preferences.dmWidgets}
+        widgetOrder={isPlayerLayout ? preferences.playerWidgets : preferences.dmWidgets}
         onToggleWidget={isPlayerLayout ? togglePlayerWidget : toggleDmWidget}
+        onReorderWidgets={isPlayerLayout
+          ? (order) => reorderPlayerWidgets(order as Parameters<typeof reorderPlayerWidgets>[0])
+          : (order) => reorderDmWidgets(order as Parameters<typeof reorderDmWidgets>[0])
+        }
         onResetToDefaults={resetToDefaults}
       />
     </AppLayout>

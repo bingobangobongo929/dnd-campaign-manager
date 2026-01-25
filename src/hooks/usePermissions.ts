@@ -5,7 +5,7 @@ import { useSupabase, useUser } from './useSupabase'
 import type { MemberPermissions, CampaignMemberRole, CampaignMember } from '@/types/database'
 import { DEFAULT_PERMISSIONS } from '@/types/database'
 
-interface PermissionCan {
+export interface PermissionCan {
   // Session Notes
   addOwnSessionNotes: boolean
   viewRecaps: boolean
