@@ -328,7 +328,13 @@ export default function HomePage() {
           oneshots={oneshots}
           savedTemplates={savedTemplates}
           featuredCampaign={featuredCampaign}
+          featuredAdventure={featuredAdventure}
+          featuredCharacter={featuredCharacter}
+          featuredOneshot={featuredOneshot}
           displayCampaigns={displayCampaigns}
+          drafts={drafts}
+          pendingInvites={pendingInvites}
+          claimableCharacters={claimableCharacters}
           onNavigate={(path) => router.push(path)}
           isFounder={isFounder}
           founderBannerDismissed={founderBannerDismissed}
@@ -1544,6 +1550,23 @@ export default function HomePage() {
             </div>
           </section>
         )}
+
+        {/* Community Discovery - Coming Soon */}
+        <section className="border-t border-white/[0.06] pt-8">
+          <div className="rounded-2xl bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5 border border-white/[0.06] p-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center">
+              <Users className="w-8 h-8 text-indigo-400" />
+            </div>
+            <span className="inline-block px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 rounded-full mb-3">
+              Coming Soon
+            </span>
+            <h3 className="text-xl font-semibold text-white mb-2">Community Hub</h3>
+            <p className="text-gray-400 max-w-md mx-auto text-sm">
+              Discover campaigns, characters, and one-shots shared by other DMs and players.
+              Browse community templates and find inspiration for your next adventure.
+            </p>
+          </div>
+        </section>
 
         {/* Quick Actions Footer */}
         <section className="flex flex-wrap justify-center gap-3 pt-4 pb-8">

@@ -15,7 +15,10 @@ import {
   Wand2,
   Sparkles,
   Users,
+  ArrowRight,
+  Map,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout, MobileSectionHeader } from '@/components/mobile'
 import { FounderBadge } from '@/components/membership'
@@ -28,6 +31,8 @@ function getInitials(name: string): string {
   return name.split(' ').map((word) => word[0]).slice(0, 2).join('').toUpperCase()
 }
 
+import type { Character } from '@/types/database'
+
 export interface HomePageMobileProps {
   campaigns: Campaign[]
   adventures: Campaign[]
@@ -36,7 +41,13 @@ export interface HomePageMobileProps {
   oneshots: Oneshot[]
   savedTemplates: ContentSave[]
   featuredCampaign: Campaign | undefined
+  featuredAdventure: Campaign | undefined
+  featuredCharacter: VaultCharacter | undefined
+  featuredOneshot: Oneshot | undefined
   displayCampaigns: Campaign[]
+  drafts: { type: 'campaign' | 'adventure' | 'oneshot' | 'character'; item: Campaign | Oneshot | VaultCharacter; progress: number }[]
+  pendingInvites: { id: string; campaign: Campaign; inviter_name?: string }[]
+  claimableCharacters: { character: Character; campaign: Campaign }[]
   onNavigate: (path: string) => void
   isFounder?: boolean
   founderBannerDismissed?: boolean
@@ -52,7 +63,14 @@ export function HomePageMobile({
   characters,
   oneshots,
   savedTemplates,
+  featuredCampaign,
+  featuredAdventure,
+  featuredCharacter,
+  featuredOneshot,
   displayCampaigns,
+  drafts,
+  pendingInvites,
+  claimableCharacters,
   onNavigate,
   isFounder = false,
   founderBannerDismissed = false,
@@ -126,6 +144,109 @@ export function HomePageMobile({
                 <X className="w-4 h-4" />
               </button>
             )}
+          </div>
+        )}
+
+        {/* Claimable Characters Notification */}
+        {claimableCharacters.length > 0 && (
+          <div className="mx-4 mb-4 bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-600/20 flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-5 h-5 text-purple-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-white">
+                  {claimableCharacters.length === 1
+                    ? 'A character is waiting!'
+                    : `${claimableCharacters.length} characters waiting!`}
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Add to your vault to track their journey
+                </p>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {claimableCharacters.slice(0, 2).map(({ character, campaign }) => (
+                    <button
+                      key={character.id}
+                      onClick={() => onNavigate(`/campaigns/${campaign.id}/dashboard`)}
+                      className="flex items-center gap-2 p-2 bg-white/[0.03] border border-white/[0.06] rounded-lg active:bg-white/[0.06]"
+                    >
+                      {character.image_url ? (
+                        <Image
+                          src={character.image_url}
+                          alt={character.name}
+                          width={32}
+                          height={32}
+                          className="rounded-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-lg bg-purple-600/20 flex items-center justify-center text-purple-400 text-xs font-bold">
+                          {getInitials(character.name)}
+                        </div>
+                      )}
+                      <div className="text-left">
+                        <p className="text-xs font-medium text-white">{character.name}</p>
+                        <p className="text-[10px] text-gray-500">{campaign.name}</p>
+                      </div>
+                    </button>
+                  ))}
+                  {claimableCharacters.length > 2 && (
+                    <span className="flex items-center text-xs text-gray-400">
+                      +{claimableCharacters.length - 2} more
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Pending Invites Notification */}
+        {pendingInvites.length > 0 && (
+          <div className="mx-4 mb-4 bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-600/20 flex items-center justify-center flex-shrink-0">
+                <Users className="w-5 h-5 text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-white">
+                  {pendingInvites.length === 1
+                    ? 'Campaign invite!'
+                    : `${pendingInvites.length} campaign invites!`}
+                </h3>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {pendingInvites.slice(0, 2).map(({ id, campaign }) => (
+                    <button
+                      key={id}
+                      onClick={() => onNavigate(`/campaigns/${campaign.id}/dashboard`)}
+                      className="flex items-center gap-2 p-2 bg-white/[0.03] border border-white/[0.06] rounded-lg active:bg-white/[0.06]"
+                    >
+                      {campaign.image_url ? (
+                        <Image
+                          src={campaign.image_url}
+                          alt={campaign.name}
+                          width={32}
+                          height={32}
+                          className="rounded-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center">
+                          <Swords className="w-4 h-4 text-blue-400" />
+                        </div>
+                      )}
+                      <div className="text-left">
+                        <p className="text-xs font-medium text-white">{campaign.name}</p>
+                        <p className="text-[10px] text-gray-500">Tap to view invite</p>
+                      </div>
+                    </button>
+                  ))}
+                  {pendingInvites.length > 2 && (
+                    <span className="flex items-center text-xs text-gray-400">
+                      +{pendingInvites.length - 2} more
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -237,6 +358,65 @@ export function HomePageMobile({
         {/* Returning User Content */}
         {!isFreshUser && (
           <>
+        {/* Continue Working On - Drafts */}
+        {drafts.length > 0 && (
+          <>
+            <MobileSectionHeader title="Continue Working On" />
+            <div className="px-4 space-y-2 mb-4">
+              {drafts.map(({ type, item, progress }) => {
+                const href = type === 'character'
+                  ? `/vault/${item.id}`
+                  : type === 'oneshot'
+                  ? `/oneshots/${item.id}`
+                  : `/campaigns/${item.id}/dashboard`
+
+                const name = 'title' in item ? item.title : item.name
+                const Icon = type === 'character' ? BookOpen : type === 'oneshot' ? Scroll : type === 'adventure' ? Compass : Swords
+
+                const colors = {
+                  character: { bg: 'bg-purple-500/20', text: 'text-purple-400', bar: 'bg-purple-500/60' },
+                  oneshot: { bg: 'bg-green-500/20', text: 'text-green-400', bar: 'bg-green-500/60' },
+                  adventure: { bg: 'bg-amber-500/20', text: 'text-amber-400', bar: 'bg-amber-500/60' },
+                  campaign: { bg: 'bg-blue-500/20', text: 'text-blue-400', bar: 'bg-blue-500/60' },
+                }
+                const color = colors[type]
+
+                return (
+                  <button
+                    key={`${type}-${item.id}`}
+                    onClick={() => onNavigate(href)}
+                    className="w-full flex items-center gap-3 p-3 bg-[--bg-surface] rounded-xl border border-white/[0.06] active:bg-[--bg-hover] transition-colors"
+                  >
+                    <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0", color.bg)}>
+                      <Icon className={cn("w-5 h-5", color.text)} />
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="flex items-center gap-2">
+                        <span className={cn("text-[10px] uppercase tracking-wider font-medium", color.text)}>
+                          {type === 'adventure' ? 'Adventure' : type.charAt(0).toUpperCase() + type.slice(1)} • Draft
+                        </span>
+                      </div>
+                      <h4 className="font-medium text-white truncate text-sm mt-0.5">
+                        {name || 'Untitled'}
+                      </h4>
+                      <div className="mt-1.5">
+                        <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
+                          <div
+                            className={cn("h-full rounded-full", color.bar)}
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                        <p className="text-[10px] text-gray-500 mt-0.5">{progress}% complete</p>
+                      </div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                  </button>
+                )
+              })}
+            </div>
+          </>
+        )}
+
         {/* Recent Activity Section */}
         {recentActivity.length > 0 && (
           <>
@@ -293,22 +473,81 @@ export function HomePageMobile({
             ) : undefined
           }
         />
-        {campaigns.length === 0 ? (
+
+        {/* Featured Campaign Hero */}
+        {featuredCampaign && (
+          <button
+            onClick={() => onNavigate(`/campaigns/${featuredCampaign.id}/dashboard`)}
+            className="mx-4 mb-4 relative block rounded-xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] active:scale-[0.99] transition-transform"
+          >
+            <div className="relative h-[180px]">
+              {featuredCampaign.image_url ? (
+                <>
+                  <Image
+                    src={featuredCampaign.image_url}
+                    alt={featuredCampaign.name}
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent" />
+                </>
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-gray-900 to-gray-950" />
+              )}
+              <div className="absolute inset-0 flex flex-col justify-end p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <ContentBadge
+                    variant={getCampaignBadge(featuredCampaign, userId).primary}
+                    size="sm"
+                    progress={getCampaignBadge(featuredCampaign, userId).progress}
+                  />
+                  <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-white/10 text-gray-300">
+                    {featuredCampaign.game_system}
+                  </span>
+                </div>
+                <h2 className="text-xl font-display font-bold text-white mb-1">
+                  {featuredCampaign.name}
+                </h2>
+                {featuredCampaign.description && (
+                  <p className="text-gray-400 text-xs line-clamp-2 mb-2">
+                    {featuredCampaign.description}
+                  </p>
+                )}
+                <div className="flex items-center gap-1.5 text-blue-400 text-sm font-medium">
+                  <Play className="w-4 h-4" />
+                  <span>Enter Campaign</span>
+                </div>
+              </div>
+            </div>
+          </button>
+        )}
+
+        {campaigns.length === 0 && !featuredCampaign ? (
           <div className="mx-4 p-8 text-center bg-gradient-to-br from-blue-500/5 to-transparent rounded-xl border border-dashed border-blue-500/20">
             <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-blue-500/10 flex items-center justify-center">
               <Swords className="w-7 h-7 text-blue-400" />
             </div>
             <h3 className="text-base font-semibold text-white mb-1">Begin Your Adventure</h3>
-            <p className="text-gray-400 text-sm mb-5">Create your first campaign</p>
-            <button
-              onClick={() => onNavigate('/campaigns')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl"
-            >
-              <Plus className="w-4 h-4" />
-              Create Campaign
-            </button>
+            <p className="text-gray-400 text-sm mb-5">Create your first campaign and start building your world</p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => onNavigate('/campaigns')}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl"
+              >
+                <Plus className="w-4 h-4" />
+                Create Campaign
+              </button>
+              <button
+                onClick={() => onNavigate('/demo/campaign')}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 text-gray-400 text-sm"
+              >
+                <Sparkles className="w-4 h-4" />
+                Explore Demo
+              </button>
+            </div>
           </div>
-        ) : (
+        ) : campaigns.length > 0 ? (
           <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
             {campaigns.slice(0, 5).map((campaign) => {
               const badge = getCampaignBadge(campaign, userId)
@@ -347,7 +586,7 @@ export function HomePageMobile({
               )
             })}
           </div>
-        )}
+        ) : null}
 
         {/* Joined Campaigns Section - Campaigns where user is a player */}
         {joinedCampaigns.length > 0 && (
@@ -407,6 +646,50 @@ export function HomePageMobile({
                 </button>
               }
             />
+
+            {/* Featured Adventure Hero */}
+            {featuredAdventure && (
+              <button
+                onClick={() => onNavigate(`/campaigns/${featuredAdventure.id}/dashboard`)}
+                className="mx-4 mb-4 relative block rounded-xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] active:scale-[0.99] transition-transform"
+              >
+                <div className="relative h-[160px]">
+                  {featuredAdventure.image_url ? (
+                    <>
+                      <Image
+                        src={featuredAdventure.image_url}
+                        alt={featuredAdventure.name}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-900/20 via-gray-900 to-gray-950" />
+                  )}
+                  <div className="absolute inset-0 flex flex-col justify-end p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <ContentBadge
+                        variant={getCampaignBadge(featuredAdventure, userId).primary}
+                        size="sm"
+                        progress={getCampaignBadge(featuredAdventure, userId).progress}
+                      />
+                      <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-300">
+                        {(featuredAdventure as Campaign & { estimated_sessions?: number }).estimated_sessions || '3-9'} Sessions
+                      </span>
+                    </div>
+                    <h2 className="text-lg font-display font-bold text-white mb-1">
+                      {featuredAdventure.name}
+                    </h2>
+                    <div className="flex items-center gap-1.5 text-amber-400 text-sm font-medium">
+                      <Compass className="w-4 h-4" />
+                      <span>Continue Adventure</span>
+                    </div>
+                  </div>
+                </div>
+              </button>
+            )}
+
             <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
               {adventures.slice(0, 5).map((adventure) => {
                 const badge = getCampaignBadge(adventure, userId)
@@ -459,6 +742,55 @@ export function HomePageMobile({
             ) : undefined
           }
         />
+        {/* Featured One-Shot Hero */}
+        {featuredOneshot && (
+          <button
+            onClick={() => onNavigate(`/oneshots/${featuredOneshot.id}`)}
+            className="mx-4 mb-4 relative block rounded-xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] active:scale-[0.99] transition-transform"
+          >
+            <div className="relative h-[180px]">
+              {featuredOneshot.image_url ? (
+                <>
+                  <Image
+                    src={featuredOneshot.image_url}
+                    alt={featuredOneshot.title}
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent" />
+                </>
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-green-900/20 via-gray-900 to-gray-950" />
+              )}
+              <div className="absolute inset-0 flex flex-col justify-end p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <ContentBadge
+                    variant={getOneshotBadge(featuredOneshot, userId).primary}
+                    size="sm"
+                    progress={getOneshotBadge(featuredOneshot, userId).progress}
+                  />
+                  <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-white/10 text-gray-300">
+                    {featuredOneshot.game_system}
+                  </span>
+                </div>
+                <h2 className="text-xl font-display font-bold text-white mb-1">
+                  {featuredOneshot.title}
+                </h2>
+                {featuredOneshot.tagline && (
+                  <p className="text-gray-400 text-xs line-clamp-1 mb-2">
+                    {featuredOneshot.tagline}
+                  </p>
+                )}
+                <div className="flex items-center gap-1.5 text-green-400 text-sm font-medium">
+                  <Scroll className="w-4 h-4" />
+                  <span>Open One-Shot</span>
+                </div>
+              </div>
+            </div>
+          </button>
+        )}
+
         {oneshots.length === 0 ? (
           <div className="mx-4 p-8 text-center bg-gradient-to-br from-green-500/5 to-transparent rounded-xl border border-dashed border-green-500/20">
             <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-green-500/10 flex items-center justify-center">
@@ -466,13 +798,22 @@ export function HomePageMobile({
             </div>
             <h3 className="text-base font-semibold text-white mb-1">Quick Adventures Await</h3>
             <p className="text-gray-400 text-sm mb-5">Create standalone one-shot adventures</p>
-            <button
-              onClick={() => onNavigate('/oneshots')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white text-sm font-medium rounded-xl"
-            >
-              <Plus className="w-4 h-4" />
-              Create One-Shot
-            </button>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => onNavigate('/oneshots')}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white text-sm font-medium rounded-xl"
+              >
+                <Plus className="w-4 h-4" />
+                Create One-Shot
+              </button>
+              <button
+                onClick={() => onNavigate('/demo/oneshot')}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 text-gray-400 text-sm"
+              >
+                <Sparkles className="w-4 h-4" />
+                Explore Demo
+              </button>
+            </div>
           </div>
         ) : (
           <div className="px-4 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
@@ -606,13 +947,65 @@ export function HomePageMobile({
 
         {/* Characters Section */}
         <MobileSectionHeader
-          title="Characters"
+          title="Character Vault"
           action={
             <button onClick={() => onNavigate('/vault')} className="text-sm text-[--arcane-purple]">
               View All
             </button>
           }
         />
+
+        {/* Featured Character Hero */}
+        {featuredCharacter && (
+          <button
+            onClick={() => onNavigate(`/vault/${featuredCharacter.id}`)}
+            className="mx-4 mb-4 relative block rounded-xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] active:scale-[0.99] transition-transform"
+          >
+            <div className="relative h-[180px]">
+              {featuredCharacter.image_url ? (
+                <>
+                  <Image
+                    src={featuredCharacter.image_url}
+                    alt={featuredCharacter.name}
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent" />
+                </>
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-gray-900 to-gray-950" />
+              )}
+              <div className="absolute inset-0 flex flex-col justify-end p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <ContentBadge
+                    variant={getCharacterBadge(featuredCharacter).primary}
+                    size="sm"
+                  />
+                  {featuredCharacter.status && (
+                    <span
+                      className="px-2 py-0.5 text-[10px] font-medium rounded-full text-white"
+                      style={{ backgroundColor: featuredCharacter.status_color || 'rgba(255,255,255,0.1)' }}
+                    >
+                      {featuredCharacter.status}
+                    </span>
+                  )}
+                </div>
+                <h2 className="text-xl font-display font-bold text-white mb-1">
+                  {featuredCharacter.name}
+                </h2>
+                <p className="text-gray-400 text-xs mb-2">
+                  {[featuredCharacter.race, featuredCharacter.class].filter(Boolean).join(' ') || 'Adventurer'}
+                </p>
+                <div className="flex items-center gap-1.5 text-purple-400 text-sm font-medium">
+                  <BookOpen className="w-4 h-4" />
+                  <span>Open Character</span>
+                </div>
+              </div>
+            </div>
+          </button>
+        )}
+
         {characters.length === 0 ? (
           <div className="mx-4 p-8 text-center bg-gradient-to-br from-purple-500/5 to-transparent rounded-xl border border-dashed border-purple-500/20">
             <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-purple-500/10 flex items-center justify-center">
@@ -620,13 +1013,22 @@ export function HomePageMobile({
             </div>
             <h3 className="text-base font-semibold text-white mb-1">Your Vault Awaits</h3>
             <p className="text-gray-400 text-sm mb-5">Create characters to track their journeys</p>
-            <button
-              onClick={() => onNavigate('/vault')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-600 text-white text-sm font-medium rounded-xl"
-            >
-              <Plus className="w-4 h-4" />
-              Add Your First Character
-            </button>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => onNavigate('/vault')}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 text-white text-sm font-medium rounded-xl"
+              >
+                <Plus className="w-4 h-4" />
+                Add Your First Character
+              </button>
+              <button
+                onClick={() => onNavigate('/demo/character')}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 text-gray-400 text-sm"
+              >
+                <Sparkles className="w-4 h-4" />
+                Explore Demo
+              </button>
+            </div>
           </div>
         ) : (
           <div className="px-4 grid grid-cols-2 gap-3">
@@ -671,6 +1073,20 @@ export function HomePageMobile({
             })}
           </div>
         )}
+
+        {/* Community Discovery - Coming Soon */}
+        <div className="mx-4 mt-6 rounded-xl bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5 border border-white/[0.06] p-6 text-center">
+          <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center">
+            <Users className="w-6 h-6 text-indigo-400" />
+          </div>
+          <span className="inline-block px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 rounded-full mb-2">
+            Coming Soon
+          </span>
+          <h3 className="text-base font-semibold text-white mb-1">Community Hub</h3>
+          <p className="text-gray-400 text-xs">
+            Discover campaigns, characters, and one-shots shared by other DMs and players.
+          </p>
+        </div>
 
         {/* Quick Actions */}
         <div className="px-4 pt-6 pb-4 space-y-3">
