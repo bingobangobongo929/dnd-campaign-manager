@@ -179,28 +179,26 @@ export default function AdminUsersPage() {
 
     setActionLoading(true)
     try {
-      const oldTier = selectedUser.settings?.tier
-
-      const { error } = await supabase
-        .from('user_settings')
-        .update({ tier: newTier })
-        .eq('user_id', selectedUser.id)
-
-      if (error) throw error
-
-      await supabase.from('admin_activity_log').insert({
-        admin_id: (await supabase.auth.getUser()).data.user?.id,
-        action: 'change_tier',
-        target_user_id: selectedUser.id,
-        details: { old_tier: oldTier, new_tier: newTier },
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          updates: { tier: newTier },
+        }),
       })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to change tier')
+      }
 
       toast.success('Tier updated')
       setShowChangeTierModal(false)
       setNewTier('')
       fetchUsers()
-    } catch (error) {
-      toast.error('Failed to change tier')
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to change tier')
     } finally {
       setActionLoading(false)
     }
@@ -211,28 +209,26 @@ export default function AdminUsersPage() {
 
     setActionLoading(true)
     try {
-      const oldRole = selectedUser.settings?.role
-
-      const { error } = await supabase
-        .from('user_settings')
-        .update({ role: newRole })
-        .eq('user_id', selectedUser.id)
-
-      if (error) throw error
-
-      await supabase.from('admin_activity_log').insert({
-        admin_id: (await supabase.auth.getUser()).data.user?.id,
-        action: 'change_role',
-        target_user_id: selectedUser.id,
-        details: { old_role: oldRole, new_role: newRole },
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          updates: { role: newRole },
+        }),
       })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to change role')
+      }
 
       toast.success('Role updated')
       setShowChangeRoleModal(false)
       setNewRole('user')
       fetchUsers()
-    } catch (error) {
-      toast.error('Failed to change role')
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to change role')
     } finally {
       setActionLoading(false)
     }
@@ -329,28 +325,25 @@ export default function AdminUsersPage() {
     }
 
     try {
-      const adminUser = (await supabase.auth.getUser()).data.user
-      const { error } = await supabase
-        .from('user_settings')
-        .update({
-          is_founder: newFounder,
-          founder_granted_at: newFounder ? new Date().toISOString() : null,
-        })
-        .eq('user_id', user.id)
-
-      if (error) throw error
-
-      await supabase.from('admin_activity_log').insert({
-        admin_id: adminUser?.id,
-        action: newFounder ? 'grant_founder' : 'revoke_founder',
-        target_user_id: user.id,
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          updates: { is_founder: newFounder },
+        }),
       })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to update founder status')
+      }
 
       toast.success(newFounder ? 'Founder status granted' : 'Founder status revoked')
       setConfirmAction({ type: null, user: null, title: '', message: '', confirmLabel: '', variant: 'danger' })
       fetchUsers()
-    } catch (error) {
-      toast.error('Failed to update founder status')
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update founder status')
     }
   }
 
@@ -374,29 +367,25 @@ export default function AdminUsersPage() {
     }
 
     try {
-      const adminUser = (await supabase.auth.getUser()).data.user
-      const { error } = await supabase
-        .from('user_settings')
-        .update({
-          ai_access: newAI,
-          ai_access_granted_by: newAI ? adminUser?.id : null,
-          ai_access_granted_at: newAI ? new Date().toISOString() : null,
-        })
-        .eq('user_id', user.id)
-
-      if (error) throw error
-
-      await supabase.from('admin_activity_log').insert({
-        admin_id: adminUser?.id,
-        action: newAI ? 'grant_ai_access' : 'revoke_ai_access',
-        target_user_id: user.id,
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          updates: { ai_access: newAI },
+        }),
       })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to update AI access')
+      }
 
       toast.success(newAI ? 'AI access granted' : 'AI access revoked')
       setConfirmAction({ type: null, user: null, title: '', message: '', confirmLabel: '', variant: 'danger' })
       fetchUsers()
-    } catch (error) {
-      toast.error('Failed to update AI access')
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update AI access')
     }
   }
 

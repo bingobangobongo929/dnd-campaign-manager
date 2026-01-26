@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit, rateLimits } from '@/lib/rate-limit'
+import { isAdmin, isSuperAdmin } from '@/lib/admin'
 
 export const runtime = 'nodejs'
 
@@ -113,5 +114,113 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Admin users error:', error)
     return NextResponse.json({ error: 'Failed to get users' }, { status: 500 })
+  }
+}
+
+// PATCH - Update user settings (super_admin only for sensitive fields)
+export async function PATCH(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+
+    // Verify admin
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { data: adminSettings } = await supabase
+      .from('user_settings')
+      .select('role')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!adminSettings || !isAdmin(adminSettings.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const body = await request.json()
+    const { userId, updates } = body as {
+      userId: string
+      updates: {
+        role?: 'user' | 'moderator' | 'super_admin'
+        tier?: string
+        is_founder?: boolean
+        ai_access?: boolean
+        suspended_at?: string | null
+        suspended_reason?: string | null
+        disabled_at?: string | null
+        username?: string | null
+      }
+    }
+
+    if (!userId || !updates || Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'User ID and updates required' }, { status: 400 })
+    }
+
+    // Check permission level for sensitive operations
+    const isSuperAdminUser = isSuperAdmin(adminSettings.role)
+
+    // Only super_admin can change roles, tiers, founder status, AI access, disable accounts, or change usernames
+    const sensitiveFields = ['role', 'tier', 'is_founder', 'ai_access', 'disabled_at', 'username']
+    const hasSensitiveUpdate = sensitiveFields.some(field => field in updates)
+
+    if (hasSensitiveUpdate && !isSuperAdminUser) {
+      return NextResponse.json({ error: 'Only super admins can perform this action' }, { status: 403 })
+    }
+
+    // Validate role if provided
+    if (updates.role && !['user', 'moderator', 'super_admin'].includes(updates.role)) {
+      return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
+    }
+
+    // Use admin client to bypass RLS
+    const adminSupabase = createAdminClient()
+
+    // Build the update object with additional tracking fields
+    const updateData: Record<string, unknown> = { ...updates }
+
+    // Add tracking fields based on what's being updated
+    if ('is_founder' in updates) {
+      updateData.founder_granted_at = updates.is_founder ? new Date().toISOString() : null
+    }
+    if ('ai_access' in updates) {
+      updateData.ai_access_granted_by = updates.ai_access ? user.id : null
+      updateData.ai_access_granted_at = updates.ai_access ? new Date().toISOString() : null
+    }
+    if ('suspended_at' in updates) {
+      updateData.suspended_by = updates.suspended_at ? user.id : null
+    }
+    if ('disabled_at' in updates) {
+      updateData.disabled_by = updates.disabled_at ? user.id : null
+    }
+
+    // Perform the update
+    const { error: updateError } = await adminSupabase
+      .from('user_settings')
+      .update(updateData)
+      .eq('user_id', userId)
+
+    if (updateError) {
+      console.error('Failed to update user:', updateError)
+      return NextResponse.json({ error: 'Failed to update user' }, { status: 500 })
+    }
+
+    // Log the admin action
+    const actionDetails: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(updates)) {
+      actionDetails[`new_${key}`] = value
+    }
+
+    await adminSupabase.from('admin_activity_log').insert({
+      admin_id: user.id,
+      action: 'update_user_settings',
+      target_user_id: userId,
+      details: actionDetails,
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Admin update user error:', error)
+    return NextResponse.json({ error: 'Failed to update user' }, { status: 500 })
   }
 }
