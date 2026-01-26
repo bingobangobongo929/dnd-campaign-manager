@@ -71,6 +71,7 @@ const SUGGESTION_ICONS: Record<SuggestionType, typeof User> = {
   plot_hook: Lightbulb,
   enrichment: Wand2,
   timeline_issue: Clock,
+  summary: FileQuestion,
   // Character Intelligence types
   grammar: Type,
   formatting: ListChecks,
@@ -100,6 +101,7 @@ const SUGGESTION_COLORS: Record<SuggestionType, { bg: string; text: string; bord
   plot_hook: { bg: 'rgba(192, 132, 252, 0.12)', text: '#c084fc', border: 'rgba(192, 132, 252, 0.3)' },
   enrichment: { bg: 'rgba(56, 189, 248, 0.12)', text: '#38bdf8', border: 'rgba(56, 189, 248, 0.3)' },
   timeline_issue: { bg: 'rgba(251, 146, 60, 0.12)', text: '#fb923c', border: 'rgba(251, 146, 60, 0.3)' },
+  summary: { bg: 'rgba(156, 163, 175, 0.12)', text: '#9ca3af', border: 'rgba(156, 163, 175, 0.3)' },
   // Character Intelligence types
   grammar: { bg: 'rgba(239, 68, 68, 0.12)', text: '#f87171', border: 'rgba(239, 68, 68, 0.3)' },
   formatting: { bg: 'rgba(251, 191, 36, 0.12)', text: '#fbbf24', border: 'rgba(251, 191, 36, 0.3)' },
