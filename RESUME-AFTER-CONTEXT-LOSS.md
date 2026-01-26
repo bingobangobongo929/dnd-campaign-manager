@@ -333,6 +333,35 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 </DragDropContext>
 ```
 
+## Database Schema Notes
+
+**CRITICAL: Always verify field names match actual database columns!**
+
+Run this in Supabase SQL Editor to check any table:
+```sql
+SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'locations';
+```
+
+### locations table (actual columns)
+```
+id, campaign_id, oneshot_id, content_type, name, type, description, summary,
+parent_location_id, map_id, map_pin_x, map_pin_y, status, visibility,
+discovered_session, dm_notes, secrets, created_at, updated_at
+```
+
+**NOT in database** (removed from frontend):
+- `location_type` → use `type`
+- `parent_id` → use `parent_location_id`
+- `is_visited`, `is_known`, `tags`, `notes`, `current_characters` → don't exist
+
+### quests table (actual columns)
+```
+id, campaign_id, oneshot_id, name, type, description, summary, status, priority,
+quest_giver_id, quest_giver_location_id, objective_location_id,
+rewards_description, rewards_xp, rewards_gold, dm_notes, secrets, visibility,
+discovered_session, started_session, completed_session, created_at, updated_at
+```
+
 ## Key Files Reference
 
 | File | Purpose |
