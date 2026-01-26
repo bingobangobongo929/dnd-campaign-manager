@@ -24,7 +24,7 @@ export function BackToTopButton({ threshold = 500, className = '' }: BackToTopBu
   return (
     <button
       onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-      className={`fixed bottom-24 md:bottom-8 right-4 md:right-8 z-50 w-12 h-12 rounded-full bg-purple-600/90 active:bg-purple-500 md:hover:bg-purple-500 text-white shadow-lg flex items-center justify-center transition-all duration-300 md:hover:scale-110 ${className}`}
+      className={`fixed bottom-24 md:bottom-[88px] right-4 md:right-6 z-50 w-12 h-12 rounded-full bg-purple-600/90 active:bg-purple-500 md:hover:bg-purple-500 text-white shadow-lg flex items-center justify-center transition-all duration-300 md:hover:scale-110 ${className}`}
       aria-label="Back to top"
     >
       <ChevronUp className="w-6 h-6" />
