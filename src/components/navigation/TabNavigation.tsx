@@ -28,6 +28,8 @@ export interface TabConfig {
   value: ContentTab
   label: string
   count?: number
+  accentColor?: 'purple' | 'emerald' | 'blue' | 'orange' // Custom accent color for this tab
+  comingSoon?: boolean // Show as disabled with "Soon" badge
   helpTip?: {
     title: string
     description: string
@@ -68,19 +70,36 @@ export function TabNavigation({
     <div className={cn('space-y-3', className)}>
       {/* Main tabs */}
       <div className="flex flex-wrap gap-1 p-1 bg-white/[0.03] rounded-xl border border-white/[0.06]">
-        {tabs.map((tab) => (
+        {tabs.map((tab) => {
+          // Accent color classes for selected state
+          const accentClasses = {
+            purple: 'bg-purple-600 text-white shadow-lg',
+            emerald: 'bg-emerald-600 text-white shadow-lg',
+            blue: 'bg-blue-600 text-white shadow-lg',
+            orange: 'bg-orange-600 text-white shadow-lg',
+          }
+          const selectedClass = tab.accentColor ? accentClasses[tab.accentColor] : accentClasses.purple
+
+          return (
           <div key={tab.value} className="relative flex items-center">
             <button
-              onClick={() => onChange(tab.value)}
+              onClick={() => !tab.comingSoon && onChange(tab.value)}
+              disabled={tab.comingSoon}
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
-                value === tab.value
-                  ? 'bg-purple-600 text-white shadow-lg'
-                  : 'text-gray-400 hover:text-white hover:bg-white/[0.05]'
+                tab.comingSoon
+                  ? 'text-gray-600 cursor-not-allowed'
+                  : value === tab.value
+                    ? selectedClass
+                    : 'text-gray-400 hover:text-white hover:bg-white/[0.05]'
               )}
             >
               {tab.label}
-              {typeof tab.count === 'number' && (
+              {tab.comingSoon ? (
+                <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-400">
+                  Soon
+                </span>
+              ) : typeof tab.count === 'number' && (
                 <span
                   className={cn(
                     'min-w-[20px] px-1.5 py-0.5 text-xs rounded-full',
@@ -138,7 +157,7 @@ export function TabNavigation({
               </div>
             )}
           </div>
-        ))}
+        )})}
       </div>
 
       {/* Sub-filter tabs */}
@@ -248,20 +267,27 @@ export const CAMPAIGNS_TABS: TabConfig[] = [
     helpTip: {
       title: 'All Campaigns',
       description: 'Overview of all your campaigns, organized by status.',
-      items: ['Active campaigns you\'re running or playing', 'Your drafts and templates', 'Saved templates from the community']
+      items: ['Campaigns you\'re playing in', 'Campaigns you\'re running as DM', 'Your drafts and templates']
     }
   },
   {
-    value: 'active',
-    label: 'Active',
-    subFilters: [
-      { value: 'running', label: 'Running' },
-      { value: 'playing', label: 'Playing' },
-    ],
+    value: 'playing',
+    label: 'Playing In',
+    accentColor: 'purple', // Special accent for players
     helpTip: {
-      title: 'Active Games',
-      description: 'Campaigns currently in progress.',
-      items: ['Running = You\'re the DM', 'Playing = You\'re a player']
+      title: 'Playing In',
+      description: 'Campaigns where you\'re a player.',
+      items: ['Track your character\'s journey', 'Add session notes', 'Stay connected with your party']
+    }
+  },
+  {
+    value: 'running',
+    label: 'Running',
+    accentColor: 'blue', // DM color
+    helpTip: {
+      title: 'Running',
+      description: 'Campaigns where you\'re the DM.',
+      items: ['Manage your world', 'Track sessions and NPCs', 'Use AI tools to save prep time']
     }
   },
   {
@@ -290,6 +316,7 @@ export const CAMPAIGNS_TABS: TabConfig[] = [
   {
     value: 'discover',
     label: 'Discover',
+    comingSoon: true,
     helpTip: {
       title: 'Discover',
       description: 'Browse campaigns shared by the community.',
@@ -298,23 +325,121 @@ export const CAMPAIGNS_TABS: TabConfig[] = [
 ]
 
 export const ADVENTURES_TABS: TabConfig[] = [
-  ...CAMPAIGNS_TABS.map(tab => ({
-    ...tab,
-    helpTip: tab.helpTip ? {
-      ...tab.helpTip,
-      title: tab.helpTip.title.replace('Campaigns', 'Adventures').replace('campaigns', 'adventures')
-    } : undefined
-  }))
+  {
+    value: 'all',
+    label: 'All',
+    helpTip: {
+      title: 'All Adventures',
+      description: 'Overview of all your adventures, organized by status.',
+    }
+  },
+  {
+    value: 'playing',
+    label: 'Playing In',
+    accentColor: 'purple',
+    helpTip: {
+      title: 'Playing In',
+      description: 'Adventures where you\'re a player.',
+    }
+  },
+  {
+    value: 'running',
+    label: 'Running',
+    accentColor: 'blue',
+    helpTip: {
+      title: 'Running',
+      description: 'Adventures where you\'re the DM.',
+    }
+  },
+  {
+    value: 'my-work',
+    label: 'My Work',
+    subFilters: [
+      { value: 'drafts', label: 'Drafts' },
+      { value: 'my-templates', label: 'My Templates' },
+      { value: 'published', label: 'Published' },
+    ],
+    helpTip: {
+      title: 'My Work',
+      description: 'Your creative workspace for adventures.',
+    }
+  },
+  {
+    value: 'collection',
+    label: 'Collection',
+    helpTip: {
+      title: 'Collection',
+      description: 'Templates you\'ve saved from other creators.',
+    }
+  },
+  {
+    value: 'discover',
+    label: 'Discover',
+    comingSoon: true,
+    helpTip: {
+      title: 'Discover',
+      description: 'Browse adventures shared by the community.',
+    }
+  },
 ]
 
 export const ONESHOTS_TABS: TabConfig[] = [
-  ...CAMPAIGNS_TABS.map(tab => ({
-    ...tab,
-    helpTip: tab.helpTip ? {
-      ...tab.helpTip,
-      title: tab.helpTip.title.replace('Campaigns', 'Oneshots').replace('campaigns', 'oneshots')
-    } : undefined
-  }))
+  {
+    value: 'all',
+    label: 'All',
+    helpTip: {
+      title: 'All One-Shots',
+      description: 'Overview of all your one-shots.',
+    }
+  },
+  {
+    value: 'playing',
+    label: 'Participating',
+    accentColor: 'purple',
+    helpTip: {
+      title: 'Participating',
+      description: 'One-shot runs where you\'re a player.',
+    }
+  },
+  {
+    value: 'running',
+    label: 'Running',
+    accentColor: 'orange',
+    helpTip: {
+      title: 'Running',
+      description: 'One-shots you\'re running as DM.',
+    }
+  },
+  {
+    value: 'my-work',
+    label: 'My Work',
+    subFilters: [
+      { value: 'drafts', label: 'Drafts' },
+      { value: 'my-templates', label: 'My Templates' },
+      { value: 'published', label: 'Published' },
+    ],
+    helpTip: {
+      title: 'My Work',
+      description: 'Your creative workspace for one-shots.',
+    }
+  },
+  {
+    value: 'collection',
+    label: 'Collection',
+    helpTip: {
+      title: 'Collection',
+      description: 'Templates you\'ve saved from other creators.',
+    }
+  },
+  {
+    value: 'discover',
+    label: 'Discover',
+    comingSoon: true,
+    helpTip: {
+      title: 'Discover',
+      description: 'Browse one-shots shared by the community.',
+    }
+  },
 ]
 
 export const VAULT_TABS: TabConfig[] = [
@@ -329,6 +454,7 @@ export const VAULT_TABS: TabConfig[] = [
   {
     value: 'my-characters',
     label: 'My Characters',
+    accentColor: 'emerald',
     helpTip: {
       title: 'My Characters',
       description: 'Your personal characters. Fully editable - these are your source of truth.',
@@ -338,6 +464,7 @@ export const VAULT_TABS: TabConfig[] = [
   {
     value: 'in-play',
     label: 'In-Play',
+    accentColor: 'purple',
     helpTip: {
       title: 'In-Play Characters',
       description: 'Characters currently in active games.',
@@ -360,6 +487,7 @@ export const VAULT_TABS: TabConfig[] = [
   {
     value: 'discover',
     label: 'Discover',
+    comingSoon: true,
     helpTip: {
       title: 'Discover',
       description: 'Browse character templates shared by the community.',

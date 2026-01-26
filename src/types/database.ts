@@ -4547,3 +4547,81 @@ export const DEFAULT_HOMEPAGE_PREFERENCES: HomepagePreferences = {
   hidden_sections: [],
   dismissed_temporarily: []
 }
+
+// Campaigns page preferences
+export type CampaignsPageTabId = 'all' | 'playing' | 'running' | 'my-work' | 'collection' | 'discover'
+
+export interface CampaignsPagePreferences {
+  auto_order: boolean
+  tab_order: CampaignsPageTabId[]
+  hidden_tabs: CampaignsPageTabId[]
+  default_tab: CampaignsPageTabId
+}
+
+export const DEFAULT_CAMPAIGNS_PAGE_PREFERENCES: CampaignsPagePreferences = {
+  auto_order: true,
+  tab_order: ['all', 'playing', 'running', 'my-work', 'collection', 'discover'],
+  hidden_tabs: [],
+  default_tab: 'all'
+}
+
+// Adventures page preferences
+export type AdventuresPageTabId = 'all' | 'playing' | 'running' | 'my-work' | 'collection' | 'discover'
+
+export interface AdventuresPagePreferences {
+  auto_order: boolean
+  tab_order: AdventuresPageTabId[]
+  hidden_tabs: AdventuresPageTabId[]
+  default_tab: AdventuresPageTabId
+}
+
+export const DEFAULT_ADVENTURES_PAGE_PREFERENCES: AdventuresPagePreferences = {
+  auto_order: true,
+  tab_order: ['all', 'playing', 'running', 'my-work', 'collection', 'discover'],
+  hidden_tabs: [],
+  default_tab: 'all'
+}
+
+// Oneshots page preferences
+export type OneshotsPageTabId = 'all' | 'participating' | 'running' | 'my-work' | 'collection' | 'discover'
+
+export interface OneshotsPagePreferences {
+  auto_order: boolean
+  tab_order: OneshotsPageTabId[]
+  hidden_tabs: OneshotsPageTabId[]
+  default_tab: OneshotsPageTabId
+}
+
+export const DEFAULT_ONESHOTS_PAGE_PREFERENCES: OneshotsPagePreferences = {
+  auto_order: true,
+  tab_order: ['all', 'participating', 'running', 'my-work', 'collection', 'discover'],
+  hidden_tabs: [],
+  default_tab: 'all'
+}
+
+// Vault page preferences
+export type VaultPageTabId = 'all' | 'my-characters' | 'in-play' | 'collection' | 'discover'
+
+export interface VaultPagePreferences {
+  auto_order: boolean
+  tab_order: VaultPageTabId[]
+  hidden_tabs: VaultPageTabId[]
+  default_tab: VaultPageTabId
+  view_mode: 'cards' | 'gallery'
+}
+
+export const DEFAULT_VAULT_PAGE_PREFERENCES: VaultPagePreferences = {
+  auto_order: true,
+  tab_order: ['all', 'my-characters', 'in-play', 'collection', 'discover'],
+  hidden_tabs: [],
+  default_tab: 'all',
+  view_mode: 'cards'
+}
+
+// Generic page preferences type for shared components
+export interface PagePreferences<T extends string> {
+  auto_order: boolean
+  tab_order: T[]
+  hidden_tabs: T[]
+  default_tab: T
+}

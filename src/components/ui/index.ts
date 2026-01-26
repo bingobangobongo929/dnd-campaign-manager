@@ -30,3 +30,5 @@ export { StatusIndicator, getStatusCardClass, determineCampaignStatus } from './
 export type { CampaignStatus } from './StatusIndicator'
 export { DismissibleEmptyState, getSectionColorScheme, EMPTY_STATE_CONTENT } from './DismissibleEmptyState'
 export type { SectionId, ColorScheme } from './DismissibleEmptyState'
+export { PageCustomizeModal } from './PageCustomizeModal'
+export type { TabConfig, PagePreferences } from './PageCustomizeModal'
