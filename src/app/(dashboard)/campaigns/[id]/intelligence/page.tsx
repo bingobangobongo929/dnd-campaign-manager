@@ -42,6 +42,7 @@ import {
   ThumbsUp,
   ThumbsDown,
   Target,
+  Swords,
 } from 'lucide-react'
 import { Modal, AccessDeniedPage } from '@/components/ui'
 import { GuidanceTip } from '@/components/guidance/GuidanceTip'
@@ -74,6 +75,7 @@ const SUGGESTION_ICONS: Record<SuggestionType, typeof Skull> = {
   npc_detected: UserPlus,
   location_detected: MapPin,
   quest_detected: Target,
+  encounter_detected: Swords,
   plot_hook: Lightbulb,
   enrichment: Wand2,
   timeline_issue: Clock,
@@ -101,6 +103,7 @@ const SUGGESTION_COLORS: Record<SuggestionType, { bg: string; text: string; bord
   npc_detected: { bg: 'rgba(34, 211, 238, 0.12)', text: '#22d3ee', border: 'rgba(34, 211, 238, 0.3)' },
   location_detected: { bg: 'rgba(74, 222, 128, 0.12)', text: '#4ade80', border: 'rgba(74, 222, 128, 0.3)' },
   quest_detected: { bg: 'rgba(139, 92, 246, 0.12)', text: '#a78bfa', border: 'rgba(139, 92, 246, 0.3)' },
+  encounter_detected: { bg: 'rgba(239, 68, 68, 0.12)', text: '#f87171', border: 'rgba(239, 68, 68, 0.3)' },
   plot_hook: { bg: 'rgba(192, 132, 252, 0.12)', text: '#c084fc', border: 'rgba(192, 132, 252, 0.3)' },
   enrichment: { bg: 'rgba(56, 189, 248, 0.12)', text: '#38bdf8', border: 'rgba(56, 189, 248, 0.3)' },
   timeline_issue: { bg: 'rgba(251, 146, 60, 0.12)', text: '#fb923c', border: 'rgba(251, 146, 60, 0.3)' },
@@ -158,6 +161,14 @@ function formatValue(value: unknown, suggestionType?: SuggestionType): string {
       let result = `${quest.name} [${quest.quest_type || 'side_quest'}]`
       if (quest.quest_giver_name) result += ` from ${quest.quest_giver_name}`
       if (quest.location_name) result += ` → ${quest.location_name}`
+      return result
+    }
+    // Encounter formatting
+    if (suggestionType === 'encounter_detected' && 'name' in (value as object)) {
+      const encounter = value as { name: string; encounter_type?: string; status?: string; difficulty?: string; location_name?: string; quest_name?: string }
+      let result = `${encounter.name} [${encounter.encounter_type || 'combat'}]`
+      if (encounter.difficulty) result += ` (${encounter.difficulty})`
+      if (encounter.location_name) result += ` at ${encounter.location_name}`
       return result
     }
     if ('status' in (value as object)) {
@@ -252,6 +263,18 @@ export default function IntelligencePage() {
     status: 'available',
     quest_giver_name: '',
     location_name: '',
+  })
+
+  // Edit state for encounter suggestions
+  const [editingEncounterSuggestion, setEditingEncounterSuggestion] = useState<IntelligenceSuggestion | null>(null)
+  const [encounterFormData, setEncounterFormData] = useState({
+    name: '',
+    encounter_type: 'combat',
+    description: '',
+    status: 'used',
+    difficulty: '',
+    location_name: '',
+    quest_name: '',
   })
 
   // Bulk approval state
@@ -593,6 +616,50 @@ export default function IntelligencePage() {
     setEditingQuestSuggestion(null)
   }
 
+  // Open edit modal for encounter suggestions
+  const openEncounterEditModal = (suggestion: IntelligenceSuggestion) => {
+    if (suggestion.suggestion_type !== 'encounter_detected') return
+
+    const value = suggestion.suggested_value as {
+      name: string
+      encounter_type?: string
+      description?: string
+      status?: string
+      difficulty?: string
+      location_name?: string
+      quest_name?: string
+    }
+
+    setEncounterFormData({
+      name: value.name || '',
+      encounter_type: value.encounter_type || 'combat',
+      description: value.description || '',
+      status: value.status || 'used',
+      difficulty: value.difficulty || '',
+      location_name: value.location_name || '',
+      quest_name: value.quest_name || '',
+    })
+    setEditingEncounterSuggestion(suggestion)
+  }
+
+  // Save edited encounter suggestion
+  const handleSaveEncounterEdit = async () => {
+    if (!editingEncounterSuggestion) return
+
+    const finalValue = {
+      name: encounterFormData.name,
+      encounter_type: encounterFormData.encounter_type,
+      description: encounterFormData.description || null,
+      status: encounterFormData.status,
+      difficulty: encounterFormData.difficulty || null,
+      location_name: encounterFormData.location_name || null,
+      quest_name: encounterFormData.quest_name || null,
+    }
+
+    await handleAction(editingEncounterSuggestion.id, 'approve', finalValue)
+    setEditingEncounterSuggestion(null)
+  }
+
   // Bulk approve all location suggestions
   const handleBulkApproveLocations = async () => {
     const locationSuggestions = filteredSuggestions.filter(
@@ -684,6 +751,54 @@ export default function IntelligencePage() {
     }
     if (errorCount > 0) {
       toast.error(`${errorCount} quest${errorCount === 1 ? '' : 's'} failed to add`)
+    }
+
+    setIsBulkApproving(false)
+  }
+
+  // Bulk approve all encounter suggestions
+  const handleBulkApproveEncounters = async () => {
+    const encounterSuggestions = filteredSuggestions.filter(
+      s => s.suggestion_type === 'encounter_detected' && s.status === 'pending'
+    )
+
+    if (encounterSuggestions.length === 0) return
+
+    setIsBulkApproving(true)
+
+    let successCount = 0
+    let errorCount = 0
+
+    for (const suggestion of encounterSuggestions) {
+      try {
+        const response = await fetch('/api/ai/suggestions', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            suggestionId: suggestion.id,
+            action: 'approve',
+            finalValue: suggestion.suggested_value,
+          }),
+        })
+
+        if (response.ok) {
+          successCount++
+        } else {
+          errorCount++
+        }
+      } catch (err) {
+        errorCount++
+      }
+    }
+
+    // Reload suggestions
+    await loadData()
+
+    if (successCount > 0) {
+      toast.success(`${successCount} encounter${successCount === 1 ? '' : 's'} added to your campaign`)
+    }
+    if (errorCount > 0) {
+      toast.error(`${errorCount} encounter${errorCount === 1 ? '' : 's'} failed to add`)
     }
 
     setIsBulkApproving(false)
@@ -1072,7 +1187,7 @@ export default function IntelligencePage() {
               </button>
             )}
 
-            {/* Bulk approve locations and quests */}
+            {/* Bulk approve locations, quests, and encounters */}
             {(() => {
               const locationCount = suggestions.filter(
                 s => s.suggestion_type === 'location_detected' && s.status === 'pending'
@@ -1080,7 +1195,10 @@ export default function IntelligencePage() {
               const questCount = suggestions.filter(
                 s => s.suggestion_type === 'quest_detected' && s.status === 'pending'
               ).length
-              if (locationCount === 0 && questCount === 0) return null
+              const encounterCount = suggestions.filter(
+                s => s.suggestion_type === 'encounter_detected' && s.status === 'pending'
+              ).length
+              if (locationCount === 0 && questCount === 0 && encounterCount === 0) return null
               return (
                 <div className="pt-4 border-t border-white/10">
                   <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#6b7280' }}>
@@ -1126,6 +1244,27 @@ export default function IntelligencePage() {
                         )}
                         <span className="text-sm font-medium">
                           {isBulkApproving ? 'Adding...' : `Add All ${questCount} Quests`}
+                        </span>
+                      </button>
+                    )}
+                    {encounterCount > 0 && (
+                      <button
+                        onClick={handleBulkApproveEncounters}
+                        disabled={isBulkApproving}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-colors"
+                        style={{
+                          backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                          color: '#f87171',
+                        }}
+                      >
+                        {isBulkApproving ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Swords className="w-4 h-4" />
+                        )}
+                        <span className="text-sm font-medium">
+                          {isBulkApproving ? 'Adding...' : `Add All ${encounterCount} Encounters`}
                         </span>
                       </button>
                     )}
@@ -1299,6 +1438,16 @@ export default function IntelligencePage() {
                               → Quests
                             </span>
                           </p>
+                        ) : suggestion.suggestion_type === 'encounter_detected' ? (
+                          <p className="font-semibold text-[15px] mb-1" style={{ color: '#f3f4f6' }}>
+                            {(() => {
+                              const val = suggestion.suggested_value as { name?: string; encounter_type?: string; difficulty?: string } | null
+                              return val?.name || 'New Encounter'
+                            })()}
+                            <span className="font-normal text-sm ml-2" style={{ color: '#6b7280' }}>
+                              → Encounters
+                            </span>
+                          </p>
                         ) : (
                           <p className="font-semibold text-[15px] mb-1" style={{ color: '#f3f4f6' }}>
                             {suggestion.character_name || character?.name || 'Unknown'}
@@ -1391,6 +1540,16 @@ export default function IntelligencePage() {
                           {suggestion.suggestion_type === 'quest_detected' && (
                             <button
                               onClick={() => openQuestEditModal(suggestion)}
+                              disabled={isProcessing}
+                              className="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 transition-colors disabled:opacity-50"
+                              title="Edit before approving"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
+                          {suggestion.suggestion_type === 'encounter_detected' && (
+                            <button
+                              onClick={() => openEncounterEditModal(suggestion)}
                               disabled={isProcessing}
                               className="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 transition-colors disabled:opacity-50"
                               title="Edit before approving"
@@ -1709,6 +1868,145 @@ export default function IntelligencePage() {
               disabled={!questFormData.name.trim()}
             >
               Save & Add Quest
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Encounter Modal */}
+      <Modal
+        isOpen={!!editingEncounterSuggestion}
+        onClose={() => setEditingEncounterSuggestion(null)}
+        title="Edit Encounter"
+        description="Edit the details before adding to your encounters"
+        size="md"
+      >
+        <div className="space-y-4">
+          {/* Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Name <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              value={encounterFormData.name}
+              onChange={(e) => setEncounterFormData({ ...encounterFormData, name: e.target.value })}
+              className="form-input"
+              placeholder="Goblin Ambush"
+            />
+          </div>
+
+          {/* Type */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Type
+            </label>
+            <select
+              value={encounterFormData.encounter_type}
+              onChange={(e) => setEncounterFormData({ ...encounterFormData, encounter_type: e.target.value })}
+              className="form-input"
+            >
+              <option value="combat">Combat</option>
+              <option value="social">Social</option>
+              <option value="exploration">Exploration</option>
+              <option value="trap">Trap/Hazard</option>
+              <option value="skill_challenge">Skill Challenge</option>
+              <option value="puzzle">Puzzle</option>
+              <option value="mixed">Mixed</option>
+            </select>
+          </div>
+
+          {/* Status */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Status
+            </label>
+            <select
+              value={encounterFormData.status}
+              onChange={(e) => setEncounterFormData({ ...encounterFormData, status: e.target.value })}
+              className="form-input"
+            >
+              <option value="prepared">Prepared (for future)</option>
+              <option value="used">Used (already happened)</option>
+              <option value="skipped">Skipped</option>
+            </select>
+          </div>
+
+          {/* Difficulty */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Difficulty
+            </label>
+            <select
+              value={encounterFormData.difficulty}
+              onChange={(e) => setEncounterFormData({ ...encounterFormData, difficulty: e.target.value })}
+              className="form-input"
+            >
+              <option value="">Not set</option>
+              <option value="trivial">Trivial</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+              <option value="deadly">Deadly</option>
+            </select>
+          </div>
+
+          {/* Location */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Location
+            </label>
+            <input
+              type="text"
+              value={encounterFormData.location_name}
+              onChange={(e) => setEncounterFormData({ ...encounterFormData, location_name: e.target.value })}
+              className="form-input"
+              placeholder="e.g., The Trade Road"
+            />
+            <p className="text-xs text-gray-500 mt-1">Location name (will be matched to existing locations)</p>
+          </div>
+
+          {/* Quest */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Related Quest
+            </label>
+            <input
+              type="text"
+              value={encounterFormData.quest_name}
+              onChange={(e) => setEncounterFormData({ ...encounterFormData, quest_name: e.target.value })}
+              className="form-input"
+              placeholder="e.g., Find the Missing Merchant"
+            />
+            <p className="text-xs text-gray-500 mt-1">Quest name (will be matched to existing quests)</p>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Description
+            </label>
+            <textarea
+              value={encounterFormData.description}
+              onChange={(e) => setEncounterFormData({ ...encounterFormData, description: e.target.value })}
+              className="form-input min-h-[100px]"
+              placeholder="What happened in this encounter..."
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-[--border]">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setEditingEncounterSuggestion(null)}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleSaveEncounterEdit}
+              disabled={!encounterFormData.name.trim()}
+            >
+              Save & Add Encounter
             </button>
           </div>
         </div>

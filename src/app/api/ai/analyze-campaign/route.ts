@@ -184,6 +184,13 @@ export async function POST(req: Request) {
       .eq('campaign_id', campaignId)
       .order('name')
 
+    // Load ALL encounters for context (so AI doesn't suggest duplicates)
+    const { data: existingEncounters } = await supabase
+      .from('encounters')
+      .select('id, name, type, status, description, difficulty, location_id, quest_id')
+      .eq('campaign_id', campaignId)
+      .order('name')
+
     // Check if there's anything new to analyze
     const hasNewContent = (updatedSessions?.length ?? 0) > 0 ||
                          (updatedCharacters?.length ?? 0) > 0
@@ -318,6 +325,16 @@ export async function POST(req: Request) {
       return `- ${quest.name} [${quest.type}, ${quest.status}]${giverInfo}`
     }).join('\n')
 
+    // Build encounters context (so AI can avoid duplicates)
+    const encountersContext = (existingEncounters || []).map(encounter => {
+      const location = encounter.location_id
+        ? existingLocations?.find(l => l.id === encounter.location_id)?.name
+        : null
+      const locationInfo = location ? ` at ${location}` : ''
+      const difficultyInfo = encounter.difficulty ? ` (${encounter.difficulty})` : ''
+      return `- ${encounter.name} [${encounter.type}, ${encounter.status}]${difficultyInfo}${locationInfo}`
+    }).join('\n')
+
     // Build NEW content to analyze
     const newSessionContent = (updatedSessions || []).map(s => {
       return `## Session ${s.session_number}: ${s.title || 'Untitled'}
@@ -360,6 +377,9 @@ ${!existingLocations?.length ? '\n⚠️ NO LOCATIONS RECORDED - Please extract 
 ${questsContext || 'No quests recorded yet.'}
 ${!existingQuests?.length ? '\n⚠️ NO QUESTS RECORDED - Please extract all quests, missions, tasks, and objectives mentioned in session notes (explicit requests, promises, rumors, character goals, etc.).' : ''}
 
+## EXISTING ENCOUNTERS (${existingEncounters?.length || 0} encounters)
+${encountersContext || 'No encounters recorded yet.'}
+
 ---
 
 # NEW CONTENT TO ANALYZE
@@ -386,6 +406,7 @@ IMPORTANT INSTRUCTIONS:
 11. TIMELINE EVENTS: Suggest significant events for the timeline (battles, discoveries, deaths, alliances, quest milestones). ${timelineIsEmpty ? 'The timeline is currently EMPTY so please suggest key events from the sessions to populate it.' : 'Check existing timeline events above to avoid duplicates.'}
 12. LOCATIONS: Extract ALL places mentioned in session notes - cities, towns, villages, taverns, dungeons, temples, regions, landmarks, camps, buildings, etc. ${!existingLocations?.length ? 'NO LOCATIONS EXIST YET - please extract all locations from the session history.' : 'Check existing locations above to avoid duplicates.'} Include location_type and parent_location_name if nested (e.g., a tavern inside a city).
 13. QUESTS: Extract ALL quests, missions, tasks, and objectives from session notes - explicit requests from NPCs, promises the party made, rumors heard, character-driven goals, plot threads. ${!existingQuests?.length ? 'NO QUESTS EXIST YET - please extract all quests from the session history.' : 'Check existing quests above to avoid duplicates.'} Include quest_type (main_quest, side_quest, personal, faction, plot_thread, rumor), status (available or active), quest_giver_name if known, and location_name if a destination is mentioned.
+14. ENCOUNTERS: Extract combat encounters, social encounters, exploration encounters, traps, puzzles, and skill challenges from session notes. ${!existingEncounters?.length ? 'NO ENCOUNTERS EXIST YET - please extract all encounters from the session history.' : 'Check existing encounters above to avoid duplicates.'} Include encounter_type (combat, social, exploration, trap, skill_challenge, puzzle, mixed), status (used if it happened, prepared if mentioned for future), difficulty if discernible (trivial, easy, medium, hard, deadly), location_name if known, and quest_name if tied to a quest.
 
 SESSION CHRONOLOGY NOTE: Sessions are numbered chronologically. Higher session numbers = more recent events. If there are conflicts between sessions, the higher-numbered session represents the current truth. For example, if a location is called "The Old Mill" in session 2 but "The Abandoned Mill" in session 8, use the session 8 name.`
 

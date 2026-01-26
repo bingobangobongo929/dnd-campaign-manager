@@ -441,6 +441,116 @@ export async function PATCH(req: Request) {
       })
     }
 
+    // Handle encounter_detected suggestions
+    if (suggestion.suggestion_type === 'encounter_detected') {
+      const encounterData = (finalValue ?? suggestion.suggested_value) as {
+        name: string
+        encounter_type?: string
+        description?: string
+        status?: string
+        difficulty?: string
+        location_name?: string
+        quest_name?: string
+      }
+
+      // Look up location if specified
+      let locationId: string | null = null
+      if (encounterData.location_name) {
+        const { data: location } = await supabase
+          .from('locations')
+          .select('id')
+          .eq('campaign_id', suggestion.campaign_id)
+          .ilike('name', encounterData.location_name)
+          .maybeSingle()
+
+        locationId = location?.id || null
+      }
+
+      // Look up quest if specified
+      let questId: string | null = null
+      if (encounterData.quest_name) {
+        const { data: quest } = await supabase
+          .from('quests')
+          .select('id')
+          .eq('campaign_id', suggestion.campaign_id)
+          .ilike('name', encounterData.quest_name)
+          .maybeSingle()
+
+        questId = quest?.id || null
+      }
+
+      // Check if encounter already exists (by name, case-insensitive)
+      const { data: existingEncounter } = await supabase
+        .from('encounters')
+        .select('id')
+        .eq('campaign_id', suggestion.campaign_id)
+        .ilike('name', encounterData.name)
+        .maybeSingle()
+
+      if (existingEncounter) {
+        // Encounter already exists - mark as applied but don't create duplicate
+        const { error } = await supabase
+          .from('intelligence_suggestions')
+          .update({
+            status: 'applied',
+            final_value: { ...encounterData, existing_encounter_id: existingEncounter.id, note: 'Encounter already existed' }
+          })
+          .eq('id', suggestionId)
+
+        if (error) throw error
+
+        return new Response(JSON.stringify({
+          success: true,
+          action: 'applied',
+          message: 'Encounter already exists',
+          encounterId: existingEncounter.id
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Create the encounter
+      const { data: newEncounter, error: encounterError } = await supabase
+        .from('encounters')
+        .insert({
+          campaign_id: suggestion.campaign_id,
+          name: encounterData.name,
+          type: encounterData.encounter_type || 'combat',
+          description: encounterData.description || null,
+          status: encounterData.status || 'used',
+          difficulty: encounterData.difficulty || null,
+          location_id: locationId,
+          quest_id: questId,
+          visibility: 'dm', // Default to DM-only since it was extracted from session notes
+        })
+        .select('id')
+        .single()
+
+      if (encounterError) throw encounterError
+
+      // Mark suggestion as applied
+      const { error } = await supabase
+        .from('intelligence_suggestions')
+        .update({
+          status: 'applied',
+          final_value: { ...encounterData, encounter_id: newEncounter.id }
+        })
+        .eq('id', suggestionId)
+
+      if (error) throw error
+
+      return new Response(JSON.stringify({
+        success: true,
+        action: 'applied',
+        message: 'Encounter created',
+        encounterId: newEncounter.id
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
     if (!suggestion.character_id) {
       // New character suggestion - just mark as applied for now
       // TODO: Could auto-create the character

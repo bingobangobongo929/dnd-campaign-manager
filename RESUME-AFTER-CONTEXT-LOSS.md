@@ -6,8 +6,8 @@
 
 **LOCATIONS FULLY INTEGRATED WITH CAMPAIGN INTELLIGENCE.**
 **QUESTS FULLY INTEGRATED WITH CAMPAIGN INTELLIGENCE.**
-**ENCOUNTERS PAGE BUILT** - Basic UI done, needs Intelligence integration.
-**Next: Campaign Intelligence for encounters, then integrations (Quick Reference, Location/Quest detail sections).**
+**ENCOUNTERS FULLY INTEGRATED WITH CAMPAIGN INTELLIGENCE.**
+**Next: Quick Reference - pin encounters to sessions, Location/Quest detail sections for encounters.**
 
 ## What's Done
 
@@ -53,6 +53,25 @@ Features:
 - **Edit modal**: Change name, type, parent location, description before approving
 - **Bulk approval**: "Add All X Locations" button in sidebar
 - Deduplication check on approval (case-insensitive name match)
+
+### Campaign Intelligence - Encounter Detection (COMPLETE)
+**Files:**
+- `src/lib/ai/config.ts` - AI prompt with encounter_detected instructions
+- `src/app/api/ai/analyze-campaign/route.ts` - Loads existing encounters for deduplication
+- `src/app/api/ai/suggestions/route.ts` - Creates encounter records on approval
+- `src/app/(dashboard)/campaigns/[id]/intelligence/page.tsx` - Edit modal + bulk approval
+- `src/components/intelligence/suggestion-card.tsx` - Swords icon and red color for encounter_detected
+
+Features:
+- AI extracts encounters from session notes (combat, social, exploration, traps, puzzles)
+- Existing encounters loaded for context (avoids duplicates)
+- Session chronology: higher session number = more recent truth
+- **Edit modal**: Change name, type, status, difficulty, location, quest before approving
+- **Bulk approval**: "Add All X Encounters" button in sidebar (red styling)
+- Deduplication check on approval (case-insensitive name match)
+- Encounter links to location_id and quest_id if AI detects them
+
+**Migration 085** adds encounter_detected to suggestion_type enum (run in Supabase).
 
 ### Navigation (COMPLETE)
 All three new pages accessible from:
@@ -180,9 +199,9 @@ Difficulties: Trivial, Easy, Medium, Hard, Deadly
 5. ~~**Update Locations Detail**~~ ✅ DONE - "Quests at this location" in detail panel
 6. ~~**Update Characters/Canvas**~~ ✅ DONE - "Quest Giver For" in character view modal
 7. ~~**Campaign Intelligence - Quest Detection**~~ ✅ DONE - Detect from session notes
-8. ~~**Build Encounters UI**~~ ✅ DONE - List view, progressive disclosure form
-9. **Campaign Intelligence - Encounter Detection** (NEXT)
-10. **Quick Reference - Encounters** - Pin encounters to sessions
+8. ~~**Build Encounters UI**~~ ✅ DONE - Board view with Kanban pattern
+9. ~~**Campaign Intelligence - Encounter Detection**~~ ✅ DONE - Detect from session notes
+10. **Quick Reference - Encounters** (NEXT) - Pin encounters to sessions
 11. **Location Detail - Encounters** - "Encounters Here" section
 12. **Quest Detail - Encounters** - "Encounters for this Quest" section
 13. **Comprehensive Share Page Update** - After all core features done
@@ -414,6 +433,7 @@ boxed_text, visibility, dm_notes, secrets, created_at, updated_at
 ```
 
 Note: dm_notes and secrets require migration 084.
+Note: encounter_detected suggestion type requires migration 085.
 
 ## Key Files Reference
 
