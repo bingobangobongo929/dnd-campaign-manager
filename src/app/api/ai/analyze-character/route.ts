@@ -169,32 +169,37 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Tier check - only standard and premium tiers can use AI
+    // Tier and role check
     const { data: settings } = await supabase
       .from('user_settings')
-      .select('tier')
+      .select('tier, role')
       .eq('user_id', user.id)
       .single()
     const userTier = (settings?.tier || 'free') as UserTier | 'free'
-    if (userTier === 'free') {
+    const userRole = settings?.role || 'user'
+    const isModOrAbove = userRole === 'moderator' || userRole === 'super_admin'
+
+    if (userTier === 'free' && !isModOrAbove) {
       return new Response(JSON.stringify({ error: 'AI features require a paid plan' }), { status: 403, headers: { 'Content-Type': 'application/json' } })
     }
 
-    // Check cooldown before proceeding with expensive operations
-    const cooldownStatus = await checkCooldown(user.id, 'character_intelligence', characterId)
-    if (cooldownStatus.isOnCooldown) {
-      return new Response(JSON.stringify({
-        error: 'Intelligence is on cooldown',
-        cooldown: {
-          availableAt: cooldownStatus.availableAt?.toISOString(),
-          remainingMs: cooldownStatus.remainingMs,
-          remainingFormatted: cooldownStatus.remainingFormatted,
-        },
-        message: `Character Intelligence is on cooldown. Available again in ${cooldownStatus.remainingFormatted}.`
-      }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json' }
-      })
+    // Check cooldown before proceeding with expensive operations (skip for mods+)
+    if (!isModOrAbove) {
+      const cooldownStatus = await checkCooldown(user.id, 'character_intelligence', characterId)
+      if (cooldownStatus.isOnCooldown) {
+        return new Response(JSON.stringify({
+          error: 'Intelligence is on cooldown',
+          cooldown: {
+            availableAt: cooldownStatus.availableAt?.toISOString(),
+            remainingMs: cooldownStatus.remainingMs,
+            remainingFormatted: cooldownStatus.remainingFormatted,
+          },
+          message: `Character Intelligence is on cooldown. Available again in ${cooldownStatus.remainingFormatted}.`
+        }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
     }
 
     // Load the character
@@ -417,8 +422,10 @@ ${ANALYSIS_PROMPT}`
       .update({ last_intelligence_run: new Date().toISOString() })
       .eq('id', characterId)
 
-    // Set cooldown after successful analysis
-    await setCooldown(user.id, 'character_intelligence', userTier as UserTier, characterId)
+    // Set cooldown after successful analysis (skip for mods+)
+    if (!isModOrAbove) {
+      await setCooldown(user.id, 'character_intelligence', userTier as UserTier, characterId)
+    }
 
     return new Response(JSON.stringify({
       success: true,

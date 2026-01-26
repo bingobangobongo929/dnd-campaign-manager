@@ -45,32 +45,38 @@ export async function POST(req: Request) {
       })
     }
 
-    // Tier check - only standard and premium tiers can use AI
+    // Tier and role check
     const { data: settings } = await supabase
       .from('user_settings')
-      .select('tier')
+      .select('tier, role')
       .eq('user_id', user.id)
       .single()
     const userTier = (settings?.tier || 'free') as UserTier | 'free'
-    if (userTier === 'free') {
+    const userRole = settings?.role || 'user'
+    const isModOrAbove = userRole === 'moderator' || userRole === 'super_admin'
+
+    if (userTier === 'free' && !isModOrAbove) {
       return new Response(JSON.stringify({ error: 'AI features require a paid plan' }), { status: 403, headers: { 'Content-Type': 'application/json' } })
     }
 
     // Check cooldown before proceeding with expensive operations
-    const cooldownStatus = await checkCooldown(user.id, 'campaign_intelligence', campaignId)
-    if (cooldownStatus.isOnCooldown) {
-      return new Response(JSON.stringify({
-        error: 'Intelligence is on cooldown',
-        cooldown: {
-          availableAt: cooldownStatus.availableAt?.toISOString(),
-          remainingMs: cooldownStatus.remainingMs,
-          remainingFormatted: cooldownStatus.remainingFormatted,
-        },
-        message: `Campaign Intelligence is on cooldown. Available again in ${cooldownStatus.remainingFormatted}.`
-      }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json' }
-      })
+    // Mods and above bypass cooldown
+    if (!isModOrAbove) {
+      const cooldownStatus = await checkCooldown(user.id, 'campaign_intelligence', campaignId)
+      if (cooldownStatus.isOnCooldown) {
+        return new Response(JSON.stringify({
+          error: 'Intelligence is on cooldown',
+          cooldown: {
+            availableAt: cooldownStatus.availableAt?.toISOString(),
+            remainingMs: cooldownStatus.remainingMs,
+            remainingFormatted: cooldownStatus.remainingFormatted,
+          },
+          message: `Campaign Intelligence is on cooldown. Available again in ${cooldownStatus.remainingFormatted}.`
+        }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
     }
 
     // Load campaign with last intelligence run time
@@ -558,8 +564,10 @@ SESSION CHRONOLOGY NOTE: Sessions are numbered chronologically. Higher session n
       .update({ last_intelligence_run: new Date().toISOString() })
       .eq('id', campaignId)
 
-    // Set cooldown after successful analysis
-    await setCooldown(user.id, 'campaign_intelligence', userTier as UserTier, campaignId)
+    // Set cooldown after successful analysis (skip for mods+)
+    if (!isModOrAbove) {
+      await setCooldown(user.id, 'campaign_intelligence', userTier as UserTier, campaignId)
+    }
 
     return new Response(JSON.stringify({
       success: true,

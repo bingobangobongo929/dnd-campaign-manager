@@ -34,6 +34,7 @@ import {
   Columns,
   SlidersHorizontal,
   Calendar,
+  Shuffle,
 } from 'lucide-react'
 import { AppLayout, CampaignPageHeader } from '@/components/layout'
 import { Button, Modal, EmptyState, Badge, Tooltip, AccessDeniedPage } from '@/components/ui'
@@ -1441,6 +1442,18 @@ export default function EncountersPage() {
     }
   }
 
+  // Roll random prepared encounter
+  const handleRollRandom = () => {
+    const preparedEncounters = encounters.filter(e => e.status === 'prepared')
+    if (preparedEncounters.length === 0) {
+      alert('No prepared encounters to roll from!')
+      return
+    }
+    const randomIndex = Math.floor(Math.random() * preparedEncounters.length)
+    const randomEncounter = preparedEncounters[randomIndex]
+    setSelectedEncounter(randomEncounter)
+  }
+
   // Save encounter
   const handleSave = async (data: Partial<Encounter>) => {
     setSaving(true)
@@ -1536,10 +1549,24 @@ export default function EncountersPage() {
         onOpenResize={() => setShowResizeModal(true)}
         onOpenShare={() => setShowShareModal(true)}
         actions={(
-          <Button onClick={() => setShowAddModal(true)} className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Add Encounter</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            {encounters.filter(e => e.status === 'prepared').length > 0 && (
+              <Tooltip content="Roll random prepared encounter">
+                <Button
+                  variant="ghost"
+                  onClick={handleRollRandom}
+                  className="flex items-center gap-2"
+                >
+                  <Shuffle className="w-4 h-4" />
+                  <span className="hidden sm:inline">Roll</span>
+                </Button>
+              </Tooltip>
+            )}
+            <Button onClick={() => setShowAddModal(true)} className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Add Encounter</span>
+            </Button>
+          </div>
         )}
       />
 

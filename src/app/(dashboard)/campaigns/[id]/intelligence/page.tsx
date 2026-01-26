@@ -222,7 +222,11 @@ export default function IntelligencePage() {
     isOnCooldown: boolean
     remainingFormatted: string
     availableAt: string | null
+    cooldownHours?: number
   } | null>(null)
+
+  // Confirmation modal state
+  const [showAnalyzeConfirmModal, setShowAnalyzeConfirmModal] = useState(false)
 
   // Filter state
   const [showHistory, setShowHistory] = useState(false)
@@ -364,7 +368,14 @@ export default function IntelligencePage() {
     }
   }, [canUseAI, loading, campaignId, router])
 
-  const handleAnalyze = async () => {
+  // Show confirmation modal before analyzing
+  const handleAnalyzeClick = () => {
+    setShowAnalyzeConfirmModal(true)
+  }
+
+  // Actually run the analysis after confirmation
+  const handleAnalyzeConfirmed = async () => {
+    setShowAnalyzeConfirmModal(false)
     setIsAnalyzing(true)
     setAnalysisError(null)
 
@@ -882,7 +893,7 @@ export default function IntelligencePage() {
         processingIds={processingIds}
         isFilterSheetOpen={isFilterSheetOpen}
         setIsFilterSheetOpen={setIsFilterSheetOpen}
-        handleAnalyze={handleAnalyze}
+        handleAnalyze={handleAnalyzeClick}
         handleAction={handleAction}
         getCharacterForSuggestion={getCharacterForSuggestion}
         editingSuggestion={editingSuggestion}
@@ -941,7 +952,7 @@ export default function IntelligencePage() {
         actions={
           <button
             className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium disabled:opacity-50"
-            onClick={handleAnalyze}
+            onClick={handleAnalyzeClick}
             disabled={isAnalyzing || cooldownStatus?.isOnCooldown}
             title={cooldownStatus?.isOnCooldown ? `Available in ${cooldownStatus.remainingFormatted}` : undefined}
           >
@@ -969,7 +980,7 @@ export default function IntelligencePage() {
           showOnce
           action={{
             label: 'Run Your First Analysis',
-            onClick: () => handleAnalyze(),
+            onClick: () => handleAnalyzeClick(),
           }}
         />
 
@@ -1050,7 +1061,7 @@ export default function IntelligencePage() {
 
             <button
               className="btn btn-primary flex items-center gap-2"
-              onClick={handleAnalyze}
+              onClick={handleAnalyzeClick}
               disabled={isAnalyzing || cooldownStatus?.isOnCooldown}
               title={cooldownStatus?.isOnCooldown ? `Available in ${cooldownStatus.remainingFormatted}` : undefined}
             >
@@ -1345,7 +1356,7 @@ export default function IntelligencePage() {
                     ) : (
                       <button
                         className="btn btn-primary flex items-center gap-2 mt-6"
-                        onClick={handleAnalyze}
+                        onClick={handleAnalyzeClick}
                         disabled={isAnalyzing}
                       >
                         <Sparkles className="w-4 h-4" />
@@ -2009,6 +2020,40 @@ export default function IntelligencePage() {
               disabled={!encounterFormData.name.trim()}
             >
               Save & Add Encounter
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Analyze Confirmation Modal */}
+      <Modal
+        isOpen={showAnalyzeConfirmModal}
+        onClose={() => setShowAnalyzeConfirmModal(false)}
+        title="Ready to Analyze?"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-300">
+            For best results, make sure all party members have submitted their session notes and you&apos;ve added your own DM notes before running Intelligence.
+          </p>
+          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+            <p className="text-sm text-amber-300">
+              <strong>Note:</strong> After running, there will be a cooldown of approximately <strong>12 hours</strong> before you can run again. This timing will vary by subscription tier and role in the future.
+            </p>
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowAnalyzeConfirmModal(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary flex items-center gap-2"
+              onClick={handleAnalyzeConfirmed}
+            >
+              <Sparkles className="w-4 h-4" />
+              Run Analysis
             </button>
           </div>
         </div>
