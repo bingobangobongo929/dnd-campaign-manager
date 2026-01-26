@@ -50,6 +50,10 @@ export default function AdminUsersPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
 
+  // Bulk selection
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set())
+  const [bulkActionLoading, setBulkActionLoading] = useState(false)
+
   // Action modals
   const [selectedUser, setSelectedUser] = useState<UserWithSettings | null>(null)
   const [showSuspendModal, setShowSuspendModal] = useState(false)
@@ -426,6 +430,193 @@ export default function AdminUsersPage() {
     }
   }
 
+  // Bulk selection handlers
+  const toggleSelectUser = (userId: string) => {
+    setSelectedUserIds(prev => {
+      const next = new Set(prev)
+      if (next.has(userId)) {
+        next.delete(userId)
+      } else {
+        next.add(userId)
+      }
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedUserIds.size === paginatedUsers.length) {
+      setSelectedUserIds(new Set())
+    } else {
+      setSelectedUserIds(new Set(paginatedUsers.map(u => u.id)))
+    }
+  }
+
+  const clearSelection = () => {
+    setSelectedUserIds(new Set())
+  }
+
+  // Bulk action handlers
+  const handleBulkGrantFounder = async () => {
+    if (!isSuperAdminUser || selectedUserIds.size === 0) return
+    setBulkActionLoading(true)
+    try {
+      const adminUser = (await supabase.auth.getUser()).data.user
+      let successCount = 0
+      for (const userId of selectedUserIds) {
+        const { error } = await supabase
+          .from('user_settings')
+          .update({ is_founder: true, founder_granted_at: new Date().toISOString() })
+          .eq('user_id', userId)
+        if (!error) {
+          await supabase.from('admin_activity_log').insert({
+            admin_id: adminUser?.id,
+            action: 'grant_founder',
+            target_user_id: userId,
+            details: { bulk_action: true },
+          })
+          successCount++
+        }
+      }
+      toast.success(`Founder status granted to ${successCount} users`)
+      clearSelection()
+      fetchUsers()
+    } catch (error) {
+      toast.error('Failed to complete bulk action')
+    } finally {
+      setBulkActionLoading(false)
+    }
+  }
+
+  const handleBulkRevokeFounder = async () => {
+    if (!isSuperAdminUser || selectedUserIds.size === 0) return
+    setBulkActionLoading(true)
+    try {
+      const adminUser = (await supabase.auth.getUser()).data.user
+      let successCount = 0
+      for (const userId of selectedUserIds) {
+        const { error } = await supabase
+          .from('user_settings')
+          .update({ is_founder: false, founder_granted_at: null })
+          .eq('user_id', userId)
+        if (!error) {
+          await supabase.from('admin_activity_log').insert({
+            admin_id: adminUser?.id,
+            action: 'revoke_founder',
+            target_user_id: userId,
+            details: { bulk_action: true },
+          })
+          successCount++
+        }
+      }
+      toast.success(`Founder status revoked from ${successCount} users`)
+      clearSelection()
+      fetchUsers()
+    } catch (error) {
+      toast.error('Failed to complete bulk action')
+    } finally {
+      setBulkActionLoading(false)
+    }
+  }
+
+  const handleBulkGrantAI = async () => {
+    if (!isSuperAdminUser || selectedUserIds.size === 0) return
+    setBulkActionLoading(true)
+    try {
+      const adminUser = (await supabase.auth.getUser()).data.user
+      let successCount = 0
+      for (const userId of selectedUserIds) {
+        const { error } = await supabase
+          .from('user_settings')
+          .update({
+            ai_access: true,
+            ai_access_granted_by: adminUser?.id,
+            ai_access_granted_at: new Date().toISOString(),
+          })
+          .eq('user_id', userId)
+        if (!error) {
+          await supabase.from('admin_activity_log').insert({
+            admin_id: adminUser?.id,
+            action: 'grant_ai_access',
+            target_user_id: userId,
+            details: { bulk_action: true },
+          })
+          successCount++
+        }
+      }
+      toast.success(`AI access granted to ${successCount} users`)
+      clearSelection()
+      fetchUsers()
+    } catch (error) {
+      toast.error('Failed to complete bulk action')
+    } finally {
+      setBulkActionLoading(false)
+    }
+  }
+
+  const handleBulkRevokeAI = async () => {
+    if (!isSuperAdminUser || selectedUserIds.size === 0) return
+    setBulkActionLoading(true)
+    try {
+      const adminUser = (await supabase.auth.getUser()).data.user
+      let successCount = 0
+      for (const userId of selectedUserIds) {
+        const { error } = await supabase
+          .from('user_settings')
+          .update({ ai_access: false, ai_access_granted_by: null, ai_access_granted_at: null })
+          .eq('user_id', userId)
+        if (!error) {
+          await supabase.from('admin_activity_log').insert({
+            admin_id: adminUser?.id,
+            action: 'revoke_ai_access',
+            target_user_id: userId,
+            details: { bulk_action: true },
+          })
+          successCount++
+        }
+      }
+      toast.success(`AI access revoked from ${successCount} users`)
+      clearSelection()
+      fetchUsers()
+    } catch (error) {
+      toast.error('Failed to complete bulk action')
+    } finally {
+      setBulkActionLoading(false)
+    }
+  }
+
+  const handleBulkChangeTier = async (tier: string) => {
+    if (!isSuperAdminUser || selectedUserIds.size === 0) return
+    setBulkActionLoading(true)
+    try {
+      const adminUser = (await supabase.auth.getUser()).data.user
+      let successCount = 0
+      for (const userId of selectedUserIds) {
+        const user = users.find(u => u.id === userId)
+        const oldTier = user?.settings?.tier
+        const { error } = await supabase
+          .from('user_settings')
+          .update({ tier })
+          .eq('user_id', userId)
+        if (!error) {
+          await supabase.from('admin_activity_log').insert({
+            admin_id: adminUser?.id,
+            action: 'change_tier',
+            target_user_id: userId,
+            details: { old_tier: oldTier, new_tier: tier, bulk_action: true },
+          })
+          successCount++
+        }
+      }
+      toast.success(`Tier changed to ${tier} for ${successCount} users`)
+      clearSelection()
+      fetchUsers()
+    } catch (error) {
+      toast.error('Failed to complete bulk action')
+    } finally {
+      setBulkActionLoading(false)
+    }
+  }
+
   // Filter users
   const filteredUsers = users.filter(user => {
     if (searchQuery) {
@@ -575,12 +766,142 @@ export default function AdminUsersPage() {
         </button>
       </div>
 
+      {/* Bulk Actions Bar */}
+      {selectedUserIds.size > 0 && (
+        <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-purple-300 font-medium">
+                {selectedUserIds.size} user{selectedUserIds.size > 1 ? 's' : ''} selected
+              </span>
+              <button
+                onClick={clearSelection}
+                className="text-xs text-gray-400 hover:text-white transition-colors"
+              >
+                Clear selection
+              </button>
+            </div>
+
+            {isSuperAdminUser && (
+              <div className="flex flex-wrap items-center gap-2">
+                <DropdownMenu
+                  trigger={
+                    <button
+                      disabled={bulkActionLoading}
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm bg-amber-500/20 text-amber-400 rounded-lg hover:bg-amber-500/30 disabled:opacity-50 transition-colors"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      Founder
+                    </button>
+                  }
+                  align="right"
+                >
+                  <button
+                    onClick={handleBulkGrantFounder}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left text-green-400 hover:bg-white/[0.04]"
+                  >
+                    <Check className="w-4 h-4" />
+                    Grant Founder
+                  </button>
+                  <button
+                    onClick={handleBulkRevokeFounder}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left text-red-400 hover:bg-white/[0.04]"
+                  >
+                    <X className="w-4 h-4" />
+                    Revoke Founder
+                  </button>
+                </DropdownMenu>
+
+                <DropdownMenu
+                  trigger={
+                    <button
+                      disabled={bulkActionLoading}
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm bg-purple-500/20 text-purple-400 rounded-lg hover:bg-purple-500/30 disabled:opacity-50 transition-colors"
+                    >
+                      <Bot className="w-4 h-4" />
+                      AI Access
+                    </button>
+                  }
+                  align="right"
+                >
+                  <button
+                    onClick={handleBulkGrantAI}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left text-green-400 hover:bg-white/[0.04]"
+                  >
+                    <Check className="w-4 h-4" />
+                    Grant AI Access
+                  </button>
+                  <button
+                    onClick={handleBulkRevokeAI}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left text-red-400 hover:bg-white/[0.04]"
+                  >
+                    <X className="w-4 h-4" />
+                    Revoke AI Access
+                  </button>
+                </DropdownMenu>
+
+                <DropdownMenu
+                  trigger={
+                    <button
+                      disabled={bulkActionLoading}
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 disabled:opacity-50 transition-colors"
+                    >
+                      <Crown className="w-4 h-4" />
+                      Change Tier
+                    </button>
+                  }
+                  align="right"
+                >
+                  <button
+                    onClick={() => handleBulkChangeTier('adventurer')}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left text-gray-400 hover:bg-white/[0.04]"
+                  >
+                    Adventurer
+                  </button>
+                  <button
+                    onClick={() => handleBulkChangeTier('hero')}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left text-blue-400 hover:bg-white/[0.04]"
+                  >
+                    Hero
+                  </button>
+                  <button
+                    onClick={() => handleBulkChangeTier('legend')}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left text-purple-400 hover:bg-white/[0.04]"
+                  >
+                    Legend
+                  </button>
+                </DropdownMenu>
+
+                {bulkActionLoading && (
+                  <Loader2 className="w-4 h-4 animate-spin text-purple-400 ml-2" />
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Users Table */}
       <div className="bg-[#1a1a24] rounded-xl border border-white/[0.06] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/[0.06]">
+                <th className="w-10 py-3 px-4">
+                  <button
+                    onClick={toggleSelectAll}
+                    className={cn(
+                      "w-5 h-5 rounded flex items-center justify-center transition-all",
+                      selectedUserIds.size === paginatedUsers.length && paginatedUsers.length > 0
+                        ? "bg-purple-500 text-white"
+                        : selectedUserIds.size > 0
+                        ? "bg-purple-500/50 text-white"
+                        : "bg-white/[0.04] border border-white/20 hover:bg-white/[0.08]"
+                    )}
+                  >
+                    {selectedUserIds.size > 0 && <Check className="w-3 h-3" />}
+                  </button>
+                </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">User</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Username</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Tier</th>
@@ -596,7 +917,7 @@ export default function AdminUsersPage() {
             <tbody>
               {paginatedUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="text-center py-12 text-gray-500">
+                  <td colSpan={11} className="text-center py-12 text-gray-500">
                     No users found
                   </td>
                 </tr>
@@ -605,6 +926,19 @@ export default function AdminUsersPage() {
                   const status = getUserStatus(user)
                   return (
                     <tr key={user.id} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
+                      <td className="py-3 px-4">
+                        <button
+                          onClick={() => toggleSelectUser(user.id)}
+                          className={cn(
+                            "w-5 h-5 rounded flex items-center justify-center transition-all",
+                            selectedUserIds.has(user.id)
+                              ? "bg-purple-500 text-white"
+                              : "bg-white/[0.04] border border-white/20 hover:bg-white/[0.08]"
+                          )}
+                        >
+                          {selectedUserIds.has(user.id) && <Check className="w-3 h-3" />}
+                        </button>
+                      </td>
                       <td className="py-3 px-4">
                         <div>
                           <div className="flex items-center gap-1.5">

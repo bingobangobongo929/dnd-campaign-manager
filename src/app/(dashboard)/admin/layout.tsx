@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, FileText, Activity, BarChart3, Loader2, Ticket, Mail, Bot, Clock, MessageSquare } from 'lucide-react'
+import { LayoutDashboard, Users, FileText, Activity, BarChart3, Loader2, Ticket, Mail, Bot, Clock, MessageSquare, HeartPulse, FileStack, Megaphone } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useUserSettings } from '@/hooks'
 import { isAdmin } from '@/lib/admin'
@@ -16,9 +16,12 @@ const adminNavItems = [
   { href: '/admin/invites', label: 'Invites', icon: Ticket },
   { href: '/admin/waitlist', label: 'Waitlist', icon: Clock },
   { href: '/admin/feedback', label: 'Feedback', icon: MessageSquare },
+  { href: '/admin/templates', label: 'Templates', icon: FileStack },
+  { href: '/admin/announcements', label: 'Announcements', icon: Megaphone },
   { href: '/admin/emails', label: 'Emails', icon: Mail },
   { href: '/admin/ai-usage', label: 'AI Usage', icon: Bot },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: '/admin/health', label: 'Health', icon: HeartPulse },
   { href: '/admin/changelog', label: 'Changelog', icon: FileText },
   { href: '/admin/activity', label: 'Activity Log', icon: Activity },
 ]

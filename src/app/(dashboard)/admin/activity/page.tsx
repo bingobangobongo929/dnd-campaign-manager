@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Filter, Loader2, Shield, Ban, UserX, Crown, Edit2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download } from 'lucide-react'
+import { Search, Filter, Loader2, Shield, Ban, UserX, Crown, Edit2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download, Calendar } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSupabase } from '@/hooks'
 import { formatDate } from '@/lib/utils'
@@ -43,9 +43,12 @@ const ACTION_COLORS: Record<string, string> = {
 export default function AdminActivityPage() {
   const supabase = useSupabase()
   const [activities, setActivities] = useState<ActivityEntry[]>([])
+  const [userMap, setUserMap] = useState<Record<string, { email: string; username: string | null }>>({})
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterAction, setFilterAction] = useState<string>('all')
+  const [dateFrom, setDateFrom] = useState<string>('')
+  const [dateTo, setDateTo] = useState<string>('')
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
@@ -65,6 +68,33 @@ export default function AdminActivityPage() {
 
       if (error) throw error
       setActivities(data || [])
+
+      // Collect unique user IDs and fetch their details
+      const userIds = new Set<string>()
+      data?.forEach(a => {
+        if (a.admin_id) userIds.add(a.admin_id)
+        if (a.target_user_id) userIds.add(a.target_user_id)
+      })
+
+      if (userIds.size > 0) {
+        const { data: users } = await supabase
+          .from('user_settings')
+          .select('user_id, username')
+          .in('user_id', Array.from(userIds))
+
+        // Also fetch emails from admin API
+        const res = await fetch('/api/admin/users')
+        if (res.ok) {
+          const { users: allUsers } = await res.json()
+          const map: Record<string, { email: string; username: string | null }> = {}
+          allUsers?.forEach((u: { id: string; email: string; settings?: { username: string | null } }) => {
+            if (userIds.has(u.id)) {
+              map[u.id] = { email: u.email, username: u.settings?.username || null }
+            }
+          })
+          setUserMap(map)
+        }
+      }
     } catch (error) {
       console.error('Failed to fetch activity log:', error)
     } finally {
@@ -72,17 +102,52 @@ export default function AdminActivityPage() {
     }
   }
 
+  // Helper to get user display name
+  const getUserDisplay = (userId: string | null) => {
+    if (!userId) return null
+    const user = userMap[userId]
+    if (user?.username) return `@${user.username}`
+    if (user?.email) return user.email
+    return `${userId.slice(0, 8)}...`
+  }
+
   // Filter activities
   const filteredActivities = activities.filter(activity => {
+    // Action filter
     if (filterAction !== 'all' && activity.action !== filterAction) return false
+
+    // Date range filter
+    if (dateFrom && activity.created_at) {
+      const activityDate = new Date(activity.created_at)
+      const fromDate = new Date(dateFrom)
+      fromDate.setHours(0, 0, 0, 0)
+      if (activityDate < fromDate) return false
+    }
+    if (dateTo && activity.created_at) {
+      const activityDate = new Date(activity.created_at)
+      const toDate = new Date(dateTo)
+      toDate.setHours(23, 59, 59, 999)
+      if (activityDate > toDate) return false
+    }
+
+    // Search filter - searches user IDs, emails, and usernames
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
-      if (
-        !activity.admin_id.toLowerCase().includes(query) &&
-        !activity.target_user_id?.toLowerCase().includes(query)
-      ) {
-        return false
-      }
+      const adminUser = userMap[activity.admin_id]
+      const targetUser = activity.target_user_id ? userMap[activity.target_user_id] : null
+
+      const matchesAdmin =
+        activity.admin_id.toLowerCase().includes(query) ||
+        adminUser?.email?.toLowerCase().includes(query) ||
+        adminUser?.username?.toLowerCase().includes(query)
+
+      const matchesTarget = activity.target_user_id && (
+        activity.target_user_id.toLowerCase().includes(query) ||
+        targetUser?.email?.toLowerCase().includes(query) ||
+        targetUser?.username?.toLowerCase().includes(query)
+      )
+
+      if (!matchesAdmin && !matchesTarget) return false
     }
     return true
   })
@@ -140,50 +205,83 @@ export default function AdminActivityPage() {
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Search by user ID..."
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1) }}
-            className="w-full pl-10 pr-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50"
-          />
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+            <input
+              type="text"
+              placeholder="Search by email, username, or ID..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1) }}
+              className="w-full pl-10 pr-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50"
+            />
+          </div>
+
+          <select
+            value={filterAction}
+            onChange={(e) => handleFilterChange(e.target.value)}
+            className="px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-purple-500/50"
+          >
+            <option value="all">All Actions</option>
+            {uniqueActions.map(action => (
+              <option key={action} value={action}>
+                {ACTION_LABELS[action] || action}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={pageSize}
+            onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1) }}
+            className="px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-purple-500/50"
+          >
+            <option value={25}>25 per page</option>
+            <option value={50}>50 per page</option>
+            <option value={100}>100 per page</option>
+          </select>
+
+          <button
+            onClick={handleExportCSV}
+            disabled={filteredActivities.length === 0}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white hover:bg-white/[0.08] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title="Export activity log to CSV"
+          >
+            <Download className="w-4 h-4" />
+            Export
+          </button>
         </div>
 
-        <select
-          value={filterAction}
-          onChange={(e) => handleFilterChange(e.target.value)}
-          className="px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-purple-500/50"
-        >
-          <option value="all">All Actions</option>
-          {uniqueActions.map(action => (
-            <option key={action} value={action}>
-              {ACTION_LABELS[action] || action}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={pageSize}
-          onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1) }}
-          className="px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-purple-500/50"
-        >
-          <option value={25}>25 per page</option>
-          <option value={50}>50 per page</option>
-          <option value={100}>100 per page</option>
-        </select>
-
-        <button
-          onClick={handleExportCSV}
-          disabled={filteredActivities.length === 0}
-          className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white hover:bg-white/[0.08] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          title="Export activity log to CSV"
-        >
-          <Download className="w-4 h-4" />
-          Export
-        </button>
+        {/* Date Range Filter */}
+        <div className="flex flex-col sm:flex-row gap-4 items-center">
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <Calendar className="w-4 h-4" />
+            <span>Date range:</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => { setDateFrom(e.target.value); setCurrentPage(1) }}
+              className="px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-purple-500/50 [color-scheme:dark]"
+            />
+            <span className="text-gray-500">to</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => { setDateTo(e.target.value); setCurrentPage(1) }}
+              className="px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-purple-500/50 [color-scheme:dark]"
+            />
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => { setDateFrom(''); setDateTo(''); setCurrentPage(1) }}
+                className="px-3 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Activity List */}
@@ -213,11 +311,11 @@ export default function AdminActivityPage() {
                       </p>
                       <div className="mt-1 space-y-1 text-xs text-gray-500">
                         <p>
-                          Admin: <span className="text-gray-400 font-mono">{activity.admin_id.slice(0, 8)}...</span>
+                          Admin: <span className="text-gray-400">{getUserDisplay(activity.admin_id)}</span>
                         </p>
                         {activity.target_user_id && (
                           <p>
-                            Target: <span className="text-gray-400 font-mono">{activity.target_user_id.slice(0, 8)}...</span>
+                            Target: <span className="text-gray-400">{getUserDisplay(activity.target_user_id)}</span>
                           </p>
                         )}
                         {activity.details && Object.keys(activity.details).length > 0 && (

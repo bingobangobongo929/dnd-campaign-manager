@@ -589,7 +589,49 @@ function QuestDetailPanel({
   )
 }
 
-// Add/Edit quest modal
+// Expandable section component for the quest form
+function FormSection({
+  title,
+  isOpen,
+  onToggle,
+  children,
+  preview,
+  icon: Icon,
+}: {
+  title: string
+  isOpen: boolean
+  onToggle: () => void
+  children: React.ReactNode
+  preview?: string
+  icon?: any
+}) {
+  return (
+    <div className="border border-white/[0.06] rounded-lg overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/[0.02] transition-colors"
+      >
+        {Icon && <Icon className="w-4 h-4 text-gray-500" />}
+        <span className="flex-1 text-sm font-medium text-gray-300">{title}</span>
+        {!isOpen && preview && (
+          <span className="text-xs text-gray-500 truncate max-w-[150px]">{preview}</span>
+        )}
+        <ChevronDown className={cn(
+          "w-4 h-4 text-gray-500 transition-transform",
+          isOpen && "rotate-180"
+        )} />
+      </button>
+      {isOpen && (
+        <div className="px-4 pb-4 pt-1 border-t border-white/[0.06]">
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Add/Edit quest modal with progressive disclosure
 function QuestFormModal({
   isOpen,
   onClose,
@@ -631,6 +673,18 @@ function QuestFormModal({
 
   const [objectives, setObjectives] = useState<{ description: string; is_optional: boolean }[]>([])
 
+  // Track which sections are open
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set())
+
+  const toggleSection = (section: string) => {
+    setOpenSections(prev => {
+      const next = new Set(prev)
+      if (next.has(section)) next.delete(section)
+      else next.add(section)
+      return next
+    })
+  }
+
   useEffect(() => {
     if (quest) {
       setFormData({
@@ -656,6 +710,15 @@ function QuestFormModal({
         description: o.description,
         is_optional: o.is_optional,
       })) || [])
+      // When editing, open sections that have content
+      const sectionsWithContent = new Set<string>()
+      if (quest.description) sectionsWithContent.add('description')
+      if (quest.quest_giver_id || quest.objective_location_id) sectionsWithContent.add('people')
+      if (existingObjectives?.length) sectionsWithContent.add('objectives')
+      if (quest.rewards_description || quest.rewards_xp || quest.rewards_gold) sectionsWithContent.add('rewards')
+      if (quest.time_limit || quest.success_outcome || quest.failure_outcome) sectionsWithContent.add('outcomes')
+      if (quest.dm_notes || quest.secrets) sectionsWithContent.add('notes')
+      setOpenSections(sectionsWithContent)
     } else {
       setFormData({
         name: '',
@@ -677,6 +740,7 @@ function QuestFormModal({
         secrets: '',
       })
       setObjectives([])
+      setOpenSections(new Set())
     }
   }, [quest, existingObjectives, isOpen])
 
@@ -722,323 +786,357 @@ function QuestFormModal({
     setObjectives(objectives.map((o, i) => i === index ? { ...o, [field]: value } : o))
   }
 
-  // Filter NPCs from characters
-  const npcs = characters.filter(c => c.role === 'npc' || c.role === 'villain' || c.role === 'ally')
+  // All NPCs (characters that aren't PCs)
+  const npcs = characters.filter(c => !c.role || c.role !== 'pc')
+
+  // Generate preview text for sections
+  const getQuestGiverPreview = () => {
+    const giver = characters.find(c => c.id === formData.quest_giver_id)
+    const loc = locations.find(l => l.id === formData.objective_location_id)
+    if (giver && loc) return `${giver.name} → ${loc.name}`
+    if (giver) return giver.name
+    if (loc) return `→ ${loc.name}`
+    return ''
+  }
+
+  const getObjectivesPreview = () => {
+    if (objectives.length === 0) return ''
+    return `${objectives.length} objective${objectives.length === 1 ? '' : 's'}`
+  }
+
+  const getRewardsPreview = () => {
+    const parts = []
+    if (formData.rewards_xp) parts.push(`${formData.rewards_xp} XP`)
+    if (formData.rewards_gold) parts.push(`${formData.rewards_gold} gold`)
+    return parts.join(', ')
+  }
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title={quest ? 'Edit Quest' : 'Add Quest'}
-      size="lg"
+      size="md"
     >
-      <form onSubmit={handleSubmit} className="space-y-5 max-h-[70vh] overflow-y-auto pr-2">
-        {/* Name and Type row */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">
-              Name <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="form-input"
-              placeholder="Stop the Cult"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">
-              Type
-            </label>
-            <select
-              value={formData.type}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              className="form-input"
-            >
-              {QUEST_TYPES.map(type => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+      <form onSubmit={handleSubmit} className="flex flex-col h-full">
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto space-y-4 pb-4" style={{ maxHeight: 'calc(70vh - 120px)' }}>
+          {/* Essential fields - always visible */}
+          <div className="space-y-4">
+            {/* Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                Quest Name <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="form-input"
+                placeholder='e.g., "Stop the Cult", "Find the Lost Sword"'
+                required
+                autoFocus
+              />
+            </div>
 
-        {/* Status and Priority */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">
-              Status
-            </label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              className="form-input"
-            >
-              {QUEST_STATUSES.map(status => (
-                <option key={status.value} value={status.value}>
-                  {status.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">
-              Priority
-            </label>
-            <select
-              value={formData.priority}
-              onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-              className="form-input"
-            >
-              {QUEST_PRIORITIES.map(p => (
-                <option key={p.value} value={p.value}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Summary */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1.5">
-            Summary
-          </label>
-          <input
-            type="text"
-            value={formData.summary}
-            onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-            className="form-input"
-            placeholder="One-line description for lists"
-          />
-        </div>
-
-        {/* Description */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1.5">
-            Description
-          </label>
-          <textarea
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            className="form-input min-h-[80px]"
-            placeholder="Full details about the quest..."
-          />
-        </div>
-
-        {/* Quest Giver */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">
-              Quest Giver
-            </label>
-            <select
-              value={formData.quest_giver_id}
-              onChange={(e) => setFormData({ ...formData, quest_giver_id: e.target.value })}
-              className="form-input"
-            >
-              <option value="">None</option>
-              {npcs.map(npc => (
-                <option key={npc.id} value={npc.id}>
-                  {npc.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">
-              Quest Giver Location
-            </label>
-            <select
-              value={formData.quest_giver_location_id}
-              onChange={(e) => setFormData({ ...formData, quest_giver_location_id: e.target.value })}
-              className="form-input"
-            >
-              <option value="">None</option>
-              {locations.map(loc => (
-                <option key={loc.id} value={loc.id}>
-                  {loc.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Objective Location */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1.5">
-            Objective Location
-          </label>
-          <select
-            value={formData.objective_location_id}
-            onChange={(e) => setFormData({ ...formData, objective_location_id: e.target.value })}
-            className="form-input"
-          >
-            <option value="">None</option>
-            {locations.map(loc => (
-              <option key={loc.id} value={loc.id}>
-                {loc.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Objectives */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="block text-sm font-medium text-gray-300">
-              Objectives
-            </label>
-            <button
-              type="button"
-              onClick={addObjective}
-              className="text-xs text-[--arcane-purple] hover:text-[--arcane-purple-light] flex items-center gap-1"
-            >
-              <Plus className="w-3 h-3" />
-              Add Objective
-            </button>
-          </div>
-          <div className="space-y-2">
-            {objectives.map((obj, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={obj.description}
-                  onChange={(e) => updateObjective(idx, 'description', e.target.value)}
-                  className="form-input flex-1"
-                  placeholder="What needs to be done?"
-                />
-                <label className="flex items-center gap-1 text-xs text-gray-400 whitespace-nowrap">
-                  <input
-                    type="checkbox"
-                    checked={obj.is_optional}
-                    onChange={(e) => updateObjective(idx, 'is_optional', e.target.checked)}
-                    className="form-checkbox"
-                  />
-                  Optional
+            {/* Type and Status row */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                  Type
                 </label>
+                <select
+                  value={formData.type}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                  className="form-input"
+                >
+                  {QUEST_TYPES.map(type => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                  Status
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  className="form-input"
+                >
+                  {QUEST_STATUSES.map(status => (
+                    <option key={status.value} value={status.value}>
+                      {status.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Summary - simple one-liner */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                Summary <span className="text-xs text-gray-500 font-normal">(shown in lists)</span>
+              </label>
+              <input
+                type="text"
+                value={formData.summary}
+                onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+                className="form-input"
+                placeholder='e.g., "The mayor needs someone to clear out the old mine"'
+              />
+            </div>
+          </div>
+
+          {/* Expandable sections */}
+          <div className="space-y-2 pt-2">
+            <p className="text-xs text-gray-500 uppercase tracking-wider font-medium px-1">
+              Additional Details (click to expand)
+            </p>
+
+            {/* Description */}
+            <FormSection
+              title="Full Description"
+              isOpen={openSections.has('description')}
+              onToggle={() => toggleSection('description')}
+              preview={formData.description ? 'Has content' : ''}
+            >
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="form-input min-h-[100px] mt-2"
+                placeholder="The full backstory and details about this quest. What happened? What does the party need to know?"
+              />
+            </FormSection>
+
+            {/* Quest Giver & Location */}
+            <FormSection
+              title="Quest Giver & Location"
+              icon={User}
+              isOpen={openSections.has('people')}
+              onToggle={() => toggleSection('people')}
+              preview={getQuestGiverPreview()}
+            >
+              <div className="space-y-3 mt-2">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Who gives this quest?</label>
+                  <select
+                    value={formData.quest_giver_id}
+                    onChange={(e) => setFormData({ ...formData, quest_giver_id: e.target.value })}
+                    className="form-input"
+                  >
+                    <option value="">No specific NPC</option>
+                    {npcs.map(npc => (
+                      <option key={npc.id} value={npc.id}>
+                        {npc.name}
+                      </option>
+                    ))}
+                  </select>
+                  {npcs.length === 0 && (
+                    <p className="text-xs text-gray-500 mt-1 italic">
+                      No NPCs in this campaign yet. Add characters on the Canvas page.
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Where does the quest take place?</label>
+                  <select
+                    value={formData.objective_location_id}
+                    onChange={(e) => setFormData({ ...formData, objective_location_id: e.target.value })}
+                    className="form-input"
+                  >
+                    <option value="">No specific location</option>
+                    {locations.map(loc => (
+                      <option key={loc.id} value={loc.id}>
+                        {loc.name} ({loc.location_type})
+                      </option>
+                    ))}
+                  </select>
+                  {locations.length === 0 && (
+                    <p className="text-xs text-gray-500 mt-1 italic">
+                      No locations yet. Add them on the Locations page.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </FormSection>
+
+            {/* Objectives */}
+            <FormSection
+              title="Objectives"
+              icon={CheckCircle2}
+              isOpen={openSections.has('objectives')}
+              onToggle={() => toggleSection('objectives')}
+              preview={getObjectivesPreview()}
+            >
+              <div className="space-y-2 mt-2">
+                {objectives.map((obj, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={obj.description}
+                      onChange={(e) => updateObjective(idx, 'description', e.target.value)}
+                      className="form-input flex-1 text-sm"
+                      placeholder="e.g., Find the hidden entrance"
+                    />
+                    <label className="flex items-center gap-1 text-xs text-gray-400 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={obj.is_optional}
+                        onChange={(e) => updateObjective(idx, 'is_optional', e.target.checked)}
+                        className="form-checkbox"
+                      />
+                      Optional
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => removeObjective(idx)}
+                      className="p-1 text-gray-500 hover:text-red-400"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
                 <button
                   type="button"
-                  onClick={() => removeObjective(idx)}
-                  className="p-1 text-gray-500 hover:text-red-400"
+                  onClick={addObjective}
+                  className="text-sm text-[--arcane-purple] hover:text-[--arcane-purple-light] flex items-center gap-1"
                 >
-                  <X className="w-4 h-4" />
+                  <Plus className="w-4 h-4" />
+                  Add Objective
                 </button>
               </div>
-            ))}
-            {objectives.length === 0 && (
-              <p className="text-sm text-gray-500 italic">No objectives yet</p>
-            )}
+            </FormSection>
+
+            {/* Rewards */}
+            <FormSection
+              title="Rewards"
+              icon={Gift}
+              isOpen={openSections.has('rewards')}
+              onToggle={() => toggleSection('rewards')}
+              preview={getRewardsPreview()}
+            >
+              <div className="space-y-3 mt-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">XP</label>
+                    <input
+                      type="number"
+                      value={formData.rewards_xp}
+                      onChange={(e) => setFormData({ ...formData, rewards_xp: e.target.value })}
+                      className="form-input"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Gold</label>
+                    <input
+                      type="number"
+                      value={formData.rewards_gold}
+                      onChange={(e) => setFormData({ ...formData, rewards_gold: e.target.value })}
+                      className="form-input"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Other rewards</label>
+                  <input
+                    type="text"
+                    value={formData.rewards_description}
+                    onChange={(e) => setFormData({ ...formData, rewards_description: e.target.value })}
+                    className="form-input"
+                    placeholder="e.g., Magic sword, alliance with the guild"
+                  />
+                </div>
+              </div>
+            </FormSection>
+
+            {/* Time & Outcomes */}
+            <FormSection
+              title="Time Limit & Outcomes"
+              icon={Clock}
+              isOpen={openSections.has('outcomes')}
+              onToggle={() => toggleSection('outcomes')}
+              preview={formData.time_limit || ''}
+            >
+              <div className="space-y-3 mt-2">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Time limit</label>
+                  <input
+                    type="text"
+                    value={formData.time_limit}
+                    onChange={(e) => setFormData({ ...formData, time_limit: e.target.value })}
+                    className="form-input"
+                    placeholder="e.g., Before the full moon, 3 days"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-emerald-400 mb-1">On success</label>
+                    <textarea
+                      value={formData.success_outcome}
+                      onChange={(e) => setFormData({ ...formData, success_outcome: e.target.value })}
+                      className="form-input min-h-[60px] text-sm"
+                      placeholder="What happens if they succeed?"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-red-400 mb-1">On failure</label>
+                    <textarea
+                      value={formData.failure_outcome}
+                      onChange={(e) => setFormData({ ...formData, failure_outcome: e.target.value })}
+                      className="form-input min-h-[60px] text-sm"
+                      placeholder="What if they fail or ignore it?"
+                    />
+                  </div>
+                </div>
+              </div>
+            </FormSection>
+
+            {/* DM Notes & Secrets */}
+            <FormSection
+              title="DM Notes & Secrets"
+              icon={Skull}
+              isOpen={openSections.has('notes')}
+              onToggle={() => toggleSection('notes')}
+              preview={formData.secrets ? 'Has secrets' : formData.dm_notes ? 'Has notes' : ''}
+            >
+              <div className="space-y-3 mt-2">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">DM Notes</label>
+                  <textarea
+                    value={formData.dm_notes}
+                    onChange={(e) => setFormData({ ...formData, dm_notes: e.target.value })}
+                    className="form-input min-h-[60px] text-sm"
+                    placeholder="Reminders for running this quest..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-red-400 mb-1 flex items-center gap-1">
+                    <Skull className="w-3 h-3" />
+                    Secrets (players won't see this)
+                  </label>
+                  <textarea
+                    value={formData.secrets}
+                    onChange={(e) => setFormData({ ...formData, secrets: e.target.value })}
+                    className="form-input min-h-[60px] text-sm border-red-500/20 focus:border-red-500/40"
+                    placeholder="The real truth, hidden twists, villain's true motives..."
+                  />
+                </div>
+              </div>
+            </FormSection>
           </div>
         </div>
 
-        {/* Rewards */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1.5">
-            Rewards
-          </label>
-          <div className="grid grid-cols-3 gap-2 mb-2">
-            <input
-              type="number"
-              value={formData.rewards_xp}
-              onChange={(e) => setFormData({ ...formData, rewards_xp: e.target.value })}
-              className="form-input"
-              placeholder="XP"
-            />
-            <input
-              type="number"
-              value={formData.rewards_gold}
-              onChange={(e) => setFormData({ ...formData, rewards_gold: e.target.value })}
-              className="form-input"
-              placeholder="Gold"
-            />
-            <div />
-          </div>
-          <input
-            type="text"
-            value={formData.rewards_description}
-            onChange={(e) => setFormData({ ...formData, rewards_description: e.target.value })}
-            className="form-input"
-            placeholder="Other rewards (items, favors, etc.)"
-          />
-        </div>
-
-        {/* Time Limit */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1.5">
-            Time Limit
-          </label>
-          <input
-            type="text"
-            value={formData.time_limit}
-            onChange={(e) => setFormData({ ...formData, time_limit: e.target.value })}
-            className="form-input"
-            placeholder="Before the full moon, 3 days, etc."
-          />
-        </div>
-
-        {/* Outcomes */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-emerald-400 mb-1.5">
-              On Success
-            </label>
-            <textarea
-              value={formData.success_outcome}
-              onChange={(e) => setFormData({ ...formData, success_outcome: e.target.value })}
-              className="form-input min-h-[60px]"
-              placeholder="What happens if completed?"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-red-400 mb-1.5">
-              On Failure
-            </label>
-            <textarea
-              value={formData.failure_outcome}
-              onChange={(e) => setFormData({ ...formData, failure_outcome: e.target.value })}
-              className="form-input min-h-[60px]"
-              placeholder="What happens if failed?"
-            />
-          </div>
-        </div>
-
-        {/* DM Notes */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1.5">
-            DM Notes
-          </label>
-          <textarea
-            value={formData.dm_notes}
-            onChange={(e) => setFormData({ ...formData, dm_notes: e.target.value })}
-            className="form-input min-h-[60px]"
-            placeholder="Notes for running this quest..."
-          />
-        </div>
-
-        {/* Secrets */}
-        <div>
-          <label className="block text-sm font-medium text-red-400 mb-1.5 flex items-center gap-2">
-            <Skull className="w-4 h-4" />
-            Secrets (DM Only)
-          </label>
-          <textarea
-            value={formData.secrets}
-            onChange={(e) => setFormData({ ...formData, secrets: e.target.value })}
-            className="form-input min-h-[60px] border-red-500/30 focus:border-red-500/50"
-            placeholder="Hidden twists, true motivations, etc."
-          />
-        </div>
-
-        {/* Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-[--border] sticky bottom-0 bg-[--bg-surface]">
+        {/* Fixed footer */}
+        <div className="flex justify-end gap-3 pt-4 border-t border-[--border] bg-[--bg-surface]">
           <Button variant="ghost" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
-          <Button type="submit" loading={saving}>
+          <Button type="submit" loading={saving} disabled={!formData.name.trim()}>
             {quest ? 'Save Changes' : 'Add Quest'}
           </Button>
         </div>
@@ -1378,7 +1476,7 @@ export default function QuestsPage() {
 
             <div className="flex flex-col sm:flex-row gap-3">
               {/* Search */}
-              <div className="relative flex-1">
+              <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
                   type="text"
@@ -1393,7 +1491,7 @@ export default function QuestsPage() {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="form-input w-full sm:w-36"
+                className="form-input w-full sm:w-40"
               >
                 <option value="all">All Types</option>
                 {QUEST_TYPES.map(type => (
@@ -1408,7 +1506,7 @@ export default function QuestsPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="form-input w-full sm:w-36"
+                  className="form-input w-full sm:w-40"
                 >
                   <option value="all">All Status</option>
                   {QUEST_STATUSES.map(status => (
@@ -1420,31 +1518,35 @@ export default function QuestsPage() {
               )}
 
               {/* View toggle */}
-              <div className="flex rounded-lg border border-[--border] overflow-hidden">
-                <button
-                  onClick={() => setViewMode('board')}
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-2 text-sm transition-colors',
-                    viewMode === 'board'
-                      ? 'bg-[--arcane-purple]/20 text-[--arcane-purple]'
-                      : 'text-gray-400 hover:bg-white/5'
-                  )}
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                  Board
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-2 text-sm transition-colors border-l border-[--border]',
-                    viewMode === 'list'
-                      ? 'bg-[--arcane-purple]/20 text-[--arcane-purple]'
-                      : 'text-gray-400 hover:bg-white/5'
-                  )}
-                >
-                  <List className="w-4 h-4" />
-                  List
-                </button>
+              <div className="flex rounded-lg border border-[--border] overflow-hidden flex-shrink-0">
+                <Tooltip content="Kanban board view">
+                  <button
+                    onClick={() => setViewMode('board')}
+                    className={cn(
+                      'flex items-center gap-2 px-4 py-2 text-sm transition-colors whitespace-nowrap',
+                      viewMode === 'board'
+                        ? 'bg-[--arcane-purple]/20 text-[--arcane-purple]'
+                        : 'text-gray-400 hover:bg-white/5'
+                    )}
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                    <span className="hidden sm:inline">Board</span>
+                  </button>
+                </Tooltip>
+                <Tooltip content="List view">
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={cn(
+                      'flex items-center gap-2 px-4 py-2 text-sm transition-colors border-l border-[--border] whitespace-nowrap',
+                      viewMode === 'list'
+                        ? 'bg-[--arcane-purple]/20 text-[--arcane-purple]'
+                        : 'text-gray-400 hover:bg-white/5'
+                    )}
+                  >
+                    <List className="w-4 h-4" />
+                    <span className="hidden sm:inline">List</span>
+                  </button>
+                </Tooltip>
               </div>
             </div>
           </div>

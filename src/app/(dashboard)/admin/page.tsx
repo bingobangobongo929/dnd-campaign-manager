@@ -116,23 +116,52 @@ export default function AdminOverviewPage() {
           </div>
         </section>
 
-        {/* Users by Tier */}
+        {/* Users by Tier - Bar Chart */}
         <section className="bg-[#1a1a24] rounded-xl border border-white/[0.06] p-6">
           <h2 className="text-lg font-semibold text-white mb-4">Users by Tier</h2>
-          <div className="space-y-3">
-            {stats.usersByTier.length === 0 ? (
-              <p className="text-gray-500">No users yet</p>
-            ) : (
-              stats.usersByTier.map(({ tier, count }) => (
-                <div key={tier} className="flex items-center justify-between">
-                  <span className={cn("px-2 py-1 rounded text-xs font-medium", getTierBadgeColor(tier))}>
-                    {getTierDisplayName(tier)}
-                  </span>
-                  <span className="text-white font-semibold">{count}</span>
+          {stats.usersByTier.length === 0 ? (
+            <p className="text-gray-500">No users yet</p>
+          ) : (
+            <div className="space-y-4">
+              {(() => {
+                const maxCount = Math.max(...stats.usersByTier.map(t => t.count), 1)
+                const tierColors: Record<string, string> = {
+                  adventurer: 'bg-gray-500',
+                  hero: 'bg-blue-500',
+                  legend: 'bg-purple-500',
+                }
+                return stats.usersByTier.map(({ tier, count }) => (
+                  <div key={tier} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className={cn("px-2 py-0.5 rounded text-xs font-medium", getTierBadgeColor(tier))}>
+                        {getTierDisplayName(tier)}
+                      </span>
+                      <span className="text-white font-semibold">{count.toLocaleString()}</span>
+                    </div>
+                    <div className="h-2.5 bg-white/[0.06] rounded-full overflow-hidden">
+                      <div
+                        className={cn("h-full rounded-full transition-all duration-500", tierColors[tier] || 'bg-gray-500')}
+                        style={{ width: `${(count / maxCount) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                ))
+              })()}
+              {/* Percentage breakdown */}
+              <div className="mt-4 pt-4 border-t border-white/[0.06]">
+                <div className="flex items-center gap-4 text-xs text-gray-400">
+                  {stats.usersByTier.map(({ tier, count }) => {
+                    const percentage = stats.totalUsers > 0 ? ((count / stats.totalUsers) * 100).toFixed(1) : '0'
+                    return (
+                      <span key={tier}>
+                        {getTierDisplayName(tier)}: {percentage}%
+                      </span>
+                    )
+                  })}
                 </div>
-              ))
-            )}
-          </div>
+              </div>
+            </div>
+          )}
         </section>
       </div>
 
