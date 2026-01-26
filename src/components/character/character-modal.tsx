@@ -129,12 +129,20 @@ export function CharacterModal({
     // PC fields
     race: character?.race || '',
     class: character?.class || '',
+    subclass: character?.subclass || '',
+    level: character?.level || null as number | null,
     age: character?.age || null as number | null,
     background: character?.background || '',
+    alignment: character?.alignment || '',
+    pronouns: character?.pronouns || '',
     appearance: character?.appearance || '',
     personality: character?.personality || '',
+    ideals: character?.ideals || '',
+    bonds: character?.bonds || '',
+    flaws: character?.flaws || '',
     goals: character?.goals || '',
     secrets: character?.secrets || '',
+    character_sheet_url: character?.character_sheet_url || '',
     // New fields: backstory and motivations (rich text)
     backstory: character?.backstory || '',
     motivations: character?.motivations || '',
@@ -174,12 +182,20 @@ export function CharacterModal({
         status_color: character.status_color || '#10B981',
         race: character.race || '',
         class: character.class || '',
+        subclass: character.subclass || '',
+        level: character.level || null,
         age: character.age || null,
         background: character.background || '',
+        alignment: character.alignment || '',
+        pronouns: character.pronouns || '',
         appearance: character.appearance || '',
         personality: character.personality || '',
+        ideals: character.ideals || '',
+        bonds: character.bonds || '',
+        flaws: character.flaws || '',
         goals: character.goals || '',
         secrets: character.secrets || '',
+        character_sheet_url: character.character_sheet_url || '',
         backstory: character.backstory || '',
         motivations: character.motivations || '',
         role: character.role || '',
@@ -239,12 +255,20 @@ export function CharacterModal({
           status_color: formData.status_color,
           race: formData.race || null,
           class: formData.class || null,
+          subclass: formData.subclass || null,
+          level: formData.level || null,
           age: formData.age || null,
           background: formData.background || null,
+          alignment: formData.alignment || null,
+          pronouns: formData.pronouns || null,
           appearance: formData.appearance || null,
           personality: formData.personality || null,
+          ideals: formData.ideals || null,
+          bonds: formData.bonds || null,
+          flaws: formData.flaws || null,
           goals: formData.goals || null,
           secrets: formData.secrets || null,
+          character_sheet_url: formData.character_sheet_url || null,
           backstory: formData.backstory || null,
           motivations: formData.motivations || null,
           role: formData.role || null,
@@ -283,12 +307,20 @@ export function CharacterModal({
         status_color: formData.status_color,
         race: formData.race || null,
         class: formData.class || null,
+        subclass: formData.subclass || null,
+        level: formData.level || null,
         age: formData.age || null,
         background: formData.background || null,
+        alignment: formData.alignment || null,
+        pronouns: formData.pronouns || null,
         appearance: formData.appearance || null,
         personality: formData.personality || null,
+        ideals: formData.ideals || null,
+        bonds: formData.bonds || null,
+        flaws: formData.flaws || null,
         goals: formData.goals || null,
         secrets: formData.secrets || null,
+        character_sheet_url: formData.character_sheet_url || null,
         backstory: formData.backstory || null,
         motivations: formData.motivations || null,
         role: formData.role || null,
@@ -390,6 +422,27 @@ export function CharacterModal({
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="form-group">
+            <label className="form-label">Subclass</label>
+            <Input
+              value={formData.subclass}
+              onChange={(e) => setFormData({ ...formData, subclass: e.target.value })}
+              placeholder="e.g., Oath of Vengeance..."
+              className="form-input"
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Level</label>
+            <Input
+              type="number"
+              value={formData.level || ''}
+              onChange={(e) => setFormData({ ...formData, level: e.target.value ? parseInt(e.target.value) : null })}
+              placeholder="Level"
+              className="form-input"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="form-group">
             <label className="form-label">Age</label>
             <Input
               type="number"
@@ -400,6 +453,17 @@ export function CharacterModal({
             />
           </div>
           <div className="form-group">
+            <label className="form-label">Pronouns</label>
+            <Input
+              value={formData.pronouns}
+              onChange={(e) => setFormData({ ...formData, pronouns: e.target.value })}
+              placeholder="e.g., he/him, she/her..."
+              className="form-input"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="form-group">
             <label className="form-label">Background</label>
             <Input
               value={formData.background}
@@ -408,6 +472,30 @@ export function CharacterModal({
               className="form-input"
             />
           </div>
+          <div className="form-group">
+            <label className="form-label">Alignment</label>
+            <Input
+              value={formData.alignment}
+              onChange={(e) => setFormData({ ...formData, alignment: e.target.value })}
+              placeholder="e.g., Chaotic Good..."
+              className="form-input"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Character Sheet Link */}
+      <div className="space-y-4 p-4 bg-blue-500/5 rounded-xl border border-blue-500/20">
+        <h3 className="text-sm font-semibold text-blue-400 uppercase tracking-wider">External Character Sheet</h3>
+        <div className="form-group">
+          <label className="form-label">D&D Beyond / Sheet URL</label>
+          <Input
+            value={formData.character_sheet_url}
+            onChange={(e) => setFormData({ ...formData, character_sheet_url: e.target.value })}
+            placeholder="https://www.dndbeyond.com/characters/..."
+            className="form-input"
+          />
+          <p className="text-xs text-[--text-tertiary] mt-1">Link to D&D Beyond or another character sheet for full stats</p>
         </div>
       </div>
 
@@ -440,6 +528,41 @@ export function CharacterModal({
             value={formData.goals}
             onChange={(e) => setFormData({ ...formData, goals: e.target.value })}
             placeholder="What does this character want to achieve?"
+            rows={2}
+            className="form-textarea"
+          />
+        </div>
+      </div>
+
+      {/* Ideals, Bonds, Flaws (D&D 5e Personality) */}
+      <div className="space-y-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+        <h3 className="text-sm font-semibold text-[--text-secondary] uppercase tracking-wider">Ideals, Bonds & Flaws</h3>
+        <div className="form-group">
+          <label className="form-label">Ideals</label>
+          <textarea
+            value={formData.ideals}
+            onChange={(e) => setFormData({ ...formData, ideals: e.target.value })}
+            placeholder="What principles guide this character? What do they believe in?"
+            rows={2}
+            className="form-textarea"
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Bonds</label>
+          <textarea
+            value={formData.bonds}
+            onChange={(e) => setFormData({ ...formData, bonds: e.target.value })}
+            placeholder="What people, places, or things are they connected to?"
+            rows={2}
+            className="form-textarea"
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Flaws</label>
+          <textarea
+            value={formData.flaws}
+            onChange={(e) => setFormData({ ...formData, flaws: e.target.value })}
+            placeholder="What weaknesses or vices do they have?"
             rows={2}
             className="form-textarea"
           />

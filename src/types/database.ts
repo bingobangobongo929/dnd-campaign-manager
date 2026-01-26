@@ -174,12 +174,20 @@ export interface Database {
           // PC fields
           race: string | null
           class: string | null
+          subclass: string | null
+          level: number | null
           age: number | null
           background: string | null
+          alignment: string | null
+          pronouns: string | null
           appearance: string | null
           personality: string | null
+          ideals: string | null
+          bonds: string | null
+          flaws: string | null
           goals: string | null
           secrets: string | null
+          character_sheet_url: string | null
           // NPC fields
           role: string | null
           // List fields (JSONB)
@@ -223,12 +231,20 @@ export interface Database {
           status_color?: string | null
           race?: string | null
           class?: string | null
+          subclass?: string | null
+          level?: number | null
           age?: number | null
           background?: string | null
+          alignment?: string | null
+          pronouns?: string | null
           appearance?: string | null
           personality?: string | null
+          ideals?: string | null
+          bonds?: string | null
+          flaws?: string | null
           goals?: string | null
           secrets?: string | null
+          character_sheet_url?: string | null
           role?: string | null
           important_people?: Json | null
           story_hooks?: Json | null
@@ -269,12 +285,20 @@ export interface Database {
           status_color?: string | null
           race?: string | null
           class?: string | null
+          subclass?: string | null
+          level?: number | null
           age?: number | null
           background?: string | null
+          alignment?: string | null
+          pronouns?: string | null
           appearance?: string | null
           personality?: string | null
+          ideals?: string | null
+          bonds?: string | null
+          flaws?: string | null
           goals?: string | null
           secrets?: string | null
+          character_sheet_url?: string | null
           role?: string | null
           important_people?: Json | null
           story_hooks?: Json | null

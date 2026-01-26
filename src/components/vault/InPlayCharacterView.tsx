@@ -18,10 +18,16 @@ import {
   MoreHorizontal,
   Copy,
   Unlink,
+  User,
+  Shield,
+  Heart,
+  AlertTriangle,
+  Target,
+  Scroll,
 } from 'lucide-react'
 import { cn, getInitials, formatDate } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
-import { Modal } from '@/components/ui'
+import { Modal, SafeHtml } from '@/components/ui'
 import { Session0SnapshotModal } from './Session0SnapshotModal'
 import { toast } from 'sonner'
 import type { VaultCharacter, Campaign, Session } from '@/types/database'
@@ -52,6 +58,9 @@ export function InPlayCharacterView({
   )
   const [savingNotes, setSavingNotes] = useState(false)
   const [loading, setLoading] = useState(true)
+  // Character sheet URL (editable by player)
+  const [characterSheetUrl, setCharacterSheetUrl] = useState(character.character_sheet_url || '')
+  const [savingSheetUrl, setSavingSheetUrl] = useState(false)
   const [showUnlinkModal, setShowUnlinkModal] = useState(false)
   const [showSession0Modal, setShowSession0Modal] = useState(false)
   const [copying, setCopying] = useState(false)
@@ -110,6 +119,23 @@ export function InPlayCharacterView({
       toast.success('Notes saved')
     }
     setSavingNotes(false)
+  }
+
+  const handleSaveCharacterSheetUrl = async () => {
+    setSavingSheetUrl(true)
+    const supabase = createClient()
+
+    const { error } = await supabase
+      .from('vault_characters')
+      .update({ character_sheet_url: characterSheetUrl || null })
+      .eq('id', character.id)
+
+    if (error) {
+      toast.error('Failed to save character sheet link')
+    } else {
+      toast.success('Character sheet link saved')
+    }
+    setSavingSheetUrl(false)
   }
 
   const handleCopyToVault = async (source: 'in_play' | 'session_0') => {
@@ -195,7 +221,8 @@ export function InPlayCharacterView({
                 onClick={() => setShowUnlinkModal(true)}
                 className="btn btn-sm btn-ghost text-gray-400"
               >
-                <MoreHorizontal className="w-4 h-4" />
+                <Unlink className="w-4 h-4 mr-1.5" />
+                Unlink Options
               </button>
             </div>
           </div>
@@ -255,6 +282,150 @@ export function InPlayCharacterView({
         </div>
       </div>
 
+      {/* Character Sheet Link (Editable by Player) */}
+      <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-blue-400 flex items-center gap-2">
+            <ExternalLink className="w-4 h-4" />
+            Character Sheet Link
+          </h3>
+          <span className="text-xs text-green-400">Editable</span>
+        </div>
+        <p className="text-sm text-gray-500 mb-3">
+          Link to your D&D Beyond character or external character sheet for full stats.
+        </p>
+        <div className="flex gap-2">
+          <input
+            type="url"
+            value={characterSheetUrl}
+            onChange={(e) => setCharacterSheetUrl(e.target.value)}
+            placeholder="https://www.dndbeyond.com/characters/..."
+            className="form-input flex-1"
+          />
+          <button
+            onClick={handleSaveCharacterSheetUrl}
+            disabled={savingSheetUrl}
+            className="btn btn-sm btn-primary"
+          >
+            {savingSheetUrl ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              'Save'
+            )}
+          </button>
+        </div>
+        {characterSheetUrl && (
+          <a
+            href={characterSheetUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm text-blue-400 hover:text-blue-300 mt-2"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            Open Character Sheet
+          </a>
+        )}
+      </div>
+
+      {/* Character Details (Read-only) */}
+      {(character.appearance || character.personality || character.goals) && (
+        <div className="bg-white/[0.02] border border-[--border] rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-white flex items-center gap-2">
+              <User className="w-4 h-4 text-purple-400" />
+              Character Details
+            </h3>
+            <span className="flex items-center gap-1 text-xs text-gray-500">
+              <Lock className="w-3 h-3" />
+              Managed in campaign
+            </span>
+          </div>
+          <div className="space-y-4">
+            {character.appearance && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-400 mb-1">Appearance</h4>
+                <SafeHtml
+                  html={character.appearance}
+                  className="prose prose-invert prose-sm max-w-none text-gray-300"
+                />
+              </div>
+            )}
+            {character.personality && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-400 mb-1">Personality</h4>
+                <SafeHtml
+                  html={character.personality}
+                  className="prose prose-invert prose-sm max-w-none text-gray-300"
+                />
+              </div>
+            )}
+            {character.goals && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-400 mb-1">Goals</h4>
+                <SafeHtml
+                  html={character.goals}
+                  className="prose prose-invert prose-sm max-w-none text-gray-300"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Ideals, Bonds, Flaws (Read-only) */}
+      {(character.ideals || character.bonds || character.flaws) && (
+        <div className="bg-white/[0.02] border border-[--border] rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-white flex items-center gap-2">
+              <Shield className="w-4 h-4 text-purple-400" />
+              Ideals, Bonds & Flaws
+            </h3>
+            <span className="flex items-center gap-1 text-xs text-gray-500">
+              <Lock className="w-3 h-3" />
+              Managed in campaign
+            </span>
+          </div>
+          <div className="space-y-4">
+            {character.ideals && (
+              <div>
+                <h4 className="text-sm font-medium text-amber-400 flex items-center gap-1.5 mb-1">
+                  <Target className="w-3.5 h-3.5" />
+                  Ideals
+                </h4>
+                <SafeHtml
+                  html={character.ideals}
+                  className="prose prose-invert prose-sm max-w-none text-gray-300"
+                />
+              </div>
+            )}
+            {character.bonds && (
+              <div>
+                <h4 className="text-sm font-medium text-pink-400 flex items-center gap-1.5 mb-1">
+                  <Heart className="w-3.5 h-3.5" />
+                  Bonds
+                </h4>
+                <SafeHtml
+                  html={character.bonds}
+                  className="prose prose-invert prose-sm max-w-none text-gray-300"
+                />
+              </div>
+            )}
+            {character.flaws && (
+              <div>
+                <h4 className="text-sm font-medium text-red-400 flex items-center gap-1.5 mb-1">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  Flaws
+                </h4>
+                <SafeHtml
+                  html={character.flaws}
+                  className="prose prose-invert prose-sm max-w-none text-gray-300"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Backstory Section (Read-only) */}
       {character.backstory && (
         <div className="bg-white/[0.02] border border-[--border] rounded-xl p-5">
@@ -268,9 +439,10 @@ export function InPlayCharacterView({
               Managed in campaign
             </span>
           </div>
-          <p className="text-gray-300 whitespace-pre-wrap">
-            {character.backstory}
-          </p>
+          <SafeHtml
+            html={character.backstory}
+            className="prose prose-invert prose-sm max-w-none text-gray-300 [&>p]:mb-3 [&>ul]:list-disc [&>ul]:pl-5"
+          />
         </div>
       )}
 
@@ -306,7 +478,7 @@ export function InPlayCharacterView({
           </div>
           {sessions.length >= 10 && (
             <Link
-              href={`/campaigns/${campaignLink.campaign_id}/sessions`}
+              href={`/vault/${character.id}/sessions`}
               className="flex items-center justify-center gap-1 text-sm text-purple-400 hover:text-purple-300 mt-4"
             >
               View all sessions

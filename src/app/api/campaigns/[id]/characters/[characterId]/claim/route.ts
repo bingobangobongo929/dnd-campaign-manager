@@ -94,27 +94,46 @@ export async function POST(
     }
 
     // Base vault character data (shared between both options)
+    // Map campaign character fields to vault character fields
     const baseVaultData = {
       user_id: user.id,
       name: character.name,
-      pronouns: character.pronouns,
-      age: character.age,
-      occupation: character.occupation,
-      species: character.species,
-      short_description: character.short_description,
-      description: character.description,
-      image_url: character.image_url,
-      thumbnail_url: character.thumbnail_url,
+      type: character.type,
+      // Core text fields
+      description: character.description || null,
+      summary: character.summary || null,
+      notes: character.notes || null,
+      backstory: character.backstory || null,
+      // Images
+      image_url: character.image_url || null,
+      detail_image_url: character.detail_image_url || null,
+      // Status
       status: character.status || 'alive',
-      personality_traits: character.personality_traits || [],
-      ideals: character.ideals || [],
-      bonds: character.bonds || [],
-      flaws: character.flaws || [],
-      mannerisms: character.mannerisms || [],
-      fears: character.fears || [],
-      secrets: character.secrets || [],
-      goals_motivations: character.goals_motivations || [],
-      backstory_summary: character.backstory,
+      status_color: character.status_color || null,
+      // Basic identity (D&D fields)
+      race: character.race || null,
+      class: character.class || null,
+      subclass: character.subclass || null,
+      level: character.level || null,
+      background: character.background || null,
+      alignment: character.alignment || null,
+      // Demographics - note: campaign has age as number, vault has it as string
+      age: character.age ? String(character.age) : null,
+      pronouns: character.pronouns || null,
+      // Appearance & Personality
+      appearance: character.appearance || null,
+      personality: character.personality || null,
+      // D&D 5e personality system
+      ideals: character.ideals || null,
+      bonds: character.bonds || null,
+      flaws: character.flaws || null,
+      // Goals and secrets
+      goals: character.goals || null,
+      secrets: character.secrets || null,
+      motivations: character.motivations || null,
+      // External links
+      character_sheet_url: character.character_sheet_url || null,
+      // Template/publishing
       is_published: false,
     }
 
