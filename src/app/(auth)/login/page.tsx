@@ -34,6 +34,7 @@ function LoginForm() {
   const [inviteError, setInviteError] = useState('')
   const [checkingInvite, setCheckingInvite] = useState(false)
   const [discordLoading, setDiscordLoading] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
 
   // Check URL params on mount
   useEffect(() => {
@@ -203,9 +204,16 @@ function LoginForm() {
               // If trust check fails, proceed to 2FA anyway
               console.error('Trust check failed:', trustErr)
             }
-            // Redirect to 2FA verification page, preserving redirect URL
-            const verifyUrl = redirectUrl !== '/home'
-              ? `/login/verify?redirect=${encodeURIComponent(redirectUrl)}`
+            // Redirect to 2FA verification page, preserving redirect URL and remember me preference
+            const verifyParams = new URLSearchParams()
+            if (redirectUrl !== '/home') {
+              verifyParams.set('redirect', redirectUrl)
+            }
+            if (rememberMe) {
+              verifyParams.set('remember', '1')
+            }
+            const verifyUrl = verifyParams.toString()
+              ? `/login/verify?${verifyParams.toString()}`
               : '/login/verify'
             router.push(verifyUrl)
           } else {
@@ -486,6 +494,31 @@ function LoginForm() {
                 className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
               />
             </div>
+
+            {/* Remember Me (sign-in only) */}
+            {mode === 'signin' && (
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className={cn(
+                    "w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
+                    rememberMe
+                      ? "bg-purple-600 border-purple-600"
+                      : "border-gray-600 group-hover:border-gray-500"
+                  )}>
+                    {rememberMe && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                </div>
+                <span className="text-sm text-gray-400">
+                  Remember this device
+                </span>
+              </label>
+            )}
 
             {mode === 'signup' && (
               <>

@@ -11,11 +11,12 @@ function TwoFactorVerifyForm() {
   const searchParams = useSearchParams()
   const supabase = useSupabase()
 
-  // Get redirect URL from query params
+  // Get redirect URL and remember preference from query params
   const redirectUrl = searchParams.get('redirect') || '/home'
+  const rememberFromLogin = searchParams.get('remember') === '1'
   const [code, setCode] = useState('')
   const [isBackupCode, setIsBackupCode] = useState(false)
-  const [trustDevice, setTrustDevice] = useState(false)
+  const [trustDevice, setTrustDevice] = useState(rememberFromLogin)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [checkingAuth, setCheckingAuth] = useState(true)
