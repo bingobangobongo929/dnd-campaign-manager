@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import type { CharacterSnapshotInsert } from '@/types/database'
 
@@ -105,7 +106,9 @@ export async function POST(
     }
 
     // Update campaign character to link to vault
-    const { error: updateCharError } = await supabase
+    // Use admin client to bypass RLS - we've verified permissions above
+    const adminClient = createAdminClient()
+    const { error: updateCharError } = await adminClient
       .from('characters')
       .update({
         vault_character_id: vaultCharacterId,
@@ -230,7 +233,9 @@ export async function DELETE(
     }
 
     // Remove link from campaign character
-    const { error: updateError } = await supabase
+    // Use admin client to bypass RLS - we've verified permissions above
+    const adminClient = createAdminClient()
+    const { error: updateError } = await adminClient
       .from('characters')
       .update({ vault_character_id: null })
       .eq('id', characterId)

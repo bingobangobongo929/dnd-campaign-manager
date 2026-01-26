@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 
 // POST - Claim a campaign character to user's vault
@@ -165,7 +166,9 @@ export async function POST(
       inPlayVaultId = inPlayChar.id
 
       // Link campaign character to vault
-      const { error: linkError } = await supabase
+      // Use admin client to bypass RLS - we've verified the user can claim this character above
+      const adminClient = createAdminClient()
+      const { error: linkError } = await adminClient
         .from('characters')
         .update({
           vault_character_id: inPlayChar.id,
@@ -177,7 +180,7 @@ export async function POST(
         console.error('Failed to link characters:', linkError)
       }
 
-      // Update campaign member
+      // Update campaign member - user can update their own membership via RLS
       const { error: memberError } = await supabase
         .from('campaign_members')
         .update({ character_id: characterId, vault_character_id: inPlayChar.id })

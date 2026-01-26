@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import type { Character, VaultCharacter } from '@/types/database'
 
@@ -130,7 +131,9 @@ export async function POST(
 
     // Perform the update
     if (direction === 'vault_to_campaign') {
-      const { error: updateError } = await supabase
+      // Use admin client to bypass RLS - we've already verified permissions above
+      const adminClient = createAdminClient()
+      const { error: updateError } = await adminClient
         .from('characters')
         .update(updateData)
         .eq('id', characterId)
