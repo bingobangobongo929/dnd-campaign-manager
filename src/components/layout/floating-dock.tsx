@@ -21,6 +21,8 @@ import {
   Home,
   Shield,
   Compass,
+  MapPin,
+  Target,
 } from 'lucide-react'
 import { useCanUseAI } from '@/store'
 import { useUserSettings, usePermissions } from '@/hooks'
@@ -70,6 +72,12 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
         ...(isDm || can.viewTimeline ? [{ href: `/campaigns/${campaignId}/timeline`, label: 'Timeline', icon: Clock }] : []),
         // Intelligence - only for DMs with AI access
         ...(isDm && canUseAI ? [{ href: `/campaigns/${campaignId}/intelligence`, label: 'Intelligence', icon: Brain }] : []),
+        // Locations - visible to DMs (new unified system)
+        ...(isDm ? [{ href: `/campaigns/${campaignId}/locations`, label: 'Locations', icon: MapPin }] : []),
+        // Quests - visible to DMs (new unified system)
+        ...(isDm ? [{ href: `/campaigns/${campaignId}/quests`, label: 'Quests', icon: Target }] : []),
+        // Encounters - visible to DMs (new unified system)
+        ...(isDm ? [{ href: `/campaigns/${campaignId}/encounters`, label: 'Encounters', icon: Swords }] : []),
         // Lore - based on lore view permission
         ...(isDm || can.viewLore ? [{ href: `/campaigns/${campaignId}/lore`, label: 'Lore', icon: Network }] : []),
         // Map - based on maps view permission

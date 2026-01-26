@@ -14,6 +14,9 @@ export type GuidanceTipId =
   | 'campaign_members_intro'
   | 'campaign_canvas_intro'
   | 'campaign_sessions_intro'
+  | 'locations_intro'
+  | 'quests_intro'
+  | 'encounters_intro'
   // Vault
   | 'vault_intro'
   | 'vault_character_intelligence'

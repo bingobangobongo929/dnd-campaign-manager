@@ -891,11 +891,11 @@ export default function CampaignsPage() {
                   </Link>
                 </div>
               </div>
-            ) : joinedCampaigns.length > 1 && (
+            ) : joinedCampaigns.length > 0 && (
               <section>
                 <h3 className="text-xl font-semibold text-white mb-6">All Campaigns</h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {joinedCampaigns.slice(1).map(({ membership, campaign }) => (
+                  {joinedCampaigns.map(({ membership, campaign }) => (
                     <Link
                       key={membership.id}
                       href={`/campaigns/${campaign.id}/dashboard`}
@@ -1204,12 +1204,12 @@ export default function CampaignsPage() {
               </section>
             )}
 
-            {/* Campaign Grid - skip first campaign since it's shown as hero */}
-            {activeCampaigns.length > 1 && (
+            {/* Campaign Grid */}
+            {activeCampaigns.length > 0 && (
               <section>
                 <h3 className="text-xl font-semibold text-white mb-6">All Campaigns</h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {activeCampaigns.slice(1).map((campaign) => {
+                  {activeCampaigns.map((campaign) => {
                     const badge = getCampaignBadge(campaign, user?.id || '')
                     return (
                       <div key={campaign.id} className="group relative">

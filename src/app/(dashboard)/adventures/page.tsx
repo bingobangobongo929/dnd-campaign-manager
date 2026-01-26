@@ -547,12 +547,12 @@ export default function AdventuresPage() {
                   </section>
                 )}
 
-                {/* Rest of joined adventures */}
-                {joinedAdventures.length > 1 && (
+                {/* All joined adventures */}
+                {joinedAdventures.length > 0 && (
                   <section>
                     <h3 className="text-xl font-semibold text-white mb-6">All Adventures</h3>
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {joinedAdventures.slice(1).map(({ membership, campaign }) => (
+                      {joinedAdventures.map(({ membership, campaign }) => (
                         <Link
                           key={membership.id}
                           href={`/campaigns/${campaign.id}/dashboard`}
@@ -671,11 +671,11 @@ export default function AdventuresPage() {
                 )}
 
                 {/* Grid */}
-                {activeAdventures.length > 1 && (
+                {activeAdventures.length > 0 && (
                   <section>
                     <h3 className="text-xl font-semibold text-white mb-6">All Adventures</h3>
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {activeAdventures.slice(1).map((adventure) => {
+                      {activeAdventures.map((adventure) => {
                         const badge = getCampaignBadge(adventure, user?.id || '')
                         return (
                           <Link

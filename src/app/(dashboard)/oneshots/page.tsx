@@ -597,11 +597,11 @@ export default function OneshotsPage() {
               )}
 
               {/* Participating Runs Grid */}
-              {participatingRuns.length > 1 && (
+              {participatingRuns.length > 0 && (
                 <section>
                   <h3 className="text-xl font-semibold text-white mb-6">All Participating Runs</h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                    {participatingRuns.slice(1).map((run) => (
+                    {participatingRuns.map((run) => (
                       <Link
                         key={run.id}
                         href={`/oneshots/${run.oneshot_id}/run/${run.id}`}
@@ -741,11 +741,11 @@ export default function OneshotsPage() {
               )}
 
               {/* Running One-Shots Grid */}
-              {activeOneshots.length > 1 && (
+              {activeOneshots.length > 0 && (
                 <section>
                   <h3 className="text-xl font-semibold text-white mb-6">All Running One-Shots</h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                    {activeOneshots.slice(1).map((oneshot) => {
+                    {activeOneshots.map((oneshot) => {
                       const badge = getOneshotBadge(oneshot, user?.id || '')
                       return (
                         <Link

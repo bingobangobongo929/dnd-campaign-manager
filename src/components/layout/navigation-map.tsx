@@ -22,6 +22,8 @@ import {
   Download,
   X,
   HelpCircle,
+  MapPin,
+  Target,
 } from 'lucide-react'
 import { Modal } from '@/components/ui'
 
@@ -65,6 +67,21 @@ const NAVIGATION_TREE: NavigationNode[] = [
         label: 'Intelligence',
         icon: Brain,
         description: 'AI-powered campaign assistant',
+      },
+      {
+        label: 'Locations',
+        icon: MapPin,
+        description: 'Hierarchical places in your world',
+      },
+      {
+        label: 'Quests',
+        icon: Target,
+        description: 'Track objectives and missions',
+      },
+      {
+        label: 'Encounters',
+        icon: Swords,
+        description: 'Combat and social encounters',
       },
       {
         label: 'Lore',
