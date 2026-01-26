@@ -89,12 +89,16 @@ CONSTRAINT: exactly one must be set
 
 ## Critical Reminders
 
-1. **Share pages must stay in sync** with campaign pages - ALWAYS
-2. **No "AI" branding** - call it "Intelligence"
-3. **All modules available to all content types** - just different defaults
-4. **Wife's campaigns are SAFE** - existing data untouched
-5. **Use unified pattern** - `useContent()`, `useContentQuery()`, `useContentPermissions()`
-6. **Deduplication** - When Intelligence detects locations/quests, check if they already exist before creating
+1. **Campaign Intelligence integration is MANDATORY** - Every feature must consider:
+   - Can this be auto-detected from session notes?
+   - What's the approval workflow?
+   - How to handle conflicts (newer = more recent truth)?
+   - How to deduplicate against existing data?
+2. **Share pages must stay in sync** with campaign pages - ALWAYS
+3. **No "AI" branding** - call it "Intelligence"
+4. **All modules available to all content types** - just different defaults
+5. **Wife's campaigns are SAFE** - existing data untouched
+6. **Use unified pattern** - `useContent()`, `useContentQuery()`, `useContentPermissions()`
 
 ## Key Files Reference
 

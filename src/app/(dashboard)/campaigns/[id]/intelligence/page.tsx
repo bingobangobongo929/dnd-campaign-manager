@@ -142,6 +142,13 @@ function formatValue(value: unknown, suggestionType?: SuggestionType): string {
       const e = value as { title: string; description: string; event_type: string; character_names?: string[] }
       return `${e.title} (${e.event_type})${e.character_names?.length ? ` - ${e.character_names.join(', ')}` : ''}`
     }
+    // Location formatting
+    if (suggestionType === 'location_detected' && 'name' in (value as object) && 'location_type' in (value as object)) {
+      const loc = value as { name: string; location_type: string; description?: string; parent_location_name?: string }
+      let result = `${loc.name} [${loc.location_type}]`
+      if (loc.parent_location_name) result += ` in ${loc.parent_location_name}`
+      return result
+    }
     if ('status' in (value as object)) {
       return (value as { status: string }).status
     }

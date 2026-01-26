@@ -241,6 +241,98 @@ export async function PATCH(req: Request) {
       })
     }
 
+    // Handle location_detected suggestions
+    if (suggestion.suggestion_type === 'location_detected') {
+      const locationData = (finalValue ?? suggestion.suggested_value) as {
+        name: string
+        location_type?: string
+        description?: string
+        parent_location_name?: string
+      }
+
+      // Look up parent location if specified
+      let parentId: string | null = null
+      if (locationData.parent_location_name) {
+        const { data: parentLocation } = await supabase
+          .from('locations')
+          .select('id')
+          .eq('campaign_id', suggestion.campaign_id)
+          .ilike('name', locationData.parent_location_name)
+          .maybeSingle()
+
+        parentId = parentLocation?.id || null
+      }
+
+      // Check if location already exists (by name, case-insensitive)
+      const { data: existingLocation } = await supabase
+        .from('locations')
+        .select('id')
+        .eq('campaign_id', suggestion.campaign_id)
+        .ilike('name', locationData.name)
+        .maybeSingle()
+
+      if (existingLocation) {
+        // Location already exists - mark as applied but don't create duplicate
+        const { error } = await supabase
+          .from('intelligence_suggestions')
+          .update({
+            status: 'applied',
+            final_value: { ...locationData, existing_location_id: existingLocation.id, note: 'Location already existed' }
+          })
+          .eq('id', suggestionId)
+
+        if (error) throw error
+
+        return new Response(JSON.stringify({
+          success: true,
+          action: 'applied',
+          message: 'Location already exists',
+          locationId: existingLocation.id
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Create the location
+      const { data: newLocation, error: locationError } = await supabase
+        .from('locations')
+        .insert({
+          campaign_id: suggestion.campaign_id,
+          name: locationData.name,
+          location_type: locationData.location_type || 'other',
+          description: locationData.description || null,
+          parent_id: parentId,
+          is_visited: false,
+          is_known: true, // Default to known since it was mentioned in sessions
+        })
+        .select('id')
+        .single()
+
+      if (locationError) throw locationError
+
+      // Mark suggestion as applied
+      const { error } = await supabase
+        .from('intelligence_suggestions')
+        .update({
+          status: 'applied',
+          final_value: { ...locationData, location_id: newLocation.id }
+        })
+        .eq('id', suggestionId)
+
+      if (error) throw error
+
+      return new Response(JSON.stringify({
+        success: true,
+        action: 'applied',
+        message: 'Location created',
+        locationId: newLocation.id
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
     if (!suggestion.character_id) {
       // New character suggestion - just mark as applied for now
       // TODO: Could auto-create the character

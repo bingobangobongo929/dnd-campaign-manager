@@ -170,6 +170,13 @@ export async function POST(req: Request) {
       .eq('campaign_id', campaignId)
       .order('event_date', { ascending: true })
 
+    // Load ALL locations for context (so AI doesn't suggest duplicates)
+    const { data: existingLocations } = await supabase
+      .from('locations')
+      .select('id, name, location_type, parent_id, description')
+      .eq('campaign_id', campaignId)
+      .order('name')
+
     // Check if there's anything new to analyze
     const hasNewContent = (updatedSessions?.length ?? 0) > 0 ||
                          (updatedCharacters?.length ?? 0) > 0
@@ -288,6 +295,13 @@ export async function POST(req: Request) {
       return `- ${e.event_date || 'Unknown date'}: ${e.title} (${e.event_type})${charNames ? ` - Involving: ${charNames}` : ''}`
     }).join('\n')
 
+    // Build locations context (so AI can avoid duplicates and suggest hierarchy)
+    const locationsContext = (existingLocations || []).map(loc => {
+      const parent = loc.parent_id ? existingLocations?.find(l => l.id === loc.parent_id) : null
+      const parentInfo = parent ? ` (in ${parent.name})` : ''
+      return `- ${loc.name} [${loc.location_type}]${parentInfo}`
+    }).join('\n')
+
     // Build NEW content to analyze
     const newSessionContent = (updatedSessions || []).map(s => {
       return `## Session ${s.session_number}: ${s.title || 'Untitled'}
@@ -322,6 +336,10 @@ ${relationshipContext || 'No relationships recorded.'}
 ${timelineContext || 'No timeline events recorded yet.'}
 ${timelineIsEmpty ? '\n⚠️ THE TIMELINE IS EMPTY - Please suggest significant events from the session notes that should be added to build out the campaign timeline.' : ''}
 
+## EXISTING LOCATIONS (${existingLocations?.length || 0} locations)
+${locationsContext || 'No locations recorded yet.'}
+${!existingLocations?.length ? '\n⚠️ NO LOCATIONS RECORDED - Please extract all locations mentioned in session notes (cities, towns, taverns, dungeons, regions, etc.).' : ''}
+
 ---
 
 # NEW CONTENT TO ANALYZE
@@ -345,7 +363,10 @@ IMPORTANT INSTRUCTIONS:
 8. Note any revealed secrets or plot developments
 9. RELATIONSHIPS: Look for new relationships between characters (family, professional, conflict, romantic, social). Check existing relationships to avoid duplicates.
 10. FACTIONS: Note any faction involvement, membership changes, or new organizations mentioned.
-11. TIMELINE EVENTS: Suggest significant events for the timeline (battles, discoveries, deaths, alliances, quest milestones). ${timelineIsEmpty ? 'The timeline is currently EMPTY so please suggest key events from the sessions to populate it.' : 'Check existing timeline events above to avoid duplicates.'}`
+11. TIMELINE EVENTS: Suggest significant events for the timeline (battles, discoveries, deaths, alliances, quest milestones). ${timelineIsEmpty ? 'The timeline is currently EMPTY so please suggest key events from the sessions to populate it.' : 'Check existing timeline events above to avoid duplicates.'}
+12. LOCATIONS: Extract ALL places mentioned in session notes - cities, towns, villages, taverns, dungeons, temples, regions, landmarks, camps, buildings, etc. ${!existingLocations?.length ? 'NO LOCATIONS EXIST YET - please extract all locations from the session history.' : 'Check existing locations above to avoid duplicates.'} Include location_type and parent_location_name if nested (e.g., a tavern inside a city).
+
+SESSION CHRONOLOGY NOTE: Sessions are numbered chronologically. Higher session numbers = more recent events. If there are conflicts between sessions, the higher-numbered session represents the current truth. For example, if a location is called "The Old Mill" in session 2 but "The Abandoned Mill" in session 8, use the session 8 name.`
 
     const selectedProvider = provider || 'anthropic'
     const model = getAIModel(selectedProvider)

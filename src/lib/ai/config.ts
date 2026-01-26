@@ -211,6 +211,7 @@ Return your response as valid JSON with this exact structure:
    - **quote**: Memorable lines spoken by characters during the session (direct quotes only, preserve exact wording).
    - **relationship**: New relationships between existing characters or significant changes (allies, enemies, etc.).
    - **timeline_event**: Significant campaign events worth recording in the timeline (battles, discoveries, deaths, alliances, quest milestones, character introductions, major plot points). IMPORTANT: Check the existing timeline events provided and don't suggest duplicates. Include location if mentioned, and mark is_major: true for pivotal campaign moments.
+   - **location_detected**: Places mentioned in session notes - cities, towns, taverns, dungeons, regions, buildings, etc. Check the existing locations list to avoid duplicates. Only suggest NEW locations not already recorded. Include location_type (region, city, town, village, building, tavern, temple, dungeon, wilderness, landmark, camp, other) and parent_location_name if the location is inside another place.
 
 5. **CONFIDENCE LEVELS**:
    - high: Explicitly and unambiguously stated in the notes
@@ -225,6 +226,7 @@ Return your response as valid JSON with this exact structure:
    - quote → field_name: "quotes" (append the exact quote string)
    - relationship → field_name: "relationship" (for character_relationships table)
    - timeline_event → field_name: "timeline" (value should include title, description, event_type, character_names array, location if known, and is_major boolean for pivotal events)
+   - location_detected → field_name: "location" (value should include name, location_type, description if discernible from context, and parent_location_name if nested inside another location)
 
 ## OUTPUT FORMAT
 
@@ -263,6 +265,20 @@ Return valid JSON with this structure:
       },
       "source_excerpt": "The party also discovered that the true king and last of his family was Faust",
       "ai_reasoning": "Major plot revelation that should be recorded in the campaign timeline",
+      "confidence": "high"
+    },
+    {
+      "suggestion_type": "location_detected",
+      "character_name": null,
+      "field_name": "location",
+      "suggested_value": {
+        "name": "The Rusty Nail Tavern",
+        "location_type": "tavern",
+        "description": "A seedy tavern where the party met their contact. Known for watered-down ale and questionable clientele.",
+        "parent_location_name": "Waterdeep"
+      },
+      "source_excerpt": "The party arrived at The Rusty Nail, a dingy tavern in the dock ward of Waterdeep",
+      "ai_reasoning": "New location mentioned where significant events occurred",
       "confidence": "high"
     }
   ]

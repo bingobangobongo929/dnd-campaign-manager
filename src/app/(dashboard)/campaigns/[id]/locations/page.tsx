@@ -774,6 +774,7 @@ export default function LocationsPage() {
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [viewMode, setViewMode] = useState<'list' | 'tree'>('list')
@@ -804,7 +805,10 @@ export default function LocationsPage() {
   }, [user, campaignId])
 
   const loadData = async () => {
-    setLoading(true)
+    // Only show loading spinner on initial load, not refetches
+    if (!hasLoadedOnce) {
+      setLoading(true)
+    }
 
     // Load campaign
     const { data: campaignData } = await supabase
@@ -828,8 +832,8 @@ export default function LocationsPage() {
 
     setLocations(locationsData || [])
 
-    // Expand root nodes by default
-    if (locationsData) {
+    // Expand root nodes by default (only on first load)
+    if (locationsData && !hasLoadedOnce) {
       const rootIds = locationsData
         .filter(l => !l.parent_id)
         .map(l => l.id)
@@ -837,6 +841,7 @@ export default function LocationsPage() {
     }
 
     setLoading(false)
+    setHasLoadedOnce(true)
   }
 
   const toggleExpanded = (id: string) => {

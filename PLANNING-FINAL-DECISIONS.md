@@ -46,6 +46,16 @@ User can always change these.
 
 ## Critical Reminders
 
+### Campaign Intelligence Integration (MANDATORY)
+**EVERY new feature must consider Campaign Intelligence integration.**
+Ask these questions for every feature:
+1. Can this data be auto-detected from session notes? (locations, NPCs, items, quests)
+2. What's the approval workflow? (suggest → review → approve/reject)
+3. How does Intelligence handle conflicts? (newer sessions = more recent truth)
+4. How does it handle existing data? (match by name before creating new)
+
+**The vision: "I just write my session notes, and the campaign world builds itself."**
+
 ### Share Pages Must Stay In Sync
 **EVERY update to campaign pages must also update share pages.**
 This is non-negotiable. Don't let share pages fall behind.
