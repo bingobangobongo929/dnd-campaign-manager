@@ -211,12 +211,15 @@ Every campaign page has a share equivalent:
 - [x] **Locations UI** - Full page with list/tree views, detail panel, add/edit modal
 - [x] **Navigation updated** - Sidebar, floating dock, navigation map all include Locations/Quests/Encounters
 - [x] **Placeholder pages** - Quests and Encounters pages created
+- [x] **Campaign Intelligence - Location Detection** - AI extracts locations from session notes
+- [x] **Location Edit Modal** - Edit name, type, parent, description before approving
+- [x] **Location Bulk Approval** - "Add All X Locations" button for one-click approval
 
 ### TODO (Priority Order):
-1. **Build Quests UI** - List, board view, detail panel (NEXT)
-2. **Build Encounters UI** - Prep view, detail panel
-3. **Recreate Oneshots UI** - Using unified tables
-4. **Update existing campaign components** - Migrate to ContentProvider (incremental)
-5. **Expand Campaign Intelligence** - Entity detection from session notes
+1. **Build Quests UI** - List, board view, status tracking, objectives (NEXT)
+2. **Campaign Intelligence - Quest Detection** - Detect quests/objectives from sessions
+3. **Build Encounters UI** - Prep view, detail panel
+4. **Campaign Intelligence - Encounter Detection** - Detect encounters from sessions
+5. **Recreate Oneshots UI** - Using unified tables
 6. **Build Search** - Global search with smart autocomplete
 7. **Update Share Pages** - Mirror all campaign page updates

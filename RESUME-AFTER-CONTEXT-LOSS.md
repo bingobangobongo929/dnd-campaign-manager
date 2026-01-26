@@ -4,7 +4,7 @@
 
 ## Current Status (2026-01-26)
 
-**LOCATIONS UI COMPLETE. Quests and Encounters have placeholder pages.**
+**LOCATIONS FULLY INTEGRATED WITH CAMPAIGN INTELLIGENCE.**
 
 ## What's Done
 
@@ -34,6 +34,21 @@ Features built:
 - **Status indicators** - Visited (green), Hidden (amber), Has Secrets (red)
 
 Location types: Region, City, Town, Village, Building, Tavern, Temple, Dungeon, Wilderness, Landmark, Camp, Other
+
+### Campaign Intelligence - Location Detection (COMPLETE)
+**Files:**
+- `src/lib/ai/config.ts` - AI prompt with location_detected instructions
+- `src/app/api/ai/analyze-campaign/route.ts` - Loads existing locations for deduplication
+- `src/app/api/ai/suggestions/route.ts` - Creates location records on approval
+- `src/app/(dashboard)/campaigns/[id]/intelligence/page.tsx` - Edit modal + bulk approval
+
+Features:
+- AI extracts locations from session notes (cities, taverns, dungeons, etc.)
+- Existing locations loaded for context (avoids duplicates)
+- Session chronology: higher session number = more recent truth
+- **Edit modal**: Change name, type, parent location, description before approving
+- **Bulk approval**: "Add All X Locations" button in sidebar
+- Deduplication check on approval (case-insensitive name match)
 
 ### Navigation (COMPLETE)
 All three new pages accessible from:
@@ -82,10 +97,12 @@ CONSTRAINT: exactly one must be set
 
 ### Frontend Work Queue:
 1. ~~**Build Locations UI**~~ ✅ DONE
-2. **Build Quests UI** - List, board view, status tracking, objectives
-3. **Build Encounters UI** - Prep view, session linking
-4. **Recreate Oneshots pages** - Using unified system
-5. **Update existing campaign components** - Migrate to ContentProvider (optional, can do incrementally)
+2. ~~**Campaign Intelligence - Location Detection**~~ ✅ DONE (with edit modal + bulk approval)
+3. **Build Quests UI** - List, board view, status tracking, objectives (NEXT)
+4. **Campaign Intelligence - Quest Detection** - After Quests UI
+5. **Build Encounters UI** - Prep view, session linking
+6. **Campaign Intelligence - Encounter Detection** - After Encounters UI
+7. **Recreate Oneshots pages** - Using unified system
 
 ## Critical Reminders
 
