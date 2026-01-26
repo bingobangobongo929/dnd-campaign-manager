@@ -707,38 +707,143 @@ export function RollReveal<T>({
                     delay: 0.2,
                   }}
                 >
-                  {/* Golden glow behind result */}
+                  {/* Mystical outer glow */}
                   <motion.div
-                    className="absolute -inset-4 rounded-2xl"
+                    className="absolute -inset-6 rounded-3xl"
                     style={{
-                      background: 'radial-gradient(circle, rgba(245, 158, 11, 0.3) 0%, transparent 70%)',
-                      filter: 'blur(20px)',
+                      background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.4) 0%, rgba(168, 85, 247, 0.2) 40%, transparent 70%)',
+                      filter: 'blur(25px)',
                     }}
-                    animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
-                    transition={{ duration: 2, repeat: Infinity }}
+                    animate={{
+                      scale: [1, 1.05, 1],
+                      opacity: [0.6, 1, 0.6],
+                    }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                   />
 
-                  {/* Result content */}
-                  <div className="relative bg-[#1a1a24] rounded-2xl overflow-hidden"
+                  {/* Card frame */}
+                  <div
+                    className="relative rounded-2xl overflow-hidden"
                     style={{
-                      border: '2px solid rgba(245, 158, 11, 0.5)',
-                      boxShadow: '0 0 40px rgba(245, 158, 11, 0.3), 0 0 80px rgba(139, 92, 246, 0.2)',
+                      background: 'linear-gradient(145deg, rgba(139, 92, 246, 0.15) 0%, rgba(30, 20, 50, 0.98) 50%, rgba(139, 92, 246, 0.1) 100%)',
+                      boxShadow: `
+                        0 0 0 1px rgba(139, 92, 246, 0.3),
+                        0 0 0 2px rgba(168, 85, 247, 0.2),
+                        0 0 30px rgba(139, 92, 246, 0.4),
+                        0 0 60px rgba(139, 92, 246, 0.2),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1)
+                      `,
                     }}
                   >
-                    {/* Golden top bar */}
-                    <div className="h-1 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500" />
+                    {/* Animated border glow */}
+                    <motion.div
+                      className="absolute inset-0 rounded-2xl pointer-events-none"
+                      style={{
+                        background: 'linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.5), transparent)',
+                        backgroundSize: '200% 100%',
+                      }}
+                      animate={{
+                        backgroundPosition: ['200% 0', '-200% 0'],
+                      }}
+                      transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                    />
 
-                    <div className="p-4">
-                      {renderResult(chosenItem)}
+                    {/* Corner ornaments */}
+                    <svg className="absolute top-0 left-0 w-12 h-12 text-purple-400/60" viewBox="0 0 48 48">
+                      <path d="M0 24 L0 8 Q0 0 8 0 L24 0" fill="none" stroke="currentColor" strokeWidth="2"/>
+                      <circle cx="8" cy="8" r="2" fill="currentColor"/>
+                      <path d="M4 16 L4 4 L16 4" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.5"/>
+                    </svg>
+                    <svg className="absolute top-0 right-0 w-12 h-12 text-purple-400/60 rotate-90" viewBox="0 0 48 48">
+                      <path d="M0 24 L0 8 Q0 0 8 0 L24 0" fill="none" stroke="currentColor" strokeWidth="2"/>
+                      <circle cx="8" cy="8" r="2" fill="currentColor"/>
+                      <path d="M4 16 L4 4 L16 4" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.5"/>
+                    </svg>
+                    <svg className="absolute bottom-0 left-0 w-12 h-12 text-purple-400/60 -rotate-90" viewBox="0 0 48 48">
+                      <path d="M0 24 L0 8 Q0 0 8 0 L24 0" fill="none" stroke="currentColor" strokeWidth="2"/>
+                      <circle cx="8" cy="8" r="2" fill="currentColor"/>
+                      <path d="M4 16 L4 4 L16 4" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.5"/>
+                    </svg>
+                    <svg className="absolute bottom-0 right-0 w-12 h-12 text-purple-400/60 rotate-180" viewBox="0 0 48 48">
+                      <path d="M0 24 L0 8 Q0 0 8 0 L24 0" fill="none" stroke="currentColor" strokeWidth="2"/>
+                      <circle cx="8" cy="8" r="2" fill="currentColor"/>
+                      <path d="M4 16 L4 4 L16 4" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.5"/>
+                    </svg>
+
+                    {/* Mystical watermark pattern */}
+                    <div
+                      className="absolute inset-0 opacity-[0.03] pointer-events-none"
+                      style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5 L35 25 L55 30 L35 35 L30 55 L25 35 L5 30 L25 25 Z' fill='%238B5CF6' fill-opacity='0.5'/%3E%3Ccircle cx='30' cy='30' r='8' fill='none' stroke='%238B5CF6' stroke-opacity='0.3'/%3E%3C/svg%3E")`,
+                        backgroundSize: '60px 60px',
+                      }}
+                    />
+
+                    {/* Header banner */}
+                    <div className="relative">
+                      <div
+                        className="h-12 flex items-center justify-center"
+                        style={{
+                          background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.3) 0%, rgba(139, 92, 246, 0.1) 100%)',
+                          borderBottom: '1px solid rgba(139, 92, 246, 0.3)',
+                        }}
+                      >
+                        <motion.div
+                          className="absolute inset-0"
+                          style={{
+                            background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)',
+                            backgroundSize: '200% 100%',
+                          }}
+                          animate={{ backgroundPosition: ['100% 0', '-100% 0'] }}
+                          transition={{ duration: 2, repeat: Infinity, ease: 'linear', repeatDelay: 3 }}
+                        />
+                        <span className="text-sm font-medium tracking-widest uppercase text-purple-300/80">
+                          Fate Revealed
+                        </span>
+                      </div>
+                      {/* Banner edge decoration */}
+                      <svg className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-24 h-3 text-purple-500/40" viewBox="0 0 96 12">
+                        <path d="M0 0 L48 12 L96 0" fill="none" stroke="currentColor" strokeWidth="1"/>
+                        <circle cx="48" cy="10" r="2" fill="currentColor"/>
+                      </svg>
+                    </div>
+
+                    {/* Content area */}
+                    <div className="relative p-6 pt-8">
+                      {/* Subtle inner glow */}
+                      <div
+                        className="absolute inset-4 rounded-lg pointer-events-none"
+                        style={{
+                          background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.05) 0%, transparent 70%)',
+                        }}
+                      />
+
+                      <div className="relative">
+                        {renderResult(chosenItem)}
+                      </div>
                     </div>
 
                     {/* Action buttons */}
-                    <div className="flex justify-center gap-3 p-4 pt-0">
+                    <div
+                      className="relative flex justify-center gap-3 p-4 pt-2"
+                      style={{
+                        borderTop: '1px solid rgba(139, 92, 246, 0.2)',
+                        background: 'linear-gradient(0deg, rgba(139, 92, 246, 0.1) 0%, transparent 100%)',
+                      }}
+                    >
                       {allowReroll && (
                         <motion.button
                           onClick={handleReroll}
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-500/20 border border-purple-500/40 text-purple-300 hover:bg-purple-500/30 transition-colors"
-                          whileHover={{ scale: 1.05 }}
+                          className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-purple-300 font-medium transition-all"
+                          style={{
+                            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%)',
+                            border: '1px solid rgba(139, 92, 246, 0.4)',
+                            boxShadow: '0 0 20px rgba(139, 92, 246, 0.2)',
+                          }}
+                          whileHover={{
+                            scale: 1.05,
+                            boxShadow: '0 0 30px rgba(139, 92, 246, 0.4)',
+                          }}
                           whileTap={{ scale: 0.95 }}
                         >
                           <RotateCcw className="w-4 h-4" />
@@ -747,12 +852,20 @@ export function RollReveal<T>({
                       )}
                       <motion.button
                         onClick={handleAccept}
-                        className="flex items-center gap-2 px-6 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-semibold hover:from-amber-400 hover:to-yellow-400 transition-colors"
-                        whileHover={{ scale: 1.05 }}
+                        className="flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold transition-all"
+                        style={{
+                          background: 'linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #8B5CF6 100%)',
+                          boxShadow: '0 0 20px rgba(139, 92, 246, 0.5), inset 0 1px 0 rgba(255,255,255,0.2)',
+                          color: 'white',
+                        }}
+                        whileHover={{
+                          scale: 1.05,
+                          boxShadow: '0 0 35px rgba(139, 92, 246, 0.7), inset 0 1px 0 rgba(255,255,255,0.2)',
+                        }}
                         whileTap={{ scale: 0.95 }}
                       >
                         <Check className="w-4 h-4" />
-                        Accept
+                        Accept Fate
                       </motion.button>
                     </div>
                   </div>
