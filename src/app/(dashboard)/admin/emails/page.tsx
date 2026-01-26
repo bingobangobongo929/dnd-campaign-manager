@@ -16,7 +16,11 @@ import {
   ShieldOff,
   PartyPopper,
   Trash2,
-  ClipboardList
+  ClipboardList,
+  MailCheck,
+  Clock,
+  AlertTriangle,
+  Users
 } from 'lucide-react'
 
 // Email template types
@@ -29,11 +33,25 @@ const EMAIL_TEMPLATES = [
     color: 'text-green-400'
   },
   {
+    id: 'verification',
+    name: 'Email Verification',
+    description: 'Sent to verify email address',
+    icon: MailCheck,
+    color: 'text-blue-400'
+  },
+  {
     id: 'invite',
     name: 'Invite Code Email',
     description: 'Sent when sharing an invite code',
     icon: UserPlus,
     color: 'text-purple-400'
+  },
+  {
+    id: 'campaign-invite',
+    name: 'Campaign Invite',
+    description: 'Sent when DM invites player to campaign',
+    icon: Users,
+    color: 'text-indigo-400'
   },
   {
     id: 'password-reset',
@@ -57,9 +75,23 @@ const EMAIL_TEMPLATES = [
     color: 'text-orange-400'
   },
   {
+    id: 'deletion-scheduled',
+    name: 'Deletion Scheduled',
+    description: 'Sent when user schedules account deletion',
+    icon: Clock,
+    color: 'text-yellow-400'
+  },
+  {
+    id: 'deletion-reminder',
+    name: 'Deletion Reminder',
+    description: 'Sent 2 days before permanent deletion',
+    icon: AlertTriangle,
+    color: 'text-orange-400'
+  },
+  {
     id: 'account-deleted',
     name: 'Account Deleted Email',
-    description: 'Sent when user deletes their account',
+    description: 'Sent after account is permanently deleted',
     icon: Trash2,
     color: 'text-red-400'
   },

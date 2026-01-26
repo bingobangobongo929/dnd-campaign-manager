@@ -3,10 +3,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import {
   sendEmail,
   welcomeEmail,
+  verificationEmail,
   inviteCodeEmail,
+  campaignInviteEmail,
   passwordResetEmail,
   twoFactorEnabledEmail,
   twoFactorDisabledEmail,
+  accountDeletionScheduledEmail,
+  accountDeletionReminderEmail,
   accountDeletedEmail,
   waitlistConfirmationEmail
 } from '@/lib/email'
@@ -55,8 +59,20 @@ export async function POST(request: NextRequest) {
       case 'welcome':
         emailData = welcomeEmail('Test User')
         break
+      case 'verification':
+        emailData = verificationEmail('https://multiloop.app/auth/callback?token=test-token-123&type=signup')
+        break
       case 'invite':
         emailData = inviteCodeEmail('TESTCODE', 'Admin')
+        break
+      case 'campaign-invite':
+        emailData = campaignInviteEmail({
+          campaignName: 'The Lost Mines of Phandelver',
+          inviterName: 'DungeonMaster42',
+          role: 'player',
+          inviteUrl: 'https://multiloop.app/invite/abc123xyz',
+          characterName: 'Thornwick the Bold',
+        })
         break
       case 'password-reset':
         emailData = passwordResetEmail('https://multiloop.app/reset-password?token=test-token-123')
@@ -66,6 +82,20 @@ export async function POST(request: NextRequest) {
         break
       case '2fa-disabled':
         emailData = twoFactorDisabledEmail()
+        break
+      case 'deletion-scheduled':
+        emailData = accountDeletionScheduledEmail({
+          userName: 'Test User',
+          deletionDate: 'Monday, February 10, 2025',
+          cancelUrl: 'https://multiloop.app/account/cancel-deletion?token=test-token-123&email=test@example.com',
+        })
+        break
+      case 'deletion-reminder':
+        emailData = accountDeletionReminderEmail({
+          userName: 'Test User',
+          deletionDate: 'Monday, February 10, 2025',
+          cancelUrl: 'https://multiloop.app/account/cancel-deletion?token=test-token-123&email=test@example.com',
+        })
         break
       case 'account-deleted':
         emailData = accountDeletedEmail('Test User')
