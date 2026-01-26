@@ -71,6 +71,8 @@ export interface SessionDetailMobileProps {
   currentPhase: SessionPhase
   handlePhaseChange: (phase: SessionPhase) => void
   locations: { id: string; name: string; type?: string }[]
+  quests: { id: string; name: string; type: string; status: string }[]
+  encounters: { id: string; name: string; type: string; status: string; difficulty?: string }[]
   previousSession: Session | null
   previousThoughts: string
   // Permission props
@@ -113,6 +115,8 @@ export function SessionDetailMobile({
   currentPhase,
   handlePhaseChange,
   locations,
+  quests,
+  encounters,
   previousSession,
   previousThoughts,
   // Permission props
@@ -305,6 +309,8 @@ export function SessionDetailMobile({
                     campaignId={campaignId}
                     characters={characters}
                     locations={locations}
+                    quests={quests}
+                    encounters={encounters}
                     previousSession={previousSession}
                     onUpdate={onSessionUpdate}
                   />
@@ -356,6 +362,8 @@ export function SessionDetailMobile({
                     campaignId={campaignId}
                     characters={characters}
                     locations={locations}
+                    quests={quests}
+                    encounters={encounters}
                     previousSession={previousSession}
                     onUpdate={onSessionUpdate}
                   />

@@ -22,9 +22,12 @@ import {
   RefreshCw,
   MapPin,
   Target,
+  Swords,
+  Shuffle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { RollReveal } from '@/components/roll-reveal'
 import type {
   Session,
   SessionPhase,
@@ -56,12 +59,21 @@ interface Quest {
   status: string
 }
 
+interface Encounter {
+  id: string
+  name: string
+  type: string
+  status: string
+  difficulty?: string
+}
+
 interface SessionWorkflowProps {
   campaignId: string
   session: Session
   characters?: Character[]
   locations?: Location[]
   quests?: Quest[]
+  encounters?: Encounter[]
   previousSession?: Session | null
   onUpdate?: (session: Session) => void
 }
@@ -80,7 +92,7 @@ function getDefaultSections(phase: SessionPhase): SessionSection[] {
   }
 }
 
-export function SessionWorkflow({ campaignId, session, characters = [], locations = [], quests = [], previousSession, onUpdate }: SessionWorkflowProps) {
+export function SessionWorkflow({ campaignId, session, characters = [], locations = [], quests = [], encounters = [], previousSession, onUpdate }: SessionWorkflowProps) {
   // Parse session data with proper types
   const [phase, setPhase] = useState<SessionPhase>((session.phase as SessionPhase) || 'prep')
   const [enabledSections, setEnabledSections] = useState<SessionSection[]>(
@@ -105,7 +117,12 @@ export function SessionWorkflow({ campaignId, session, characters = [], location
   const [showCharacterPicker, setShowCharacterPicker] = useState(false)
   const [showLocationPicker, setShowLocationPicker] = useState(false)
   const [showQuestPicker, setShowQuestPicker] = useState(false)
+  const [showEncounterPicker, setShowEncounterPicker] = useState(false)
   const [newManualRef, setNewManualRef] = useState('')
+
+  // Roll reveal state
+  const [showQuestRoll, setShowQuestRoll] = useState(false)
+  const [showEncounterRoll, setShowEncounterRoll] = useState(false)
 
   // Timer display state
   const [timerDisplay, setTimerDisplay] = useState('00:00:00')
@@ -363,6 +380,21 @@ export function SessionWorkflow({ campaignId, session, characters = [], location
     setShowQuestPicker(false)
   }
 
+  const addEncounterRef = (encounter: Encounter) => {
+    // Don't add duplicates
+    if (pinnedRefs.some(r => r.entity_id === encounter.id)) return
+
+    setPinnedRefs([
+      ...pinnedRefs,
+      {
+        entity_type: 'encounter',
+        entity_id: encounter.id,
+        label: encounter.name,
+      }
+    ])
+    setShowEncounterPicker(false)
+  }
+
   const addManualRef = () => {
     if (!newManualRef.trim()) return
     setPinnedRefs([
@@ -389,10 +421,21 @@ export function SessionWorkflow({ campaignId, session, characters = [], location
     loc => !pinnedRefs.some(r => r.entity_id === loc.id)
   )
 
-  // Only show active quests in the picker
+  // Only show active quests in the picker (available for roll)
   const unpinnedQuests = quests.filter(
     quest => !pinnedRefs.some(r => r.entity_id === quest.id) && quest.status === 'active'
   )
+
+  // Quests available for rolling (not yet started)
+  const availableQuests = quests.filter(quest => quest.status === 'available')
+
+  // Only show prepared encounters in the picker
+  const unpinnedEncounters = encounters.filter(
+    enc => !pinnedRefs.some(r => r.entity_id === enc.id) && enc.status === 'prepared'
+  )
+
+  // Encounters available for rolling (prepared status)
+  const preparedEncounters = encounters.filter(enc => enc.status === 'prepared')
 
   // Check if previous session has a prep checklist we can carry over
   const previousChecklist = previousSession?.prep_checklist as unknown as PrepChecklistItem[] | undefined
@@ -648,6 +691,7 @@ export function SessionWorkflow({ campaignId, session, characters = [], location
                     setShowCharacterPicker(!showCharacterPicker)
                     setShowLocationPicker(false)
                     setShowQuestPicker(false)
+                    setShowEncounterPicker(false)
                   }}
                   className={cn(
                     "text-xs px-2 py-1 rounded transition-colors",
@@ -666,6 +710,7 @@ export function SessionWorkflow({ campaignId, session, characters = [], location
                     setShowLocationPicker(!showLocationPicker)
                     setShowCharacterPicker(false)
                     setShowQuestPicker(false)
+                    setShowEncounterPicker(false)
                   }}
                   className={cn(
                     "text-xs px-2 py-1 rounded transition-colors",
@@ -684,6 +729,7 @@ export function SessionWorkflow({ campaignId, session, characters = [], location
                     setShowQuestPicker(!showQuestPicker)
                     setShowCharacterPicker(false)
                     setShowLocationPicker(false)
+                    setShowEncounterPicker(false)
                   }}
                   className={cn(
                     "text-xs px-2 py-1 rounded transition-colors",
@@ -694,6 +740,25 @@ export function SessionWorkflow({ campaignId, session, characters = [], location
                 >
                   <Target className="w-3 h-3 inline mr-1" />
                   Quest
+                </button>
+              )}
+              {encounters.length > 0 && (
+                <button
+                  onClick={() => {
+                    setShowEncounterPicker(!showEncounterPicker)
+                    setShowCharacterPicker(false)
+                    setShowLocationPicker(false)
+                    setShowQuestPicker(false)
+                  }}
+                  className={cn(
+                    "text-xs px-2 py-1 rounded transition-colors",
+                    showEncounterPicker
+                      ? "bg-red-500/30 text-red-300"
+                      : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                  )}
+                >
+                  <Swords className="w-3 h-3 inline mr-1" />
+                  Encounter
                 </button>
               )}
             </div>
@@ -757,29 +822,83 @@ export function SessionWorkflow({ campaignId, session, characters = [], location
           )}
 
           {/* Quest Picker Dropdown */}
-          {showQuestPicker && unpinnedQuests.length > 0 && (
-            <div className="mb-3 p-2 bg-white/[0.02] rounded-lg border border-white/[0.06] max-h-48 overflow-y-auto">
-              <div className="text-xs text-gray-500 mb-2">Select a quest to pin:</div>
-              <div className="space-y-1">
-                {unpinnedQuests.map(quest => (
+          {showQuestPicker && (
+            <div className="mb-3 p-2 bg-white/[0.02] rounded-lg border border-white/[0.06] max-h-64 overflow-y-auto">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs text-gray-500">Select a quest to pin:</div>
+                {availableQuests.length > 0 && (
                   <button
-                    key={quest.id}
-                    onClick={() => addQuestRef(quest)}
-                    className="w-full flex items-center gap-2 p-2 rounded hover:bg-white/[0.05] transition-colors text-left"
+                    onClick={() => {
+                      setShowQuestPicker(false)
+                      setShowQuestRoll(true)
+                    }}
+                    className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors"
                   >
-                    <span className="text-[10px] px-1.5 py-0.5 rounded uppercase font-medium bg-purple-500/20 text-purple-400">
-                      {quest.type.replace('_', ' ')}
-                    </span>
-                    <span className="text-sm text-gray-300">{quest.name}</span>
+                    <Shuffle className="w-3 h-3" />
+                    Roll Random
                   </button>
-                ))}
+                )}
               </div>
+              {unpinnedQuests.length > 0 ? (
+                <div className="space-y-1">
+                  {unpinnedQuests.map(quest => (
+                    <button
+                      key={quest.id}
+                      onClick={() => addQuestRef(quest)}
+                      className="w-full flex items-center gap-2 p-2 rounded hover:bg-white/[0.05] transition-colors text-left"
+                    >
+                      <span className="text-[10px] px-1.5 py-0.5 rounded uppercase font-medium bg-purple-500/20 text-purple-400">
+                        {quest.type.replace('_', ' ')}
+                      </span>
+                      <span className="text-sm text-gray-300">{quest.name}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500">No active quests to pin, or all are already pinned.</p>
+              )}
             </div>
           )}
 
-          {showQuestPicker && unpinnedQuests.length === 0 && (
-            <div className="mb-3 p-2 bg-white/[0.02] rounded-lg border border-white/[0.06]">
-              <p className="text-xs text-gray-500">No active quests to pin, or all are already pinned.</p>
+          {/* Encounter Picker Dropdown */}
+          {showEncounterPicker && (
+            <div className="mb-3 p-2 bg-white/[0.02] rounded-lg border border-white/[0.06] max-h-64 overflow-y-auto">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs text-gray-500">Select an encounter to pin:</div>
+                {preparedEncounters.length > 0 && (
+                  <button
+                    onClick={() => {
+                      setShowEncounterPicker(false)
+                      setShowEncounterRoll(true)
+                    }}
+                    className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                  >
+                    <Shuffle className="w-3 h-3" />
+                    Roll Random
+                  </button>
+                )}
+              </div>
+              {unpinnedEncounters.length > 0 ? (
+                <div className="space-y-1">
+                  {unpinnedEncounters.map(enc => (
+                    <button
+                      key={enc.id}
+                      onClick={() => addEncounterRef(enc)}
+                      className="w-full flex items-center gap-2 p-2 rounded hover:bg-white/[0.05] transition-colors text-left"
+                    >
+                      <span className="text-[10px] px-1.5 py-0.5 rounded uppercase font-medium bg-red-500/20 text-red-400">
+                        {enc.type.replace('_', ' ')}
+                      </span>
+                      <span className="text-sm text-gray-300">{enc.name}</span>
+                      {enc.difficulty && (
+                        <span className="text-[10px] text-gray-500">{enc.difficulty}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500">No prepared encounters to pin, or all are already pinned.</p>
+              )}
             </div>
           )}
 
@@ -797,6 +916,7 @@ export function SessionWorkflow({ campaignId, session, characters = [], location
                     ref.entity_type === 'character' ? "bg-blue-500/20 text-blue-400" :
                     ref.entity_type === 'location' ? "bg-emerald-500/20 text-emerald-400" :
                     ref.entity_type === 'quest' ? "bg-purple-500/20 text-purple-400" :
+                    ref.entity_type === 'encounter' ? "bg-red-500/20 text-red-400" :
                     "bg-gray-500/20 text-gray-400"
                   )}>
                     {ref.entity_type}
@@ -879,6 +999,61 @@ export function SessionWorkflow({ campaignId, session, characters = [], location
           </button>
         </div>
       )}
+
+      {/* Roll Reveal for Quests */}
+      <RollReveal
+        items={availableQuests}
+        isOpen={showQuestRoll}
+        onClose={() => setShowQuestRoll(false)}
+        onAccept={(quest) => {
+          setShowQuestRoll(false)
+          addQuestRef(quest)
+        }}
+        allowReroll
+        title="Rolling Quest..."
+        renderResult={(quest) => (
+          <div className="text-center space-y-3">
+            <span className="inline-block text-xs px-2 py-1 rounded uppercase font-medium bg-purple-500/20 text-purple-400">
+              {quest.type.replace('_', ' ')}
+            </span>
+            <h3 className="text-xl font-bold text-white">{quest.name}</h3>
+            <p className="text-sm text-gray-400">
+              This quest will be pinned to your session for quick reference.
+            </p>
+          </div>
+        )}
+      />
+
+      {/* Roll Reveal for Encounters */}
+      <RollReveal
+        items={preparedEncounters}
+        isOpen={showEncounterRoll}
+        onClose={() => setShowEncounterRoll(false)}
+        onAccept={(encounter) => {
+          setShowEncounterRoll(false)
+          addEncounterRef(encounter)
+        }}
+        allowReroll
+        title="Rolling Encounter..."
+        renderResult={(encounter) => (
+          <div className="text-center space-y-3">
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-xs px-2 py-1 rounded uppercase font-medium bg-red-500/20 text-red-400">
+                {encounter.type.replace('_', ' ')}
+              </span>
+              {encounter.difficulty && (
+                <span className="text-xs px-2 py-1 rounded uppercase font-medium bg-amber-500/20 text-amber-400">
+                  {encounter.difficulty}
+                </span>
+              )}
+            </div>
+            <h3 className="text-xl font-bold text-white">{encounter.name}</h3>
+            <p className="text-sm text-gray-400">
+              This encounter will be pinned to your session for quick reference.
+            </p>
+          </div>
+        )}
+      />
     </div>
   )
 }

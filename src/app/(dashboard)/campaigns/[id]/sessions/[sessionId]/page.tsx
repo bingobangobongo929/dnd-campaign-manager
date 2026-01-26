@@ -63,6 +63,7 @@ export default function SessionDetailPage() {
   const [characters, setCharacters] = useState<Character[]>([])
   const [locations, setLocations] = useState<{ id: string; name: string; type?: string }[]>([])
   const [quests, setQuests] = useState<{ id: string; name: string; type: string; status: string }[]>([])
+  const [encounters, setEncounters] = useState<{ id: string; name: string; type: string; status: string; difficulty?: string }[]>([])
   const [previousSessionData, setPreviousSessionData] = useState<Session | null>(null)
   const [attendees, setAttendees] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
@@ -142,6 +143,15 @@ export default function SessionDetailPage() {
       .order('name')
 
     setQuests(questsData || [])
+
+    // Load encounters for quick reference
+    const { data: encountersData } = await supabase
+      .from('encounters')
+      .select('id, name, type, status, difficulty')
+      .eq('campaign_id', campaignId)
+      .order('name')
+
+    setEncounters(encountersData || [])
 
     if (isNew) {
       // Get previous session for next session number, thoughts_for_next, and prep_checklist
@@ -609,6 +619,8 @@ export default function SessionDetailPage() {
         currentPhase={currentPhase}
         handlePhaseChange={handlePhaseChange}
         locations={locations}
+        quests={quests}
+        encounters={encounters}
         previousSession={previousSessionData}
         previousThoughts={previousThoughts}
         // Permission props
@@ -843,6 +855,7 @@ export default function SessionDetailPage() {
                 characters={characters}
                 locations={locations}
                 quests={quests}
+                encounters={encounters}
                 previousSession={previousSessionData}
                 onUpdate={(updatedSession) => setSession(updatedSession)}
               />
@@ -893,6 +906,7 @@ export default function SessionDetailPage() {
                 characters={characters}
                 locations={locations}
                 quests={quests}
+                encounters={encounters}
                 previousSession={previousSessionData}
                 onUpdate={(updatedSession) => setSession(updatedSession)}
               />
