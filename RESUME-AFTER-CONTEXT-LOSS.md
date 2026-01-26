@@ -338,6 +338,17 @@ These patterns have been established after multiple iterations. Follow them EXAC
 )}
 ```
 
+### Board Views - Consider for Status-Based Pages
+
+When a page shows items with distinct statuses (Quests: Available→Active→Completed, Encounters: Prepared→Used→Skipped), consider using the Kanban board pattern with:
+- **Column visibility dropdown** - Let users show/hide status columns
+- **Detail level dropdown** - Compact, Standard, Detailed card info
+- **Presets** - Quick configurations for common workflows
+- **Drag and drop** - Change status by moving cards between columns
+- **localStorage persistence** - Remember user preferences per campaign
+
+Not mandatory for all pages, but provides consistent UX when the data fits this pattern.
+
 ### Drag and Drop (for Board Views)
 
 Use `@hello-pangea/dnd` (maintained fork of react-beautiful-dnd):

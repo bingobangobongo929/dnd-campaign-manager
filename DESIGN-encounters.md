@@ -202,50 +202,42 @@ Intelligence can also suggest updates to existing encounters:
 
 ### Encounters Page (`/campaigns/[id]/encounters`)
 
-**List View:**
+**Board View (Kanban-style, matches Quests page):**
+
+Columns: Prepared | Used | Skipped
+
+Features:
+- **Column visibility dropdown** - Show/hide columns with checkboxes
+- **Detail level dropdown** - Compact, Standard, Detailed
+- **Presets** - Quick configurations (Prep Mode, Session Review, Full Overview, Clean Slate)
+- **Drag and drop** - Move encounters between columns (changes status)
+- **Settings saved** - localStorage per campaign
+
+**Detail Levels:**
+
+| Level | Shows |
+|-------|-------|
+| Compact | Name + type badge |
+| Standard | + summary, difficulty badge, location |
+| Detailed | + enemies count, XP reward, planned/played session |
+
+**Presets:**
+
+| Preset | Columns | Detail |
+|--------|---------|--------|
+| Prep Mode | Prepared | Detailed |
+| Session Review | Used | Detailed |
+| Full Overview | All | Standard |
+| Clean Slate | Prepared | Compact |
+
+**Card Example (Standard detail):**
 ```
-Encounters                             [+ Add Encounter] [Filter: All | Prepared | Used]
-
-⚔️ PREPARED FOR NEXT SESSION (2)
-
-  🗡️ Goblin Ambush (Combat - Medium)
-     Location: Forest Road near Phandalin
-     Enemies: 6 Goblins, 1 Bugbear
-     Planned for: Session 15
-
-  🗣️ Negotiating with the Baron (Social)
-     Location: Baron's Keep, Great Hall
-     Stakes: Alliance against the Cult
-
-📜 USED (12)
-
-  🗡️ Session 14: Cave Defense (Combat - Hard)
-     Party defended the cave entrance from orc raiders
-     Outcome: Victory, 2 PCs dropped to 0 HP
-     ✓ 450 XP awarded
-
-  🧩 Session 13: Riddle of the Sphinx (Puzzle)
-     Location: Temple of Mysteries
-     Outcome: Solved after 3 wrong guesses
-```
-
-**Prep View (For Upcoming Session):**
-```
-Session 15 Prep                                     [Add Encounter]
-
-Planned Encounters (3):
-┌─────────────────────────────────────────────────────────────────┐
-│ 1. 🗡️ Goblin Ambush          Medium | Forest Road              │
-│    [View] [Edit] [Move to Session 16] [Remove]                  │
-├─────────────────────────────────────────────────────────────────┤
-│ 2. 🗣️ Baron Negotiation      Social | Baron's Keep             │
-│    [View] [Edit] [Move to Session 16] [Remove]                  │
-├─────────────────────────────────────────────────────────────────┤
-│ 3. 🗿 Trapped Hallway         Trap | Dungeon Level 2            │
-│    [View] [Edit] [Move to Session 16] [Remove]                  │
-└─────────────────────────────────────────────────────────────────┘
-
-[Reorder] [Mark Session 15 Complete]
+┌─────────────────────────────────┐
+│ ⚔️ Combat    Medium             │
+│ Goblin Ambush                   │
+│ Goblins attack on forest road   │
+│ 📍 Forest Road                  │
+└─────────────────────────────────┘
 ```
 
 ### Encounter Detail Panel

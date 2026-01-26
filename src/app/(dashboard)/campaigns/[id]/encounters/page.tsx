@@ -1,12 +1,17 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  type DropResult,
+} from '@hello-pangea/dnd'
 import {
   Swords,
   Plus,
   Search,
-  ChevronRight,
   ChevronDown,
   X,
   Trash2,
@@ -26,7 +31,9 @@ import {
   Gift,
   Skull,
   Check,
-  Filter,
+  Columns,
+  SlidersHorizontal,
+  Calendar,
 } from 'lucide-react'
 import { AppLayout, CampaignPageHeader } from '@/components/layout'
 import { Button, Modal, EmptyState, Badge, Tooltip, AccessDeniedPage } from '@/components/ui'
@@ -57,22 +64,29 @@ const ENCOUNTER_TYPE_ICONS: Record<string, any> = {
 
 // Encounter type colors
 const ENCOUNTER_TYPE_COLORS: Record<string, string> = {
-  combat: '#EF4444',      // Red
-  social: '#3B82F6',      // Blue
-  exploration: '#10B981', // Green
-  trap: '#F59E0B',        // Amber
-  skill_challenge: '#8B5CF6', // Purple
-  puzzle: '#EC4899',      // Pink
-  mixed: '#6B7280',       // Gray
+  combat: '#EF4444',
+  social: '#3B82F6',
+  exploration: '#10B981',
+  trap: '#F59E0B',
+  skill_challenge: '#8B5CF6',
+  puzzle: '#EC4899',
+  mixed: '#6B7280',
+}
+
+// Encounter status colors
+const ENCOUNTER_STATUS_COLORS: Record<string, string> = {
+  prepared: '#8B5CF6',
+  used: '#10B981',
+  skipped: '#6B7280',
 }
 
 // Difficulty colors
 const DIFFICULTY_COLORS: Record<string, string> = {
-  trivial: '#6B7280',   // Gray
-  easy: '#10B981',      // Green
-  medium: '#F59E0B',    // Amber
-  hard: '#EF4444',      // Red
-  deadly: '#7C2D12',    // Dark red
+  trivial: '#6B7280',
+  easy: '#10B981',
+  medium: '#F59E0B',
+  hard: '#EF4444',
+  deadly: '#7C2D12',
 }
 
 const ENCOUNTER_TYPES = [
@@ -108,6 +122,39 @@ const getEncounterStatusLabel = (status: string) =>
 
 const getDifficultyLabel = (difficulty: string) =>
   DIFFICULTIES.find(d => d.value === difficulty)?.label || difficulty
+
+// Board settings types
+type DetailLevel = 'compact' | 'standard' | 'detailed'
+type ColumnKey = 'prepared' | 'used' | 'skipped'
+
+interface BoardSettings {
+  visibleColumns: ColumnKey[]
+  detailLevel: DetailLevel
+}
+
+const COLUMN_OPTIONS: { key: ColumnKey; label: string; color: string }[] = [
+  { key: 'prepared', label: 'Prepared', color: ENCOUNTER_STATUS_COLORS.prepared },
+  { key: 'used', label: 'Used', color: ENCOUNTER_STATUS_COLORS.used },
+  { key: 'skipped', label: 'Skipped', color: ENCOUNTER_STATUS_COLORS.skipped },
+]
+
+const DETAIL_OPTIONS: { value: DetailLevel; label: string; description: string }[] = [
+  { value: 'compact', label: 'Compact', description: 'Name and type only' },
+  { value: 'standard', label: 'Standard', description: 'Summary, difficulty, location' },
+  { value: 'detailed', label: 'Detailed', description: 'Full info with enemies and rewards' },
+]
+
+const BOARD_PRESETS: { name: string; columns: ColumnKey[]; detail: DetailLevel }[] = [
+  { name: 'Prep Mode', columns: ['prepared'], detail: 'detailed' },
+  { name: 'Session Review', columns: ['used'], detail: 'detailed' },
+  { name: 'Full Overview', columns: ['prepared', 'used', 'skipped'], detail: 'standard' },
+  { name: 'Clean Slate', columns: ['prepared'], detail: 'compact' },
+]
+
+const DEFAULT_BOARD_SETTINGS: BoardSettings = {
+  visibleColumns: ['prepared', 'used'],
+  detailLevel: 'standard',
+}
 
 interface Encounter {
   id: string
@@ -155,95 +202,191 @@ interface Quest {
   type: string
 }
 
-// Encounter Card component
-function EncounterCard({
+// Board Card component
+function BoardCard({
   encounter,
   location,
   quest,
   onClick,
+  isDragging,
+  detailLevel,
 }: {
   encounter: Encounter
   location?: Location
   quest?: Quest
   onClick: () => void
+  isDragging: boolean
+  detailLevel: DetailLevel
 }) {
   const typeColor = ENCOUNTER_TYPE_COLORS[encounter.type] || '#6B7280'
   const difficultyColor = encounter.difficulty ? DIFFICULTY_COLORS[encounter.difficulty] : null
   const Icon = ENCOUNTER_TYPE_ICONS[encounter.type] || Swords
   const enemyCount = encounter.enemies?.reduce((sum, e) => sum + (e.count || 1), 0) || 0
 
+  const showSummary = detailLevel !== 'compact'
+  const showDetails = detailLevel === 'detailed'
+
   return (
     <div
-      className="p-4 rounded-xl bg-white/[0.03] hover:bg-white/[0.05] cursor-pointer transition-all"
+      className={cn(
+        'p-3 rounded-lg cursor-pointer transition-all duration-150',
+        'bg-[#1e1e2a] hover:bg-[#252532]',
+        isDragging && 'shadow-xl shadow-black/50 rotate-2 scale-105'
+      )}
       onClick={onClick}
     >
-      <div className="flex items-start gap-3">
-        {/* Type icon */}
+      {/* Type indicator bar and badges */}
+      <div className="flex items-center gap-2 mb-2">
         <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: `${typeColor}20` }}
-        >
-          <Icon className="w-5 h-5" style={{ color: typeColor }} />
-        </div>
-
-        <div className="flex-1 min-w-0">
-          {/* Header row */}
-          <div className="flex items-center gap-2 mb-1">
-            <Badge size="sm" color={typeColor}>
-              {getEncounterTypeLabel(encounter.type)}
-            </Badge>
-            {encounter.difficulty && (
-              <Badge size="sm" color={difficultyColor || '#6B7280'}>
-                {getDifficultyLabel(encounter.difficulty)}
-              </Badge>
-            )}
-            {encounter.status === 'used' && (
-              <Badge size="sm" color="#10B981">Used</Badge>
-            )}
-            {encounter.status === 'skipped' && (
-              <Badge size="sm" color="#6B7280">Skipped</Badge>
-            )}
-          </div>
-
-          {/* Name */}
-          <h3 className="font-medium text-white mb-1">{encounter.name}</h3>
-
-          {/* Summary */}
-          {encounter.summary && (
-            <p className="text-sm text-gray-400 line-clamp-2 mb-2">
-              {encounter.summary}
-            </p>
-          )}
-
-          {/* Meta info */}
-          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-            {location && (
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
-                {location.name}
-              </span>
-            )}
-            {quest && (
-              <span className="flex items-center gap-1">
-                <Target className="w-3 h-3" />
-                {quest.name}
-              </span>
-            )}
-            {enemyCount > 0 && (
-              <span className="flex items-center gap-1">
-                <Users className="w-3 h-3" />
-                {enemyCount} {enemyCount === 1 ? 'enemy' : 'enemies'}
-              </span>
-            )}
-            {encounter.xp_reward && (
-              <span className="flex items-center gap-1">
-                <Gift className="w-3 h-3" />
-                {encounter.xp_reward} XP
-              </span>
-            )}
-          </div>
-        </div>
+          className="h-1 w-8 rounded-full"
+          style={{ backgroundColor: typeColor }}
+        />
+        <Badge size="sm" color={typeColor}>
+          {getEncounterTypeLabel(encounter.type)}
+        </Badge>
+        {encounter.difficulty && (
+          <Badge size="sm" color={difficultyColor || '#6B7280'}>
+            {getDifficultyLabel(encounter.difficulty)}
+          </Badge>
+        )}
       </div>
+
+      {/* Title */}
+      <p className="font-medium text-sm text-white mb-1">{encounter.name}</p>
+
+      {/* Summary (standard & detailed) */}
+      {showSummary && encounter.summary && (
+        <p className="text-xs text-gray-400 line-clamp-2 mb-2">
+          {encounter.summary}
+        </p>
+      )}
+
+      {/* Location (standard & detailed) */}
+      {showSummary && location && (
+        <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+          <MapPin className="w-3 h-3" />
+          <span className="truncate">{location.name}</span>
+        </div>
+      )}
+
+      {/* Enemies count (detailed only) */}
+      {showDetails && enemyCount > 0 && (
+        <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+          <Users className="w-3 h-3" />
+          <span>{enemyCount} {enemyCount === 1 ? 'enemy' : 'enemies'}</span>
+        </div>
+      )}
+
+      {/* Session tracking (detailed only) */}
+      {showDetails && (encounter.planned_session || encounter.played_session) && (
+        <div className="flex items-center gap-3 text-xs text-gray-500 mb-2">
+          {encounter.planned_session && (
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              Planned: S{encounter.planned_session}
+            </span>
+          )}
+          {encounter.played_session && (
+            <span className="flex items-center gap-1">
+              <Check className="w-3 h-3 text-emerald-400" />
+              Played: S{encounter.played_session}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Rewards (detailed only) */}
+      {showDetails && encounter.xp_reward && (
+        <div className="flex items-center gap-2 text-xs text-gray-500 pt-2 border-t border-white/10">
+          <Gift className="w-3 h-3 text-amber-400" />
+          <span>{encounter.xp_reward} XP</span>
+        </div>
+      )}
+
+      {/* Quest link (detailed only) */}
+      {showDetails && quest && (
+        <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+          <Target className="w-3 h-3" />
+          <span className="truncate">{quest.name}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Board Column component
+function BoardColumn({
+  title,
+  status,
+  encounters,
+  locations,
+  quests,
+  onSelect,
+  color,
+  detailLevel,
+}: {
+  title: string
+  status: string
+  encounters: Encounter[]
+  locations: Location[]
+  quests: Quest[]
+  onSelect: (encounter: Encounter) => void
+  color: string
+  detailLevel: DetailLevel
+}) {
+  return (
+    <div className="flex-1 min-w-[220px] max-w-[400px] flex flex-col bg-[#12121a] rounded-xl">
+      {/* Column header */}
+      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/[0.05]">
+        <div
+          className="w-2 h-2 rounded-full"
+          style={{ backgroundColor: color }}
+        />
+        <h3 className="font-medium text-sm text-white flex-1">{title}</h3>
+        <span className="text-xs text-gray-500 bg-white/[0.05] px-1.5 py-0.5 rounded-full">
+          {encounters.length}
+        </span>
+      </div>
+
+      {/* Droppable area */}
+      <Droppable droppableId={status}>
+        {(provided, snapshot) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            className={cn(
+              'p-2 space-y-2 min-h-[80px]',
+              snapshot.isDraggingOver && 'bg-[--arcane-purple]/5'
+            )}
+          >
+            {encounters.map((encounter, index) => {
+              const location = locations.find(l => l.id === encounter.location_id)
+              const quest = quests.find(q => q.id === encounter.quest_id)
+              return (
+                <Draggable key={encounter.id} draggableId={encounter.id} index={index}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                    >
+                      <BoardCard
+                        encounter={encounter}
+                        location={location}
+                        quest={quest}
+                        onClick={() => onSelect(encounter)}
+                        isDragging={snapshot.isDragging}
+                        detailLevel={detailLevel}
+                      />
+                    </div>
+                  )}
+                </Draggable>
+              )
+            })}
+            {provided.placeholder}
+          </div>
+        )}
+      </Droppable>
     </div>
   )
 }
@@ -275,21 +418,12 @@ function EncounterViewModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
       onClick={onClose}
     >
-      {/* Backdrop */}
       <div className="fixed inset-0 bg-black/70" />
-
-      {/* Modal */}
       <div
         className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-[#1a1a24] rounded-xl shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Color bar */}
-        <div
-          className="h-2 rounded-t-xl"
-          style={{ backgroundColor: typeColor }}
-        />
-
-        {/* Close button */}
+        <div className="h-2 rounded-t-xl" style={{ backgroundColor: typeColor }} />
         <button
           onClick={onClose}
           className="absolute top-4 right-4 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors z-10"
@@ -297,7 +431,6 @@ function EncounterViewModal({
           <X className="w-5 h-5" />
         </button>
 
-        {/* Header */}
         <div className="p-6 pb-4">
           <div className="flex items-start gap-4 pr-10">
             <div
@@ -317,24 +450,18 @@ function EncounterViewModal({
                     {getDifficultyLabel(encounter.difficulty)}
                   </Badge>
                 )}
-                <Badge size="sm" color={
-                  encounter.status === 'used' ? '#10B981' :
-                  encounter.status === 'skipped' ? '#6B7280' : '#8B5CF6'
-                }>
+                <Badge size="sm" color={ENCOUNTER_STATUS_COLORS[encounter.status] || '#6B7280'}>
                   {getEncounterStatusLabel(encounter.status)}
                 </Badge>
               </div>
             </div>
           </div>
-
           {encounter.summary && (
             <p className="mt-4 text-gray-400">{encounter.summary}</p>
           )}
         </div>
 
-        {/* Content */}
         <div className="px-6 pb-6 space-y-6">
-          {/* Boxed Text (Read-aloud) */}
           {encounter.boxed_text && (
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
               <h4 className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-2">
@@ -347,19 +474,15 @@ function EncounterViewModal({
             </div>
           )}
 
-          {/* Description */}
           {encounter.description && (
             <div>
-              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                Description
-              </h4>
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Description</h4>
               <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap bg-white/[0.02] rounded-lg p-3">
                 {encounter.description}
               </p>
             </div>
           )}
 
-          {/* Enemies */}
           {encounter.enemies && encounter.enemies.length > 0 && (
             <div>
               <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
@@ -369,11 +492,9 @@ function EncounterViewModal({
               <div className="bg-white/[0.02] rounded-lg p-3 space-y-2">
                 {encounter.enemies.map((enemy, idx) => (
                   <div key={idx} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-300">
-                        {enemy.name} {enemy.count > 1 && `× ${enemy.count}`}
-                      </span>
-                    </div>
+                    <span className="text-gray-300">
+                      {enemy.name} {enemy.count > 1 && `× ${enemy.count}`}
+                    </span>
                     <div className="flex items-center gap-3 text-xs text-gray-500">
                       {enemy.hp && (
                         <span className="flex items-center gap-1">
@@ -394,59 +515,45 @@ function EncounterViewModal({
             </div>
           )}
 
-          {/* Two column layout */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Tactics */}
-            {encounter.tactics && (
-              <div className="bg-white/[0.02] rounded-lg p-3">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  Tactics
-                </h4>
-                <p className="text-sm text-gray-300 whitespace-pre-wrap">{encounter.tactics}</p>
-              </div>
-            )}
+          {(encounter.tactics || encounter.terrain) && (
+            <div className="grid grid-cols-2 gap-4">
+              {encounter.tactics && (
+                <div className="bg-white/[0.02] rounded-lg p-3">
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Tactics</h4>
+                  <p className="text-sm text-gray-300 whitespace-pre-wrap">{encounter.tactics}</p>
+                </div>
+              )}
+              {encounter.terrain && (
+                <div className="bg-white/[0.02] rounded-lg p-3">
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Terrain</h4>
+                  <p className="text-sm text-gray-300 whitespace-pre-wrap">{encounter.terrain}</p>
+                </div>
+              )}
+            </div>
+          )}
 
-            {/* Terrain */}
-            {encounter.terrain && (
-              <div className="bg-white/[0.02] rounded-lg p-3">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  Terrain
-                </h4>
-                <p className="text-sm text-gray-300 whitespace-pre-wrap">{encounter.terrain}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Social encounter fields */}
           {(encounter.stakes || encounter.npc_goals) && (
             <div className="grid grid-cols-2 gap-4">
               {encounter.stakes && (
                 <div className="bg-white/[0.02] rounded-lg p-3">
-                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                    Stakes
-                  </h4>
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Stakes</h4>
                   <p className="text-sm text-gray-300">{encounter.stakes}</p>
                 </div>
               )}
               {encounter.npc_goals && (
                 <div className="bg-white/[0.02] rounded-lg p-3">
-                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                    NPC Goals
-                  </h4>
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">NPC Goals</h4>
                   <p className="text-sm text-gray-300">{encounter.npc_goals}</p>
                 </div>
               )}
             </div>
           )}
 
-          {/* Location & Quest */}
           {(location || quest) && (
             <div className="grid grid-cols-2 gap-4">
               {location && (
                 <div className="bg-white/[0.02] rounded-lg p-3">
-                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                    Location
-                  </h4>
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Location</h4>
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-gray-400" />
                     <span className="text-sm text-gray-300">{location.name}</span>
@@ -455,9 +562,7 @@ function EncounterViewModal({
               )}
               {quest && (
                 <div className="bg-white/[0.02] rounded-lg p-3">
-                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                    Quest
-                  </h4>
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Quest</h4>
                   <div className="flex items-center gap-2">
                     <Target className="w-4 h-4 text-gray-400" />
                     <span className="text-sm text-gray-300">{quest.name}</span>
@@ -467,71 +572,70 @@ function EncounterViewModal({
             </div>
           )}
 
-          {/* Rewards */}
+          {(encounter.planned_session || encounter.played_session) && (
+            <div className="grid grid-cols-2 gap-4">
+              {encounter.planned_session && (
+                <div className="bg-white/[0.02] rounded-lg p-3">
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Planned Session</h4>
+                  <span className="text-sm text-gray-300">Session {encounter.planned_session}</span>
+                </div>
+              )}
+              {encounter.played_session && (
+                <div className="bg-white/[0.02] rounded-lg p-3">
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Played Session</h4>
+                  <span className="text-sm text-gray-300">Session {encounter.played_session}</span>
+                </div>
+              )}
+            </div>
+          )}
+
           {(encounter.rewards || encounter.xp_reward) && (
             <div className="bg-amber-500/10 rounded-lg p-4">
               <h4 className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-2">
                 <Gift className="w-4 h-4" />
                 Rewards
               </h4>
-              {encounter.rewards && (
-                <p className="text-sm text-amber-300/80 mb-2">{encounter.rewards}</p>
-              )}
-              {encounter.xp_reward && (
-                <span className="text-amber-400 font-medium">{encounter.xp_reward} XP</span>
-              )}
+              {encounter.rewards && <p className="text-sm text-amber-300/80 mb-2">{encounter.rewards}</p>}
+              {encounter.xp_reward && <span className="text-amber-400 font-medium">{encounter.xp_reward} XP</span>}
             </div>
           )}
 
-          {/* Outcome (for used encounters) */}
           {encounter.outcome && (
             <div className="bg-emerald-500/10 rounded-lg p-4">
-              <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2">
-                Outcome
-              </h4>
+              <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2">Outcome</h4>
               <p className="text-sm text-emerald-300/80">{encounter.outcome}</p>
             </div>
           )}
 
-          {/* Player Notes */}
           {encounter.player_notes && (
             <div>
-              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                Player Notes
-              </h4>
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Player Notes</h4>
               <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-wrap bg-white/[0.02] rounded-lg p-3">
                 {encounter.player_notes}
               </p>
             </div>
           )}
 
-          {/* DM Notes */}
           {encounter.dm_notes && (
             <div>
-              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                DM Notes
-              </h4>
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">DM Notes</h4>
               <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-wrap bg-white/[0.02] rounded-lg p-3">
                 {encounter.dm_notes}
               </p>
             </div>
           )}
 
-          {/* Secrets */}
           {encounter.secrets && (
             <div className="bg-red-500/10 rounded-lg p-4">
               <h4 className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-2 flex items-center gap-2">
                 <Skull className="w-4 h-4" />
                 Secrets (DM Only)
               </h4>
-              <p className="text-sm text-red-300/80 leading-relaxed whitespace-pre-wrap">
-                {encounter.secrets}
-              </p>
+              <p className="text-sm text-red-300/80 leading-relaxed whitespace-pre-wrap">{encounter.secrets}</p>
             </div>
           )}
         </div>
 
-        {/* Footer actions */}
         {canEdit && (
           <div className="px-6 py-4 border-t border-white/[0.05] flex justify-between">
             <Button
@@ -581,10 +685,7 @@ function FormSection({
         {!isOpen && preview && (
           <span className="text-xs text-gray-500 truncate max-w-[150px]">{preview}</span>
         )}
-        <ChevronDown className={cn(
-          "w-4 h-4 text-gray-500 transition-transform",
-          isOpen && "rotate-180"
-        )} />
+        <ChevronDown className={cn("w-4 h-4 text-gray-500 transition-transform", isOpen && "rotate-180")} />
       </button>
       {isOpen && (
         <div className="px-4 pb-4 pt-1 border-t border-white/[0.06]">
@@ -677,10 +778,10 @@ function EncounterFormModal({
         dm_notes: encounter.dm_notes || '',
         secrets: encounter.secrets || '',
       })
-      // Auto-expand sections with content
       const sectionsWithContent = new Set<string>()
       if (encounter.description || encounter.boxed_text) sectionsWithContent.add('description')
       if (encounter.difficulty || encounter.enemies?.length || encounter.tactics || encounter.terrain) sectionsWithContent.add('combat')
+      if (encounter.stakes || encounter.npc_goals) sectionsWithContent.add('social')
       if (encounter.location_id || encounter.quest_id) sectionsWithContent.add('location')
       if (encounter.rewards || encounter.xp_reward) sectionsWithContent.add('rewards')
       if (encounter.planned_session || encounter.played_session) sectionsWithContent.add('session')
@@ -771,17 +872,10 @@ function EncounterFormModal({
   const isSocial = formData.type === 'social'
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={encounter ? 'Edit Encounter' : 'Add Encounter'}
-      size="md"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title={encounter ? 'Edit Encounter' : 'Add Encounter'} size="md">
       <form onSubmit={handleSubmit} className="flex flex-col h-full">
         <div className="flex-1 overflow-y-auto space-y-4 pb-4" style={{ maxHeight: 'calc(70vh - 120px)' }}>
-          {/* Essential fields */}
           <div className="space-y-4">
-            {/* Name */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">
                 Encounter Name <span className="text-red-400">*</span>
@@ -791,52 +885,42 @@ function EncounterFormModal({
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="form-input"
-                placeholder='e.g., "Goblin Ambush", "Audience with the Baron"'
+                placeholder='e.g., "Goblin Ambush"'
                 required
                 autoFocus
               />
             </div>
 
-            {/* Type and Status */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                  Type
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">Type</label>
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                   className="form-input"
                 >
                   {ENCOUNTER_TYPES.map(type => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
+                    <option key={type.value} value={type.value}>{type.label}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                  Status
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">Status</label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   className="form-input"
                 >
                   {ENCOUNTER_STATUSES.map(status => (
-                    <option key={status.value} value={status.value}>
-                      {status.label}
-                    </option>
+                    <option key={status.value} value={status.value}>{status.label}</option>
                   ))}
                 </select>
               </div>
             </div>
 
-            {/* Summary */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                Summary <span className="text-xs text-gray-500 font-normal">(shown in lists)</span>
+                Summary <span className="text-xs text-gray-500 font-normal">(shown in cards)</span>
               </label>
               <input
                 type="text"
@@ -848,13 +932,9 @@ function EncounterFormModal({
             </div>
           </div>
 
-          {/* Collapsible sections */}
           <div className="space-y-2 pt-2">
-            <p className="text-xs text-gray-500 uppercase tracking-wider font-medium px-1">
-              Additional Details (click to expand)
-            </p>
+            <p className="text-xs text-gray-500 uppercase tracking-wider font-medium px-1">Additional Details</p>
 
-            {/* Description & Boxed Text */}
             <FormSection
               title="Description & Read-Aloud"
               icon={Scroll}
@@ -869,7 +949,7 @@ function EncounterFormModal({
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="form-input min-h-[80px]"
-                    placeholder="Setup, context, and what the DM needs to know..."
+                    placeholder="Setup, context..."
                   />
                 </div>
                 <div>
@@ -878,13 +958,12 @@ function EncounterFormModal({
                     value={formData.boxed_text}
                     onChange={(e) => setFormData({ ...formData, boxed_text: e.target.value })}
                     className="form-input min-h-[80px] border-amber-500/20 focus:border-amber-500/40"
-                    placeholder="The text you'll read to players to set the scene..."
+                    placeholder="Text to read to players..."
                   />
                 </div>
               </div>
             </FormSection>
 
-            {/* Combat Details */}
             {isCombat && (
               <FormSection
                 title="Combat Details"
@@ -920,7 +999,6 @@ function EncounterFormModal({
                     </div>
                   </div>
 
-                  {/* Enemies */}
                   <div>
                     <label className="block text-xs text-gray-400 mb-1">Enemies</label>
                     <div className="space-y-2">
@@ -955,11 +1033,7 @@ function EncounterFormModal({
                             className="form-input w-16 text-sm"
                             placeholder="AC"
                           />
-                          <button
-                            type="button"
-                            onClick={() => removeEnemy(idx)}
-                            className="p-1 text-gray-500 hover:text-red-400"
-                          >
+                          <button type="button" onClick={() => removeEnemy(idx)} className="p-1 text-gray-500 hover:text-red-400">
                             <X className="w-4 h-4" />
                           </button>
                         </div>
@@ -981,7 +1055,7 @@ function EncounterFormModal({
                       value={formData.tactics}
                       onChange={(e) => setFormData({ ...formData, tactics: e.target.value })}
                       className="form-input min-h-[60px] text-sm"
-                      placeholder="How do the enemies fight? What's their strategy?"
+                      placeholder="How do enemies fight?"
                     />
                   </div>
                   <div>
@@ -990,14 +1064,13 @@ function EncounterFormModal({
                       value={formData.terrain}
                       onChange={(e) => setFormData({ ...formData, terrain: e.target.value })}
                       className="form-input min-h-[60px] text-sm"
-                      placeholder="Environmental features, cover, hazards..."
+                      placeholder="Environmental features, cover..."
                     />
                   </div>
                 </div>
               </FormSection>
             )}
 
-            {/* Social Details */}
             {isSocial && (
               <FormSection
                 title="Social Details"
@@ -1013,7 +1086,7 @@ function EncounterFormModal({
                       value={formData.stakes}
                       onChange={(e) => setFormData({ ...formData, stakes: e.target.value })}
                       className="form-input min-h-[60px] text-sm"
-                      placeholder="What's at risk in this negotiation/conversation?"
+                      placeholder="What's at risk?"
                     />
                   </div>
                   <div>
@@ -1022,23 +1095,19 @@ function EncounterFormModal({
                       value={formData.npc_goals}
                       onChange={(e) => setFormData({ ...formData, npc_goals: e.target.value })}
                       className="form-input min-h-[60px] text-sm"
-                      placeholder="What does the NPC want from this interaction?"
+                      placeholder="What does the NPC want?"
                     />
                   </div>
                 </div>
               </FormSection>
             )}
 
-            {/* Location & Quest */}
             <FormSection
               title="Location & Quest"
               icon={MapPin}
               isOpen={openSections.has('location')}
               onToggle={() => toggleSection('location')}
-              preview={
-                locations.find(l => l.id === formData.location_id)?.name ||
-                quests.find(q => q.id === formData.quest_id)?.name || ''
-              }
+              preview={locations.find(l => l.id === formData.location_id)?.name || quests.find(q => q.id === formData.quest_id)?.name || ''}
             >
               <div className="space-y-3 mt-2">
                 <div>
@@ -1050,9 +1119,7 @@ function EncounterFormModal({
                   >
                     <option value="">No specific location</option>
                     {locations.map(loc => (
-                      <option key={loc.id} value={loc.id}>
-                        {loc.name} ({loc.type})
-                      </option>
+                      <option key={loc.id} value={loc.id}>{loc.name} ({loc.type})</option>
                     ))}
                   </select>
                 </div>
@@ -1065,16 +1132,13 @@ function EncounterFormModal({
                   >
                     <option value="">No related quest</option>
                     {quests.map(quest => (
-                      <option key={quest.id} value={quest.id}>
-                        {quest.name}
-                      </option>
+                      <option key={quest.id} value={quest.id}>{quest.name}</option>
                     ))}
                   </select>
                 </div>
               </div>
             </FormSection>
 
-            {/* Rewards */}
             <FormSection
               title="Rewards"
               icon={Gift}
@@ -1099,22 +1163,18 @@ function EncounterFormModal({
                     value={formData.rewards}
                     onChange={(e) => setFormData({ ...formData, rewards: e.target.value })}
                     className="form-input min-h-[60px] text-sm"
-                    placeholder="Treasure, items, information gained..."
+                    placeholder="Treasure, items..."
                   />
                 </div>
               </div>
             </FormSection>
 
-            {/* Session Tracking */}
             <FormSection
               title="Session Tracking"
-              icon={Scroll}
+              icon={Calendar}
               isOpen={openSections.has('session')}
               onToggle={() => toggleSection('session')}
-              preview={
-                formData.played_session ? `Played: Session ${formData.played_session}` :
-                formData.planned_session ? `Planned: Session ${formData.planned_session}` : ''
-              }
+              preview={formData.played_session ? `Played: S${formData.played_session}` : formData.planned_session ? `Planned: S${formData.planned_session}` : ''}
             >
               <div className="grid grid-cols-2 gap-3 mt-2">
                 <div>
@@ -1140,7 +1200,6 @@ function EncounterFormModal({
               </div>
             </FormSection>
 
-            {/* Outcome (for used encounters) */}
             <FormSection
               title="Outcome & Notes"
               icon={Check}
@@ -1155,7 +1214,7 @@ function EncounterFormModal({
                     value={formData.outcome}
                     onChange={(e) => setFormData({ ...formData, outcome: e.target.value })}
                     className="form-input min-h-[60px] text-sm"
-                    placeholder="How did it resolve? Victory, defeat, negotiation?"
+                    placeholder="How did it resolve?"
                   />
                 </div>
                 <div>
@@ -1164,13 +1223,12 @@ function EncounterFormModal({
                     value={formData.player_notes}
                     onChange={(e) => setFormData({ ...formData, player_notes: e.target.value })}
                     className="form-input min-h-[60px] text-sm"
-                    placeholder="Memorable moments, quotes, surprises..."
+                    placeholder="Memorable moments..."
                   />
                 </div>
               </div>
             </FormSection>
 
-            {/* DM Notes & Secrets */}
             <FormSection
               title="DM Notes & Secrets"
               icon={Skull}
@@ -1185,19 +1243,19 @@ function EncounterFormModal({
                     value={formData.dm_notes}
                     onChange={(e) => setFormData({ ...formData, dm_notes: e.target.value })}
                     className="form-input min-h-[60px] text-sm"
-                    placeholder="Reminders for running this encounter..."
+                    placeholder="Reminders..."
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-red-400 mb-1 flex items-center gap-1">
                     <Skull className="w-3 h-3" />
-                    Secrets (players won't see)
+                    Secrets
                   </label>
                   <textarea
                     value={formData.secrets}
                     onChange={(e) => setFormData({ ...formData, secrets: e.target.value })}
                     className="form-input min-h-[60px] text-sm border-red-500/20 focus:border-red-500/40"
-                    placeholder="Hidden truths, twists, what's really going on..."
+                    placeholder="Hidden truths..."
                   />
                 </div>
               </div>
@@ -1205,11 +1263,8 @@ function EncounterFormModal({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex justify-end gap-3 pt-4 border-t border-[--border] bg-[--bg-surface]">
-          <Button variant="ghost" onClick={onClose} disabled={saving}>
-            Cancel
-          </Button>
+          <Button variant="ghost" onClick={onClose} disabled={saving}>Cancel</Button>
           <Button type="submit" loading={saving} disabled={!formData.name.trim()}>
             {encounter ? 'Save Changes' : 'Add Encounter'}
           </Button>
@@ -1225,10 +1280,8 @@ export default function EncountersPage() {
   const router = useRouter()
   const supabase = useSupabase()
   const { user } = useUser()
-
   const campaignId = params.id as string
-
-  const { can, loading: permissionsLoading, isMember, isOwner, isDm } = usePermissions(campaignId)
+  const { loading: permissionsLoading, isMember, isOwner, isDm } = usePermissions(campaignId)
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [encounters, setEncounters] = useState<Encounter[]>([])
@@ -1238,7 +1291,47 @@ export default function EncountersPage() {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+
+  // Board settings
+  const [boardSettings, setBoardSettings] = useState<BoardSettings>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`encounter-board-settings-${campaignId}`)
+      if (saved) {
+        try {
+          return JSON.parse(saved)
+        } catch {
+          return DEFAULT_BOARD_SETTINGS
+        }
+      }
+    }
+    return DEFAULT_BOARD_SETTINGS
+  })
+  const [showColumnsDropdown, setShowColumnsDropdown] = useState(false)
+  const [showDetailDropdown, setShowDetailDropdown] = useState(false)
+  const columnsDropdownRef = useRef<HTMLDivElement>(null)
+  const detailDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Save board settings
+  useEffect(() => {
+    if (typeof window !== 'undefined' && campaignId) {
+      localStorage.setItem(`encounter-board-settings-${campaignId}`, JSON.stringify(boardSettings))
+    }
+  }, [boardSettings, campaignId])
+
+  // Close dropdowns on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node
+      if (columnsDropdownRef.current && !columnsDropdownRef.current.contains(target)) {
+        setShowColumnsDropdown(false)
+      }
+      if (detailDropdownRef.current && !detailDropdownRef.current.contains(target)) {
+        setShowDetailDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Modals
   const [selectedEncounter, setSelectedEncounter] = useState<Encounter | null>(null)
@@ -1263,11 +1356,8 @@ export default function EncountersPage() {
   }, [user, campaignId])
 
   const loadData = async () => {
-    if (!hasLoadedOnce) {
-      setLoading(true)
-    }
+    if (!hasLoadedOnce) setLoading(true)
 
-    // Load campaign
     const { data: campaignData } = await supabase
       .from('campaigns')
       .select('*')
@@ -1280,7 +1370,6 @@ export default function EncountersPage() {
     }
     setCampaign(campaignData)
 
-    // Load encounters
     const { data: encountersData } = await supabase
       .from('encounters')
       .select('*')
@@ -1289,7 +1378,6 @@ export default function EncountersPage() {
 
     setEncounters(encountersData || [])
 
-    // Load locations
     const { data: locationsData } = await supabase
       .from('locations')
       .select('id, name, type')
@@ -1298,7 +1386,6 @@ export default function EncountersPage() {
 
     setLocations(locationsData || [])
 
-    // Load quests
     const { data: questsData } = await supabase
       .from('quests')
       .select('id, name, type')
@@ -1321,22 +1408,38 @@ export default function EncountersPage() {
         encounter.summary?.toLowerCase().includes(query)
       if (!matchesSearch) return false
     }
-
-    if (typeFilter !== 'all' && encounter.type !== typeFilter) {
-      return false
-    }
-
-    if (statusFilter !== 'all' && encounter.status !== statusFilter) {
-      return false
-    }
-
+    if (typeFilter !== 'all' && encounter.type !== typeFilter) return false
     return true
   })
 
-  // Group by status
-  const preparedEncounters = filteredEncounters.filter(e => e.status === 'prepared')
-  const usedEncounters = filteredEncounters.filter(e => e.status === 'used')
-  const skippedEncounters = filteredEncounters.filter(e => e.status === 'skipped')
+  // Group by status for board
+  const getEncountersByStatus = (status: string) =>
+    filteredEncounters.filter(e => e.status === status)
+
+  // Handle drag end
+  const handleDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result
+    if (!destination) return
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return
+
+    const newStatus = destination.droppableId
+
+    // Optimistic update
+    setEncounters(prev =>
+      prev.map(e => e.id === draggableId ? { ...e, status: newStatus } : e)
+    )
+
+    // Update in database
+    const { error } = await supabase
+      .from('encounters')
+      .update({ status: newStatus })
+      .eq('id', draggableId)
+
+    if (error) {
+      console.error('Failed to update encounter status:', error)
+      loadData()
+    }
+  }
 
   // Save encounter
   const handleSave = async (data: Partial<Encounter>) => {
@@ -1350,16 +1453,11 @@ export default function EncountersPage() {
           .from('encounters')
           .update(data)
           .eq('id', editingEncounter.id)
-
         if (error) throw error
       } else {
         const { error } = await supabase
           .from('encounters')
-          .insert({
-            ...data,
-            campaign_id: campaignId,
-          })
-
+          .insert({ ...data, campaign_id: campaignId })
         if (error) throw error
       }
 
@@ -1371,10 +1469,7 @@ export default function EncountersPage() {
           .select('*')
           .eq('id', editedId)
           .single()
-
-        if (updated) {
-          setSelectedEncounter(updated)
-        }
+        if (updated) setSelectedEncounter(updated)
       }
 
       setShowAddModal(false)
@@ -1395,9 +1490,7 @@ export default function EncountersPage() {
         .from('encounters')
         .delete()
         .eq('id', selectedEncounter.id)
-
       if (error) throw error
-
       await loadData()
       setSelectedEncounter(null)
       setShowDeleteModal(false)
@@ -1408,7 +1501,6 @@ export default function EncountersPage() {
     }
   }
 
-  // Loading state
   if (loading || permissionsLoading) {
     return (
       <AppLayout campaignId={campaignId}>
@@ -1419,21 +1511,16 @@ export default function EncountersPage() {
     )
   }
 
-  // Permission check
   if (!isMember) {
     return (
       <AppLayout campaignId={campaignId}>
-        <AccessDeniedPage
-          campaignId={campaignId}
-          message="You don't have permission to view encounters for this campaign."
-        />
+        <AccessDeniedPage campaignId={campaignId} message="You don't have permission to view encounters." />
       </AppLayout>
     )
   }
 
   return (
     <AppLayout campaignId={campaignId} hideHeader>
-      {/* Page Header */}
       <CampaignPageHeader
         campaign={campaign}
         campaignId={campaignId}
@@ -1449,10 +1536,7 @@ export default function EncountersPage() {
         onOpenResize={() => setShowResizeModal(true)}
         onOpenShare={() => setShowShareModal(true)}
         actions={(
-          <Button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2"
-          >
+          <Button onClick={() => setShowAddModal(true)} className="flex items-center gap-2">
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Add Encounter</span>
           </Button>
@@ -1465,15 +1549,15 @@ export default function EncountersPage() {
           <GuidanceTip
             tipId="encounters_intro"
             title="Plan Your Moments"
-            description="Encounters are the exciting moments of your sessions - battles, negotiations, puzzles, and traps. Prepare them ahead of time and track what the party has faced."
+            description="Drag encounters between columns to change their status. Use the dropdowns to customize what you see."
             variant="banner"
             showOnce
           />
 
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Search */}
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none z-10" />
+            <div className="relative flex-[2] min-w-[200px]">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none z-10" />
               <input
                 type="text"
                 placeholder="Search encounters..."
@@ -1492,35 +1576,122 @@ export default function EncountersPage() {
             >
               <option value="all">All Types</option>
               {ENCOUNTER_TYPES.map(type => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
+                <option key={type.value} value={type.value}>{type.label}</option>
               ))}
             </select>
 
-            {/* Status filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="form-input w-full sm:w-32"
-            >
-              <option value="all">All Status</option>
-              {ENCOUNTER_STATUSES.map(status => (
-                <option key={status.value} value={status.value}>
-                  {status.label}
-                </option>
-              ))}
-            </select>
+            {/* Columns dropdown */}
+            <div className="relative" ref={columnsDropdownRef}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowColumnsDropdown(!showColumnsDropdown)
+                  setShowDetailDropdown(false)
+                }}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[--border] text-sm text-gray-300 hover:bg-white/5 transition-colors"
+              >
+                <Columns className="w-4 h-4" />
+                <span className="hidden sm:inline">Columns</span>
+                <span className="text-xs bg-white/10 px-1.5 py-0.5 rounded">{boardSettings.visibleColumns.length}</span>
+                <ChevronDown className="w-3 h-3" />
+              </button>
+
+              {showColumnsDropdown && (
+                <div className="absolute right-0 top-full mt-1 w-56 bg-[#1a1a24] border border-white/10 rounded-xl shadow-xl z-50 py-2" onClick={(e) => e.stopPropagation()}>
+                  <div className="px-3 py-1 text-xs text-gray-500 uppercase tracking-wider">Visible Columns</div>
+                  {COLUMN_OPTIONS.map(col => {
+                    const isVisible = boardSettings.visibleColumns.includes(col.key)
+                    return (
+                      <button
+                        key={col.key}
+                        onClick={() => {
+                          const newColumns = isVisible
+                            ? boardSettings.visibleColumns.filter(c => c !== col.key)
+                            : [...boardSettings.visibleColumns, col.key]
+                          if (newColumns.length > 0) {
+                            setBoardSettings(prev => ({ ...prev, visibleColumns: newColumns }))
+                          }
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-white/5 transition-colors"
+                      >
+                        <div className={cn(
+                          'w-4 h-4 rounded border flex items-center justify-center',
+                          isVisible ? 'bg-[--arcane-purple] border-[--arcane-purple]' : 'border-gray-600'
+                        )}>
+                          {isVisible && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: col.color }} />
+                        <span className="text-gray-300">{col.label}</span>
+                      </button>
+                    )
+                  })}
+                  <div className="border-t border-white/10 mt-2 pt-2">
+                    <div className="px-3 py-1 text-xs text-gray-500 uppercase tracking-wider">Quick Presets</div>
+                    {BOARD_PRESETS.map(preset => (
+                      <button
+                        key={preset.name}
+                        onClick={() => {
+                          setBoardSettings({ visibleColumns: preset.columns, detailLevel: preset.detail })
+                          setShowColumnsDropdown(false)
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                      >
+                        <span>{preset.name}</span>
+                        <span className="text-xs text-gray-600">({preset.columns.length} cols, {preset.detail})</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Detail dropdown */}
+            <div className="relative" ref={detailDropdownRef}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowDetailDropdown(!showDetailDropdown)
+                  setShowColumnsDropdown(false)
+                }}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[--border] text-sm text-gray-300 hover:bg-white/5 transition-colors"
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                <span className="hidden sm:inline">Detail</span>
+                <ChevronDown className="w-3 h-3" />
+              </button>
+
+              {showDetailDropdown && (
+                <div className="absolute right-0 top-full mt-1 w-52 bg-[#1a1a24] border border-white/10 rounded-xl shadow-xl z-50 py-2" onClick={(e) => e.stopPropagation()}>
+                  <div className="px-3 py-1 text-xs text-gray-500 uppercase tracking-wider">Card Detail Level</div>
+                  {DETAIL_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => {
+                        setBoardSettings(prev => ({ ...prev, detailLevel: opt.value }))
+                        setShowDetailDropdown(false)
+                      }}
+                      className={cn(
+                        'w-full flex flex-col px-3 py-2 text-sm text-left transition-colors',
+                        boardSettings.detailLevel === opt.value ? 'bg-[--arcane-purple]/20 text-[--arcane-purple]' : 'text-gray-300 hover:bg-white/5'
+                      )}
+                    >
+                      <span className="font-medium">{opt.label}</span>
+                      <span className="text-xs text-gray-500">{opt.description}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Encounter List */}
+        {/* Board */}
         <div className="p-4">
           {encounters.length === 0 ? (
             <EmptyState
               icon={<Swords className="w-12 h-12" />}
               title="No encounters yet"
-              description="Plan combat, social, and exploration encounters. Link them to locations and quests, then track what the party has faced."
+              description="Plan combat, social, and exploration encounters. Link them to locations and quests."
               tip="Start by creating a few prepared encounters for your next session."
               action={
                 <Button onClick={() => setShowAddModal(true)}>
@@ -1529,82 +1700,31 @@ export default function EncountersPage() {
                 </Button>
               }
             />
-          ) : filteredEncounters.length === 0 ? (
-            <EmptyState
-              icon={<Swords className="w-12 h-12" />}
-              title="No matching encounters"
-              description="Try adjusting your search or filters"
-            />
           ) : (
-            <div className="space-y-6">
-              {/* Prepared section */}
-              {preparedEncounters.length > 0 && (
-                <div>
-                  <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-[--arcane-purple]" />
-                    Prepared ({preparedEncounters.length})
-                  </h2>
-                  <div className="space-y-2">
-                    {preparedEncounters.map(encounter => (
-                      <EncounterCard
-                        key={encounter.id}
-                        encounter={encounter}
-                        location={locations.find(l => l.id === encounter.location_id)}
-                        quest={quests.find(q => q.id === encounter.quest_id)}
-                        onClick={() => setSelectedEncounter(encounter)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Used section */}
-              {usedEncounters.length > 0 && (
-                <div>
-                  <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                    Used ({usedEncounters.length})
-                  </h2>
-                  <div className="space-y-2">
-                    {usedEncounters.map(encounter => (
-                      <EncounterCard
-                        key={encounter.id}
-                        encounter={encounter}
-                        location={locations.find(l => l.id === encounter.location_id)}
-                        quest={quests.find(q => q.id === encounter.quest_id)}
-                        onClick={() => setSelectedEncounter(encounter)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Skipped section */}
-              {skippedEncounters.length > 0 && (
-                <div>
-                  <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-gray-500" />
-                    Skipped ({skippedEncounters.length})
-                  </h2>
-                  <div className="space-y-2">
-                    {skippedEncounters.map(encounter => (
-                      <EncounterCard
-                        key={encounter.id}
-                        encounter={encounter}
-                        location={locations.find(l => l.id === encounter.location_id)}
-                        quest={quests.find(q => q.id === encounter.quest_id)}
-                        onClick={() => setSelectedEncounter(encounter)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <div className="flex gap-3 overflow-x-auto pb-4">
+                {boardSettings.visibleColumns.map(status => {
+                  const col = COLUMN_OPTIONS.find(c => c.key === status)!
+                  return (
+                    <BoardColumn
+                      key={status}
+                      title={col.label}
+                      status={status}
+                      encounters={getEncountersByStatus(status)}
+                      locations={locations}
+                      quests={quests}
+                      onSelect={setSelectedEncounter}
+                      color={col.color}
+                      detailLevel={boardSettings.detailLevel}
+                    />
+                  )
+                })}
+              </div>
+            </DragDropContext>
           )}
         </div>
       </div>
 
-      {/* View Modal */}
       {selectedEncounter && (
         <EncounterViewModal
           encounter={selectedEncounter}
@@ -1622,13 +1742,9 @@ export default function EncountersPage() {
 
       <BackToTopButton />
 
-      {/* Add/Edit Modal */}
       <EncounterFormModal
         isOpen={showAddModal}
-        onClose={() => {
-          setShowAddModal(false)
-          setEditingEncounter(null)
-        }}
+        onClose={() => { setShowAddModal(false); setEditingEncounter(null) }}
         onSave={handleSave}
         encounter={editingEncounter}
         locations={locations}
@@ -1636,79 +1752,25 @@ export default function EncountersPage() {
         saving={saving}
       />
 
-      {/* Delete Modal */}
-      <Modal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        title="Delete Encounter"
-        size="sm"
-      >
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Delete Encounter" size="sm">
         <div className="space-y-4">
           <p className="text-gray-300">
-            Are you sure you want to delete{' '}
-            <span className="font-semibold text-white">{selectedEncounter?.name}</span>?
+            Are you sure you want to delete <span className="font-semibold text-white">{selectedEncounter?.name}</span>?
           </p>
           <div className="flex justify-end gap-3">
-            <Button variant="ghost" onClick={() => setShowDeleteModal(false)}>
-              Cancel
-            </Button>
-            <Button variant="danger" onClick={handleDelete} loading={deleting}>
-              Delete
-            </Button>
+            <Button variant="ghost" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
+            <Button variant="danger" onClick={handleDelete} loading={deleting}>Delete</Button>
           </div>
         </div>
       </Modal>
 
-      {/* Campaign header modals */}
-      <PartyModal
-        campaignId={campaignId}
-        characters={[]}
-        isOpen={showMembersModal}
-        onClose={() => setShowMembersModal(false)}
-      />
-
-      {showLabelsModal && (
-        <TagManager
-          campaignId={campaignId}
-          isOpen={showLabelsModal}
-          onClose={() => setShowLabelsModal(false)}
-        />
-      )}
-
-      {showFactionsModal && (
-        <FactionManager
-          campaignId={campaignId}
-          characters={[]}
-          isOpen={showFactionsModal}
-          onClose={() => setShowFactionsModal(false)}
-        />
-      )}
-
-      {showRelationshipsModal && (
-        <RelationshipManager
-          campaignId={campaignId}
-          isOpen={showRelationshipsModal}
-          onClose={() => setShowRelationshipsModal(false)}
-        />
-      )}
-
-      {showResizeModal && (
-        <ResizeToolbar
-          onClose={() => setShowResizeModal(false)}
-          characters={[]}
-          onResize={async () => {}}
-        />
-      )}
-
+      <PartyModal campaignId={campaignId} characters={[]} isOpen={showMembersModal} onClose={() => setShowMembersModal(false)} />
+      {showLabelsModal && <TagManager campaignId={campaignId} isOpen={showLabelsModal} onClose={() => setShowLabelsModal(false)} />}
+      {showFactionsModal && <FactionManager campaignId={campaignId} characters={[]} isOpen={showFactionsModal} onClose={() => setShowFactionsModal(false)} />}
+      {showRelationshipsModal && <RelationshipManager campaignId={campaignId} isOpen={showRelationshipsModal} onClose={() => setShowRelationshipsModal(false)} />}
+      {showResizeModal && <ResizeToolbar onClose={() => setShowResizeModal(false)} characters={[]} onResize={async () => {}} />}
       {campaign && (
-        <UnifiedShareModal
-          isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
-          contentType="campaign"
-          contentId={campaignId}
-          contentName={campaign.name}
-          contentMode="active"
-        />
+        <UnifiedShareModal isOpen={showShareModal} onClose={() => setShowShareModal(false)} contentType="campaign" contentId={campaignId} contentName={campaign.name} contentMode="active" />
       )}
     </AppLayout>
   )
