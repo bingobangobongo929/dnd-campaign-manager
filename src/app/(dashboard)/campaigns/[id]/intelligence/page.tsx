@@ -89,6 +89,8 @@ const SUGGESTION_ICONS: Record<SuggestionType, typeof Skull> = {
   relationship_gap: Link2,
   secret_opportunity: Eye,
   cross_reference: GitMerge,
+  // Session linking types
+  quest_session_link: CalendarDays,
 }
 
 const SUGGESTION_COLORS: Record<SuggestionType, { bg: string; text: string; border: string }> = {
@@ -118,6 +120,8 @@ const SUGGESTION_COLORS: Record<SuggestionType, { bg: string; text: string; bord
   relationship_gap: { bg: 'rgba(245, 158, 11, 0.12)', text: '#fbbf24', border: 'rgba(245, 158, 11, 0.3)' },
   secret_opportunity: { bg: 'rgba(139, 92, 246, 0.12)', text: '#a78bfa', border: 'rgba(139, 92, 246, 0.3)' },
   cross_reference: { bg: 'rgba(59, 130, 246, 0.12)', text: '#60a5fa', border: 'rgba(59, 130, 246, 0.3)' },
+  // Session linking types
+  quest_session_link: { bg: 'rgba(99, 102, 241, 0.12)', text: '#818cf8', border: 'rgba(99, 102, 241, 0.3)' },
 }
 
 const CONFIDENCE_COLORS: Record<ConfidenceLevel, string> = {
