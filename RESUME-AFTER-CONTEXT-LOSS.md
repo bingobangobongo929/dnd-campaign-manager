@@ -38,10 +38,11 @@ The AI detection code is written but awaiting validation with real/fake data.
 ### What's Next (Pick One)
 1. ~~**Quick Reference - Encounters**~~ ✅ DONE - Pin encounters, Roll button in modal
 2. ~~**Quick Reference - Quests Roll**~~ ✅ DONE - Roll button added to quest picker
-3. **Location Detail - Encounters** - "Encounters Here" section (NEXT)
-4. **Quest Detail - Encounters** - "Encounters for this Quest" section
+3. ~~**Location Detail - Encounters**~~ ✅ DONE - "Encounters Here" section
+4. ~~**Quest Detail - Encounters**~~ ✅ DONE - "Encounters" section
 5. **Test Campaign Intelligence** - Create fake session notes to validate detection
 6. **Oneshots Migration** - Recreate oneshot UI using unified system
+7. **Sessions Link to Quests** - Link sessions to quests progressed (from TODO list)
 
 ### DEFERRED - Do NOT Start Yet
 - **Share Pages Update** - WAIT until 100% happy with every single field in every campaign page. No point updating share pages if campaign fields might still change.
