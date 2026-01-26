@@ -24,7 +24,7 @@ import {
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
-import { OnboardingTour, ContentBadge, StatusIndicator, determineCampaignStatus, getStatusCardClass, DismissibleEmptyState, getSectionColorScheme, EMPTY_STATE_CONTENT } from '@/components/ui'
+import { OnboardingTour, ContentBadge, StatusIndicator, determineCampaignStatus, getStatusCardClass, DismissibleEmptyState, getSectionColorScheme, EMPTY_STATE_CONTENT, PendingDeletionBanner } from '@/components/ui'
 import { FounderBadge } from '@/components/membership'
 import { getCampaignBadge, getOneshotBadge, getCharacterBadge } from '@/lib/content-badges'
 import { MobileLayout, MobileSectionHeader, MobileSearchBar } from '@/components/mobile'
@@ -600,6 +600,9 @@ export default function HomePage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto space-y-12">
+
+        {/* Pending Deletion Warning Banner */}
+        <PendingDeletionBanner />
 
         {/* Founder Welcome Banner */}
         {isFounder && !membershipLoading && !founderBannerDismissed && (

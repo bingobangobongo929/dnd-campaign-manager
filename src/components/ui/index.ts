@@ -32,3 +32,4 @@ export { DismissibleEmptyState, getSectionColorScheme, EMPTY_STATE_CONTENT } fro
 export type { SectionId, ColorScheme } from './DismissibleEmptyState'
 export { PageCustomizeModal } from './PageCustomizeModal'
 export type { TabConfig, PagePreferences } from './PageCustomizeModal'
+export { PendingDeletionBanner } from './pending-deletion-banner'

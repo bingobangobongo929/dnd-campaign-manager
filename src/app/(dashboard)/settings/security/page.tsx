@@ -194,13 +194,17 @@ export default function SecuritySettingsPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete account')
+        throw new Error(data.error || 'Failed to schedule account deletion')
       }
 
-      toast.success('Account deleted successfully')
-      router.push('/login')
+      // Show detailed success message
+      toast.success(
+        `Account deletion scheduled for ${data.formattedDate}. Check your email to cancel if needed.`,
+        { duration: 8000 }
+      )
+      router.push('/login?deleted=scheduled')
     } catch (error) {
-      setDeleteError(error instanceof Error ? error.message : 'Failed to delete account')
+      setDeleteError(error instanceof Error ? error.message : 'Failed to schedule account deletion')
     } finally {
       setDeleteLoading(false)
     }
@@ -320,16 +324,21 @@ export default function SecuritySettingsPage() {
               </div>
               <div className="flex-1">
                 <h2 className="text-lg font-semibold text-red-400">Delete Account</h2>
-                <p className="text-sm text-gray-400 mt-1">
-                  Permanently delete your account and all associated data. This action cannot be undone.
+                <p className="text-sm text-gray-400 mt-1 mb-3">
+                  Request deletion of your account and all associated data.
                   This is your right under GDPR Article 17 (Right to Erasure).
                 </p>
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-amber-200">
+                    <strong>14-day grace period:</strong> After requesting deletion, you have 14 days to change your mind and cancel. After that, deletion is permanent and cannot be undone.
+                  </p>
+                </div>
                 <div className="mt-4">
                   <button
                     onClick={() => setShowDeleteModal(true)}
                     className="px-4 py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors text-sm font-medium"
                   >
-                    Delete Account
+                    Request Account Deletion
                   </button>
                 </div>
               </div>
@@ -560,15 +569,35 @@ export default function SecuritySettingsPage() {
               setDeleteTotpCode('')
               setDeleteError('')
             }}
-            title="Delete Account"
+            title="Request Account Deletion"
           >
             <div className="space-y-4">
+              {/* Grace period explanation */}
+              <div className="bg-[#1a1a24] rounded-xl p-4 border border-white/[0.08]">
+                <h3 className="text-white font-medium mb-3">What happens when you delete your account:</h3>
+                <ol className="space-y-2 text-sm text-gray-300">
+                  <li className="flex gap-2">
+                    <span className="text-purple-400 font-medium">1.</span>
+                    <span>Your account will be <strong>immediately deactivated</strong> and you'll be signed out</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-purple-400 font-medium">2.</span>
+                    <span>You have <strong>14 days</strong> to change your mind and cancel via email link</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-purple-400 font-medium">3.</span>
+                    <span>After 14 days, your account and <strong>all data will be permanently deleted</strong></span>
+                  </li>
+                </ol>
+              </div>
+
+              {/* Warning */}
               <div className="flex items-start gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
                 <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm text-red-200 font-medium">This action cannot be undone!</p>
+                  <p className="text-sm text-red-200 font-medium">After 14 days, this cannot be undone!</p>
                   <p className="text-sm text-red-200/70 mt-1">
-                    All your campaigns, characters, and data will be permanently deleted.
+                    All campaigns, characters, oneshots, and uploaded files will be permanently deleted.
                   </p>
                 </div>
               </div>
@@ -636,7 +665,7 @@ export default function SecuritySettingsPage() {
                   {deleteLoading ? (
                     <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                   ) : (
-                    'Delete My Account'
+                    'Schedule Deletion'
                   )}
                 </button>
               </div>

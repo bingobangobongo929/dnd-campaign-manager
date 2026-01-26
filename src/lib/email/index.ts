@@ -451,23 +451,174 @@ export function twoFactorDisabledEmail(): { subject: string; html: string } {
   }
 }
 
+// Email sent when user REQUESTS deletion (starts 14-day grace period)
+export function accountDeletionScheduledEmail(options: {
+  userName: string
+  deletionDate: string
+  cancelUrl: string
+}): { subject: string; html: string } {
+  const { userName, deletionDate, cancelUrl } = options
+
+  const content = `
+    <div style="text-align: center; margin-bottom: 24px;">
+      ${emailIcon('⏳', '#3d3020')}
+    </div>
+
+    <h1 style="margin: 0 0 8px 0; font-size: 26px; font-weight: 700; color: #ffffff; text-align: center;">
+      Account Deletion Scheduled
+    </h1>
+    <p style="margin: 0 0 24px 0; font-size: 15px; color: #b4b4b4; text-align: center;">
+      ${userName || 'Adventurer'}, your request has been received
+    </p>
+
+    ${emailDivider()}
+
+    <div style="background-color: #3d3020; border: 1px solid #5c4a30; border-radius: 16px; padding: 24px; text-align: center; margin: 24px 0;">
+      <p style="margin: 0 0 8px 0; font-size: 13px; color: #fcd34d; text-transform: uppercase; letter-spacing: 1px;">
+        Your account will be permanently deleted on
+      </p>
+      <p style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff;">
+        ${deletionDate}
+      </p>
+      <p style="margin: 12px 0 0 0; font-size: 14px; color: #d4a574;">
+        14 days from now
+      </p>
+    </div>
+
+    <p style="margin: 0 0 16px 0; font-size: 15px; color: #e5e5e5; line-height: 1.6;">
+      We've scheduled your account for deletion. During this 14-day grace period:
+    </p>
+
+    <ul style="margin: 0 0 24px 0; padding-left: 20px; color: #e5e5e5; font-size: 15px; line-height: 1.8;">
+      <li>You <strong>cannot</strong> access your account</li>
+      <li>Your data is <strong>not</strong> being deleted yet</li>
+      <li>You <strong>can</strong> cancel and restore your account anytime</li>
+    </ul>
+
+    <p style="margin: 0 0 8px 0; font-size: 15px; color: #e5e5e5; line-height: 1.6; text-align: center;">
+      <strong>Changed your mind?</strong>
+    </p>
+
+    ${emailButton('Cancel Deletion & Restore Account', cancelUrl)}
+
+    ${emailDivider()}
+
+    <div style="background-color: #2d2020; border: 1px solid #4a3030; border-radius: 12px; padding: 16px;">
+      <p style="margin: 0; font-size: 13px; color: #fca5a5; text-align: center;">
+        After ${deletionDate}, your account and all data will be <strong>permanently deleted</strong> and cannot be recovered.
+      </p>
+    </div>
+
+    <p style="margin: 16px 0 0 0; font-size: 12px; color: #888888; text-align: center;">
+      If you didn't request this deletion, please cancel immediately and secure your account.
+    </p>
+  `
+
+  return {
+    subject: 'Your Multiloop account is scheduled for deletion',
+    html: emailWrapper(content, `Your Multiloop account will be deleted on ${deletionDate}. You have 14 days to cancel.`)
+  }
+}
+
+// Email sent 2 days before permanent deletion (reminder)
+export function accountDeletionReminderEmail(options: {
+  userName: string
+  deletionDate: string
+  cancelUrl: string
+}): { subject: string; html: string } {
+  const { userName, deletionDate, cancelUrl } = options
+
+  const content = `
+    <div style="text-align: center; margin-bottom: 24px;">
+      ${emailIcon('⚠️', '#3d2020')}
+    </div>
+
+    <h1 style="margin: 0 0 8px 0; font-size: 26px; font-weight: 700; color: #ffffff; text-align: center;">
+      Final Reminder
+    </h1>
+    <p style="margin: 0 0 24px 0; font-size: 15px; color: #fca5a5; text-align: center;">
+      Your account will be permanently deleted in 2 days
+    </p>
+
+    ${emailDivider()}
+
+    <div style="background-color: #3d2020; border: 1px solid #5c3030; border-radius: 16px; padding: 24px; text-align: center; margin: 24px 0;">
+      <p style="margin: 0 0 8px 0; font-size: 13px; color: #fca5a5; text-transform: uppercase; letter-spacing: 1px;">
+        Permanent deletion date
+      </p>
+      <p style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff;">
+        ${deletionDate}
+      </p>
+    </div>
+
+    <p style="margin: 0 0 16px 0; font-size: 15px; color: #e5e5e5; line-height: 1.6;">
+      Hi ${userName || 'Adventurer'},
+    </p>
+
+    <p style="margin: 0 0 16px 0; font-size: 15px; color: #e5e5e5; line-height: 1.6;">
+      This is a final reminder that your Multiloop account is scheduled to be <strong>permanently deleted</strong> on <strong>${deletionDate}</strong>.
+    </p>
+
+    <p style="margin: 0 0 16px 0; font-size: 15px; color: #e5e5e5; line-height: 1.6;">
+      Once deleted, <strong>all your data will be gone forever</strong>, including:
+    </p>
+
+    <ul style="margin: 0 0 24px 0; padding-left: 20px; color: #e5e5e5; font-size: 15px; line-height: 1.8;">
+      <li>All campaigns and session notes</li>
+      <li>All characters (vault and campaign)</li>
+      <li>All oneshots and templates</li>
+      <li>Your account settings and preferences</li>
+    </ul>
+
+    <p style="margin: 0 0 8px 0; font-size: 15px; color: #e5e5e5; line-height: 1.6; text-align: center;">
+      <strong>This is your last chance to cancel.</strong>
+    </p>
+
+    ${emailButton('Cancel Deletion & Keep My Account', cancelUrl)}
+
+    ${emailDivider()}
+
+    <p style="margin: 0; font-size: 12px; color: #888888; text-align: center;">
+      If you still want to delete your account, no action is needed. Deletion will proceed automatically.
+    </p>
+  `
+
+  return {
+    subject: 'FINAL REMINDER: Your Multiloop account will be deleted in 2 days',
+    html: emailWrapper(content, `Last chance! Your Multiloop account will be permanently deleted on ${deletionDate}`)
+  }
+}
+
+// Email sent AFTER permanent deletion is complete
 export function accountDeletedEmail(userName: string): { subject: string; html: string } {
   const content = `
     <h1 style="margin: 0 0 8px 0; font-size: 26px; font-weight: 700; color: #ffffff; text-align: center;">
-      Account Deleted
+      Account Permanently Deleted
     </h1>
     <p style="margin: 0 0 24px 0; font-size: 15px; color: #b4b4b4; text-align: center;">
-      We're sorry to see you go, ${userName || 'Adventurer'}
+      Goodbye, ${userName || 'Adventurer'}
     </p>
 
     ${emailDivider()}
 
     <p style="margin: 0 0 16px 0; font-size: 15px; color: #e5e5e5; line-height: 1.6;">
-      Your Multiloop account and all associated data have been permanently deleted as requested. This action cannot be undone.
+      Your Multiloop account and all associated data have been <strong>permanently deleted</strong>. This cannot be undone.
     </p>
 
     <p style="margin: 0 0 16px 0; font-size: 15px; color: #e5e5e5; line-height: 1.6;">
-      We hope you enjoyed using Multiloop for your tabletop adventures. If you ever decide to return, we'd be happy to have you back.
+      The following has been removed:
+    </p>
+
+    <ul style="margin: 0 0 24px 0; padding-left: 20px; color: #b4b4b4; font-size: 14px; line-height: 1.8;">
+      <li>Your account and login credentials</li>
+      <li>All campaigns and session notes</li>
+      <li>All characters and their data</li>
+      <li>All oneshots and templates</li>
+      <li>All uploaded images and files</li>
+    </ul>
+
+    <p style="margin: 0 0 16px 0; font-size: 15px; color: #e5e5e5; line-height: 1.6;">
+      We hope you enjoyed your time with Multiloop. If you ever want to return, you're welcome to create a new account at any time.
     </p>
 
     <p style="margin: 24px 0 0 0; font-size: 13px; color: #888888; text-align: center;">
@@ -476,8 +627,8 @@ export function accountDeletedEmail(userName: string): { subject: string; html: 
   `
 
   return {
-    subject: 'Your Multiloop account has been deleted',
-    html: emailWrapper(content, 'Your Multiloop account and data have been permanently deleted')
+    subject: 'Your Multiloop account has been permanently deleted',
+    html: emailWrapper(content, 'Your Multiloop account and all data have been permanently deleted')
   }
 }
 

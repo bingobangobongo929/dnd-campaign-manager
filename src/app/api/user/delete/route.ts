@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { sendEmail, accountDeletionScheduledEmail } from '@/lib/email'
+import { randomBytes } from 'crypto'
+
+// Grace period in days
+const DELETION_GRACE_PERIOD_DAYS = 14
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -45,9 +49,17 @@ export async function POST(request: NextRequest) {
     // Check if 2FA is enabled and verify TOTP code if so
     const { data: userSettings } = await supabase
       .from('user_settings')
-      .select('totp_enabled, totp_secret')
+      .select('totp_enabled, totp_secret, username, deletion_scheduled_at')
       .eq('user_id', user.id)
       .single()
+
+    // Check if deletion is already scheduled
+    if (userSettings?.deletion_scheduled_at) {
+      return NextResponse.json({
+        error: 'Account deletion is already scheduled',
+        deletionDate: userSettings.deletion_scheduled_at
+      }, { status: 400 })
+    }
 
     if (userSettings?.totp_enabled) {
       if (!totpCode) {
@@ -71,85 +83,66 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Delete all user data using cascade or manual deletion
-    // Order matters to avoid foreign key violations
+    // Calculate deletion date (14 days from now)
+    const now = new Date()
+    const deletionDate = new Date(now.getTime() + (DELETION_GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000))
 
-    // 1. Get all campaign IDs
-    const { data: campaigns } = await supabase
-      .from('campaigns')
-      .select('id')
-      .eq('user_id', user.id)
-    const campaignIds = campaigns?.map(c => c.id) || []
+    // Generate a secure cancellation token
+    const cancellationToken = randomBytes(32).toString('hex')
 
-    // 2. Get all vault character IDs
-    const { data: vaultCharacters } = await supabase
-      .from('vault_characters')
-      .select('id')
-      .eq('user_id', user.id)
-    const vaultCharacterIds = vaultCharacters?.map(vc => vc.id) || []
-
-    // Delete in proper order
-    if (campaignIds.length > 0) {
-      // Delete session attendees
-      await supabase.from('session_attendees').delete().in('session_id',
-        (await supabase.from('sessions').select('id').in('campaign_id', campaignIds)).data?.map(s => s.id) || []
-      )
-      // Delete sessions
-      await supabase.from('sessions').delete().in('campaign_id', campaignIds)
-      // Delete timeline events
-      await supabase.from('timeline_events').delete().in('campaign_id', campaignIds)
-      // Delete character groups
-      await supabase.from('character_groups').delete().in('campaign_id', campaignIds)
-      // Delete campaign characters
-      await supabase.from('characters').delete().in('campaign_id', campaignIds)
-      // Delete campaigns
-      await supabase.from('campaigns').delete().eq('user_id', user.id)
-    }
-
-    if (vaultCharacterIds.length > 0) {
-      // Delete character tags
-      await supabase.from('character_tags').delete().in('character_id', vaultCharacterIds)
-      // Delete companions
-      await supabase.from('companions').delete().in('character_id', vaultCharacterIds)
-      // Delete NPCs
-      await supabase.from('npcs').delete().in('character_id', vaultCharacterIds)
-      // Delete vault sessions
-      await supabase.from('vault_sessions').delete().in('character_id', vaultCharacterIds)
-      // Delete vault characters
-      await supabase.from('vault_characters').delete().eq('user_id', user.id)
-    }
-
-    // Delete tags
-    await supabase.from('tags').delete().eq('user_id', user.id)
-
-    // Delete oneshots
-    await supabase.from('oneshots').delete().eq('user_id', user.id)
-
-    // Delete user settings
-    await supabase.from('user_settings').delete().eq('user_id', user.id)
-
-    // Delete the user from Supabase Auth using admin API
-    // This requires the service role key
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (supabaseUrl && serviceRoleKey) {
-      const adminClient = createAdminClient(supabaseUrl, serviceRoleKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
+    // Schedule deletion instead of immediate delete
+    const { error: updateError } = await supabase
+      .from('user_settings')
+      .update({
+        deletion_requested_at: now.toISOString(),
+        deletion_scheduled_at: deletionDate.toISOString(),
+        deletion_cancellation_token: cancellationToken,
       })
+      .eq('user_id', user.id)
 
-      await adminClient.auth.admin.deleteUser(user.id)
+    if (updateError) {
+      console.error('Failed to schedule deletion:', updateError)
+      return NextResponse.json({ error: 'Failed to schedule deletion' }, { status: 500 })
+    }
+
+    // Format deletion date for email
+    const formattedDate = deletionDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+
+    // Build cancel URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://multiloop.app'
+    const cancelUrl = `${baseUrl}/account/cancel-deletion?token=${cancellationToken}&email=${encodeURIComponent(user.email!)}`
+
+    // Send confirmation email
+    const emailResult = await sendEmail(
+      accountDeletionScheduledEmail({
+        userName: userSettings?.username || user.email?.split('@')[0] || 'Adventurer',
+        deletionDate: formattedDate,
+        cancelUrl,
+      })
+    )
+
+    if (!emailResult.success) {
+      console.error('Failed to send deletion scheduled email:', emailResult.error)
+      // Don't fail the request, deletion is still scheduled
     }
 
     // Sign out the user
     await supabase.auth.signOut()
 
-    return NextResponse.json({ success: true, message: 'Account deleted successfully' })
+    return NextResponse.json({
+      success: true,
+      message: 'Account deletion scheduled',
+      deletionDate: deletionDate.toISOString(),
+      formattedDate,
+      gracePeriodDays: DELETION_GRACE_PERIOD_DAYS,
+    })
   } catch (error) {
-    console.error('Account deletion error:', error)
-    return NextResponse.json({ error: 'Failed to delete account' }, { status: 500 })
+    console.error('Account deletion scheduling error:', error)
+    return NextResponse.json({ error: 'Failed to schedule account deletion' }, { status: 500 })
   }
 }
