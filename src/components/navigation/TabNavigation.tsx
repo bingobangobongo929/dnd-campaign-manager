@@ -394,7 +394,7 @@ export const ONESHOTS_TABS: TabConfig[] = [
     }
   },
   {
-    value: 'playing',
+    value: 'participating',
     label: 'Participating',
     accentColor: 'purple',
     helpTip: {

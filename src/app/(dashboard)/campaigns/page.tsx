@@ -876,14 +876,20 @@ export default function CampaignsPage() {
               <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-purple-900/20 via-gray-900 to-gray-950 border border-white/[0.06] p-16 text-center">
                 <Users className="w-20 h-20 mx-auto mb-6 text-purple-400/50" />
                 <h2 className="text-2xl font-display font-bold text-white mb-3">
-                  Ready to Join an Adventure?
+                  Your Adventures Await
                 </h2>
-                <p className="text-gray-400 mb-4 max-w-md mx-auto">
-                  When a DM invites you to their campaign, it will appear here. You'll be able to track your character's journey, add session notes, and stay connected with your party.
+                <p className="text-gray-400 mb-8 max-w-md mx-auto">
+                  Campaigns you've joined will appear here. When your DM sends an invite, you'll be able to
+                  track your character's journey, add session notes, and stay connected with your party.
                 </p>
-                <p className="text-sm text-gray-500">
-                  Share your Multiloop email with your DM so they can send you an invite.
-                </p>
+                <div className="flex items-center justify-center gap-4">
+                  <Link
+                    href="/campaigns"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white/[0.05] hover:bg-white/[0.08] text-gray-300 font-medium rounded-xl transition-colors"
+                  >
+                    Browse Campaigns
+                  </Link>
+                </div>
               </div>
             ) : joinedCampaigns.length > 1 && (
               <section>
@@ -954,12 +960,22 @@ export default function CampaignsPage() {
         {activeTab === 'my-work' && subFilter === 'drafts' && (
           <div className="space-y-6">
             {filteredCampaigns.length === 0 ? (
-              <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
-                <Swords className="w-12 h-12 mx-auto mb-4 text-gray-400/50" />
-                <h3 className="text-lg font-medium text-white mb-2">No inactive campaigns</h3>
-                <p className="text-gray-400 max-w-sm mx-auto">
-                  Completed or retired campaigns will appear here.
+              <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-amber-900/20 via-gray-900 to-gray-950 border border-white/[0.06] p-16 text-center">
+                <Edit className="w-20 h-20 mx-auto mb-6 text-amber-400/50" />
+                <h2 className="text-2xl font-display font-bold text-white mb-3">
+                  Your Creative Workshop
+                </h2>
+                <p className="text-gray-400 mb-8 max-w-md mx-auto">
+                  Drafts and templates you're working on will appear here. When you're ready to publish
+                  a campaign for others to use, it'll live in your workshop first.
                 </p>
+                <Link
+                  href="/campaigns/new"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-amber-600 hover:bg-amber-500 text-white font-medium rounded-xl transition-colors"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  Start Creating
+                </Link>
               </div>
             ) : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1094,16 +1110,17 @@ export default function CampaignsPage() {
             <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-blue-900/20 via-gray-900 to-gray-950 border border-white/[0.06] p-16 text-center">
               <Crown className="w-20 h-20 mx-auto mb-6 text-blue-400/50" />
               <h2 className="text-2xl font-display font-bold text-white mb-3">
-                Ready to Run a Campaign?
+                Ready to Run Your Own Game?
               </h2>
               <p className="text-gray-400 mb-8 max-w-md mx-auto">
-                Create your first campaign and start building an unforgettable story. Use our AI tools to save prep time and focus on what matters - the adventure.
+                When you're ready to be the Dungeon Master, this is where the magic happens. Manage your world,
+                track sessions and NPCs, and use AI tools to save prep time.
               </p>
               <Link
                 href="/campaigns/new"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl transition-colors"
               >
-                <Plus className="w-5 h-5" />
+                <Sparkles className="w-5 h-5" />
                 Create Your First Campaign
               </Link>
             </div>
