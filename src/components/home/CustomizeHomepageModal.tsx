@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Modal } from '@/components/ui/modal'
 import {
   Swords,
@@ -10,8 +10,6 @@ import {
   BookOpen,
   Eye,
   EyeOff,
-  ChevronUp,
-  ChevronDown,
   RotateCcw,
   Wand2,
   GripVertical
@@ -52,11 +50,16 @@ export function CustomizeHomepageModal({
 }: CustomizeHomepageModalProps) {
   const [localPrefs, setLocalPrefs] = useState<HomepagePreferences>(preferences)
   const [saving, setSaving] = useState(false)
+  const [draggedItem, setDraggedItem] = useState<HomepageSectionId | null>(null)
+  const [dragOverItem, setDragOverItem] = useState<HomepageSectionId | null>(null)
+  const dragNodeRef = useRef<HTMLDivElement | null>(null)
 
   // Reset local state when modal opens
   useEffect(() => {
     if (isOpen) {
       setLocalPrefs(preferences)
+      setDraggedItem(null)
+      setDragOverItem(null)
     }
   }, [isOpen, preferences])
 
@@ -88,19 +91,62 @@ export function CustomizeHomepageModal({
 
   const orderedSections = getSectionOrder()
 
-  const moveSection = (index: number, direction: 'up' | 'down') => {
-    const newOrder = [...orderedSections]
-    const newIndex = direction === 'up' ? index - 1 : index + 1
-    if (newIndex < 0 || newIndex >= newOrder.length) return
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, sectionId: HomepageSectionId) => {
+    setDraggedItem(sectionId)
+    dragNodeRef.current = e.currentTarget
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', sectionId)
+    setTimeout(() => {
+      if (dragNodeRef.current) {
+        dragNodeRef.current.style.opacity = '0.5'
+      }
+    }, 0)
+  }
 
-    // Swap
-    ;[newOrder[index], newOrder[newIndex]] = [newOrder[newIndex], newOrder[index]]
+  const handleDragEnd = () => {
+    if (dragNodeRef.current) {
+      dragNodeRef.current.style.opacity = '1'
+    }
+    setDraggedItem(null)
+    setDragOverItem(null)
+    dragNodeRef.current = null
+  }
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, sectionId: HomepageSectionId) => {
+    e.preventDefault()
+    if (draggedItem && draggedItem !== sectionId) {
+      setDragOverItem(sectionId)
+    }
+  }
+
+  const handleDragLeave = () => {
+    setDragOverItem(null)
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetSectionId: HomepageSectionId) => {
+    e.preventDefault()
+    if (!draggedItem || draggedItem === targetSectionId) {
+      setDragOverItem(null)
+      return
+    }
+
+    const currentOrder = [...orderedSections]
+    const draggedIndex = currentOrder.indexOf(draggedItem)
+    const targetIndex = currentOrder.indexOf(targetSectionId)
+
+    if (draggedIndex === -1 || targetIndex === -1) return
+
+    const newOrder = [...currentOrder]
+    newOrder.splice(draggedIndex, 1)
+    newOrder.splice(targetIndex, 0, draggedItem)
 
     setLocalPrefs({
       ...localPrefs,
       auto_order: false,
       section_order: newOrder,
     })
+    setDragOverItem(null)
   }
 
   const toggleVisibility = (sectionId: HomepageSectionId) => {
@@ -173,47 +219,39 @@ export function CustomizeHomepageModal({
         <div className="space-y-1">
           <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Sections</p>
 
-          {orderedSections.map((sectionId, index) => {
+          {orderedSections.map((sectionId) => {
             const config = getConfig(sectionId)
             const count = sectionCounts[sectionId] || 0
             const isHidden = localPrefs.hidden_sections.includes(sectionId)
             const isAutoMode = localPrefs.auto_order
+            const isDragging = draggedItem === sectionId
+            const isDragOver = dragOverItem === sectionId
 
             return (
               <div
                 key={sectionId}
+                draggable={!isAutoMode}
+                onDragStart={(e) => !isAutoMode && handleDragStart(e, sectionId)}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => handleDragOver(e, sectionId)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, sectionId)}
                 className={cn(
                   "flex items-center gap-2 p-2.5 rounded-lg border transition-all",
                   isHidden
                     ? "bg-gray-900/50 border-white/[0.03] opacity-60"
-                    : "bg-white/[0.03] border-white/[0.06]"
+                    : "bg-white/[0.03] border-white/[0.06]",
+                  isDragging && "opacity-50",
+                  isDragOver && "border-purple-400 border-dashed bg-purple-500/20",
+                  !isAutoMode && "cursor-grab active:cursor-grabbing"
                 )}
               >
-                {/* Drag Handle / Order Indicator */}
-                <div className="flex items-center gap-1">
-                  {!isAutoMode && (
-                    <div className="flex flex-col -my-1">
-                      <button
-                        onClick={() => moveSection(index, 'up')}
-                        disabled={index === 0}
-                        className="p-0.5 text-gray-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <ChevronUp className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => moveSection(index, 'down')}
-                        disabled={index === orderedSections.length - 1}
-                        className="p-0.5 text-gray-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <ChevronDown className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
-                  {isAutoMode && (
-                    <div className="w-5 flex items-center justify-center">
-                      <GripVertical className="w-3.5 h-3.5 text-gray-600" />
-                    </div>
-                  )}
+                {/* Drag Handle */}
+                <div className={cn(
+                  "text-gray-500 transition-colors",
+                  !isAutoMode && "hover:text-gray-300"
+                )}>
+                  <GripVertical className="w-4 h-4" />
                 </div>
 
                 {/* Icon */}
