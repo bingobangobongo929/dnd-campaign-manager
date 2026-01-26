@@ -379,15 +379,15 @@ function LocationViewModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-12 pb-12 px-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
       onClick={onClose}
     >
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/70" />
 
-      {/* Modal */}
+      {/* Modal - centered with max height */}
       <div
-        className="relative w-full max-w-2xl bg-[#1a1a24] rounded-xl shadow-2xl"
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-[#1a1a24] rounded-xl shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Color bar at top */}
@@ -1034,6 +1034,8 @@ export default function LocationsPage() {
         campaign={campaign}
         campaignId={campaignId}
         title="Locations"
+        icon={MapPin}
+        iconColor="#10B981"
         isOwner={isOwner}
         isDm={isDm}
         onOpenMembers={() => setShowMembersModal(true)}
@@ -1053,9 +1055,9 @@ export default function LocationsPage() {
         )}
       />
 
-      <div className="flex flex-col h-[calc(100vh-56px)]">
+      <div className="flex flex-col">
         {/* Toolbar */}
-        <div className="flex-shrink-0 p-4 border-b border-[--border] space-y-4">
+        <div className="p-4 border-b border-[--border] space-y-4">
             <GuidanceTip
               tipId="locations_intro"
               title="Track Your World"
@@ -1065,23 +1067,23 @@ export default function LocationsPage() {
             />
 
             <div className="flex flex-col sm:flex-row gap-3">
-              {/* Search */}
-              <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+              {/* Search - wider box */}
+              <div className="relative flex-[2] min-w-[250px]">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Search locations..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="form-input pl-11 w-full"
+                  className="form-input pl-12 w-full"
                 />
               </div>
 
-              {/* Type filter */}
+              {/* Type filter - narrower */}
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="form-input w-full sm:w-40"
+                className="form-input w-full sm:w-32"
               >
                 <option value="all">All Types</option>
                 {LOCATION_TYPES.map(type => (
@@ -1126,7 +1128,7 @@ export default function LocationsPage() {
           </div>
 
           {/* Location list/tree */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="p-4">
             {filteredLocations.length === 0 ? (
               <EmptyState
                 icon={<MapPin className="w-12 h-12" />}

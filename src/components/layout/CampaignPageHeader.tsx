@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Menu } from 'lucide-react'
+import { Menu, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CampaignMenuDrawer } from './CampaignMenuDrawer'
 import type { Campaign } from '@/types/database'
@@ -13,6 +13,9 @@ interface CampaignPageHeaderProps {
   title: string
   isOwner: boolean
   isDm: boolean
+  // Optional page icon to show instead of app logo
+  icon?: LucideIcon
+  iconColor?: string
   // Current page for context-aware menu items
   currentPage?: 'dashboard' | 'canvas' | 'sessions' | 'timeline' | 'lore' | 'map' | 'gallery' | 'intelligence' | 'view' | 'settings'
   // Optional page-specific actions
@@ -33,6 +36,8 @@ export function CampaignPageHeader({
   title,
   isOwner,
   isDm,
+  icon: PageIcon,
+  iconColor = '#8B5CF6',
   currentPage,
   actions,
   onOpenMembers,
@@ -51,14 +56,23 @@ export function CampaignPageHeader({
         "flex items-center justify-between h-14 px-4 border-b border-white/[0.08] bg-[#0a0a0f]",
         className
       )}>
-        {/* Left: Logo + Title */}
+        {/* Left: Icon + Title */}
         <div className="flex items-center gap-3 min-w-0">
-          <Link
-            href="/home"
-            className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center"
-          >
-            <span className="text-white font-bold text-sm">M</span>
-          </Link>
+          {PageIcon ? (
+            <div
+              className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: `${iconColor}20` }}
+            >
+              <PageIcon className="w-4 h-4" style={{ color: iconColor }} />
+            </div>
+          ) : (
+            <Link
+              href="/home"
+              className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center"
+            >
+              <span className="text-white font-bold text-sm">M</span>
+            </Link>
+          )}
           <h1 className="text-lg font-semibold text-white truncate">
             {title}
           </h1>

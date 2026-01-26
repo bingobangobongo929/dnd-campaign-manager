@@ -205,12 +205,18 @@ These patterns have been established after multiple iterations. Follow them EXAC
 <input className="form-input pl-10" />
 ```
 
-**CORRECT** (proper spacing):
+**CORRECT** (proper spacing - use pl-12 and left-4):
 ```tsx
-<div className="relative">
-  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-  <input className="form-input pl-11 w-full" placeholder="Search..." />
+<div className="relative flex-[2] min-w-[250px]">
+  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+  <input className="form-input pl-12 w-full" placeholder="Search..." />
 </div>
+```
+
+### Filter Dropdowns - Keep Narrow
+```tsx
+{/* Dropdowns should be narrow, search should be wide */}
+<select className="form-input w-full sm:w-32">  {/* NOT w-40 */}
 ```
 
 ### View Toggles - Prevent Text Cutoff
@@ -238,24 +244,61 @@ These patterns have been established after multiple iterations. Follow them EXAC
 </div>
 ```
 
-### Detail Views - Modal, NOT Sidebar
+### Page Headers - Use Page-Specific Icons
 
-**WRONG** (old sidebar pattern):
+**WRONG** (generic "M" logo):
 ```tsx
-<div className="flex">
-  <div className="flex-1">Content</div>
-  {selected && <DetailPanel className="w-96" />}  // Sidebar
+<CampaignPageHeader title="Quests" ... />
+```
+
+**CORRECT** (page-specific icon):
+```tsx
+<CampaignPageHeader
+  title="Quests"
+  icon={Target}
+  iconColor="#8B5CF6"
+  ...
+/>
+```
+
+### Page Scrolling - Let Page Scroll Naturally
+
+**WRONG** (forces internal scrolling which is confusing):
+```tsx
+<div className="flex flex-col h-[calc(100vh-56px)]">
+  <div className="flex-shrink-0">Toolbar</div>
+  <div className="flex-1 overflow-auto">Content</div>  {/* Bad! */}
 </div>
 ```
 
-**CORRECT** (Trello-style modal overlay):
+**CORRECT** (page scrolls naturally):
 ```tsx
-<div className="flex-1">Content</div>
+<div className="flex flex-col">
+  <div>Toolbar</div>
+  <div className="p-4">Content</div>  {/* No overflow constraints */}
+</div>
+```
 
+### Detail Views - Centered Modal, NOT Sidebar
+
+**WRONG** (old sidebar pattern OR modal pushed to top):
+```tsx
+// Sidebar pattern
+<div className="flex">
+  <div className="flex-1">Content</div>
+  {selected && <DetailPanel className="w-96" />}
+</div>
+
+// Modal pushed to top
+<div className="fixed inset-0 flex items-start pt-12 ...">
+```
+
+**CORRECT** (Trello-style modal, vertically AND horizontally centered):
+```tsx
 {selected && (
-  <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 pb-12 px-4 overflow-y-auto" onClick={onClose}>
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
     <div className="fixed inset-0 bg-black/70" />
-    <div className="relative w-full max-w-2xl bg-[#1a1a24] rounded-xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-[#1a1a24] rounded-xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
       {/* Color bar at top */}
       <div className="h-2 rounded-t-xl" style={{ backgroundColor: color }} />
       {/* Content */}

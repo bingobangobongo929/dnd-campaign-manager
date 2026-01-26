@@ -345,27 +345,27 @@ function BoardColumn({
   color: string
 }) {
   return (
-    <div className="flex-shrink-0 w-[280px] flex flex-col bg-[#12121a] rounded-xl max-h-full">
+    <div className="flex-shrink-0 w-[260px] flex flex-col bg-[#12121a] rounded-xl">
       {/* Column header */}
-      <div className="flex items-center gap-2 px-3 py-3 border-b border-white/[0.05]">
+      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/[0.05]">
         <div
-          className="w-2.5 h-2.5 rounded-full"
+          className="w-2 h-2 rounded-full"
           style={{ backgroundColor: color }}
         />
         <h3 className="font-medium text-sm text-white flex-1">{title}</h3>
-        <span className="text-xs text-gray-500 bg-white/[0.05] px-2 py-0.5 rounded-full">
+        <span className="text-xs text-gray-500 bg-white/[0.05] px-1.5 py-0.5 rounded-full">
           {quests.length}
         </span>
       </div>
 
-      {/* Droppable area */}
+      {/* Droppable area - no internal scroll, content expands naturally */}
       <Droppable droppableId={status}>
         {(provided, snapshot) => (
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
             className={cn(
-              'flex-1 p-2 space-y-2 overflow-y-auto min-h-[100px]',
+              'p-2 space-y-2 min-h-[80px]',
               snapshot.isDraggingOver && 'bg-[--arcane-purple]/5'
             )}
           >
@@ -393,7 +393,7 @@ function BoardColumn({
             })}
             {provided.placeholder}
             {quests.length === 0 && !snapshot.isDraggingOver && (
-              <div className="text-center py-6 text-gray-600 text-xs">
+              <div className="text-center py-4 text-gray-600 text-xs">
                 Drop quests here
               </div>
             )}
@@ -436,15 +436,15 @@ function QuestViewModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-12 pb-12 px-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
       onClick={onClose}
     >
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/70" />
 
-      {/* Modal */}
+      {/* Modal - centered with max height */}
       <div
-        className="relative w-full max-w-2xl bg-[#1a1a24] rounded-xl shadow-2xl"
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-[#1a1a24] rounded-xl shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Color bar at top */}
@@ -1397,6 +1397,9 @@ export default function QuestsPage() {
   // Save quest
   const handleSave = async (data: Partial<Quest>, newObjectives: Partial<QuestObjective>[]) => {
     setSaving(true)
+    const wasEditing = editingQuest
+    const editedQuestId = editingQuest?.id
+
     try {
       if (editingQuest) {
         // Update quest
@@ -1440,6 +1443,20 @@ export default function QuestsPage() {
       }
 
       await loadData()
+
+      // If we were editing, refresh the selected quest with updated data
+      if (wasEditing && editedQuestId) {
+        const { data: updatedQuest } = await supabase
+          .from('quests')
+          .select('*')
+          .eq('id', editedQuestId)
+          .single()
+
+        if (updatedQuest) {
+          setSelectedQuest(updatedQuest)
+        }
+      }
+
       setShowAddModal(false)
       setEditingQuest(null)
     } catch (err) {
@@ -1558,6 +1575,8 @@ export default function QuestsPage() {
         campaign={campaign}
         campaignId={campaignId}
         title="Quests"
+        icon={Target}
+        iconColor="#8B5CF6"
         isOwner={isOwner}
         isDm={isDm}
         onOpenMembers={() => setShowMembersModal(true)}
@@ -1591,9 +1610,9 @@ export default function QuestsPage() {
         )}
       />
 
-      <div className="flex flex-col h-[calc(100vh-56px)]">
+      <div className="flex flex-col">
         {/* Toolbar */}
-        <div className="flex-shrink-0 p-4 border-b border-[--border] space-y-4">
+        <div className="p-4 border-b border-[--border] space-y-4">
             <GuidanceTip
               tipId="quests_intro"
               title="Track Your Story"
@@ -1603,23 +1622,23 @@ export default function QuestsPage() {
             />
 
             <div className="flex flex-col sm:flex-row gap-3">
-              {/* Search */}
-              <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+              {/* Search - wider box */}
+              <div className="relative flex-[2] min-w-[250px]">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Search quests..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="form-input pl-11 w-full"
+                  className="form-input pl-12 w-full"
                 />
               </div>
 
-              {/* Type filter */}
+              {/* Type filter - narrower */}
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="form-input w-full sm:w-40"
+                className="form-input w-full sm:w-32"
               >
                 <option value="all">All Types</option>
                 {QUEST_TYPES.map(type => (
@@ -1629,12 +1648,12 @@ export default function QuestsPage() {
                 ))}
               </select>
 
-              {/* Status filter (only in list view) */}
+              {/* Status filter (only in list view) - narrower */}
               {viewMode === 'list' && (
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="form-input w-full sm:w-40"
+                  className="form-input w-full sm:w-32"
                 >
                   <option value="all">All Status</option>
                   {QUEST_STATUSES.map(status => (
@@ -1680,7 +1699,7 @@ export default function QuestsPage() {
           </div>
 
         {/* Quest list/board */}
-        <div className="flex-1 overflow-auto p-4">
+        <div className="p-4">
           {quests.length === 0 ? (
             <EmptyState
               icon={<Target className="w-12 h-12" />}
@@ -1702,7 +1721,7 @@ export default function QuestsPage() {
             />
           ) : viewMode === 'board' ? (
             <DragDropContext onDragEnd={handleDragEnd}>
-              <div className="flex gap-4 h-full overflow-x-auto pb-4">
+              <div className="flex gap-3 overflow-x-auto pb-4">
                 <BoardColumn
                   title="Available"
                   status="available"
