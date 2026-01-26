@@ -175,13 +175,30 @@ async function permanentlyDeleteUser(userId: string, userEmail: string) {
 
     const userName = userSettings?.username || userEmail?.split('@')[0] || 'Adventurer'
 
-    // 6. Delete user settings
+    // 6. Orphan template snapshots (preserve for users who saved them)
+    // Update attribution to show "Deleted User" since original author is gone
+    // The foreign key ON DELETE SET NULL will set user_id to null
+    await supabaseAdmin
+      .from('template_snapshots')
+      .update({
+        attribution_name: 'Deleted User',
+        author_deleted_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId)
+
+    // Also update content_saves to clear the source_owner_id
+    await supabaseAdmin
+      .from('content_saves')
+      .update({ source_owner_id: null })
+      .eq('source_owner_id', userId)
+
+    // 7. Delete user settings
     await supabaseAdmin.from('user_settings').delete().eq('user_id', userId)
 
-    // 7. Delete the user from Supabase Auth
+    // 8. Delete the user from Supabase Auth
     await supabaseAdmin.auth.admin.deleteUser(userId)
 
-    // 8. Delete all storage files
+    // 9. Delete all storage files
     const storageFiles = allMediaUrls
       .map(parseStorageUrl)
       .filter((f): f is { bucket: string; path: string } => f !== null)
@@ -191,7 +208,7 @@ async function permanentlyDeleteUser(userId: string, userEmail: string) {
       deletedFiles = await deleteStorageFiles(storageFiles)
     }
 
-    // 9. Send final deletion confirmation email
+    // 10. Send final deletion confirmation email
     await sendEmail({
       to: userEmail,
       ...accountDeletedEmail(userName),
