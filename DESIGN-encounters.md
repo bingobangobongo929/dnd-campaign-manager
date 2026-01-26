@@ -129,6 +129,75 @@ CREATE INDEX idx_encounters_quest ON campaign_encounters(quest_id);
 
 ---
 
+## Campaign Intelligence Integration
+
+**MANDATORY** - Encounters must integrate with session note analysis.
+
+### Detection from Session Notes
+
+When analyzing session notes, Intelligence looks for:
+- Combat mentions: "fought", "battle", "attacked", "ambushed", "defeated"
+- Social encounters: "negotiated", "persuaded", "interrogated", "audience with"
+- Traps/hazards: "triggered trap", "fell into", "poisoned", "collapsed"
+- Puzzles: "solved the riddle", "figured out", "unlocked"
+
+**Example session note:**
+> "The party was ambushed by goblins on the forest road. After defeating them, they found a map to the hideout."
+
+**Intelligence extracts:**
+```json
+{
+  "type": "encounter_detected",
+  "name": "Goblin Ambush",
+  "encounter_type": "combat",
+  "description": "Party ambushed by goblins on forest road",
+  "outcome": "Victory - found map to hideout",
+  "session_number": 14
+}
+```
+
+### Approval Workflow
+
+1. Intelligence suggests encounter from session notes
+2. DM can: Approve, Edit then Approve, or Dismiss
+3. On approve: Creates encounter record with status "used" and links to session
+4. Deduplication: Check if encounter name already exists (case-insensitive)
+
+### Existing Encounter Updates
+
+Intelligence can also suggest updates to existing encounters:
+- Mark prepared encounter as "used"
+- Add outcome notes
+- Link to session where it was played
+
+---
+
+## Form Field Organization (Progressive Disclosure)
+
+**Essential fields (always visible):**
+- Name (required)
+- Type (combat, social, exploration, trap, skill_challenge, mixed)
+- Status (prepared, used, skipped)
+- Summary (one-liner for lists)
+
+**Collapsible sections:**
+
+| Section | Fields | Icon |
+|---------|--------|------|
+| **Description** | Full description, boxed text | 📖 |
+| **Combat Details** | Difficulty, enemies list, tactics, terrain | ⚔️ |
+| **Location & Quest** | Location dropdown, quest dropdown | 📍 |
+| **Rewards** | XP, loot description | 🎁 |
+| **Session Tracking** | Planned session, played session | 📅 |
+| **Outcome** | How it resolved, player notes, lessons learned | 📝 |
+| **DM Notes & Secrets** | Private notes, hidden info | 🔒 |
+
+**Auto-expand logic (when editing):**
+- Sections with existing content auto-expand
+- Empty sections stay collapsed
+
+---
+
 ## UI Design
 
 ### Encounters Page (`/campaigns/[id]/encounters`)
@@ -237,34 +306,43 @@ Quick-start when creating encounters:
 
 ## Integration Points
 
+| Location | Integration | Status |
+|----------|-------------|--------|
+| **Encounters Page** | Main library, list view, detail modal | TODO |
+| **Quick Reference** | Pin encounters to sessions (like quests) | TODO |
+| **Campaign Intelligence** | Detect encounters from session notes | TODO |
+| **Locations Detail** | "Encounters at this location" section | TODO |
+| **Quests Detail** | "Encounters for this quest" section | TODO |
+| **Sessions** | Link sessions to encounters played | TODO |
+| **Canvas** | NPCs show "Appears in encounters: X" (for named villains) | TODO |
+| **Share Page** | DEFERRED - update with locations/quests/encounters together |
+
 ### Sessions
 - Session can have `encounters_used[]` list
 - Session prep shows planned encounters
 - "Mark encounter as used" workflow
+- **Quick Reference**: Pin encounters like quests/NPCs/locations
 
 ### Locations
 - Encounter has location_id
-- Location page shows "Encounters at this location"
+- Location detail modal shows "Encounters Here" section
 
 ### Quests
-- Encounter can belong to quest
-- Quest final encounter might be boss fight
+- Encounter can belong to quest (quest_id)
+- Quest detail modal shows "Encounters for this Quest" section
 
 ### Characters
-- Enemies can link to character entries (for named villains)
-- Or use simple enemy list (for generic monsters)
+- Named villains link to character entries
+- Generic monsters use simple enemy list (JSONB)
+
+### Campaign Intelligence
+- Detect encounters from session notes (see above)
+- Suggest marking prepared encounters as "used"
+- Auto-fill outcome from notes
 
 ### Maps
 - Battle map can be attached to encounter
 - Click encounter → view map with setup
-
-### Arcs
-- Encounters belong to arcs
-- Arc page shows its encounters
-
-### Timeline
-- "Encounter played" can be timeline event
-- Filter: "Show combat events"
 
 ---
 
