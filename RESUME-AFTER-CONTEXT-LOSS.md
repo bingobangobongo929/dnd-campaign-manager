@@ -6,7 +6,8 @@
 
 **LOCATIONS FULLY INTEGRATED WITH CAMPAIGN INTELLIGENCE.**
 **QUESTS FULLY INTEGRATED WITH CAMPAIGN INTELLIGENCE.**
-**Next: Share page for quests, then Encounters UI.**
+**ENCOUNTERS PAGE BUILT** - Basic UI done, needs Intelligence integration.
+**Next: Campaign Intelligence for encounters, then integrations (Quick Reference, Location/Quest detail sections).**
 
 ## What's Done
 
@@ -149,6 +150,28 @@ Features built:
 - Picks randomly from Available quests (quests not yet introduced to party)
 - Simple implementation now, more complex Random Tables system in Phase 2
 
+### Encounters Page Features (COMPLETE)
+**Full page at:** `src/app/(dashboard)/campaigns/[id]/encounters/page.tsx`
+
+Features built:
+- **List view** - Grouped by status (Prepared, Used, Skipped)
+- **Detail modal** - Trello-style modal overlay, click-outside-to-close
+- **Progressive disclosure form** - Essential fields visible, optional in collapsible sections
+- **Encounter types** - Combat, Social, Exploration, Trap/Hazard, Skill Challenge, Puzzle, Mixed
+- **Combat details section** - Difficulty, enemies list (name, count, HP, AC), tactics, terrain
+- **Social details section** - Stakes, NPC goals
+- **Boxed text** - Read-aloud text with special amber styling
+- **Location & quest linking** - Dropdowns to connect encounters
+- **Session tracking** - Planned session, played session
+- **Outcome section** - How it resolved, player notes
+- **DM notes & secrets** - Private notes with red styling for secrets
+- **Rewards** - XP and loot description
+
+Encounter statuses: Prepared, Used, Skipped
+Difficulties: Trivial, Easy, Medium, Hard, Deadly
+
+**Migration 084** adds dm_notes and secrets columns (run in Supabase).
+
 ### Frontend Work Queue:
 1. ~~**Build Locations UI**~~ ✅ DONE
 2. ~~**Campaign Intelligence - Location Detection**~~ ✅ DONE
@@ -157,10 +180,13 @@ Features built:
 5. ~~**Update Locations Detail**~~ ✅ DONE - "Quests at this location" in detail panel
 6. ~~**Update Characters/Canvas**~~ ✅ DONE - "Quest Giver For" in character view modal
 7. ~~**Campaign Intelligence - Quest Detection**~~ ✅ DONE - Detect from session notes
-8. **Build Encounters UI** - (NEXT) See `DESIGN-encounters.md`
-9. **Campaign Intelligence - Encounter Detection**
-10. **Comprehensive Share Page Update** - After all core features done, update share page to match locations/quests/encounters all at once
-11. **Recreate Oneshots pages** - Using unified system
+8. ~~**Build Encounters UI**~~ ✅ DONE - List view, progressive disclosure form
+9. **Campaign Intelligence - Encounter Detection** (NEXT)
+10. **Quick Reference - Encounters** - Pin encounters to sessions
+11. **Location Detail - Encounters** - "Encounters Here" section
+12. **Quest Detail - Encounters** - "Encounters for this Quest" section
+13. **Comprehensive Share Page Update** - After all core features done
+14. **Recreate Oneshots pages** - Using unified system
 
 ## Critical Reminders
 
@@ -367,6 +393,17 @@ rewards_description, rewards_xp, rewards_gold, dm_notes, secrets, visibility,
 discovered_session, started_session, completed_session, created_at, updated_at
 ```
 
+### encounters table (actual columns)
+```
+id, campaign_id, oneshot_id, content_type, name, type, description, summary,
+difficulty, party_level, enemies (JSONB), tactics, terrain, stakes, npc_goals,
+rewards, xp_reward, location_id, map_id, quest_id, display_order,
+planned_session, played_session, status, outcome, player_notes, lessons_learned,
+boxed_text, visibility, dm_notes, secrets, created_at, updated_at
+```
+
+Note: dm_notes and secrets require migration 084.
+
 ## Key Files Reference
 
 | File | Purpose |
@@ -377,7 +414,7 @@ discovered_session, started_session, completed_session, created_at, updated_at
 | `src/components/unified/UnifiedCharacterList.tsx` | Example component |
 | `src/app/(dashboard)/campaigns/[id]/locations/page.tsx` | **Locations UI (COMPLETE)** |
 | `src/app/(dashboard)/campaigns/[id]/quests/page.tsx` | **Quests UI (COMPLETE)** |
-| `src/app/(dashboard)/campaigns/[id]/encounters/page.tsx` | Encounters placeholder |
+| `src/app/(dashboard)/campaigns/[id]/encounters/page.tsx` | **Encounters UI (COMPLETE)** |
 | `DESIGN-locations.md` | Locations UI spec |
 | `DESIGN-quests.md` | Quests UI spec |
 | `DESIGN-encounters.md` | Encounters UI spec |
