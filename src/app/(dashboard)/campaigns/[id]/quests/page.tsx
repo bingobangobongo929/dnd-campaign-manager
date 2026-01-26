@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
   DragDropContext,
@@ -18,8 +18,8 @@ import {
   MoreHorizontal,
   Trash2,
   Edit3,
-  List,
-  LayoutGrid,
+  Columns,
+  SlidersHorizontal,
   CheckCircle2,
   Circle,
   User,
@@ -33,6 +33,8 @@ import {
   AlertCircle,
   Shuffle,
   GripVertical,
+  Check,
+  Coins,
 } from 'lucide-react'
 import { AppLayout, CampaignPageHeader } from '@/components/layout'
 import { Button, Modal, EmptyState, Badge, Tooltip, AccessDeniedPage } from '@/components/ui'
@@ -110,6 +112,41 @@ const getQuestTypeLabel = (type: string) =>
 const getQuestStatusLabel = (status: string) =>
   QUEST_STATUSES.find(s => s.value === status)?.label || status
 
+// Board settings types
+type DetailLevel = 'compact' | 'standard' | 'detailed'
+type ColumnKey = 'available' | 'active' | 'completed' | 'failed' | 'abandoned'
+
+interface BoardSettings {
+  visibleColumns: ColumnKey[]
+  detailLevel: DetailLevel
+}
+
+const COLUMN_OPTIONS: { key: ColumnKey; label: string; color: string }[] = [
+  { key: 'available', label: 'Available', color: QUEST_STATUS_COLORS.available },
+  { key: 'active', label: 'Active', color: QUEST_STATUS_COLORS.active },
+  { key: 'completed', label: 'Completed', color: QUEST_STATUS_COLORS.completed },
+  { key: 'failed', label: 'Failed', color: QUEST_STATUS_COLORS.failed },
+  { key: 'abandoned', label: 'Abandoned', color: QUEST_STATUS_COLORS.abandoned },
+]
+
+const DETAIL_OPTIONS: { value: DetailLevel; label: string; description: string }[] = [
+  { value: 'compact', label: 'Compact', description: 'Name and type only' },
+  { value: 'standard', label: 'Standard', description: 'Summary and quest giver' },
+  { value: 'detailed', label: 'Detailed', description: 'Full info with objectives' },
+]
+
+const BOARD_PRESETS: { name: string; columns: ColumnKey[]; detail: DetailLevel }[] = [
+  { name: 'Focus Mode', columns: ['available', 'active'], detail: 'compact' },
+  { name: 'Full Overview', columns: ['available', 'active', 'completed', 'failed', 'abandoned'], detail: 'standard' },
+  { name: 'DM Prep', columns: ['available', 'active', 'completed'], detail: 'detailed' },
+  { name: 'Clean Slate', columns: ['available'], detail: 'standard' },
+]
+
+const DEFAULT_BOARD_SETTINGS: BoardSettings = {
+  visibleColumns: ['available', 'active', 'completed'],
+  detailLevel: 'standard',
+}
+
 interface Quest {
   id: string
   campaign_id: string | null
@@ -163,125 +200,29 @@ interface Location {
   type: string
 }
 
-// Quest card for list view
-function QuestCard({
-  quest,
-  objectives,
-  questGiver,
-  location,
-  onSelect,
-  isSelected,
-}: {
-  quest: Quest
-  objectives: QuestObjective[]
-  questGiver?: Character
-  location?: Location
-  onSelect: (quest: Quest) => void
-  isSelected: boolean
-}) {
-  const Icon = QUEST_TYPE_ICONS[quest.type] || Target
-  const typeColor = QUEST_TYPE_COLORS[quest.type] || '#6B7280'
-  const statusColor = QUEST_STATUS_COLORS[quest.status] || '#6B7280'
-
-  const completedObjectives = objectives.filter(o => o.is_completed).length
-  const totalObjectives = objectives.length
-
-  return (
-    <div
-      className={cn(
-        'p-4 rounded-xl cursor-pointer transition-all duration-200 group',
-        isSelected
-          ? 'bg-[--arcane-purple]/15 ring-1 ring-[--arcane-purple]/40 shadow-lg shadow-purple-500/10'
-          : 'bg-white/[0.03] hover:bg-white/[0.05]'
-      )}
-      onClick={() => onSelect(quest)}
-    >
-      <div className="flex items-start gap-4">
-        {/* Icon */}
-        <div
-          className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105"
-          style={{ backgroundColor: `${typeColor}15` }}
-        >
-          <Icon className="w-6 h-6" style={{ color: typeColor }} />
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h3 className="font-semibold text-white truncate">{quest.name}</h3>
-            <Badge size="sm" color={typeColor}>
-              {getQuestTypeLabel(quest.type)}
-            </Badge>
-            <Badge size="sm" color={statusColor}>
-              {getQuestStatusLabel(quest.status)}
-            </Badge>
-          </div>
-
-          {quest.summary && (
-            <p className="text-sm text-gray-400 line-clamp-1 mb-2">
-              {quest.summary}
-            </p>
-          )}
-
-          <div className="flex items-center gap-4 text-xs text-gray-500">
-            {questGiver && (
-              <span className="flex items-center gap-1">
-                <User className="w-3 h-3" />
-                {questGiver.name}
-              </span>
-            )}
-            {location && (
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
-                {location.name}
-              </span>
-            )}
-            {totalObjectives > 0 && (
-              <span className="flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" />
-                {completedObjectives}/{totalObjectives}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Priority indicator */}
-        {quest.priority === 'urgent' && (
-          <Tooltip content="Urgent">
-            <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-red-500/20">
-              <AlertCircle className="w-3.5 h-3.5 text-red-400" />
-            </div>
-          </Tooltip>
-        )}
-        {quest.priority === 'high' && (
-          <Tooltip content="High Priority">
-            <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-amber-500/20">
-              <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-            </div>
-          </Tooltip>
-        )}
-      </div>
-    </div>
-  )
-}
-
 // Trello-style board card (draggable)
 function BoardCard({
   quest,
   objectives,
   questGiver,
+  location,
   onClick,
   isDragging,
+  detailLevel,
 }: {
   quest: Quest
   objectives: QuestObjective[]
   questGiver?: Character
+  location?: Location
   onClick: () => void
   isDragging: boolean
+  detailLevel: DetailLevel
 }) {
   const typeColor = QUEST_TYPE_COLORS[quest.type] || '#6B7280'
   const completedObjectives = objectives.filter(o => o.is_completed).length
   const totalObjectives = objectives.length
+  const showSummary = detailLevel !== 'compact'
+  const showDetails = detailLevel === 'detailed'
 
   return (
     <div
@@ -293,42 +234,100 @@ function BoardCard({
       onClick={onClick}
     >
       {/* Type indicator bar */}
-      <div
-        className="h-1 w-12 rounded-full mb-2"
-        style={{ backgroundColor: typeColor }}
-      />
+      <div className="flex items-center gap-2 mb-2">
+        <div
+          className="h-1 w-8 rounded-full"
+          style={{ backgroundColor: typeColor }}
+        />
+        <Badge size="sm" color={typeColor}>
+          {getQuestTypeLabel(quest.type)}
+        </Badge>
+        {(quest.priority === 'urgent' || quest.priority === 'high') && (
+          <Badge size="sm" color={quest.priority === 'urgent' ? '#EF4444' : '#F59E0B'}>
+            {quest.priority === 'urgent' ? 'Urgent' : 'High'}
+          </Badge>
+        )}
+      </div>
 
       {/* Title */}
       <p className="font-medium text-sm text-white mb-1">{quest.name}</p>
 
-      {/* Summary preview */}
-      {quest.summary && (
+      {/* Summary preview (standard & detailed) */}
+      {showSummary && quest.summary && (
         <p className="text-xs text-gray-400 line-clamp-2 mb-2">
           {quest.summary}
         </p>
       )}
 
-      {/* Footer info */}
-      <div className="flex items-center gap-3 text-xs text-gray-500">
-        {questGiver && (
-          <span className="flex items-center gap-1">
-            <User className="w-3 h-3" />
-            <span className="truncate max-w-[80px]">{questGiver.name}</span>
-          </span>
-        )}
-        {totalObjectives > 0 && (
+      {/* Quest giver and location (standard & detailed) */}
+      {showSummary && (questGiver || location) && (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 mb-2">
+          {questGiver && (
+            <span className="flex items-center gap-1">
+              <User className="w-3 h-3" />
+              <span className="truncate max-w-[100px]">{questGiver.name}</span>
+            </span>
+          )}
+          {location && (
+            <span className="flex items-center gap-1">
+              <MapPin className="w-3 h-3" />
+              <span className="truncate max-w-[100px]">{location.name}</span>
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Objectives (detailed only) */}
+      {showDetails && totalObjectives > 0 && (
+        <div className="border-t border-white/10 pt-2 mt-2 space-y-1">
+          {objectives.slice(0, 3).map(obj => (
+            <div key={obj.id} className="flex items-start gap-1.5 text-xs">
+              {obj.is_completed ? (
+                <CheckCircle2 className="w-3 h-3 text-emerald-400 flex-shrink-0 mt-0.5" />
+              ) : (
+                <Circle className="w-3 h-3 text-gray-500 flex-shrink-0 mt-0.5" />
+              )}
+              <span className={cn(
+                'line-clamp-1',
+                obj.is_completed ? 'text-gray-500 line-through' : 'text-gray-400'
+              )}>
+                {obj.description}
+              </span>
+            </div>
+          ))}
+          {totalObjectives > 3 && (
+            <p className="text-xs text-gray-500">+{totalObjectives - 3} more</p>
+          )}
+        </div>
+      )}
+
+      {/* Rewards (detailed only) */}
+      {showDetails && (quest.rewards_gold || quest.rewards_xp) && (
+        <div className="flex items-center gap-3 text-xs text-gray-500 mt-2 pt-2 border-t border-white/10">
+          {quest.rewards_gold && (
+            <span className="flex items-center gap-1">
+              <Coins className="w-3 h-3 text-amber-400" />
+              {quest.rewards_gold} gold
+            </span>
+          )}
+          {quest.rewards_xp && (
+            <span className="flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-purple-400" />
+              {quest.rewards_xp} XP
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Compact footer (objectives count only in compact/standard) */}
+      {!showDetails && totalObjectives > 0 && (
+        <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
           <span className="flex items-center gap-1">
             <CheckCircle2 className="w-3 h-3" />
             {completedObjectives}/{totalObjectives}
           </span>
-        )}
-        {quest.priority === 'urgent' && (
-          <AlertCircle className="w-3 h-3 text-red-400" />
-        )}
-        {quest.priority === 'high' && (
-          <AlertCircle className="w-3 h-3 text-amber-400" />
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -340,16 +339,20 @@ function BoardColumn({
   quests,
   objectives,
   characters,
+  locations,
   onSelect,
   color,
+  detailLevel,
 }: {
   title: string
   status: string
   quests: Quest[]
   objectives: Record<string, QuestObjective[]>
   characters: Character[]
+  locations: Location[]
   onSelect: (quest: Quest) => void
   color: string
+  detailLevel: DetailLevel
 }) {
   return (
     <div className="flex-shrink-0 w-[260px] flex flex-col bg-[#12121a] rounded-xl">
@@ -378,6 +381,7 @@ function BoardColumn({
           >
             {quests.map((quest, index) => {
               const questGiver = characters.find(c => c.id === quest.quest_giver_id)
+              const location = locations.find(l => l.id === quest.objective_location_id)
               return (
                 <Draggable key={quest.id} draggableId={quest.id} index={index}>
                   {(provided, snapshot) => (
@@ -390,8 +394,10 @@ function BoardColumn({
                         quest={quest}
                         objectives={objectives[quest.id] || []}
                         questGiver={questGiver}
+                        location={location}
                         onClick={() => onSelect(quest)}
                         isDragging={snapshot.isDragging}
+                        detailLevel={detailLevel}
                       />
                     </div>
                   )}
@@ -1266,7 +1272,41 @@ export default function QuestsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [viewMode, setViewMode] = useState<'list' | 'board'>('board')
+
+  // Board settings (columns and detail level)
+  const [boardSettings, setBoardSettings] = useState<BoardSettings>(() => {
+    // Try to load from localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`quest-board-settings-${campaignId}`)
+      if (saved) {
+        try {
+          return JSON.parse(saved)
+        } catch {
+          return DEFAULT_BOARD_SETTINGS
+        }
+      }
+    }
+    return DEFAULT_BOARD_SETTINGS
+  })
+  const [showColumnsDropdown, setShowColumnsDropdown] = useState(false)
+  const [showDetailDropdown, setShowDetailDropdown] = useState(false)
+
+  // Save board settings when they change
+  useEffect(() => {
+    if (typeof window !== 'undefined' && campaignId) {
+      localStorage.setItem(`quest-board-settings-${campaignId}`, JSON.stringify(boardSettings))
+    }
+  }, [boardSettings, campaignId])
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowColumnsDropdown(false)
+      setShowDetailDropdown(false)
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [])
 
   // Selection and modals
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null)
@@ -1656,52 +1696,131 @@ export default function QuestsPage() {
                 ))}
               </select>
 
-              {/* Status filter (only in list view) - narrower */}
-              {viewMode === 'list' && (
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="form-input w-full sm:w-32"
+              {/* Columns dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setShowColumnsDropdown(!showColumnsDropdown)
+                    setShowDetailDropdown(false)
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[--border] text-sm text-gray-300 hover:bg-white/5 transition-colors"
                 >
-                  <option value="all">All Status</option>
-                  {QUEST_STATUSES.map(status => (
-                    <option key={status.value} value={status.value}>
-                      {status.label}
-                    </option>
-                  ))}
-                </select>
-              )}
+                  <Columns className="w-4 h-4" />
+                  <span className="hidden sm:inline">Columns</span>
+                  <span className="text-xs bg-white/10 px-1.5 py-0.5 rounded">
+                    {boardSettings.visibleColumns.length}
+                  </span>
+                  <ChevronDown className="w-3 h-3" />
+                </button>
 
-              {/* View toggle */}
-              <div className="flex rounded-lg border border-[--border] overflow-hidden flex-shrink-0">
-                <Tooltip content="Kanban board view">
-                  <button
-                    onClick={() => setViewMode('board')}
-                    className={cn(
-                      'flex items-center gap-2 px-4 py-2 text-sm transition-colors whitespace-nowrap',
-                      viewMode === 'board'
-                        ? 'bg-[--arcane-purple]/20 text-[--arcane-purple]'
-                        : 'text-gray-400 hover:bg-white/5'
-                    )}
+                {showColumnsDropdown && (
+                  <div
+                    className="absolute right-0 top-full mt-1 w-56 bg-[#1a1a24] border border-white/10 rounded-xl shadow-xl z-50 py-2"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <LayoutGrid className="w-4 h-4" />
-                    <span className="hidden sm:inline">Board</span>
-                  </button>
-                </Tooltip>
-                <Tooltip content="List view">
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={cn(
-                      'flex items-center gap-2 px-4 py-2 text-sm transition-colors border-l border-[--border] whitespace-nowrap',
-                      viewMode === 'list'
-                        ? 'bg-[--arcane-purple]/20 text-[--arcane-purple]'
-                        : 'text-gray-400 hover:bg-white/5'
-                    )}
+                    <div className="px-3 py-1 text-xs text-gray-500 uppercase tracking-wider">
+                      Visible Columns
+                    </div>
+                    {COLUMN_OPTIONS.map(col => {
+                      const isVisible = boardSettings.visibleColumns.includes(col.key)
+                      return (
+                        <button
+                          key={col.key}
+                          onClick={() => {
+                            const newColumns = isVisible
+                              ? boardSettings.visibleColumns.filter(c => c !== col.key)
+                              : [...boardSettings.visibleColumns, col.key]
+                            if (newColumns.length > 0) {
+                              setBoardSettings(prev => ({ ...prev, visibleColumns: newColumns }))
+                            }
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-white/5 transition-colors"
+                        >
+                          <div className={cn(
+                            'w-4 h-4 rounded border flex items-center justify-center',
+                            isVisible ? 'bg-[--arcane-purple] border-[--arcane-purple]' : 'border-gray-600'
+                          )}>
+                            {isVisible && <Check className="w-3 h-3 text-white" />}
+                          </div>
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: col.color }} />
+                          <span className="text-gray-300">{col.label}</span>
+                        </button>
+                      )
+                    })}
+                    <div className="border-t border-white/10 mt-2 pt-2">
+                      <div className="px-3 py-1 text-xs text-gray-500 uppercase tracking-wider">
+                        Quick Presets
+                      </div>
+                      {BOARD_PRESETS.map(preset => (
+                        <button
+                          key={preset.name}
+                          onClick={() => {
+                            setBoardSettings({ visibleColumns: preset.columns, detailLevel: preset.detail })
+                            setShowColumnsDropdown(false)
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                        >
+                          <span>{preset.name}</span>
+                          <span className="text-xs text-gray-600">({preset.columns.length} cols, {preset.detail})</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Detail dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setShowDetailDropdown(!showDetailDropdown)
+                    setShowColumnsDropdown(false)
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[--border] text-sm text-gray-300 hover:bg-white/5 transition-colors"
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                  <span className="hidden sm:inline">Detail</span>
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+
+                {showDetailDropdown && (
+                  <div
+                    className="absolute right-0 top-full mt-1 w-52 bg-[#1a1a24] border border-white/10 rounded-xl shadow-xl z-50 py-2"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <List className="w-4 h-4" />
-                    <span className="hidden sm:inline">List</span>
-                  </button>
-                </Tooltip>
+                    <div className="px-3 py-1 text-xs text-gray-500 uppercase tracking-wider">
+                      Card Detail Level
+                    </div>
+                    {DETAIL_OPTIONS.map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => {
+                          setBoardSettings(prev => ({ ...prev, detailLevel: opt.value }))
+                          setShowDetailDropdown(false)
+                        }}
+                        className={cn(
+                          'w-full flex flex-col items-start px-3 py-2 text-sm text-left hover:bg-white/5 transition-colors',
+                          boardSettings.detailLevel === opt.value && 'bg-[--arcane-purple]/10'
+                        )}
+                      >
+                        <div className="flex items-center gap-2 w-full">
+                          <div className={cn(
+                            'w-4 h-4 rounded-full border flex items-center justify-center',
+                            boardSettings.detailLevel === opt.value
+                              ? 'bg-[--arcane-purple] border-[--arcane-purple]'
+                              : 'border-gray-600'
+                          )}>
+                            {boardSettings.detailLevel === opt.value && (
+                              <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                            )}
+                          </div>
+                          <span className="text-gray-300">{opt.label}</span>
+                        </div>
+                        <p className="text-xs text-gray-500 ml-6">{opt.description}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1727,70 +1846,27 @@ export default function QuestsPage() {
               title="No matching quests"
               description="Try adjusting your search or filters"
             />
-          ) : viewMode === 'board' ? (
+          ) : (
             <DragDropContext onDragEnd={handleDragEnd}>
               <div className="flex gap-3 overflow-x-auto pb-4">
-                <BoardColumn
-                  title="Available"
-                  status="available"
-                  quests={questsByStatus.available}
-                  objectives={objectives}
-                  characters={characters}
-                  onSelect={setSelectedQuest}
-                  color={QUEST_STATUS_COLORS.available}
-                />
-                <BoardColumn
-                  title="Active"
-                  status="active"
-                  quests={questsByStatus.active}
-                  objectives={objectives}
-                  characters={characters}
-                  onSelect={setSelectedQuest}
-                  color={QUEST_STATUS_COLORS.active}
-                />
-                <BoardColumn
-                  title="Completed"
-                  status="completed"
-                  quests={questsByStatus.completed}
-                  objectives={objectives}
-                  characters={characters}
-                  onSelect={setSelectedQuest}
-                  color={QUEST_STATUS_COLORS.completed}
-                />
-                <BoardColumn
-                  title="Failed"
-                  status="failed"
-                  quests={questsByStatus.failed}
-                  objectives={objectives}
-                  characters={characters}
-                  onSelect={setSelectedQuest}
-                  color={QUEST_STATUS_COLORS.failed}
-                />
-                <BoardColumn
-                  title="Abandoned"
-                  status="abandoned"
-                  quests={questsByStatus.abandoned}
-                  objectives={objectives}
-                  characters={characters}
-                  onSelect={setSelectedQuest}
-                  color={QUEST_STATUS_COLORS.abandoned}
-                />
+                {COLUMN_OPTIONS
+                  .filter(col => boardSettings.visibleColumns.includes(col.key))
+                  .map(col => (
+                    <BoardColumn
+                      key={col.key}
+                      title={col.label}
+                      status={col.key}
+                      quests={questsByStatus[col.key]}
+                      objectives={objectives}
+                      characters={characters}
+                      locations={locations}
+                      onSelect={setSelectedQuest}
+                      color={col.color}
+                      detailLevel={boardSettings.detailLevel}
+                    />
+                  ))}
               </div>
             </DragDropContext>
-          ) : (
-            <div className="grid gap-3 max-w-4xl">
-              {filteredQuests.map(quest => (
-                <QuestCard
-                  key={quest.id}
-                  quest={quest}
-                  objectives={objectives[quest.id] || []}
-                  questGiver={characters.find(c => c.id === quest.quest_giver_id)}
-                  location={locations.find(l => l.id === quest.objective_location_id)}
-                  onSelect={setSelectedQuest}
-                  isSelected={selectedQuest?.id === quest.id}
-                />
-              ))}
-            </div>
           )}
         </div>
       </div>

@@ -131,8 +131,11 @@ CONSTRAINT: exactly one must be set
 **Full page at:** `src/app/(dashboard)/campaigns/[id]/quests/page.tsx`
 
 Features built:
-- **List view** - Quest cards with status badge, type, quest giver, objectives preview
-- **Board view** - Trello-style Kanban with drag-and-drop between columns (Available | Active | Completed)
+- **Board view only** - Trello-style Kanban with drag-and-drop (no list view)
+- **Column visibility** - Dropdown to show/hide columns (Available, Active, Completed, Failed, Abandoned)
+- **Detail levels** - Compact (name+type), Standard (+summary, quest giver), Detailed (+objectives, rewards)
+- **Presets** - Quick presets: Focus Mode, Full Overview, DM Prep, Clean Slate
+- **Settings saved** - Column and detail preferences saved to localStorage per campaign
 - **Detail modal** - Trello-style modal overlay (NOT sidebar), click-outside-to-close
 - **Add/Edit modal** - Progressive disclosure with expandable sections, NPC dropdown, location dropdown
 - **Roll Random button** - Pick random quest from Available pool
