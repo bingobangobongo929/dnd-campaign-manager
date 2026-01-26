@@ -1290,6 +1290,8 @@ export default function QuestsPage() {
   })
   const [showColumnsDropdown, setShowColumnsDropdown] = useState(false)
   const [showDetailDropdown, setShowDetailDropdown] = useState(false)
+  const columnsDropdownRef = useRef<HTMLDivElement>(null)
+  const detailDropdownRef = useRef<HTMLDivElement>(null)
 
   // Save board settings when they change
   useEffect(() => {
@@ -1300,12 +1302,17 @@ export default function QuestsPage() {
 
   // Close dropdowns when clicking outside
   useEffect(() => {
-    const handleClickOutside = () => {
-      setShowColumnsDropdown(false)
-      setShowDetailDropdown(false)
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node
+      if (columnsDropdownRef.current && !columnsDropdownRef.current.contains(target)) {
+        setShowColumnsDropdown(false)
+      }
+      if (detailDropdownRef.current && !detailDropdownRef.current.contains(target)) {
+        setShowDetailDropdown(false)
+      }
     }
-    document.addEventListener('click', handleClickOutside)
-    return () => document.removeEventListener('click', handleClickOutside)
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   // Selection and modals
@@ -1697,7 +1704,7 @@ export default function QuestsPage() {
               </select>
 
               {/* Columns dropdown */}
-              <div className="relative">
+              <div className="relative" ref={columnsDropdownRef}>
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
@@ -1771,7 +1778,7 @@ export default function QuestsPage() {
               </div>
 
               {/* Detail dropdown */}
-              <div className="relative">
+              <div className="relative" ref={detailDropdownRef}>
                 <button
                   onClick={(e) => {
                     e.stopPropagation()

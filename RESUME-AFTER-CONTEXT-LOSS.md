@@ -5,7 +5,8 @@
 ## Current Status (2026-01-26)
 
 **LOCATIONS FULLY INTEGRATED WITH CAMPAIGN INTELLIGENCE.**
-**QUESTS UI - Design decisions finalized, ready to build.**
+**QUESTS FULLY INTEGRATED WITH CAMPAIGN INTELLIGENCE.**
+**Next: Share page for quests, then Encounters UI.**
 
 ## What's Done
 
@@ -117,7 +118,7 @@ CONSTRAINT: exactly one must be set
 
 | Location | Integration | Status |
 |----------|-------------|--------|
-| **Quests Page** | Main library, list + board views, objectives | ✅ DONE |
+| **Quests Page** | Main library, board view, objectives | ✅ DONE |
 | **Quick Reference** | Pin quests to sessions (new pinnable type) | ✅ DONE |
 | **Campaign Intelligence** | Detect quests/progress from session notes | ✅ DONE |
 | **Canvas** | NPC cards show "Quest Giver for: X" | ✅ DONE |
@@ -125,7 +126,7 @@ CONSTRAINT: exactly one must be set
 | **Locations Detail** | "Quests at this location" section | ✅ DONE |
 | **Sessions** | Link sessions to quests progressed | TODO |
 | **Roll Random** | Button to pick random Available quest | ✅ DONE |
-| **Share Page** | `/share/[code]/quests` for player visibility | TODO |
+| **Share Page** | `/share/[code]/quests` for player visibility | DEFERRED (do after encounters) |
 
 ### Quests Page Features (COMPLETE)
 **Full page at:** `src/app/(dashboard)/campaigns/[id]/quests/page.tsx`
@@ -151,14 +152,14 @@ Features built:
 ### Frontend Work Queue:
 1. ~~**Build Locations UI**~~ ✅ DONE
 2. ~~**Campaign Intelligence - Location Detection**~~ ✅ DONE
-3. ~~**Build Quests Page**~~ ✅ DONE - List + board view, objectives, roll random
+3. ~~**Build Quests Page**~~ ✅ DONE - Board view, objectives, roll random
 4. ~~**Update Quick Reference**~~ ✅ DONE - Quests now pinnable in sessions
 5. ~~**Update Locations Detail**~~ ✅ DONE - "Quests at this location" in detail panel
 6. ~~**Update Characters/Canvas**~~ ✅ DONE - "Quest Giver For" in character view modal
 7. ~~**Campaign Intelligence - Quest Detection**~~ ✅ DONE - Detect from session notes
-8. **Build Share Page** - `/share/[code]/quests` (NEXT)
-9. **Build Encounters UI** - After quests complete
-10. **Campaign Intelligence - Encounter Detection**
+8. **Build Encounters UI** - (NEXT) See `DESIGN-encounters.md`
+9. **Campaign Intelligence - Encounter Detection**
+10. **Comprehensive Share Page Update** - After all core features done, update share page to match locations/quests/encounters all at once
 11. **Recreate Oneshots pages** - Using unified system
 
 ## Critical Reminders
@@ -375,7 +376,7 @@ discovered_session, started_session, completed_session, created_at, updated_at
 | `src/components/providers/ContentProvider.tsx` | Context provider |
 | `src/components/unified/UnifiedCharacterList.tsx` | Example component |
 | `src/app/(dashboard)/campaigns/[id]/locations/page.tsx` | **Locations UI (COMPLETE)** |
-| `src/app/(dashboard)/campaigns/[id]/quests/page.tsx` | Quests placeholder |
+| `src/app/(dashboard)/campaigns/[id]/quests/page.tsx` | **Quests UI (COMPLETE)** |
 | `src/app/(dashboard)/campaigns/[id]/encounters/page.tsx` | Encounters placeholder |
 | `DESIGN-locations.md` | Locations UI spec |
 | `DESIGN-quests.md` | Quests UI spec |
