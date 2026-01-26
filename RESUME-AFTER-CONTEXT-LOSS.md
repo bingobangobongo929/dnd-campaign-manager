@@ -4,10 +4,44 @@
 
 ## Current Status (2026-01-26)
 
-**LOCATIONS FULLY INTEGRATED WITH CAMPAIGN INTELLIGENCE.**
-**QUESTS FULLY INTEGRATED WITH CAMPAIGN INTELLIGENCE.**
-**ENCOUNTERS FULLY INTEGRATED WITH CAMPAIGN INTELLIGENCE.**
-**Next: Quick Reference - pin encounters to sessions, Location/Quest detail sections for encounters.**
+**LOCATIONS, QUESTS, ENCOUNTERS - ALL UI COMPLETE.**
+**CAMPAIGN INTELLIGENCE - IMPLEMENTED BUT AWAITING FULL TESTING** (needs fake session notes to verify detection works properly).
+**ROLL REVEAL ANIMATION - COMPLETE** (Deck of Many Things style for random rolls).
+**MODS+ AI BYPASS - COMPLETE** (moderators/super_admins bypass all AI limits including cooldowns).
+
+### Recent Session Work
+1. **RollReveal Component** - `src/components/roll-reveal/RollReveal.tsx`
+   - Animated "Deck of Many Things" style roll reveal for encounters/quests
+   - Arcane circle with rotating runes, floating cards, particle effects
+   - Web Audio API generated sounds, card flip reveal
+   - Mystical fate card result design with purple theme
+   - Accept/Roll Again buttons
+
+2. **Mods+ AI Bypass** - `src/app/api/ai/analyze-campaign/route.ts`, `analyze-character/route.ts`
+   - Moderators and super_admins bypass tier checks and cooldowns
+   - Both campaign and character intelligence affected
+
+3. **Intelligence Confirmation Modal** - `src/app/(dashboard)/campaigns/[id]/intelligence/page.tsx`
+   - Warning modal before running Intelligence
+   - Reminds to submit session notes first
+   - Shows cooldown time warning (~12 hours)
+
+### Campaign Intelligence Testing Status
+**NOT YET FULLY TESTED** - Needs proper session notes with:
+- Location mentions (cities, taverns, dungeons)
+- Quest references (objectives, progress)
+- Encounter descriptions (combat, social, exploration)
+- NPC interactions
+
+The AI detection code is written but awaiting validation with real/fake data.
+
+### What's Next (Pick One)
+1. **Quick Reference - Encounters** - Pin encounters to sessions (like quests/NPCs)
+2. **Location Detail - Encounters** - "Encounters Here" section
+3. **Quest Detail - Encounters** - "Encounters for this Quest" section
+4. **Share Pages Update** - Add locations/quests/encounters to share pages
+5. **Test Campaign Intelligence** - Create fake session notes to validate detection
+6. **Oneshots Migration** - Recreate oneshot UI using unified system
 
 ## What's Done
 
