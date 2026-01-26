@@ -153,7 +153,7 @@ interface Character {
 interface Location {
   id: string
   name: string
-  location_type: string
+  type: string
 }
 
 // Quest card for list view
@@ -1043,7 +1043,7 @@ function QuestFormModal({
                     <option value="">No specific location</option>
                     {locations.map(loc => (
                       <option key={loc.id} value={loc.id}>
-                        {loc.name} ({loc.location_type})
+                        {loc.name} ({loc.type})
                       </option>
                     ))}
                   </select>
@@ -1341,7 +1341,7 @@ export default function QuestsPage() {
     // Load locations
     const { data: locationsData } = await supabase
       .from('locations')
-      .select('id, name, location_type')
+      .select('id, name, type')
       .eq('campaign_id', campaignId)
       .order('name')
 

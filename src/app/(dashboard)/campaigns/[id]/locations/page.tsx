@@ -96,17 +96,18 @@ interface Location {
   campaign_id: string | null
   oneshot_id: string | null
   name: string
+  type: string
   description: string | null
-  location_type: string
-  parent_id: string | null
+  summary: string | null
+  parent_location_id: string | null
   map_id: string | null
-  map_coordinates: { x: number; y: number } | null
-  is_visited: boolean
-  is_known: boolean
-  current_characters: string[] | null
-  tags: string[] | null
+  map_pin_x: number | null
+  map_pin_y: number | null
+  status: string
+  visibility: string
+  discovered_session: number | null
+  dm_notes: string | null
   secrets: string | null
-  notes: string | null
   created_at: string
   updated_at: string
   // Computed in frontend
@@ -141,13 +142,13 @@ function LocationTreeNode({
   onSelect: (location: Location) => void
   selectedId: string | null
 }) {
-  const children = allLocations.filter(l => l.parent_id === location.id)
+  const children = allLocations.filter(l => l.parent_location_id === location.id)
   const hasChildren = children.length > 0
   const isExpanded = expandedIds.has(location.id)
   const isSelected = selectedId === location.id
 
-  const Icon = LOCATION_TYPE_ICONS[location.location_type] || Compass
-  const color = LOCATION_TYPE_COLORS[location.location_type] || '#6B7280'
+  const Icon = LOCATION_TYPE_ICONS[location.type] || Compass
+  const color = LOCATION_TYPE_COLORS[location.type] || '#6B7280'
 
   return (
     <div className="select-none">
@@ -201,17 +202,17 @@ function LocationTreeNode({
 
         {/* Status indicators */}
         <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          {location.is_visited && (
-            <Tooltip content="Visited">
-              <div className="w-5 h-5 rounded flex items-center justify-center bg-emerald-500/20">
-                <Eye className="w-3 h-3 text-emerald-400" />
+          {location.visibility === 'dm_only' && (
+            <Tooltip content="DM Only">
+              <div className="w-5 h-5 rounded flex items-center justify-center bg-amber-500/20">
+                <EyeOff className="w-3 h-3 text-amber-400" />
               </div>
             </Tooltip>
           )}
-          {!location.is_known && (
-            <Tooltip content="Hidden from players">
-              <div className="w-5 h-5 rounded flex items-center justify-center bg-amber-500/20">
-                <EyeOff className="w-3 h-3 text-amber-400" />
+          {location.secrets && (
+            <Tooltip content="Has secrets">
+              <div className="w-5 h-5 rounded flex items-center justify-center bg-red-500/20">
+                <Skull className="w-3 h-3 text-red-400" />
               </div>
             </Tooltip>
           )}
@@ -256,8 +257,8 @@ function LocationCard({
   onSelect: (location: Location) => void
   isSelected: boolean
 }) {
-  const Icon = LOCATION_TYPE_ICONS[location.location_type] || Compass
-  const color = LOCATION_TYPE_COLORS[location.location_type] || '#6B7280'
+  const Icon = LOCATION_TYPE_ICONS[location.type] || Compass
+  const color = LOCATION_TYPE_COLORS[location.type] || '#6B7280'
 
   return (
     <div
@@ -283,7 +284,7 @@ function LocationCard({
           <div className="flex items-center gap-2 mb-1">
             <h3 className="font-semibold text-white truncate">{location.name}</h3>
             <Badge size="sm" color={color}>
-              {location.location_type}
+              {location.type}
             </Badge>
           </div>
 
@@ -299,38 +300,12 @@ function LocationCard({
               {location.description}
             </p>
           )}
-
-          {/* Tags */}
-          {location.tags && location.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-3">
-              {location.tags.slice(0, 3).map((tag, idx) => (
-                <span
-                  key={idx}
-                  className="px-2 py-0.5 text-xs rounded-full bg-white/5 text-gray-400"
-                >
-                  {tag}
-                </span>
-              ))}
-              {location.tags.length > 3 && (
-                <span className="px-2 py-0.5 text-xs text-gray-500">
-                  +{location.tags.length - 3} more
-                </span>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Status indicators */}
         <div className="flex flex-col gap-1">
-          {location.is_visited && (
-            <Tooltip content="Visited">
-              <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-emerald-500/20">
-                <Eye className="w-3.5 h-3.5 text-emerald-400" />
-              </div>
-            </Tooltip>
-          )}
-          {!location.is_known && (
-            <Tooltip content="Hidden from players">
+          {location.visibility === 'dm_only' && (
+            <Tooltip content="DM Only">
               <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-amber-500/20">
                 <EyeOff className="w-3.5 h-3.5 text-amber-400" />
               </div>
@@ -367,10 +342,10 @@ function LocationViewModal({
   onDelete: () => void
   canEdit: boolean
 }) {
-  const Icon = LOCATION_TYPE_ICONS[location.location_type] || Compass
-  const color = LOCATION_TYPE_COLORS[location.location_type] || '#6B7280'
-  const parent = locations.find(l => l.id === location.parent_id)
-  const children = locations.filter(l => l.parent_id === location.id)
+  const Icon = LOCATION_TYPE_ICONS[location.type] || Compass
+  const color = LOCATION_TYPE_COLORS[location.type] || '#6B7280'
+  const parent = locations.find(l => l.id === location.parent_location_id)
+  const children = locations.filter(l => l.parent_location_id === location.id)
 
   // Find quests at this location (either as quest giver location or objective location)
   const questsAtLocation = quests.filter(
@@ -417,13 +392,13 @@ function LocationViewModal({
               <h2 className="text-xl font-bold text-white mb-2">{location.name}</h2>
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge size="sm" color={color}>
-                  {location.location_type}
+                  {location.type}
                 </Badge>
-                {location.is_visited && (
-                  <Badge size="sm" color="#10B981">visited</Badge>
+                {location.visibility === 'dm_only' && (
+                  <Badge size="sm" color="#F59E0B">DM only</Badge>
                 )}
-                {!location.is_known && (
-                  <Badge size="sm" color="#F59E0B">hidden</Badge>
+                {location.visibility === 'party' && (
+                  <Badge size="sm" color="#10B981">visible to party</Badge>
                 )}
                 {location.secrets && (
                   <Badge size="sm" color="#EF4444">has secrets</Badge>
@@ -438,8 +413,8 @@ function LocationViewModal({
               <MapPin className="w-4 h-4" />
               <span>Located in</span>
               <span className="text-gray-300">{parent.name}</span>
-              <Badge size="sm" color={LOCATION_TYPE_COLORS[parent.location_type]}>
-                {parent.location_type}
+              <Badge size="sm" color={LOCATION_TYPE_COLORS[parent.type]}>
+                {parent.type}
               </Badge>
             </div>
           )}
@@ -467,8 +442,8 @@ function LocationViewModal({
               </h4>
               <div className="grid grid-cols-2 gap-2">
                 {children.map(child => {
-                  const ChildIcon = LOCATION_TYPE_ICONS[child.location_type] || Compass
-                  const childColor = LOCATION_TYPE_COLORS[child.location_type] || '#6B7280'
+                  const ChildIcon = LOCATION_TYPE_ICONS[child.type] || Compass
+                  const childColor = LOCATION_TYPE_COLORS[child.type] || '#6B7280'
                   return (
                     <div
                       key={child.id}
@@ -483,33 +458,14 @@ function LocationViewModal({
             </div>
           )}
 
-          {/* Tags */}
-          {location.tags && location.tags.length > 0 && (
+          {/* DM Notes */}
+          {location.dm_notes && (
             <div>
               <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                Tags
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {location.tags.map((tag, idx) => (
-                  <span
-                    key={idx}
-                    className="px-3 py-1 text-sm rounded-full bg-white/5 text-gray-300"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Notes */}
-          {location.notes && (
-            <div>
-              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                Notes
+                DM Notes
               </h4>
               <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-wrap bg-white/[0.02] rounded-lg p-3">
-                {location.notes}
+                {location.dm_notes}
               </p>
             </div>
           )}
@@ -600,40 +556,34 @@ function LocationFormModal({
 }) {
   const [formData, setFormData] = useState({
     name: '',
-    location_type: 'building',
-    parent_id: '',
+    type: 'building',
+    parent_location_id: '',
     description: '',
-    is_visited: false,
-    is_known: true,
-    tags: '',
-    notes: '',
+    dm_notes: '',
     secrets: '',
+    visibility: 'dm_only',
   })
 
   useEffect(() => {
     if (location) {
       setFormData({
         name: location.name,
-        location_type: location.location_type,
-        parent_id: location.parent_id || '',
+        type: location.type || 'building',
+        parent_location_id: location.parent_location_id || '',
         description: location.description || '',
-        is_visited: location.is_visited,
-        is_known: location.is_known,
-        tags: location.tags?.join(', ') || '',
-        notes: location.notes || '',
+        dm_notes: location.dm_notes || '',
         secrets: location.secrets || '',
+        visibility: location.visibility || 'dm_only',
       })
     } else {
       setFormData({
         name: '',
-        location_type: 'building',
-        parent_id: '',
+        type: 'building',
+        parent_location_id: '',
         description: '',
-        is_visited: false,
-        is_known: true,
-        tags: '',
-        notes: '',
+        dm_notes: '',
         secrets: '',
+        visibility: 'dm_only',
       })
     }
   }, [location, isOpen])
@@ -642,20 +592,18 @@ function LocationFormModal({
     e.preventDefault()
     onSave({
       name: formData.name,
-      location_type: formData.location_type,
-      parent_id: formData.parent_id || null,
+      type: formData.type,
+      parent_location_id: formData.parent_location_id || null,
       description: formData.description || null,
-      is_visited: formData.is_visited,
-      is_known: formData.is_known,
-      tags: formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : null,
-      notes: formData.notes || null,
+      dm_notes: formData.dm_notes || null,
       secrets: formData.secrets || null,
-    })
+      visibility: formData.visibility,
+    } as Partial<Location>)
   }
 
   // Filter out current location and its descendants for parent selection
   const getDescendantIds = (id: string): string[] => {
-    const children = locations.filter(l => l.parent_id === id)
+    const children = locations.filter(l => l.parent_location_id === id)
     return [id, ...children.flatMap(c => getDescendantIds(c.id))]
   }
   const excludeIds = location ? getDescendantIds(location.id) : []
@@ -689,8 +637,8 @@ function LocationFormModal({
               Type <span className="text-red-400">*</span>
             </label>
             <select
-              value={formData.location_type}
-              onChange={(e) => setFormData({ ...formData, location_type: e.target.value })}
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
               className="form-input"
             >
               {LOCATION_TYPES.map(type => (
@@ -708,14 +656,14 @@ function LocationFormModal({
             Located In
           </label>
           <select
-            value={formData.parent_id}
-            onChange={(e) => setFormData({ ...formData, parent_id: e.target.value })}
+            value={formData.parent_location_id}
+            onChange={(e) => setFormData({ ...formData, parent_location_id: e.target.value })}
             className="form-input"
           >
             <option value="">None (Top Level)</option>
             {availableParents.map(loc => (
               <option key={loc.id} value={loc.id}>
-                {loc.name} ({loc.location_type})
+                {loc.name} ({loc.type})
               </option>
             ))}
           </select>
@@ -734,53 +682,32 @@ function LocationFormModal({
           />
         </div>
 
-        {/* Status toggles */}
-        <div className="flex gap-6">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.is_visited}
-              onChange={(e) => setFormData({ ...formData, is_visited: e.target.checked })}
-              className="form-checkbox"
-            />
-            <span className="text-sm text-gray-300">Party has visited</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.is_known}
-              onChange={(e) => setFormData({ ...formData, is_known: e.target.checked })}
-              className="form-checkbox"
-            />
-            <span className="text-sm text-gray-300">Known to players</span>
-          </label>
-        </div>
-
-        {/* Tags */}
+        {/* Visibility */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1.5">
-            Tags
+            Visibility
           </label>
-          <input
-            type="text"
-            value={formData.tags}
-            onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+          <select
+            value={formData.visibility}
+            onChange={(e) => setFormData({ ...formData, visibility: e.target.value })}
             className="form-input"
-            placeholder="safe haven, merchant district, quest location"
-          />
-          <p className="text-xs text-gray-500 mt-1">Separate tags with commas</p>
+          >
+            <option value="dm_only">DM Only</option>
+            <option value="party">Visible to Party</option>
+            <option value="public">Public</option>
+          </select>
         </div>
 
-        {/* Notes */}
+        {/* DM Notes */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1.5">
-            Notes
+            DM Notes
           </label>
           <textarea
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            value={formData.dm_notes}
+            onChange={(e) => setFormData({ ...formData, dm_notes: e.target.value })}
             className="form-input min-h-[80px]"
-            placeholder="General notes about this location..."
+            placeholder="Notes for running this location..."
           />
         </div>
 
@@ -898,7 +825,7 @@ export default function LocationsPage() {
     // Expand root nodes by default (only on first load)
     if (locationsData && !hasLoadedOnce) {
       const rootIds = locationsData
-        .filter(l => !l.parent_id)
+        .filter(l => !l.parent_location_id)
         .map(l => l.id)
       setExpandedIds(new Set(rootIds))
     }
@@ -927,12 +854,12 @@ export default function LocationsPage() {
       const matchesSearch =
         location.name.toLowerCase().includes(query) ||
         location.description?.toLowerCase().includes(query) ||
-        location.tags?.some(t => t.toLowerCase().includes(query))
+        location.dm_notes?.toLowerCase().includes(query)
       if (!matchesSearch) return false
     }
 
     // Type filter
-    if (typeFilter !== 'all' && location.location_type !== typeFilter) {
+    if (typeFilter !== 'all' && location.type !== typeFilter) {
       return false
     }
 
@@ -940,7 +867,7 @@ export default function LocationsPage() {
   })
 
   // Get root locations for tree view
-  const rootLocations = filteredLocations.filter(l => !l.parent_id)
+  const rootLocations = filteredLocations.filter(l => !l.parent_location_id)
 
   // Get parent name helper
   const getParentName = (parentId: string | null) => {
@@ -1163,7 +1090,7 @@ export default function LocationsPage() {
                 ))}
                 {/* Show orphaned locations (parent filtered out) */}
                 {filteredLocations
-                  .filter(l => l.parent_id && !filteredLocations.find(p => p.id === l.parent_id))
+                  .filter(l => l.parent_location_id && !filteredLocations.find(p => p.id === l.parent_location_id))
                   .map(location => (
                     <LocationTreeNode
                       key={location.id}
@@ -1183,7 +1110,7 @@ export default function LocationsPage() {
                   <LocationCard
                     key={location.id}
                     location={location}
-                    parentName={getParentName(location.parent_id)}
+                    parentName={getParentName(location.parent_location_id)}
                     onSelect={setSelectedLocation}
                     isSelected={selectedLocation?.id === location.id}
                   />
@@ -1237,7 +1164,7 @@ export default function LocationsPage() {
             Are you sure you want to delete{' '}
             <span className="font-semibold text-white">{selectedLocation?.name}</span>?
           </p>
-          {locations.filter(l => l.parent_id === selectedLocation?.id).length > 0 && (
+          {locations.filter(l => l.parent_location_id === selectedLocation?.id).length > 0 && (
             <p className="text-amber-400 text-sm">
               This location has child locations. They will become top-level locations.
             </p>
