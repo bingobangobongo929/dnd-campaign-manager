@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import {
-  HeartPulse,
   Database,
-  Server,
   Clock,
   CheckCircle,
   AlertCircle,
@@ -103,8 +101,8 @@ export default function AdminHealthPage() {
         tables: stats.map(s => ({ name: s.name, rowCount: s.count })),
         lastChecked: new Date().toISOString(),
       })
-    } catch (err: any) {
-      setError(err.message || 'Failed to check health')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to check health')
       toast.error('Health check failed')
     } finally {
       setLoading(false)

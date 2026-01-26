@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Filter, Loader2, Shield, Ban, UserX, Crown, Edit2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download, Calendar } from 'lucide-react'
+import { Search, Loader2, Shield, Ban, UserX, Crown, Edit2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download, Calendar } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSupabase } from '@/hooks'
 import { formatDate } from '@/lib/utils'
@@ -77,12 +77,7 @@ export default function AdminActivityPage() {
       })
 
       if (userIds.size > 0) {
-        const { data: users } = await supabase
-          .from('user_settings')
-          .select('user_id, username')
-          .in('user_id', Array.from(userIds))
-
-        // Also fetch emails from admin API
+        // Fetch emails and usernames from admin API
         const res = await fetch('/api/admin/users')
         if (res.ok) {
           const { users: allUsers } = await res.json()

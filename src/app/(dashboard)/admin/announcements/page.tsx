@@ -11,8 +11,7 @@ import {
   AlertTriangle,
   Info,
   CheckCircle,
-  X,
-  Calendar
+  X
 } from 'lucide-react'
 import { useSupabase, useUserSettings } from '@/hooks'
 import { isSuperAdmin } from '@/lib/admin'

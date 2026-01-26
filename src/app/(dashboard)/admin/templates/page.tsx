@@ -8,15 +8,11 @@ import {
   User,
   Search,
   Loader2,
-  Eye,
   Download,
-  Calendar,
-  Tag,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
-  ChevronsRight,
-  ExternalLink
+  ChevronsRight
 } from 'lucide-react'
 import { useSupabase } from '@/hooks'
 import { cn, formatDate } from '@/lib/utils'

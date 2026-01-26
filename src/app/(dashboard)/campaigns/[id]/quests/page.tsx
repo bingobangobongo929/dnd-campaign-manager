@@ -3,6 +3,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  type DropResult,
+} from '@hello-pangea/dnd'
+import {
   Target,
   Plus,
   Search,
@@ -178,8 +184,8 @@ function QuestCard({
       className={cn(
         'p-4 rounded-xl cursor-pointer transition-all duration-200 group',
         isSelected
-          ? 'bg-[--arcane-purple]/15 border border-[--arcane-purple]/40 shadow-lg shadow-purple-500/10'
-          : 'bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] hover:border-white/[0.1]'
+          ? 'bg-[--arcane-purple]/15 ring-1 ring-[--arcane-purple]/40 shadow-lg shadow-purple-500/10'
+          : 'bg-white/[0.03] hover:bg-white/[0.05]'
       )}
       onClick={() => onSelect(quest)}
     >
@@ -187,7 +193,7 @@ function QuestCard({
         {/* Icon */}
         <div
           className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105"
-          style={{ backgroundColor: `${typeColor}15`, border: `1px solid ${typeColor}30` }}
+          style={{ backgroundColor: `${typeColor}15` }}
         >
           <Icon className="w-6 h-6" style={{ color: typeColor }} />
         </div>
@@ -252,16 +258,82 @@ function QuestCard({
   )
 }
 
-// Board column for Kanban view
+// Trello-style board card (draggable)
+function BoardCard({
+  quest,
+  objectives,
+  questGiver,
+  onClick,
+  isDragging,
+}: {
+  quest: Quest
+  objectives: QuestObjective[]
+  questGiver?: Character
+  onClick: () => void
+  isDragging: boolean
+}) {
+  const typeColor = QUEST_TYPE_COLORS[quest.type] || '#6B7280'
+  const completedObjectives = objectives.filter(o => o.is_completed).length
+  const totalObjectives = objectives.length
+
+  return (
+    <div
+      className={cn(
+        'p-3 rounded-lg cursor-pointer transition-all duration-150',
+        'bg-[#1e1e2a] hover:bg-[#252532]',
+        isDragging && 'shadow-xl shadow-black/50 rotate-2 scale-105'
+      )}
+      onClick={onClick}
+    >
+      {/* Type indicator bar */}
+      <div
+        className="h-1 w-12 rounded-full mb-2"
+        style={{ backgroundColor: typeColor }}
+      />
+
+      {/* Title */}
+      <p className="font-medium text-sm text-white mb-1">{quest.name}</p>
+
+      {/* Summary preview */}
+      {quest.summary && (
+        <p className="text-xs text-gray-400 line-clamp-2 mb-2">
+          {quest.summary}
+        </p>
+      )}
+
+      {/* Footer info */}
+      <div className="flex items-center gap-3 text-xs text-gray-500">
+        {questGiver && (
+          <span className="flex items-center gap-1">
+            <User className="w-3 h-3" />
+            <span className="truncate max-w-[80px]">{questGiver.name}</span>
+          </span>
+        )}
+        {totalObjectives > 0 && (
+          <span className="flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3" />
+            {completedObjectives}/{totalObjectives}
+          </span>
+        )}
+        {quest.priority === 'urgent' && (
+          <AlertCircle className="w-3 h-3 text-red-400" />
+        )}
+        {quest.priority === 'high' && (
+          <AlertCircle className="w-3 h-3 text-amber-400" />
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Trello-style board column with drag and drop
 function BoardColumn({
   title,
   status,
   quests,
   objectives,
   characters,
-  locations,
   onSelect,
-  selectedId,
   color,
 }: {
   title: string
@@ -269,79 +341,71 @@ function BoardColumn({
   quests: Quest[]
   objectives: Record<string, QuestObjective[]>
   characters: Character[]
-  locations: Location[]
   onSelect: (quest: Quest) => void
-  selectedId: string | null
   color: string
 }) {
   return (
-    <div className="flex-1 min-w-[280px] max-w-[350px] flex flex-col">
+    <div className="flex-shrink-0 w-[280px] flex flex-col bg-[#12121a] rounded-xl max-h-full">
       {/* Column header */}
-      <div className="flex items-center gap-2 px-3 py-2 mb-3">
+      <div className="flex items-center gap-2 px-3 py-3 border-b border-white/[0.05]">
         <div
-          className="w-3 h-3 rounded-full"
+          className="w-2.5 h-2.5 rounded-full"
           style={{ backgroundColor: color }}
         />
-        <h3 className="font-semibold text-white">{title}</h3>
-        <span className="text-sm text-gray-500">({quests.length})</span>
+        <h3 className="font-medium text-sm text-white flex-1">{title}</h3>
+        <span className="text-xs text-gray-500 bg-white/[0.05] px-2 py-0.5 rounded-full">
+          {quests.length}
+        </span>
       </div>
 
-      {/* Cards */}
-      <div className="flex-1 space-y-2 overflow-y-auto px-1">
-        {quests.map(quest => {
-          const questGiver = characters.find(c => c.id === quest.quest_giver_id)
-          const location = locations.find(l => l.id === quest.objective_location_id)
-          return (
-            <div
-              key={quest.id}
-              className={cn(
-                'p-3 rounded-lg cursor-pointer transition-all duration-150',
-                selectedId === quest.id
-                  ? 'bg-[--arcane-purple]/20 border border-[--arcane-purple]/40'
-                  : 'bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.06]'
-              )}
-              onClick={() => onSelect(quest)}
-            >
-              <div className="flex items-start gap-2">
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: `${QUEST_TYPE_COLORS[quest.type]}20` }}
-                >
-                  {(() => {
-                    const Icon = QUEST_TYPE_ICONS[quest.type] || Target
-                    return <Icon className="w-4 h-4" style={{ color: QUEST_TYPE_COLORS[quest.type] }} />
-                  })()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm text-white truncate">{quest.name}</p>
-                  {questGiver && (
-                    <p className="text-xs text-gray-500 truncate">
-                      {questGiver.name}
-                    </p>
+      {/* Droppable area */}
+      <Droppable droppableId={status}>
+        {(provided, snapshot) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            className={cn(
+              'flex-1 p-2 space-y-2 overflow-y-auto min-h-[100px]',
+              snapshot.isDraggingOver && 'bg-[--arcane-purple]/5'
+            )}
+          >
+            {quests.map((quest, index) => {
+              const questGiver = characters.find(c => c.id === quest.quest_giver_id)
+              return (
+                <Draggable key={quest.id} draggableId={quest.id} index={index}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                    >
+                      <BoardCard
+                        quest={quest}
+                        objectives={objectives[quest.id] || []}
+                        questGiver={questGiver}
+                        onClick={() => onSelect(quest)}
+                        isDragging={snapshot.isDragging}
+                      />
+                    </div>
                   )}
-                </div>
+                </Draggable>
+              )
+            })}
+            {provided.placeholder}
+            {quests.length === 0 && !snapshot.isDraggingOver && (
+              <div className="text-center py-6 text-gray-600 text-xs">
+                Drop quests here
               </div>
-              {objectives[quest.id]?.length > 0 && (
-                <div className="mt-2 flex items-center gap-1 text-xs text-gray-500">
-                  <CheckCircle2 className="w-3 h-3" />
-                  {objectives[quest.id].filter(o => o.is_completed).length}/{objectives[quest.id].length}
-                </div>
-              )}
-            </div>
-          )
-        })}
-        {quests.length === 0 && (
-          <div className="text-center py-8 text-gray-500 text-sm">
-            No quests
+            )}
           </div>
         )}
-      </div>
+      </Droppable>
     </div>
   )
 }
 
-// Detail panel component
-function QuestDetailPanel({
+// Trello-style Quest View Modal
+function QuestViewModal({
   quest,
   objectives,
   characters,
@@ -371,217 +435,246 @@ function QuestDetailPanel({
   const objectiveLocation = locations.find(l => l.id === quest.objective_location_id)
 
   return (
-    <div className="h-full flex flex-col bg-[--bg-surface] border-l border-[--border]">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-[--border]">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ backgroundColor: `${typeColor}20` }}
-          >
-            <Icon className="w-5 h-5" style={{ color: typeColor }} />
-          </div>
-          <div>
-            <h2 className="font-semibold text-white">{quest.name}</h2>
-            <div className="flex items-center gap-2 mt-0.5">
-              <Badge size="sm" color={typeColor}>
-                {quest.type.replace('_', ' ')}
-              </Badge>
-              <Badge size="sm" color={statusColor}>
-                {quest.status}
-              </Badge>
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center pt-12 pb-12 px-4 overflow-y-auto"
+      onClick={onClose}
+    >
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/70" />
+
+      {/* Modal */}
+      <div
+        className="relative w-full max-w-2xl bg-[#1a1a24] rounded-xl shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Color bar at top */}
+        <div
+          className="h-2 rounded-t-xl"
+          style={{ backgroundColor: typeColor }}
+        />
+
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors z-10"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* Header */}
+        <div className="p-6 pb-4">
+          <div className="flex items-start gap-4 pr-10">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: `${typeColor}20` }}
+            >
+              <Icon className="w-6 h-6" style={{ color: typeColor }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-bold text-white mb-2">{quest.name}</h2>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge size="sm" color={typeColor}>
+                  {quest.type.replace('_', ' ')}
+                </Badge>
+                <Badge size="sm" color={statusColor}>
+                  {quest.status}
+                </Badge>
+                {quest.priority === 'urgent' && (
+                  <Badge size="sm" color="#EF4444">urgent</Badge>
+                )}
+                {quest.priority === 'high' && (
+                  <Badge size="sm" color="#F59E0B">high priority</Badge>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-1">
-          {canEdit && (
-            <>
-              <button
-                onClick={onEdit}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-              >
-                <Edit3 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={onDelete}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </>
+
+          {quest.summary && (
+            <p className="mt-4 text-gray-400">{quest.summary}</p>
           )}
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {/* Description */}
-        {quest.description && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Description
-            </h4>
-            <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
-              {quest.description}
-            </p>
+        {/* Content */}
+        <div className="px-6 pb-6 space-y-6">
+          {/* Description */}
+          {quest.description && (
+            <div>
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Description
+              </h4>
+              <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap bg-white/[0.02] rounded-lg p-3">
+                {quest.description}
+              </p>
+            </div>
+          )}
+
+          {/* Two column layout for meta info */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Quest Giver */}
+            {questGiver && (
+              <div className="bg-white/[0.02] rounded-lg p-3">
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Quest Giver
+                </h4>
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-300">{questGiver.name}</span>
+                </div>
+                {questGiverLocation && (
+                  <p className="text-xs text-gray-500 mt-1 ml-6">
+                    at {questGiverLocation.name}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Location */}
+            {objectiveLocation && (
+              <div className="bg-white/[0.02] rounded-lg p-3">
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Location
+                </h4>
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-300">{objectiveLocation.name}</span>
+                </div>
+              </div>
+            )}
           </div>
-        )}
 
-        {/* Objectives */}
-        {objectives.length > 0 && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Objectives ({objectives.filter(o => o.is_completed).length}/{objectives.length})
-            </h4>
-            <div className="space-y-2">
-              {objectives.map(objective => (
-                <button
-                  key={objective.id}
-                  onClick={() => canEdit && onToggleObjective(objective.id, !objective.is_completed)}
-                  disabled={!canEdit}
-                  className={cn(
-                    'w-full flex items-start gap-3 p-2 rounded-lg text-left transition-colors',
-                    canEdit ? 'hover:bg-white/5 cursor-pointer' : 'cursor-default',
-                    objective.is_completed ? 'opacity-60' : ''
-                  )}
-                >
-                  {objective.is_completed ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
-                  ) : (
-                    <Circle className="w-5 h-5 text-gray-500 flex-shrink-0 mt-0.5" />
-                  )}
-                  <span className={cn(
-                    'text-sm',
-                    objective.is_completed ? 'text-gray-500 line-through' : 'text-gray-300'
-                  )}>
-                    {objective.description}
-                    {objective.is_optional && (
-                      <span className="ml-2 text-xs text-gray-600">(Optional)</span>
+          {/* Objectives */}
+          {objectives.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Objectives ({objectives.filter(o => o.is_completed).length}/{objectives.length})
+              </h4>
+              <div className="bg-white/[0.02] rounded-lg p-1">
+                {objectives.map(objective => (
+                  <button
+                    key={objective.id}
+                    onClick={() => canEdit && onToggleObjective(objective.id, !objective.is_completed)}
+                    disabled={!canEdit}
+                    className={cn(
+                      'w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors',
+                      canEdit ? 'hover:bg-white/5 cursor-pointer' : 'cursor-default',
+                      objective.is_completed ? 'opacity-60' : ''
                     )}
-                  </span>
-                </button>
-              ))}
+                  >
+                    {objective.is_completed ? (
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <Circle className="w-5 h-5 text-gray-500 flex-shrink-0 mt-0.5" />
+                    )}
+                    <span className={cn(
+                      'text-sm',
+                      objective.is_completed ? 'text-gray-500 line-through' : 'text-gray-300'
+                    )}>
+                      {objective.description}
+                      {objective.is_optional && (
+                        <span className="ml-2 text-xs text-gray-600">(Optional)</span>
+                      )}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Quest Giver */}
-        {questGiver && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Quest Giver
-            </h4>
-            <div className="flex items-center gap-2 p-2 bg-white/[0.02] rounded-lg">
-              <User className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-300">{questGiver.name}</span>
-              {questGiverLocation && (
-                <span className="text-xs text-gray-500">
-                  at {questGiverLocation.name}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Objective Location */}
-        {objectiveLocation && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Location
-            </h4>
-            <div className="flex items-center gap-2 p-2 bg-white/[0.02] rounded-lg">
-              <MapPin className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-300">{objectiveLocation.name}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Rewards */}
-        {(quest.rewards_description || quest.rewards_xp || quest.rewards_gold) && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Rewards
-            </h4>
-            <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
+          {/* Rewards */}
+          {(quest.rewards_description || quest.rewards_xp || quest.rewards_gold) && (
+            <div className="bg-amber-500/10 rounded-lg p-4">
+              <h4 className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                <Gift className="w-4 h-4" />
+                Rewards
+              </h4>
               {quest.rewards_description && (
                 <p className="text-sm text-amber-300/80 mb-2">{quest.rewards_description}</p>
               )}
               <div className="flex gap-4 text-sm">
                 {quest.rewards_xp && (
-                  <span className="text-amber-400">{quest.rewards_xp} XP</span>
+                  <span className="text-amber-400 font-medium">{quest.rewards_xp} XP</span>
                 )}
                 {quest.rewards_gold && (
-                  <span className="text-yellow-400">{quest.rewards_gold} gold</span>
+                  <span className="text-yellow-400 font-medium">{quest.rewards_gold} gold</span>
                 )}
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Time Limit */}
-        {quest.time_limit && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Time Limit
-            </h4>
-            <div className="flex items-center gap-2 p-2 bg-red-500/5 border border-red-500/20 rounded-lg">
-              <Clock className="w-4 h-4 text-red-400" />
-              <span className="text-sm text-red-300/80">{quest.time_limit}</span>
+          {/* Time Limit */}
+          {quest.time_limit && (
+            <div className="bg-red-500/10 rounded-lg p-4">
+              <h4 className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-1 flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Time Limit
+              </h4>
+              <p className="text-sm text-red-300/80">{quest.time_limit}</p>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* DM Notes */}
-        {quest.dm_notes && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              DM Notes
-            </h4>
-            <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-wrap">
-              {quest.dm_notes}
-            </p>
-          </div>
-        )}
-
-        {/* Secrets */}
-        {quest.secrets && (
-          <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-xl">
-            <h4 className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-              <Skull className="w-4 h-4" />
-              Secrets (DM Only)
-            </h4>
-            <p className="text-sm text-red-300/80 leading-relaxed whitespace-pre-wrap">
-              {quest.secrets}
-            </p>
-          </div>
-        )}
-
-        {/* Outcomes */}
-        {(quest.success_outcome || quest.failure_outcome) && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Outcomes
-            </h4>
-            <div className="space-y-2">
+          {/* Outcomes */}
+          {(quest.success_outcome || quest.failure_outcome) && (
+            <div className="grid grid-cols-2 gap-3">
               {quest.success_outcome && (
-                <div className="p-2 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
-                  <p className="text-xs text-emerald-400 font-medium mb-1">On Success:</p>
+                <div className="bg-emerald-500/10 rounded-lg p-3">
+                  <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-1">
+                    On Success
+                  </h4>
                   <p className="text-sm text-emerald-300/80">{quest.success_outcome}</p>
                 </div>
               )}
               {quest.failure_outcome && (
-                <div className="p-2 bg-red-500/5 border border-red-500/20 rounded-lg">
-                  <p className="text-xs text-red-400 font-medium mb-1">On Failure:</p>
+                <div className="bg-red-500/10 rounded-lg p-3">
+                  <h4 className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-1">
+                    On Failure
+                  </h4>
                   <p className="text-sm text-red-300/80">{quest.failure_outcome}</p>
                 </div>
               )}
             </div>
+          )}
+
+          {/* DM Notes */}
+          {quest.dm_notes && (
+            <div>
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                DM Notes
+              </h4>
+              <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-wrap bg-white/[0.02] rounded-lg p-3">
+                {quest.dm_notes}
+              </p>
+            </div>
+          )}
+
+          {/* Secrets */}
+          {quest.secrets && (
+            <div className="bg-red-500/10 rounded-lg p-4">
+              <h4 className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                <Skull className="w-4 h-4" />
+                Secrets (DM Only)
+              </h4>
+              <p className="text-sm text-red-300/80 leading-relaxed whitespace-pre-wrap">
+                {quest.secrets}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer actions */}
+        {canEdit && (
+          <div className="px-6 py-4 border-t border-white/[0.05] flex justify-between">
+            <Button
+              variant="ghost"
+              onClick={onDelete}
+              className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete
+            </Button>
+            <Button onClick={onEdit}>
+              <Edit3 className="w-4 h-4 mr-2" />
+              Edit Quest
+            </Button>
           </div>
         )}
       </div>
@@ -1395,6 +1488,46 @@ export default function QuestsPage() {
     }
   }
 
+  // Handle drag end - update quest status
+  const handleDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result
+
+    // Dropped outside a droppable
+    if (!destination) return
+
+    // Dropped in same position
+    if (destination.droppableId === source.droppableId && destination.index === source.index) {
+      return
+    }
+
+    // Get the new status from the destination droppable
+    const newStatus = destination.droppableId
+
+    // Optimistically update local state
+    setQuests(prevQuests =>
+      prevQuests.map(q =>
+        q.id === draggableId ? { ...q, status: newStatus } : q
+      )
+    )
+
+    // Update in database
+    try {
+      const { error } = await supabase
+        .from('quests')
+        .update({ status: newStatus })
+        .eq('id', draggableId)
+
+      if (error) {
+        console.error('Failed to update quest status:', error)
+        // Revert on error
+        await loadData()
+      }
+    } catch (err) {
+      console.error('Failed to update quest status:', err)
+      await loadData()
+    }
+  }
+
   // Loading state
   if (loading || permissionsLoading) {
     return (
@@ -1458,14 +1591,9 @@ export default function QuestsPage() {
         )}
       />
 
-      <div className="flex h-[calc(100vh-56px)]">
-        {/* Main content */}
-        <div className={cn(
-          'flex-1 overflow-hidden flex flex-col',
-          selectedQuest ? 'hidden md:flex' : ''
-        )}>
-          {/* Toolbar */}
-          <div className="p-4 border-b border-[--border] space-y-4">
+      <div className="flex flex-col h-[calc(100vh-56px)]">
+        {/* Toolbar */}
+        <div className="flex-shrink-0 p-4 border-b border-[--border] space-y-4">
             <GuidanceTip
               tipId="quests_intro"
               title="Track Your Story"
@@ -1477,13 +1605,13 @@ export default function QuestsPage() {
             <div className="flex flex-col sm:flex-row gap-3">
               {/* Search */}
               <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Search quests..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="form-input pl-10 w-full"
+                  className="form-input pl-11 w-full"
                 />
               </div>
 
@@ -1551,28 +1679,29 @@ export default function QuestsPage() {
             </div>
           </div>
 
-          {/* Quest list/board */}
-          <div className="flex-1 overflow-auto p-4">
-            {quests.length === 0 ? (
-              <EmptyState
-                icon={<Target className="w-12 h-12" />}
-                title="No quests yet"
-                description="Start tracking what the party is doing. Add quests, objectives, and never lose a plot thread again."
-                tip="Quests can be main storylines, side missions, personal character goals, or just rumors to explore."
-                action={
-                  <Button onClick={() => setShowAddModal(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add First Quest
-                  </Button>
-                }
-              />
-            ) : filteredQuests.length === 0 ? (
-              <EmptyState
-                icon={<Target className="w-12 h-12" />}
-                title="No matching quests"
-                description="Try adjusting your search or filters"
-              />
-            ) : viewMode === 'board' ? (
+        {/* Quest list/board */}
+        <div className="flex-1 overflow-auto p-4">
+          {quests.length === 0 ? (
+            <EmptyState
+              icon={<Target className="w-12 h-12" />}
+              title="No quests yet"
+              description="Start tracking what the party is doing. Add quests, objectives, and never lose a plot thread again."
+              tip="Quests can be main storylines, side missions, personal character goals, or just rumors to explore."
+              action={
+                <Button onClick={() => setShowAddModal(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add First Quest
+                </Button>
+              }
+            />
+          ) : filteredQuests.length === 0 ? (
+            <EmptyState
+              icon={<Target className="w-12 h-12" />}
+              title="No matching quests"
+              description="Try adjusting your search or filters"
+            />
+          ) : viewMode === 'board' ? (
+            <DragDropContext onDragEnd={handleDragEnd}>
               <div className="flex gap-4 h-full overflow-x-auto pb-4">
                 <BoardColumn
                   title="Available"
@@ -1580,9 +1709,7 @@ export default function QuestsPage() {
                   quests={questsByStatus.available}
                   objectives={objectives}
                   characters={characters}
-                  locations={locations}
                   onSelect={setSelectedQuest}
-                  selectedId={selectedQuest?.id || null}
                   color={QUEST_STATUS_COLORS.available}
                 />
                 <BoardColumn
@@ -1591,9 +1718,7 @@ export default function QuestsPage() {
                   quests={questsByStatus.active}
                   objectives={objectives}
                   characters={characters}
-                  locations={locations}
                   onSelect={setSelectedQuest}
-                  selectedId={selectedQuest?.id || null}
                   color={QUEST_STATUS_COLORS.active}
                 />
                 <BoardColumn
@@ -1602,63 +1727,64 @@ export default function QuestsPage() {
                   quests={questsByStatus.completed}
                   objectives={objectives}
                   characters={characters}
-                  locations={locations}
                   onSelect={setSelectedQuest}
-                  selectedId={selectedQuest?.id || null}
                   color={QUEST_STATUS_COLORS.completed}
                 />
-                {(questsByStatus.failed.length > 0 || questsByStatus.abandoned.length > 0) && (
-                  <BoardColumn
-                    title="Failed/Abandoned"
-                    status="failed"
-                    quests={[...questsByStatus.failed, ...questsByStatus.abandoned]}
-                    objectives={objectives}
-                    characters={characters}
-                    locations={locations}
-                    onSelect={setSelectedQuest}
-                    selectedId={selectedQuest?.id || null}
-                    color={QUEST_STATUS_COLORS.failed}
-                  />
-                )}
+                <BoardColumn
+                  title="Failed"
+                  status="failed"
+                  quests={questsByStatus.failed}
+                  objectives={objectives}
+                  characters={characters}
+                  onSelect={setSelectedQuest}
+                  color={QUEST_STATUS_COLORS.failed}
+                />
+                <BoardColumn
+                  title="Abandoned"
+                  status="abandoned"
+                  quests={questsByStatus.abandoned}
+                  objectives={objectives}
+                  characters={characters}
+                  onSelect={setSelectedQuest}
+                  color={QUEST_STATUS_COLORS.abandoned}
+                />
               </div>
-            ) : (
-              <div className="grid gap-3">
-                {filteredQuests.map(quest => (
-                  <QuestCard
-                    key={quest.id}
-                    quest={quest}
-                    objectives={objectives[quest.id] || []}
-                    questGiver={characters.find(c => c.id === quest.quest_giver_id)}
-                    location={locations.find(l => l.id === quest.objective_location_id)}
-                    onSelect={setSelectedQuest}
-                    isSelected={selectedQuest?.id === quest.id}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+            </DragDropContext>
+          ) : (
+            <div className="grid gap-3 max-w-4xl">
+              {filteredQuests.map(quest => (
+                <QuestCard
+                  key={quest.id}
+                  quest={quest}
+                  objectives={objectives[quest.id] || []}
+                  questGiver={characters.find(c => c.id === quest.quest_giver_id)}
+                  location={locations.find(l => l.id === quest.objective_location_id)}
+                  onSelect={setSelectedQuest}
+                  isSelected={selectedQuest?.id === quest.id}
+                />
+              ))}
+            </div>
+          )}
         </div>
-
-        {/* Detail panel */}
-        {selectedQuest && (
-          <div className="w-full md:w-96 flex-shrink-0">
-            <QuestDetailPanel
-              quest={selectedQuest}
-              objectives={objectives[selectedQuest.id] || []}
-              characters={characters}
-              locations={locations}
-              onClose={() => setSelectedQuest(null)}
-              onEdit={() => {
-                setEditingQuest(selectedQuest)
-                setShowAddModal(true)
-              }}
-              onDelete={() => setShowDeleteModal(true)}
-              onToggleObjective={handleToggleObjective}
-              canEdit={isDm || isOwner}
-            />
-          </div>
-        )}
       </div>
+
+      {/* Quest View Modal (Trello-style) */}
+      {selectedQuest && (
+        <QuestViewModal
+          quest={selectedQuest}
+          objectives={objectives[selectedQuest.id] || []}
+          characters={characters}
+          locations={locations}
+          onClose={() => setSelectedQuest(null)}
+          onEdit={() => {
+            setEditingQuest(selectedQuest)
+            setShowAddModal(true)
+          }}
+          onDelete={() => setShowDeleteModal(true)}
+          onToggleObjective={handleToggleObjective}
+          canEdit={isDm || isOwner}
+        />
+      )}
 
       <BackToTopButton />
 
