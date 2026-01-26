@@ -910,7 +910,7 @@ export default function IntelligencePage() {
   // ============ DESKTOP LAYOUT ============
   if (loading || permissionsLoading) {
     return (
-      <AppLayout campaignId={campaignId}>
+      <AppLayout campaignId={campaignId} hideHeader>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-[--arcane-purple]" />
         </div>
@@ -921,7 +921,7 @@ export default function IntelligencePage() {
   // Permission check - only DMs can access Campaign Intelligence
   if (!isMember || !isDm) {
     return (
-      <AppLayout campaignId={campaignId}>
+      <AppLayout campaignId={campaignId} hideHeader>
         <AccessDeniedPage
           campaignId={campaignId}
           message="Campaign Intelligence is only available to DMs and Co-DMs."

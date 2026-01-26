@@ -488,7 +488,7 @@ export default function TimelinePage() {
   // ============ DESKTOP LAYOUT ============
   if (loading || permissionsLoading) {
     return (
-      <AppLayout campaignId={campaignId}>
+      <AppLayout campaignId={campaignId} hideHeader>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
         </div>
@@ -499,7 +499,7 @@ export default function TimelinePage() {
   // Permission check - must be a member with view permission
   if (!isMember || !can.viewTimeline) {
     return (
-      <AppLayout campaignId={campaignId}>
+      <AppLayout campaignId={campaignId} hideHeader>
         <AccessDeniedPage
           campaignId={campaignId}
           message="You don't have permission to view the timeline for this campaign."

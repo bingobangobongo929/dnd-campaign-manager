@@ -432,7 +432,7 @@ export default function CampaignDashboardPage() {
   // Loading state
   if (loading || permissionsLoading) {
     return (
-      <AppLayout campaignId={campaignId}>
+      <AppLayout campaignId={campaignId} hideHeader>
         <div className="flex items-center justify-center h-[60vh]">
           <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
         </div>
@@ -443,7 +443,7 @@ export default function CampaignDashboardPage() {
   // Permission check
   if (!isMember) {
     return (
-      <AppLayout campaignId={campaignId}>
+      <AppLayout campaignId={campaignId} hideHeader>
         <AccessDeniedPage
           campaignId={campaignId}
           message="You don't have permission to view this campaign."

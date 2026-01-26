@@ -36,6 +36,7 @@ import {
   Check,
   Coins,
   Swords,
+  Calendar,
 } from 'lucide-react'
 import { AppLayout, CampaignPageHeader } from '@/components/layout'
 import { Button, Modal, EmptyState, Badge, Tooltip, AccessDeniedPage } from '@/components/ui'
@@ -209,6 +210,18 @@ interface Encounter {
   status: string
   difficulty: string | null
   quest_id: string | null
+}
+
+interface SessionQuestHistory {
+  id: string
+  quest_id: string
+  progress_type: string
+  session: {
+    id: string
+    session_number: number
+    date: string | null
+    title: string | null
+  }
 }
 
 // Trello-style board card (draggable)
@@ -435,6 +448,7 @@ function QuestViewModal({
   characters,
   locations,
   encounters,
+  sessionHistory,
   onClose,
   onEdit,
   onDelete,
@@ -446,6 +460,7 @@ function QuestViewModal({
   characters: Character[]
   locations: Location[]
   encounters: Encounter[]
+  sessionHistory: SessionQuestHistory[]
   onClose: () => void
   onEdit: () => void
   onDelete: () => void
@@ -688,6 +703,48 @@ function QuestViewModal({
                     </Badge>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Session History */}
+          {sessionHistory.length > 0 && (
+            <div className="bg-[--arcane-purple]/10 rounded-lg p-4">
+              <h4 className="text-xs font-semibold text-[--arcane-purple] uppercase tracking-wider mb-2 flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Session History ({sessionHistory.length})
+              </h4>
+              <div className="space-y-2">
+                {sessionHistory.map(sq => {
+                  const progressColors: Record<string, string> = {
+                    mentioned: '#6B7280',
+                    started: '#3B82F6',
+                    progressed: '#8B5CF6',
+                    completed: '#10B981',
+                    failed: '#EF4444',
+                  }
+                  return (
+                    <div
+                      key={sq.id}
+                      className="flex items-center gap-2 p-2 bg-white/[0.02] rounded-lg"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm text-gray-300 truncate block">
+                          Session {sq.session.session_number}
+                          {sq.session.title && `: ${sq.session.title}`}
+                        </span>
+                        {sq.session.date && (
+                          <span className="text-xs text-gray-500">
+                            {new Date(sq.session.date).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                      <Badge size="sm" color={progressColors[sq.progress_type] || '#6B7280'}>
+                        {sq.progress_type}
+                      </Badge>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
@@ -1313,6 +1370,7 @@ export default function QuestsPage() {
   const [characters, setCharacters] = useState<Character[]>([])
   const [locations, setLocations] = useState<Location[]>([])
   const [encounters, setEncounters] = useState<Encounter[]>([])
+  const [questSessions, setQuestSessions] = useState<SessionQuestHistory[]>([])
   const [loading, setLoading] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -1457,6 +1515,24 @@ export default function QuestsPage() {
       .order('name')
 
     setEncounters(encountersData || [])
+
+    // Load session quests for Session History
+    const { data: sessionQuestsData } = await supabase
+      .from('session_quests')
+      .select(`
+        id,
+        quest_id,
+        progress_type,
+        session:sessions(id, session_number, date, title)
+      `)
+      .in('quest_id', quests?.map(q => q.id) || [])
+      .order('created_at', { ascending: false })
+
+    // Flatten the session relationship
+    setQuestSessions(sessionQuestsData?.map(sq => ({
+      ...sq,
+      session: Array.isArray(sq.session) ? sq.session[0] : sq.session
+    })).filter(sq => sq.session) as SessionQuestHistory[] || [])
 
     setLoading(false)
     setHasLoadedOnce(true)
@@ -1663,7 +1739,7 @@ export default function QuestsPage() {
   // Loading state
   if (loading || permissionsLoading) {
     return (
-      <AppLayout campaignId={campaignId}>
+      <AppLayout campaignId={campaignId} hideHeader>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
         </div>
@@ -1674,7 +1750,7 @@ export default function QuestsPage() {
   // Permission check
   if (!isMember) {
     return (
-      <AppLayout campaignId={campaignId}>
+      <AppLayout campaignId={campaignId} hideHeader>
         <AccessDeniedPage
           campaignId={campaignId}
           message="You don't have permission to view quests for this campaign."
@@ -1949,6 +2025,7 @@ export default function QuestsPage() {
           characters={characters}
           locations={locations}
           encounters={encounters}
+          sessionHistory={questSessions.filter(sq => sq.quest_id === selectedQuest.id)}
           onClose={() => setSelectedQuest(null)}
           onEdit={() => {
             setEditingQuest(selectedQuest)

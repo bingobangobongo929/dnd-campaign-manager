@@ -34,7 +34,7 @@ import { useAppStore, useCanUseAI } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
 import type { Session, Campaign, Character, SessionPhase } from '@/types/database'
-import { SessionWorkflow, PlayerNotes, ThoughtsForNextCard, MergedNotesView } from '@/components/sessions'
+import { SessionWorkflow, PlayerNotes, ThoughtsForNextCard, MergedNotesView, SessionContent } from '@/components/sessions'
 import { DmNotesSection } from '@/components/dm-notes'
 import { EntitySecretsManager } from '@/components/secrets'
 
@@ -1184,6 +1184,17 @@ export default function SessionDetailPage() {
                 )}
               </div>
             </div>
+
+            {/* Session Content - Quests & Encounters */}
+            {!isNew && (
+              <div className="mb-8">
+                <SessionContent
+                  sessionId={session.id}
+                  campaignId={campaignId}
+                  canEdit={can.editSession}
+                />
+              </div>
+            )}
 
             {/* Detailed Notes Section */}
             {(formData.notes || (!detailedNotesCollapsed && can.editSession)) && (

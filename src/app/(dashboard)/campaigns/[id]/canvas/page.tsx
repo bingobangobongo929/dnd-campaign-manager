@@ -749,7 +749,7 @@ export default function CampaignCanvasPage() {
   // Permission check - must be a member with view permission
   if (!isMember || !can.viewCanvas) {
     return (
-      <AppLayout campaignId={campaignId}>
+      <AppLayout campaignId={campaignId} fullBleed transparentTopBar>
         <AccessDeniedPage
           campaignId={campaignId}
           message="You don't have permission to view the canvas for this campaign."

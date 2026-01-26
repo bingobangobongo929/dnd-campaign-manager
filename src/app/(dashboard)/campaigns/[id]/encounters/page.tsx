@@ -204,6 +204,18 @@ interface Quest {
   type: string
 }
 
+interface SessionEncounterHistory {
+  id: string
+  encounter_id: string
+  status_in_session: string
+  session: {
+    id: string
+    session_number: number
+    date: string | null
+    title: string | null
+  }
+}
+
 // Board Card component
 function BoardCard({
   encounter,
@@ -398,6 +410,7 @@ function EncounterViewModal({
   encounter,
   location,
   quest,
+  sessionHistory,
   onClose,
   onEdit,
   onDelete,
@@ -406,6 +419,7 @@ function EncounterViewModal({
   encounter: Encounter
   location?: Location
   quest?: Quest
+  sessionHistory: SessionEncounterHistory[]
   onClose: () => void
   onEdit: () => void
   onDelete: () => void
@@ -624,6 +638,46 @@ function EncounterViewModal({
               <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-wrap bg-white/[0.02] rounded-lg p-3">
                 {encounter.dm_notes}
               </p>
+            </div>
+          )}
+
+          {/* Session History */}
+          {sessionHistory.length > 0 && (
+            <div className="bg-[--arcane-purple]/10 rounded-lg p-4">
+              <h4 className="text-xs font-semibold text-[--arcane-purple] uppercase tracking-wider mb-2 flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Session History ({sessionHistory.length})
+              </h4>
+              <div className="space-y-2">
+                {sessionHistory.map(se => {
+                  const statusColors: Record<string, string> = {
+                    planned: '#F59E0B',
+                    used: '#10B981',
+                    skipped: '#6B7280',
+                  }
+                  return (
+                    <div
+                      key={se.id}
+                      className="flex items-center gap-2 p-2 bg-white/[0.02] rounded-lg"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm text-gray-300 truncate block">
+                          Session {se.session.session_number}
+                          {se.session.title && `: ${se.session.title}`}
+                        </span>
+                        {se.session.date && (
+                          <span className="text-xs text-gray-500">
+                            {new Date(se.session.date).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                      <Badge size="sm" color={statusColors[se.status_in_session] || '#6B7280'}>
+                        {se.status_in_session}
+                      </Badge>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           )}
 
@@ -1289,6 +1343,7 @@ export default function EncountersPage() {
   const [encounters, setEncounters] = useState<Encounter[]>([])
   const [locations, setLocations] = useState<Location[]>([])
   const [quests, setQuests] = useState<Quest[]>([])
+  const [encounterSessions, setEncounterSessions] = useState<SessionEncounterHistory[]>([])
   const [loading, setLoading] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -1395,6 +1450,23 @@ export default function EncountersPage() {
       .order('name')
 
     setQuests(questsData || [])
+
+    // Load session encounters for Session History
+    const { data: sessionEncountersData } = await supabase
+      .from('session_encounters')
+      .select(`
+        id,
+        encounter_id,
+        status_in_session,
+        session:sessions(id, session_number, date, title)
+      `)
+      .in('encounter_id', encountersData?.map(e => e.id) || [])
+      .order('created_at', { ascending: false })
+
+    setEncounterSessions(sessionEncountersData?.map(se => ({
+      ...se,
+      session: Array.isArray(se.session) ? se.session[0] : se.session
+    })).filter(se => se.session) as SessionEncounterHistory[] || [])
 
     setLoading(false)
     setHasLoadedOnce(true)
@@ -1523,7 +1595,7 @@ export default function EncountersPage() {
 
   if (loading || permissionsLoading) {
     return (
-      <AppLayout campaignId={campaignId}>
+      <AppLayout campaignId={campaignId} hideHeader>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
         </div>
@@ -1533,7 +1605,7 @@ export default function EncountersPage() {
 
   if (!isMember) {
     return (
-      <AppLayout campaignId={campaignId}>
+      <AppLayout campaignId={campaignId} hideHeader>
         <AccessDeniedPage campaignId={campaignId} message="You don't have permission to view encounters." />
       </AppLayout>
     )
@@ -1764,6 +1836,7 @@ export default function EncountersPage() {
           encounter={selectedEncounter}
           location={locations.find(l => l.id === selectedEncounter.location_id)}
           quest={quests.find(q => q.id === selectedEncounter.quest_id)}
+          sessionHistory={encounterSessions.filter(se => se.encounter_id === selectedEncounter.id)}
           onClose={() => setSelectedEncounter(null)}
           onEdit={() => {
             setEditingEncounter(selectedEncounter)
