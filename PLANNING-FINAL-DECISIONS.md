@@ -215,11 +215,36 @@ Every campaign page has a share equivalent:
 - [x] **Location Edit Modal** - Edit name, type, parent, description before approving
 - [x] **Location Bulk Approval** - "Add All X Locations" button for one-click approval
 
+### Quests Design Decisions (CONFIRMED):
+- **Integrates with Session Workflow** - Not a separate prep system
+- **Quick Reference** - Add "Quests" as pinnable type (joins NPCs, characters, locations)
+- **Board view** - Available | Active | Done columns
+- **Simple objectives** - Checklist style, no status-per-objective
+- **Links to existing content** - Quest giver (NPCs), location (Locations) via dropdowns
+- **Campaign Intelligence** - Detects quest progress from session notes
+- **Roll Random** - Button to pick random Available quest for tonight's session
+
+### Full Quest Integration (ALL touch points):
+| Location | Integration |
+|----------|-------------|
+| Quests Page | Main library, list + board views, objectives, roll random |
+| Quick Reference | Pin quests to sessions (new pinnable type) |
+| Campaign Intelligence | Detect quests/progress from session notes |
+| Canvas | NPC cards show "Quest Giver for: X" |
+| Characters Detail | "Quests involving this character" section |
+| Locations Detail | "Quests at this location" section |
+| Sessions | Link sessions to quests progressed |
+| Share Page | `/share/[code]/quests` for player visibility |
+
 ### TODO (Priority Order):
-1. **Build Quests UI** - List, board view, status tracking, objectives (NEXT)
-2. **Campaign Intelligence - Quest Detection** - Detect quests/objectives from sessions
-3. **Build Encounters UI** - Prep view, detail panel
-4. **Campaign Intelligence - Encounter Detection** - Detect encounters from sessions
-5. **Recreate Oneshots UI** - Using unified tables
-6. **Build Search** - Global search with smart autocomplete
-7. **Update Share Pages** - Mirror all campaign page updates
+1. **Build Quests Page** - List + board view, objectives, roll random (NEXT)
+2. **Update Quick Reference** - Add "Quests" as pinnable type
+3. **Update Locations Detail** - Add "Quests at this location" section
+4. **Update Characters/Canvas** - Add quest associations to NPC cards
+5. **Campaign Intelligence - Quest Detection** - Detect quests/objectives from sessions
+6. **Build Share Page** - `/share/[code]/quests`
+7. **Build Encounters UI** - Prep view, detail panel
+8. **Campaign Intelligence - Encounter Detection** - Detect encounters from sessions
+9. **Recreate Oneshots UI** - Using unified tables
+10. **Build Search** - Global search with smart autocomplete
+11. **Random Tables** - Full prep tool with rolling, links to campaign content (Phase 2)

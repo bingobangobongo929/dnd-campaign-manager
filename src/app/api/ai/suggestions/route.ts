@@ -333,6 +333,114 @@ export async function PATCH(req: Request) {
       })
     }
 
+    // Handle quest_detected suggestions
+    if (suggestion.suggestion_type === 'quest_detected') {
+      const questData = (finalValue ?? suggestion.suggested_value) as {
+        name: string
+        quest_type?: string
+        description?: string
+        status?: string
+        quest_giver_name?: string
+        location_name?: string
+      }
+
+      // Look up quest giver if specified
+      let questGiverId: string | null = null
+      if (questData.quest_giver_name) {
+        const { data: questGiver } = await supabase
+          .from('characters')
+          .select('id')
+          .eq('campaign_id', suggestion.campaign_id)
+          .ilike('name', questData.quest_giver_name)
+          .maybeSingle()
+
+        questGiverId = questGiver?.id || null
+      }
+
+      // Look up objective location if specified
+      let objectiveLocationId: string | null = null
+      if (questData.location_name) {
+        const { data: location } = await supabase
+          .from('locations')
+          .select('id')
+          .eq('campaign_id', suggestion.campaign_id)
+          .ilike('name', questData.location_name)
+          .maybeSingle()
+
+        objectiveLocationId = location?.id || null
+      }
+
+      // Check if quest already exists (by name, case-insensitive)
+      const { data: existingQuest } = await supabase
+        .from('quests')
+        .select('id')
+        .eq('campaign_id', suggestion.campaign_id)
+        .ilike('name', questData.name)
+        .maybeSingle()
+
+      if (existingQuest) {
+        // Quest already exists - mark as applied but don't create duplicate
+        const { error } = await supabase
+          .from('intelligence_suggestions')
+          .update({
+            status: 'applied',
+            final_value: { ...questData, existing_quest_id: existingQuest.id, note: 'Quest already existed' }
+          })
+          .eq('id', suggestionId)
+
+        if (error) throw error
+
+        return new Response(JSON.stringify({
+          success: true,
+          action: 'applied',
+          message: 'Quest already exists',
+          questId: existingQuest.id
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Create the quest
+      const { data: newQuest, error: questError } = await supabase
+        .from('quests')
+        .insert({
+          campaign_id: suggestion.campaign_id,
+          name: questData.name,
+          type: questData.quest_type || 'side_quest',
+          description: questData.description || null,
+          status: questData.status || 'available',
+          quest_giver_id: questGiverId,
+          objective_location_id: objectiveLocationId,
+          visibility: 'party', // Default to party visible since it was in session notes
+        })
+        .select('id')
+        .single()
+
+      if (questError) throw questError
+
+      // Mark suggestion as applied
+      const { error } = await supabase
+        .from('intelligence_suggestions')
+        .update({
+          status: 'applied',
+          final_value: { ...questData, quest_id: newQuest.id }
+        })
+        .eq('id', suggestionId)
+
+      if (error) throw error
+
+      return new Response(JSON.stringify({
+        success: true,
+        action: 'applied',
+        message: 'Quest created',
+        questId: newQuest.id
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
     if (!suggestion.character_id) {
       // New character suggestion - just mark as applied for now
       // TODO: Could auto-create the character

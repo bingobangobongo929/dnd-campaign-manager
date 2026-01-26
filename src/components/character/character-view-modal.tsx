@@ -16,11 +16,19 @@ interface MembershipWithFaction extends FactionMembership {
   faction: CampaignFaction
 }
 
+interface QuestInfo {
+  id: string
+  name: string
+  type: string
+  status: string
+}
+
 interface CharacterViewModalProps {
   character: Character
   tags: (CharacterTag & { tag: Tag; related_character?: Character | null })[]
   relationships?: RelationshipWithDetails[]
   factionMemberships?: MembershipWithFaction[]
+  questsAsGiver?: QuestInfo[]
   onEdit: () => void
   onClose: () => void
 }
@@ -64,6 +72,7 @@ export function CharacterViewModal({
   tags,
   relationships = [],
   factionMemberships = [],
+  questsAsGiver = [],
   onEdit,
   onClose,
 }: CharacterViewModalProps) {
@@ -89,7 +98,8 @@ export function CharacterViewModal({
   const hasLabels = labels.length > 0
   const hasFactions = factionMemberships.length > 0
   const hasRelationships = relationships.length > 0
-  const hasConnectionsSection = hasLabels || hasFactions || hasRelationships
+  const hasQuests = questsAsGiver.length > 0
+  const hasConnectionsSection = hasLabels || hasFactions || hasRelationships || hasQuests
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -260,6 +270,30 @@ export function CharacterViewModal({
                         +{relationships.length - 6} more
                       </span>
                     )}
+                  </div>
+                )}
+
+                {/* Quests (Quest Giver For) */}
+                {hasQuests && (
+                  <div className="flex flex-wrap gap-2">
+                    {questsAsGiver.map((quest) => (
+                      <span
+                        key={quest.id}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-purple-500/10 border border-purple-500/20"
+                      >
+                        <Target className="w-3 h-3 text-purple-400" />
+                        <span className="text-purple-300">Quest Giver:</span>
+                        <span className="text-white/80">{quest.name}</span>
+                        <span
+                          className={cn(
+                            "px-1.5 py-0.5 rounded text-[10px]",
+                            quest.status === 'active' ? "bg-purple-500/20 text-purple-300" : "bg-gray-500/20 text-gray-400"
+                          )}
+                        >
+                          {quest.status}
+                        </span>
+                      </span>
+                    ))}
                   </div>
                 )}
               </div>

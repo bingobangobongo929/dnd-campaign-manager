@@ -62,6 +62,7 @@ export default function SessionDetailPage() {
   const [originalData, setOriginalData] = useState<any>(null)
   const [characters, setCharacters] = useState<Character[]>([])
   const [locations, setLocations] = useState<{ id: string; name: string; type?: string }[]>([])
+  const [quests, setQuests] = useState<{ id: string; name: string; type: string; status: string }[]>([])
   const [previousSessionData, setPreviousSessionData] = useState<Session | null>(null)
   const [attendees, setAttendees] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
@@ -132,6 +133,15 @@ export default function SessionDetailPage() {
       .order('name')
 
     setLocations(locationsData || [])
+
+    // Load quests for quick reference
+    const { data: questsData } = await supabase
+      .from('quests')
+      .select('id, name, type, status')
+      .eq('campaign_id', campaignId)
+      .order('name')
+
+    setQuests(questsData || [])
 
     if (isNew) {
       // Get previous session for next session number, thoughts_for_next, and prep_checklist
@@ -832,6 +842,7 @@ export default function SessionDetailPage() {
                 campaignId={campaignId}
                 characters={characters}
                 locations={locations}
+                quests={quests}
                 previousSession={previousSessionData}
                 onUpdate={(updatedSession) => setSession(updatedSession)}
               />
@@ -881,6 +892,7 @@ export default function SessionDetailPage() {
                 campaignId={campaignId}
                 characters={characters}
                 locations={locations}
+                quests={quests}
                 previousSession={previousSessionData}
                 onUpdate={(updatedSession) => setSession(updatedSession)}
               />

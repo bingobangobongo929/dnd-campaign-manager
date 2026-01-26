@@ -85,6 +85,7 @@ export default function CampaignCanvasPage() {
   const [connectionDropdownOpen, setConnectionDropdownOpen] = useState(false)
   const [relationships, setRelationships] = useState<(CanvasRelationship & { template?: RelationshipTemplate | null; to_character?: { id: string; name: string } })[]>([])
   const [factionMemberships, setFactionMemberships] = useState<FactionMembershipWithFaction[]>([])
+  const [quests, setQuests] = useState<{ id: string; name: string; type: string; status: string; quest_giver_id: string | null }[]>([])
   const [viewingCharacterId, setViewingCharacterId] = useState<string | null>(null)
   const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null)
   const [groupForm, setGroupForm] = useState({ name: '', color: '#8B5CF6', icon: 'users' })
@@ -204,6 +205,16 @@ export default function CampaignCanvasPage() {
       : { data: null }
 
     setFactionMemberships((factionMembershipsData || []) as FactionMembershipWithFaction[])
+
+    // Load quests for "Quest Giver For" display
+    const { data: questsData } = await supabase
+      .from('quests')
+      .select('id, name, type, status, quest_giver_id')
+      .eq('campaign_id', campaignId)
+      .in('status', ['available', 'active'])
+      .order('name')
+
+    setQuests(questsData || [])
 
     setLoading(false)
     setHasLoadedOnce(true)
@@ -826,6 +837,14 @@ export default function CampaignCanvasPage() {
         <CharacterViewModal
           character={viewingCharacter}
           tags={characterTags.get(viewingCharacter.id) || []}
+          relationships={relationships
+            .filter(r => r.from_character_id === viewingCharacter.id)
+            .map(r => ({
+              ...r,
+              to_character: characters.find(c => c.id === r.to_character_id) || { id: r.to_character_id, name: 'Unknown' }
+            })) as any}
+          factionMemberships={factionMemberships.filter(fm => fm.character_id === viewingCharacter.id)}
+          questsAsGiver={quests.filter(q => q.quest_giver_id === viewingCharacter.id)}
           onEdit={handleViewToEdit}
           onClose={handleCloseViewModal}
         />

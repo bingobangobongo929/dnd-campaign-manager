@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, MoreVertical, Shield, Ban, UserX, Crown, Loader2, Check, X, Sparkles, Bot, Copy, AtSign, CheckCircle, AlertCircle } from 'lucide-react'
+import { Search, MoreVertical, Shield, Ban, UserX, Crown, Loader2, Check, X, Sparkles, Bot, Copy, AtSign, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download } from 'lucide-react'
 import { useSupabase, useUserSettings } from '@/hooks'
 import { Modal, Button } from '@/components/ui'
 import { DropdownMenu } from '@/components/ui/dropdown-menu'
@@ -46,6 +46,10 @@ export default function AdminUsersPage() {
   const [filterRole, setFilterRole] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
+
   // Action modals
   const [selectedUser, setSelectedUser] = useState<UserWithSettings | null>(null)
   const [showSuspendModal, setShowSuspendModal] = useState(false)
@@ -53,6 +57,16 @@ export default function AdminUsersPage() {
   const [showChangeRoleModal, setShowChangeRoleModal] = useState(false)
   const [showChangeUsernameModal, setShowChangeUsernameModal] = useState(false)
   const [showCloneModal, setShowCloneModal] = useState(false)
+
+  // Confirmation modal for dangerous actions
+  const [confirmAction, setConfirmAction] = useState<{
+    type: 'disable' | 'revoke_founder' | 'revoke_ai' | null
+    user: UserWithSettings | null
+    title: string
+    message: string
+    confirmLabel: string
+    variant: 'danger' | 'warning'
+  }>({ type: null, user: null, title: '', message: '', confirmLabel: '', variant: 'danger' })
   const [cloneResults, setCloneResults] = useState<{ campaigns: number; oneshots: number; characters: number; errors: string[] } | null>(null)
   const [cloneTargetUser, setCloneTargetUser] = useState<UserWithSettings | null>(null)
   const [cloneTargetSearch, setCloneTargetSearch] = useState('')
@@ -124,8 +138,9 @@ export default function AdminUsersPage() {
     }
   }
 
-  const handleDisable = async (disable: boolean) => {
-    if (!selectedUser || !isSuperAdminUser) return
+  const handleDisable = async (disable: boolean, user?: UserWithSettings) => {
+    const targetUser = user || selectedUser
+    if (!targetUser || !isSuperAdminUser) return
 
     setActionLoading(true)
     try {
@@ -135,17 +150,18 @@ export default function AdminUsersPage() {
           disabled_at: disable ? new Date().toISOString() : null,
           disabled_by: disable ? (await supabase.auth.getUser()).data.user?.id : null,
         })
-        .eq('user_id', selectedUser.id)
+        .eq('user_id', targetUser.id)
 
       if (error) throw error
 
       await supabase.from('admin_activity_log').insert({
         admin_id: (await supabase.auth.getUser()).data.user?.id,
         action: disable ? 'disable_user' : 'enable_user',
-        target_user_id: selectedUser.id,
+        target_user_id: targetUser.id,
       })
 
       toast.success(disable ? 'User disabled' : 'User enabled')
+      setConfirmAction({ type: null, user: null, title: '', message: '', confirmLabel: '', variant: 'danger' })
       fetchUsers()
     } catch (error) {
       toast.error('Failed to update user status')
@@ -289,11 +305,24 @@ export default function AdminUsersPage() {
     }
   }
 
-  const handleToggleFounder = async (user: UserWithSettings) => {
+  const handleToggleFounder = async (user: UserWithSettings, skipConfirm = false) => {
     if (!isSuperAdminUser) return
 
     const currentFounder = user.settings?.is_founder || false
     const newFounder = !currentFounder
+
+    // Show confirmation when revoking
+    if (currentFounder && !skipConfirm) {
+      setConfirmAction({
+        type: 'revoke_founder',
+        user,
+        title: 'Revoke Founder Status',
+        message: `Are you sure you want to revoke founder status from ${user.settings?.username || user.email}? They will lose all founder benefits.`,
+        confirmLabel: 'Revoke Founder',
+        variant: 'warning',
+      })
+      return
+    }
 
     try {
       const adminUser = (await supabase.auth.getUser()).data.user
@@ -314,17 +343,31 @@ export default function AdminUsersPage() {
       })
 
       toast.success(newFounder ? 'Founder status granted' : 'Founder status revoked')
+      setConfirmAction({ type: null, user: null, title: '', message: '', confirmLabel: '', variant: 'danger' })
       fetchUsers()
     } catch (error) {
       toast.error('Failed to update founder status')
     }
   }
 
-  const handleToggleAIAccess = async (user: UserWithSettings) => {
+  const handleToggleAIAccess = async (user: UserWithSettings, skipConfirm = false) => {
     if (!isSuperAdminUser) return
 
     const currentAI = user.settings?.ai_access || false
     const newAI = !currentAI
+
+    // Show confirmation when revoking
+    if (currentAI && !skipConfirm) {
+      setConfirmAction({
+        type: 'revoke_ai',
+        user,
+        title: 'Revoke AI Access',
+        message: `Are you sure you want to revoke AI access from ${user.settings?.username || user.email}? They will no longer be able to use AI features.`,
+        confirmLabel: 'Revoke AI Access',
+        variant: 'warning',
+      })
+      return
+    }
 
     try {
       const adminUser = (await supabase.auth.getUser()).data.user
@@ -346,6 +389,7 @@ export default function AdminUsersPage() {
       })
 
       toast.success(newAI ? 'AI access granted' : 'AI access revoked')
+      setConfirmAction({ type: null, user: null, title: '', message: '', confirmLabel: '', variant: 'danger' })
       fetchUsers()
     } catch (error) {
       toast.error('Failed to update AI access')
@@ -401,6 +445,53 @@ export default function AdminUsersPage() {
     return true
   })
 
+  // Pagination calculations
+  const totalUsers = filteredUsers.length
+  const totalPages = Math.ceil(totalUsers / pageSize)
+  const startIndex = (currentPage - 1) * pageSize
+  const endIndex = Math.min(startIndex + pageSize, totalUsers)
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex)
+
+  // Reset to page 1 when filters change
+  const handleFilterChange = (setter: (value: string) => void, value: string) => {
+    setter(value)
+    setCurrentPage(1)
+  }
+
+  // Export filtered users to CSV
+  const handleExportCSV = () => {
+    const headers = ['ID', 'Email', 'Username', 'Tier', 'Role', 'Founder', 'AI Access', 'Status', '2FA', 'Created At', 'Last Login']
+    const rows = filteredUsers.map(user => {
+      const status = user.settings?.disabled_at ? 'Disabled' : user.settings?.suspended_at ? 'Suspended' : 'Active'
+      return [
+        user.id,
+        user.email || '',
+        user.settings?.username || '',
+        user.settings?.tier || 'adventurer',
+        user.settings?.role || 'user',
+        user.settings?.is_founder ? 'Yes' : 'No',
+        user.settings?.ai_access ? 'Yes' : 'No',
+        status,
+        user.settings?.totp_enabled ? 'Yes' : 'No',
+        user.created_at ? new Date(user.created_at).toISOString() : '',
+        user.settings?.last_login_at ? new Date(user.settings.last_login_at).toISOString() : '',
+      ]
+    })
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `users-export-${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+    URL.revokeObjectURL(link.href)
+    toast.success(`Exported ${filteredUsers.length} users to CSV`)
+  }
+
   const getUserStatus = (user: UserWithSettings) => {
     if (user.settings?.disabled_at) return { label: 'Disabled', color: 'text-red-400 bg-red-500/10' }
     if (user.settings?.suspended_at) return { label: 'Suspended', color: 'text-amber-400 bg-amber-500/10' }
@@ -425,14 +516,14 @@ export default function AdminUsersPage() {
             type="text"
             placeholder="Search by email, username, or ID..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1) }}
             className="w-full pl-10 pr-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50"
           />
         </div>
 
         <select
           value={filterTier}
-          onChange={(e) => setFilterTier(e.target.value)}
+          onChange={(e) => handleFilterChange(setFilterTier, e.target.value)}
           className="px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-purple-500/50"
         >
           <option value="all">All Tiers</option>
@@ -443,7 +534,7 @@ export default function AdminUsersPage() {
 
         <select
           value={filterRole}
-          onChange={(e) => setFilterRole(e.target.value)}
+          onChange={(e) => handleFilterChange(setFilterRole, e.target.value)}
           className="px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-purple-500/50"
         >
           <option value="all">All Roles</option>
@@ -454,7 +545,7 @@ export default function AdminUsersPage() {
 
         <select
           value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
+          onChange={(e) => handleFilterChange(setFilterStatus, e.target.value)}
           className="px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-purple-500/50"
         >
           <option value="all">All Status</option>
@@ -462,6 +553,26 @@ export default function AdminUsersPage() {
           <option value="suspended">Suspended</option>
           <option value="disabled">Disabled</option>
         </select>
+
+        <select
+          value={pageSize}
+          onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1) }}
+          className="px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-purple-500/50"
+        >
+          <option value={25}>25 per page</option>
+          <option value={50}>50 per page</option>
+          <option value={100}>100 per page</option>
+        </select>
+
+        <button
+          onClick={handleExportCSV}
+          disabled={filteredUsers.length === 0}
+          className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white hover:bg-white/[0.08] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          title="Export filtered users to CSV"
+        >
+          <Download className="w-4 h-4" />
+          Export
+        </button>
       </div>
 
       {/* Users Table */}
@@ -483,14 +594,14 @@ export default function AdminUsersPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.length === 0 ? (
+              {paginatedUsers.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="text-center py-12 text-gray-500">
                     No users found
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((user) => {
+                paginatedUsers.map((user) => {
                   const status = getUserStatus(user)
                   return (
                     <tr key={user.id} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
@@ -626,7 +737,7 @@ export default function AdminUsersPage() {
                                 <button
                                   onClick={() => {
                                     setSelectedUser(user)
-                                    handleDisable(false)
+                                    handleDisable(false, user)
                                   }}
                                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left text-green-400 hover:bg-white/[0.04]"
                                 >
@@ -636,8 +747,14 @@ export default function AdminUsersPage() {
                               ) : (
                                 <button
                                   onClick={() => {
-                                    setSelectedUser(user)
-                                    handleDisable(true)
+                                    setConfirmAction({
+                                      type: 'disable',
+                                      user,
+                                      title: 'Disable User Account',
+                                      message: `Are you sure you want to disable ${user.settings?.username || user.email}? This will permanently lock them out of their account until re-enabled.`,
+                                      confirmLabel: 'Disable Account',
+                                      variant: 'danger',
+                                    })
                                   }}
                                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left text-red-400 hover:bg-white/[0.04]"
                                 >
@@ -709,6 +826,52 @@ export default function AdminUsersPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {totalUsers > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-white/[0.06]">
+            <div className="text-sm text-gray-400">
+              Showing {startIndex + 1}-{endIndex} of {totalUsers} users
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="p-2 rounded-lg hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                title="First page"
+              >
+                <ChevronsLeft className="w-4 h-4 text-gray-400" />
+              </button>
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 rounded-lg hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                title="Previous page"
+              >
+                <ChevronLeft className="w-4 h-4 text-gray-400" />
+              </button>
+              <span className="px-3 py-1 text-sm text-white">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-lg hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                title="Next page"
+              >
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+              </button>
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-lg hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                title="Last page"
+              >
+                <ChevronsRight className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Suspend Modal */}
@@ -1066,6 +1229,65 @@ export default function AdminUsersPage() {
             >
               {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update Username'}
             </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Confirmation Modal for Dangerous Actions */}
+      <Modal
+        isOpen={confirmAction.type !== null}
+        onClose={() => setConfirmAction({ type: null, user: null, title: '', message: '', confirmLabel: '', variant: 'danger' })}
+        title={confirmAction.title}
+      >
+        <div className="space-y-4">
+          <div className={cn(
+            "p-4 rounded-xl border",
+            confirmAction.variant === 'danger'
+              ? "bg-red-500/10 border-red-500/20"
+              : "bg-amber-500/10 border-amber-500/20"
+          )}>
+            <p className={cn(
+              "text-sm",
+              confirmAction.variant === 'danger' ? "text-red-200" : "text-amber-200"
+            )}>
+              {confirmAction.message}
+            </p>
+          </div>
+
+          <div className="text-sm text-gray-400">
+            <p>User: <span className="text-white font-medium">{confirmAction.user?.settings?.username || confirmAction.user?.email}</span></p>
+            <p className="text-xs text-gray-500 mt-1">ID: {confirmAction.user?.id}</p>
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => setConfirmAction({ type: null, user: null, title: '', message: '', confirmLabel: '', variant: 'danger' })}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <button
+              onClick={() => {
+                if (!confirmAction.user) return
+                if (confirmAction.type === 'disable') {
+                  handleDisable(true, confirmAction.user)
+                } else if (confirmAction.type === 'revoke_founder') {
+                  handleToggleFounder(confirmAction.user, true)
+                } else if (confirmAction.type === 'revoke_ai') {
+                  handleToggleAIAccess(confirmAction.user, true)
+                }
+              }}
+              disabled={actionLoading}
+              className={cn(
+                "flex-1 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2",
+                confirmAction.variant === 'danger'
+                  ? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                  : "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
+              )}
+            >
+              {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : confirmAction.confirmLabel}
+            </button>
           </div>
         </div>
       </Modal>

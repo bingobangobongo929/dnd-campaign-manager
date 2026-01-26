@@ -21,6 +21,7 @@ import {
   Pause,
   RefreshCw,
   MapPin,
+  Target,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -48,11 +49,19 @@ interface Location {
   type?: string
 }
 
+interface Quest {
+  id: string
+  name: string
+  type: string
+  status: string
+}
+
 interface SessionWorkflowProps {
   campaignId: string
   session: Session
   characters?: Character[]
   locations?: Location[]
+  quests?: Quest[]
   previousSession?: Session | null
   onUpdate?: (session: Session) => void
 }
@@ -71,7 +80,7 @@ function getDefaultSections(phase: SessionPhase): SessionSection[] {
   }
 }
 
-export function SessionWorkflow({ campaignId, session, characters = [], locations = [], previousSession, onUpdate }: SessionWorkflowProps) {
+export function SessionWorkflow({ campaignId, session, characters = [], locations = [], quests = [], previousSession, onUpdate }: SessionWorkflowProps) {
   // Parse session data with proper types
   const [phase, setPhase] = useState<SessionPhase>((session.phase as SessionPhase) || 'prep')
   const [enabledSections, setEnabledSections] = useState<SessionSection[]>(
@@ -95,6 +104,7 @@ export function SessionWorkflow({ campaignId, session, characters = [], location
   // Quick reference state
   const [showCharacterPicker, setShowCharacterPicker] = useState(false)
   const [showLocationPicker, setShowLocationPicker] = useState(false)
+  const [showQuestPicker, setShowQuestPicker] = useState(false)
   const [newManualRef, setNewManualRef] = useState('')
 
   // Timer display state
@@ -338,6 +348,21 @@ export function SessionWorkflow({ campaignId, session, characters = [], location
     setShowLocationPicker(false)
   }
 
+  const addQuestRef = (quest: Quest) => {
+    // Don't add duplicates
+    if (pinnedRefs.some(r => r.entity_id === quest.id)) return
+
+    setPinnedRefs([
+      ...pinnedRefs,
+      {
+        entity_type: 'quest',
+        entity_id: quest.id,
+        label: quest.name,
+      }
+    ])
+    setShowQuestPicker(false)
+  }
+
   const addManualRef = () => {
     if (!newManualRef.trim()) return
     setPinnedRefs([
@@ -355,13 +380,18 @@ export function SessionWorkflow({ campaignId, session, characters = [], location
     setPinnedRefs(pinnedRefs.filter(r => r.entity_id !== entityId))
   }
 
-  // Filter out already pinned characters and locations
+  // Filter out already pinned characters, locations, and quests
   const unpinnedCharacters = characters.filter(
     char => !pinnedRefs.some(r => r.entity_id === char.id)
   )
 
   const unpinnedLocations = locations.filter(
     loc => !pinnedRefs.some(r => r.entity_id === loc.id)
+  )
+
+  // Only show active quests in the picker
+  const unpinnedQuests = quests.filter(
+    quest => !pinnedRefs.some(r => r.entity_id === quest.id) && quest.status === 'active'
   )
 
   // Check if previous session has a prep checklist we can carry over
@@ -617,6 +647,7 @@ export function SessionWorkflow({ campaignId, session, characters = [], location
                   onClick={() => {
                     setShowCharacterPicker(!showCharacterPicker)
                     setShowLocationPicker(false)
+                    setShowQuestPicker(false)
                   }}
                   className={cn(
                     "text-xs px-2 py-1 rounded transition-colors",
@@ -634,6 +665,7 @@ export function SessionWorkflow({ campaignId, session, characters = [], location
                   onClick={() => {
                     setShowLocationPicker(!showLocationPicker)
                     setShowCharacterPicker(false)
+                    setShowQuestPicker(false)
                   }}
                   className={cn(
                     "text-xs px-2 py-1 rounded transition-colors",
@@ -644,6 +676,24 @@ export function SessionWorkflow({ campaignId, session, characters = [], location
                 >
                   <MapPin className="w-3 h-3 inline mr-1" />
                   Location
+                </button>
+              )}
+              {quests.length > 0 && (
+                <button
+                  onClick={() => {
+                    setShowQuestPicker(!showQuestPicker)
+                    setShowCharacterPicker(false)
+                    setShowLocationPicker(false)
+                  }}
+                  className={cn(
+                    "text-xs px-2 py-1 rounded transition-colors",
+                    showQuestPicker
+                      ? "bg-purple-500/30 text-purple-300"
+                      : "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30"
+                  )}
+                >
+                  <Target className="w-3 h-3 inline mr-1" />
+                  Quest
                 </button>
               )}
             </div>
@@ -706,6 +756,33 @@ export function SessionWorkflow({ campaignId, session, characters = [], location
             </div>
           )}
 
+          {/* Quest Picker Dropdown */}
+          {showQuestPicker && unpinnedQuests.length > 0 && (
+            <div className="mb-3 p-2 bg-white/[0.02] rounded-lg border border-white/[0.06] max-h-48 overflow-y-auto">
+              <div className="text-xs text-gray-500 mb-2">Select a quest to pin:</div>
+              <div className="space-y-1">
+                {unpinnedQuests.map(quest => (
+                  <button
+                    key={quest.id}
+                    onClick={() => addQuestRef(quest)}
+                    className="w-full flex items-center gap-2 p-2 rounded hover:bg-white/[0.05] transition-colors text-left"
+                  >
+                    <span className="text-[10px] px-1.5 py-0.5 rounded uppercase font-medium bg-purple-500/20 text-purple-400">
+                      {quest.type.replace('_', ' ')}
+                    </span>
+                    <span className="text-sm text-gray-300">{quest.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {showQuestPicker && unpinnedQuests.length === 0 && (
+            <div className="mb-3 p-2 bg-white/[0.02] rounded-lg border border-white/[0.06]">
+              <p className="text-xs text-gray-500">No active quests to pin, or all are already pinned.</p>
+            </div>
+          )}
+
           {/* Pinned Items */}
           {pinnedRefs.length > 0 && (
             <div className="space-y-2 mb-3">
@@ -717,8 +794,9 @@ export function SessionWorkflow({ campaignId, session, characters = [], location
                   <span className={cn(
                     "text-[10px] px-1.5 py-0.5 rounded uppercase font-medium",
                     ref.entity_type === 'npc' ? "bg-amber-500/20 text-amber-400" :
-                    ref.entity_type === 'character' ? "bg-purple-500/20 text-purple-400" :
+                    ref.entity_type === 'character' ? "bg-blue-500/20 text-blue-400" :
                     ref.entity_type === 'location' ? "bg-emerald-500/20 text-emerald-400" :
+                    ref.entity_type === 'quest' ? "bg-purple-500/20 text-purple-400" :
                     "bg-gray-500/20 text-gray-400"
                   )}>
                     {ref.entity_type}

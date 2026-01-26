@@ -242,37 +242,61 @@ Quests                                    [+ Add Quest] [Filter: All | Active | 
 
 ---
 
-## Integration Points
+## Integration Points (CONFIRMED - Build All)
+
+### Session Workflow Integration (KEY ARCHITECTURE)
+**Philosophy**: Quests integrate with existing Session Workflow, NOT a separate prep system.
+
+**The Flow**:
+1. Quest created in Quests page (or Intelligence detects from session notes)
+2. DM pins quest to session via **Quick Reference** during prep
+3. Session plays - DM references pinned quest
+4. Session completes - DM writes notes mentioning quest progress
+5. Intelligence reads notes → suggests status/objective updates → DM approves
+
+### Quick Reference (NEW - Priority)
+- Add "Quests" as pinnable type alongside NPCs, Characters, Locations
+- DM pins active quests to session for easy access
+- This replaces need for separate "quest prep" status
 
 ### Characters
-- Quest giver links to character
-- Character panel shows "Quests involving this character"
+- Quest giver links to character via dropdown
+- Character detail panel shows "Quests involving this character" section
+- Canvas NPC cards show "Quest Giver for: X"
 - Personal quests tied to specific PC
 
 ### Locations
 - Quest objective at location
 - Quest giver location
-- "Quests at this location" on location page
+- Location detail panel shows "Quests at this location" section
+
+### Campaign Intelligence
+- Detect new quests mentioned in session notes
+- Detect quest progress (objectives completed, status changes)
+- Suggest updates with approval workflow
+- Deduplicate against existing quests by name
 
 ### Sessions
 - Session notes can @mention quests
 - Quest status changes logged: "Session 12: Started 'Dragon Cult'"
-- Session can list "quests progressed this session"
+- Link sessions to quests progressed
 
-### Arcs
-- Quests belong to arcs
-- Arc shows all its quests
-- Main quest might define the arc
+### Rolling (NEW)
+- "Roll Random" button on Quests page
+- Picks randomly from Available quests (not yet introduced to party)
+- Simple implementation for now, more complex Random Tables in Phase 2
 
-### Timeline
+### Share Pages
+- `/share/[code]/quests` for player visibility
+- Respects visibility setting (dm_only, party, public)
+- Players see name, description, objectives, quest giver, location
+- Players do NOT see: DM notes, secrets, failure outcomes
+
+### Timeline (Later)
 - Quest start/complete events on timeline
 - Filter timeline by quest
 
-### Canvas
-- NPCs can show quest associations
-- Filter: "Show NPCs involved in active quests"
-
-### Dashboard
+### Dashboard (Later)
 - "Active Quests" widget
 - "Quest updates this session" summary
 
@@ -365,6 +389,8 @@ Plot threads can become quests when the party decides to pursue them.
 
 - [x] Characters table exists
 - [x] Sessions table exists
-- [ ] Locations table (designing now)
-- [ ] Arcs (enhancing eras)
-- [ ] Items table (future)
+- [x] Locations table (COMPLETE - migration 082)
+- [x] Quests table (COMPLETE - migration 082)
+- [x] Quest objectives table (COMPLETE - migration 082)
+- [ ] Arcs (enhancing eras) - future
+- [ ] Items table - future

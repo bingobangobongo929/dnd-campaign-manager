@@ -2068,7 +2068,7 @@ export interface Database {
           character_id: string | null
           vault_character_id: string | null
           character_name: string | null
-          suggestion_type: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship' | 'timeline_event' | 'completeness' | 'consistency' | 'npc_detected' | 'location_detected' | 'plot_hook' | 'enrichment' | 'timeline_issue'
+          suggestion_type: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship' | 'timeline_event' | 'completeness' | 'consistency' | 'npc_detected' | 'location_detected' | 'quest_detected' | 'plot_hook' | 'enrichment' | 'timeline_issue'
           field_name: string
           current_value: Json | null
           suggested_value: Json
@@ -2086,7 +2086,7 @@ export interface Database {
           character_id?: string | null
           vault_character_id?: string | null
           character_name?: string | null
-          suggestion_type: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship' | 'timeline_event' | 'completeness' | 'consistency' | 'npc_detected' | 'location_detected' | 'plot_hook' | 'enrichment' | 'timeline_issue'
+          suggestion_type: 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person' | 'relationship' | 'timeline_event' | 'completeness' | 'consistency' | 'npc_detected' | 'location_detected' | 'quest_detected' | 'plot_hook' | 'enrichment' | 'timeline_issue'
           field_name: string
           current_value?: Json | null
           suggested_value: Json
@@ -3995,7 +3995,7 @@ export type SuggestionType =
   // Campaign Intelligence types
   | 'status_change' | 'secret_revealed' | 'story_hook' | 'quote' | 'important_person'
   | 'relationship' | 'timeline_event' | 'completeness' | 'consistency'
-  | 'npc_detected' | 'location_detected' | 'plot_hook' | 'enrichment' | 'timeline_issue'
+  | 'npc_detected' | 'location_detected' | 'quest_detected' | 'plot_hook' | 'enrichment' | 'timeline_issue'
   // Character Intelligence types
   | 'grammar' | 'formatting' | 'lore_conflict' | 'redundancy'
   | 'voice_inconsistency' | 'relationship_gap' | 'secret_opportunity' | 'cross_reference'
@@ -4462,7 +4462,7 @@ export interface SessionTimerState {
 
 // Pinned reference for quick access
 export interface PinnedReference {
-  entity_type: 'character' | 'npc' | 'location' | 'lore' | 'faction' | 'note'
+  entity_type: 'character' | 'npc' | 'location' | 'lore' | 'faction' | 'note' | 'quest'
   entity_id: string
   label: string
 }

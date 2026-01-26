@@ -26,6 +26,7 @@ import {
   Edit3,
   GitBranch,
   List,
+  Target,
 } from 'lucide-react'
 import { AppLayout, CampaignPageHeader } from '@/components/layout'
 import { Button, Modal, EmptyState, Badge, Tooltip, AccessDeniedPage } from '@/components/ui'
@@ -111,6 +112,15 @@ interface Location {
   // Computed in frontend
   children?: Location[]
   depth?: number
+}
+
+interface QuestAtLocation {
+  id: string
+  name: string
+  type: string
+  status: string
+  quest_giver_location_id: string | null
+  objective_location_id: string | null
 }
 
 // Tree node component for hierarchical view
@@ -343,6 +353,7 @@ function LocationCard({
 function LocationDetailPanel({
   location,
   locations,
+  quests,
   onClose,
   onEdit,
   onDelete,
@@ -350,6 +361,7 @@ function LocationDetailPanel({
 }: {
   location: Location
   locations: Location[]
+  quests: QuestAtLocation[]
   onClose: () => void
   onEdit: () => void
   onDelete: () => void
@@ -359,6 +371,11 @@ function LocationDetailPanel({
   const color = LOCATION_TYPE_COLORS[location.location_type] || '#6B7280'
   const parent = locations.find(l => l.id === location.parent_id)
   const children = locations.filter(l => l.parent_id === location.id)
+
+  // Find quests at this location (either as quest giver location or objective location)
+  const questsAtLocation = quests.filter(
+    q => q.quest_giver_location_id === location.id || q.objective_location_id === location.id
+  )
 
   return (
     <div className="h-full flex flex-col bg-[--bg-surface] border-l border-[--border]">
@@ -510,6 +527,38 @@ function LocationDetailPanel({
             <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-wrap">
               {location.notes}
             </p>
+          </div>
+        )}
+
+        {/* Quests at this location */}
+        {questsAtLocation.length > 0 && (
+          <div>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              Quests Here ({questsAtLocation.length})
+            </h4>
+            <div className="space-y-2">
+              {questsAtLocation.map(quest => (
+                <div
+                  key={quest.id}
+                  className="flex items-center gap-2 p-2 bg-purple-500/5 border border-purple-500/20 rounded-lg"
+                >
+                  <Target className="w-4 h-4 text-purple-400" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm text-gray-300 truncate block">{quest.name}</span>
+                    <span className="text-xs text-gray-500">
+                      {quest.quest_giver_location_id === location.id && quest.objective_location_id === location.id
+                        ? 'Quest giver & Objective'
+                        : quest.quest_giver_location_id === location.id
+                        ? 'Quest giver here'
+                        : 'Objective here'}
+                    </span>
+                  </div>
+                  <Badge size="sm" color={quest.status === 'active' ? '#8B5CF6' : '#6B7280'}>
+                    {quest.status}
+                  </Badge>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -773,6 +822,7 @@ export default function LocationsPage() {
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [locations, setLocations] = useState<Location[]>([])
+  const [quests, setQuests] = useState<QuestAtLocation[]>([])
   const [loading, setLoading] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -831,6 +881,16 @@ export default function LocationsPage() {
       .order('name')
 
     setLocations(locationsData || [])
+
+    // Load quests (for "Quests at this location" display)
+    const { data: questsData } = await supabase
+      .from('quests')
+      .select('id, name, type, status, quest_giver_location_id, objective_location_id')
+      .eq('campaign_id', campaignId)
+      .in('status', ['available', 'active'])
+      .order('name')
+
+    setQuests(questsData || [])
 
     // Expand root nodes by default (only on first load)
     if (locationsData && !hasLoadedOnce) {
@@ -1135,6 +1195,7 @@ export default function LocationsPage() {
             <LocationDetailPanel
               location={selectedLocation}
               locations={locations}
+              quests={quests}
               onClose={() => setSelectedLocation(null)}
               onEdit={() => {
                 setEditingLocation(selectedLocation)

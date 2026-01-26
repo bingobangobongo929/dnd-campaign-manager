@@ -28,6 +28,7 @@ import {
   EyeOff,
   Trash2,
   ChevronRight,
+  Download,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -199,6 +200,36 @@ export default function AdminFeedbackPage() {
     }
   }
 
+  // Export feedback to CSV
+  const handleExportCSV = () => {
+    const headers = ['ID', 'Type', 'Priority', 'Status', 'Title', 'Description', 'User ID', 'User Email', 'Route', 'Created At']
+    const rows = feedback.map(item => [
+      item.id,
+      TYPE_CONFIG[item.type]?.label || item.type,
+      item.priority ? (PRIORITY_CONFIG[item.priority]?.label || item.priority) : '',
+      STATUS_CONFIG[item.status]?.label || item.status,
+      item.title || '',
+      item.description || '',
+      item.user_id || '',
+      item.user_email || '',
+      item.current_route || '',
+      item.created_at ? new Date(item.created_at).toISOString() : '',
+    ])
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""').replace(/\n/g, ' ')}"`).join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `feedback-export-${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+    URL.revokeObjectURL(link.href)
+    toast.success(`Exported ${feedback.length} feedback items to CSV`)
+  }
+
   const newCount = stats.byStatus['new'] || 0
 
   return (
@@ -289,6 +320,16 @@ export default function AdminFeedbackPage() {
               <option key={key} value={key}>{label}</option>
             ))}
           </select>
+
+          <button
+            onClick={handleExportCSV}
+            disabled={feedback.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title="Export feedback to CSV"
+          >
+            <Download className="w-4 h-4" />
+            Export
+          </button>
         </div>
 
         {/* Main content - split view */}

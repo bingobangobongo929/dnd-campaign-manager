@@ -5,6 +5,7 @@
 ## Current Status (2026-01-26)
 
 **LOCATIONS FULLY INTEGRATED WITH CAMPAIGN INTELLIGENCE.**
+**QUESTS UI - Design decisions finalized, ready to build.**
 
 ## What's Done
 
@@ -93,16 +94,63 @@ CONSTRAINT: exactly one must be set
 
 ## Immediate Next Step
 
-**Build Quests UI** - Next unified feature.
+**Build Quests System** - Full integration across the app.
+
+### Quests Integration Plan (COMPLETE SCOPE)
+
+**Philosophy**: Quests integrate with existing Session Workflow, NOT separate prep system. No duplication.
+
+**Session System Context** (existing):
+- 3 phases: Prep → Live → Completed
+- 4 optional boxes: Prep Checklist, Quick Reference, Session Timer, Thoughts for Next
+- Quick Reference already pins NPCs, characters, locations
+
+**The Flow**:
+1. Quest created in Quests page (or Intelligence detects from session notes)
+2. DM pins quest to session via Quick Reference during prep
+3. Session plays - DM references pinned quest
+4. Session completes - DM writes notes mentioning quest progress
+5. Intelligence reads notes → suggests status/objective updates → DM approves
+
+### Full Quest Integration Points
+
+| Location | Integration | Status |
+|----------|-------------|--------|
+| **Quests Page** | Main library, list + board views, objectives | ✅ DONE |
+| **Quick Reference** | Pin quests to sessions (new pinnable type) | ✅ DONE |
+| **Campaign Intelligence** | Detect quests/progress from session notes | ✅ DONE |
+| **Canvas** | NPC cards show "Quest Giver for: X" | ✅ DONE |
+| **Characters Detail** | "Quests involving this character" section | ✅ DONE |
+| **Locations Detail** | "Quests at this location" section | ✅ DONE |
+| **Sessions** | Link sessions to quests progressed | TODO |
+| **Roll Random** | Button to pick random Available quest | ✅ DONE |
+| **Share Page** | `/share/[code]/quests` for player visibility | TODO |
+
+### Quests Page Features
+- **List view**: Quest cards with status badge, type, quest giver, objectives preview
+- **Board view**: Kanban columns (Available | Active | Done)
+- **Detail panel**: Full info, objectives checklist, quest giver, location, rewards, secrets
+- **Add/Edit modal**: All fields, NPC dropdown for quest giver, location dropdown
+- **Roll Random button**: Pick random quest from Available pool
+- **Simple objectives**: Checklist style (no status-per-objective complexity)
+
+### Rolling Feature
+- **"Roll Random" button** on Quests page
+- Picks randomly from Available quests (quests not yet introduced to party)
+- Simple implementation now, more complex Random Tables system in Phase 2
 
 ### Frontend Work Queue:
 1. ~~**Build Locations UI**~~ ✅ DONE
-2. ~~**Campaign Intelligence - Location Detection**~~ ✅ DONE (with edit modal + bulk approval)
-3. **Build Quests UI** - List, board view, status tracking, objectives (NEXT)
-4. **Campaign Intelligence - Quest Detection** - After Quests UI
-5. **Build Encounters UI** - Prep view, session linking
-6. **Campaign Intelligence - Encounter Detection** - After Encounters UI
-7. **Recreate Oneshots pages** - Using unified system
+2. ~~**Campaign Intelligence - Location Detection**~~ ✅ DONE
+3. ~~**Build Quests Page**~~ ✅ DONE - List + board view, objectives, roll random
+4. ~~**Update Quick Reference**~~ ✅ DONE - Quests now pinnable in sessions
+5. ~~**Update Locations Detail**~~ ✅ DONE - "Quests at this location" in detail panel
+6. ~~**Update Characters/Canvas**~~ ✅ DONE - "Quest Giver For" in character view modal
+7. ~~**Campaign Intelligence - Quest Detection**~~ ✅ DONE - Detect from session notes
+8. **Build Share Page** - `/share/[code]/quests` (NEXT)
+9. **Build Encounters UI** - After quests complete
+10. **Campaign Intelligence - Encounter Detection**
+11. **Recreate Oneshots pages** - Using unified system
 
 ## Critical Reminders
 

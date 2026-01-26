@@ -212,6 +212,7 @@ Return your response as valid JSON with this exact structure:
    - **relationship**: New relationships between existing characters or significant changes (allies, enemies, etc.).
    - **timeline_event**: Significant campaign events worth recording in the timeline (battles, discoveries, deaths, alliances, quest milestones, character introductions, major plot points). IMPORTANT: Check the existing timeline events provided and don't suggest duplicates. Include location if mentioned, and mark is_major: true for pivotal campaign moments.
    - **location_detected**: Places mentioned in session notes - cities, towns, taverns, dungeons, regions, buildings, etc. Check the existing locations list to avoid duplicates. Only suggest NEW locations not already recorded. Include location_type (region, city, town, village, building, tavern, temple, dungeon, wilderness, landmark, camp, other) and parent_location_name if the location is inside another place.
+   - **quest_detected**: Quests, missions, tasks, or objectives mentioned or implied in session notes. This includes explicit quests ("the mayor asked them to..."), implied tasks ("they promised to return the artifact"), rumors ("they heard about treasure in..."), and character-driven goals. Check existing quests to avoid duplicates. Include quest_type (main_quest, side_quest, personal, faction, plot_thread, rumor), status (available if not yet started, active if in progress), quest_giver_name if an NPC gave the quest, and location_name if a destination/objective location is mentioned.
 
 5. **CONFIDENCE LEVELS**:
    - high: Explicitly and unambiguously stated in the notes
@@ -227,6 +228,7 @@ Return your response as valid JSON with this exact structure:
    - relationship → field_name: "relationship" (for character_relationships table)
    - timeline_event → field_name: "timeline" (value should include title, description, event_type, character_names array, location if known, and is_major boolean for pivotal events)
    - location_detected → field_name: "location" (value should include name, location_type, description if discernible from context, and parent_location_name if nested inside another location)
+   - quest_detected → field_name: "quest" (value should include name, quest_type, description, status, quest_giver_name if known, and location_name if a destination is mentioned)
 
 ## OUTPUT FORMAT
 
@@ -279,6 +281,22 @@ Return valid JSON with this structure:
       },
       "source_excerpt": "The party arrived at The Rusty Nail, a dingy tavern in the dock ward of Waterdeep",
       "ai_reasoning": "New location mentioned where significant events occurred",
+      "confidence": "high"
+    },
+    {
+      "suggestion_type": "quest_detected",
+      "character_name": null,
+      "field_name": "quest",
+      "suggested_value": {
+        "name": "Find the Missing Merchant",
+        "quest_type": "side_quest",
+        "description": "The mayor has asked the party to investigate the disappearance of merchant Aldric Thornwood, who vanished three days ago on the road to Neverwinter.",
+        "status": "active",
+        "quest_giver_name": "Mayor Bramwell",
+        "location_name": "Road to Neverwinter"
+      },
+      "source_excerpt": "The mayor pleaded with them to find Aldric Thornwood, a merchant who disappeared on the Neverwinter road",
+      "ai_reasoning": "Clear quest given by an NPC with specific objective and destination",
       "confidence": "high"
     }
   ]

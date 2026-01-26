@@ -41,6 +41,7 @@ import {
   GitMerge,
   ThumbsUp,
   ThumbsDown,
+  Target,
 } from 'lucide-react'
 import { Modal, AccessDeniedPage } from '@/components/ui'
 import { GuidanceTip } from '@/components/guidance/GuidanceTip'
@@ -72,6 +73,7 @@ const SUGGESTION_ICONS: Record<SuggestionType, typeof Skull> = {
   consistency: AlertTriangle,
   npc_detected: UserPlus,
   location_detected: MapPin,
+  quest_detected: Target,
   plot_hook: Lightbulb,
   enrichment: Wand2,
   timeline_issue: Clock,
@@ -98,6 +100,7 @@ const SUGGESTION_COLORS: Record<SuggestionType, { bg: string; text: string; bord
   consistency: { bg: 'rgba(249, 115, 22, 0.12)', text: '#fb923c', border: 'rgba(249, 115, 22, 0.3)' },
   npc_detected: { bg: 'rgba(34, 211, 238, 0.12)', text: '#22d3ee', border: 'rgba(34, 211, 238, 0.3)' },
   location_detected: { bg: 'rgba(74, 222, 128, 0.12)', text: '#4ade80', border: 'rgba(74, 222, 128, 0.3)' },
+  quest_detected: { bg: 'rgba(139, 92, 246, 0.12)', text: '#a78bfa', border: 'rgba(139, 92, 246, 0.3)' },
   plot_hook: { bg: 'rgba(192, 132, 252, 0.12)', text: '#c084fc', border: 'rgba(192, 132, 252, 0.3)' },
   enrichment: { bg: 'rgba(56, 189, 248, 0.12)', text: '#38bdf8', border: 'rgba(56, 189, 248, 0.3)' },
   timeline_issue: { bg: 'rgba(251, 146, 60, 0.12)', text: '#fb923c', border: 'rgba(251, 146, 60, 0.3)' },
@@ -147,6 +150,14 @@ function formatValue(value: unknown, suggestionType?: SuggestionType): string {
       const loc = value as { name: string; location_type: string; description?: string; parent_location_name?: string }
       let result = `${loc.name} [${loc.location_type}]`
       if (loc.parent_location_name) result += ` in ${loc.parent_location_name}`
+      return result
+    }
+    // Quest formatting
+    if (suggestionType === 'quest_detected' && 'name' in (value as object)) {
+      const quest = value as { name: string; quest_type?: string; status?: string; quest_giver_name?: string; location_name?: string }
+      let result = `${quest.name} [${quest.quest_type || 'side_quest'}]`
+      if (quest.quest_giver_name) result += ` from ${quest.quest_giver_name}`
+      if (quest.location_name) result += ` → ${quest.location_name}`
       return result
     }
     if ('status' in (value as object)) {
@@ -230,6 +241,17 @@ export default function IntelligencePage() {
     location_type: 'other',
     description: '',
     parent_location_name: '',
+  })
+
+  // Edit state for quest suggestions
+  const [editingQuestSuggestion, setEditingQuestSuggestion] = useState<IntelligenceSuggestion | null>(null)
+  const [questFormData, setQuestFormData] = useState({
+    name: '',
+    quest_type: 'side_quest',
+    description: '',
+    status: 'available',
+    quest_giver_name: '',
+    location_name: '',
   })
 
   // Bulk approval state
@@ -530,6 +552,47 @@ export default function IntelligencePage() {
     setEditingLocationSuggestion(null)
   }
 
+  // Open edit modal for quest suggestions
+  const openQuestEditModal = (suggestion: IntelligenceSuggestion) => {
+    if (suggestion.suggestion_type !== 'quest_detected') return
+
+    const value = suggestion.suggested_value as {
+      name: string
+      quest_type?: string
+      description?: string
+      status?: string
+      quest_giver_name?: string
+      location_name?: string
+    }
+
+    setQuestFormData({
+      name: value.name || '',
+      quest_type: value.quest_type || 'side_quest',
+      description: value.description || '',
+      status: value.status || 'available',
+      quest_giver_name: value.quest_giver_name || '',
+      location_name: value.location_name || '',
+    })
+    setEditingQuestSuggestion(suggestion)
+  }
+
+  // Save edited quest suggestion
+  const handleSaveQuestEdit = async () => {
+    if (!editingQuestSuggestion) return
+
+    const finalValue = {
+      name: questFormData.name,
+      quest_type: questFormData.quest_type,
+      description: questFormData.description || null,
+      status: questFormData.status,
+      quest_giver_name: questFormData.quest_giver_name || null,
+      location_name: questFormData.location_name || null,
+    }
+
+    await handleAction(editingQuestSuggestion.id, 'approve', finalValue)
+    setEditingQuestSuggestion(null)
+  }
+
   // Bulk approve all location suggestions
   const handleBulkApproveLocations = async () => {
     const locationSuggestions = filteredSuggestions.filter(
@@ -573,6 +636,54 @@ export default function IntelligencePage() {
     }
     if (errorCount > 0) {
       toast.error(`${errorCount} location${errorCount === 1 ? '' : 's'} failed to add`)
+    }
+
+    setIsBulkApproving(false)
+  }
+
+  // Bulk approve all quest suggestions
+  const handleBulkApproveQuests = async () => {
+    const questSuggestions = filteredSuggestions.filter(
+      s => s.suggestion_type === 'quest_detected' && s.status === 'pending'
+    )
+
+    if (questSuggestions.length === 0) return
+
+    setIsBulkApproving(true)
+
+    let successCount = 0
+    let errorCount = 0
+
+    for (const suggestion of questSuggestions) {
+      try {
+        const response = await fetch('/api/ai/suggestions', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            suggestionId: suggestion.id,
+            action: 'approve',
+            finalValue: suggestion.suggested_value,
+          }),
+        })
+
+        if (response.ok) {
+          successCount++
+        } else {
+          errorCount++
+        }
+      } catch (err) {
+        errorCount++
+      }
+    }
+
+    // Reload suggestions
+    await loadData()
+
+    if (successCount > 0) {
+      toast.success(`${successCount} quest${successCount === 1 ? '' : 's'} added to your campaign`)
+    }
+    if (errorCount > 0) {
+      toast.error(`${errorCount} quest${errorCount === 1 ? '' : 's'} failed to add`)
     }
 
     setIsBulkApproving(false)
@@ -961,38 +1072,66 @@ export default function IntelligencePage() {
               </button>
             )}
 
-            {/* Bulk approve locations */}
+            {/* Bulk approve locations and quests */}
             {(() => {
               const locationCount = suggestions.filter(
                 s => s.suggestion_type === 'location_detected' && s.status === 'pending'
               ).length
-              if (locationCount === 0) return null
+              const questCount = suggestions.filter(
+                s => s.suggestion_type === 'quest_detected' && s.status === 'pending'
+              ).length
+              if (locationCount === 0 && questCount === 0) return null
               return (
                 <div className="pt-4 border-t border-white/10">
                   <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#6b7280' }}>
                     Bulk Actions
                   </h3>
-                  <button
-                    onClick={handleBulkApproveLocations}
-                    disabled={isBulkApproving}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-colors"
-                    style={{
-                      backgroundColor: 'rgba(74, 222, 128, 0.15)',
-                      border: '1px solid rgba(74, 222, 128, 0.3)',
-                      color: '#4ade80',
-                    }}
-                  >
-                    {isBulkApproving ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4" />
+                  <div className="space-y-2">
+                    {locationCount > 0 && (
+                      <button
+                        onClick={handleBulkApproveLocations}
+                        disabled={isBulkApproving}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-colors"
+                        style={{
+                          backgroundColor: 'rgba(74, 222, 128, 0.15)',
+                          border: '1px solid rgba(74, 222, 128, 0.3)',
+                          color: '#4ade80',
+                        }}
+                      >
+                        {isBulkApproving ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <MapPin className="w-4 h-4" />
+                        )}
+                        <span className="text-sm font-medium">
+                          {isBulkApproving ? 'Adding...' : `Add All ${locationCount} Locations`}
+                        </span>
+                      </button>
                     )}
-                    <span className="text-sm font-medium">
-                      {isBulkApproving ? 'Adding...' : `Add All ${locationCount} Locations`}
-                    </span>
-                  </button>
+                    {questCount > 0 && (
+                      <button
+                        onClick={handleBulkApproveQuests}
+                        disabled={isBulkApproving}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-colors"
+                        style={{
+                          backgroundColor: 'rgba(139, 92, 246, 0.15)',
+                          border: '1px solid rgba(139, 92, 246, 0.3)',
+                          color: '#a78bfa',
+                        }}
+                      >
+                        {isBulkApproving ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Target className="w-4 h-4" />
+                        )}
+                        <span className="text-sm font-medium">
+                          {isBulkApproving ? 'Adding...' : `Add All ${questCount} Quests`}
+                        </span>
+                      </button>
+                    )}
+                  </div>
                   <p className="text-xs mt-2 text-center" style={{ color: '#6b7280' }}>
-                    Creates all detected locations at once
+                    Creates all detected items at once
                   </p>
                 </div>
               )
@@ -1150,6 +1289,16 @@ export default function IntelligencePage() {
                               → Locations
                             </span>
                           </p>
+                        ) : suggestion.suggestion_type === 'quest_detected' ? (
+                          <p className="font-semibold text-[15px] mb-1" style={{ color: '#f3f4f6' }}>
+                            {(() => {
+                              const val = suggestion.suggested_value as { name?: string; quest_type?: string; quest_giver_name?: string } | null
+                              return val?.name || 'New Quest'
+                            })()}
+                            <span className="font-normal text-sm ml-2" style={{ color: '#6b7280' }}>
+                              → Quests
+                            </span>
+                          </p>
                         ) : (
                           <p className="font-semibold text-[15px] mb-1" style={{ color: '#f3f4f6' }}>
                             {suggestion.character_name || character?.name || 'Unknown'}
@@ -1232,6 +1381,16 @@ export default function IntelligencePage() {
                           {suggestion.suggestion_type === 'location_detected' && (
                             <button
                               onClick={() => openLocationEditModal(suggestion)}
+                              disabled={isProcessing}
+                              className="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 transition-colors disabled:opacity-50"
+                              title="Edit before approving"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
+                          {suggestion.suggestion_type === 'quest_detected' && (
+                            <button
+                              onClick={() => openQuestEditModal(suggestion)}
                               disabled={isProcessing}
                               className="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 transition-colors disabled:opacity-50"
                               title="Edit before approving"
@@ -1429,6 +1588,127 @@ export default function IntelligencePage() {
               disabled={!locationFormData.name.trim()}
             >
               Save & Add Location
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Quest Modal */}
+      <Modal
+        isOpen={!!editingQuestSuggestion}
+        onClose={() => setEditingQuestSuggestion(null)}
+        title="Edit Quest"
+        description="Edit the details before adding to your quests"
+        size="md"
+      >
+        <div className="space-y-4">
+          {/* Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Name <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              value={questFormData.name}
+              onChange={(e) => setQuestFormData({ ...questFormData, name: e.target.value })}
+              className="form-input"
+              placeholder="Find the Missing Merchant"
+            />
+          </div>
+
+          {/* Type */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Type
+            </label>
+            <select
+              value={questFormData.quest_type}
+              onChange={(e) => setQuestFormData({ ...questFormData, quest_type: e.target.value })}
+              className="form-input"
+            >
+              <option value="main_quest">Main Quest</option>
+              <option value="side_quest">Side Quest</option>
+              <option value="personal">Personal Quest</option>
+              <option value="faction">Faction Quest</option>
+              <option value="plot_thread">Plot Thread</option>
+              <option value="rumor">Rumor</option>
+            </select>
+          </div>
+
+          {/* Status */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Status
+            </label>
+            <select
+              value={questFormData.status}
+              onChange={(e) => setQuestFormData({ ...questFormData, status: e.target.value })}
+              className="form-input"
+            >
+              <option value="available">Available (not yet started)</option>
+              <option value="active">Active (in progress)</option>
+              <option value="completed">Completed</option>
+              <option value="failed">Failed</option>
+              <option value="abandoned">Abandoned</option>
+            </select>
+          </div>
+
+          {/* Quest Giver */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Quest Giver
+            </label>
+            <input
+              type="text"
+              value={questFormData.quest_giver_name}
+              onChange={(e) => setQuestFormData({ ...questFormData, quest_giver_name: e.target.value })}
+              className="form-input"
+              placeholder="e.g., Mayor Bramwell"
+            />
+            <p className="text-xs text-gray-500 mt-1">NPC name (will be matched to existing characters)</p>
+          </div>
+
+          {/* Location */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Objective Location
+            </label>
+            <input
+              type="text"
+              value={questFormData.location_name}
+              onChange={(e) => setQuestFormData({ ...questFormData, location_name: e.target.value })}
+              className="form-input"
+              placeholder="e.g., The Abandoned Mine"
+            />
+            <p className="text-xs text-gray-500 mt-1">Where the quest takes place (will be matched to existing locations)</p>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Description
+            </label>
+            <textarea
+              value={questFormData.description}
+              onChange={(e) => setQuestFormData({ ...questFormData, description: e.target.value })}
+              className="form-input min-h-[100px]"
+              placeholder="What the party needs to do..."
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-[--border]">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setEditingQuestSuggestion(null)}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleSaveQuestEdit}
+              disabled={!questFormData.name.trim()}
+            >
+              Save & Add Quest
             </button>
           </div>
         </div>

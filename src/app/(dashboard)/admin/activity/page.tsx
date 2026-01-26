@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Filter, Loader2, Shield, Ban, UserX, Crown, Edit2 } from 'lucide-react'
+import { Search, Filter, Loader2, Shield, Ban, UserX, Crown, Edit2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download } from 'lucide-react'
+import { toast } from 'sonner'
 import { useSupabase } from '@/hooks'
 import { formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
@@ -46,6 +47,10 @@ export default function AdminActivityPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterAction, setFilterAction] = useState<string>('all')
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
+
   useEffect(() => {
     fetchActivities()
   }, [])
@@ -56,7 +61,7 @@ export default function AdminActivityPage() {
         .from('admin_activity_log')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(100)
+        .limit(1000) // Fetch more, paginate client-side
 
       if (error) throw error
       setActivities(data || [])
@@ -82,6 +87,45 @@ export default function AdminActivityPage() {
     return true
   })
 
+  // Pagination calculations
+  const totalActivities = filteredActivities.length
+  const totalPages = Math.ceil(totalActivities / pageSize)
+  const startIndex = (currentPage - 1) * pageSize
+  const endIndex = Math.min(startIndex + pageSize, totalActivities)
+  const paginatedActivities = filteredActivities.slice(startIndex, endIndex)
+
+  // Reset to page 1 when filters change
+  const handleFilterChange = (value: string) => {
+    setFilterAction(value)
+    setCurrentPage(1)
+  }
+
+  // Export filtered activities to CSV
+  const handleExportCSV = () => {
+    const headers = ['ID', 'Action', 'Admin ID', 'Target User ID', 'Details', 'Created At']
+    const rows = filteredActivities.map(activity => [
+      activity.id,
+      ACTION_LABELS[activity.action] || activity.action,
+      activity.admin_id,
+      activity.target_user_id || '',
+      activity.details ? JSON.stringify(activity.details) : '',
+      activity.created_at ? new Date(activity.created_at).toISOString() : '',
+    ])
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `activity-log-${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+    URL.revokeObjectURL(link.href)
+    toast.success(`Exported ${filteredActivities.length} entries to CSV`)
+  }
+
   // Get unique actions for filter
   const uniqueActions = [...new Set(activities.map(a => a.action))]
 
@@ -103,14 +147,14 @@ export default function AdminActivityPage() {
             type="text"
             placeholder="Search by user ID..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1) }}
             className="w-full pl-10 pr-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50"
           />
         </div>
 
         <select
           value={filterAction}
-          onChange={(e) => setFilterAction(e.target.value)}
+          onChange={(e) => handleFilterChange(e.target.value)}
           className="px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-purple-500/50"
         >
           <option value="all">All Actions</option>
@@ -120,10 +164,30 @@ export default function AdminActivityPage() {
             </option>
           ))}
         </select>
+
+        <select
+          value={pageSize}
+          onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1) }}
+          className="px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-purple-500/50"
+        >
+          <option value={25}>25 per page</option>
+          <option value={50}>50 per page</option>
+          <option value={100}>100 per page</option>
+        </select>
+
+        <button
+          onClick={handleExportCSV}
+          disabled={filteredActivities.length === 0}
+          className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white hover:bg-white/[0.08] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          title="Export activity log to CSV"
+        >
+          <Download className="w-4 h-4" />
+          Export
+        </button>
       </div>
 
       {/* Activity List */}
-      {filteredActivities.length === 0 ? (
+      {paginatedActivities.length === 0 ? (
         <div className="text-center py-16 bg-[#1a1a24] rounded-xl border border-white/[0.06]">
           <Shield className="w-12 h-12 text-gray-600 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-white mb-2">No activity yet</h3>
@@ -132,7 +196,7 @@ export default function AdminActivityPage() {
       ) : (
         <div className="bg-[#1a1a24] rounded-xl border border-white/[0.06] overflow-hidden">
           <div className="divide-y divide-white/[0.03]">
-            {filteredActivities.map((activity) => {
+            {paginatedActivities.map((activity) => {
               const Icon = ACTION_ICONS[activity.action] || Edit2
               const label = ACTION_LABELS[activity.action] || activity.action
               const colorClass = ACTION_COLORS[activity.action] || 'text-gray-400 bg-gray-500/10'
@@ -171,6 +235,52 @@ export default function AdminActivityPage() {
               )
             })}
           </div>
+
+          {/* Pagination Controls */}
+          {totalActivities > 0 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-white/[0.06]">
+              <div className="text-sm text-gray-400">
+                Showing {startIndex + 1}-{endIndex} of {totalActivities} entries
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  title="First page"
+                >
+                  <ChevronsLeft className="w-4 h-4 text-gray-400" />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  title="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4 text-gray-400" />
+                </button>
+                <span className="px-3 py-1 text-sm text-white">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  title="Next page"
+                >
+                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  title="Last page"
+                >
+                  <ChevronsRight className="w-4 h-4 text-gray-400" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
