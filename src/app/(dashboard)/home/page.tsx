@@ -155,10 +155,15 @@ export default function HomePage() {
       setHomepagePreferences(newPrefs)
 
       if (user) {
+        // Use upsert to ensure it works even if user_settings row doesn't exist yet
         await supabase
           .from('user_settings')
-          .update({ homepage_preferences: newPrefs })
-          .eq('user_id', user.id)
+          .upsert({
+            user_id: user.id,
+            homepage_preferences: newPrefs,
+          }, {
+            onConflict: 'user_id'
+          })
       }
     } else {
       // Only dismiss for this session (local state only)
@@ -178,10 +183,15 @@ export default function HomePage() {
     setDismissedTemporarilyLocal([])
 
     if (user) {
+      // Use upsert to ensure it works even if user_settings row doesn't exist yet
       await supabase
         .from('user_settings')
-        .update({ homepage_preferences: newPrefs })
-        .eq('user_id', user.id)
+        .upsert({
+          user_id: user.id,
+          homepage_preferences: newPrefs,
+        }, {
+          onConflict: 'user_id'
+        })
     }
   }
 
