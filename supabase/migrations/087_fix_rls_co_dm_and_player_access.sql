@@ -234,7 +234,7 @@ USING (
       EXISTS (
         SELECT 1 FROM campaign_lore cl
         WHERE cl.id = entity_id
-        AND cl.type = 'artifact'
+        AND cl.lore_type = 'artifact'
         AND user_is_dm_of_campaign(cl.campaign_id, auth.uid())
       )
     ELSE FALSE
@@ -293,6 +293,15 @@ USING (
           SELECT 1 FROM locations l
           JOIN campaign_members cm ON cm.campaign_id = l.campaign_id
           WHERE l.id = entity_id
+          AND cm.user_id = auth.uid()
+          AND cm.status = 'active'
+        )
+      WHEN 'artifact' THEN
+        EXISTS (
+          SELECT 1 FROM campaign_lore cl
+          JOIN campaign_members cm ON cm.campaign_id = cl.campaign_id
+          WHERE cl.id = entity_id
+          AND cl.lore_type = 'artifact'
           AND cm.user_id = auth.uid()
           AND cm.status = 'active'
         )
