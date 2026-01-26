@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { isAdmin } from '@/lib/admin'
+import type { UserRole } from '@/types/database'
 
 // GET - Get all tier settings
 export async function GET(request: NextRequest) {
@@ -15,11 +17,11 @@ export async function GET(request: NextRequest) {
     // Check if user is admin
     const { data: userSettings } = await supabase
       .from('user_settings')
-      .select('is_admin')
+      .select('role')
       .eq('user_id', user.id)
       .single()
 
-    if (!userSettings?.is_admin) {
+    if (!userSettings || !isAdmin(userSettings.role as UserRole)) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
@@ -54,11 +56,11 @@ export async function PATCH(request: NextRequest) {
     // Check if user is admin
     const { data: userSettings } = await supabase
       .from('user_settings')
-      .select('is_admin')
+      .select('role')
       .eq('user_id', user.id)
       .single()
 
-    if (!userSettings?.is_admin) {
+    if (!userSettings || !isAdmin(userSettings.role as UserRole)) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
@@ -127,11 +129,11 @@ export async function POST(request: NextRequest) {
     // Check if user is admin
     const { data: userSettings } = await supabase
       .from('user_settings')
-      .select('is_admin')
+      .select('role')
       .eq('user_id', user.id)
       .single()
 
-    if (!userSettings?.is_admin) {
+    if (!userSettings || !isAdmin(userSettings.role as UserRole)) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
