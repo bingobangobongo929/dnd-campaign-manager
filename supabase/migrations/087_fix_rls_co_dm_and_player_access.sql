@@ -188,6 +188,7 @@ DROP POLICY IF EXISTS "Campaign owners can manage secrets" ON entity_secrets;
 DROP POLICY IF EXISTS "Users can view revealed secrets" ON entity_secrets;
 
 -- DMs can manage all secrets for their campaigns
+-- Note: Table names are campaign_lore, campaign_factions, locations
 CREATE POLICY "DMs can manage secrets"
 ON entity_secrets FOR ALL
 USING (
@@ -213,15 +214,15 @@ USING (
       )
     WHEN 'lore' THEN
       EXISTS (
-        SELECT 1 FROM lore l
-        WHERE l.id = entity_id
-        AND user_is_dm_of_campaign(l.campaign_id, auth.uid())
+        SELECT 1 FROM campaign_lore cl
+        WHERE cl.id = entity_id
+        AND user_is_dm_of_campaign(cl.campaign_id, auth.uid())
       )
     WHEN 'faction' THEN
       EXISTS (
-        SELECT 1 FROM factions f
-        WHERE f.id = entity_id
-        AND user_is_dm_of_campaign(f.campaign_id, auth.uid())
+        SELECT 1 FROM campaign_factions cf
+        WHERE cf.id = entity_id
+        AND user_is_dm_of_campaign(cf.campaign_id, auth.uid())
       )
     WHEN 'location' THEN
       EXISTS (
@@ -231,10 +232,10 @@ USING (
       )
     WHEN 'artifact' THEN
       EXISTS (
-        SELECT 1 FROM lore l
-        WHERE l.id = entity_id
-        AND l.type = 'artifact'
-        AND user_is_dm_of_campaign(l.campaign_id, auth.uid())
+        SELECT 1 FROM campaign_lore cl
+        WHERE cl.id = entity_id
+        AND cl.type = 'artifact'
+        AND user_is_dm_of_campaign(cl.campaign_id, auth.uid())
       )
     ELSE FALSE
   END
@@ -273,17 +274,17 @@ USING (
         )
       WHEN 'lore' THEN
         EXISTS (
-          SELECT 1 FROM lore l
-          JOIN campaign_members cm ON cm.campaign_id = l.campaign_id
-          WHERE l.id = entity_id
+          SELECT 1 FROM campaign_lore cl
+          JOIN campaign_members cm ON cm.campaign_id = cl.campaign_id
+          WHERE cl.id = entity_id
           AND cm.user_id = auth.uid()
           AND cm.status = 'active'
         )
       WHEN 'faction' THEN
         EXISTS (
-          SELECT 1 FROM factions f
-          JOIN campaign_members cm ON cm.campaign_id = f.campaign_id
-          WHERE f.id = entity_id
+          SELECT 1 FROM campaign_factions cf
+          JOIN campaign_members cm ON cm.campaign_id = cf.campaign_id
+          WHERE cf.id = entity_id
           AND cm.user_id = auth.uid()
           AND cm.status = 'active'
         )
