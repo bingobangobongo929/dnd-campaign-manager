@@ -176,15 +176,48 @@ async function permanentlyDeleteUser(userId: string, userEmail: string) {
     const userName = userSettings?.username || userEmail?.split('@')[0] || 'Adventurer'
 
     // 6. Orphan template snapshots (preserve for users who saved them)
-    // Update attribution to show "Deleted User" since original author is gone
-    // The foreign key ON DELETE SET NULL will set user_id to null
-    await supabaseAdmin
+    // Update attribution to show "Anonymous" since original author is gone
+    // Also scrub user_id from snapshot_data and related_data JSONB fields
+    const { data: userSnapshots } = await supabaseAdmin
       .from('template_snapshots')
-      .update({
-        attribution_name: 'Deleted User',
-        author_deleted_at: new Date().toISOString(),
-      })
+      .select('id, snapshot_data, related_data')
       .eq('user_id', userId)
+
+    if (userSnapshots && userSnapshots.length > 0) {
+      for (const snapshot of userSnapshots) {
+        // Scrub user_id from snapshot_data (the main content)
+        const scrubbedSnapshotData = snapshot.snapshot_data ? {
+          ...snapshot.snapshot_data,
+          user_id: null,
+        } : null
+
+        // Scrub user_id from related_data items (characters, etc.)
+        let scrubbedRelatedData = snapshot.related_data
+        if (scrubbedRelatedData && typeof scrubbedRelatedData === 'object') {
+          scrubbedRelatedData = { ...scrubbedRelatedData }
+          for (const key of Object.keys(scrubbedRelatedData)) {
+            if (Array.isArray(scrubbedRelatedData[key])) {
+              scrubbedRelatedData[key] = scrubbedRelatedData[key].map((item: Record<string, unknown>) => {
+                if (item && typeof item === 'object' && 'user_id' in item) {
+                  return { ...item, user_id: null }
+                }
+                return item
+              })
+            }
+          }
+        }
+
+        await supabaseAdmin
+          .from('template_snapshots')
+          .update({
+            attribution_name: 'Anonymous',
+            author_deleted_at: new Date().toISOString(),
+            snapshot_data: scrubbedSnapshotData,
+            related_data: scrubbedRelatedData,
+          })
+          .eq('id', snapshot.id)
+      }
+    }
 
     // Also update content_saves to clear the source_owner_id
     await supabaseAdmin
