@@ -475,58 +475,75 @@ export function RollReveal<T>({
   const [rotation, setRotation] = useState(0)
   const [showResult, setShowResult] = useState(false)
   const rotationRef = useRef<number | null>(null)
+  const timeoutsRef = useRef<NodeJS.Timeout[]>([])
+  const isAnimatingRef = useRef(false)
 
   const sounds = useSounds()
+  const soundsRef = useRef(sounds)
+  soundsRef.current = sounds
+
+  const soundEnabledRef = useRef(soundEnabled)
+  soundEnabledRef.current = soundEnabled
+
   const cardCount = Math.min(Math.max(items.length, 5), 7)
 
-  // Select random item
-  const selectRandom = useCallback(() => {
-    return Math.floor(Math.random() * items.length)
-  }, [items.length])
+  // Clear all pending timeouts
+  const clearTimeouts = useCallback(() => {
+    timeoutsRef.current.forEach(id => clearTimeout(id))
+    timeoutsRef.current = []
+  }, [])
 
   // Start the animation sequence
   const startAnimation = useCallback(() => {
+    // Clear any existing timeouts first
+    clearTimeouts()
+
+    // Prevent multiple simultaneous animations
+    if (isAnimatingRef.current) return
+    isAnimatingRef.current = true
+
     setPhase(0)
     setShowResult(false)
     setRotation(0)
-    setChosenIndex(selectRandom())
+    setChosenIndex(Math.floor(Math.random() * items.length))
 
     // Phase 1: Summon (0.5s)
-    setTimeout(() => {
+    timeoutsRef.current.push(setTimeout(() => {
       setPhase(1)
-      if (soundEnabled) sounds.playSummon()
-    }, 100)
+      if (soundEnabledRef.current) soundsRef.current.playSummon()
+    }, 100))
 
     // Phase 2: Cards emerge (0.8s)
-    setTimeout(() => {
+    timeoutsRef.current.push(setTimeout(() => {
       setPhase(2)
-      if (soundEnabled) sounds.playWhoosh()
-    }, 600)
+      if (soundEnabledRef.current) soundsRef.current.playWhoosh()
+    }, 600))
 
     // Phase 3: Chaos (1.5s)
-    setTimeout(() => {
+    timeoutsRef.current.push(setTimeout(() => {
       setPhase(3)
-      if (soundEnabled) sounds.playChaos()
-    }, 1400)
+      if (soundEnabledRef.current) soundsRef.current.playChaos()
+    }, 1400))
 
     // Phase 4: Draw (0.8s)
-    setTimeout(() => {
+    timeoutsRef.current.push(setTimeout(() => {
       setPhase(4)
-      if (soundEnabled) sounds.playDraw()
-    }, 2900)
+      if (soundEnabledRef.current) soundsRef.current.playDraw()
+    }, 2900))
 
     // Phase 5: Reveal (0.6s)
-    setTimeout(() => {
+    timeoutsRef.current.push(setTimeout(() => {
       setPhase(5)
-    }, 3500)
+    }, 3500))
 
     // Phase 6: Result
-    setTimeout(() => {
+    timeoutsRef.current.push(setTimeout(() => {
       setPhase(6)
       setShowResult(true)
-      if (soundEnabled) sounds.playReveal()
-    }, 4100)
-  }, [selectRandom, soundEnabled, sounds])
+      isAnimatingRef.current = false
+      if (soundEnabledRef.current) soundsRef.current.playReveal()
+    }, 4100))
+  }, [items.length, clearTimeouts])
 
   // Rotation animation during chaos
   useEffect(() => {
@@ -543,23 +560,25 @@ export function RollReveal<T>({
     }
   }, [phase])
 
-  // Track if we've started for this open session
-  const hasStartedRef = useRef(false)
-
   // Start animation when opened
   useEffect(() => {
-    if (isOpen && !hasStartedRef.current) {
-      hasStartedRef.current = true
+    if (isOpen) {
       startAnimation()
-    } else if (!isOpen) {
-      hasStartedRef.current = false
+    } else {
+      clearTimeouts()
+      isAnimatingRef.current = false
       setPhase(0)
       setShowResult(false)
     }
-  }, [isOpen, startAnimation])
+
+    return () => {
+      clearTimeouts()
+      isAnimatingRef.current = false
+    }
+  }, [isOpen]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleReroll = () => {
-    hasStartedRef.current = true // Keep it true since we're intentionally restarting
+    isAnimatingRef.current = false // Allow restart
     startAnimation()
   }
 
