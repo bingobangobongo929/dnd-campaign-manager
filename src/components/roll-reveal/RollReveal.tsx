@@ -95,7 +95,7 @@ const useSounds = () => {
     })
   }, [playTone])
 
-  return { playSummon, playWhoosh, playChaos, playDraw, playReveal }
+  return useMemo(() => ({ playSummon, playWhoosh, playChaos, playDraw, playReveal }), [playSummon, playWhoosh, playChaos, playDraw, playReveal])
 }
 
 // Particle component for magical effects
@@ -543,17 +543,23 @@ export function RollReveal<T>({
     }
   }, [phase])
 
+  // Track if we've started for this open session
+  const hasStartedRef = useRef(false)
+
   // Start animation when opened
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !hasStartedRef.current) {
+      hasStartedRef.current = true
       startAnimation()
-    } else {
+    } else if (!isOpen) {
+      hasStartedRef.current = false
       setPhase(0)
       setShowResult(false)
     }
   }, [isOpen, startAnimation])
 
   const handleReroll = () => {
+    hasStartedRef.current = true // Keep it true since we're intentionally restarting
     startAnimation()
   }
 
