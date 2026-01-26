@@ -223,6 +223,18 @@ export default function IntelligencePage() {
     character_ids: [],
   })
 
+  // Edit state for location suggestions
+  const [editingLocationSuggestion, setEditingLocationSuggestion] = useState<IntelligenceSuggestion | null>(null)
+  const [locationFormData, setLocationFormData] = useState({
+    name: '',
+    location_type: 'other',
+    description: '',
+    parent_location_name: '',
+  })
+
+  // Bulk approval state
+  const [isBulkApproving, setIsBulkApproving] = useState(false)
+
   // Modal state for burger menu
   const [showMembersModal, setShowMembersModal] = useState(false)
   const [showLabelsModal, setShowLabelsModal] = useState(false)
@@ -481,6 +493,89 @@ export default function IntelligencePage() {
 
     await handleAction(editingSuggestion.id, 'approve', finalValue)
     setEditingSuggestion(null)
+  }
+
+  // Open edit modal for location suggestions
+  const openLocationEditModal = (suggestion: IntelligenceSuggestion) => {
+    if (suggestion.suggestion_type !== 'location_detected') return
+
+    const value = suggestion.suggested_value as {
+      name: string
+      location_type?: string
+      description?: string
+      parent_location_name?: string
+    }
+
+    setLocationFormData({
+      name: value.name || '',
+      location_type: value.location_type || 'other',
+      description: value.description || '',
+      parent_location_name: value.parent_location_name || '',
+    })
+    setEditingLocationSuggestion(suggestion)
+  }
+
+  // Save edited location suggestion
+  const handleSaveLocationEdit = async () => {
+    if (!editingLocationSuggestion) return
+
+    const finalValue = {
+      name: locationFormData.name,
+      location_type: locationFormData.location_type,
+      description: locationFormData.description || null,
+      parent_location_name: locationFormData.parent_location_name || null,
+    }
+
+    await handleAction(editingLocationSuggestion.id, 'approve', finalValue)
+    setEditingLocationSuggestion(null)
+  }
+
+  // Bulk approve all location suggestions
+  const handleBulkApproveLocations = async () => {
+    const locationSuggestions = filteredSuggestions.filter(
+      s => s.suggestion_type === 'location_detected' && s.status === 'pending'
+    )
+
+    if (locationSuggestions.length === 0) return
+
+    setIsBulkApproving(true)
+
+    let successCount = 0
+    let errorCount = 0
+
+    for (const suggestion of locationSuggestions) {
+      try {
+        const response = await fetch('/api/ai/suggestions', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            suggestionId: suggestion.id,
+            action: 'approve',
+            finalValue: suggestion.suggested_value,
+          }),
+        })
+
+        if (response.ok) {
+          successCount++
+        } else {
+          errorCount++
+        }
+      } catch (err) {
+        errorCount++
+      }
+    }
+
+    // Reload suggestions
+    await loadData()
+
+    if (successCount > 0) {
+      toast.success(`${successCount} location${successCount === 1 ? '' : 's'} added to your campaign`)
+    }
+    if (errorCount > 0) {
+      toast.error(`${errorCount} location${errorCount === 1 ? '' : 's'} failed to add`)
+    }
+
+    setIsBulkApproving(false)
   }
 
   const toggleExpanded = (id: string) => {
@@ -865,6 +960,43 @@ export default function IntelligencePage() {
                 Clear all filters
               </button>
             )}
+
+            {/* Bulk approve locations */}
+            {(() => {
+              const locationCount = suggestions.filter(
+                s => s.suggestion_type === 'location_detected' && s.status === 'pending'
+              ).length
+              if (locationCount === 0) return null
+              return (
+                <div className="pt-4 border-t border-white/10">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#6b7280' }}>
+                    Bulk Actions
+                  </h3>
+                  <button
+                    onClick={handleBulkApproveLocations}
+                    disabled={isBulkApproving}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-colors"
+                    style={{
+                      backgroundColor: 'rgba(74, 222, 128, 0.15)',
+                      border: '1px solid rgba(74, 222, 128, 0.3)',
+                      color: '#4ade80',
+                    }}
+                  >
+                    {isBulkApproving ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-4 h-4" />
+                    )}
+                    <span className="text-sm font-medium">
+                      {isBulkApproving ? 'Adding...' : `Add All ${locationCount} Locations`}
+                    </span>
+                  </button>
+                  <p className="text-xs mt-2 text-center" style={{ color: '#6b7280' }}>
+                    Creates all detected locations at once
+                  </p>
+                </div>
+              )
+            })()}
           </aside>
 
           {/* Suggestions list */}
@@ -1008,6 +1140,16 @@ export default function IntelligencePage() {
                               → Campaign Timeline
                             </span>
                           </p>
+                        ) : suggestion.suggestion_type === 'location_detected' ? (
+                          <p className="font-semibold text-[15px] mb-1" style={{ color: '#f3f4f6' }}>
+                            {(() => {
+                              const val = suggestion.suggested_value as { name?: string; location_type?: string; parent_location_name?: string } | null
+                              return val?.name || 'New Location'
+                            })()}
+                            <span className="font-normal text-sm ml-2" style={{ color: '#6b7280' }}>
+                              → Locations
+                            </span>
+                          </p>
                         ) : (
                           <p className="font-semibold text-[15px] mb-1" style={{ color: '#f3f4f6' }}>
                             {suggestion.character_name || character?.name || 'Unknown'}
@@ -1080,6 +1222,16 @@ export default function IntelligencePage() {
                           {suggestion.suggestion_type === 'timeline_event' && (
                             <button
                               onClick={() => openEditModal(suggestion)}
+                              disabled={isProcessing}
+                              className="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 transition-colors disabled:opacity-50"
+                              title="Edit before approving"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
+                          {suggestion.suggestion_type === 'location_detected' && (
+                            <button
+                              onClick={() => openLocationEditModal(suggestion)}
                               disabled={isProcessing}
                               className="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 transition-colors disabled:opacity-50"
                               title="Edit before approving"
@@ -1183,6 +1335,100 @@ export default function IntelligencePage() {
               disabled={!editFormData.title.trim()}
             >
               Save & Add to Timeline
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Location Modal */}
+      <Modal
+        isOpen={!!editingLocationSuggestion}
+        onClose={() => setEditingLocationSuggestion(null)}
+        title="Edit Location"
+        description="Edit the details before adding to your locations"
+        size="md"
+      >
+        <div className="space-y-4">
+          {/* Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Name <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              value={locationFormData.name}
+              onChange={(e) => setLocationFormData({ ...locationFormData, name: e.target.value })}
+              className="form-input"
+              placeholder="The Rusty Nail"
+            />
+          </div>
+
+          {/* Type */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Type
+            </label>
+            <select
+              value={locationFormData.location_type}
+              onChange={(e) => setLocationFormData({ ...locationFormData, location_type: e.target.value })}
+              className="form-input"
+            >
+              <option value="region">Region</option>
+              <option value="city">City</option>
+              <option value="town">Town</option>
+              <option value="village">Village</option>
+              <option value="building">Building</option>
+              <option value="tavern">Tavern</option>
+              <option value="temple">Temple</option>
+              <option value="dungeon">Dungeon</option>
+              <option value="wilderness">Wilderness</option>
+              <option value="landmark">Landmark</option>
+              <option value="camp">Camp</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          {/* Parent Location */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Located In
+            </label>
+            <input
+              type="text"
+              value={locationFormData.parent_location_name}
+              onChange={(e) => setLocationFormData({ ...locationFormData, parent_location_name: e.target.value })}
+              className="form-input"
+              placeholder="e.g., Waterdeep, The Sword Coast"
+            />
+            <p className="text-xs text-gray-500 mt-1">Leave empty if top-level location</p>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Description
+            </label>
+            <textarea
+              value={locationFormData.description}
+              onChange={(e) => setLocationFormData({ ...locationFormData, description: e.target.value })}
+              className="form-input min-h-[100px]"
+              placeholder="A brief description of this location..."
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-[--border]">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setEditingLocationSuggestion(null)}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleSaveLocationEdit}
+              disabled={!locationFormData.name.trim()}
+            >
+              Save & Add Location
             </button>
           </div>
         </div>
