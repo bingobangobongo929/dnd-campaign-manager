@@ -516,7 +516,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Permission denied' }, { status: 403 })
     }
 
-    const { error } = await supabase
+    // Use admin client to bypass RLS - we've already verified permission above
+    const adminClient = createAdminClient()
+    const { error } = await adminClient
       .from('campaign_members')
       .delete()
       .eq('id', memberId)

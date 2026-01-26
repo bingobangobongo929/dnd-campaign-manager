@@ -112,31 +112,29 @@ export default function AdminUsersPage() {
 
     setActionLoading(true)
     try {
-      const { error } = await supabase
-        .from('user_settings')
-        .update({
-          suspended_at: suspend ? new Date().toISOString() : null,
-          suspended_reason: suspend ? suspendReason : null,
-          suspended_by: suspend ? (await supabase.auth.getUser()).data.user?.id : null,
-        })
-        .eq('user_id', selectedUser.id)
-
-      if (error) throw error
-
-      // Log admin activity
-      await supabase.from('admin_activity_log').insert({
-        admin_id: (await supabase.auth.getUser()).data.user?.id,
-        action: suspend ? 'suspend_user' : 'unsuspend_user',
-        target_user_id: selectedUser.id,
-        details: suspend ? { reason: suspendReason } : {},
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          updates: {
+            suspended_at: suspend ? new Date().toISOString() : null,
+            suspended_reason: suspend ? suspendReason : null,
+          },
+        }),
       })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to update user status')
+      }
 
       toast.success(suspend ? 'User suspended' : 'User unsuspended')
       setShowSuspendModal(false)
       setSuspendReason('')
       fetchUsers()
-    } catch (error) {
-      toast.error('Failed to update user status')
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update user status')
     } finally {
       setActionLoading(false)
     }
@@ -148,27 +146,27 @@ export default function AdminUsersPage() {
 
     setActionLoading(true)
     try {
-      const { error } = await supabase
-        .from('user_settings')
-        .update({
-          disabled_at: disable ? new Date().toISOString() : null,
-          disabled_by: disable ? (await supabase.auth.getUser()).data.user?.id : null,
-        })
-        .eq('user_id', targetUser.id)
-
-      if (error) throw error
-
-      await supabase.from('admin_activity_log').insert({
-        admin_id: (await supabase.auth.getUser()).data.user?.id,
-        action: disable ? 'disable_user' : 'enable_user',
-        target_user_id: targetUser.id,
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: targetUser.id,
+          updates: {
+            disabled_at: disable ? new Date().toISOString() : null,
+          },
+        }),
       })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to update user status')
+      }
 
       toast.success(disable ? 'User disabled' : 'User enabled')
       setConfirmAction({ type: null, user: null, title: '', message: '', confirmLabel: '', variant: 'danger' })
       fetchUsers()
-    } catch (error) {
-      toast.error('Failed to update user status')
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update user status')
     } finally {
       setActionLoading(false)
     }
@@ -262,9 +260,7 @@ export default function AdminUsersPage() {
     setUsernameError('')
 
     try {
-      const oldUsername = selectedUser.settings?.username
-
-      // Check if username is taken (if not clearing it)
+      // Check if username is taken (if not clearing it) - this read is OK via RLS
       if (trimmedUsername) {
         const { data: existing } = await supabase
           .from('user_settings')
@@ -280,26 +276,26 @@ export default function AdminUsersPage() {
         }
       }
 
-      const { error } = await supabase
-        .from('user_settings')
-        .update({ username: trimmedUsername || null })
-        .eq('user_id', selectedUser.id)
-
-      if (error) throw error
-
-      await supabase.from('admin_activity_log').insert({
-        admin_id: (await supabase.auth.getUser()).data.user?.id,
-        action: 'change_username',
-        target_user_id: selectedUser.id,
-        details: { old_username: oldUsername, new_username: trimmedUsername || null },
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          updates: { username: trimmedUsername || null },
+        }),
       })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to change username')
+      }
 
       toast.success(trimmedUsername ? 'Username updated' : 'Username cleared')
       setShowChangeUsernameModal(false)
       setNewUsername('')
       fetchUsers()
-    } catch (error) {
-      toast.error('Failed to change username')
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to change username')
     } finally {
       setActionLoading(false)
     }
@@ -444,27 +440,22 @@ export default function AdminUsersPage() {
     setSelectedUserIds(new Set())
   }
 
-  // Bulk action handlers
+  // Bulk action handlers - use API to bypass RLS
   const handleBulkGrantFounder = async () => {
     if (!isSuperAdminUser || selectedUserIds.size === 0) return
     setBulkActionLoading(true)
     try {
-      const adminUser = (await supabase.auth.getUser()).data.user
       let successCount = 0
       for (const userId of selectedUserIds) {
-        const { error } = await supabase
-          .from('user_settings')
-          .update({ is_founder: true, founder_granted_at: new Date().toISOString() })
-          .eq('user_id', userId)
-        if (!error) {
-          await supabase.from('admin_activity_log').insert({
-            admin_id: adminUser?.id,
-            action: 'grant_founder',
-            target_user_id: userId,
-            details: { bulk_action: true },
-          })
-          successCount++
-        }
+        const res = await fetch('/api/admin/users', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            updates: { is_founder: true },
+          }),
+        })
+        if (res.ok) successCount++
       }
       toast.success(`Founder status granted to ${successCount} users`)
       clearSelection()
@@ -480,22 +471,17 @@ export default function AdminUsersPage() {
     if (!isSuperAdminUser || selectedUserIds.size === 0) return
     setBulkActionLoading(true)
     try {
-      const adminUser = (await supabase.auth.getUser()).data.user
       let successCount = 0
       for (const userId of selectedUserIds) {
-        const { error } = await supabase
-          .from('user_settings')
-          .update({ is_founder: false, founder_granted_at: null })
-          .eq('user_id', userId)
-        if (!error) {
-          await supabase.from('admin_activity_log').insert({
-            admin_id: adminUser?.id,
-            action: 'revoke_founder',
-            target_user_id: userId,
-            details: { bulk_action: true },
-          })
-          successCount++
-        }
+        const res = await fetch('/api/admin/users', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            updates: { is_founder: false },
+          }),
+        })
+        if (res.ok) successCount++
       }
       toast.success(`Founder status revoked from ${successCount} users`)
       clearSelection()
@@ -511,26 +497,17 @@ export default function AdminUsersPage() {
     if (!isSuperAdminUser || selectedUserIds.size === 0) return
     setBulkActionLoading(true)
     try {
-      const adminUser = (await supabase.auth.getUser()).data.user
       let successCount = 0
       for (const userId of selectedUserIds) {
-        const { error } = await supabase
-          .from('user_settings')
-          .update({
-            ai_access: true,
-            ai_access_granted_by: adminUser?.id,
-            ai_access_granted_at: new Date().toISOString(),
-          })
-          .eq('user_id', userId)
-        if (!error) {
-          await supabase.from('admin_activity_log').insert({
-            admin_id: adminUser?.id,
-            action: 'grant_ai_access',
-            target_user_id: userId,
-            details: { bulk_action: true },
-          })
-          successCount++
-        }
+        const res = await fetch('/api/admin/users', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            updates: { ai_access: true },
+          }),
+        })
+        if (res.ok) successCount++
       }
       toast.success(`AI access granted to ${successCount} users`)
       clearSelection()
@@ -546,22 +523,17 @@ export default function AdminUsersPage() {
     if (!isSuperAdminUser || selectedUserIds.size === 0) return
     setBulkActionLoading(true)
     try {
-      const adminUser = (await supabase.auth.getUser()).data.user
       let successCount = 0
       for (const userId of selectedUserIds) {
-        const { error } = await supabase
-          .from('user_settings')
-          .update({ ai_access: false, ai_access_granted_by: null, ai_access_granted_at: null })
-          .eq('user_id', userId)
-        if (!error) {
-          await supabase.from('admin_activity_log').insert({
-            admin_id: adminUser?.id,
-            action: 'revoke_ai_access',
-            target_user_id: userId,
-            details: { bulk_action: true },
-          })
-          successCount++
-        }
+        const res = await fetch('/api/admin/users', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            updates: { ai_access: false },
+          }),
+        })
+        if (res.ok) successCount++
       }
       toast.success(`AI access revoked from ${successCount} users`)
       clearSelection()
@@ -577,24 +549,17 @@ export default function AdminUsersPage() {
     if (!isSuperAdminUser || selectedUserIds.size === 0) return
     setBulkActionLoading(true)
     try {
-      const adminUser = (await supabase.auth.getUser()).data.user
       let successCount = 0
       for (const userId of selectedUserIds) {
-        const user = users.find(u => u.id === userId)
-        const oldTier = user?.settings?.tier
-        const { error } = await supabase
-          .from('user_settings')
-          .update({ tier })
-          .eq('user_id', userId)
-        if (!error) {
-          await supabase.from('admin_activity_log').insert({
-            admin_id: adminUser?.id,
-            action: 'change_tier',
-            target_user_id: userId,
-            details: { old_tier: oldTier, new_tier: tier, bulk_action: true },
-          })
-          successCount++
-        }
+        const res = await fetch('/api/admin/users', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            updates: { tier },
+          }),
+        })
+        if (res.ok) successCount++
       }
       toast.success(`Tier changed to ${tier} for ${successCount} users`)
       clearSelection()
