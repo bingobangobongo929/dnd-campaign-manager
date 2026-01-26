@@ -355,7 +355,7 @@ function BoardColumn({
   detailLevel: DetailLevel
 }) {
   return (
-    <div className="flex-shrink-0 w-[260px] flex flex-col bg-[#12121a] rounded-xl">
+    <div className="flex-1 min-w-[220px] max-w-[400px] flex flex-col bg-[#12121a] rounded-xl">
       {/* Column header */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/[0.05]">
         <div
@@ -1699,7 +1699,8 @@ export default function QuestsPage() {
               {/* Columns dropdown */}
               <div className="relative">
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation()
                     setShowColumnsDropdown(!showColumnsDropdown)
                     setShowDetailDropdown(false)
                   }}
@@ -1772,7 +1773,8 @@ export default function QuestsPage() {
               {/* Detail dropdown */}
               <div className="relative">
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation()
                     setShowDetailDropdown(!showDetailDropdown)
                     setShowColumnsDropdown(false)
                   }}

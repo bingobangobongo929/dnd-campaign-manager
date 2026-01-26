@@ -132,6 +132,7 @@ CONSTRAINT: exactly one must be set
 
 Features built:
 - **Board view only** - Trello-style Kanban with drag-and-drop (no list view)
+- **Responsive columns** - Columns stretch to fill space (min-w-[220px], max-w-[400px], flex-1)
 - **Column visibility** - Dropdown to show/hide columns (Available, Active, Completed, Failed, Abandoned)
 - **Detail levels** - Compact (name+type), Standard (+summary, quest giver), Detailed (+objectives, rewards)
 - **Presets** - Quick presets: Focus Mode, Full Overview, DM Prep, Clean Slate
