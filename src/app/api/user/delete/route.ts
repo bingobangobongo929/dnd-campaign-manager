@@ -118,13 +118,14 @@ export async function POST(request: NextRequest) {
     const cancelUrl = `${baseUrl}/account/cancel-deletion?token=${cancellationToken}&email=${encodeURIComponent(user.email!)}`
 
     // Send confirmation email
-    const emailResult = await sendEmail(
-      accountDeletionScheduledEmail({
+    const emailResult = await sendEmail({
+      to: user.email!,
+      ...accountDeletionScheduledEmail({
         userName: userSettings?.username || user.email?.split('@')[0] || 'Adventurer',
         deletionDate: formattedDate,
         cancelUrl,
       })
-    )
+    })
 
     if (!emailResult.success) {
       console.error('Failed to send deletion scheduled email:', emailResult.error)
