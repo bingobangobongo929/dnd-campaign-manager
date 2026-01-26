@@ -67,6 +67,8 @@ export interface HomePageMobileProps {
   // Section visibility
   isSectionVisible?: (sectionId: SectionId) => boolean
   onDismissSection?: (sectionId: SectionId, permanent: boolean) => void
+  // For conditional "Playing In" section
+  hasOwnedContent?: boolean
 }
 
 export function HomePageMobile({
@@ -100,6 +102,7 @@ export function HomePageMobile({
   characterCampaignCounts = {},
   isSectionVisible = () => true,
   onDismissSection,
+  hasOwnedContent = false,
 }: HomePageMobileProps) {
   // Combine recent items for activity section
   const recentActivity = [
@@ -626,8 +629,23 @@ export function HomePageMobile({
           </div>
         ) : null}
 
+        {/* Subtle "Join a campaign" link for DMs who might also want to play */}
+        {campaigns.length > 0 && joinedCampaigns.length === 0 && (
+          <div className="px-4 pb-4">
+            <button
+              onClick={() => onNavigate('/join')}
+              className="flex items-center gap-2 text-sm text-gray-500 active:text-emerald-400"
+            >
+              <Users className="w-4 h-4" />
+              Want to play too? Join a campaign
+              <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+
         {/* Joined Campaigns Section - Campaigns where user is a player */}
-        {(joinedCampaigns.length > 0 || isSectionVisible('playing')) && (
+        {/* Only show if: user has joined campaigns OR (user has no owned content AND hasn't dismissed) */}
+        {(joinedCampaigns.length > 0 || (!hasOwnedContent && isSectionVisible('playing'))) && (
           <>
             <MobileSectionHeader
               title="Playing In"
@@ -640,8 +658,8 @@ export function HomePageMobile({
               }
             />
 
-            {/* Empty State */}
-            {joinedCampaigns.length === 0 && isSectionVisible('playing') && (
+            {/* Empty State - only for fresh users */}
+            {joinedCampaigns.length === 0 && !hasOwnedContent && isSectionVisible('playing') && (
               <div className="mx-4 mb-4">
                 <DismissibleEmptyState
                   sectionId="playing"

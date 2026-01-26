@@ -491,6 +491,9 @@ export default function HomePage() {
   // Check if this is a fresh user (no content at all, including joined campaigns)
   const isFreshUser = !loading && campaigns.length === 0 && adventures.length === 0 && joinedCampaigns.length === 0 && characters.length === 0 && oneshots.length === 0
 
+  // Check if user has any owned/created content (used to hide "Playing In" empty state for DMs)
+  const hasOwnedContent = campaigns.length > 0 || adventures.length > 0 || oneshots.length > 0 || characters.length > 0
+
   const featuredCampaign = campaigns[0]
   const featuredAdventure = adventures[0]
   const featuredCharacter = characters[0]
@@ -536,6 +539,7 @@ export default function HomePage() {
           characterCampaignCounts={characterCampaignCounts}
           isSectionVisible={isSectionVisible}
           onDismissSection={handleDismissSection}
+          hasOwnedContent={hasOwnedContent}
         />
         <OnboardingTour
           isOpen={showOnboarding}
@@ -1169,11 +1173,26 @@ export default function HomePage() {
               })}
             </div>
           ) : null}
+
+          {/* Subtle "Join a campaign" link for DMs who might also want to play */}
+          {campaigns.length > 0 && joinedCampaigns.length === 0 && (
+            <div className="mt-4 pt-4 border-t border-white/[0.06]">
+              <Link
+                href="/join"
+                className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-emerald-400 transition-colors"
+              >
+                <Users className="w-4 h-4" />
+                Want to play too? Join someone else's campaign
+                <ChevronRight className="w-3 h-3" />
+              </Link>
+            </div>
+          )}
           </section>
         )}
 
         {/* Joined Campaigns Section - Campaigns where user is a player */}
-        {(joinedCampaigns.length > 0 || isSectionVisible('playing')) && (
+        {/* Only show if: user has joined campaigns OR (user has no owned content AND hasn't dismissed) */}
+        {(joinedCampaigns.length > 0 || (!hasOwnedContent && isSectionVisible('playing'))) && (
           <section style={{ order: getSectionOrderIndex('playing') }}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -1189,7 +1208,7 @@ export default function HomePage() {
               )}
             </div>
 
-            {joinedCampaigns.length === 0 && isSectionVisible('playing') ? (
+            {joinedCampaigns.length === 0 && !hasOwnedContent && isSectionVisible('playing') ? (
               <DismissibleEmptyState
                 sectionId="playing"
                 icon={<Users className="w-7 h-7" />}
