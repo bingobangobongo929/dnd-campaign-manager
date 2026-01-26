@@ -155,8 +155,8 @@ function LocationTreeNode({
         className={cn(
           'flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-150 group',
           isSelected
-            ? 'bg-[--arcane-purple]/20 border border-[--arcane-purple]/40'
-            : 'hover:bg-white/[0.04] border border-transparent'
+            ? 'bg-[--arcane-purple]/15 ring-1 ring-[--arcane-purple]/40'
+            : 'hover:bg-white/[0.04]'
         )}
         style={{ paddingLeft: `${depth * 20 + 12}px` }}
         onClick={() => onSelect(location)}
@@ -264,8 +264,8 @@ function LocationCard({
       className={cn(
         'p-4 rounded-xl cursor-pointer transition-all duration-200 group',
         isSelected
-          ? 'bg-[--arcane-purple]/15 border border-[--arcane-purple]/40 shadow-lg shadow-purple-500/10'
-          : 'bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] hover:border-white/[0.1]'
+          ? 'bg-[--arcane-purple]/15 ring-1 ring-[--arcane-purple]/40 shadow-lg shadow-purple-500/10'
+          : 'bg-white/[0.03] hover:bg-white/[0.05]'
       )}
       onClick={() => onSelect(location)}
     >
@@ -273,7 +273,7 @@ function LocationCard({
         {/* Icon */}
         <div
           className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105"
-          style={{ backgroundColor: `${color}15`, border: `1px solid ${color}30` }}
+          style={{ backgroundColor: `${color}15` }}
         >
           <Icon className="w-6 h-6" style={{ color }} />
         </div>
@@ -349,8 +349,8 @@ function LocationCard({
   )
 }
 
-// Detail panel component
-function LocationDetailPanel({
+// Location View Modal (replaces sidebar panel)
+function LocationViewModal({
   location,
   locations,
   quests,
@@ -378,200 +378,203 @@ function LocationDetailPanel({
   )
 
   return (
-    <div className="h-full flex flex-col bg-[--bg-surface] border-l border-[--border]">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-[--border]">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ backgroundColor: `${color}20` }}
-          >
-            <Icon className="w-5 h-5" style={{ color }} />
-          </div>
-          <div>
-            <h2 className="font-semibold text-white">{location.name}</h2>
-            <p className="text-xs text-gray-500 capitalize">{location.location_type}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1">
-          {canEdit && (
-            <>
-              <button
-                onClick={onEdit}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-              >
-                <Edit3 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={onDelete}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </>
-          )}
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center pt-12 pb-12 px-4 overflow-y-auto"
+      onClick={onClose}
+    >
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/70" />
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {/* Status badges */}
-        <div className="flex flex-wrap gap-2">
-          <div
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm',
-              location.is_visited
-                ? 'bg-emerald-500/20 text-emerald-400'
-                : 'bg-gray-500/20 text-gray-400'
-            )}
-          >
-            <Eye className="w-4 h-4" />
-            {location.is_visited ? 'Visited' : 'Not Visited'}
-          </div>
-          <div
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm',
-              location.is_known
-                ? 'bg-blue-500/20 text-blue-400'
-                : 'bg-amber-500/20 text-amber-400'
-            )}
-          >
-            {location.is_known ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-            {location.is_known ? 'Known to Players' : 'Hidden'}
-          </div>
-        </div>
+      {/* Modal */}
+      <div
+        className="relative w-full max-w-2xl bg-[#1a1a24] rounded-xl shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Color bar at top */}
+        <div
+          className="h-2 rounded-t-xl"
+          style={{ backgroundColor: color }}
+        />
 
-        {/* Parent location */}
-        {parent && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Located In
-            </h4>
-            <div className="flex items-center gap-2 p-2 bg-white/[0.02] rounded-lg">
-              <MapPin className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-300">{parent.name}</span>
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors z-10"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* Header */}
+        <div className="p-6 pb-4">
+          <div className="flex items-start gap-4 pr-10">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: `${color}20` }}
+            >
+              <Icon className="w-6 h-6" style={{ color }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-bold text-white mb-2">{location.name}</h2>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge size="sm" color={color}>
+                  {location.location_type}
+                </Badge>
+                {location.is_visited && (
+                  <Badge size="sm" color="#10B981">visited</Badge>
+                )}
+                {!location.is_known && (
+                  <Badge size="sm" color="#F59E0B">hidden</Badge>
+                )}
+                {location.secrets && (
+                  <Badge size="sm" color="#EF4444">has secrets</Badge>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Parent location */}
+          {parent && (
+            <div className="mt-4 flex items-center gap-2 text-sm text-gray-400">
+              <MapPin className="w-4 h-4" />
+              <span>Located in</span>
+              <span className="text-gray-300">{parent.name}</span>
               <Badge size="sm" color={LOCATION_TYPE_COLORS[parent.location_type]}>
                 {parent.location_type}
               </Badge>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Description */}
-        {location.description && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Description
-            </h4>
-            <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
-              {location.description}
-            </p>
-          </div>
-        )}
+        {/* Content */}
+        <div className="px-6 pb-6 space-y-6">
+          {/* Description */}
+          {location.description && (
+            <div>
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Description
+              </h4>
+              <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap bg-white/[0.02] rounded-lg p-3">
+                {location.description}
+              </p>
+            </div>
+          )}
 
-        {/* Child locations */}
-        {children.length > 0 && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Contains ({children.length})
-            </h4>
-            <div className="space-y-1">
-              {children.map(child => {
-                const ChildIcon = LOCATION_TYPE_ICONS[child.location_type] || Compass
-                const childColor = LOCATION_TYPE_COLORS[child.location_type] || '#6B7280'
-                return (
+          {/* Child locations */}
+          {children.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Contains ({children.length})
+              </h4>
+              <div className="grid grid-cols-2 gap-2">
+                {children.map(child => {
+                  const ChildIcon = LOCATION_TYPE_ICONS[child.location_type] || Compass
+                  const childColor = LOCATION_TYPE_COLORS[child.location_type] || '#6B7280'
+                  return (
+                    <div
+                      key={child.id}
+                      className="flex items-center gap-2 p-2 bg-white/[0.02] rounded-lg"
+                    >
+                      <ChildIcon className="w-4 h-4" style={{ color: childColor }} />
+                      <span className="text-sm text-gray-300 truncate">{child.name}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Tags */}
+          {location.tags && location.tags.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Tags
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {location.tags.map((tag, idx) => (
+                  <span
+                    key={idx}
+                    className="px-3 py-1 text-sm rounded-full bg-white/5 text-gray-300"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Notes */}
+          {location.notes && (
+            <div>
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Notes
+              </h4>
+              <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-wrap bg-white/[0.02] rounded-lg p-3">
+                {location.notes}
+              </p>
+            </div>
+          )}
+
+          {/* Quests at this location */}
+          {questsAtLocation.length > 0 && (
+            <div className="bg-purple-500/10 rounded-lg p-4">
+              <h4 className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                <Target className="w-4 h-4" />
+                Quests Here ({questsAtLocation.length})
+              </h4>
+              <div className="space-y-2">
+                {questsAtLocation.map(quest => (
                   <div
-                    key={child.id}
+                    key={quest.id}
                     className="flex items-center gap-2 p-2 bg-white/[0.02] rounded-lg"
                   >
-                    <ChildIcon className="w-4 h-4" style={{ color: childColor }} />
-                    <span className="text-sm text-gray-300">{child.name}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm text-gray-300 truncate block">{quest.name}</span>
+                      <span className="text-xs text-gray-500">
+                        {quest.quest_giver_location_id === location.id && quest.objective_location_id === location.id
+                          ? 'Quest giver & Objective'
+                          : quest.quest_giver_location_id === location.id
+                          ? 'Quest giver here'
+                          : 'Objective here'}
+                      </span>
+                    </div>
+                    <Badge size="sm" color={quest.status === 'active' ? '#8B5CF6' : '#6B7280'}>
+                      {quest.status}
+                    </Badge>
                   </div>
-                )
-              })}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Tags */}
-        {location.tags && location.tags.length > 0 && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Tags
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {location.tags.map((tag, idx) => (
-                <span
-                  key={idx}
-                  className="px-3 py-1 text-sm rounded-full bg-white/5 text-gray-300 border border-white/10"
-                >
-                  {tag}
-                </span>
-              ))}
+          {/* Secrets - DM only section */}
+          {location.secrets && (
+            <div className="bg-red-500/10 rounded-lg p-4">
+              <h4 className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                <Skull className="w-4 h-4" />
+                Secrets (DM Only)
+              </h4>
+              <p className="text-sm text-red-300/80 leading-relaxed whitespace-pre-wrap">
+                {location.secrets}
+              </p>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Notes */}
-        {location.notes && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Notes
-            </h4>
-            <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-wrap">
-              {location.notes}
-            </p>
-          </div>
-        )}
-
-        {/* Quests at this location */}
-        {questsAtLocation.length > 0 && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Quests Here ({questsAtLocation.length})
-            </h4>
-            <div className="space-y-2">
-              {questsAtLocation.map(quest => (
-                <div
-                  key={quest.id}
-                  className="flex items-center gap-2 p-2 bg-purple-500/5 border border-purple-500/20 rounded-lg"
-                >
-                  <Target className="w-4 h-4 text-purple-400" />
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm text-gray-300 truncate block">{quest.name}</span>
-                    <span className="text-xs text-gray-500">
-                      {quest.quest_giver_location_id === location.id && quest.objective_location_id === location.id
-                        ? 'Quest giver & Objective'
-                        : quest.quest_giver_location_id === location.id
-                        ? 'Quest giver here'
-                        : 'Objective here'}
-                    </span>
-                  </div>
-                  <Badge size="sm" color={quest.status === 'active' ? '#8B5CF6' : '#6B7280'}>
-                    {quest.status}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Secrets - DM only section */}
-        {location.secrets && (
-          <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-xl">
-            <h4 className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-              <Skull className="w-4 h-4" />
-              Secrets (DM Only)
-            </h4>
-            <p className="text-sm text-red-300/80 leading-relaxed whitespace-pre-wrap">
-              {location.secrets}
-            </p>
+        {/* Footer actions */}
+        {canEdit && (
+          <div className="px-6 py-4 border-t border-white/[0.05] flex justify-between">
+            <Button
+              variant="ghost"
+              onClick={onDelete}
+              className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete
+            </Button>
+            <Button onClick={onEdit}>
+              <Edit3 className="w-4 h-4 mr-2" />
+              Edit Location
+            </Button>
           </div>
         )}
       </div>
@@ -1050,14 +1053,9 @@ export default function LocationsPage() {
         )}
       />
 
-      <div className="flex h-[calc(100vh-56px)]">
-        {/* Main content */}
-        <div className={cn(
-          'flex-1 overflow-hidden flex flex-col',
-          selectedLocation ? 'hidden md:flex' : ''
-        )}>
-          {/* Toolbar */}
-          <div className="p-4 border-b border-[--border] space-y-4">
+      <div className="flex flex-col h-[calc(100vh-56px)]">
+        {/* Toolbar */}
+        <div className="flex-shrink-0 p-4 border-b border-[--border] space-y-4">
             <GuidanceTip
               tipId="locations_intro"
               title="Track Your World"
@@ -1068,14 +1066,14 @@ export default function LocationsPage() {
 
             <div className="flex flex-col sm:flex-row gap-3">
               {/* Search */}
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Search locations..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="form-input pl-10 w-full"
+                  className="form-input pl-11 w-full"
                 />
               </div>
 
@@ -1094,31 +1092,35 @@ export default function LocationsPage() {
               </select>
 
               {/* View toggle */}
-              <div className="flex rounded-lg border border-[--border] overflow-hidden">
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-2 text-sm transition-colors',
-                    viewMode === 'list'
-                      ? 'bg-[--arcane-purple]/20 text-[--arcane-purple]'
-                      : 'text-gray-400 hover:bg-white/5'
-                  )}
-                >
-                  <List className="w-4 h-4" />
-                  List
-                </button>
-                <button
-                  onClick={() => setViewMode('tree')}
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-2 text-sm transition-colors border-l border-[--border]',
-                    viewMode === 'tree'
-                      ? 'bg-[--arcane-purple]/20 text-[--arcane-purple]'
-                      : 'text-gray-400 hover:bg-white/5'
-                  )}
-                >
-                  <GitBranch className="w-4 h-4" />
-                  Tree
-                </button>
+              <div className="flex rounded-lg border border-[--border] overflow-hidden flex-shrink-0">
+                <Tooltip content="Card list view">
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={cn(
+                      'flex items-center gap-2 px-4 py-2 text-sm transition-colors whitespace-nowrap',
+                      viewMode === 'list'
+                        ? 'bg-[--arcane-purple]/20 text-[--arcane-purple]'
+                        : 'text-gray-400 hover:bg-white/5'
+                    )}
+                  >
+                    <List className="w-4 h-4" />
+                    <span className="hidden sm:inline">List</span>
+                  </button>
+                </Tooltip>
+                <Tooltip content="Hierarchical tree view">
+                  <button
+                    onClick={() => setViewMode('tree')}
+                    className={cn(
+                      'flex items-center gap-2 px-4 py-2 text-sm transition-colors border-l border-[--border] whitespace-nowrap',
+                      viewMode === 'tree'
+                        ? 'bg-[--arcane-purple]/20 text-[--arcane-purple]'
+                        : 'text-gray-400 hover:bg-white/5'
+                    )}
+                  >
+                    <GitBranch className="w-4 h-4" />
+                    <span className="hidden sm:inline">Tree</span>
+                  </button>
+                </Tooltip>
               </div>
             </div>
           </div>
@@ -1189,24 +1191,22 @@ export default function LocationsPage() {
           </div>
         </div>
 
-        {/* Detail panel */}
-        {selectedLocation && (
-          <div className="w-full md:w-96 flex-shrink-0">
-            <LocationDetailPanel
-              location={selectedLocation}
-              locations={locations}
-              quests={quests}
-              onClose={() => setSelectedLocation(null)}
-              onEdit={() => {
-                setEditingLocation(selectedLocation)
-                setShowAddModal(true)
-              }}
-              onDelete={() => setShowDeleteModal(true)}
-              canEdit={isDm || isOwner}
-            />
-          </div>
-        )}
-      </div>
+      {/* Location View Modal */}
+      {selectedLocation && (
+        <LocationViewModal
+          location={selectedLocation}
+          locations={locations}
+          quests={quests}
+          onClose={() => setSelectedLocation(null)}
+          onEdit={() => {
+            setEditingLocation(selectedLocation)
+            setShowAddModal(true)
+            setSelectedLocation(null)
+          }}
+          onDelete={() => setShowDeleteModal(true)}
+          canEdit={isDm || isOwner}
+        />
+      )}
 
       <BackToTopButton />
 

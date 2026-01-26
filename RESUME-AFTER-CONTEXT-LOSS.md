@@ -27,12 +27,13 @@
 Features built:
 - **List view** - Cards with type badges, parent location, tags, status indicators
 - **Tree view** - Hierarchical with expand/collapse, connecting lines
-- **Detail panel** - Slide-out with full info, edit/delete buttons
+- **Detail modal** - Trello-style modal overlay (NOT sidebar), click-outside-to-close
 - **Add/Edit modal** - Name, type, parent, description, tags, notes, secrets
 - **Filtering** - Search + type filter dropdown
-- **View toggle** - List/Tree switch
+- **View toggle** - List/Tree switch with responsive text hiding
 - **Secrets section** - Red styling, "DM Only" label
 - **Status indicators** - Visited (green), Hidden (amber), Has Secrets (red)
+- **Quests integration** - "Quests Here" section shows quests at this location
 
 Location types: Region, City, Town, Village, Building, Tavern, Temple, Dungeon, Wilderness, Landmark, Camp, Other
 
@@ -126,13 +127,17 @@ CONSTRAINT: exactly one must be set
 | **Roll Random** | Button to pick random Available quest | ✅ DONE |
 | **Share Page** | `/share/[code]/quests` for player visibility | TODO |
 
-### Quests Page Features
-- **List view**: Quest cards with status badge, type, quest giver, objectives preview
-- **Board view**: Kanban columns (Available | Active | Done)
-- **Detail panel**: Full info, objectives checklist, quest giver, location, rewards, secrets
-- **Add/Edit modal**: All fields, NPC dropdown for quest giver, location dropdown
-- **Roll Random button**: Pick random quest from Available pool
-- **Simple objectives**: Checklist style (no status-per-objective complexity)
+### Quests Page Features (COMPLETE)
+**Full page at:** `src/app/(dashboard)/campaigns/[id]/quests/page.tsx`
+
+Features built:
+- **List view** - Quest cards with status badge, type, quest giver, objectives preview
+- **Board view** - Trello-style Kanban with drag-and-drop between columns (Available | Active | Completed)
+- **Detail modal** - Trello-style modal overlay (NOT sidebar), click-outside-to-close
+- **Add/Edit modal** - Progressive disclosure with expandable sections, NPC dropdown, location dropdown
+- **Roll Random button** - Pick random quest from Available pool
+- **Simple objectives** - Checklist style (no status-per-objective complexity)
+- **Drag and drop** - Uses `@hello-pangea/dnd` for smooth column transitions
 
 ### Rolling Feature
 - **"Roll Random" button** on Quests page
@@ -164,6 +169,126 @@ CONSTRAINT: exactly one must be set
 4. **All modules available to all content types** - just different defaults
 5. **Wife's campaigns are SAFE** - existing data untouched
 6. **Use unified pattern** - `useContent()`, `useContentQuery()`, `useContentPermissions()`
+
+## UI/UX Styling Guidelines (MANDATORY)
+
+**STOP! READ THIS BEFORE BUILDING ANY NEW UI COMPONENTS.**
+
+These patterns have been established after multiple iterations. Follow them EXACTLY.
+
+### Cards - NO HARSH WHITE BORDERS
+
+**WRONG** (causes ugly white outlines):
+```tsx
+<div className="border border-white/[0.06] bg-[#1a1a24] rounded-xl">
+```
+
+**CORRECT** (soft, subtle styling):
+```tsx
+// Normal state - NO border, just subtle background
+<div className="bg-white/[0.03] hover:bg-white/[0.05] rounded-xl">
+
+// Selected state - use ring-1, NOT border
+<div className={cn(
+  'rounded-xl transition-all',
+  isSelected
+    ? 'bg-[--arcane-purple]/15 ring-1 ring-[--arcane-purple]/40 shadow-lg shadow-purple-500/10'
+    : 'bg-white/[0.03] hover:bg-white/[0.05]'
+)}>
+```
+
+### Search Inputs - Prevent Icon Overlap
+
+**WRONG** (icon overlaps placeholder text):
+```tsx
+<Search className="absolute left-3 ..." />
+<input className="form-input pl-10" />
+```
+
+**CORRECT** (proper spacing):
+```tsx
+<div className="relative">
+  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+  <input className="form-input pl-11 w-full" placeholder="Search..." />
+</div>
+```
+
+### View Toggles - Prevent Text Cutoff
+
+**WRONG** (text gets cut off on narrow screens):
+```tsx
+<button className="px-3 py-2">
+  <Icon className="w-4 h-4" />
+  List
+</button>
+```
+
+**CORRECT** (responsive with proper sizing):
+```tsx
+<div className="flex rounded-lg border border-[--border] overflow-hidden flex-shrink-0">
+  <Tooltip content="Card list view">
+    <button className={cn(
+      'flex items-center gap-2 px-4 py-2 text-sm transition-colors whitespace-nowrap flex-shrink-0',
+      isActive ? 'bg-[--arcane-purple]/20 text-[--arcane-purple]' : 'text-gray-400 hover:bg-white/5'
+    )}>
+      <Icon className="w-4 h-4" />
+      <span className="hidden sm:inline">List</span>
+    </button>
+  </Tooltip>
+</div>
+```
+
+### Detail Views - Modal, NOT Sidebar
+
+**WRONG** (old sidebar pattern):
+```tsx
+<div className="flex">
+  <div className="flex-1">Content</div>
+  {selected && <DetailPanel className="w-96" />}  // Sidebar
+</div>
+```
+
+**CORRECT** (Trello-style modal overlay):
+```tsx
+<div className="flex-1">Content</div>
+
+{selected && (
+  <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 pb-12 px-4 overflow-y-auto" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/70" />
+    <div className="relative w-full max-w-2xl bg-[#1a1a24] rounded-xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      {/* Color bar at top */}
+      <div className="h-2 rounded-t-xl" style={{ backgroundColor: color }} />
+      {/* Content */}
+    </div>
+  </div>
+)}
+```
+
+### Drag and Drop (for Board Views)
+
+Use `@hello-pangea/dnd` (maintained fork of react-beautiful-dnd):
+```tsx
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
+
+<DragDropContext onDragEnd={handleDragEnd}>
+  <Droppable droppableId={status}>
+    {(provided) => (
+      <div ref={provided.innerRef} {...provided.droppableProps}>
+        {items.map((item, index) => (
+          <Draggable key={item.id} draggableId={item.id} index={index}>
+            {(provided, snapshot) => (
+              <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                <Card isDragging={snapshot.isDragging} />
+              </div>
+            )}
+          </Draggable>
+        ))}
+        {provided.placeholder}
+      </div>
+    )}
+  </Droppable>
+</DragDropContext>
+```
 
 ## Key Files Reference
 
