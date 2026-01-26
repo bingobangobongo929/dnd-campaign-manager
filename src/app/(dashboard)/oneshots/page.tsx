@@ -838,12 +838,80 @@ export default function OneshotsPage() {
         {/* All Tab - Overview */}
         {activeTab === 'all' && (
           <div className="space-y-8">
+            {/* Hero One-Shot */}
+            {heroOneshot && (
+              <section className="group relative">
+                <Link
+                  href={`/oneshots/${heroOneshot.id}`}
+                  className="relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-green-500/30 transition-all duration-500"
+                >
+                  <div className="relative h-[300px] md:h-[380px] overflow-hidden">
+                    {heroOneshot.image_url ? (
+                      <>
+                        <Image
+                          src={heroOneshot.image_url}
+                          alt={heroOneshot.title}
+                          fill
+                          className="object-cover transition-transform duration-700 group-hover:scale-105"
+                          priority
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-green-900/30 via-gray-900 to-gray-950 flex items-center justify-center">
+                        <Scroll className="w-32 h-32 text-green-400/20" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <ContentBadge
+                          variant={getOneshotBadge(heroOneshot, user?.id || '').primary}
+                          size="lg"
+                          progress={getOneshotBadge(heroOneshot, user?.id || '').progress}
+                        />
+                        <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300">
+                          {heroOneshot.game_system}
+                        </span>
+                      </div>
+                      <h2 className="text-2xl md:text-4xl font-display font-bold text-white mb-2 group-hover:text-green-400 transition-colors">
+                        {heroOneshot.title}
+                      </h2>
+                      {heroOneshot.tagline && (
+                        <p className="text-gray-300 text-sm md:text-base max-w-2xl line-clamp-2 mb-3 italic">
+                          "{heroOneshot.tagline}"
+                        </p>
+                      )}
+                      <div className="flex items-center gap-4 text-sm text-gray-400 mb-3">
+                        <span className="flex items-center gap-1.5">
+                          <Users className="w-4 h-4" />
+                          {heroOneshot.player_count_min}-{heroOneshot.player_count_max} players
+                        </span>
+                        {heroOneshot.estimated_duration && (
+                          <span className="flex items-center gap-1.5">
+                            <Clock className="w-4 h-4" />
+                            {heroOneshot.estimated_duration}
+                          </span>
+                        )}
+                        <span className="text-green-400">Level {heroOneshot.level || '?'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-green-400 font-medium">
+                        <Play className="w-5 h-5" />
+                        <span>Open One-Shot</span>
+                        <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              </section>
+            )}
+
             {/* Active One-Shots */}
             {activeOneshots.length > 0 && (
               <section>
                 <h3 className="text-lg font-semibold text-white mb-4">Active One-Shots</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                  {activeOneshots.slice(0, 5).map((oneshot) => {
+                  {activeOneshots.map((oneshot) => {
                     const badge = getOneshotBadge(oneshot, user?.id || '')
                     return (
                       <Link

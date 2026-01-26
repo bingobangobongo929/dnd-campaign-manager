@@ -245,6 +245,15 @@ export default function VaultPage() {
     discover: 0, // Coming soon
   }), [activeCharacters, inPlayCharacters, savedCharacters, templateSnapshots])
 
+  // Hero character for the "all" tab - most recently updated character
+  const heroCharacter = useMemo(() => {
+    const allChars = [...activeCharacters, ...inPlayCharacters]
+    if (allChars.length === 0) return null
+    return allChars.sort((a, b) =>
+      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    )[0]
+  }, [activeCharacters, inPlayCharacters])
+
   // Tab config for customize modal
   const VAULT_TAB_CONFIG: ModalTabConfig<VaultPageTabId>[] = [
     { id: 'all', label: 'All', icon: <User className="w-4 h-4" />, color: 'text-gray-400' },
@@ -837,6 +846,70 @@ export default function VaultPage() {
         {/* All Tab - Overview */}
         {activeTab === 'all' && (
           <div className="space-y-8">
+            {/* Hero Character */}
+            {heroCharacter && (
+              <section className="group relative">
+                <button
+                  onClick={() => router.push(`/vault/${heroCharacter.id}`)}
+                  className="w-full relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-purple-500/30 transition-all duration-500 text-left"
+                >
+                  <div className="relative h-[300px] md:h-[380px] overflow-hidden">
+                    {heroCharacter.image_url ? (
+                      <>
+                        <Image
+                          src={heroCharacter.image_url}
+                          alt={heroCharacter.name}
+                          fill
+                          className="object-cover transition-transform duration-700 group-hover:scale-105"
+                          priority
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-gray-900 to-gray-950 flex items-center justify-center">
+                        <User className="w-32 h-32 text-purple-400/20" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${
+                          heroCharacter.linked_campaign_id
+                            ? 'bg-green-500/20 text-green-300 border-green-500/30'
+                            : 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                        }`}>
+                          {heroCharacter.linked_campaign_id ? 'In Play' : 'My Character'}
+                        </span>
+                        {heroCharacter.type && (
+                          <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300 uppercase">
+                            {heroCharacter.type}
+                          </span>
+                        )}
+                      </div>
+                      <h2 className="text-2xl md:text-4xl font-display font-bold text-white mb-2 group-hover:text-purple-400 transition-colors">
+                        {heroCharacter.name}
+                      </h2>
+                      {(heroCharacter.race || heroCharacter.class) && (
+                        <p className="text-gray-300 text-sm md:text-base max-w-2xl mb-3">
+                          {[heroCharacter.race, heroCharacter.class].filter(Boolean).join(' • ')}
+                        </p>
+                      )}
+                      {heroCharacter.summary && (
+                        <p className="text-gray-400 text-sm max-w-2xl line-clamp-2 mb-3">
+                          {heroCharacter.summary}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 text-purple-400 font-medium">
+                        <Play className="w-5 h-5" />
+                        <span>View Character</span>
+                        <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              </section>
+            )}
+
             {/* My Characters Section */}
             {activeCharacters.length > 0 && (
               <section>
