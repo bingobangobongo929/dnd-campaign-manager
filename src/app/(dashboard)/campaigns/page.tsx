@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -16,19 +16,34 @@ import {
   Sparkles,
   RotateCcw,
   Bookmark,
+  Settings,
+  Users,
+  Crown,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
-import { Modal, Input, Textarea, Dropdown, UnifiedImageModal, ContentBadge } from '@/components/ui'
+import { Modal, Input, Textarea, Dropdown, UnifiedImageModal, ContentBadge, PageCustomizeModal } from '@/components/ui'
+import type { TabConfig as ModalTabConfig, PagePreferences } from '@/components/ui/PageCustomizeModal'
 import { getCampaignBadge } from '@/lib/content-badges'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { MobileLayout, MobileSectionHeader, MobileFAB } from '@/components/mobile'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { v4 as uuidv4 } from 'uuid'
-import type { Campaign, ContentSave } from '@/types/database'
+import type { Campaign, ContentSave, CampaignsPageTabId, CampaignsPagePreferences } from '@/types/database'
+import { DEFAULT_CAMPAIGNS_PAGE_PREFERENCES } from '@/types/database'
 import { CampaignsPageMobile } from './page.mobile'
 import { TemplateStateBadge } from '@/components/templates'
 import { TabNavigation, type ContentTab, CAMPAIGNS_TABS } from '@/components/navigation'
+
+// Tab configuration for customize modal
+const CAMPAIGNS_TAB_CONFIG: ModalTabConfig<CampaignsPageTabId>[] = [
+  { id: 'all', label: 'All', icon: <Swords className="w-4 h-4" />, color: 'text-gray-400' },
+  { id: 'playing', label: 'Playing In', icon: <Users className="w-4 h-4" />, color: 'text-purple-400' },
+  { id: 'running', label: 'Running', icon: <Crown className="w-4 h-4" />, color: 'text-blue-400' },
+  { id: 'my-work', label: 'My Work', icon: <Edit className="w-4 h-4" />, color: 'text-amber-400' },
+  { id: 'collection', label: 'Collection', icon: <Bookmark className="w-4 h-4" />, color: 'text-emerald-400' },
+  { id: 'discover', label: 'Discover', icon: <Sparkles className="w-4 h-4" />, color: 'text-purple-400', comingSoon: true },
+]
 
 // Helper to format role for display
 function formatRoleLabel(role: string): string {
@@ -84,9 +99,13 @@ export default function CampaignsPage() {
   const { user, loading: userLoading } = useUser()
   const isMobile = useIsMobile()
 
+  // Page preferences
+  const [preferences, setPreferences] = useState<CampaignsPagePreferences>(DEFAULT_CAMPAIGNS_PAGE_PREFERENCES)
+  const [customizeModalOpen, setCustomizeModalOpen] = useState(false)
+
   // Read initial tab/filter from URL params
-  const initialTab = (searchParams.get('tab') as ContentTab) || 'all'
-  const initialFilter = (searchParams.get('filter') as ContentTab) || 'running'
+  const initialTab = (searchParams.get('tab') as ContentTab) || preferences.default_tab || 'all'
+  const initialFilter = (searchParams.get('filter') as ContentTab) || 'drafts'
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [joinedCampaigns, setJoinedCampaigns] = useState<JoinedCampaign[]>([])
@@ -105,11 +124,44 @@ export default function CampaignsPage() {
   const [saving, setSaving] = useState(false)
   const [imageModalOpen, setImageModalOpen] = useState(false)
 
+  // Load preferences on mount
   useEffect(() => {
     if (user) {
+      loadPreferences()
       loadData()
     }
   }, [user])
+
+  const loadPreferences = async () => {
+    const { data } = await supabase
+      .from('user_settings')
+      .select('campaigns_page_preferences')
+      .eq('user_id', user!.id)
+      .single()
+
+    if (data?.campaigns_page_preferences) {
+      setPreferences(data.campaigns_page_preferences as CampaignsPagePreferences)
+      // Update active tab to default if not set from URL
+      if (!searchParams.get('tab')) {
+        setActiveTab((data.campaigns_page_preferences as CampaignsPagePreferences).default_tab || 'all')
+      }
+    }
+  }
+
+  const savePreferences = async (newPrefs: PagePreferences<CampaignsPageTabId>) => {
+    const prefs = newPrefs as CampaignsPagePreferences
+    setPreferences(prefs)
+
+    await supabase
+      .from('user_settings')
+      .upsert({
+        user_id: user!.id,
+        campaigns_page_preferences: prefs,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id'
+      })
+  }
 
   const loadData = async () => {
     // Load user's campaigns (excluding adventures which have duration_type = 'adventure')
@@ -174,10 +226,8 @@ export default function CampaignsPage() {
   // Get what campaigns to show based on tab + sub-filter
   const getFilteredCampaigns = () => {
     if (activeTab === 'all') return activeCampaigns
-    if (activeTab === 'active') {
-      if (subFilter === 'running') return activeCampaigns
-      if (subFilter === 'playing') return [] // Joined campaigns handled separately
-    }
+    if (activeTab === 'running') return activeCampaigns
+    if (activeTab === 'playing') return [] // Joined campaigns handled separately
     if (activeTab === 'my-work') {
       if (subFilter === 'drafts') return inactiveCampaigns
       // Templates handled via templateSnapshots
@@ -187,28 +237,55 @@ export default function CampaignsPage() {
 
   const filteredCampaigns = getFilteredCampaigns()
 
-  // Build tabs with counts
-  const tabsWithCounts = CAMPAIGNS_TABS.map(tab => {
-    let count: number | undefined
-    if (tab.value === 'all') count = campaigns.length
-    else if (tab.value === 'active') count = activeCampaigns.length + joinedCampaigns.length
-    else if (tab.value === 'my-work') count = inactiveCampaigns.length + uniqueTemplateContentIds.size
-    else if (tab.value === 'collection') count = savedCampaigns.length
-    else if (tab.value === 'discover') count = undefined // Coming soon
+  // Tab counts
+  const tabCounts: Record<CampaignsPageTabId, number> = {
+    all: campaigns.length + joinedCampaigns.length,
+    playing: joinedCampaigns.length,
+    running: activeCampaigns.length,
+    'my-work': inactiveCampaigns.length + uniqueTemplateContentIds.size,
+    collection: savedCampaigns.length,
+    discover: 0,
+  }
 
-    // Update sub-filter counts
-    const subFilters = tab.subFilters?.map(sf => {
-      let sfCount: number | undefined
-      if (sf.value === 'running') sfCount = activeCampaigns.length
-      else if (sf.value === 'playing') sfCount = joinedCampaigns.length
-      else if (sf.value === 'drafts') sfCount = inactiveCampaigns.length
-      else if (sf.value === 'my-templates') sfCount = privateSnapshots.length
-      else if (sf.value === 'published') sfCount = publishedSnapshots.length
-      return { ...sf, count: sfCount }
-    })
+  // Build tabs with counts - filtered by preferences
+  const tabsWithCounts = useMemo(() => {
+    // Get ordered tabs based on preferences
+    const orderedTabIds = preferences.auto_order
+      ? [...(preferences.tab_order || CAMPAIGNS_TABS.map(t => t.value as CampaignsPageTabId))]
+          .sort((a, b) => {
+            const tabA = CAMPAIGNS_TABS.find(t => t.value === a)
+            const tabB = CAMPAIGNS_TABS.find(t => t.value === b)
+            // Coming soon always last
+            if (tabA?.comingSoon && !tabB?.comingSoon) return 1
+            if (!tabA?.comingSoon && tabB?.comingSoon) return -1
+            // Sort by count descending
+            const countA = tabCounts[a] || 0
+            const countB = tabCounts[b] || 0
+            if (countA === 0 && countB > 0) return 1
+            if (countA > 0 && countB === 0) return -1
+            return countB - countA
+          })
+      : preferences.tab_order || CAMPAIGNS_TABS.map(t => t.value as CampaignsPageTabId)
 
-    return { ...tab, count, subFilters }
-  })
+    return orderedTabIds
+      .filter(id => !preferences.hidden_tabs.includes(id))
+      .map(id => {
+        const tab = CAMPAIGNS_TABS.find(t => t.value === id)
+        if (!tab) return null
+
+        // Update sub-filter counts
+        const subFilters = tab.subFilters?.map(sf => {
+          let sfCount: number | undefined
+          if (sf.value === 'drafts') sfCount = inactiveCampaigns.length
+          else if (sf.value === 'my-templates') sfCount = privateSnapshots.length
+          else if (sf.value === 'published') sfCount = publishedSnapshots.length
+          return { ...sf, count: sfCount }
+        })
+
+        return { ...tab, count: tabCounts[id as CampaignsPageTabId], subFilters }
+      })
+      .filter(Boolean) as typeof CAMPAIGNS_TABS
+  }, [preferences, tabCounts, inactiveCampaigns.length, privateSnapshots.length, publishedSnapshots.length])
 
   const handleReactivate = async (campaignId: string) => {
     const response = await fetch('/api/content/reactivate', {
@@ -299,8 +376,18 @@ export default function CampaignsPage() {
     )
   }
 
-  // Show featured campaign on both 'all' and 'active' tabs
-  const featuredCampaign = (activeTab === 'all' || activeTab === 'active') ? activeCampaigns[0] : null
+  // Get hero campaign based on active tab
+  const getHeroCampaign = () => {
+    if (activeTab === 'all' || activeTab === 'running') {
+      return activeCampaigns[0] || null
+    }
+    if (activeTab === 'playing') {
+      return joinedCampaigns[0]?.campaign || null
+    }
+    return null
+  }
+  const heroCampaign = getHeroCampaign()
+  const heroMembership = activeTab === 'playing' ? joinedCampaigns[0]?.membership : null
 
   // ============ MOBILE LAYOUT ============
   if (isMobile) {
@@ -311,7 +398,7 @@ export default function CampaignsPage() {
         inactiveCampaigns={inactiveCampaigns}
         savedCampaigns={savedCampaigns}
         templateSnapshots={templateSnapshots}
-        featuredCampaign={featuredCampaign}
+        heroCampaign={heroCampaign}
         editingCampaign={editingCampaign}
         setEditingCampaign={setEditingCampaign}
         formData={formData}
@@ -339,13 +426,22 @@ export default function CampaignsPage() {
             <h1 className="text-3xl font-display font-bold text-white">Your Campaigns</h1>
             <p className="text-gray-400 mt-1">Epic adventures await</p>
           </div>
-          <Link
-            href="/campaigns/new"
-            className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-xl transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            New Campaign
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setCustomizeModalOpen(true)}
+              className="p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/[0.1] text-gray-400 hover:text-white transition-all"
+              title="Customize page"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+            <Link
+              href="/campaigns/new"
+              className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-xl transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              New Campaign
+            </Link>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -361,18 +457,18 @@ export default function CampaignsPage() {
         {activeTab === 'all' && (
           <div className="space-y-10">
             {/* Featured Campaign Hero */}
-            {featuredCampaign && (
+            {heroCampaign && (
               <section className="group relative">
                 <Link
-                  href={`/campaigns/${featuredCampaign.id}/dashboard`}
+                  href={`/campaigns/${heroCampaign.id}/dashboard`}
                   className="relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-purple-500/30 transition-all duration-500"
                 >
                   <div className="relative h-[300px] md:h-[380px] overflow-hidden">
-                    {featuredCampaign.image_url ? (
+                    {heroCampaign.image_url ? (
                       <>
                         <Image
-                          src={featuredCampaign.image_url}
-                          alt={featuredCampaign.name}
+                          src={heroCampaign.image_url}
+                          alt={heroCampaign.name}
                           fill
                           className="object-cover transition-transform duration-700 group-hover:scale-105"
                           priority
@@ -388,20 +484,20 @@ export default function CampaignsPage() {
                     <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-10">
                       <div className="flex items-center gap-2 mb-3">
                         <ContentBadge
-                          variant={getCampaignBadge(featuredCampaign, user?.id || '').primary}
+                          variant={getCampaignBadge(heroCampaign, user?.id || '').primary}
                           size="lg"
-                          progress={getCampaignBadge(featuredCampaign, user?.id || '').progress}
+                          progress={getCampaignBadge(heroCampaign, user?.id || '').progress}
                         />
                         <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300">
-                          {featuredCampaign.game_system}
+                          {heroCampaign.game_system}
                         </span>
                       </div>
                       <h2 className="text-2xl md:text-4xl font-display font-bold text-white mb-2 group-hover:text-purple-400 transition-colors">
-                        {featuredCampaign.name}
+                        {heroCampaign.name}
                       </h2>
-                      {featuredCampaign.description && (
+                      {heroCampaign.description && (
                         <p className="text-gray-300 text-sm md:text-base max-w-2xl line-clamp-2 mb-3">
-                          {featuredCampaign.description}
+                          {heroCampaign.description}
                         </p>
                       )}
                       <div className="flex items-center gap-2 text-purple-400 font-medium">
@@ -429,7 +525,7 @@ export default function CampaignsPage() {
                     </span>
                   </div>
                   <button
-                    onClick={() => { setActiveTab('active'); setSubFilter('running'); }}
+                    onClick={() => setActiveTab('running')}
                     className="text-sm text-purple-400 hover:text-purple-300"
                   >
                     View all →
@@ -531,7 +627,7 @@ export default function CampaignsPage() {
                     </span>
                   </div>
                   <button
-                    onClick={() => { setActiveTab('my-work'); setSubFilter('drafts'); }}
+                    onClick={() => setActiveTab('my-work')}
                     className="text-sm text-purple-400 hover:text-purple-300"
                   >
                     View all →
@@ -715,74 +811,141 @@ export default function CampaignsPage() {
           </div>
         )}
 
-        {/* Active - Playing (Joined Campaigns) */}
-        {activeTab === 'active' && subFilter === 'playing' && (
+        {/* Playing In Tab (Joined Campaigns) */}
+        {activeTab === 'playing' && (
           <div className="space-y-6">
-            {joinedCampaigns.length === 0 ? (
-              <div className="text-center py-16 bg-white/[0.02] border border-white/[0.06] rounded-xl">
-                <Swords className="w-12 h-12 mx-auto mb-4 text-purple-400/50" />
-                <h3 className="text-lg font-medium text-white mb-2">No campaigns joined yet</h3>
-                <p className="text-gray-400 max-w-sm mx-auto">
-                  When you're invited to join a campaign, it will appear here.
-                </p>
-              </div>
-            ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {joinedCampaigns.map(({ membership, campaign }) => (
-                  <Link
-                    key={membership.id}
-                    href={`/campaigns/${campaign.id}/dashboard`}
-                    className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/40 transition-all"
-                  >
-                    <div className="relative h-48 overflow-hidden">
-                      {campaign.image_url ? (
-                        <>
-                          <Image
-                            src={campaign.image_url}
-                            alt={campaign.name}
-                            fill
-                            className="object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
-                        </>
-                      ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
-                          <Swords className="w-16 h-16 text-purple-400/30" />
-                        </div>
-                      )}
-                      <div className="absolute top-3 left-3 flex gap-2">
-                        <span className={`px-2.5 py-1 text-xs font-semibold rounded-lg border ${
-                          membership.status === 'pending'
+            {/* Hero for most recent joined campaign */}
+            {heroCampaign && heroMembership && (
+              <section className="group relative">
+                <Link
+                  href={`/campaigns/${heroCampaign.id}/dashboard`}
+                  className="relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-purple-500/30 transition-all duration-500"
+                >
+                  <div className="relative h-[300px] md:h-[380px] overflow-hidden">
+                    {heroCampaign.image_url ? (
+                      <>
+                        <Image
+                          src={heroCampaign.image_url}
+                          alt={heroCampaign.name}
+                          fill
+                          className="object-cover transition-transform duration-700 group-hover:scale-105"
+                          priority
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-gray-900 to-gray-950 flex items-center justify-center">
+                        <Swords className="w-32 h-32 text-purple-400/20" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <ContentBadge variant="playing" size="lg" />
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${
+                          heroMembership.status === 'pending'
                             ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
                             : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                         }`}>
-                          {membership.status === 'pending' ? 'Pending Invite' : formatRoleLabel(membership.role)}
+                          {heroMembership.status === 'pending' ? 'Pending Invite' : formatRoleLabel(heroMembership.role)}
+                        </span>
+                        <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300">
+                          {heroCampaign.game_system}
                         </span>
                       </div>
-                      <div className="absolute top-3 right-3">
-                        <span className="px-2.5 py-1 text-xs font-medium rounded-lg bg-black/60 backdrop-blur-sm text-gray-300">
-                          {campaign.game_system}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="p-5">
-                      <h4 className="font-display font-semibold text-lg text-white truncate group-hover:text-purple-400 transition-colors">
-                        {campaign.name}
-                      </h4>
-                      {campaign.description && (
-                        <p className="text-sm text-gray-400 mt-2 line-clamp-2">
-                          {campaign.description}
+                      <h2 className="text-2xl md:text-4xl font-display font-bold text-white mb-2 group-hover:text-purple-400 transition-colors">
+                        {heroCampaign.name}
+                      </h2>
+                      {heroCampaign.description && (
+                        <p className="text-gray-300 text-sm md:text-base max-w-2xl line-clamp-2 mb-3">
+                          {heroCampaign.description}
                         </p>
                       )}
-                      <p className="text-xs text-gray-500 mt-3">
-                        {membership.joined_at
-                          ? `Joined ${formatDate(membership.joined_at)}`
-                          : `Invited ${formatDate(membership.invited_at!)}`}
-                      </p>
+                      <div className="flex items-center gap-2 text-purple-400 font-medium">
+                        <Play className="w-5 h-5" />
+                        <span>Enter Campaign</span>
+                        <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      </div>
                     </div>
-                  </Link>
-                ))}
+                  </div>
+                </Link>
+              </section>
+            )}
+
+            {joinedCampaigns.length === 0 ? (
+              <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-purple-900/20 via-gray-900 to-gray-950 border border-white/[0.06] p-16 text-center">
+                <Users className="w-20 h-20 mx-auto mb-6 text-purple-400/50" />
+                <h2 className="text-2xl font-display font-bold text-white mb-3">
+                  Ready to Join an Adventure?
+                </h2>
+                <p className="text-gray-400 mb-4 max-w-md mx-auto">
+                  When a DM invites you to their campaign, it will appear here. You'll be able to track your character's journey, add session notes, and stay connected with your party.
+                </p>
+                <p className="text-sm text-gray-500">
+                  Share your Multiloop email with your DM so they can send you an invite.
+                </p>
               </div>
+            ) : joinedCampaigns.length > 1 && (
+              <section>
+                <h3 className="text-xl font-semibold text-white mb-6">All Campaigns</h3>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {joinedCampaigns.slice(1).map(({ membership, campaign }) => (
+                    <Link
+                      key={membership.id}
+                      href={`/campaigns/${campaign.id}/dashboard`}
+                      className="group relative rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/40 transition-all"
+                    >
+                      <div className="relative h-48 overflow-hidden">
+                        {campaign.image_url ? (
+                          <>
+                            <Image
+                              src={campaign.image_url}
+                              alt={campaign.name}
+                              fill
+                              className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
+                            <Swords className="w-16 h-16 text-purple-400/30" />
+                          </div>
+                        )}
+                        <div className="absolute top-3 left-3 flex gap-2">
+                          <ContentBadge variant="playing" size="sm" />
+                          <span className={`px-2.5 py-1 text-xs font-semibold rounded-lg border ${
+                            membership.status === 'pending'
+                              ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
+                              : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                          }`}>
+                            {membership.status === 'pending' ? 'Pending' : formatRoleLabel(membership.role)}
+                          </span>
+                        </div>
+                        <div className="absolute top-3 right-3">
+                          <span className="px-2.5 py-1 text-xs font-medium rounded-lg bg-black/60 backdrop-blur-sm text-gray-300">
+                            {campaign.game_system}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-5">
+                        <h4 className="font-display font-semibold text-lg text-white truncate group-hover:text-purple-400 transition-colors">
+                          {campaign.name}
+                        </h4>
+                        {campaign.description && (
+                          <p className="text-sm text-gray-400 mt-2 line-clamp-2">
+                            {campaign.description}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500 mt-3">
+                          {membership.joined_at
+                            ? `Joined ${formatDate(membership.joined_at)}`
+                            : `Invited ${formatDate(membership.invited_at!)}`}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
             )}
           </div>
         )}
@@ -924,41 +1087,41 @@ export default function CampaignsPage() {
           </div>
         )}
 
-        {/* Active - Running (My Campaigns) */}
-        {(activeTab === 'active' && subFilter === 'running') && (
-          filteredCampaigns.length === 0 ? (
+        {/* Running Tab (My Campaigns) */}
+        {activeTab === 'running' && (
+          activeCampaigns.length === 0 ? (
             /* Empty State */
-            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-purple-900/20 via-gray-900 to-gray-950 border border-white/[0.06] p-16 text-center">
-              <Sparkles className="w-20 h-20 mx-auto mb-6 text-purple-400/50" />
+            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-blue-900/20 via-gray-900 to-gray-950 border border-white/[0.06] p-16 text-center">
+              <Crown className="w-20 h-20 mx-auto mb-6 text-blue-400/50" />
               <h2 className="text-2xl font-display font-bold text-white mb-3">
-                Begin Your Adventure
+                Ready to Run a Campaign?
               </h2>
               <p className="text-gray-400 mb-8 max-w-md mx-auto">
-                Create your first campaign and start building an unforgettable story with your players.
+                Create your first campaign and start building an unforgettable story. Use our AI tools to save prep time and focus on what matters - the adventure.
               </p>
               <Link
                 href="/campaigns/new"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-xl transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl transition-colors"
               >
-                <Swords className="w-5 h-5" />
+                <Plus className="w-5 h-5" />
                 Create Your First Campaign
               </Link>
             </div>
           ) : (
             <>
             {/* Featured Campaign (Hero) */}
-            {featuredCampaign && (
+            {heroCampaign && (
               <section className="group relative">
                 <Link
-                  href={`/campaigns/${featuredCampaign.id}/dashboard`}
-                  className="relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-purple-500/30 transition-all duration-500"
+                  href={`/campaigns/${heroCampaign.id}/dashboard`}
+                  className="relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-blue-500/30 transition-all duration-500"
                 >
                   <div className="relative h-[350px] md:h-[450px] overflow-hidden">
-                    {featuredCampaign.image_url ? (
+                    {heroCampaign.image_url ? (
                       <>
                         <Image
-                          src={featuredCampaign.image_url}
-                          alt={featuredCampaign.name}
+                          src={heroCampaign.image_url}
+                          alt={heroCampaign.name}
                           fill
                           className="object-cover transition-transform duration-700 group-hover:scale-105"
                           priority
@@ -967,8 +1130,8 @@ export default function CampaignsPage() {
                         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
                       </>
                     ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-gray-900 to-gray-950 flex items-center justify-center">
-                        <Swords className="w-32 h-32 text-purple-400/20" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 via-gray-900 to-gray-950 flex items-center justify-center">
+                        <Swords className="w-32 h-32 text-blue-400/20" />
                       </div>
                     )}
 
@@ -976,26 +1139,26 @@ export default function CampaignsPage() {
                     <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-12">
                       <div className="flex items-center gap-2 mb-4">
                         <ContentBadge
-                          variant={getCampaignBadge(featuredCampaign, user?.id || '').primary}
+                          variant={getCampaignBadge(heroCampaign, user?.id || '').primary}
                           size="lg"
-                          progress={getCampaignBadge(featuredCampaign, user?.id || '').progress}
+                          progress={getCampaignBadge(heroCampaign, user?.id || '').progress}
                         />
                         <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300">
-                          {featuredCampaign.game_system}
+                          {heroCampaign.game_system}
                         </span>
                       </div>
 
-                      <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-3 group-hover:text-purple-400 transition-colors">
-                        {featuredCampaign.name}
+                      <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-3 group-hover:text-blue-400 transition-colors">
+                        {heroCampaign.name}
                       </h2>
 
-                      {featuredCampaign.description && (
+                      {heroCampaign.description && (
                         <p className="text-gray-300 text-base md:text-lg max-w-2xl line-clamp-2 mb-4">
-                          {featuredCampaign.description}
+                          {heroCampaign.description}
                         </p>
                       )}
 
-                      <div className="flex items-center gap-2 text-purple-400 font-medium">
+                      <div className="flex items-center gap-2 text-blue-400 font-medium">
                         <Play className="w-5 h-5" />
                         <span>Enter Campaign</span>
                         <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
@@ -1007,14 +1170,14 @@ export default function CampaignsPage() {
                 {/* Edit/Delete buttons - positioned outside the link */}
                 <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                   <button
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditModal(featuredCampaign) }}
-                    className="p-2.5 bg-black/70 backdrop-blur-sm rounded-lg hover:bg-purple-500 transition-colors"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditModal(heroCampaign) }}
+                    className="p-2.5 bg-black/70 backdrop-blur-sm rounded-lg hover:bg-blue-500 transition-colors"
                     title="Edit"
                   >
                     <Edit className="w-4 h-4 text-white" />
                   </button>
                   <button
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(featuredCampaign.id) }}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(heroCampaign.id) }}
                     className="p-2.5 bg-black/70 backdrop-blur-sm rounded-lg hover:bg-red-500 transition-colors"
                     title="Delete"
                   >
@@ -1024,18 +1187,18 @@ export default function CampaignsPage() {
               </section>
             )}
 
-            {/* Campaign Grid */}
-            {filteredCampaigns.length > 1 && (
+            {/* Campaign Grid - skip first campaign since it's shown as hero */}
+            {activeCampaigns.length > 1 && (
               <section>
                 <h3 className="text-xl font-semibold text-white mb-6">All Campaigns</h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredCampaigns.map((campaign) => {
+                  {activeCampaigns.slice(1).map((campaign) => {
                     const badge = getCampaignBadge(campaign, user?.id || '')
                     return (
                       <div key={campaign.id} className="group relative">
                         <Link
                           href={`/campaigns/${campaign.id}/dashboard`}
-                          className="relative block rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-purple-500/40 transition-all"
+                          className="relative block rounded-xl overflow-hidden bg-gray-900/50 border border-white/[0.06] hover:border-blue-500/40 transition-all"
                         >
                           {/* Large Image */}
                           <div className="relative h-48 sm:h-56 overflow-hidden">
@@ -1050,8 +1213,8 @@ export default function CampaignsPage() {
                                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
                               </>
                             ) : (
-                              <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-gray-900 flex items-center justify-center">
-                                <Swords className="w-16 h-16 text-purple-400/30" />
+                              <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 to-gray-900 flex items-center justify-center">
+                                <Swords className="w-16 h-16 text-blue-400/30" />
                               </div>
                             )}
 
@@ -1072,7 +1235,7 @@ export default function CampaignsPage() {
 
                           {/* Content */}
                           <div className="p-5">
-                            <h4 className="font-display font-semibold text-lg text-white truncate group-hover:text-purple-400 transition-colors">
+                            <h4 className="font-display font-semibold text-lg text-white truncate group-hover:text-blue-400 transition-colors">
                               {campaign.name}
                             </h4>
                             {campaign.description && (
@@ -1090,7 +1253,7 @@ export default function CampaignsPage() {
                         <div className="absolute top-3 right-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                           <button
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditModal(campaign) }}
-                            className="p-2 bg-black/70 backdrop-blur-sm rounded-lg hover:bg-purple-500 transition-colors"
+                            className="p-2 bg-black/70 backdrop-blur-sm rounded-lg hover:bg-blue-500 transition-colors"
                             title="Edit"
                           >
                             <Edit className="w-3.5 h-3.5 text-white" />
@@ -1110,25 +1273,25 @@ export default function CampaignsPage() {
                   {/* Create New Card */}
                   <Link
                     href="/campaigns/new"
-                    className="group relative rounded-xl overflow-hidden bg-gradient-to-br from-purple-900/10 to-gray-900/50 border-2 border-dashed border-purple-500/20 hover:border-purple-500/50 transition-all flex flex-col items-center justify-center gap-4 min-h-[280px]"
+                    className="group relative rounded-xl overflow-hidden bg-gradient-to-br from-blue-900/10 to-gray-900/50 border-2 border-dashed border-blue-500/20 hover:border-blue-500/50 transition-all flex flex-col items-center justify-center gap-4 min-h-[280px]"
                   >
-                    <div className="p-4 rounded-full bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
-                      <Plus className="w-8 h-8 text-purple-400" />
+                    <div className="p-4 rounded-full bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
+                      <Plus className="w-8 h-8 text-blue-400" />
                     </div>
-                    <span className="text-sm font-medium text-purple-400">Create New Campaign</span>
+                    <span className="text-sm font-medium text-blue-400">Create New Campaign</span>
                   </Link>
                 </div>
               </section>
             )}
 
             {/* Single campaign - show create prompt */}
-            {filteredCampaigns.length === 1 && (
+            {activeCampaigns.length === 1 && (
               <section>
-                <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-white/[0.08] rounded-xl">
+                <div className="flex flex-col items-center justify-center py-12 bg-white/[0.015] border border-dashed border-blue-500/20 rounded-xl">
                   <p className="text-gray-400 mb-4">Great start! Add more campaigns to your collection.</p>
                   <Link
                     href="/campaigns/new"
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-600/80 hover:bg-purple-500 text-white font-medium rounded-lg transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600/80 hover:bg-blue-500 text-white font-medium rounded-lg transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                     Create Another Campaign
@@ -1243,6 +1406,18 @@ export default function CampaignsPage() {
           game_system: formData.game_system,
         }}
         title="Campaign"
+      />
+
+      {/* Page Customize Modal */}
+      <PageCustomizeModal
+        isOpen={customizeModalOpen}
+        onClose={() => setCustomizeModalOpen(false)}
+        title="Customize Campaigns Page"
+        tabs={CAMPAIGNS_TAB_CONFIG}
+        preferences={preferences as PagePreferences<CampaignsPageTabId>}
+        defaultPreferences={DEFAULT_CAMPAIGNS_PAGE_PREFERENCES as PagePreferences<CampaignsPageTabId>}
+        onSave={savePreferences}
+        tabCounts={tabCounts}
       />
       <BackToTopButton />
     </AppLayout>

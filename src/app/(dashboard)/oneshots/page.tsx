@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, useMemo } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -15,17 +15,32 @@ import {
   Loader2,
   Bookmark,
   RotateCcw,
+  Settings,
+  Crown,
+  Edit,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
-import { ContentBadge } from '@/components/ui'
+import { ContentBadge, PageCustomizeModal } from '@/components/ui'
+import type { TabConfig as ModalTabConfig, PagePreferences } from '@/components/ui/PageCustomizeModal'
 import { getOneshotBadge } from '@/lib/content-badges'
 import { OneshotsPageMobile } from './page.mobile'
 import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { formatDate } from '@/lib/utils'
-import type { Oneshot, OneshotGenreTag, OneshotRun, ContentSave } from '@/types/database'
+import type { Oneshot, OneshotGenreTag, OneshotRun, ContentSave, OneshotsPageTabId, OneshotsPagePreferences } from '@/types/database'
+import { DEFAULT_ONESHOTS_PAGE_PREFERENCES } from '@/types/database'
 import { TemplateStateBadge } from '@/components/templates'
 import { TabNavigation, ONESHOTS_TABS, type ContentTab } from '@/components/navigation'
+
+// Tab configuration for customize modal
+const ONESHOTS_TAB_CONFIG: ModalTabConfig<OneshotsPageTabId>[] = [
+  { id: 'all', label: 'All', icon: <Scroll className="w-4 h-4" />, color: 'text-gray-400' },
+  { id: 'participating', label: 'Participating', icon: <Users className="w-4 h-4" />, color: 'text-purple-400' },
+  { id: 'running', label: 'Running', icon: <Crown className="w-4 h-4" />, color: 'text-orange-400' },
+  { id: 'my-work', label: 'My Work', icon: <Edit className="w-4 h-4" />, color: 'text-amber-400' },
+  { id: 'collection', label: 'Collection', icon: <Bookmark className="w-4 h-4" />, color: 'text-emerald-400' },
+  { id: 'discover', label: 'Discover', icon: <Sparkles className="w-4 h-4" />, color: 'text-purple-400', comingSoon: true },
+]
 
 interface TemplateSnapshot {
   id: string
@@ -41,24 +56,64 @@ interface TemplateSnapshot {
 
 export default function OneshotsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = useSupabase()
   const { user, loading: userLoading } = useUser()
   const isMobile = useIsMobile()
 
+  // Page preferences
+  const [preferences, setPreferences] = useState<OneshotsPagePreferences>(DEFAULT_ONESHOTS_PAGE_PREFERENCES)
+  const [customizeModalOpen, setCustomizeModalOpen] = useState(false)
+
+  const initialTab = (searchParams.get('tab') as ContentTab) || preferences.default_tab || 'all'
+  const initialFilter = (searchParams.get('filter') as ContentTab) || 'drafts'
+
   const [oneshots, setOneshots] = useState<Oneshot[]>([])
+  const [participatingRuns, setParticipatingRuns] = useState<OneshotRun[]>([])
   const [savedOneshots, setSavedOneshots] = useState<ContentSave[]>([])
   const [templateSnapshots, setTemplateSnapshots] = useState<TemplateSnapshot[]>([])
   const [genreTags, setGenreTags] = useState<OneshotGenreTag[]>([])
   const [oneshotRuns, setOneshotRuns] = useState<Record<string, OneshotRun[]>>({})
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<ContentTab>('all')
-  const [subFilter, setSubFilter] = useState<ContentTab>('running')
+  const [activeTab, setActiveTab] = useState<ContentTab>(initialTab)
+  const [subFilter, setSubFilter] = useState<ContentTab>(initialFilter)
 
   useEffect(() => {
     if (user) {
+      loadPreferences()
       loadData()
     }
   }, [user])
+
+  const loadPreferences = async () => {
+    const { data } = await supabase
+      .from('user_settings')
+      .select('oneshots_page_preferences')
+      .eq('user_id', user!.id)
+      .single()
+
+    if (data?.oneshots_page_preferences) {
+      setPreferences(data.oneshots_page_preferences as OneshotsPagePreferences)
+      if (!searchParams.get('tab')) {
+        setActiveTab((data.oneshots_page_preferences as OneshotsPagePreferences).default_tab as ContentTab || 'all')
+      }
+    }
+  }
+
+  const savePreferences = async (newPrefs: PagePreferences<OneshotsPageTabId>) => {
+    const prefs = newPrefs as OneshotsPagePreferences
+    setPreferences(prefs)
+
+    await supabase
+      .from('user_settings')
+      .upsert({
+        user_id: user!.id,
+        oneshots_page_preferences: prefs,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id'
+      })
+  }
 
   const loadData = async () => {
     // Load one-shots
@@ -124,27 +179,67 @@ export default function OneshotsPage() {
   // Filter oneshots by active status
   const activeOneshots = oneshots.filter(o => o.content_mode === 'active' || !o.content_mode)
   const inactiveOneshots = oneshots.filter(o => o.content_mode === 'inactive')
+  const publishedSnapshots = templateSnapshots.filter(s => s.is_public)
+  const privateSnapshots = templateSnapshots.filter(s => !s.is_public)
 
   // Group snapshots by content_id to get unique templates
   const uniqueTemplateContentIds = new Set(templateSnapshots.map(s => s.content_id))
 
-  // Get counts for tabs
-  const tabCounts = {
-    all: activeOneshots.length + inactiveOneshots.length + templateSnapshots.length + savedOneshots.length,
-    active: activeOneshots.length,
-    'my-work': templateSnapshots.length + oneshots.filter(o => o.content_mode === 'inactive').length,
+  // Tab counts
+  const tabCounts: Record<OneshotsPageTabId, number> = {
+    all: oneshots.length + participatingRuns.length,
+    participating: participatingRuns.length,
+    running: activeOneshots.length,
+    'my-work': inactiveOneshots.length + uniqueTemplateContentIds.size,
     collection: savedOneshots.length,
+    discover: 0,
   }
 
-  // Create tabs with counts
-  const tabsWithCounts = ONESHOTS_TABS.map(tab => ({
-    ...tab,
-    count: tabCounts[tab.value as keyof typeof tabCounts] ?? 0,
-    subFilters: tab.subFilters?.map(sf => ({
-      ...sf,
-      count: sf.value === 'running' ? activeOneshots.length : 0,
-    })),
-  }))
+  // Build tabs with counts - filtered by preferences
+  const tabsWithCounts = useMemo(() => {
+    const orderedTabIds = preferences.auto_order
+      ? [...(preferences.tab_order || ONESHOTS_TABS.map(t => t.value as OneshotsPageTabId))]
+          .sort((a, b) => {
+            const tabA = ONESHOTS_TABS.find(t => t.value === a)
+            const tabB = ONESHOTS_TABS.find(t => t.value === b)
+            if (tabA?.comingSoon && !tabB?.comingSoon) return 1
+            if (!tabA?.comingSoon && tabB?.comingSoon) return -1
+            const countA = tabCounts[a] || 0
+            const countB = tabCounts[b] || 0
+            if (countA === 0 && countB > 0) return 1
+            if (countA > 0 && countB === 0) return -1
+            return countB - countA
+          })
+      : preferences.tab_order || ONESHOTS_TABS.map(t => t.value as OneshotsPageTabId)
+
+    return orderedTabIds
+      .filter(id => !preferences.hidden_tabs.includes(id))
+      .map(id => {
+        const tab = ONESHOTS_TABS.find(t => t.value === id)
+        if (!tab) return null
+
+        const subFilters = tab.subFilters?.map(sf => {
+          let sfCount: number | undefined
+          if (sf.value === 'drafts') sfCount = inactiveOneshots.length
+          else if (sf.value === 'my-templates') sfCount = privateSnapshots.length
+          else if (sf.value === 'published') sfCount = publishedSnapshots.length
+          return { ...sf, count: sfCount }
+        })
+
+        return { ...tab, count: tabCounts[id as OneshotsPageTabId], subFilters }
+      })
+      .filter(Boolean) as typeof ONESHOTS_TABS
+  }, [preferences, tabCounts, inactiveOneshots.length, privateSnapshots.length, publishedSnapshots.length])
+
+  // Get hero oneshot based on active tab
+  const getHeroOneshot = () => {
+    if (activeTab === 'all' || activeTab === 'running') {
+      return activeOneshots[0] || null
+    }
+    // For participating tab, we'd need to get from participatingRuns
+    return null
+  }
+  const heroOneshot = getHeroOneshot()
 
   const handleReactivate = async (oneshotId: string) => {
     const response = await fetch('/api/content/reactivate', {
@@ -174,8 +269,6 @@ export default function OneshotsPage() {
       </AppLayout>
     )
   }
-
-  const featuredOneshot = activeOneshots[0] || null
 
   // ============ MOBILE LAYOUT ============
   if (isMobile) {
@@ -207,13 +300,22 @@ export default function OneshotsPage() {
             <h1 className="text-3xl font-display font-bold text-white">One-Shot Adventures</h1>
             <p className="text-gray-400 mt-1">Standalone adventures ready to run</p>
           </div>
-          <Link
-            href="/oneshots/new"
-            className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-xl transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            New One-Shot
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setCustomizeModalOpen(true)}
+              className="p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/[0.1] text-gray-400 hover:text-white transition-all"
+              title="Customize page"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+            <Link
+              href="/oneshots/new"
+              className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-xl transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              New One-Shot
+            </Link>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -563,18 +665,18 @@ export default function OneshotsPage() {
         ) : (
           <>
             {/* Featured One-Shot (Hero) */}
-            {featuredOneshot && (
+            {heroOneshot && (
               <section>
                 <Link
-                  href={`/oneshots/${featuredOneshot.id}`}
+                  href={`/oneshots/${heroOneshot.id}`}
                   className="group relative block rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-white/[0.06] hover:border-green-500/30 transition-all duration-500"
                 >
                   <div className="relative h-[350px] md:h-[450px]">
-                    {featuredOneshot.image_url ? (
+                    {heroOneshot.image_url ? (
                       <>
                         <Image
-                          src={featuredOneshot.image_url}
-                          alt={featuredOneshot.title}
+                          src={heroOneshot.image_url}
+                          alt={heroOneshot.title}
                           fill
                           className="object-cover transition-transform duration-700 group-hover:scale-105"
                           priority
@@ -593,14 +695,14 @@ export default function OneshotsPage() {
                       {/* Genre Tags */}
                       <div className="flex flex-wrap items-center gap-2 mb-4">
                         <ContentBadge
-                          variant={getOneshotBadge(featuredOneshot, user?.id || '').primary}
+                          variant={getOneshotBadge(heroOneshot, user?.id || '').primary}
                           size="lg"
-                          progress={getOneshotBadge(featuredOneshot, user?.id || '').progress}
+                          progress={getOneshotBadge(heroOneshot, user?.id || '').progress}
                         />
                         <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-gray-300">
-                          {featuredOneshot.game_system}
+                          {heroOneshot.game_system}
                         </span>
-                        {getTagsForOneshot(featuredOneshot).slice(0, 3).map(tag => (
+                        {getTagsForOneshot(heroOneshot).slice(0, 3).map(tag => (
                           <span
                             key={tag.id}
                             className="px-2.5 py-1 text-xs font-medium rounded-full"
@@ -612,12 +714,12 @@ export default function OneshotsPage() {
                       </div>
 
                       <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-3 group-hover:text-green-400 transition-colors">
-                        {featuredOneshot.title}
+                        {heroOneshot.title}
                       </h2>
 
-                      {featuredOneshot.tagline && (
+                      {heroOneshot.tagline && (
                         <p className="text-gray-300 text-lg md:text-xl max-w-2xl mb-4 italic">
-                          "{featuredOneshot.tagline}"
+                          "{heroOneshot.tagline}"
                         </p>
                       )}
 
@@ -625,16 +727,16 @@ export default function OneshotsPage() {
                       <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400 mb-4">
                         <span className="flex items-center gap-1.5">
                           <Users className="w-4 h-4" />
-                          {featuredOneshot.player_count_min}-{featuredOneshot.player_count_max} players
+                          {heroOneshot.player_count_min}-{heroOneshot.player_count_max} players
                         </span>
-                        {featuredOneshot.estimated_duration && (
+                        {heroOneshot.estimated_duration && (
                           <span className="flex items-center gap-1.5">
                             <Clock className="w-4 h-4" />
-                            {featuredOneshot.estimated_duration}
+                            {heroOneshot.estimated_duration}
                           </span>
                         )}
                         <span className="text-green-400">
-                          Level {featuredOneshot.level || '?'}
+                          Level {heroOneshot.level || '?'}
                         </span>
                       </div>
 
@@ -644,9 +746,9 @@ export default function OneshotsPage() {
                           Open Adventure
                           <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                         </span>
-                        {oneshotRuns[featuredOneshot.id]?.length > 0 && (
+                        {oneshotRuns[heroOneshot.id]?.length > 0 && (
                           <span className="text-sm text-gray-500">
-                            Run {oneshotRuns[featuredOneshot.id].length} time{oneshotRuns[featuredOneshot.id].length !== 1 ? 's' : ''}
+                            Run {oneshotRuns[heroOneshot.id].length} time{oneshotRuns[heroOneshot.id].length !== 1 ? 's' : ''}
                           </span>
                         )}
                       </div>
@@ -758,6 +860,18 @@ export default function OneshotsPage() {
         )
         )}
       </div>
+
+      {/* Page Customize Modal */}
+      <PageCustomizeModal
+        isOpen={customizeModalOpen}
+        onClose={() => setCustomizeModalOpen(false)}
+        title="Customize One-Shots Page"
+        tabs={ONESHOTS_TAB_CONFIG}
+        preferences={preferences as PagePreferences<OneshotsPageTabId>}
+        defaultPreferences={DEFAULT_ONESHOTS_PAGE_PREFERENCES as PagePreferences<OneshotsPageTabId>}
+        onSave={savePreferences}
+        tabCounts={tabCounts}
+      />
       <BackToTopButton />
     </AppLayout>
   )

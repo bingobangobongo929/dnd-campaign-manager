@@ -46,7 +46,7 @@ export interface CampaignsPageMobileProps {
   inactiveCampaigns: Campaign[]
   savedCampaigns: ContentSave[]
   templateSnapshots: TemplateSnapshot[]
-  featuredCampaign: Campaign | null | undefined
+  heroCampaign: Campaign | null | undefined
   editingCampaign: Campaign | null
   setEditingCampaign: (campaign: Campaign | null) => void
   formData: {
@@ -78,7 +78,7 @@ export function CampaignsPageMobile({
   inactiveCampaigns,
   savedCampaigns,
   templateSnapshots,
-  featuredCampaign,
+  heroCampaign,
   editingCampaign,
   setEditingCampaign,
   formData,
@@ -439,17 +439,17 @@ export function CampaignsPageMobile({
               ) : (
                 <div className="space-y-4 pb-20">
                   {/* Featured Campaign */}
-                  {featuredCampaign && (
+                  {heroCampaign && (
                     <button
-                      onClick={() => onNavigate(`/campaigns/${featuredCampaign.id}/canvas`)}
+                      onClick={() => onNavigate(`/campaigns/${heroCampaign.id}/canvas`)}
                       className="w-full mx-4 max-w-[calc(100%-32px)] relative rounded-2xl overflow-hidden bg-gray-900 border border-white/[0.06] active:scale-[0.98] transition-transform"
                     >
                       <div className="relative h-52">
-                        {featuredCampaign.image_url ? (
+                        {heroCampaign.image_url ? (
                           <>
                             <Image
-                              src={featuredCampaign.image_url}
-                              alt={featuredCampaign.name}
+                              src={heroCampaign.image_url}
+                              alt={heroCampaign.name}
                               fill
                               className="object-cover"
                               priority
@@ -467,12 +467,12 @@ export function CampaignsPageMobile({
                               Continue
                             </span>
                             <span className="px-2 py-1 text-[10px] font-medium rounded bg-white/10 text-gray-300">
-                              {featuredCampaign.game_system}
+                              {heroCampaign.game_system}
                             </span>
                           </div>
-                          <h2 className="text-xl font-display font-bold text-white">{featuredCampaign.name}</h2>
-                          {featuredCampaign.description && (
-                            <p className="text-xs text-gray-400 mt-1 line-clamp-1">{featuredCampaign.description}</p>
+                          <h2 className="text-xl font-display font-bold text-white">{heroCampaign.name}</h2>
+                          {heroCampaign.description && (
+                            <p className="text-xs text-gray-400 mt-1 line-clamp-1">{heroCampaign.description}</p>
                           )}
                         </div>
                       </div>

@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, Trash2, Copy, X, CheckSquare, Square, CopyPlus, Check, LayoutGrid, Grid3X3, PenLine, Sparkles, Star, Play, ChevronRight, User, Eye, BookOpen, Filter, Bookmark, RotateCcw, Swords, Users } from 'lucide-react'
+import { Plus, Search, Trash2, Copy, X, CheckSquare, Square, CopyPlus, Check, LayoutGrid, Grid3X3, PenLine, Sparkles, Star, Play, ChevronRight, User, Eye, BookOpen, Filter, Bookmark, RotateCcw, Swords, Users, Settings } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
-import { Modal, Dropdown } from '@/components/ui'
+import { Modal, Dropdown, PageCustomizeModal } from '@/components/ui'
+import type { TabConfig as ModalTabConfig, PagePreferences as ModalPagePreferences } from '@/components/ui/PageCustomizeModal'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { CharacterCard } from '@/components/vault/CharacterCard'
@@ -14,7 +15,8 @@ import { useSupabase, useUser, useIsMobile } from '@/hooks'
 import { useCanUseAI } from '@/store'
 import { VaultPageMobile } from './page.mobile'
 import { cn, getInitials, formatDate } from '@/lib/utils'
-import type { VaultCharacter, Campaign, ContentSave } from '@/types/database'
+import type { VaultCharacter, Campaign, ContentSave, VaultPagePreferences, VaultPageTabId } from '@/types/database'
+import { DEFAULT_VAULT_PAGE_PREFERENCES } from '@/types/database'
 import { TemplateStateBadge } from '@/components/templates'
 import { TabNavigation, VAULT_TABS, type ContentTab } from '@/components/navigation'
 
@@ -99,6 +101,10 @@ export default function VaultPage() {
   // View mode state
   const [viewMode, setViewMode] = useState<'cards' | 'gallery'>('cards')
 
+  // Page preferences
+  const [preferences, setPreferences] = useState<VaultPagePreferences>(DEFAULT_VAULT_PAGE_PREFERENCES)
+  const [customizeModalOpen, setCustomizeModalOpen] = useState(false)
+
   // Gallery lightbox state
   const [lightboxCharacter, setLightboxCharacter] = useState<VaultCharacter | null>(null)
 
@@ -110,6 +116,42 @@ export default function VaultPage() {
       loadData()
     }
   }, [user])
+
+  // Load user preferences
+  useEffect(() => {
+    if (!user) return
+    const loadPreferences = async () => {
+      const { data } = await supabase
+        .from('user_settings')
+        .select('vault_page_preferences')
+        .eq('user_id', user.id)
+        .single()
+
+      if (data?.vault_page_preferences) {
+        const prefs = data.vault_page_preferences as VaultPagePreferences
+        setPreferences(prefs)
+        setActiveTab(prefs.default_tab as ContentTab || 'all')
+        if (prefs.view_mode) setViewMode(prefs.view_mode)
+      }
+    }
+    loadPreferences()
+  }, [user])
+
+  const savePreferences = async (newPrefs: ModalPagePreferences<VaultPageTabId>) => {
+    const prefs: VaultPagePreferences = {
+      ...newPrefs,
+      view_mode: viewMode,
+    }
+    setPreferences(prefs)
+
+    await supabase
+      .from('user_settings')
+      .upsert({
+        user_id: user!.id,
+        vault_page_preferences: prefs,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' })
+  }
 
   // Close context menu when clicking outside
   useEffect(() => {
@@ -200,20 +242,48 @@ export default function VaultPage() {
     'my-characters': activeCharacters.length,
     'in-play': inPlayCharacters.length,
     collection: templateSnapshots.length + savedCharacters.length,
+    discover: 0, // Coming soon
   }), [activeCharacters, inPlayCharacters, savedCharacters, templateSnapshots])
 
-  // Create tabs with counts
-  const tabsWithCounts = useMemo(() =>
-    VAULT_TABS.map(tab => ({
+  // Tab config for customize modal
+  const VAULT_TAB_CONFIG: ModalTabConfig<VaultPageTabId>[] = [
+    { id: 'all', label: 'All', icon: <User className="w-4 h-4" />, color: 'text-gray-400' },
+    { id: 'my-characters', label: 'My Characters', icon: <User className="w-4 h-4" />, color: 'text-emerald-400' },
+    { id: 'in-play', label: 'In-Play', icon: <Swords className="w-4 h-4" />, color: 'text-purple-400' },
+    { id: 'collection', label: 'Collection', icon: <Bookmark className="w-4 h-4" />, color: 'text-blue-400' },
+    { id: 'discover', label: 'Discover', icon: <Sparkles className="w-4 h-4" />, color: 'text-purple-400', comingSoon: true },
+  ]
+
+  // Create tabs with counts, respecting preference ordering
+  const tabsWithCounts = useMemo(() => {
+    const baseTabs = VAULT_TABS.map(tab => ({
       ...tab,
       count: tabCounts[tab.value as keyof typeof tabCounts] ?? 0,
       subFilters: tab.subFilters?.map(sf => ({
         ...sf,
         count: sf.value === 'my-templates' ? templateSnapshots.length : savedCharacters.length,
       })),
-    })),
-    [tabCounts, templateSnapshots, savedCharacters]
-  )
+    }))
+
+    // If auto_order is on, sort by count (highest first), keeping 'all' first and 'discover' last
+    if (preferences.auto_order) {
+      return baseTabs.sort((a, b) => {
+        if (a.value === 'all') return -1
+        if (b.value === 'all') return 1
+        if (a.value === 'discover') return 1
+        if (b.value === 'discover') return -1
+        return (b.count ?? 0) - (a.count ?? 0)
+      })
+    }
+
+    // Otherwise, use custom order from preferences
+    const orderedTabs = preferences.tab_order
+      .filter(tabId => !preferences.hidden_tabs.includes(tabId))
+      .map(tabId => baseTabs.find(t => t.value === tabId))
+      .filter(Boolean) as typeof baseTabs
+
+    return orderedTabs
+  }, [tabCounts, templateSnapshots, savedCharacters, preferences])
 
   const handleReactivate = async (characterId: string) => {
     const response = await fetch('/api/content/reactivate', {
@@ -568,6 +638,13 @@ export default function VaultPage() {
             >
               <Plus className="w-5 h-5" />
               Add Character
+            </button>
+            <button
+              onClick={() => setCustomizeModalOpen(true)}
+              className="p-2.5 text-gray-400 hover:text-white hover:bg-white/[0.05] rounded-lg transition-colors"
+              title="Customize page"
+            >
+              <Settings className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -1524,6 +1601,18 @@ export default function VaultPage() {
             </button>
           </div>
         </Modal>
+
+        {/* Customize Modal */}
+        <PageCustomizeModal
+          isOpen={customizeModalOpen}
+          onClose={() => setCustomizeModalOpen(false)}
+          title="Customize Vault"
+          tabs={VAULT_TAB_CONFIG}
+          preferences={preferences as ModalPagePreferences<VaultPageTabId>}
+          defaultPreferences={DEFAULT_VAULT_PAGE_PREFERENCES as ModalPagePreferences<VaultPageTabId>}
+          onSave={savePreferences}
+          tabCounts={tabCounts}
+        />
       </div>
       <BackToTopButton />
     </AppLayout>

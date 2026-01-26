@@ -14,9 +14,10 @@ export type ContentTab =
   // Vault-specific tabs
   | 'my-characters'
   | 'in-play'
-  // Sub-filters for active
+  // Main tabs (used directly, not as sub-filters)
   | 'running'
   | 'playing'
+  | 'participating' // One-shots specific (equivalent to 'playing')
   // Sub-filters for my-work
   | 'drafts'
   | 'my-templates'
