@@ -17,6 +17,7 @@ import {
   Users,
   ArrowRight,
   Map,
+  Settings,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AppLayout } from '@/components/layout/app-layout'
@@ -26,13 +27,11 @@ import { ContentBadge, StatusIndicator, determineCampaignStatus, getStatusCardCl
 import type { SectionId } from '@/components/ui'
 import { formatDistanceToNow } from '@/lib/utils'
 import { getCampaignBadge, getOneshotBadge, getCharacterBadge } from '@/lib/content-badges'
-import type { Campaign, VaultCharacter, Oneshot, ContentSave } from '@/types/database'
+import type { Campaign, VaultCharacter, Oneshot, ContentSave, Character, HomepagePreferences, HomepageSectionId } from '@/types/database'
 
 function getInitials(name: string): string {
   return name.split(' ').map((word) => word[0]).slice(0, 2).join('').toUpperCase()
 }
-
-import type { Character } from '@/types/database'
 
 export interface HomePageMobileProps {
   campaigns: Campaign[]
@@ -69,6 +68,11 @@ export interface HomePageMobileProps {
   onDismissSection?: (sectionId: SectionId, permanent: boolean) => void
   // For conditional "Playing In" section
   hasOwnedContent?: boolean
+  // Homepage customization
+  sectionCounts?: Record<HomepageSectionId, number>
+  homepagePreferences?: HomepagePreferences
+  onOpenCustomize?: () => void
+  onSavePreferences?: (prefs: HomepagePreferences) => Promise<void>
 }
 
 export function HomePageMobile({
@@ -103,6 +107,10 @@ export function HomePageMobile({
   isSectionVisible = () => true,
   onDismissSection,
   hasOwnedContent = false,
+  sectionCounts = { campaigns: 0, adventures: 0, playing: 0, oneshots: 0, characters: 0 },
+  homepagePreferences,
+  onOpenCustomize,
+  onSavePreferences,
 }: HomePageMobileProps) {
   // Combine recent items for activity section
   const recentActivity = [
@@ -488,6 +496,19 @@ export function HomePageMobile({
           </>
         )}
 
+        {/* Section Header with Customize Button */}
+        <div className="flex items-center justify-between px-4 pt-2 pb-1">
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Your Content</span>
+          {onOpenCustomize && (
+            <button
+              onClick={onOpenCustomize}
+              className="p-1.5 -mr-1.5 rounded-lg text-gray-500 active:bg-white/[0.05]"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
         {/* Campaigns Section */}
         <MobileSectionHeader
           title="Campaigns"
@@ -644,8 +665,8 @@ export function HomePageMobile({
         )}
 
         {/* Joined Campaigns Section - Campaigns where user is a player */}
-        {/* Only show if: user has joined campaigns OR (user has no owned content AND hasn't dismissed) */}
-        {(joinedCampaigns.length > 0 || (!hasOwnedContent && isSectionVisible('playing'))) && (
+        {/* Show if: user has joined campaigns OR section is explicitly visible in preferences */}
+        {(joinedCampaigns.length > 0 || isSectionVisible('playing')) && (
           <>
             <MobileSectionHeader
               title="Playing In"
@@ -658,14 +679,16 @@ export function HomePageMobile({
               }
             />
 
-            {/* Empty State - only for fresh users */}
-            {joinedCampaigns.length === 0 && !hasOwnedContent && isSectionVisible('playing') && (
+            {/* Empty State */}
+            {joinedCampaigns.length === 0 && isSectionVisible('playing') && (
               <div className="mx-4 mb-4">
                 <DismissibleEmptyState
                   sectionId="playing"
                   icon={<Users className="w-7 h-7" />}
-                  title={EMPTY_STATE_CONTENT.playing.title}
-                  description={EMPTY_STATE_CONTENT.playing.description}
+                  title={hasOwnedContent ? "Want to be a player too?" : EMPTY_STATE_CONTENT.playing.title}
+                  description={hasOwnedContent
+                    ? "Join another DM's game to experience being on the other side of the screen"
+                    : EMPTY_STATE_CONTENT.playing.description}
                   primaryAction={{
                     label: EMPTY_STATE_CONTENT.playing.primaryLabel,
                     href: EMPTY_STATE_CONTENT.playing.primaryHref,

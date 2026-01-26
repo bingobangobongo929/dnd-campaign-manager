@@ -20,6 +20,7 @@ import {
   Users,
   Map,
   Wand2,
+  Settings,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
@@ -33,6 +34,7 @@ import { formatDistanceToNow, cn } from '@/lib/utils'
 import type { Campaign, VaultCharacter, Oneshot, ContentSave, Character, HomepagePreferences, HomepageSectionId } from '@/types/database'
 import { DEFAULT_HOMEPAGE_PREFERENCES } from '@/types/database'
 import { HomePageMobile } from './page.mobile'
+import { CustomizeHomepageModal } from '@/components/home/CustomizeHomepageModal'
 
 export default function HomePage() {
   const router = useRouter()
@@ -67,6 +69,16 @@ export default function HomePage() {
   // Homepage preferences
   const [homepagePreferences, setHomepagePreferences] = useState<HomepagePreferences>(DEFAULT_HOMEPAGE_PREFERENCES)
   const [dismissedTemporarilyLocal, setDismissedTemporarilyLocal] = useState<HomepageSectionId[]>([])
+  const [showCustomizeModal, setShowCustomizeModal] = useState(false)
+
+  // Section counts for the customize modal
+  const sectionCounts: Record<HomepageSectionId, number> = {
+    campaigns: campaigns.length,
+    adventures: adventures.length,
+    playing: joinedCampaigns.length,
+    oneshots: oneshots.length,
+    characters: characters.length,
+  }
 
   // Check if founder banner was dismissed and if role was selected
   useEffect(() => {
@@ -157,6 +169,20 @@ export default function HomePage() {
   const isSectionVisible = (sectionId: HomepageSectionId): boolean => {
     return !homepagePreferences.hidden_sections.includes(sectionId) &&
            !dismissedTemporarilyLocal.includes(sectionId)
+  }
+
+  // Save homepage preferences (used by customize modal)
+  const saveHomepagePreferences = async (newPrefs: HomepagePreferences) => {
+    setHomepagePreferences(newPrefs)
+    // Clear temporary dismissals when saving new preferences
+    setDismissedTemporarilyLocal([])
+
+    if (user) {
+      await supabase
+        .from('user_settings')
+        .update({ homepage_preferences: newPrefs })
+        .eq('user_id', user.id)
+    }
   }
 
   // Get the order index for a section (used for CSS order property)
@@ -540,10 +566,21 @@ export default function HomePage() {
           isSectionVisible={isSectionVisible}
           onDismissSection={handleDismissSection}
           hasOwnedContent={hasOwnedContent}
+          sectionCounts={sectionCounts}
+          homepagePreferences={homepagePreferences}
+          onOpenCustomize={() => setShowCustomizeModal(true)}
+          onSavePreferences={saveHomepagePreferences}
         />
         <OnboardingTour
           isOpen={showOnboarding}
           onClose={() => setShowOnboarding(false)}
+        />
+        <CustomizeHomepageModal
+          isOpen={showCustomizeModal}
+          onClose={() => setShowCustomizeModal(false)}
+          preferences={homepagePreferences}
+          onSave={saveHomepagePreferences}
+          sectionCounts={sectionCounts}
         />
       </>
     )
@@ -1017,6 +1054,16 @@ export default function HomePage() {
         </div>
 
         {/* Dynamic Sections - Ordered by user preference or auto-sorted */}
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Your Content</h2>
+          <button
+            onClick={() => setShowCustomizeModal(true)}
+            className="p-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-white/[0.05] transition-colors"
+            title="Customize homepage"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+        </div>
         <div className="flex flex-col gap-12">
 
         {/* Your Campaigns Section */}
@@ -1191,8 +1238,8 @@ export default function HomePage() {
         )}
 
         {/* Joined Campaigns Section - Campaigns where user is a player */}
-        {/* Only show if: user has joined campaigns OR (user has no owned content AND hasn't dismissed) */}
-        {(joinedCampaigns.length > 0 || (!hasOwnedContent && isSectionVisible('playing'))) && (
+        {/* Show if: user has joined campaigns OR section is explicitly visible in preferences */}
+        {(joinedCampaigns.length > 0 || isSectionVisible('playing')) && (
           <section style={{ order: getSectionOrderIndex('playing') }}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -1208,12 +1255,14 @@ export default function HomePage() {
               )}
             </div>
 
-            {joinedCampaigns.length === 0 && !hasOwnedContent && isSectionVisible('playing') ? (
+            {joinedCampaigns.length === 0 && isSectionVisible('playing') ? (
               <DismissibleEmptyState
                 sectionId="playing"
                 icon={<Users className="w-7 h-7" />}
-                title={EMPTY_STATE_CONTENT.playing.title}
-                description={EMPTY_STATE_CONTENT.playing.description}
+                title={hasOwnedContent ? "Want to be a player too?" : EMPTY_STATE_CONTENT.playing.title}
+                description={hasOwnedContent
+                  ? "Join another DM's game to experience being on the other side of the screen"
+                  : EMPTY_STATE_CONTENT.playing.description}
                 primaryAction={{
                   label: EMPTY_STATE_CONTENT.playing.primaryLabel,
                   href: EMPTY_STATE_CONTENT.playing.primaryHref,
@@ -1945,6 +1994,15 @@ export default function HomePage() {
       <OnboardingTour
         isOpen={showOnboarding}
         onClose={() => setShowOnboarding(false)}
+      />
+
+      {/* Customize Homepage Modal */}
+      <CustomizeHomepageModal
+        isOpen={showCustomizeModal}
+        onClose={() => setShowCustomizeModal(false)}
+        preferences={homepagePreferences}
+        onSave={saveHomepagePreferences}
+        sectionCounts={sectionCounts}
       />
     </AppLayout>
   )
