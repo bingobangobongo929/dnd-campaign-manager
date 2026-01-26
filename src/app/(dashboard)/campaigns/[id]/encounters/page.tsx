@@ -48,6 +48,7 @@ import {
 import { ResizeToolbar } from '@/components/canvas'
 import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 import { BackToTopButton } from '@/components/ui/back-to-top'
+import { RollReveal } from '@/components/roll-reveal'
 import { useSupabase, useUser, usePermissions } from '@/hooks'
 import { cn } from '@/lib/utils'
 import type { Campaign } from '@/types/database'
@@ -1442,6 +1443,9 @@ export default function EncountersPage() {
     }
   }
 
+  // Roll reveal modal state
+  const [showRollReveal, setShowRollReveal] = useState(false)
+
   // Roll random prepared encounter
   const handleRollRandom = () => {
     const preparedEncounters = encounters.filter(e => e.status === 'prepared')
@@ -1449,9 +1453,12 @@ export default function EncountersPage() {
       alert('No prepared encounters to roll from!')
       return
     }
-    const randomIndex = Math.floor(Math.random() * preparedEncounters.length)
-    const randomEncounter = preparedEncounters[randomIndex]
-    setSelectedEncounter(randomEncounter)
+    setShowRollReveal(true)
+  }
+
+  // Handle roll result
+  const handleRollResult = (encounter: Encounter) => {
+    setSelectedEncounter(encounter)
   }
 
   // Save encounter
@@ -1799,6 +1806,56 @@ export default function EncountersPage() {
       {campaign && (
         <UnifiedShareModal isOpen={showShareModal} onClose={() => setShowShareModal(false)} contentType="campaign" contentId={campaignId} contentName={campaign.name} contentMode="active" />
       )}
+
+      {/* Roll Reveal Modal */}
+      <RollReveal
+        items={encounters.filter(e => e.status === 'prepared')}
+        isOpen={showRollReveal}
+        onClose={() => setShowRollReveal(false)}
+        onAccept={handleRollResult}
+        title="Summoning an Encounter..."
+        renderResult={(encounter) => (
+          <div className="p-2">
+            <div className="flex items-center gap-3 mb-3">
+              {(() => {
+                const Icon = ENCOUNTER_TYPE_ICONS[encounter.type] || Swords
+                const color = ENCOUNTER_TYPE_COLORS[encounter.type] || '#8B5CF6'
+                return (
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: `${color}20` }}
+                  >
+                    <Icon className="w-5 h-5" style={{ color }} />
+                  </div>
+                )
+              })()}
+              <div>
+                <h3 className="text-lg font-bold text-white">{encounter.name}</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400 capitalize">{encounter.type}</span>
+                  {encounter.difficulty && (
+                    <span
+                      className="text-xs px-2 py-0.5 rounded"
+                      style={{
+                        backgroundColor: `${DIFFICULTY_COLORS[encounter.difficulty]}20`,
+                        color: DIFFICULTY_COLORS[encounter.difficulty],
+                      }}
+                    >
+                      {encounter.difficulty}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            {encounter.summary && (
+              <p className="text-sm text-gray-300 line-clamp-3">{encounter.summary}</p>
+            )}
+            {encounter.description && !encounter.summary && (
+              <p className="text-sm text-gray-300 line-clamp-3">{encounter.description}</p>
+            )}
+          </div>
+        )}
+      />
     </AppLayout>
   )
 }

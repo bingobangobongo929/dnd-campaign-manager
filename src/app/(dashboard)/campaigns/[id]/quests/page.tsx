@@ -48,6 +48,7 @@ import {
 import { ResizeToolbar } from '@/components/canvas'
 import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 import { BackToTopButton } from '@/components/ui/back-to-top'
+import { RollReveal } from '@/components/roll-reveal'
 import { useSupabase, useUser, usePermissions } from '@/hooks'
 import { cn } from '@/lib/utils'
 import type { Campaign } from '@/types/database'
@@ -1320,6 +1321,7 @@ export default function QuestsPage() {
   const [editingQuest, setEditingQuest] = useState<Quest | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showRollReveal, setShowRollReveal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -1443,9 +1445,13 @@ export default function QuestsPage() {
       alert('No available quests to roll from!')
       return
     }
-    const randomIndex = Math.floor(Math.random() * availableQuests.length)
-    const randomQuest = availableQuests[randomIndex]
-    setSelectedQuest(randomQuest)
+    setShowRollReveal(true)
+  }
+
+  // Handle roll result acceptance
+  const handleRollResult = (quest: Quest) => {
+    setShowRollReveal(false)
+    setSelectedQuest(quest)
   }
 
   // Save quest
@@ -1940,6 +1946,49 @@ export default function QuestsPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Roll Reveal Animation */}
+      <RollReveal
+        items={quests.filter(q => q.status === 'available')}
+        isOpen={showRollReveal}
+        onClose={() => setShowRollReveal(false)}
+        onAccept={handleRollResult}
+        allowReroll
+        title="Rolling Quest..."
+        renderResult={(quest) => (
+          <div className="text-center space-y-4">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <div
+                className="h-1 w-12 rounded-full"
+                style={{ backgroundColor: QUEST_TYPE_COLORS[quest.type] || '#6B7280' }}
+              />
+              <Badge size="sm" color={QUEST_TYPE_COLORS[quest.type] || '#6B7280'}>
+                {getQuestTypeLabel(quest.type)}
+              </Badge>
+            </div>
+            <h3 className="text-2xl font-bold text-white">{quest.name}</h3>
+            {quest.summary && (
+              <p className="text-gray-400 max-w-md mx-auto">{quest.summary}</p>
+            )}
+            {(quest.rewards_xp || quest.rewards_gold) && (
+              <div className="flex items-center justify-center gap-4 text-sm">
+                {quest.rewards_xp && (
+                  <span className="flex items-center gap-1 text-purple-400">
+                    <Sparkles className="w-4 h-4" />
+                    {quest.rewards_xp} XP
+                  </span>
+                )}
+                {quest.rewards_gold && (
+                  <span className="flex items-center gap-1 text-amber-400">
+                    <Coins className="w-4 h-4" />
+                    {quest.rewards_gold} gold
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      />
 
       {/* Campaign header modals */}
       <PartyModal
