@@ -36,9 +36,9 @@
 The AI detection code is written but awaiting validation with real/fake data.
 
 ### What's Next (Pick One)
-1. **Quick Reference - Encounters** - Pin encounters to sessions (like quests/NPCs), add Roll button to modal
-2. **Quick Reference - Quests Roll** - Add Roll button to quest search modal too
-3. **Location Detail - Encounters** - "Encounters Here" section
+1. ~~**Quick Reference - Encounters**~~ ✅ DONE - Pin encounters, Roll button in modal
+2. ~~**Quick Reference - Quests Roll**~~ ✅ DONE - Roll button added to quest picker
+3. **Location Detail - Encounters** - "Encounters Here" section (NEXT)
 4. **Quest Detail - Encounters** - "Encounters for this Quest" section
 5. **Test Campaign Intelligence** - Create fake session notes to validate detection
 6. **Oneshots Migration** - Recreate oneshot UI using unified system

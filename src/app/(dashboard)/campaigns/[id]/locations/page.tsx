@@ -27,6 +27,7 @@ import {
   GitBranch,
   List,
   Target,
+  Swords,
 } from 'lucide-react'
 import { AppLayout, CampaignPageHeader } from '@/components/layout'
 import { Button, Modal, EmptyState, Badge, Tooltip, AccessDeniedPage } from '@/components/ui'
@@ -122,6 +123,15 @@ interface QuestAtLocation {
   status: string
   quest_giver_location_id: string | null
   objective_location_id: string | null
+}
+
+interface EncounterAtLocation {
+  id: string
+  name: string
+  type: string
+  status: string
+  difficulty: string | null
+  location_id: string | null
 }
 
 // Tree node component for hierarchical view
@@ -329,6 +339,7 @@ function LocationViewModal({
   location,
   locations,
   quests,
+  encounters,
   onClose,
   onEdit,
   onDelete,
@@ -337,6 +348,7 @@ function LocationViewModal({
   location: Location
   locations: Location[]
   quests: QuestAtLocation[]
+  encounters: EncounterAtLocation[]
   onClose: () => void
   onEdit: () => void
   onDelete: () => void
@@ -351,6 +363,9 @@ function LocationViewModal({
   const questsAtLocation = quests.filter(
     q => q.quest_giver_location_id === location.id || q.objective_location_id === location.id
   )
+
+  // Find encounters at this location
+  const encountersAtLocation = encounters.filter(e => e.location_id === location.id)
 
   return (
     <div
@@ -502,9 +517,38 @@ function LocationViewModal({
             </div>
           )}
 
+          {/* Encounters at this location */}
+          {encountersAtLocation.length > 0 && (
+            <div className="bg-red-500/10 rounded-lg p-4">
+              <h4 className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                <Swords className="w-4 h-4" />
+                Encounters Here ({encountersAtLocation.length})
+              </h4>
+              <div className="space-y-2">
+                {encountersAtLocation.map(encounter => (
+                  <div
+                    key={encounter.id}
+                    className="flex items-center gap-2 p-2 bg-white/[0.02] rounded-lg"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm text-gray-300 truncate block">{encounter.name}</span>
+                      <span className="text-xs text-gray-500">
+                        {encounter.type.replace('_', ' ')}
+                        {encounter.difficulty && ` • ${encounter.difficulty}`}
+                      </span>
+                    </div>
+                    <Badge size="sm" color={encounter.status === 'prepared' ? '#EF4444' : '#6B7280'}>
+                      {encounter.status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Secrets - DM only section */}
           {location.secrets && (
-            <div className="bg-red-500/10 rounded-lg p-4">
+            <div className="bg-red-500/10 rounded-lg p-4 border border-red-500/20">
               <h4 className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-2 flex items-center gap-2">
                 <Skull className="w-4 h-4" />
                 Secrets (DM Only)
@@ -753,6 +797,7 @@ export default function LocationsPage() {
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [locations, setLocations] = useState<Location[]>([])
   const [quests, setQuests] = useState<QuestAtLocation[]>([])
+  const [encounters, setEncounters] = useState<EncounterAtLocation[]>([])
   const [loading, setLoading] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -821,6 +866,16 @@ export default function LocationsPage() {
       .order('name')
 
     setQuests(questsData || [])
+
+    // Load encounters (for "Encounters at this location" display)
+    const { data: encountersData } = await supabase
+      .from('encounters')
+      .select('id, name, type, status, difficulty, location_id')
+      .eq('campaign_id', campaignId)
+      .not('location_id', 'is', null)
+      .order('name')
+
+    setEncounters(encountersData || [])
 
     // Expand root nodes by default (only on first load)
     if (locationsData && !hasLoadedOnce) {
@@ -1127,6 +1182,7 @@ export default function LocationsPage() {
           location={selectedLocation}
           locations={locations}
           quests={quests}
+          encounters={encounters}
           onClose={() => setSelectedLocation(null)}
           onEdit={() => {
             setEditingLocation(selectedLocation)

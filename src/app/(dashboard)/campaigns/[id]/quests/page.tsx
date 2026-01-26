@@ -35,6 +35,7 @@ import {
   GripVertical,
   Check,
   Coins,
+  Swords,
 } from 'lucide-react'
 import { AppLayout, CampaignPageHeader } from '@/components/layout'
 import { Button, Modal, EmptyState, Badge, Tooltip, AccessDeniedPage } from '@/components/ui'
@@ -199,6 +200,15 @@ interface Location {
   id: string
   name: string
   type: string
+}
+
+interface Encounter {
+  id: string
+  name: string
+  type: string
+  status: string
+  difficulty: string | null
+  quest_id: string | null
 }
 
 // Trello-style board card (draggable)
@@ -424,6 +434,7 @@ function QuestViewModal({
   objectives,
   characters,
   locations,
+  encounters,
   onClose,
   onEdit,
   onDelete,
@@ -434,6 +445,7 @@ function QuestViewModal({
   objectives: QuestObjective[]
   characters: Character[]
   locations: Location[]
+  encounters: Encounter[]
   onClose: () => void
   onEdit: () => void
   onDelete: () => void
@@ -447,6 +459,9 @@ function QuestViewModal({
   const questGiver = characters.find(c => c.id === quest.quest_giver_id)
   const questGiverLocation = locations.find(l => l.id === quest.quest_giver_location_id)
   const objectiveLocation = locations.find(l => l.id === quest.objective_location_id)
+
+  // Find encounters for this quest
+  const questEncounters = encounters.filter(e => e.quest_id === quest.id)
 
   return (
     <div
@@ -648,6 +663,35 @@ function QuestViewModal({
             </div>
           )}
 
+          {/* Encounters for this Quest */}
+          {questEncounters.length > 0 && (
+            <div className="bg-red-500/10 rounded-lg p-4">
+              <h4 className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                <Swords className="w-4 h-4" />
+                Encounters ({questEncounters.length})
+              </h4>
+              <div className="space-y-2">
+                {questEncounters.map(encounter => (
+                  <div
+                    key={encounter.id}
+                    className="flex items-center gap-2 p-2 bg-white/[0.02] rounded-lg"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm text-gray-300 truncate block">{encounter.name}</span>
+                      <span className="text-xs text-gray-500">
+                        {encounter.type.replace('_', ' ')}
+                        {encounter.difficulty && ` • ${encounter.difficulty}`}
+                      </span>
+                    </div>
+                    <Badge size="sm" color={encounter.status === 'prepared' ? '#EF4444' : '#6B7280'}>
+                      {encounter.status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* DM Notes */}
           {quest.dm_notes && (
             <div>
@@ -662,7 +706,7 @@ function QuestViewModal({
 
           {/* Secrets */}
           {quest.secrets && (
-            <div className="bg-red-500/10 rounded-lg p-4">
+            <div className="bg-red-500/10 rounded-lg p-4 border border-red-500/20">
               <h4 className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-2 flex items-center gap-2">
                 <Skull className="w-4 h-4" />
                 Secrets (DM Only)
@@ -1268,6 +1312,7 @@ export default function QuestsPage() {
   const [objectives, setObjectives] = useState<Record<string, QuestObjective[]>>({})
   const [characters, setCharacters] = useState<Character[]>([])
   const [locations, setLocations] = useState<Location[]>([])
+  const [encounters, setEncounters] = useState<Encounter[]>([])
   const [loading, setLoading] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -1402,6 +1447,16 @@ export default function QuestsPage() {
       .order('name')
 
     setLocations(locationsData || [])
+
+    // Load encounters (for "Encounters for this Quest" display)
+    const { data: encountersData } = await supabase
+      .from('encounters')
+      .select('id, name, type, status, difficulty, quest_id')
+      .eq('campaign_id', campaignId)
+      .not('quest_id', 'is', null)
+      .order('name')
+
+    setEncounters(encountersData || [])
 
     setLoading(false)
     setHasLoadedOnce(true)
@@ -1893,6 +1948,7 @@ export default function QuestsPage() {
           objectives={objectives[selectedQuest.id] || []}
           characters={characters}
           locations={locations}
+          encounters={encounters}
           onClose={() => setSelectedQuest(null)}
           onEdit={() => {
             setEditingQuest(selectedQuest)
