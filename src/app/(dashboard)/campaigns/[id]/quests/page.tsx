@@ -103,6 +103,13 @@ const QUEST_PRIORITIES = [
   { value: 'urgent', label: 'Urgent' },
 ]
 
+// Helper functions to get formatted labels
+const getQuestTypeLabel = (type: string) =>
+  QUEST_TYPES.find(t => t.value === type)?.label || type.replace('_', ' ')
+
+const getQuestStatusLabel = (status: string) =>
+  QUEST_STATUSES.find(s => s.value === status)?.label || status
+
 interface Quest {
   id: string
   campaign_id: string | null
@@ -203,10 +210,10 @@ function QuestCard({
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h3 className="font-semibold text-white truncate">{quest.name}</h3>
             <Badge size="sm" color={typeColor}>
-              {quest.type.replace('_', ' ')}
+              {getQuestTypeLabel(quest.type)}
             </Badge>
             <Badge size="sm" color={statusColor}>
-              {quest.status}
+              {getQuestStatusLabel(quest.status)}
             </Badge>
           </div>
 
@@ -474,16 +481,16 @@ function QuestViewModal({
               <h2 className="text-xl font-bold text-white mb-2">{quest.name}</h2>
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge size="sm" color={typeColor}>
-                  {quest.type.replace('_', ' ')}
+                  {getQuestTypeLabel(quest.type)}
                 </Badge>
                 <Badge size="sm" color={statusColor}>
-                  {quest.status}
+                  {getQuestStatusLabel(quest.status)}
                 </Badge>
                 {quest.priority === 'urgent' && (
-                  <Badge size="sm" color="#EF4444">urgent</Badge>
+                  <Badge size="sm" color="#EF4444">Urgent</Badge>
                 )}
                 {quest.priority === 'high' && (
-                  <Badge size="sm" color="#F59E0B">high priority</Badge>
+                  <Badge size="sm" color="#F59E0B">High Priority</Badge>
                 )}
               </div>
             </div>
@@ -1622,23 +1629,24 @@ export default function QuestsPage() {
             />
 
             <div className="flex flex-col sm:flex-row gap-3">
-              {/* Search - wider box */}
-              <div className="relative flex-[2] min-w-[250px]">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+              {/* Search */}
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none z-10" />
                 <input
                   type="text"
                   placeholder="Search quests..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="form-input pl-12 w-full"
+                  className="form-input w-full"
+                  style={{ paddingLeft: '2.5rem' }}
                 />
               </div>
 
-              {/* Type filter - narrower */}
+              {/* Type filter - compact */}
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="form-input w-full sm:w-32"
+                className="form-input w-full sm:w-28"
               >
                 <option value="all">All Types</option>
                 {QUEST_TYPES.map(type => (

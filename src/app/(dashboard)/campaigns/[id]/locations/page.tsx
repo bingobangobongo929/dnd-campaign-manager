@@ -994,23 +994,24 @@ export default function LocationsPage() {
             />
 
             <div className="flex flex-col sm:flex-row gap-3">
-              {/* Search - wider box */}
-              <div className="relative flex-[2] min-w-[250px]">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+              {/* Search */}
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none z-10" />
                 <input
                   type="text"
                   placeholder="Search locations..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="form-input pl-12 w-full"
+                  className="form-input w-full"
+                  style={{ paddingLeft: '2.5rem' }}
                 />
               </div>
 
-              {/* Type filter - narrower */}
+              {/* Type filter - compact */}
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="form-input w-full sm:w-32"
+                className="form-input w-full sm:w-28"
               >
                 <option value="all">All Types</option>
                 {LOCATION_TYPES.map(type => (
