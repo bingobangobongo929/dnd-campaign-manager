@@ -146,7 +146,7 @@ export function CampaignLoreEmpty({ type, onAdd }: { type: 'factions' | 'locatio
       icon={icon}
       title={title}
       description={description}
-      guidance="Add entries manually, or let Intelligence detect mentions in your session notes."
+      guidance="Add entries manually, or let Campaign Intelligence detect mentions in your session notes."
       action={onAdd ? { label: 'Add Entry', onClick: onAdd } : undefined}
     />
   )
