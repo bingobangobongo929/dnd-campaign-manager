@@ -674,7 +674,7 @@ export function UnifiedShareModal({
                           type="checkbox"
                           checked={selectedSections[section.key] || false}
                           onChange={() => toggleSection(section.key)}
-                          className="mt-0.5 w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50"
+                          className="mt-0.5 w-4 h-4 rounded border-[--border] bg-white/5 text-purple-500 accent-purple-500 focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-0"
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
@@ -740,7 +740,7 @@ export function UnifiedShareModal({
                       type="checkbox"
                       checked={usePassword}
                       onChange={(e) => setUsePassword(e.target.checked)}
-                      className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50"
+                      className="w-4 h-4 rounded border-[--border] bg-white/5 text-purple-500 accent-purple-500 focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-0"
                     />
                     <Lock className="w-4 h-4 text-gray-400" />
                     <span className="text-sm text-gray-300">Password protect</span>
@@ -894,7 +894,7 @@ export function UnifiedShareModal({
                       type="checkbox"
                       checked={usePassword}
                       onChange={(e) => setUsePassword(e.target.checked)}
-                      className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50"
+                      className="w-4 h-4 rounded border-[--border] bg-white/5 text-purple-500 accent-purple-500 focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-0"
                     />
                     <Lock className="w-4 h-4 text-gray-400" />
                     <span className="text-sm text-gray-300">Password protect</span>
@@ -1152,7 +1152,7 @@ function ShareLinkCard({
                     type="checkbox"
                     checked={editSections[section.key] || false}
                     onChange={() => onToggleEditSection(section.key)}
-                    className="w-3 h-3 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50"
+                    className="w-3 h-3 rounded border-[--border] bg-white/5 text-purple-500 accent-purple-500 focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-0"
                   />
                   <span className="truncate">{section.label}</span>
                   {section.dmOnly && (
@@ -1189,7 +1189,7 @@ function ShareLinkCard({
                       type="checkbox"
                       checked={editUsePassword}
                       onChange={(e) => onEditUsePasswordChange(e.target.checked)}
-                      className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50"
+                      className="w-4 h-4 rounded border-[--border] bg-white/5 text-purple-500 accent-purple-500 focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-0"
                     />
                     <Lock className="w-4 h-4 text-gray-400" />
                     <span className="text-sm text-gray-300">Change password</span>
@@ -1202,7 +1202,7 @@ function ShareLinkCard({
                   type="checkbox"
                   checked={editUsePassword}
                   onChange={(e) => onEditUsePasswordChange(e.target.checked)}
-                  className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50"
+                  className="w-4 h-4 rounded border-[--border] bg-white/5 text-purple-500 accent-purple-500 focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-0"
                 />
                 <Lock className="w-4 h-4 text-gray-400" />
                 <span className="text-sm text-gray-300">Add password protection</span>

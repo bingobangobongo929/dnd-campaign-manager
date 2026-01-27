@@ -1364,7 +1364,7 @@ function PermissionRow({
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-0"
+        className="w-4 h-4 rounded border-[--border] bg-white/5 text-purple-500 accent-purple-500 focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-0"
       />
       <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
         {label}
@@ -1386,7 +1386,7 @@ function PermissionGrid({
             type="checkbox"
             checked={perm.checked}
             onChange={(e) => perm.onChange(e.target.checked)}
-            className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-0"
+            className="w-4 h-4 rounded border-[--border] bg-white/5 text-purple-500 accent-purple-500 focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-0"
           />
           <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
             {perm.label}
