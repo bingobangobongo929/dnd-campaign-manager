@@ -24,6 +24,11 @@ import {
   Sparkles,
   Clock,
   Send,
+  ChevronDown,
+  UserCircle2,
+  ScrollText,
+  Map,
+  KeyRound,
 } from 'lucide-react'
 import { Modal, Input } from '@/components/ui'
 import { toast } from 'sonner'
@@ -384,7 +389,7 @@ export function PartyModal({
       isOpen={isOpen}
       onClose={onClose}
       title={getModalTitle()}
-      size="lg"
+      size="xl"
     >
       {loading ? (
         <div className="flex items-center justify-center py-12">
@@ -397,64 +402,85 @@ export function PartyModal({
           {/* ============================================ */}
           {view === 'list' && (
             <div className="space-y-4">
-              {/* Invite Button */}
-              <button
-                onClick={() => {
-                  setInviteMethod('email')
-                  setInviteForm({
-                    email: '',
-                    discordId: '',
-                    role: 'player',
-                    characterId: '',
-                    permissions: DEFAULT_PERMISSIONS['player'],
-                  })
-                  setShowAdvancedPermissions(false)
-                  setView('invite')
-                }}
-                className="btn btn-primary w-full"
-              >
-                <UserPlus className="w-4 h-4 mr-2" />
-                Invite Member
-              </button>
-
-              {/* Member Count */}
-              <div className="text-sm text-gray-500">
-                {members.length} member{members.length !== 1 ? 's' : ''}
+              {/* Header with count and invite button */}
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-400">
+                  {members.length} member{members.length !== 1 ? 's' : ''} in party
+                </p>
+                <button
+                  onClick={() => {
+                    setInviteMethod('email')
+                    setInviteForm({
+                      email: '',
+                      discordId: '',
+                      role: 'player',
+                      characterId: '',
+                      permissions: DEFAULT_PERMISSIONS['player'],
+                    })
+                    setShowAdvancedPermissions(false)
+                    setView('invite')
+                  }}
+                  className="btn btn-primary btn-sm"
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Invite
+                </button>
               </div>
 
-              {/* Member List */}
+              {/* Member List - cleaner cards */}
               <div className="space-y-2">
                 {members.map(member => {
                   const RoleIcon = getRoleIcon(member.role)
                   const displayName = getDisplayName(member)
                   const isCurrentUserOwner = member.role === 'owner'
+                  const hasCharacter = !!member.character
 
                   return (
                     <div
                       key={member.id}
                       className={cn(
-                        "flex items-center gap-3 p-3 rounded-lg border transition-colors",
+                        "flex items-center gap-4 p-3 rounded-lg border transition-all",
                         member.status === 'pending'
                           ? "bg-amber-500/5 border-amber-500/20"
                           : "bg-white/[0.02] border-[--border]",
-                        !isCurrentUserOwner && "hover:border-purple-500/30 cursor-pointer"
+                        !isCurrentUserOwner && "hover:border-purple-500/30 hover:bg-white/[0.03] cursor-pointer"
                       )}
                       onClick={() => !isCurrentUserOwner && handleSelectMember(member)}
                     >
-                      {/* Avatar */}
-                      {member.user_settings?.avatar_url ? (
-                        <Image
-                          src={member.user_settings.avatar_url}
-                          alt={displayName}
-                          width={40}
-                          height={40}
-                          className="rounded-full"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-purple-600/20 flex items-center justify-center text-purple-400 font-medium text-sm">
-                          {getInitials(displayName)}
-                        </div>
-                      )}
+                      {/* Character Avatar (prominent) or User Avatar */}
+                      <div className="relative flex-shrink-0">
+                        {hasCharacter && member.character?.image_url ? (
+                          <div className="w-12 h-12 rounded-lg overflow-hidden border-2 border-purple-500/30">
+                            <Image
+                              src={member.character.image_url}
+                              alt={member.character.name}
+                              width={48}
+                              height={48}
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                        ) : hasCharacter ? (
+                          <div className="w-12 h-12 rounded-lg bg-purple-600/20 border-2 border-purple-500/30 flex items-center justify-center">
+                            <User className="w-5 h-5 text-purple-400" />
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-gray-800 border border-[--border] flex items-center justify-center">
+                            <UserCircle2 className="w-6 h-6 text-gray-500" />
+                          </div>
+                        )}
+                        {/* Small user avatar overlay if character is assigned */}
+                        {hasCharacter && member.user_settings?.avatar_url && (
+                          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-[--bg-surface] overflow-hidden">
+                            <Image
+                              src={member.user_settings.avatar_url}
+                              alt={displayName}
+                              width={20}
+                              height={20}
+                              className="object-cover"
+                            />
+                          </div>
+                        )}
+                      </div>
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
@@ -462,50 +488,31 @@ export function PartyModal({
                           <p className="font-medium text-white text-sm truncate">
                             {displayName}
                           </p>
+                          <span className={cn(
+                            "inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-medium",
+                            getRoleColor(member.role)
+                          )}>
+                            <RoleIcon className="w-2.5 h-2.5" />
+                            {getRoleLabel(member.role)}
+                          </span>
                           {member.status === 'pending' && (
-                            <span className="text-xs text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                            <span className="text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded font-medium">
                               Pending
                             </span>
                           )}
                         </div>
-                        {member.status === 'pending' && member.invited_at && (
-                          <p className="text-xs text-gray-500">
-                            Invited {new Date(member.invited_at).toLocaleDateString()}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                          <span className={cn(
-                            "inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded",
-                            getRoleColor(member.role)
-                          )}>
-                            <RoleIcon className="w-3 h-3" />
-                            {getRoleLabel(member.role)}
-                          </span>
-                          {member.character && (
-                            <span className="text-xs text-gray-500">
-                              as {member.character.name}
-                            </span>
+                        <p className="text-xs text-gray-500 mt-0.5 truncate">
+                          {hasCharacter ? (
+                            <>Playing as <span className="text-gray-400">{member.character?.name}</span></>
+                          ) : (
+                            <span className="text-gray-600">No character assigned</span>
                           )}
-                          {/* Claim Status */}
-                          {member.character && member.status === 'active' && (
-                            member.vault_character_id ? (
-                              <span className="inline-flex items-center gap-1 text-xs text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded">
-                                <Sparkles className="w-3 h-3" />
-                                Claimed
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-xs text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
-                                <Clock className="w-3 h-3" />
-                                Not claimed
-                              </span>
-                            )
-                          )}
-                        </div>
+                        </p>
                       </div>
 
                       {/* Edit Arrow */}
                       {!isCurrentUserOwner && (
-                        <ChevronRight className="w-4 h-4 text-gray-500" />
+                        <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" />
                       )}
                     </div>
                   )
@@ -518,175 +525,168 @@ export function PartyModal({
           {/* MEMBER DETAIL VIEW */}
           {/* ============================================ */}
           {view === 'member-detail' && selectedMember && editForm && (
-            <div className="space-y-6">
+            <div className="flex flex-col h-full">
               {/* Back Button */}
               <button
                 onClick={() => setView('list')}
-                className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
+                className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-4"
               >
                 <ChevronLeft className="w-4 h-4" />
                 Back to Party
               </button>
 
-              {/* Member Header */}
-              <div className="flex items-center gap-4 p-4 bg-white/[0.02] rounded-lg border border-[--border]">
-                {selectedMember.user_settings?.avatar_url ? (
-                  <Image
-                    src={selectedMember.user_settings.avatar_url}
-                    alt={getDisplayName(selectedMember)}
-                    width={56}
-                    height={56}
-                    className="rounded-full"
-                  />
-                ) : (
-                  <div className="w-14 h-14 rounded-full bg-purple-600/20 flex items-center justify-center text-purple-400 font-bold text-lg">
-                    {getInitials(getDisplayName(selectedMember))}
-                  </div>
-                )}
-                <div>
-                  <h3 className="font-medium text-white">{getDisplayName(selectedMember)}</h3>
-                  {selectedMember.email && (
-                    <p className="text-sm text-gray-500">{selectedMember.email}</p>
-                  )}
-                  {selectedMember.discord_username && (
-                    <p className="text-sm text-gray-500 flex items-center gap-1.5">
-                      <svg className="w-3.5 h-3.5 text-[#5865F2]" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
-                      </svg>
-                      {selectedMember.discord_username}
-                    </p>
-                  )}
-                  {selectedMember.discord_id && !selectedMember.discord_username && (
-                    <p className="text-sm text-gray-500">Discord: {selectedMember.discord_id}</p>
-                  )}
-                  {selectedMember.status === 'pending' && selectedMember.invited_at ? (
-                    <p className="text-xs text-amber-400">
-                      Pending since {new Date(selectedMember.invited_at).toLocaleDateString()}
-                    </p>
-                  ) : selectedMember.joined_at && (
-                    <p className="text-xs text-gray-600">
-                      Joined {new Date(selectedMember.joined_at).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Invite Link for Pending Members */}
-              {selectedMember.status === 'pending' && selectedMember.invite_url && (
-                <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs text-amber-400 font-medium mb-1">Invite Link</p>
-                      <p className="text-sm text-gray-400 truncate font-mono">
-                        {selectedMember.invite_url}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleCopyMemberInviteLink(selectedMember.invite_url!)}
-                      className="btn btn-secondary btn-sm flex-shrink-0"
-                    >
-                      {copiedMemberLink ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 mr-1" />
-                          Copied
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5 mr-1" />
-                          Copy
-                        </>
-                      )}
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Share this link via WhatsApp, Discord, or any other platform.
-                  </p>
-                </div>
-              )}
-
-              {/* Claim Status for Active Members with Characters */}
-              {selectedMember.status === 'active' && selectedMember.character && (
-                <div className={cn(
-                  "rounded-lg p-4",
-                  selectedMember.vault_character_id
-                    ? "bg-green-500/5 border border-green-500/20"
-                    : "bg-amber-500/5 border border-amber-500/20"
-                )}>
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className={cn(
-                        "text-sm font-medium flex items-center gap-2",
-                        selectedMember.vault_character_id ? "text-green-400" : "text-amber-400"
-                      )}>
-                        {selectedMember.vault_character_id ? (
-                          <>
-                            <Sparkles className="w-4 h-4" />
-                            Character claimed to vault
-                          </>
-                        ) : (
-                          <>
-                            <Clock className="w-4 h-4" />
-                            Character not yet claimed
-                          </>
-                        )}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {selectedMember.vault_character_id
-                          ? `${selectedMember.character.name} is linked to the player's personal vault`
-                          : `${selectedMember.character.name} is waiting to be claimed by the player`
-                        }
-                      </p>
-                    </div>
-                    {!selectedMember.vault_character_id && (selectedMember.email || selectedMember.user_id) && (
-                      <button
-                        onClick={async () => {
-                          setSendingReminder(true)
-                          try {
-                            const response = await fetch(`/api/campaigns/${campaignId}/members/remind`, {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                memberId: selectedMember.id,
-                                characterId: selectedMember.character_id,
-                              }),
-                            })
-
-                            const data = await response.json()
-
-                            if (!response.ok) {
-                              throw new Error(data.error || 'Failed to send reminder')
-                            }
-
-                            toast.success(data.message || 'Reminder sent!')
-                          } catch (error) {
-                            console.error('Remind error:', error)
-                            // Fallback: copy reminder message
-                            const reminderText = `Hey! Don't forget to claim ${selectedMember.character?.name} to your Character Vault on Multiloop. This lets you track your character's journey and keep them after the campaign ends.`
-                            navigator.clipboard.writeText(reminderText)
-                            toast.info('Email sending unavailable - reminder message copied to clipboard')
-                          } finally {
-                            setSendingReminder(false)
-                          }
-                        }}
-                        disabled={sendingReminder}
-                        className="btn btn-secondary btn-sm flex-shrink-0"
-                      >
-                        {sendingReminder ? (
-                          <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-                        ) : (
-                          <Send className="w-3.5 h-3.5 mr-1" />
-                        )}
-                        {sendingReminder ? 'Sending...' : 'Send Reminder'}
-                      </button>
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto space-y-5 pr-1">
+                {/* Member Header - More compact with character avatar */}
+                <div className="flex items-center gap-4 p-4 bg-white/[0.02] rounded-lg border border-[--border]">
+                  {/* Character or User Avatar */}
+                  <div className="relative flex-shrink-0">
+                    {selectedMember.character?.image_url ? (
+                      <div className="w-14 h-14 rounded-lg overflow-hidden border-2 border-purple-500/30">
+                        <Image
+                          src={selectedMember.character.image_url}
+                          alt={selectedMember.character.name}
+                          width={56}
+                          height={56}
+                          className="object-cover w-full h-full"
+                        />
+                      </div>
+                    ) : selectedMember.character ? (
+                      <div className="w-14 h-14 rounded-lg bg-purple-600/20 border-2 border-purple-500/30 flex items-center justify-center">
+                        <User className="w-6 h-6 text-purple-400" />
+                      </div>
+                    ) : selectedMember.user_settings?.avatar_url ? (
+                      <Image
+                        src={selectedMember.user_settings.avatar_url}
+                        alt={getDisplayName(selectedMember)}
+                        width={56}
+                        height={56}
+                        className="rounded-full"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-purple-600/20 flex items-center justify-center text-purple-400 font-bold text-lg">
+                        {getInitials(getDisplayName(selectedMember))}
+                      </div>
+                    )}
+                    {/* User avatar overlay when character is shown */}
+                    {selectedMember.character && selectedMember.user_settings?.avatar_url && (
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-[--bg-surface] overflow-hidden">
+                        <Image
+                          src={selectedMember.user_settings.avatar_url}
+                          alt={getDisplayName(selectedMember)}
+                          width={24}
+                          height={24}
+                          className="object-cover"
+                        />
+                      </div>
                     )}
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-white">{getDisplayName(selectedMember)}</h3>
+                    {selectedMember.character && (
+                      <p className="text-sm text-purple-400">Playing as {selectedMember.character.name}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                      {selectedMember.email && <span>{selectedMember.email}</span>}
+                      {selectedMember.discord_username && (
+                        <span className="flex items-center gap-1">
+                          <svg className="w-3 h-3 text-[#5865F2]" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                          </svg>
+                          {selectedMember.discord_username}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {/* Status badge */}
+                  {selectedMember.status === 'pending' ? (
+                    <span className="text-xs text-amber-400 bg-amber-500/10 px-2 py-1 rounded font-medium">
+                      Pending
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-500">
+                      Joined {selectedMember.joined_at ? new Date(selectedMember.joined_at).toLocaleDateString() : 'N/A'}
+                    </span>
+                  )}
                 </div>
-              )}
 
-              {/* Role & Character */}
-              <div className="space-y-4">
-                <h4 className="text-sm font-medium text-white">Role & Character</h4>
+                {/* Invite Link for Pending Members */}
+                {selectedMember.status === 'pending' && selectedMember.invite_url && (
+                  <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-amber-400 font-medium mb-1">Invite Link</p>
+                        <p className="text-xs text-gray-400 truncate font-mono">
+                          {selectedMember.invite_url}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleCopyMemberInviteLink(selectedMember.invite_url!)}
+                        className="btn btn-secondary btn-sm flex-shrink-0"
+                      >
+                        {copiedMemberLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
+                {/* Claim Status for Active Members with Characters */}
+                {selectedMember.status === 'active' && selectedMember.character && (
+                  <div className={cn(
+                    "rounded-lg p-3",
+                    selectedMember.vault_character_id
+                      ? "bg-green-500/5 border border-green-500/20"
+                      : "bg-amber-500/5 border border-amber-500/20"
+                  )}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        {selectedMember.vault_character_id ? (
+                          <Sparkles className="w-4 h-4 text-green-400" />
+                        ) : (
+                          <Clock className="w-4 h-4 text-amber-400" />
+                        )}
+                        <span className={cn(
+                          "text-sm font-medium",
+                          selectedMember.vault_character_id ? "text-green-400" : "text-amber-400"
+                        )}>
+                          {selectedMember.vault_character_id ? 'Character claimed' : 'Awaiting claim'}
+                        </span>
+                      </div>
+                      {!selectedMember.vault_character_id && (selectedMember.email || selectedMember.user_id) && (
+                        <button
+                          onClick={async () => {
+                            setSendingReminder(true)
+                            try {
+                              const response = await fetch(`/api/campaigns/${campaignId}/members/remind`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  memberId: selectedMember.id,
+                                  characterId: selectedMember.character_id,
+                                }),
+                              })
+                              const data = await response.json()
+                              if (!response.ok) throw new Error(data.error || 'Failed to send reminder')
+                              toast.success(data.message || 'Reminder sent!')
+                            } catch (error) {
+                              const reminderText = `Hey! Don't forget to claim ${selectedMember.character?.name} to your Character Vault on Multiloop.`
+                              navigator.clipboard.writeText(reminderText)
+                              toast.info('Reminder copied to clipboard')
+                            } finally {
+                              setSendingReminder(false)
+                            }
+                          }}
+                          disabled={sendingReminder}
+                          className="btn btn-secondary btn-sm"
+                        >
+                          {sendingReminder ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Role & Character - Side by side */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="form-group">
                     <label className="form-label">Role</label>
@@ -731,231 +731,140 @@ export function PartyModal({
                     </select>
                   </div>
                 </div>
-              </div>
 
-              {/* Permissions */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-medium text-white">Permissions</h4>
-                  <button
-                    onClick={handleResetPermissions}
-                    className="text-xs text-gray-400 hover:text-white flex items-center gap-1"
+                {/* Permissions - Grouped into Accordions */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium text-white">Permissions</h4>
+                    <button
+                      onClick={handleResetPermissions}
+                      className="text-xs text-gray-400 hover:text-white flex items-center gap-1"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      Reset
+                    </button>
+                  </div>
+
+                  {/* Accordion Groups */}
+                  <PermissionAccordion
+                    icon={Users}
+                    title="Characters & NPCs"
+                    defaultOpen={true}
                   >
-                    <RotateCcw className="w-3 h-3" />
-                    Reset to Default
-                  </button>
-                </div>
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                      <div>
+                        <p className="text-xs text-gray-500 mb-2">Party Characters</p>
+                        <PermissionRow label="Edit own character" checked={editForm.permissions.characters.editOwn} onChange={(v) => updatePermission('characters', 'editOwn', v)} />
+                        <PermissionRow label="View party members" checked={editForm.permissions.characters.viewParty} onChange={(v) => updatePermission('characters', 'viewParty', v)} />
+                        <PermissionRow label="View full details" checked={editForm.permissions.characters.viewPartyDetails} onChange={(v) => updatePermission('characters', 'viewPartyDetails', v)} />
+                        <PermissionRow label="Edit other PCs" checked={editForm.permissions.characters.editParty} onChange={(v) => updatePermission('characters', 'editParty', v)} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-2">NPCs</p>
+                        <PermissionRow label="View NPCs" checked={editForm.permissions.npcs.view} onChange={(v) => updatePermission('npcs', 'view', v)} />
+                        <PermissionRow label="View details" checked={editForm.permissions.npcs.viewDetails} onChange={(v) => updatePermission('npcs', 'viewDetails', v)} />
+                        <PermissionRow label="Add NPCs" checked={editForm.permissions.npcs.add} onChange={(v) => updatePermission('npcs', 'add', v)} />
+                        <PermissionRow label="Edit NPCs" checked={editForm.permissions.npcs.edit} onChange={(v) => updatePermission('npcs', 'edit', v)} />
+                      </div>
+                    </div>
+                  </PermissionAccordion>
 
-                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
-                  {/* Session Notes */}
-                  <PermissionSection title="Session Notes">
-                    <PermissionRow
-                      label="Add own session notes"
-                      checked={editForm.permissions.sessionNotes.addOwn}
-                      onChange={(v) => updatePermission('sessionNotes', 'addOwn', v)}
-                    />
-                    <PermissionRow
-                      label="View session recaps"
-                      checked={editForm.permissions.sessionNotes.viewRecaps}
-                      onChange={(v) => updatePermission('sessionNotes', 'viewRecaps', v)}
-                    />
-                    <PermissionRow
-                      label="View other players' notes"
-                      checked={editForm.permissions.sessionNotes.viewOthers}
-                      onChange={(v) => updatePermission('sessionNotes', 'viewOthers', v)}
-                    />
-                    <PermissionRow
-                      label="Edit other players' notes"
-                      checked={editForm.permissions.sessionNotes.editOthers}
-                      onChange={(v) => updatePermission('sessionNotes', 'editOthers', v)}
-                    />
-                  </PermissionSection>
+                  <PermissionAccordion
+                    icon={ScrollText}
+                    title="Sessions & Notes"
+                  >
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                      <div>
+                        <p className="text-xs text-gray-500 mb-2">Session Notes</p>
+                        <PermissionRow label="Add own notes" checked={editForm.permissions.sessionNotes.addOwn} onChange={(v) => updatePermission('sessionNotes', 'addOwn', v)} />
+                        <PermissionRow label="View recaps" checked={editForm.permissions.sessionNotes.viewRecaps} onChange={(v) => updatePermission('sessionNotes', 'viewRecaps', v)} />
+                        <PermissionRow label="View others' notes" checked={editForm.permissions.sessionNotes.viewOthers} onChange={(v) => updatePermission('sessionNotes', 'viewOthers', v)} />
+                        <PermissionRow label="Edit others' notes" checked={editForm.permissions.sessionNotes.editOthers} onChange={(v) => updatePermission('sessionNotes', 'editOthers', v)} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-2">Sessions</p>
+                        <PermissionRow label="View sessions" checked={editForm.permissions.sessions.view} onChange={(v) => updatePermission('sessions', 'view', v)} />
+                        <PermissionRow label="Add sessions" checked={editForm.permissions.sessions.add} onChange={(v) => updatePermission('sessions', 'add', v)} />
+                        <PermissionRow label="Edit sessions" checked={editForm.permissions.sessions.edit} onChange={(v) => updatePermission('sessions', 'edit', v)} />
+                        <PermissionRow label="Delete sessions" checked={editForm.permissions.sessions.delete} onChange={(v) => updatePermission('sessions', 'delete', v)} />
+                      </div>
+                    </div>
+                  </PermissionAccordion>
 
-                  {/* Characters */}
-                  <PermissionSection title="Characters">
-                    <PermissionRow
-                      label="Edit own character"
-                      checked={editForm.permissions.characters.editOwn}
-                      onChange={(v) => updatePermission('characters', 'editOwn', v)}
-                    />
-                    <PermissionRow
-                      label="View party members"
-                      checked={editForm.permissions.characters.viewParty}
-                      onChange={(v) => updatePermission('characters', 'viewParty', v)}
-                    />
-                    <PermissionRow
-                      label="View full PC details"
-                      checked={editForm.permissions.characters.viewPartyDetails}
-                      onChange={(v) => updatePermission('characters', 'viewPartyDetails', v)}
-                    />
-                    <PermissionRow
-                      label="Edit other party members"
-                      checked={editForm.permissions.characters.editParty}
-                      onChange={(v) => updatePermission('characters', 'editParty', v)}
-                    />
-                  </PermissionSection>
+                  <PermissionAccordion
+                    icon={Map}
+                    title="World & Lore"
+                  >
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                      <div>
+                        <p className="text-xs text-gray-500 mb-2">Timeline</p>
+                        <PermissionRow label="View timeline" checked={editForm.permissions.timeline.view} onChange={(v) => updatePermission('timeline', 'view', v)} />
+                        <PermissionRow label="View future events" checked={editForm.permissions.timeline.viewFuture} onChange={(v) => updatePermission('timeline', 'viewFuture', v)} />
+                        <PermissionRow label="Add events" checked={editForm.permissions.timeline.add} onChange={(v) => updatePermission('timeline', 'add', v)} />
+                        <PermissionRow label="Edit events" checked={editForm.permissions.timeline.edit} onChange={(v) => updatePermission('timeline', 'edit', v)} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-2">Factions & Locations</p>
+                        <PermissionRow label="View factions" checked={editForm.permissions.factions.view} onChange={(v) => updatePermission('factions', 'view', v)} />
+                        <PermissionRow label="Edit factions" checked={editForm.permissions.factions.edit} onChange={(v) => updatePermission('factions', 'edit', v)} />
+                        <PermissionRow label="View locations" checked={editForm.permissions.locations.view} onChange={(v) => updatePermission('locations', 'view', v)} />
+                        <PermissionRow label="Edit locations" checked={editForm.permissions.locations.edit} onChange={(v) => updatePermission('locations', 'edit', v)} />
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-xs text-gray-500 mb-2 mt-2">Lore</p>
+                        <div className="flex flex-wrap gap-4">
+                          <PermissionRow label="View" checked={editForm.permissions.lore.view} onChange={(v) => updatePermission('lore', 'view', v)} />
+                          <PermissionRow label="Add" checked={editForm.permissions.lore.add} onChange={(v) => updatePermission('lore', 'add', v)} />
+                          <PermissionRow label="Edit" checked={editForm.permissions.lore.edit} onChange={(v) => updatePermission('lore', 'edit', v)} />
+                          <PermissionRow label="Delete" checked={editForm.permissions.lore.delete} onChange={(v) => updatePermission('lore', 'delete', v)} />
+                        </div>
+                      </div>
+                    </div>
+                  </PermissionAccordion>
 
-                  {/* NPCs */}
-                  <PermissionSection title="NPCs">
-                    <PermissionGrid
-                      permissions={[
-                        { label: 'View', checked: editForm.permissions.npcs.view, onChange: (v) => updatePermission('npcs', 'view', v) },
-                        { label: 'View Details', checked: editForm.permissions.npcs.viewDetails, onChange: (v) => updatePermission('npcs', 'viewDetails', v) },
-                        { label: 'Add', checked: editForm.permissions.npcs.add, onChange: (v) => updatePermission('npcs', 'add', v) },
-                        { label: 'Edit', checked: editForm.permissions.npcs.edit, onChange: (v) => updatePermission('npcs', 'edit', v) },
-                        { label: 'Delete', checked: editForm.permissions.npcs.delete, onChange: (v) => updatePermission('npcs', 'delete', v) },
-                      ]}
-                    />
-                    <PermissionRow
-                      label="View relationships"
-                      checked={editForm.permissions.npcs.viewRelationships}
-                      onChange={(v) => updatePermission('npcs', 'viewRelationships', v)}
-                    />
-                    <PermissionRow
-                      label="Edit relationships"
-                      checked={editForm.permissions.npcs.editRelationships}
-                      onChange={(v) => updatePermission('npcs', 'editRelationships', v)}
-                    />
-                  </PermissionSection>
-
-                  {/* Timeline */}
-                  <PermissionSection title="Timeline">
-                    <PermissionGrid
-                      permissions={[
-                        { label: 'View', checked: editForm.permissions.timeline.view, onChange: (v) => updatePermission('timeline', 'view', v) },
-                        { label: 'Add', checked: editForm.permissions.timeline.add, onChange: (v) => updatePermission('timeline', 'add', v) },
-                        { label: 'Edit', checked: editForm.permissions.timeline.edit, onChange: (v) => updatePermission('timeline', 'edit', v) },
-                        { label: 'Delete', checked: editForm.permissions.timeline.delete, onChange: (v) => updatePermission('timeline', 'delete', v) },
-                      ]}
-                    />
-                    <PermissionRow
-                      label="View future/planned events"
-                      checked={editForm.permissions.timeline.viewFuture}
-                      onChange={(v) => updatePermission('timeline', 'viewFuture', v)}
-                    />
-                  </PermissionSection>
-
-                  {/* Factions */}
-                  <PermissionSection title="Factions">
-                    <PermissionGrid
-                      permissions={[
-                        { label: 'View', checked: editForm.permissions.factions.view, onChange: (v) => updatePermission('factions', 'view', v) },
-                        { label: 'Add', checked: editForm.permissions.factions.add, onChange: (v) => updatePermission('factions', 'add', v) },
-                        { label: 'Edit', checked: editForm.permissions.factions.edit, onChange: (v) => updatePermission('factions', 'edit', v) },
-                        { label: 'Delete', checked: editForm.permissions.factions.delete, onChange: (v) => updatePermission('factions', 'delete', v) },
-                      ]}
-                    />
-                  </PermissionSection>
-
-                  {/* Locations */}
-                  <PermissionSection title="Locations">
-                    <PermissionGrid
-                      permissions={[
-                        { label: 'View', checked: editForm.permissions.locations.view, onChange: (v) => updatePermission('locations', 'view', v) },
-                        { label: 'Add', checked: editForm.permissions.locations.add, onChange: (v) => updatePermission('locations', 'add', v) },
-                        { label: 'Edit', checked: editForm.permissions.locations.edit, onChange: (v) => updatePermission('locations', 'edit', v) },
-                        { label: 'Delete', checked: editForm.permissions.locations.delete, onChange: (v) => updatePermission('locations', 'delete', v) },
-                      ]}
-                    />
-                  </PermissionSection>
-
-                  {/* Lore */}
-                  <PermissionSection title="Lore">
-                    <PermissionGrid
-                      permissions={[
-                        { label: 'View', checked: editForm.permissions.lore.view, onChange: (v) => updatePermission('lore', 'view', v) },
-                        { label: 'Add', checked: editForm.permissions.lore.add, onChange: (v) => updatePermission('lore', 'add', v) },
-                        { label: 'Edit', checked: editForm.permissions.lore.edit, onChange: (v) => updatePermission('lore', 'edit', v) },
-                        { label: 'Delete', checked: editForm.permissions.lore.delete, onChange: (v) => updatePermission('lore', 'delete', v) },
-                      ]}
-                    />
-                  </PermissionSection>
-
-                  {/* Maps */}
-                  <PermissionSection title="Maps">
-                    <PermissionGrid
-                      permissions={[
-                        { label: 'View', checked: editForm.permissions.maps.view, onChange: (v) => updatePermission('maps', 'view', v) },
-                        { label: 'Add', checked: editForm.permissions.maps.add, onChange: (v) => updatePermission('maps', 'add', v) },
-                        { label: 'Delete', checked: editForm.permissions.maps.delete, onChange: (v) => updatePermission('maps', 'delete', v) },
-                      ]}
-                    />
-                  </PermissionSection>
-
-                  {/* Map Pins */}
-                  <PermissionSection title="Map Pins">
-                    <PermissionGrid
-                      permissions={[
-                        { label: 'View', checked: editForm.permissions.mapPins.view, onChange: (v) => updatePermission('mapPins', 'view', v) },
-                        { label: 'Add', checked: editForm.permissions.mapPins.add, onChange: (v) => updatePermission('mapPins', 'add', v) },
-                        { label: 'Edit', checked: editForm.permissions.mapPins.edit, onChange: (v) => updatePermission('mapPins', 'edit', v) },
-                        { label: 'Delete', checked: editForm.permissions.mapPins.delete, onChange: (v) => updatePermission('mapPins', 'delete', v) },
-                      ]}
-                    />
-                  </PermissionSection>
-
-                  {/* Gallery */}
-                  <PermissionSection title="Gallery">
-                    <PermissionGrid
-                      permissions={[
-                        { label: 'View', checked: editForm.permissions.gallery.view, onChange: (v) => updatePermission('gallery', 'view', v) },
-                        { label: 'Add', checked: editForm.permissions.gallery.add, onChange: (v) => updatePermission('gallery', 'add', v) },
-                        { label: 'Delete', checked: editForm.permissions.gallery.delete, onChange: (v) => updatePermission('gallery', 'delete', v) },
-                      ]}
-                    />
-                  </PermissionSection>
-
-                  {/* Canvas */}
-                  <PermissionSection title="Canvas">
-                    <PermissionRow
-                      label="View canvas"
-                      checked={editForm.permissions.canvas.view}
-                      onChange={(v) => updatePermission('canvas', 'view', v)}
-                    />
-                    <PermissionRow
-                      label="Edit layout"
-                      checked={editForm.permissions.canvas.editLayout}
-                      onChange={(v) => updatePermission('canvas', 'editLayout', v)}
-                    />
-                  </PermissionSection>
-
-                  {/* Sessions */}
-                  <PermissionSection title="Sessions">
-                    <PermissionGrid
-                      permissions={[
-                        { label: 'View', checked: editForm.permissions.sessions.view, onChange: (v) => updatePermission('sessions', 'view', v) },
-                        { label: 'Add', checked: editForm.permissions.sessions.add, onChange: (v) => updatePermission('sessions', 'add', v) },
-                        { label: 'Edit', checked: editForm.permissions.sessions.edit, onChange: (v) => updatePermission('sessions', 'edit', v) },
-                        { label: 'Delete', checked: editForm.permissions.sessions.delete, onChange: (v) => updatePermission('sessions', 'delete', v) },
-                      ]}
-                    />
-                  </PermissionSection>
-
-                  {/* Secrets */}
-                  <PermissionSection title="Secrets & Visibility">
-                    <PermissionRow
-                      label="View 'Party' visibility items"
-                      checked={editForm.permissions.secrets.viewPartyItems}
-                      onChange={(v) => updatePermission('secrets', 'viewPartyItems', v)}
-                    />
-                    <PermissionRow
-                      label="View reveal history"
-                      checked={editForm.permissions.secrets.viewRevealHistory}
-                      onChange={(v) => updatePermission('secrets', 'viewRevealHistory', v)}
-                    />
-                  </PermissionSection>
+                  <PermissionAccordion
+                    icon={KeyRound}
+                    title="Canvas, Maps & Gallery"
+                  >
+                    <div className="grid grid-cols-3 gap-x-6 gap-y-2">
+                      <div>
+                        <p className="text-xs text-gray-500 mb-2">Canvas</p>
+                        <PermissionRow label="View canvas" checked={editForm.permissions.canvas.view} onChange={(v) => updatePermission('canvas', 'view', v)} />
+                        <PermissionRow label="Edit layout" checked={editForm.permissions.canvas.editLayout} onChange={(v) => updatePermission('canvas', 'editLayout', v)} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-2">Maps</p>
+                        <PermissionRow label="View maps" checked={editForm.permissions.maps.view} onChange={(v) => updatePermission('maps', 'view', v)} />
+                        <PermissionRow label="Add maps" checked={editForm.permissions.maps.add} onChange={(v) => updatePermission('maps', 'add', v)} />
+                        <PermissionRow label="View pins" checked={editForm.permissions.mapPins.view} onChange={(v) => updatePermission('mapPins', 'view', v)} />
+                        <PermissionRow label="Add pins" checked={editForm.permissions.mapPins.add} onChange={(v) => updatePermission('mapPins', 'add', v)} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-2">Gallery</p>
+                        <PermissionRow label="View gallery" checked={editForm.permissions.gallery.view} onChange={(v) => updatePermission('gallery', 'view', v)} />
+                        <PermissionRow label="Add images" checked={editForm.permissions.gallery.add} onChange={(v) => updatePermission('gallery', 'add', v)} />
+                        <PermissionRow label="Delete images" checked={editForm.permissions.gallery.delete} onChange={(v) => updatePermission('gallery', 'delete', v)} />
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-[--border]">
+                      <p className="text-xs text-gray-500 mb-2">Secrets & Visibility</p>
+                      <div className="flex flex-wrap gap-4">
+                        <PermissionRow label="View party items" checked={editForm.permissions.secrets.viewPartyItems} onChange={(v) => updatePermission('secrets', 'viewPartyItems', v)} />
+                        <PermissionRow label="View reveal history" checked={editForm.permissions.secrets.viewRevealHistory} onChange={(v) => updatePermission('secrets', 'viewRevealHistory', v)} />
+                      </div>
+                    </div>
+                  </PermissionAccordion>
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-3 pt-4 border-t border-[--border]">
+              {/* Sticky Actions */}
+              <div className="flex items-center gap-3 pt-4 mt-4 border-t border-[--border] bg-[--bg-surface] sticky bottom-0">
                 <button
                   onClick={handleRemoveMember}
                   disabled={saving || selectedMember.role === 'owner'}
                   className="btn btn-secondary text-red-400 hover:text-red-300 hover:border-red-500/30"
                 >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Remove
+                  <Trash2 className="w-4 h-4" />
                 </button>
                 <div className="flex-1" />
                 <button
@@ -1396,6 +1305,41 @@ export function PartyModal({
 }
 
 // Helper Components
+
+function PermissionAccordion({
+  icon: Icon,
+  title,
+  children,
+  defaultOpen = false
+}: {
+  icon: any
+  title: string
+  children: React.ReactNode
+  defaultOpen?: boolean
+}) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
+
+  return (
+    <div className="border border-[--border] rounded-lg overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center gap-3 p-3 bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
+      >
+        <Icon className="w-4 h-4 text-purple-400" />
+        <span className="text-sm font-medium text-white flex-1 text-left">{title}</span>
+        <ChevronDown className={cn(
+          "w-4 h-4 text-gray-400 transition-transform",
+          isOpen && "rotate-180"
+        )} />
+      </button>
+      {isOpen && (
+        <div className="p-4 bg-white/[0.01] border-t border-[--border]">
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function PermissionSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
