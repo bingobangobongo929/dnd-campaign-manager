@@ -263,6 +263,7 @@ export default function WorldMapPage() {
         campaign={campaign}
         campaignId={campaignId}
         title="Maps"
+        icon={Map}
         isOwner={isOwner}
         isDm={isDm}
         onOpenMembers={() => setShowMembersModal(true)}
@@ -271,15 +272,6 @@ export default function WorldMapPage() {
         onOpenRelationships={() => setShowRelationshipsModal(true)}
         onOpenResize={() => setShowResizeModal(true)}
         onOpenShare={() => setShowShareModal(true)}
-        actions={can.addMap && (
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Add Map</span>
-          </button>
-        )}
       />
 
       {maps.length === 0 ? (
@@ -313,50 +305,31 @@ export default function WorldMapPage() {
       ) : (
         /* Gallery Grid */
         <div className="p-6">
-          {/* Header with filter */}
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="page-title">Maps</h1>
-              <p className="text-sm text-[--text-tertiary]">{maps.length} map{maps.length !== 1 ? 's' : ''}</p>
+          {/* Filter bar - only show if multiple types exist */}
+          {existingTypes.length > 1 && (
+            <div className="flex items-center gap-2 mb-6">
+              <Filter className="w-4 h-4 text-[--text-tertiary]" />
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value as MapType | 'all')}
+                className="form-input py-1.5 text-sm min-w-[140px]"
+              >
+                <option value="all">All Types ({maps.length})</option>
+                {existingTypes.map(type => {
+                  const info = MAP_TYPES[type as MapType] || MAP_TYPES.world
+                  const count = maps.filter(m => m.map_type === type).length
+                  return (
+                    <option key={type} value={type}>
+                      {info.icon} {info.label} ({count})
+                    </option>
+                  )
+                })}
+              </select>
             </div>
-
-            <div className="flex items-center gap-3">
-              {/* Filter dropdown */}
-              {existingTypes.length > 1 && (
-                <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-[--text-tertiary]" />
-                  <select
-                    value={filterType}
-                    onChange={(e) => setFilterType(e.target.value as MapType | 'all')}
-                    className="form-input py-1.5 text-sm min-w-[140px]"
-                  >
-                    <option value="all">All Types</option>
-                    {existingTypes.map(type => {
-                      const info = MAP_TYPES[type as MapType] || MAP_TYPES.world
-                      return (
-                        <option key={type} value={type}>
-                          {info.icon} {info.label}
-                        </option>
-                      )
-                    })}
-                  </select>
-                </div>
-              )}
-
-              {can.addMap && (
-                <button
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="btn btn-primary"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Map
-                </button>
-              )}
-            </div>
-          </div>
+          )}
 
           {/* Map Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {filteredMaps.map((map) => {
               const typeInfo = getMapTypeInfo(map)
               const count = pinCounts[map.id] || 0
@@ -365,60 +338,58 @@ export default function WorldMapPage() {
                 <button
                   key={map.id}
                   onClick={() => setSelectedMap(map)}
-                  className="group relative bg-[--bg-elevated] rounded-xl border border-[--border] overflow-hidden text-left hover:border-[--arcane-purple]/50 hover:shadow-lg hover:shadow-purple-500/5 transition-all"
+                  className="group relative rounded-xl overflow-hidden text-left hover:ring-2 hover:ring-[--arcane-purple]/50 transition-all"
                 >
                   {/* Thumbnail */}
-                  <div className="aspect-[4/3] relative bg-[--bg-surface]">
+                  <div className="aspect-[4/3] relative bg-[--bg-elevated]">
                     {map.image_url ? (
                       <Image
                         src={map.image_url}
                         alt={map.name || 'Map'}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw"
                       />
                     ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Map className="w-12 h-12 text-[--text-tertiary]" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[--bg-elevated] to-[--bg-surface]">
+                        <Map className="w-10 h-10 text-[--text-tertiary]/50" />
                       </div>
                     )}
 
+                    {/* Gradient overlay for text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
                     {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                      <span className="text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-                        <Eye className="w-4 h-4" />
-                        View Map
-                      </span>
-                    </div>
+                    <div className="absolute inset-0 bg-[--arcane-purple]/0 group-hover:bg-[--arcane-purple]/10 transition-colors" />
 
                     {/* Delete button (DM only) */}
                     {can.deleteMap && (
                       <button
                         onClick={(e) => handleDelete(map, e)}
-                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 hover:bg-[--arcane-ember] transition-all"
+                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 text-white/70 opacity-0 group-hover:opacity-100 hover:bg-[--arcane-ember] hover:text-white transition-all"
                         title="Delete map"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
-                  </div>
 
-                  {/* Card info */}
-                  <div className="p-3">
-                    <h3 className="font-medium text-[--text-primary] truncate">
-                      {map.name || 'Untitled Map'}
-                    </h3>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-[--text-tertiary] flex items-center gap-1">
-                        <span>{typeInfo.icon}</span>
-                        <span>{typeInfo.label}</span>
-                      </span>
-                      {count > 0 && (
-                        <span className="text-xs text-[--text-tertiary] flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {count}
+                    {/* Card info - overlaid on image */}
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <h3 className="font-medium text-white truncate text-shadow-sm">
+                        {map.name || 'Untitled Map'}
+                      </h3>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <span className="text-xs text-white/70 flex items-center gap-1">
+                          <span>{typeInfo.icon}</span>
+                          <span>{typeInfo.label}</span>
                         </span>
-                      )}
+                        {count > 0 && (
+                          <span className="text-xs text-white/70 flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {count}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </button>
@@ -429,12 +400,12 @@ export default function WorldMapPage() {
             {can.addMap && (
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="aspect-[4/3] flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-[--border] hover:border-[--arcane-purple]/50 hover:bg-[--bg-elevated] transition-colors group"
+                className="aspect-[4/3] flex flex-col items-center justify-center rounded-xl border border-dashed border-[--border-subtle] hover:border-[--arcane-purple]/40 hover:bg-[--arcane-purple]/5 transition-colors group"
               >
-                <div className="w-12 h-12 rounded-full bg-[--bg-elevated] group-hover:bg-[--arcane-purple]/10 flex items-center justify-center mb-3 transition-colors">
-                  <Plus className="w-6 h-6 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
+                <div className="w-10 h-10 rounded-full bg-[--bg-elevated] group-hover:bg-[--arcane-purple]/10 flex items-center justify-center mb-2 transition-colors">
+                  <Plus className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
                 </div>
-                <span className="text-sm text-[--text-secondary] group-hover:text-[--text-primary]">
+                <span className="text-sm text-[--text-tertiary] group-hover:text-[--text-secondary]">
                   Add Map
                 </span>
               </button>
