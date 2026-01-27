@@ -21,8 +21,8 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { Input, Textarea, Modal, Dropdown } from '@/components/ui'
-import Link from 'next/link'
 import { CharacterViewModal } from '@/components/character'
+import { IntelligenceHint } from '@/components/intelligence/IntelligenceHint'
 import {
   FeedView,
   ChaptersView,
@@ -446,7 +446,7 @@ export function TimelineTab({ campaignId, characters, isDm }: TimelineTabProps) 
 
         {/* Generate from sessions button */}
         {isDm && sessions.length > 0 && (
-          <div className="flex flex-col items-center gap-4 mt-4">
+          <div className="flex flex-col items-center mt-4">
             <button
               className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
               onClick={() => setIsAIGenerateModalOpen(true)}
@@ -458,20 +458,6 @@ export function TimelineTab({ campaignId, characters, isDm }: TimelineTabProps) 
               <Sparkles className="w-4 h-4" style={{ color: '#a78bfa' }} />
               <span style={{ color: '#a78bfa' }}>Generate from Sessions</span>
             </button>
-
-            {/* Campaign Intelligence link */}
-            <div className="text-center text-sm text-gray-500 max-w-md">
-              <p>
-                <span className="text-purple-400">Campaign Intelligence</span> reads your session notes and suggests timeline events to add.
-              </p>
-              <Link
-                href={`/campaigns/${campaignId}/intelligence`}
-                className="inline-flex items-center gap-1 mt-1 text-purple-400 hover:text-purple-300 transition-colors"
-              >
-                Open Campaign Intelligence
-                <span className="text-xs">→</span>
-              </Link>
-            </div>
           </div>
         )}
 
@@ -719,25 +705,14 @@ export function TimelineTab({ campaignId, characters, isDm }: TimelineTabProps) 
         <>
           {renderView()}
 
-          {/* Campaign Intelligence callout */}
-          {isDm && events.length < 10 && sessions.length > 0 && (
-            <div className="mt-6 p-4 rounded-lg bg-purple-500/5 border border-purple-500/10">
-              <div className="flex items-start gap-3">
-                <Sparkles className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm text-purple-300/90">
-                    <strong className="text-purple-300">Campaign Intelligence</strong> analyzes your session notes and suggests timeline events you may have missed.
-                  </p>
-                  <Link
-                    href={`/campaigns/${campaignId}/intelligence`}
-                    className="inline-flex items-center gap-1 mt-2 text-sm text-purple-400 hover:text-purple-300 transition-colors"
-                  >
-                    Open Campaign Intelligence
-                    <span className="text-xs">→</span>
-                  </Link>
-                </div>
-              </div>
-            </div>
+          {/* Intelligence Hint */}
+          {events.length > 0 && (
+            <IntelligenceHint
+              contentType="campaigns"
+              itemType="timeline"
+              contentId={campaignId}
+              isDm={isDm}
+            />
           )}
         </>
       )}

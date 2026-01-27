@@ -240,7 +240,7 @@ export function CampaignHub({
 
   const tabs: TabConfig[] = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'suggestions', label: 'AI Suggestions', icon: Sparkles, count: suggestions.length },
+    { id: 'suggestions', label: 'Suggestions', icon: Sparkles, count: suggestions.length },
     { id: 'timeline', label: 'Timeline', icon: Clock, count: timelineEvents.length },
   ]
 

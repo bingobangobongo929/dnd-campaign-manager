@@ -80,7 +80,7 @@ export function HubOverview({
       color: '#F59E0B',
     },
     {
-      label: 'AI Suggestions',
+      label: 'Suggestions',
       value: suggestions.length,
       subtext: suggestions.length > 0 ? 'Pending review' : 'All clear',
       icon: Sparkles,
@@ -165,7 +165,7 @@ export function HubOverview({
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-[15px] mb-1" style={{ color: '#f3f4f6' }}>
-                  AI Campaign Analysis
+                  Campaign Intelligence
                 </h3>
                 <p className="text-sm" style={{ color: '#9ca3af' }}>
                   Scan sessions and characters for updates, new relationships, quotes, and story developments.
@@ -290,7 +290,7 @@ export function HubOverview({
                     {suggestions.length} Suggestion{suggestions.length !== 1 ? 's' : ''} Pending
                   </h3>
                   <p className="text-xs" style={{ color: '#6b7280' }}>
-                    Review AI-detected updates for your characters
+                    Review suggested updates for your campaign
                   </p>
                 </div>
               </div>
@@ -346,7 +346,7 @@ export function HubOverview({
           }}
         >
           <h4 className="text-sm font-semibold mb-3" style={{ color: '#34d399' }}>
-            What the AI analyzes:
+            What Intelligence analyzes:
           </h4>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[

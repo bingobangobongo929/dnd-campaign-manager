@@ -137,7 +137,7 @@ export function IntelligenceModal({
       }
       description={
         step === 'idle' ? `Analyze session notes to detect character updates` :
-        step === 'analyzing' ? 'AI is scanning for character changes, revelations, and story updates' :
+        step === 'analyzing' ? 'Scanning for character changes, revelations, and story updates' :
         `${suggestions.length} potential update${suggestions.length !== 1 ? 's' : ''} found`
       }
     >
@@ -180,7 +180,7 @@ export function IntelligenceModal({
                     {session.title || `Session ${session.session_number}`}
                   </h3>
                   <p className="text-sm mb-3" style={{ color: '#9ca3af' }}>
-                    AI will analyze this session&apos;s notes and suggest updates to character cards based on events, revelations, and story developments.
+                    Intelligence will analyze this session&apos;s notes and suggest updates to character cards based on events, revelations, and story developments.
                   </p>
                   <div className="flex flex-wrap gap-4 text-xs" style={{ color: '#6b7280' }}>
                     <span>
@@ -202,7 +202,7 @@ export function IntelligenceModal({
               }}
             >
               <h4 className="text-sm font-semibold mb-2" style={{ color: '#34d399' }}>
-                What the AI looks for:
+                What Intelligence looks for:
               </h4>
               <ul className="text-sm space-y-1" style={{ color: '#9ca3af' }}>
                 <li>• Character status changes (deaths, captures, escapes)</li>
@@ -294,7 +294,7 @@ export function IntelligenceModal({
                     No Updates Detected
                   </p>
                   <p className="text-sm" style={{ color: '#6b7280' }}>
-                    The AI didn&apos;t find any character updates in this session&apos;s notes.
+                    No character updates were found in this session&apos;s notes.
                     This could mean the session was already reflected in character cards,
                     or the notes don&apos;t contain explicit character changes.
                   </p>

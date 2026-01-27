@@ -342,6 +342,7 @@ export function WorldTabs({
             campaignId={campaignId}
             characters={characters}
             relationships={relationships}
+            isDm={isDm}
           />
         )}
 

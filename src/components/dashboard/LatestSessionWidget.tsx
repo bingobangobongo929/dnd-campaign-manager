@@ -36,7 +36,7 @@ export function LatestSessionWidget({
         <WidgetEmptyState
           icon={Calendar}
           title="No sessions yet"
-          description="Record your first session to start tracking your campaign's story. Session notes power Campaign Intelligence suggestions!"
+          description="Record your first session to start tracking your campaign's story."
           action={isDm ? {
             label: 'Create First Session',
             href: `/campaigns/${campaignId}/sessions`,

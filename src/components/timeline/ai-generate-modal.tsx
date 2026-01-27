@@ -143,7 +143,7 @@ export function AIGenerateModal({
       }
       description={
         step === 'select' ? 'Select sessions to analyze for timeline events' :
-        step === 'generating' ? 'AI is extracting key events from your session notes' :
+        step === 'generating' ? 'Extracting key events from your session notes' :
         `${generatedEvents.length} events found. Select which to add.`
       }
     >

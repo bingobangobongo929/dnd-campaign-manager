@@ -193,7 +193,7 @@ export function CampaignIntelligenceModal({
       }
       description={
         step === 'idle' ? 'Analyze all changes since last run' :
-        step === 'analyzing' ? 'AI is scanning for character updates across your campaign' :
+        step === 'analyzing' ? 'Scanning for updates across your campaign' :
         noNewContent ? 'No new content to analyze' :
         `${suggestions.length} potential update${suggestions.length !== 1 ? 's' : ''} found`
       }
@@ -238,7 +238,7 @@ export function CampaignIntelligenceModal({
                     {campaign.name}
                   </h3>
                   <p className="text-sm mb-3" style={{ color: '#9ca3af' }}>
-                    AI will analyze all sessions and character updates since your last analysis run, detecting changes, revelations, and story developments.
+                    Intelligence will analyze all sessions and character updates since your last analysis run, detecting changes, revelations, and story developments.
                   </p>
                   <div className="flex flex-wrap gap-4 text-xs" style={{ color: '#6b7280' }}>
                     <span className="flex items-center gap-1.5">
@@ -262,7 +262,7 @@ export function CampaignIntelligenceModal({
               }}
             >
               <h4 className="text-sm font-semibold mb-2" style={{ color: '#34d399' }}>
-                What the AI looks for:
+                What Intelligence looks for:
               </h4>
               <ul className="text-sm space-y-1" style={{ color: '#9ca3af' }}>
                 <li>• Character status changes (deaths, captures, escapes)</li>
@@ -415,7 +415,7 @@ export function CampaignIntelligenceModal({
                         No Updates Detected
                       </p>
                       <p className="text-sm max-w-md mx-auto" style={{ color: '#6b7280' }}>
-                        The AI analyzed the new content but didn&apos;t find any character updates.
+                        No updates were found in the new content.
                         This could mean the changes are already reflected in character cards.
                       </p>
                     </div>

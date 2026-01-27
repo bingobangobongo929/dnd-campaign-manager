@@ -42,6 +42,7 @@ import { AppLayout } from '@/components/layout'
 import { Button, Modal, EmptyState, Badge, Tooltip, AccessDeniedPage } from '@/components/ui'
 import { GuidanceTip } from '@/components/guidance/GuidanceTip'
 import { BackToTopButton } from '@/components/ui/back-to-top'
+import { IntelligenceHint } from '@/components/intelligence/IntelligenceHint'
 import { RollReveal } from '@/components/roll-reveal'
 import { useSupabase, useUser, usePermissions } from '@/hooks'
 import { cn } from '@/lib/utils'
@@ -1946,7 +1947,7 @@ export default function QuestsPage() {
             <EmptyState
               icon={<Target className="w-12 h-12" />}
               title="No quests yet"
-              description="Start tracking what the party is doing. Add quests, objectives, and never lose a plot thread again."
+              description="Add quests manually, or let Campaign Intelligence detect quest hooks from your session notes."
               tip="Quests can be main storylines, side missions, personal character goals, or just rumors to explore."
               action={
                 <Button onClick={() => setShowAddModal(true)}>
@@ -1982,6 +1983,16 @@ export default function QuestsPage() {
                   ))}
               </div>
             </DragDropContext>
+          )}
+
+          {/* Intelligence Hint */}
+          {quests.length > 0 && (
+            <IntelligenceHint
+              contentType="campaigns"
+              itemType="quests"
+              contentId={campaignId}
+              isDm={isDm}
+            />
           )}
         </div>
       </div>

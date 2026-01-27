@@ -1,6 +1,6 @@
 'use client'
 
-import { MapPin, Shield, Users, Plus, Map, Lightbulb, Clock, Sparkles, ArrowRight } from 'lucide-react'
+import { MapPin, Shield, Users, Plus, Map, Lightbulb, Clock, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui'
 import Link from 'next/link'
 
@@ -57,7 +57,7 @@ export function EmptyWorldState({
             <div className="flex items-start gap-3 text-left">
               <Lightbulb className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-purple-300/80">
-                <strong className="text-purple-300">Tip:</strong> Start with your main city or the party's home base. Campaign Intelligence reads your session notes and suggests locations, factions, and more as you play.
+                <strong className="text-purple-300">Tip:</strong> Start with your main city or the party's home base. Add content manually anytime, or let Campaign Intelligence detect it from your session notes.
               </p>
             </div>
           </div>
@@ -88,11 +88,8 @@ export function EmptyWorldState({
           <MapPin className="w-8 h-8 text-blue-400" />
         </div>
         <h3 className="text-lg font-semibold text-white mb-2">No locations yet</h3>
-        <p className="text-gray-400 max-w-md mb-2">
-          Add the places that matter to your story. Link them to your maps for easy navigation.
-        </p>
-        <p className="text-gray-500 text-sm max-w-md mb-6">
-          Campaign Intelligence detects locations in your session notes and suggests adding them.
+        <p className="text-gray-400 max-w-md mb-6">
+          Add locations manually, or let Campaign Intelligence detect them from your session notes.
         </p>
         {onAddLocation && (
           <Button onClick={onAddLocation}>
@@ -112,11 +109,8 @@ export function EmptyWorldState({
           <Shield className="w-8 h-8 text-emerald-400" />
         </div>
         <h3 className="text-lg font-semibold text-white mb-2">No factions yet</h3>
-        <p className="text-gray-400 max-w-md mb-2">
-          Factions are groups with shared goals: guilds, governments, cults, mercenary bands...
-        </p>
-        <p className="text-gray-500 text-sm max-w-md mb-6">
-          Create factions, then add characters as members. Campaign Intelligence detects factions in your session notes and suggests adding them.
+        <p className="text-gray-400 max-w-md mb-6">
+          Create factions manually, or let Campaign Intelligence detect them from your session notes.
         </p>
         {onAddFaction && (
           <Button onClick={onAddFaction}>
@@ -136,11 +130,8 @@ export function EmptyWorldState({
           <Users className="w-8 h-8 text-purple-400" />
         </div>
         <h3 className="text-lg font-semibold text-white mb-2">No relationships defined</h3>
-        <p className="text-gray-400 max-w-md mb-2">
-          Character relationships bring your world to life: allies, rivals, family, lovers...
-        </p>
-        <p className="text-gray-500 text-sm max-w-md mb-6">
-          Create relationships on the Canvas. Campaign Intelligence detects character interactions in your session notes and suggests relationships.
+        <p className="text-gray-400 max-w-md mb-6">
+          Create relationships on the Canvas, or let Campaign Intelligence detect character interactions from your session notes.
         </p>
         {campaignId && (
           <Link
@@ -177,11 +168,8 @@ export function EmptyWorldState({
           <Clock className="w-8 h-8 text-amber-400" />
         </div>
         <h3 className="text-lg font-semibold text-white mb-2">No events yet</h3>
-        <p className="text-gray-400 max-w-md mb-2">
-          Track your campaign's key moments: battles, discoveries, character introductions, and story beats.
-        </p>
-        <p className="text-gray-500 text-sm max-w-md mb-6">
-          Campaign Intelligence analyzes your session notes and suggests timeline events to add.
+        <p className="text-gray-400 max-w-md mb-6">
+          Add events manually, or let Campaign Intelligence detect them from your session notes.
         </p>
         {onAddEvent && (
           <Button onClick={onAddEvent}>

@@ -41,6 +41,7 @@ import { Button, Modal, EmptyState, Badge, Tooltip, AccessDeniedPage } from '@/c
 import { GuidanceTip } from '@/components/guidance/GuidanceTip'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { RollReveal } from '@/components/roll-reveal'
+import { IntelligenceHint } from '@/components/intelligence/IntelligenceHint'
 import { useSupabase, useUser, usePermissions } from '@/hooks'
 import { cn } from '@/lib/utils'
 import type { Campaign } from '@/types/database'
@@ -1767,7 +1768,7 @@ export default function EncountersPage() {
             <EmptyState
               icon={<Swords className="w-12 h-12" />}
               title="No encounters yet"
-              description="Plan combat, social, and exploration encounters. Link them to locations and quests."
+              description="Add encounters manually, or let Campaign Intelligence detect them from your session notes."
               tip="Start by creating a few prepared encounters for your next session."
               action={
                 <Button onClick={() => setShowAddModal(true)}>
@@ -1797,6 +1798,16 @@ export default function EncountersPage() {
                 })}
               </div>
             </DragDropContext>
+          )}
+
+          {/* Intelligence Hint */}
+          {encounters.length > 0 && (
+            <IntelligenceHint
+              contentType="campaigns"
+              itemType="encounters"
+              contentId={campaignId}
+              isDm={isDm}
+            />
           )}
         </div>
       </div>

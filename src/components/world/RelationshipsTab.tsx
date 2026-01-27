@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo } from 'react'
 import { List, Share2, Search, Filter, ArrowRight } from 'lucide-react'
 import { RelationshipDiagram } from '@/components/campaign'
 import { EmptyWorldState } from './EmptyWorldState'
+import { IntelligenceHint } from '@/components/intelligence/IntelligenceHint'
 import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -17,9 +18,10 @@ interface RelationshipsTabProps {
   campaignId: string
   characters: CharacterWithTags[]
   relationships: CharacterRelationship[]
+  isDm?: boolean
 }
 
-export function RelationshipsTab({ campaignId, characters, relationships }: RelationshipsTabProps) {
+export function RelationshipsTab({ campaignId, characters, relationships, isDm = false }: RelationshipsTabProps) {
   const [viewMode, setViewMode] = useState<'list' | 'diagram'>('list')
   const [searchQuery, setSearchQuery] = useState('')
   const [characterFilter, setCharacterFilter] = useState<string>('all')
@@ -245,6 +247,16 @@ export function RelationshipsTab({ campaignId, characters, relationships }: Rela
             })
           )}
         </div>
+      )}
+
+      {/* Intelligence Hint */}
+      {relationships.length > 0 && (
+        <IntelligenceHint
+          contentType="campaigns"
+          itemType="relationships"
+          contentId={campaignId}
+          isDm={isDm}
+        />
       )}
     </div>
   )
