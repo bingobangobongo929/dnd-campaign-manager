@@ -7,7 +7,7 @@ import { Trash2, Brain, ChevronRight, Sparkles, Loader2, ChevronUp } from 'lucid
 import { Modal, Input, ColorPicker, IconPicker, getGroupIcon, AccessDeniedPage } from '@/components/ui'
 import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT, FloatingCanvasToolbar } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
-import { UnclaimedCharactersBanner } from '@/components/campaign'
+import { UnclaimedCharactersBanner, TagManager, FactionManager, RelationshipManager } from '@/components/campaign'
 import { TemplateStateBadge } from '@/components/templates/TemplateStateBadge'
 import { TemplateOnboardingModal } from '@/components/templates/TemplateOnboardingModal'
 import { toast } from 'sonner'
@@ -68,6 +68,9 @@ export default function CampaignCanvasPage() {
   const [isCreateCharacterModalOpen, setIsCreateCharacterModalOpen] = useState(false)
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false)
   const [isResizeToolbarOpen, setIsResizeToolbarOpen] = useState(false)
+  const [isLabelsModalOpen, setIsLabelsModalOpen] = useState(false)
+  const [isFactionsModalOpen, setIsFactionsModalOpen] = useState(false)
+  const [isRelationshipsModalOpen, setIsRelationshipsModalOpen] = useState(false)
 
   // Connection lines state
   const [showConnections, setShowConnections] = useState(false)
@@ -676,16 +679,15 @@ export default function CampaignCanvasPage() {
     <AppLayout campaignId={campaignId} fullBleed transparentTopBar topBarActions={topBarActions}>
       {/* Floating Canvas Toolbar */}
       <FloatingCanvasToolbar
-        zoomLevel={1}
-        onZoomIn={() => {}}
-        onZoomOut={() => {}}
-        onFitToScreen={() => {}}
         showConnections={showConnections}
         connectionFilter={connectionFilter}
         onToggleConnections={() => setShowConnections(!showConnections)}
         onFilterChange={setConnectionFilter}
         onAddCharacter={() => setIsCreateCharacterModalOpen(true)}
         onAddGroup={() => setIsCreateGroupOpen(true)}
+        onOpenLabels={() => setIsLabelsModalOpen(true)}
+        onOpenFactions={() => setIsFactionsModalOpen(true)}
+        onOpenRelationships={() => setIsRelationshipsModalOpen(true)}
         onOpenCardSizing={() => setIsResizeToolbarOpen(true)}
         canEdit={can.editCanvasLayout}
       />
@@ -997,6 +999,30 @@ export default function CampaignCanvasPage() {
           contentName={campaign.name}
         />
       )}
+
+      {/* Labels Manager Modal */}
+      <TagManager
+        campaignId={campaignId}
+        isOpen={isLabelsModalOpen}
+        onClose={() => setIsLabelsModalOpen(false)}
+        onTagsChange={loadCampaignData}
+      />
+
+      {/* Factions Manager Modal */}
+      <FactionManager
+        campaignId={campaignId}
+        characters={characters}
+        isOpen={isFactionsModalOpen}
+        onClose={() => setIsFactionsModalOpen(false)}
+        onFactionsChange={loadCampaignData}
+      />
+
+      {/* Relationships Manager Modal */}
+      <RelationshipManager
+        campaignId={campaignId}
+        isOpen={isRelationshipsModalOpen}
+        onClose={() => setIsRelationshipsModalOpen(false)}
+      />
 
     </AppLayout>
   )

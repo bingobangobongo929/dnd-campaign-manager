@@ -427,8 +427,8 @@ function CampaignCanvasInner({
         zoomOnPinch={true}
         zoomOnDoubleClick={true}
         panOnScroll={false} // Scroll zooms, not pans
-        panOnDrag={[0, 2]} // Left click (when not on node) or right click to pan
-        selectionOnDrag={canEdit} // Enable selection box with left click drag on empty space
+        panOnDrag={[2]} // Right click only to pan (like Miro)
+        selectionOnDrag={canEdit} // Left click drag on empty space for selection box
         selectionMode={SelectionMode.Partial} // Select when touching the box
         selectNodesOnDrag={canEdit}
         multiSelectionKeyCode={canEdit ? ['Shift', 'Control', 'Meta'] : null} // Hold shift/ctrl/cmd to add to selection

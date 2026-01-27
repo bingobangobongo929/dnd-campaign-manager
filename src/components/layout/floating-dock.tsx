@@ -23,9 +23,7 @@ import {
   Eye,
   Users,
   Lock,
-  Tags,
   Shield,
-  Link2,
 } from 'lucide-react'
 import { DockFlyout } from './dock-flyout'
 import { useCanUseAI } from '@/store'
@@ -86,7 +84,7 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
     ...(isDm || can.viewSessions ? [{ href: `/campaigns/${campaignId}/sessions`, label: 'Sessions', icon: ScrollText }] : []),
     ...(isDm || can.viewTimeline ? [{ href: `/campaigns/${campaignId}/timeline`, label: 'Timeline', icon: Clock }] : []),
     ...(isDm || can.viewLore ? [{ href: `/campaigns/${campaignId}/lore`, label: 'Lore', icon: Network }] : []),
-    ...(isDm || can.viewMaps ? [{ href: `/campaigns/${campaignId}/map`, label: 'World Map', icon: Map }] : []),
+    ...(isDm || can.viewMaps ? [{ href: `/campaigns/${campaignId}/map`, label: 'Maps', icon: Map }] : []),
     ...(isDm || can.viewGallery ? [{ href: `/campaigns/${campaignId}/gallery`, label: 'Gallery', icon: Image }] : []),
   ] : []
 
@@ -96,14 +94,7 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
     { href: `/campaigns/${campaignId}/locations`, label: 'Locations', icon: MapPin, isActive: isActive(`/campaigns/${campaignId}/locations`) },
     { href: `/campaigns/${campaignId}/quests`, label: 'Quests', icon: Target, isActive: isActive(`/campaigns/${campaignId}/quests`) },
     { href: `/campaigns/${campaignId}/encounters`, label: 'Encounters', icon: Swords, isActive: isActive(`/campaigns/${campaignId}/encounters`) },
-  ] : []
-
-  // Management flyout items (campaign context only, for DMs/owners)
-  const managementItems = campaignId && (isDm || isOwner) ? [
     { href: `/campaigns/${campaignId}/settings`, label: 'Party & Members', icon: Users, isActive: isActive(`/campaigns/${campaignId}/settings`) },
-    { href: `/campaigns/${campaignId}/settings`, label: 'Labels', icon: Tags, isActive: false },
-    { href: `/campaigns/${campaignId}/settings`, label: 'Factions', icon: Shield, isActive: false },
-    { href: `/campaigns/${campaignId}/settings`, label: 'Relationships', icon: Link2, isActive: false },
   ] : []
 
   // Navigate flyout items (for detail pages)
@@ -202,15 +193,6 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
               icon={Lock}
               label="DM Tools"
               items={dmToolsItems}
-            />
-          )}
-
-          {/* Management Flyout */}
-          {managementItems.length > 0 && (
-            <DockFlyout
-              icon={Settings}
-              label="Management"
-              items={managementItems}
             />
           )}
 
