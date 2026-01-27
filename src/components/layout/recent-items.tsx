@@ -92,11 +92,10 @@ export function RecentItems() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] hover:border-white/[0.1] transition-all text-gray-400 hover:text-white"
+        className="topbar-icon-btn"
         title="Recent items"
       >
         <Clock className="w-4 h-4" />
-        <span className="hidden sm:inline">Recent</span>
       </button>
 
       {isOpen && (

@@ -255,11 +255,10 @@ export function NavigationMapButton() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] hover:border-white/[0.1] transition-all text-gray-400 hover:text-white"
+        className="topbar-icon-btn"
         title="Navigation Guide"
       >
         <Map className="w-4 h-4" />
-        <span className="hidden sm:inline">Navigate</span>
       </button>
       <NavigationMapModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
     </>

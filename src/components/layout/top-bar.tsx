@@ -3,7 +3,7 @@
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronDown, Sparkles, LogOut, ChevronRight, Swords, BookOpen, Settings, LayoutGrid, ScrollText, Clock, Brain, Network, Map, Image as ImageIcon, Edit3, Eye, Users, Scroll, LayoutDashboard, MapPin, Target, Compass, PanelTop } from 'lucide-react'
+import { ChevronDown, Sparkles, LogOut, ChevronRight, Swords, BookOpen, Settings, LayoutGrid, ScrollText, Clock, Brain, Network, Map, Image as ImageIcon, Edit3, Eye, Users, Scroll, LayoutDashboard, MapPin, Target, Compass, PanelTop, Share2, Home, User } from 'lucide-react'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore, useCanUseAI } from '@/store'
 import type { UserSettings } from '@/types/database'
@@ -11,8 +11,7 @@ import { useState, useRef, useEffect } from 'react'
 import type { Campaign } from '@/types/database'
 import { RecentItems } from './recent-items'
 import { NavigationMapButton } from './navigation-map'
-
-import { Home } from 'lucide-react'
+import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 
 // Page icons for "You are here" indicator
 const PAGE_ICONS: Record<string, any> = {
@@ -67,8 +66,11 @@ export function TopBar({
   const canUseAI = useCanUseAI()
   const [showCampaignDropdown, setShowCampaignDropdown] = useState(false)
   const [showCharacterDropdown, setShowCharacterDropdown] = useState(false)
+  const [showUserDropdown, setShowUserDropdown] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
   const campaignDropdownRef = useRef<HTMLDivElement>(null)
   const characterDropdownRef = useRef<HTMLDivElement>(null)
+  const userDropdownRef = useRef<HTMLDivElement>(null)
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -78,6 +80,9 @@ export function TopBar({
       }
       if (characterDropdownRef.current && !characterDropdownRef.current.contains(event.target as Node)) {
         setShowCharacterDropdown(false)
+      }
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+        setShowUserDropdown(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -111,6 +116,43 @@ export function TopBar({
 
   // Get current character info for switcher
   const currentCharacter = characters.find(c => c.id === currentCharacterId)
+
+  // Determine share context from pathname
+  const getShareContext = (): { type: 'campaign' | 'character' | 'oneshot' | null; id: string | null; name: string } => {
+    const parts = pathname.split('/').filter(Boolean)
+
+    // Campaign context
+    if (parts[0] === 'campaigns' && parts[1] && parts[1] !== 'new') {
+      return {
+        type: 'campaign',
+        id: parts[1],
+        name: currentCampaign?.name || 'Campaign'
+      }
+    }
+
+    // Character (vault) context
+    if (parts[0] === 'vault' && parts[1] && parts[1] !== 'new' && parts[1] !== 'import') {
+      return {
+        type: 'character',
+        id: parts[1],
+        name: currentCharacter?.name || 'Character'
+      }
+    }
+
+    // Oneshot context
+    if (parts[0] === 'oneshots' && parts[1] && parts[1] !== 'new') {
+      return { type: 'oneshot', id: parts[1], name: 'One-Shot' }
+    }
+
+    // Adventure context (treated same as campaign for sharing)
+    if (parts[0] === 'adventures' && parts[1] && parts[1] !== 'new') {
+      return { type: 'campaign', id: parts[1], name: 'Adventure' }
+    }
+
+    return { type: null, id: null, name: '' }
+  }
+
+  const shareContext = getShareContext()
 
   // Build breadcrumb from pathname
   const getBreadcrumbs = () => {
@@ -404,22 +446,39 @@ export function TopBar({
           </div>
         )}
 
-        {/* Navigation & Recent Items */}
-        <NavigationMapButton />
-        <RecentItems />
-
-        {currentCampaignId && canUseAI && (
+        {/* Share Button - context aware */}
+        {shareContext.type && shareContext.id && (
           <button
-            className="ai-trigger"
-            onClick={() => setIsAIAssistantOpen(true)}
+            className="topbar-action-btn"
+            onClick={() => setShowShareModal(true)}
+            title="Share"
           >
-            <Sparkles className="ai-trigger-icon" />
-            <span>AI Assistant</span>
+            <Share2 className="w-4 h-4" />
+            <span className="topbar-action-label">Share</span>
           </button>
         )}
 
-        <div className="flex items-center gap-3">
-          <Link href="/home" className="relative w-8 h-8 rounded-full overflow-hidden bg-[--bg-secondary] flex items-center justify-center hover:ring-2 hover:ring-[--arcane-purple]/50 transition-all">
+        {/* Navigation & Recent Items (icon-only) */}
+        <NavigationMapButton />
+        <RecentItems />
+
+        {/* AI Assistant (icon-only) */}
+        {currentCampaignId && canUseAI && (
+          <button
+            className="topbar-action-btn ai"
+            onClick={() => setIsAIAssistantOpen(true)}
+            title="AI Assistant"
+          >
+            <Sparkles className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* User Avatar Dropdown */}
+        <div className="relative" ref={userDropdownRef}>
+          <button
+            className="user-avatar-btn"
+            onClick={() => setShowUserDropdown(!showUserDropdown)}
+          >
             {userSettings?.avatar_url ? (
               <Image
                 src={userSettings.avatar_url}
@@ -432,12 +491,57 @@ export function TopBar({
                 {user?.email?.charAt(0).toUpperCase() || 'U'}
               </span>
             )}
-          </Link>
-          <button className="btn-ghost btn-icon" onClick={handleLogout}>
-            <LogOut className="w-5 h-5" />
           </button>
+
+          {showUserDropdown && (
+            <div className="user-dropdown">
+              <div className="user-dropdown-header">
+                <span className="user-dropdown-email">{user?.email}</span>
+              </div>
+              <div className="user-dropdown-divider" />
+              <Link
+                href="/home"
+                className="user-dropdown-item"
+                onClick={() => setShowUserDropdown(false)}
+              >
+                <User className="w-4 h-4" />
+                Profile
+              </Link>
+              <Link
+                href="/settings"
+                className="user-dropdown-item"
+                onClick={() => setShowUserDropdown(false)}
+              >
+                <Settings className="w-4 h-4" />
+                Settings
+              </Link>
+              <div className="user-dropdown-divider" />
+              <button
+                className="user-dropdown-item text-red-400 hover:text-red-300"
+                onClick={() => {
+                  setShowUserDropdown(false)
+                  handleLogout()
+                }}
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Share Modal */}
+      {shareContext.type && shareContext.id && (
+        <UnifiedShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          contentType={shareContext.type}
+          contentId={shareContext.id}
+          contentName={shareContext.name}
+          contentMode="active"
+        />
+      )}
     </header>
   )
 }
