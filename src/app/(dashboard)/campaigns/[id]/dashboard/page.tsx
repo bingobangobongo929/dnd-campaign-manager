@@ -103,6 +103,10 @@ export default function CampaignDashboardPage() {
     resetToDefaults,
     isDmWidgetVisible,
     isPlayerWidgetVisible,
+    getDmWidgetSize,
+    getPlayerWidgetSize,
+    setDmWidgetSize,
+    setPlayerWidgetSize,
     getHiddenDmWidgets,
     getHiddenPlayerWidgets,
   } = useDashboardPreferences(campaignId, user?.id)
@@ -500,8 +504,9 @@ export default function CampaignDashboardPage() {
           <PlayerDashboardLayout
             campaignId={campaignId}
             campaign={campaign}
-            widgetOrder={preferences.playerWidgets}
+            widgetOrder={preferences.playerWidgets.map(w => w.id) as Parameters<typeof reorderPlayerWidgets>[0]}
             isVisible={isPlayerWidgetVisible}
+            getWidgetSize={getPlayerWidgetSize}
             myCharacter={myCharacter}
             membership={membership}
             isCharacterDesignatedForUser={isCharacterDesignatedForUser}
@@ -523,14 +528,16 @@ export default function CampaignDashboardPage() {
             isEditMode={isEditMode}
             onReorderWidgets={reorderPlayerWidgets}
             onToggleWidget={togglePlayerWidget}
+            onResizeWidget={setPlayerWidgetSize}
           />
         ) : (
           /* DM Dashboard Layout */
           <DmDashboardLayout
             campaignId={campaignId}
             campaign={campaign}
-            widgetOrder={preferences.dmWidgets}
+            widgetOrder={preferences.dmWidgets.map(w => w.id) as Parameters<typeof reorderDmWidgets>[0]}
             isVisible={isDmWidgetVisible}
+            getWidgetSize={getDmWidgetSize}
             sessions={sessions}
             characters={characters}
             pcCharacters={pcCharacters}
@@ -557,6 +564,7 @@ export default function CampaignDashboardPage() {
             isEditMode={isEditMode}
             onReorderWidgets={reorderDmWidgets}
             onToggleWidget={toggleDmWidget}
+            onResizeWidget={setDmWidgetSize}
           />
         )}
       </div>

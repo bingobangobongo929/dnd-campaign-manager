@@ -4,8 +4,8 @@ import { ReactNode } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { GripVertical, Eye, EyeOff, Lock } from 'lucide-react'
 import type { Campaign, Character, Session, TimelineEvent, PlayerSessionNote, CampaignMember, VaultCharacter } from '@/types/database'
-import type { DmWidgetId, PlayerWidgetId } from '@/hooks/useDashboardPreferences'
-import { DM_WIDGETS, PLAYER_WIDGETS } from '@/hooks/useDashboardPreferences'
+import type { DmWidgetId, PlayerWidgetId, WidgetSize } from '@/hooks/useDashboardPreferences'
+import { DM_WIDGETS, PLAYER_WIDGETS, WIDGET_SIZE_OPTIONS } from '@/hooks/useDashboardPreferences'
 import type { PermissionCan } from '@/hooks/usePermissions'
 import type { ScheduleSettings, SchedulePattern, ScheduleException } from '@/lib/schedule-utils'
 import { cn } from '@/lib/utils'
@@ -40,38 +40,36 @@ interface PartyMemberStatus {
   note?: string
 }
 
-// Widget size hints for layout decisions
-export const WIDGET_SIZES: { [key: string]: 'full' | 'half' | 'third' } = {
-  // DM widgets
-  campaignHeader: 'full',
-  quickActions: 'third',
-  latestSession: 'third',
-  campaignStats: 'third',
-  nextSession: 'full',
-  partyOverview: 'full',
-  recentEvents: 'third',
-  upcomingPlot: 'third',
-  recentSessions: 'full',
-  intelligenceStatus: 'half',
-  playerNotesReview: 'half',
-  dmToolbox: 'half',
-  // Player widgets
-  myCharacter: 'full',
-  previouslyOn: 'full',
+// Size to column span mapping for 6-column grid
+const SIZE_TO_SPAN: Record<WidgetSize, number> = {
+  'third': 2,  // 2 of 6 columns = 33%
+  'half': 3,   // 3 of 6 columns = 50%
+  'full': 6,   // 6 of 6 columns = 100%
+}
+
+// Size to medium breakpoint span (4-column grid)
+const SIZE_TO_MD_SPAN: Record<WidgetSize, number> = {
+  'third': 2,  // 2 of 4 columns = 50%
+  'half': 2,   // 2 of 4 columns = 50%
+  'full': 4,   // 4 of 4 columns = 100%
 }
 
 // Edit mode overlay for widgets
 function WidgetEditOverlay({
   widgetId,
   isRequired,
-  isVisible,
+  currentSize,
+  allowedSizes,
   onToggleVisibility,
+  onResize,
   isDragging,
 }: {
   widgetId: string
   isRequired: boolean
-  isVisible: boolean
+  currentSize: WidgetSize
+  allowedSizes: WidgetSize[]
   onToggleVisibility?: () => void
+  onResize?: (size: WidgetSize) => void
   isDragging: boolean
 }) {
   const widgetDef = [...DM_WIDGETS, ...PLAYER_WIDGETS].find(w => w.id === widgetId)
@@ -85,7 +83,7 @@ function WidgetEditOverlay({
         isDragging ? "border-purple-400 bg-purple-500/10" : "border-purple-500/50"
       )}
     >
-      {/* Drag handle and widget info */}
+      {/* Top bar with drag handle, label, and controls */}
       <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-2 pointer-events-auto">
         <div className="flex items-center gap-2">
           {!isRequired && (
@@ -103,24 +101,45 @@ function WidgetEditOverlay({
           </span>
         </div>
 
-        {/* Visibility toggle */}
-        {!isRequired && onToggleVisibility && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onToggleVisibility()
-            }}
-            className={cn(
-              "p-1.5 rounded-lg transition-colors",
-              isVisible
-                ? "bg-black/80 text-white hover:bg-red-600/80"
-                : "bg-red-600/80 text-white"
-            )}
-            title={isVisible ? "Hide widget" : "Show widget"}
-          >
-            {isVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Size selector - only show if multiple sizes allowed */}
+          {allowedSizes.length > 1 && onResize && (
+            <div className="flex gap-0.5 p-0.5 bg-black/80 rounded-lg">
+              {allowedSizes.map(size => (
+                <button
+                  key={size}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onResize(size)
+                  }}
+                  className={cn(
+                    "px-2 py-1 text-xs font-medium rounded transition-colors",
+                    currentSize === size
+                      ? "bg-purple-600 text-white"
+                      : "text-gray-400 hover:text-white hover:bg-white/10"
+                  )}
+                  title={size === 'third' ? 'Small (1/3)' : size === 'half' ? 'Medium (1/2)' : 'Large (Full)'}
+                >
+                  {size === 'third' ? 'S' : size === 'half' ? 'M' : 'L'}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Visibility toggle */}
+          {!isRequired && onToggleVisibility && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleVisibility()
+              }}
+              className="p-1.5 rounded-lg bg-black/80 text-white hover:bg-red-600/80 transition-colors"
+              title="Hide widget"
+            >
+              <EyeOff className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -131,6 +150,7 @@ interface DmDashboardLayoutProps {
   campaign: Campaign | null
   widgetOrder: readonly DmWidgetId[]
   isVisible: (widgetId: DmWidgetId) => boolean
+  getWidgetSize: (widgetId: DmWidgetId) => WidgetSize
   sessions: Session[]
   characters: Character[]
   pcCharacters: Character[]
@@ -158,6 +178,7 @@ interface DmDashboardLayoutProps {
   isEditMode?: boolean
   onReorderWidgets?: (newOrder: DmWidgetId[]) => void
   onToggleWidget?: (widgetId: DmWidgetId) => void
+  onResizeWidget?: (widgetId: DmWidgetId, size: WidgetSize) => void
 }
 
 export function DmDashboardLayout({
@@ -165,6 +186,7 @@ export function DmDashboardLayout({
   campaign,
   widgetOrder,
   isVisible,
+  getWidgetSize,
   sessions,
   characters,
   pcCharacters,
@@ -190,6 +212,7 @@ export function DmDashboardLayout({
   isEditMode = false,
   onReorderWidgets,
   onToggleWidget,
+  onResizeWidget,
 }: DmDashboardLayoutProps) {
   // Build widget map
   const widgetMap: { [key in DmWidgetId]?: ReactNode } = {
@@ -317,79 +340,66 @@ export function DmDashboardLayout({
   // Get visible widgets
   const visibleWidgets = widgetOrder.filter(id => isVisible(id) && widgetMap[id])
 
-  // Non-edit mode: use the original row-grouping layout
-  if (!isEditMode) {
-    const renderedWidgets: ReactNode[] = []
-    let currentRow: { id: DmWidgetId; size: 'full' | 'half' | 'third' }[] = []
+  // Render widget with grid span
+  const renderWidget = (widgetId: DmWidgetId, index?: number) => {
+    const size = getWidgetSize(widgetId)
+    const span = SIZE_TO_SPAN[size]
+    const mdSpan = SIZE_TO_MD_SPAN[size]
 
-    const flushRow = () => {
-      if (currentRow.length === 0) return
-
-      const allThirds = currentRow.every(w => w.size === 'third')
-      const allHalves = currentRow.every(w => w.size === 'half')
-      const mixed = !allThirds && !allHalves
-
-      if (currentRow.length === 1 || (currentRow.length > 1 && mixed)) {
-        currentRow.forEach(w => {
-          renderedWidgets.push(
-            <div key={w.id}>{widgetMap[w.id]}</div>
-          )
-        })
-      } else if (allThirds) {
-        renderedWidgets.push(
-          <div key={`row-${renderedWidgets.length}`} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {currentRow.map(w => (
-              <div key={w.id}>{widgetMap[w.id]}</div>
-            ))}
-          </div>
-        )
-      } else if (allHalves) {
-        renderedWidgets.push(
-          <div key={`row-${renderedWidgets.length}`} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {currentRow.map(w => (
-              <div key={w.id}>{widgetMap[w.id]}</div>
-            ))}
-          </div>
-        )
-      }
-
-      currentRow = []
-    }
-
-    visibleWidgets.forEach((widgetId, index) => {
-      const size = WIDGET_SIZES[widgetId] || 'full'
-
-      if (size === 'full') {
-        flushRow()
-        renderedWidgets.push(
-          <div key={widgetId}>{widgetMap[widgetId]}</div>
-        )
-      } else {
-        currentRow.push({ id: widgetId, size })
-
-        const maxInRow = size === 'third' ? 3 : 2
-        if (currentRow.length >= maxInRow) {
-          flushRow()
-        } else {
-          const nextWidget = visibleWidgets[index + 1]
-          if (nextWidget) {
-            const nextSize = WIDGET_SIZES[nextWidget] || 'full'
-            if (nextSize !== size) {
-              flushRow()
-            }
-          } else {
-            flushRow()
-          }
-        }
-      }
-    })
-
-    flushRow()
-
-    return <div className="space-y-6">{renderedWidgets}</div>
+    return (
+      <div
+        key={widgetId}
+        className="col-span-full"
+        style={{
+          gridColumn: `span ${span}`,
+        }}
+        // Use responsive classes via data attribute for CSS
+        data-size={size}
+      >
+        {widgetMap[widgetId]}
+      </div>
+    )
   }
 
-  // Edit mode: use drag-and-drop with flat list for simpler reordering
+  // Non-edit mode: CSS grid layout
+  if (!isEditMode) {
+    return (
+      <div
+        className="grid gap-4"
+        style={{
+          gridTemplateColumns: 'repeat(6, 1fr)',
+        }}
+      >
+        <style jsx>{`
+          @media (max-width: 1023px) {
+            div {
+              grid-template-columns: repeat(4, 1fr) !important;
+            }
+            div > [data-size="third"] {
+              grid-column: span 2 !important;
+            }
+            div > [data-size="half"] {
+              grid-column: span 2 !important;
+            }
+            div > [data-size="full"] {
+              grid-column: span 4 !important;
+            }
+          }
+          @media (max-width: 767px) {
+            div {
+              grid-template-columns: 1fr !important;
+            }
+            div > [data-size] {
+              grid-column: span 1 !important;
+            }
+          }
+        `}</style>
+        {visibleWidgets.map(widgetId => renderWidget(widgetId))}
+      </div>
+    )
+  }
+
+  // Edit mode: drag-and-drop with CSS grid
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <Droppable droppableId="dm-dashboard-widgets">
@@ -398,13 +408,31 @@ export function DmDashboardLayout({
             ref={provided.innerRef}
             {...provided.droppableProps}
             className={cn(
-              "space-y-4 transition-colors rounded-xl p-2 -m-2",
+              "grid gap-4 transition-colors rounded-xl p-2 -m-2",
               snapshot.isDraggingOver && "bg-purple-500/5"
             )}
+            style={{
+              gridTemplateColumns: 'repeat(6, 1fr)',
+            }}
           >
+            <style jsx>{`
+              @media (max-width: 1023px) {
+                div {
+                  grid-template-columns: repeat(4, 1fr) !important;
+                }
+              }
+              @media (max-width: 767px) {
+                div {
+                  grid-template-columns: 1fr !important;
+                }
+              }
+            `}</style>
             {visibleWidgets.map((widgetId, index) => {
               const widgetDef = DM_WIDGETS.find(w => w.id === widgetId)
               const isRequired = widgetDef?.required || false
+              const size = getWidgetSize(widgetId)
+              const span = SIZE_TO_SPAN[size]
+              const allowedSizes = WIDGET_SIZE_OPTIONS[widgetId] || ['full']
 
               return (
                 <Draggable
@@ -419,19 +447,23 @@ export function DmDashboardLayout({
                       {...provided.draggableProps}
                       {...provided.dragHandleProps}
                       className={cn(
-                        "relative transition-transform",
+                        "relative transition-transform col-span-full",
                         snapshot.isDragging && "rotate-1 scale-[1.02] z-50"
                       )}
                       style={{
                         ...provided.draggableProps.style,
                         opacity: snapshot.isDragging ? 0.9 : 1,
+                        gridColumn: snapshot.isDragging ? 'span 6' : `span ${span}`,
                       }}
+                      data-size={size}
                     >
                       <WidgetEditOverlay
                         widgetId={widgetId}
                         isRequired={isRequired}
-                        isVisible={true}
+                        currentSize={size}
+                        allowedSizes={allowedSizes}
                         onToggleVisibility={onToggleWidget ? () => onToggleWidget(widgetId) : undefined}
+                        onResize={onResizeWidget ? (newSize) => onResizeWidget(widgetId, newSize) : undefined}
                         isDragging={snapshot.isDragging}
                       />
                       {widgetMap[widgetId]}
@@ -453,6 +485,7 @@ interface PlayerDashboardLayoutProps {
   campaign: Campaign | null
   widgetOrder: readonly PlayerWidgetId[]
   isVisible: (widgetId: PlayerWidgetId) => boolean
+  getWidgetSize: (widgetId: PlayerWidgetId) => WidgetSize
   myCharacter: Character | null
   membership: CampaignMember | null
   isCharacterDesignatedForUser: boolean
@@ -475,6 +508,7 @@ interface PlayerDashboardLayoutProps {
   isEditMode?: boolean
   onReorderWidgets?: (newOrder: PlayerWidgetId[]) => void
   onToggleWidget?: (widgetId: PlayerWidgetId) => void
+  onResizeWidget?: (widgetId: PlayerWidgetId, size: WidgetSize) => void
 }
 
 export function PlayerDashboardLayout({
@@ -482,6 +516,7 @@ export function PlayerDashboardLayout({
   campaign,
   widgetOrder,
   isVisible,
+  getWidgetSize,
   myCharacter,
   membership,
   isCharacterDesignatedForUser,
@@ -503,6 +538,7 @@ export function PlayerDashboardLayout({
   isEditMode = false,
   onReorderWidgets,
   onToggleWidget,
+  onResizeWidget,
 }: PlayerDashboardLayoutProps) {
   // Compute player status
   const myStatus = (membership as CampaignMember & { next_session_status?: string })?.next_session_status as string | undefined
@@ -590,62 +626,64 @@ export function PlayerDashboardLayout({
   // Get visible widgets
   const visibleWidgets = widgetOrder.filter(id => isVisible(id) && widgetMap[id])
 
-  // Non-edit mode: use the original row-grouping layout
-  if (!isEditMode) {
-    const renderedWidgets: ReactNode[] = []
-    let currentHalfRow: PlayerWidgetId[] = []
+  // Render widget with grid span
+  const renderWidget = (widgetId: PlayerWidgetId) => {
+    const size = getWidgetSize(widgetId)
+    const span = SIZE_TO_SPAN[size]
 
-    const flushHalfRow = () => {
-      if (currentHalfRow.length === 0) return
-
-      if (currentHalfRow.length === 1) {
-        renderedWidgets.push(
-          <div key={currentHalfRow[0]}>{widgetMap[currentHalfRow[0]]}</div>
-        )
-      } else {
-        renderedWidgets.push(
-          <div key={`row-${renderedWidgets.length}`} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {currentHalfRow.map(id => (
-              <div key={id}>{widgetMap[id]}</div>
-            ))}
-          </div>
-        )
-      }
-      currentHalfRow = []
-    }
-
-    visibleWidgets.forEach((widgetId, index) => {
-      const size = WIDGET_SIZES[widgetId] || 'half'
-
-      if (size === 'full') {
-        flushHalfRow()
-        renderedWidgets.push(
-          <div key={widgetId}>{widgetMap[widgetId]}</div>
-        )
-      } else {
-        currentHalfRow.push(widgetId)
-        if (currentHalfRow.length >= 2) {
-          flushHalfRow()
-        } else {
-          const nextWidget = visibleWidgets[index + 1]
-          if (nextWidget) {
-            const nextSize = WIDGET_SIZES[nextWidget] || 'half'
-            if (nextSize === 'full') {
-              flushHalfRow()
-            }
-          } else {
-            flushHalfRow()
-          }
-        }
-      }
-    })
-
-    flushHalfRow()
-
-    return <div className="space-y-6">{renderedWidgets}</div>
+    return (
+      <div
+        key={widgetId}
+        className="col-span-full"
+        style={{
+          gridColumn: `span ${span}`,
+        }}
+        data-size={size}
+      >
+        {widgetMap[widgetId]}
+      </div>
+    )
   }
 
-  // Edit mode: use drag-and-drop with flat list
+  // Non-edit mode: CSS grid layout
+  if (!isEditMode) {
+    return (
+      <div
+        className="grid gap-4"
+        style={{
+          gridTemplateColumns: 'repeat(6, 1fr)',
+        }}
+      >
+        <style jsx>{`
+          @media (max-width: 1023px) {
+            div {
+              grid-template-columns: repeat(4, 1fr) !important;
+            }
+            div > [data-size="third"] {
+              grid-column: span 2 !important;
+            }
+            div > [data-size="half"] {
+              grid-column: span 2 !important;
+            }
+            div > [data-size="full"] {
+              grid-column: span 4 !important;
+            }
+          }
+          @media (max-width: 767px) {
+            div {
+              grid-template-columns: 1fr !important;
+            }
+            div > [data-size] {
+              grid-column: span 1 !important;
+            }
+          }
+        `}</style>
+        {visibleWidgets.map(widgetId => renderWidget(widgetId))}
+      </div>
+    )
+  }
+
+  // Edit mode: drag-and-drop with CSS grid
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <Droppable droppableId="player-dashboard-widgets">
@@ -654,13 +692,31 @@ export function PlayerDashboardLayout({
             ref={provided.innerRef}
             {...provided.droppableProps}
             className={cn(
-              "space-y-4 transition-colors rounded-xl p-2 -m-2",
+              "grid gap-4 transition-colors rounded-xl p-2 -m-2",
               snapshot.isDraggingOver && "bg-purple-500/5"
             )}
+            style={{
+              gridTemplateColumns: 'repeat(6, 1fr)',
+            }}
           >
+            <style jsx>{`
+              @media (max-width: 1023px) {
+                div {
+                  grid-template-columns: repeat(4, 1fr) !important;
+                }
+              }
+              @media (max-width: 767px) {
+                div {
+                  grid-template-columns: 1fr !important;
+                }
+              }
+            `}</style>
             {visibleWidgets.map((widgetId, index) => {
               const widgetDef = PLAYER_WIDGETS.find(w => w.id === widgetId)
               const isRequired = widgetDef?.required || false
+              const size = getWidgetSize(widgetId)
+              const span = SIZE_TO_SPAN[size]
+              const allowedSizes = WIDGET_SIZE_OPTIONS[widgetId] || ['full']
 
               return (
                 <Draggable
@@ -675,19 +731,23 @@ export function PlayerDashboardLayout({
                       {...provided.draggableProps}
                       {...provided.dragHandleProps}
                       className={cn(
-                        "relative transition-transform",
+                        "relative transition-transform col-span-full",
                         snapshot.isDragging && "rotate-1 scale-[1.02] z-50"
                       )}
                       style={{
                         ...provided.draggableProps.style,
                         opacity: snapshot.isDragging ? 0.9 : 1,
+                        gridColumn: snapshot.isDragging ? 'span 6' : `span ${span}`,
                       }}
+                      data-size={size}
                     >
                       <WidgetEditOverlay
                         widgetId={widgetId}
                         isRequired={isRequired}
-                        isVisible={true}
+                        currentSize={size}
+                        allowedSizes={allowedSizes}
                         onToggleVisibility={onToggleWidget ? () => onToggleWidget(widgetId) : undefined}
+                        onResize={onResizeWidget ? (newSize) => onResizeWidget(widgetId, newSize) : undefined}
                         isDragging={snapshot.isDragging}
                       />
                       {widgetMap[widgetId]}
