@@ -74,6 +74,7 @@ export default function LorePage() {
   const [loreEntries, setLoreEntries] = useState<CampaignLore[]>([])
   const [factionTags, setFactionTags] = useState<Tag[]>([])
   const [loading, setLoading] = useState(true)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [generatingLore, setGeneratingLore] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -100,7 +101,10 @@ export default function LorePage() {
   }, [user, campaignId])
 
   const loadData = async () => {
-    setLoading(true)
+    // Only show loading spinner on initial load, not refetches
+    if (!hasLoadedOnce) {
+      setLoading(true)
+    }
 
     // Load campaign
     const { data: campaignData } = await supabase
@@ -174,6 +178,7 @@ export default function LorePage() {
     setLoreEntries(loreData || [])
 
     setLoading(false)
+    setHasLoadedOnce(true)
   }
 
   // Build family tree data from relationships

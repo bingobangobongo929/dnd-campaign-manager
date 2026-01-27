@@ -38,6 +38,7 @@ export default function GalleryPage() {
   const [items, setItems] = useState<MediaItem[]>([])
   const [selectedItem, setSelectedItem] = useState<MediaItem | null>(null)
   const [loading, setLoading] = useState(true)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [gridSize, setGridSize] = useState<'sm' | 'md' | 'lg'>('md')
   const [error, setError] = useState<string | null>(null)
@@ -57,7 +58,10 @@ export default function GalleryPage() {
   }, [user, campaignId])
 
   const loadData = async () => {
-    setLoading(true)
+    // Only show loading spinner on initial load, not refetches
+    if (!hasLoadedOnce) {
+      setLoading(true)
+    }
 
     const { data: campaignData } = await supabase
       .from('campaigns')
@@ -79,6 +83,7 @@ export default function GalleryPage() {
 
     setItems(itemsData || [])
     setLoading(false)
+    setHasLoadedOnce(true)
   }
 
   const handleFileSelect = useCallback(() => {

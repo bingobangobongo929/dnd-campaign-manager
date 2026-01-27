@@ -81,6 +81,7 @@ export default function TimelinePage() {
   const [events, setEvents] = useState<TimelineEventWithCharacters[]>([])
   const [characters, setCharacters] = useState<Character[]>([])
   const [loading, setLoading] = useState(true)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
@@ -160,7 +161,10 @@ export default function TimelinePage() {
   }, [user, campaignId])
 
   const loadData = async () => {
-    setLoading(true)
+    // Only show loading spinner on initial load, not refetches
+    if (!hasLoadedOnce) {
+      setLoading(true)
+    }
 
     const { data: campaignData } = await supabase
       .from('campaigns')
@@ -222,6 +226,7 @@ export default function TimelinePage() {
 
     setEvents(eventsWithCharacters)
     setLoading(false)
+    setHasLoadedOnce(true)
   }
 
   const handleCreate = async () => {

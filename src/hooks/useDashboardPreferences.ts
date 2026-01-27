@@ -150,6 +150,16 @@ export function useDashboardPreferences(campaignId: string, userId: string | und
     return preferences.playerWidgets.includes(widgetId)
   }, [preferences.playerWidgets])
 
+  // Get hidden DM widgets (visible in order array = shown, not in array = hidden)
+  const getHiddenDmWidgets = useCallback(() => {
+    return DM_WIDGETS.filter(w => !preferences.dmWidgets.includes(w.id as DmWidgetId))
+  }, [preferences.dmWidgets])
+
+  // Get hidden Player widgets
+  const getHiddenPlayerWidgets = useCallback(() => {
+    return PLAYER_WIDGETS.filter(w => !preferences.playerWidgets.includes(w.id as PlayerWidgetId))
+  }, [preferences.playerWidgets])
+
   return {
     preferences,
     loaded,
@@ -160,5 +170,7 @@ export function useDashboardPreferences(campaignId: string, userId: string | und
     resetToDefaults,
     isDmWidgetVisible,
     isPlayerWidgetVisible,
+    getHiddenDmWidgets,
+    getHiddenPlayerWidgets,
   }
 }

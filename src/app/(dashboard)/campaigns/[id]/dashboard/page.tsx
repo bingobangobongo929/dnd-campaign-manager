@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Loader2, Settings2 } from 'lucide-react'
+import { Loader2, Settings2, Check } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { AppLayout } from '@/components/layout/app-layout'
 import { CampaignPageHeader } from '@/components/layout'
 import { useSupabase, useUser, usePermissions, useDashboardPreferences } from '@/hooks'
@@ -13,6 +14,7 @@ import {
   CustomizeDashboardModal,
   DmDashboardLayout,
   PlayerDashboardLayout,
+  EditModeToolbar,
 } from '@/components/dashboard'
 import {
   type ScheduleSettings,
@@ -57,6 +59,7 @@ export default function CampaignDashboardPage() {
 
   // Data state
   const [loading, setLoading] = useState(true)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [characters, setCharacters] = useState<Character[]>([])
   const [sessions, setSessions] = useState<Session[]>([])
@@ -82,6 +85,7 @@ export default function CampaignDashboardPage() {
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [showScheduleSettings, setShowScheduleSettings] = useState(false)
   const [showCustomizeModal, setShowCustomizeModal] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
 
   const isOwner = campaign?.user_id === user?.id
   // Use isDm from usePermissions for layout decisions - it properly handles loading states
@@ -99,12 +103,17 @@ export default function CampaignDashboardPage() {
     resetToDefaults,
     isDmWidgetVisible,
     isPlayerWidgetVisible,
+    getHiddenDmWidgets,
+    getHiddenPlayerWidgets,
   } = useDashboardPreferences(campaignId, user?.id)
 
   // Load dashboard data
   const loadDashboardData = useCallback(async () => {
     if (!user) return
-    setLoading(true)
+    // Only show loading spinner on initial load, not refetches
+    if (!hasLoadedOnce) {
+      setLoading(true)
+    }
 
     try {
       // Load campaign
@@ -242,8 +251,9 @@ export default function CampaignDashboardPage() {
       toast.error('Failed to load dashboard')
     } finally {
       setLoading(false)
+      setHasLoadedOnce(true)
     }
-  }, [user, campaignId, supabase, router, trackRecentItem])
+  }, [user, campaignId, supabase, router, trackRecentItem, hasLoadedOnce])
 
   useEffect(() => {
     if (user && campaignId) {
@@ -470,11 +480,16 @@ export default function CampaignDashboardPage() {
         onOpenShare={() => setShowShareModal(true)}
         actions={
           <button
-            onClick={() => setShowCustomizeModal(true)}
-            className="p-2 text-gray-400 hover:text-white hover:bg-white/[0.05] rounded-lg transition-colors"
-            title="Customize dashboard"
+            onClick={() => setIsEditMode(!isEditMode)}
+            className={cn(
+              "p-2 rounded-lg transition-colors",
+              isEditMode
+                ? "bg-purple-600 text-white"
+                : "text-gray-400 hover:text-white hover:bg-white/[0.05]"
+            )}
+            title={isEditMode ? "Exit edit mode" : "Customize dashboard"}
           >
-            <Settings2 className="w-5 h-5" />
+            {isEditMode ? <Check className="w-5 h-5" /> : <Settings2 className="w-5 h-5" />}
           </button>
         }
       />
@@ -505,6 +520,9 @@ export default function CampaignDashboardPage() {
             onUpdateSessionStatus={handleUpdateSessionStatus}
             onUpdatePlayerAvailability={handleUpdatePlayerAvailability}
             onCharacterClaimed={handleCharacterClaimed}
+            isEditMode={isEditMode}
+            onReorderWidgets={reorderPlayerWidgets}
+            onToggleWidget={togglePlayerWidget}
           />
         ) : (
           /* DM Dashboard Layout */
@@ -536,9 +554,22 @@ export default function CampaignDashboardPage() {
             onOpenMembersModal={() => setShowMembersModal(true)}
             onOpenShareModal={() => setShowShareModal(true)}
             onOpenScheduleSettings={() => setShowScheduleSettings(true)}
+            isEditMode={isEditMode}
+            onReorderWidgets={reorderDmWidgets}
+            onToggleWidget={toggleDmWidget}
           />
         )}
       </div>
+
+      {/* Edit Mode Toolbar */}
+      {isEditMode && (
+        <EditModeToolbar
+          hiddenWidgets={isPlayerLayout ? getHiddenPlayerWidgets() : getHiddenDmWidgets()}
+          onShowWidget={isPlayerLayout ? togglePlayerWidget : toggleDmWidget}
+          onReset={resetToDefaults}
+          onDone={() => setIsEditMode(false)}
+        />
+      )}
 
       {/* Modals */}
       <PartyModal

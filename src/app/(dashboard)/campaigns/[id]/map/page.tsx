@@ -68,6 +68,7 @@ export default function WorldMapPage() {
   const [pinCounts, setPinCounts] = useState<Record<string, number>>({})
   const [selectedMap, setSelectedMap] = useState<WorldMap | null>(null)
   const [loading, setLoading] = useState(true)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [filterType, setFilterType] = useState<MapType | 'all'>('all')
   const [error, setError] = useState<string | null>(null)
@@ -87,7 +88,10 @@ export default function WorldMapPage() {
   }, [user, campaignId])
 
   const loadData = async () => {
-    setLoading(true)
+    // Only show loading spinner on initial load, not refetches
+    if (!hasLoadedOnce) {
+      setLoading(true)
+    }
 
     const { data: campaignData } = await supabase
       .from('campaigns')
@@ -126,6 +130,7 @@ export default function WorldMapPage() {
     }
 
     setLoading(false)
+    setHasLoadedOnce(true)
   }
 
   const handleMapCreated = async (mapId: string) => {
