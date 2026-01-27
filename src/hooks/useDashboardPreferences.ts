@@ -57,25 +57,25 @@ export const WIDGET_SIZE_OPTIONS: Record<string, WidgetSize[]> = {
   campaignHeader: ['full'],
 }
 
-// Default sizes for widgets
+// Default sizes for widgets (optimized for no dead space)
 export const DEFAULT_WIDGET_SIZES: Record<string, WidgetSize> = {
-  // Full width
+  // Full width (hero/header)
   campaignHeader: 'full',
-  nextSession: 'full',
-  partyOverview: 'full',
-  recentSessions: 'full',
   myCharacter: 'full',
   previouslyOn: 'full',
-  // Half width
+  recentSessions: 'full',
+  // Half width (pairs well)
+  nextSession: 'half',
+  partyOverview: 'half',
+  recentEvents: 'half',
+  upcomingPlot: 'half',
   intelligenceStatus: 'half',
   playerNotesReview: 'half',
   dmToolbox: 'half',
-  // Third width
-  quickActions: 'third',
+  quickActions: 'half',
+  // Third width (groups of 3)
   latestSession: 'third',
   campaignStats: 'third',
-  recentEvents: 'third',
-  upcomingPlot: 'third',
 }
 
 // Widget preference with size
@@ -90,27 +90,40 @@ interface DashboardPreferences {
   playerWidgets: WidgetPreference[]
 }
 
+// Optimized default layout - all rows fill completely (no dead space)
 const DEFAULT_DM_WIDGETS: WidgetPreference[] = [
+  // Row 1: Header (full)
   { id: 'campaignHeader', size: 'full', visible: true },
+  // Row 2: Three thirds = full row
   { id: 'quickActions', size: 'third', visible: true },
-  { id: 'nextSession', size: 'full', visible: true },
   { id: 'latestSession', size: 'third', visible: true },
   { id: 'campaignStats', size: 'third', visible: true },
+  // Row 3: Two halves = full row
+  { id: 'nextSession', size: 'half', visible: true },
+  { id: 'recentEvents', size: 'half', visible: true },
+  // Row 4: Party (full)
   { id: 'partyOverview', size: 'full', visible: true },
-  { id: 'recentEvents', size: 'third', visible: true },
-  { id: 'upcomingPlot', size: 'third', visible: true },
-  { id: 'recentSessions', size: 'full', visible: true },
+  // Row 5: Two halves = full row
+  { id: 'upcomingPlot', size: 'half', visible: true },
   { id: 'intelligenceStatus', size: 'half', visible: true },
+  // Row 6: Sessions (full)
+  { id: 'recentSessions', size: 'full', visible: true },
+  // Row 7: Two halves = full row
   { id: 'playerNotesReview', size: 'half', visible: true },
   { id: 'dmToolbox', size: 'half', visible: true },
 ]
 
+// Optimized player layout - all rows fill completely
 const DEFAULT_PLAYER_WIDGETS: WidgetPreference[] = [
+  // Row 1: Character (full)
   { id: 'myCharacter', size: 'full', visible: true },
-  { id: 'nextSession', size: 'full', visible: true },
+  // Row 2: Two halves = full row
+  { id: 'nextSession', size: 'half', visible: true },
+  { id: 'quickActions', size: 'half', visible: true },
+  // Row 3: Story recap (full)
   { id: 'previouslyOn', size: 'full', visible: true },
-  { id: 'partyOverview', size: 'full', visible: true },
-  { id: 'quickActions', size: 'third', visible: true },
+  // Row 4: Two halves = full row
+  { id: 'partyOverview', size: 'half', visible: true },
   { id: 'recentSessions', size: 'half', visible: true },
 ]
 
