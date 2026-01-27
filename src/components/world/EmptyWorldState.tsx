@@ -1,12 +1,13 @@
 'use client'
 
-import { MapPin, Shield, Users, Plus, Map, Lightbulb } from 'lucide-react'
+import { MapPin, Shield, Users, Plus, Map, Lightbulb, Clock, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui'
 
 interface EmptyWorldStateProps {
-  type: 'all' | 'locations' | 'factions' | 'relationships'
+  type: 'all' | 'locations' | 'factions' | 'relationships' | 'timeline'
   onAddLocation?: () => void
   onAddFaction?: () => void
+  onAddEvent?: () => void
   isPlayer?: boolean
 }
 
@@ -14,6 +15,7 @@ export function EmptyWorldState({
   type,
   onAddLocation,
   onAddFaction,
+  onAddEvent,
   isPlayer = false,
 }: EmptyWorldStateProps) {
   // Completely empty world state
@@ -134,6 +136,44 @@ export function EmptyWorldState({
         <p className="text-gray-500 text-sm max-w-md">
           Add relationships between characters from the Canvas page to visualize your campaign's connections.
         </p>
+      </div>
+    )
+  }
+
+  // Empty timeline tab
+  if (type === 'timeline') {
+    if (isPlayer) {
+      return (
+        <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+          <div className="w-16 h-16 mb-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+            <Clock className="w-8 h-8 text-amber-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-white mb-2">No events recorded</h3>
+          <p className="text-gray-400 max-w-md">
+            The timeline of your adventure will appear here as your story unfolds.
+          </p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+        <div className="w-16 h-16 mb-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+          <Clock className="w-8 h-8 text-amber-400" />
+        </div>
+        <h3 className="text-lg font-semibold text-white mb-2">No events yet</h3>
+        <p className="text-gray-400 max-w-md mb-2">
+          Track your campaign's key moments: battles, discoveries, character introductions, and story beats.
+        </p>
+        <p className="text-gray-500 text-sm max-w-md mb-6">
+          Add events manually or use AI to extract them from your session notes.
+        </p>
+        {onAddEvent && (
+          <Button onClick={onAddEvent}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add First Event
+          </Button>
+        )}
       </div>
     )
   }

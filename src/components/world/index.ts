@@ -3,4 +3,5 @@ export { LocationsTab, LOCATION_TYPE_ICONS, LOCATION_TYPE_COLORS, LOCATION_TYPES
 export type { Location } from './LocationsTab'
 export { FactionsTab } from './FactionsTab'
 export { RelationshipsTab } from './RelationshipsTab'
+export { TimelineTab } from './TimelineTab'
 export { EmptyWorldState } from './EmptyWorldState'

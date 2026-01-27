@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { MapPin, Shield, Users, Plus, ChevronDown } from 'lucide-react'
+import { MapPin, Shield, Users, Plus, ChevronDown, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LocationsTab } from './LocationsTab'
 import { FactionsTab } from './FactionsTab'
 import { RelationshipsTab } from './RelationshipsTab'
+import { TimelineTab } from './TimelineTab'
 import { EmptyWorldState } from './EmptyWorldState'
 import type { Character, CharacterRelationship } from '@/types/database'
 
@@ -13,7 +14,7 @@ interface CharacterWithTags extends Character {
   tags: any[]
 }
 
-type TabType = 'locations' | 'factions' | 'relationships'
+type TabType = 'locations' | 'factions' | 'relationships' | 'timeline'
 
 interface WorldTabsProps {
   campaignId: string
@@ -22,8 +23,10 @@ interface WorldTabsProps {
   locationCount: number
   factionCount: number
   relationshipCount: number
+  eventCount: number
   isDm: boolean
   isOwner: boolean
+  canViewTimeline: boolean
   onAddLocation: () => void
   onAddFaction: () => void
 }
@@ -37,8 +40,10 @@ export function WorldTabs({
   locationCount,
   factionCount,
   relationshipCount,
+  eventCount,
   isDm,
   isOwner,
+  canViewTimeline,
   onAddLocation,
   onAddFaction,
 }: WorldTabsProps) {
@@ -48,10 +53,15 @@ export function WorldTabs({
   // Restore last active tab from localStorage
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved && ['locations', 'factions', 'relationships'].includes(saved)) {
-      setActiveTab(saved as TabType)
+    if (saved && ['locations', 'factions', 'relationships', 'timeline'].includes(saved)) {
+      // Don't restore timeline tab if user can't view it
+      if (saved === 'timeline' && !canViewTimeline) {
+        setActiveTab('locations')
+      } else {
+        setActiveTab(saved as TabType)
+      }
     }
-  }, [])
+  }, [canViewTimeline])
 
   // Save active tab to localStorage
   const handleTabChange = (tab: TabType) => {
@@ -59,7 +69,7 @@ export function WorldTabs({
     localStorage.setItem(STORAGE_KEY, tab)
   }
 
-  const totalContent = locationCount + factionCount + relationshipCount
+  const totalContent = locationCount + factionCount + relationshipCount + eventCount
 
   // Show unified empty state if completely empty
   if (totalContent === 0) {
@@ -97,6 +107,15 @@ export function WorldTabs({
       color: 'text-purple-400',
       bgColor: 'bg-purple-500/10',
     },
+    // Only show Timeline tab if user has permission
+    ...(canViewTimeline ? [{
+      id: 'timeline' as TabType,
+      label: 'Timeline',
+      count: eventCount,
+      icon: Clock,
+      color: 'text-amber-400',
+      bgColor: 'bg-amber-500/10',
+    }] : []),
   ]
 
   return (
@@ -206,6 +225,14 @@ export function WorldTabs({
           <RelationshipsTab
             characters={characters}
             relationships={relationships}
+          />
+        )}
+
+        {activeTab === 'timeline' && canViewTimeline && (
+          <TimelineTab
+            campaignId={campaignId}
+            characters={characters}
+            isDm={isDm}
           />
         )}
       </div>

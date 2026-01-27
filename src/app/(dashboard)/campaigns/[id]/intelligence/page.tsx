@@ -43,6 +43,8 @@ import {
   ThumbsDown,
   Target,
   Swords,
+  Shield,
+  Users,
 } from 'lucide-react'
 import { Modal, AccessDeniedPage } from '@/components/ui'
 import { GuidanceTip } from '@/components/guidance/GuidanceTip'
@@ -68,6 +70,7 @@ const SUGGESTION_ICONS: Record<SuggestionType, typeof Skull> = {
   location_detected: MapPin,
   quest_detected: Target,
   encounter_detected: Swords,
+  faction_detected: Shield,
   plot_hook: Lightbulb,
   enrichment: Wand2,
   timeline_issue: Clock,
@@ -99,6 +102,7 @@ const SUGGESTION_COLORS: Record<SuggestionType, { bg: string; text: string; bord
   location_detected: { bg: 'rgba(74, 222, 128, 0.12)', text: '#4ade80', border: 'rgba(74, 222, 128, 0.3)' },
   quest_detected: { bg: 'rgba(139, 92, 246, 0.12)', text: '#a78bfa', border: 'rgba(139, 92, 246, 0.3)' },
   encounter_detected: { bg: 'rgba(239, 68, 68, 0.12)', text: '#f87171', border: 'rgba(239, 68, 68, 0.3)' },
+  faction_detected: { bg: 'rgba(16, 185, 129, 0.12)', text: '#10b981', border: 'rgba(16, 185, 129, 0.3)' },
   plot_hook: { bg: 'rgba(192, 132, 252, 0.12)', text: '#c084fc', border: 'rgba(192, 132, 252, 0.3)' },
   enrichment: { bg: 'rgba(56, 189, 248, 0.12)', text: '#38bdf8', border: 'rgba(56, 189, 248, 0.3)' },
   timeline_issue: { bg: 'rgba(251, 146, 60, 0.12)', text: '#fb923c', border: 'rgba(251, 146, 60, 0.3)' },
@@ -805,6 +809,150 @@ export default function IntelligencePage() {
     setIsBulkApproving(false)
   }
 
+  // Bulk approve all faction suggestions
+  const handleBulkApproveFactions = async () => {
+    const factionSuggestions = filteredSuggestions.filter(
+      s => (s.suggestion_type as string) === 'faction_detected' && s.status === 'pending'
+    )
+
+    if (factionSuggestions.length === 0) return
+
+    setIsBulkApproving(true)
+
+    let successCount = 0
+    let errorCount = 0
+
+    for (const suggestion of factionSuggestions) {
+      try {
+        const response = await fetch('/api/ai/suggestions', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            suggestionId: suggestion.id,
+            action: 'approve',
+            finalValue: suggestion.suggested_value,
+          }),
+        })
+
+        if (response.ok) {
+          successCount++
+        } else {
+          errorCount++
+        }
+      } catch (err) {
+        errorCount++
+      }
+    }
+
+    // Reload suggestions
+    await loadData()
+
+    if (successCount > 0) {
+      toast.success(`${successCount} faction${successCount === 1 ? '' : 's'} added to your campaign`)
+    }
+    if (errorCount > 0) {
+      toast.error(`${errorCount} faction${errorCount === 1 ? '' : 's'} failed to add`)
+    }
+
+    setIsBulkApproving(false)
+  }
+
+  // Bulk approve all NPC suggestions
+  const handleBulkApproveNPCs = async () => {
+    const npcSuggestions = filteredSuggestions.filter(
+      s => s.suggestion_type === 'npc_detected' && s.status === 'pending'
+    )
+
+    if (npcSuggestions.length === 0) return
+
+    setIsBulkApproving(true)
+
+    let successCount = 0
+    let errorCount = 0
+
+    for (const suggestion of npcSuggestions) {
+      try {
+        const response = await fetch('/api/ai/suggestions', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            suggestionId: suggestion.id,
+            action: 'approve',
+            finalValue: suggestion.suggested_value,
+          }),
+        })
+
+        if (response.ok) {
+          successCount++
+        } else {
+          errorCount++
+        }
+      } catch (err) {
+        errorCount++
+      }
+    }
+
+    // Reload suggestions
+    await loadData()
+
+    if (successCount > 0) {
+      toast.success(`${successCount} NPC${successCount === 1 ? '' : 's'} added to your campaign`)
+    }
+    if (errorCount > 0) {
+      toast.error(`${errorCount} NPC${errorCount === 1 ? '' : 's'} failed to add`)
+    }
+
+    setIsBulkApproving(false)
+  }
+
+  // Bulk approve all relationship suggestions
+  const handleBulkApproveRelationships = async () => {
+    const relationshipSuggestions = filteredSuggestions.filter(
+      s => s.suggestion_type === 'relationship' && s.status === 'pending'
+    )
+
+    if (relationshipSuggestions.length === 0) return
+
+    setIsBulkApproving(true)
+
+    let successCount = 0
+    let errorCount = 0
+
+    for (const suggestion of relationshipSuggestions) {
+      try {
+        const response = await fetch('/api/ai/suggestions', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            suggestionId: suggestion.id,
+            action: 'approve',
+            finalValue: suggestion.suggested_value,
+          }),
+        })
+
+        if (response.ok) {
+          successCount++
+        } else {
+          errorCount++
+        }
+      } catch (err) {
+        errorCount++
+      }
+    }
+
+    // Reload suggestions
+    await loadData()
+
+    if (successCount > 0) {
+      toast.success(`${successCount} relationship${successCount === 1 ? '' : 's'} added to your campaign`)
+    }
+    if (errorCount > 0) {
+      toast.error(`${errorCount} relationship${errorCount === 1 ? '' : 's'} failed to add`)
+    }
+
+    setIsBulkApproving(false)
+  }
+
   const toggleExpanded = (id: string) => {
     setExpandedIds(prev => {
       const next = new Set(prev)
@@ -1176,7 +1324,7 @@ export default function IntelligencePage() {
               </button>
             )}
 
-            {/* Bulk approve locations, quests, and encounters */}
+            {/* Bulk approve locations, quests, encounters, factions, NPCs, and relationships */}
             {(() => {
               const locationCount = suggestions.filter(
                 s => s.suggestion_type === 'location_detected' && s.status === 'pending'
@@ -1187,7 +1335,16 @@ export default function IntelligencePage() {
               const encounterCount = suggestions.filter(
                 s => s.suggestion_type === 'encounter_detected' && s.status === 'pending'
               ).length
-              if (locationCount === 0 && questCount === 0 && encounterCount === 0) return null
+              const factionCount = suggestions.filter(
+                s => (s.suggestion_type as string) === 'faction_detected' && s.status === 'pending'
+              ).length
+              const npcCount = suggestions.filter(
+                s => s.suggestion_type === 'npc_detected' && s.status === 'pending'
+              ).length
+              const relationshipCount = suggestions.filter(
+                s => s.suggestion_type === 'relationship' && s.status === 'pending'
+              ).length
+              if (locationCount === 0 && questCount === 0 && encounterCount === 0 && factionCount === 0 && npcCount === 0 && relationshipCount === 0) return null
               return (
                 <div className="pt-4 border-t border-white/10">
                   <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#6b7280' }}>
@@ -1254,6 +1411,69 @@ export default function IntelligencePage() {
                         )}
                         <span className="text-sm font-medium">
                           {isBulkApproving ? 'Adding...' : `Add All ${encounterCount} Encounters`}
+                        </span>
+                      </button>
+                    )}
+                    {factionCount > 0 && (
+                      <button
+                        onClick={handleBulkApproveFactions}
+                        disabled={isBulkApproving}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-colors"
+                        style={{
+                          backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                          border: '1px solid rgba(16, 185, 129, 0.3)',
+                          color: '#10b981',
+                        }}
+                      >
+                        {isBulkApproving ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Shield className="w-4 h-4" />
+                        )}
+                        <span className="text-sm font-medium">
+                          {isBulkApproving ? 'Adding...' : `Add All ${factionCount} Factions`}
+                        </span>
+                      </button>
+                    )}
+                    {npcCount > 0 && (
+                      <button
+                        onClick={handleBulkApproveNPCs}
+                        disabled={isBulkApproving}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-colors"
+                        style={{
+                          backgroundColor: 'rgba(34, 211, 238, 0.15)',
+                          border: '1px solid rgba(34, 211, 238, 0.3)',
+                          color: '#22d3ee',
+                        }}
+                      >
+                        {isBulkApproving ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <UserPlus className="w-4 h-4" />
+                        )}
+                        <span className="text-sm font-medium">
+                          {isBulkApproving ? 'Adding...' : `Add All ${npcCount} NPCs`}
+                        </span>
+                      </button>
+                    )}
+                    {relationshipCount > 0 && (
+                      <button
+                        onClick={handleBulkApproveRelationships}
+                        disabled={isBulkApproving}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-colors"
+                        style={{
+                          backgroundColor: 'rgba(236, 72, 153, 0.15)',
+                          border: '1px solid rgba(236, 72, 153, 0.3)',
+                          color: '#f472b6',
+                        }}
+                      >
+                        {isBulkApproving ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Users className="w-4 h-4" />
+                        )}
+                        <span className="text-sm font-medium">
+                          {isBulkApproving ? 'Adding...' : `Add All ${relationshipCount} Relationships`}
                         </span>
                       </button>
                     )}

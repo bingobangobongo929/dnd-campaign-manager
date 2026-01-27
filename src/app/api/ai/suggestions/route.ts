@@ -551,6 +551,324 @@ export async function PATCH(req: Request) {
       })
     }
 
+    // Handle faction_detected suggestions
+    if (suggestion.suggestion_type === 'faction_detected') {
+      const factionData = (finalValue ?? suggestion.suggested_value) as {
+        name: string
+        faction_type?: string
+        description?: string
+        is_known_to_party?: boolean
+        hq_location_name?: string
+      }
+
+      // Check if faction already exists (by name, case-insensitive)
+      const { data: existingFaction } = await supabase
+        .from('campaign_factions')
+        .select('id')
+        .eq('campaign_id', suggestion.campaign_id)
+        .ilike('name', factionData.name)
+        .maybeSingle()
+
+      if (existingFaction) {
+        // Faction already exists - mark as applied but don't create duplicate
+        const { error } = await supabase
+          .from('intelligence_suggestions')
+          .update({
+            status: 'applied',
+            final_value: { ...factionData, existing_faction_id: existingFaction.id, note: 'Faction already existed' }
+          })
+          .eq('id', suggestionId)
+
+        if (error) throw error
+
+        return new Response(JSON.stringify({
+          success: true,
+          action: 'applied',
+          message: 'Faction already exists',
+          factionId: existingFaction.id
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Look up HQ location if specified
+      let hqLocationId: string | null = null
+      if (factionData.hq_location_name) {
+        const { data: location } = await supabase
+          .from('locations')
+          .select('id')
+          .eq('campaign_id', suggestion.campaign_id)
+          .ilike('name', factionData.hq_location_name)
+          .maybeSingle()
+
+        hqLocationId = location?.id || null
+      }
+
+      // Create the faction
+      const { data: newFaction, error: factionError } = await supabase
+        .from('campaign_factions')
+        .insert({
+          campaign_id: suggestion.campaign_id,
+          name: factionData.name,
+          faction_type: factionData.faction_type || 'guild',
+          description: factionData.description || null,
+          is_known_to_party: factionData.is_known_to_party ?? true,
+          hq_location_id: hqLocationId,
+          status: 'active',
+          color: '#8B5CF6', // Default purple
+          icon: 'shield',
+        })
+        .select('id')
+        .single()
+
+      if (factionError) throw factionError
+
+      // Mark suggestion as applied
+      const { error } = await supabase
+        .from('intelligence_suggestions')
+        .update({
+          status: 'applied',
+          final_value: { ...factionData, faction_id: newFaction.id }
+        })
+        .eq('id', suggestionId)
+
+      if (error) throw error
+
+      return new Response(JSON.stringify({
+        success: true,
+        action: 'applied',
+        message: 'Faction created',
+        factionId: newFaction.id
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Handle npc_detected suggestions - create new NPC character
+    if (suggestion.suggestion_type === 'npc_detected') {
+      const npcData = (finalValue ?? suggestion.suggested_value) as {
+        name: string
+        description?: string
+        role?: string
+        race?: string
+        class?: string
+        location_name?: string
+        faction_name?: string
+      }
+
+      // Check if character already exists (by name, case-insensitive)
+      const { data: existingChar } = await supabase
+        .from('characters')
+        .select('id')
+        .eq('campaign_id', suggestion.campaign_id)
+        .ilike('name', npcData.name)
+        .maybeSingle()
+
+      if (existingChar) {
+        // Character already exists - mark as applied but don't create duplicate
+        const { error } = await supabase
+          .from('intelligence_suggestions')
+          .update({
+            status: 'applied',
+            final_value: { ...npcData, existing_character_id: existingChar.id, note: 'Character already existed' }
+          })
+          .eq('id', suggestionId)
+
+        if (error) throw error
+
+        return new Response(JSON.stringify({
+          success: true,
+          action: 'applied',
+          message: 'Character already exists',
+          characterId: existingChar.id
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Create the NPC character
+      const { data: newCharacter, error: charError } = await supabase
+        .from('characters')
+        .insert({
+          campaign_id: suggestion.campaign_id,
+          name: npcData.name,
+          type: 'npc',
+          summary: npcData.description || npcData.role || null,
+          race: npcData.race || null,
+          class: npcData.class || null,
+          status: 'alive',
+        })
+        .select('id')
+        .single()
+
+      if (charError) throw charError
+
+      // If faction specified, add to faction
+      if (npcData.faction_name) {
+        const { data: faction } = await supabase
+          .from('campaign_factions')
+          .select('id')
+          .eq('campaign_id', suggestion.campaign_id)
+          .ilike('name', npcData.faction_name)
+          .maybeSingle()
+
+        if (faction) {
+          await supabase
+            .from('faction_memberships')
+            .insert({
+              faction_id: faction.id,
+              character_id: newCharacter.id,
+              role: npcData.role || null,
+              is_active: true,
+              is_public: true,
+            })
+        }
+      }
+
+      // Mark suggestion as applied
+      const { error } = await supabase
+        .from('intelligence_suggestions')
+        .update({
+          status: 'applied',
+          final_value: { ...npcData, character_id: newCharacter.id }
+        })
+        .eq('id', suggestionId)
+
+      if (error) throw error
+
+      return new Response(JSON.stringify({
+        success: true,
+        action: 'applied',
+        message: 'NPC character created',
+        characterId: newCharacter.id
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Handle relationship suggestions - create canvas_relationships
+    if (suggestion.suggestion_type === 'relationship') {
+      const relationshipData = (finalValue ?? suggestion.suggested_value) as {
+        from_character_name: string
+        to_character_name: string
+        relationship_type?: string
+        description?: string
+        is_known_to_party?: boolean
+      }
+
+      // Look up both characters
+      const { data: characters } = await supabase
+        .from('characters')
+        .select('id, name')
+        .eq('campaign_id', suggestion.campaign_id)
+
+      const fromChar = characters?.find(c =>
+        c.name.toLowerCase() === relationshipData.from_character_name?.toLowerCase() ||
+        c.name.toLowerCase().includes(relationshipData.from_character_name?.toLowerCase() || '')
+      )
+      const toChar = characters?.find(c =>
+        c.name.toLowerCase() === relationshipData.to_character_name?.toLowerCase() ||
+        c.name.toLowerCase().includes(relationshipData.to_character_name?.toLowerCase() || '')
+      )
+
+      if (!fromChar || !toChar) {
+        // Characters not found - mark as rejected
+        const { error } = await supabase
+          .from('intelligence_suggestions')
+          .update({
+            status: 'rejected',
+            final_value: { ...relationshipData, note: `Character not found: ${!fromChar ? relationshipData.from_character_name : relationshipData.to_character_name}` }
+          })
+          .eq('id', suggestionId)
+
+        if (error) throw error
+
+        return new Response(JSON.stringify({
+          success: false,
+          action: 'rejected',
+          message: `Character not found: ${!fromChar ? relationshipData.from_character_name : relationshipData.to_character_name}`
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Check if relationship already exists
+      const { data: existingRel } = await supabase
+        .from('canvas_relationships')
+        .select('id')
+        .eq('campaign_id', suggestion.campaign_id)
+        .eq('from_character_id', fromChar.id)
+        .eq('to_character_id', toChar.id)
+        .maybeSingle()
+
+      if (existingRel) {
+        // Relationship already exists
+        const { error } = await supabase
+          .from('intelligence_suggestions')
+          .update({
+            status: 'applied',
+            final_value: { ...relationshipData, existing_relationship_id: existingRel.id, note: 'Relationship already existed' }
+          })
+          .eq('id', suggestionId)
+
+        if (error) throw error
+
+        return new Response(JSON.stringify({
+          success: true,
+          action: 'applied',
+          message: 'Relationship already exists',
+          relationshipId: existingRel.id
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Create the relationship
+      const { data: newRelationship, error: relError } = await supabase
+        .from('canvas_relationships')
+        .insert({
+          campaign_id: suggestion.campaign_id,
+          from_character_id: fromChar.id,
+          to_character_id: toChar.id,
+          custom_label: relationshipData.relationship_type || 'Connected',
+          description: relationshipData.description || null,
+          is_known_to_party: relationshipData.is_known_to_party ?? true,
+          is_primary: true,
+          status: 'active',
+        })
+        .select('id')
+        .single()
+
+      if (relError) throw relError
+
+      // Mark suggestion as applied
+      const { error } = await supabase
+        .from('intelligence_suggestions')
+        .update({
+          status: 'applied',
+          final_value: { ...relationshipData, relationship_id: newRelationship.id }
+        })
+        .eq('id', suggestionId)
+
+      if (error) throw error
+
+      return new Response(JSON.stringify({
+        success: true,
+        action: 'applied',
+        message: 'Relationship created',
+        relationshipId: newRelationship.id
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
     // Handle quest_session_link suggestions
     if (suggestion.suggestion_type === 'quest_session_link') {
       const linkData = (finalValue ?? suggestion.suggested_value) as {

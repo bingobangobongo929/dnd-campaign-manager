@@ -22,12 +22,14 @@ import {
   Skull,
   GraduationCap,
   HelpCircle,
+  Clock,
+  Calendar,
 } from 'lucide-react'
 import { Modal, Input, ColorPicker, IconPicker, getGroupIcon, Button } from '@/components/ui'
 import { EmptyWorldState } from './EmptyWorldState'
 import { useSupabase } from '@/hooks'
 import { cn } from '@/lib/utils'
-import type { CampaignFaction, FactionMembership, Character, FactionType, FactionStatus } from '@/types/database'
+import type { CampaignFaction, FactionMembership, Character, FactionType, FactionStatus, TimelineEvent } from '@/types/database'
 
 interface FactionWithMembers extends CampaignFaction {
   members: (FactionMembership & { character: Character })[]
@@ -72,6 +74,7 @@ export function FactionsTab({ campaignId, characters, isDm }: FactionsTabProps) 
   const router = useRouter()
   const [factions, setFactions] = useState<FactionWithMembers[]>([])
   const [locations, setLocations] = useState<Location[]>([])
+  const [events, setEvents] = useState<TimelineEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedFactions, setExpandedFactions] = useState<Set<string>>(new Set())
@@ -168,6 +171,16 @@ export function FactionsTab({ campaignId, characters, isDm }: FactionsTabProps) 
       .order('name')
 
     setLocations(locationsData || [])
+
+    // Get timeline events for showing recent faction activity
+    const { data: eventsData } = await supabase
+      .from('timeline_events')
+      .select('*')
+      .eq('campaign_id', campaignId)
+      .order('event_date', { ascending: false })
+      .limit(100)  // Only get recent events for performance
+
+    setEvents(eventsData || [])
 
     // Build faction tree with HQ info
     const factionsWithMembers: FactionWithMembers[] = factionsData.map(faction => {
@@ -373,6 +386,19 @@ export function FactionsTab({ campaignId, characters, isDm }: FactionsTabProps) 
     router.push(`/campaigns/${campaignId}/canvas?characterId=${characterId}`)
   }
 
+  const navigateToEvent = (eventId: string) => {
+    router.push(`/campaigns/${campaignId}/timeline/${eventId}`)
+  }
+
+  // Get events involving faction members
+  const getFactionEvents = (faction: FactionWithMembers) => {
+    const memberIds = new Set(faction.members.map(m => m.character_id))
+    return events.filter(event => {
+      const eventCharIds = event.character_ids || (event.character_id ? [event.character_id] : [])
+      return eventCharIds.some((id: string) => memberIds.has(id))
+    }).slice(0, 3) // Only show 3 most recent
+  }
+
   const renderFactionCard = (faction: FactionWithMembers, depth = 0) => {
     const hasChildren = faction.child_factions.length > 0
     const isExpanded = expandedFactions.has(faction.id)
@@ -500,6 +526,37 @@ export function FactionsTab({ campaignId, characters, isDm }: FactionsTabProps) 
               </div>
             </div>
           )}
+
+          {/* Recent Events - show events involving faction members */}
+          {faction.members.length > 0 && (() => {
+            const factionEvents = getFactionEvents(faction)
+            if (factionEvents.length === 0) return null
+            return (
+              <div className="mt-3 pt-3 border-t border-white/[0.06]">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-xs font-medium text-amber-400">Recent Events</span>
+                </div>
+                <div className="space-y-1.5">
+                  {factionEvents.map(event => (
+                    <div
+                      key={event.id}
+                      onClick={() => navigateToEvent(event.id)}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/[0.02] text-xs cursor-pointer hover:bg-white/[0.04] transition-colors group"
+                    >
+                      <Calendar className="w-3 h-3 text-gray-500 shrink-0" />
+                      <span className="text-gray-400 shrink-0">
+                        {new Date(event.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                      <span className="text-white truncate group-hover:text-amber-300 transition-colors">
+                        {event.title}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
         </div>
 
         {hasChildren && isExpanded && (

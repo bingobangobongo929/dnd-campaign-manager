@@ -31,6 +31,7 @@ export default function WorldPage() {
   const [relationships, setRelationships] = useState<CharacterRelationship[]>([])
   const [locationCount, setLocationCount] = useState(0)
   const [factionCount, setFactionCount] = useState(0)
+  const [eventCount, setEventCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
 
@@ -130,6 +131,16 @@ export default function WorldPage() {
     const { count: facCount } = await factionsQuery
     setFactionCount(facCount || 0)
 
+    // Get timeline event count (only if user can view timeline)
+    if (can.viewTimeline || isDm) {
+      const { count: evtCount } = await supabase
+        .from('timeline_events')
+        .select('id', { count: 'exact', head: true })
+        .eq('campaign_id', campaignId)
+
+      setEventCount(evtCount || 0)
+    }
+
     setLoading(false)
     setHasLoadedOnce(true)
   }
@@ -182,7 +193,7 @@ export default function WorldPage() {
           <div>
             <h1 className="text-2xl font-bold text-white">World</h1>
             <p className="text-sm text-gray-500">
-              Locations, factions, and relationships in {campaign?.name}
+              Locations, factions, relationships, and timeline in {campaign?.name}
             </p>
           </div>
         </div>
@@ -195,8 +206,10 @@ export default function WorldPage() {
           locationCount={locationCount}
           factionCount={factionCount}
           relationshipCount={relationships.length}
+          eventCount={eventCount}
           isDm={isDm}
           isOwner={isOwner}
+          canViewTimeline={can.viewTimeline || isDm}
           onAddLocation={handleAddLocation}
           onAddFaction={handleAddFaction}
         />
