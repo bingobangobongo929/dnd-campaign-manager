@@ -38,17 +38,9 @@ import {
   Swords,
   Calendar,
 } from 'lucide-react'
-import { AppLayout, CampaignPageHeader } from '@/components/layout'
+import { AppLayout } from '@/components/layout'
 import { Button, Modal, EmptyState, Badge, Tooltip, AccessDeniedPage } from '@/components/ui'
 import { GuidanceTip } from '@/components/guidance/GuidanceTip'
-import {
-  PartyModal,
-  TagManager,
-  FactionManager,
-  RelationshipManager,
-} from '@/components/campaign'
-import { ResizeToolbar } from '@/components/canvas'
-import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { RollReveal } from '@/components/roll-reveal'
 import { useSupabase, useUser, usePermissions } from '@/hooks'
@@ -1428,14 +1420,6 @@ export default function QuestsPage() {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  // Campaign header modals
-  const [showMembersModal, setShowMembersModal] = useState(false)
-  const [showLabelsModal, setShowLabelsModal] = useState(false)
-  const [showFactionsModal, setShowFactionsModal] = useState(false)
-  const [showRelationshipsModal, setShowRelationshipsModal] = useState(false)
-  const [showResizeModal, setShowResizeModal] = useState(false)
-  const [showShareModal, setShowShareModal] = useState(false)
-
   useEffect(() => {
     if (user && campaignId) {
       loadData()
@@ -1736,10 +1720,35 @@ export default function QuestsPage() {
     }
   }
 
+  // Page actions for top bar
+  const pageActions = (
+    <div className="flex items-center gap-2">
+      {quests.filter(q => q.status === 'available').length > 0 && (
+        <Tooltip content="Roll random available quest">
+          <Button
+            variant="ghost"
+            onClick={handleRollRandom}
+            className="flex items-center gap-2"
+          >
+            <Shuffle className="w-4 h-4" />
+            <span className="hidden sm:inline">Roll</span>
+          </Button>
+        </Tooltip>
+      )}
+      <Button
+        onClick={() => setShowAddModal(true)}
+        className="flex items-center gap-2"
+      >
+        <Plus className="w-4 h-4" />
+        <span className="hidden sm:inline">Add Quest</span>
+      </Button>
+    </div>
+  )
+
   // Loading state
   if (loading || permissionsLoading) {
     return (
-      <AppLayout campaignId={campaignId} hideHeader>
+      <AppLayout campaignId={campaignId}>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
         </div>
@@ -1750,7 +1759,7 @@ export default function QuestsPage() {
   // Permission check
   if (!isMember) {
     return (
-      <AppLayout campaignId={campaignId} hideHeader>
+      <AppLayout campaignId={campaignId}>
         <AccessDeniedPage
           campaignId={campaignId}
           message="You don't have permission to view quests for this campaign."
@@ -1760,47 +1769,7 @@ export default function QuestsPage() {
   }
 
   return (
-    <AppLayout campaignId={campaignId} hideHeader>
-      {/* Page Header */}
-      <CampaignPageHeader
-        campaign={campaign}
-        campaignId={campaignId}
-        title="Quests"
-        icon={Target}
-        iconColor="#8B5CF6"
-        isOwner={isOwner}
-        isDm={isDm}
-        onOpenMembers={() => setShowMembersModal(true)}
-        onOpenLabels={() => setShowLabelsModal(true)}
-        onOpenFactions={() => setShowFactionsModal(true)}
-        onOpenRelationships={() => setShowRelationshipsModal(true)}
-        onOpenResize={() => setShowResizeModal(true)}
-        onOpenShare={() => setShowShareModal(true)}
-        actions={(
-          <div className="flex items-center gap-2">
-            {quests.filter(q => q.status === 'available').length > 0 && (
-              <Tooltip content="Roll random available quest">
-                <Button
-                  variant="ghost"
-                  onClick={handleRollRandom}
-                  className="flex items-center gap-2"
-                >
-                  <Shuffle className="w-4 h-4" />
-                  <span className="hidden sm:inline">Roll</span>
-                </Button>
-              </Tooltip>
-            )}
-            <Button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Add Quest</span>
-            </Button>
-          </div>
-        )}
-      />
-
+    <AppLayout campaignId={campaignId} topBarActions={pageActions}>
       <div className="flex flex-col">
         {/* Toolbar */}
         <div className="p-4 border-b border-[--border] space-y-4">
@@ -2122,58 +2091,6 @@ export default function QuestsPage() {
           </div>
         )}
       />
-
-      {/* Campaign header modals */}
-      <PartyModal
-        campaignId={campaignId}
-        characters={[]}
-        isOpen={showMembersModal}
-        onClose={() => setShowMembersModal(false)}
-      />
-
-      {showLabelsModal && (
-        <TagManager
-          campaignId={campaignId}
-          isOpen={showLabelsModal}
-          onClose={() => setShowLabelsModal(false)}
-        />
-      )}
-
-      {showFactionsModal && (
-        <FactionManager
-          campaignId={campaignId}
-          characters={[]}
-          isOpen={showFactionsModal}
-          onClose={() => setShowFactionsModal(false)}
-        />
-      )}
-
-      {showRelationshipsModal && (
-        <RelationshipManager
-          campaignId={campaignId}
-          isOpen={showRelationshipsModal}
-          onClose={() => setShowRelationshipsModal(false)}
-        />
-      )}
-
-      {showResizeModal && (
-        <ResizeToolbar
-          onClose={() => setShowResizeModal(false)}
-          characters={[]}
-          onResize={async () => {}}
-        />
-      )}
-
-      {campaign && (
-        <UnifiedShareModal
-          isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
-          contentType="campaign"
-          contentId={campaignId}
-          contentName={campaign.name}
-          contentMode="active"
-        />
-      )}
     </AppLayout>
   )
 }

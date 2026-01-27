@@ -3,4 +3,5 @@ export { CharacterNode, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT } from './charac
 export { GroupNode } from './group-node'
 export { ResizeToolbar } from './resize-toolbar'
 export { generateConnectionEdges, CONNECTION_FILTER_OPTIONS } from './connection-edges'
+export { FloatingCanvasToolbar } from './floating-canvas-toolbar'
 export type { ConnectionLineData } from './connection-edges'

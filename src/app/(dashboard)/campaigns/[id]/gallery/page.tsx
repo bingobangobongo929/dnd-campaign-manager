@@ -4,15 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Image as ImageIcon, Upload, Plus, Trash2, X, Loader2, Grid, LayoutGrid } from 'lucide-react'
 import { Modal, Input, AccessDeniedPage } from '@/components/ui'
-import { AppLayout, CampaignPageHeader } from '@/components/layout'
-import {
-  PartyModal,
-  TagManager,
-  FactionManager,
-  RelationshipManager,
-} from '@/components/campaign'
-import { ResizeToolbar } from '@/components/canvas'
-import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
+import { AppLayout } from '@/components/layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { CampaignGalleryPageMobile } from './page.mobile'
@@ -42,14 +34,6 @@ export default function GalleryPage() {
   const [uploading, setUploading] = useState(false)
   const [gridSize, setGridSize] = useState<'sm' | 'md' | 'lg'>('md')
   const [error, setError] = useState<string | null>(null)
-
-  // Modal state for burger menu
-  const [showMembersModal, setShowMembersModal] = useState(false)
-  const [showLabelsModal, setShowLabelsModal] = useState(false)
-  const [showFactionsModal, setShowFactionsModal] = useState(false)
-  const [showRelationshipsModal, setShowRelationshipsModal] = useState(false)
-  const [showResizeModal, setShowResizeModal] = useState(false)
-  const [showShareModal, setShowShareModal] = useState(false)
 
   useEffect(() => {
     if (user && campaignId) {
@@ -207,10 +191,22 @@ export default function GalleryPage() {
     )
   }
 
+  // Page actions for top bar
+  const pageActions = can.addGalleryItem && (
+    <button
+      onClick={handleFileSelect}
+      disabled={uploading}
+      className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium disabled:opacity-50"
+    >
+      <Upload className="w-4 h-4" />
+      <span className="hidden sm:inline">Upload</span>
+    </button>
+  )
+
   // ============ DESKTOP LAYOUT ============
   if (loading || permissionsLoading) {
     return (
-      <AppLayout campaignId={campaignId} hideHeader>
+      <AppLayout campaignId={campaignId}>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
         </div>
@@ -221,7 +217,7 @@ export default function GalleryPage() {
   // Permission check - must be a member with view permission
   if (!isMember || !can.viewGallery) {
     return (
-      <AppLayout campaignId={campaignId} hideHeader>
+      <AppLayout campaignId={campaignId}>
         <AccessDeniedPage
           campaignId={campaignId}
           message="You don't have permission to view the gallery for this campaign."
@@ -231,32 +227,7 @@ export default function GalleryPage() {
   }
 
   return (
-    <AppLayout campaignId={campaignId} hideHeader>
-      {/* Page Header with Burger Menu */}
-      <CampaignPageHeader
-        campaign={campaign}
-        campaignId={campaignId}
-        title="Gallery"
-        isOwner={isOwner}
-        isDm={isDm}
-        onOpenMembers={() => setShowMembersModal(true)}
-        onOpenLabels={() => setShowLabelsModal(true)}
-        onOpenFactions={() => setShowFactionsModal(true)}
-        onOpenRelationships={() => setShowRelationshipsModal(true)}
-        onOpenResize={() => setShowResizeModal(true)}
-        onOpenShare={() => setShowShareModal(true)}
-        actions={can.addGalleryItem && (
-          <button
-            onClick={handleFileSelect}
-            disabled={uploading}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium disabled:opacity-50"
-          >
-            <Upload className="w-4 h-4" />
-            <span className="hidden sm:inline">Upload</span>
-          </button>
-        )}
-      />
-
+    <AppLayout campaignId={campaignId} topBarActions={pageActions}>
       <input
         ref={fileInputRef}
         type="file"
@@ -430,58 +401,6 @@ export default function GalleryPage() {
         </div>
       )}
       <BackToTopButton />
-
-      {/* Modals */}
-      <PartyModal
-        campaignId={campaignId}
-        characters={[]}
-        isOpen={showMembersModal}
-        onClose={() => setShowMembersModal(false)}
-      />
-
-      {showLabelsModal && (
-        <TagManager
-          campaignId={campaignId}
-          isOpen={showLabelsModal}
-          onClose={() => setShowLabelsModal(false)}
-        />
-      )}
-
-      {showFactionsModal && (
-        <FactionManager
-          campaignId={campaignId}
-          characters={[]}
-          isOpen={showFactionsModal}
-          onClose={() => setShowFactionsModal(false)}
-        />
-      )}
-
-      {showRelationshipsModal && (
-        <RelationshipManager
-          campaignId={campaignId}
-          isOpen={showRelationshipsModal}
-          onClose={() => setShowRelationshipsModal(false)}
-        />
-      )}
-
-      {showResizeModal && (
-        <ResizeToolbar
-          onClose={() => setShowResizeModal(false)}
-          characters={[]}
-          onResize={async () => {}}
-        />
-      )}
-
-      {campaign && (
-        <UnifiedShareModal
-          isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
-          contentType="campaign"
-          contentId={campaignId}
-          contentName={campaign.name}
-          contentMode="active"
-        />
-      )}
     </AppLayout>
   )
 }

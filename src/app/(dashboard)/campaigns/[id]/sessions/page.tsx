@@ -16,15 +16,7 @@ import {
 } from 'lucide-react'
 import { Tooltip, sanitizeHtml, AccessDeniedPage, Modal } from '@/components/ui'
 import { GuidanceTip } from '@/components/guidance/GuidanceTip'
-import { AppLayout, CampaignPageHeader } from '@/components/layout'
-import {
-  PartyModal,
-  TagManager,
-  FactionManager,
-  RelationshipManager,
-} from '@/components/campaign'
-import { ResizeToolbar } from '@/components/canvas'
-import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
+import { AppLayout } from '@/components/layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { SessionsPageMobile } from './page.mobile'
 import { CharacterViewModal } from '@/components/character'
@@ -90,12 +82,6 @@ export default function SessionsPage() {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
   // Modal state
-  const [showMembersModal, setShowMembersModal] = useState(false)
-  const [showLabelsModal, setShowLabelsModal] = useState(false)
-  const [showFactionsModal, setShowFactionsModal] = useState(false)
-  const [showRelationshipsModal, setShowRelationshipsModal] = useState(false)
-  const [showResizeModal, setShowResizeModal] = useState(false)
-  const [showShareModal, setShowShareModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [sessionToDelete, setSessionToDelete] = useState<SessionWithAttendees | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -304,10 +290,30 @@ export default function SessionsPage() {
     )
   }
 
+  // Page-specific actions for TopBar
+  const pageActions = can.addSession && (
+    <div className="flex items-center gap-2">
+      <button
+        className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 transition-colors font-medium"
+        onClick={() => handleCreateSession('prep')}
+      >
+        <ClipboardList className="w-4 h-4" />
+        <span className="hidden sm:inline">Plan</span>
+      </button>
+      <button
+        className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium"
+        onClick={() => handleCreateSession('completed')}
+      >
+        <CheckCircle2 className="w-4 h-4" />
+        <span className="hidden sm:inline">Recap</span>
+      </button>
+    </div>
+  )
+
   // Desktop Layout
   if (loading || permissionsLoading) {
     return (
-      <AppLayout campaignId={campaignId} hideHeader>
+      <AppLayout campaignId={campaignId}>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
         </div>
@@ -318,7 +324,7 @@ export default function SessionsPage() {
   // Permission check - must be a member with view permission
   if (!isMember || !can.viewSessions) {
     return (
-      <AppLayout campaignId={campaignId} hideHeader>
+      <AppLayout campaignId={campaignId}>
         <AccessDeniedPage
           campaignId={campaignId}
           message="You don't have permission to view sessions for this campaign."
@@ -328,40 +334,7 @@ export default function SessionsPage() {
   }
 
   return (
-    <AppLayout campaignId={campaignId} hideHeader>
-      {/* Page Header with Burger Menu */}
-      <CampaignPageHeader
-        campaign={campaign}
-        campaignId={campaignId}
-        title="Sessions"
-        isOwner={isOwner}
-        isDm={isDm}
-        onOpenMembers={() => setShowMembersModal(true)}
-        onOpenLabels={() => setShowLabelsModal(true)}
-        onOpenFactions={() => setShowFactionsModal(true)}
-        onOpenRelationships={() => setShowRelationshipsModal(true)}
-        onOpenResize={() => setShowResizeModal(true)}
-        onOpenShare={() => setShowShareModal(true)}
-        actions={can.addSession && (
-          <div className="flex items-center gap-2">
-            <button
-              className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 transition-colors font-medium"
-              onClick={() => handleCreateSession('prep')}
-            >
-              <ClipboardList className="w-4 h-4" />
-              <span className="hidden sm:inline">Plan</span>
-            </button>
-            <button
-              className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium"
-              onClick={() => handleCreateSession('completed')}
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Recap</span>
-            </button>
-          </div>
-        )}
-      />
-
+    <AppLayout campaignId={campaignId} topBarActions={pageActions}>
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* First-time guidance */}
         <GuidanceTip
@@ -662,58 +635,6 @@ export default function SessionsPage() {
         )}
       </div>
       <BackToTopButton />
-
-      {/* Modals */}
-      <PartyModal
-        campaignId={campaignId}
-        characters={characters}
-        isOpen={showMembersModal}
-        onClose={() => setShowMembersModal(false)}
-      />
-
-      {showLabelsModal && (
-        <TagManager
-          campaignId={campaignId}
-          isOpen={showLabelsModal}
-          onClose={() => setShowLabelsModal(false)}
-        />
-      )}
-
-      {showFactionsModal && (
-        <FactionManager
-          campaignId={campaignId}
-          characters={characters}
-          isOpen={showFactionsModal}
-          onClose={() => setShowFactionsModal(false)}
-        />
-      )}
-
-      {showRelationshipsModal && (
-        <RelationshipManager
-          campaignId={campaignId}
-          isOpen={showRelationshipsModal}
-          onClose={() => setShowRelationshipsModal(false)}
-        />
-      )}
-
-      {showResizeModal && (
-        <ResizeToolbar
-          onClose={() => setShowResizeModal(false)}
-          characters={characters}
-          onResize={async () => {}}
-        />
-      )}
-
-      {campaign && (
-        <UnifiedShareModal
-          isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
-          contentType="campaign"
-          contentId={campaignId}
-          contentName={campaign.name}
-          contentMode="active"
-        />
-      )}
 
       {/* Delete Session Confirmation Modal */}
       <Modal

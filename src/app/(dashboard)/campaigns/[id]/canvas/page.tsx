@@ -3,17 +3,15 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
-import { Plus, FolderPlus, Scaling, Trash2, Brain, Share2, ChevronRight, Users, Sparkles, ChevronDown, Loader2, Tags, Shield, Link2, ChevronUp, Settings2, Menu } from 'lucide-react'
+import { Trash2, Brain, ChevronRight, Sparkles, Loader2, ChevronUp } from 'lucide-react'
 import { Modal, Input, ColorPicker, IconPicker, getGroupIcon, AccessDeniedPage } from '@/components/ui'
-import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT, CONNECTION_FILTER_OPTIONS } from '@/components/canvas'
+import { CampaignCanvas, ResizeToolbar, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT, FloatingCanvasToolbar } from '@/components/canvas'
 import { CharacterModal, CharacterViewModal } from '@/components/character'
-import { TagManager, FactionManager, RelationshipManager, UnclaimedCharactersBanner, PartyModal } from '@/components/campaign'
-import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
+import { UnclaimedCharactersBanner } from '@/components/campaign'
 import { TemplateStateBadge } from '@/components/templates/TemplateStateBadge'
 import { TemplateOnboardingModal } from '@/components/templates/TemplateOnboardingModal'
 import { toast } from 'sonner'
 import { AppLayout } from '@/components/layout/app-layout'
-import { CampaignMenuDrawer } from '@/components/layout'
 import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { CampaignCanvasPageMobile } from './page.mobile'
 import { useAppStore, useCanUseAI } from '@/store'
@@ -70,19 +68,10 @@ export default function CampaignCanvasPage() {
   const [isCreateCharacterModalOpen, setIsCreateCharacterModalOpen] = useState(false)
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false)
   const [isResizeToolbarOpen, setIsResizeToolbarOpen] = useState(false)
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
-  const [isTagManagerOpen, setIsTagManagerOpen] = useState(false)
-  const [isFactionManagerOpen, setIsFactionManagerOpen] = useState(false)
-  const [isRelationshipManagerOpen, setIsRelationshipManagerOpen] = useState(false)
-  const [isMemberManagerOpen, setIsMemberManagerOpen] = useState(false)
-  const [manageDropdownOpen, setManageDropdownOpen] = useState(false)
-  const [addDropdownOpen, setAddDropdownOpen] = useState(false)
-  const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false)
 
   // Connection lines state
   const [showConnections, setShowConnections] = useState(false)
   const [connectionFilter, setConnectionFilter] = useState<RelationshipCategory | null>(null)
-  const [connectionDropdownOpen, setConnectionDropdownOpen] = useState(false)
   const [relationships, setRelationships] = useState<(CanvasRelationship & { template?: RelationshipTemplate | null; to_character?: { id: string; name: string } })[]>([])
   const [factionMemberships, setFactionMemberships] = useState<FactionMembershipWithFaction[]>([])
   const [quests, setQuests] = useState<{ id: string; name: string; type: string; status: string; quest_giver_id: string | null }[]>([])
@@ -587,20 +576,10 @@ export default function CampaignCanvasPage() {
     setSelectedCharacterId(null)
   }, [setSelectedCharacterId])
 
-  // Handle successful publish/update from UnifiedShareModal
-  const handlePublished = () => {
-    setCampaign(prev => prev ? {
-      ...prev,
-      is_published: true,
-      template_version: (prev.template_version || 0) + 1
-    } : null)
-    toast.success('Template published successfully')
-  }
-
   const isPublished = campaign?.is_published === true
 
-  // Canvas toolbar actions - simplified, management moved to burger menu
-  const canvasActions = (
+  // TopBar actions - just badges, main actions are in floating toolbar
+  const topBarActions = (
     <>
       {/* State Badge */}
       {campaign && (
@@ -618,108 +597,6 @@ export default function CampaignCanvasPage() {
           Published
         </span>
       )}
-
-      {/* Connection Lines Toggle */}
-      <div className="relative">
-        <button
-          className={cn(
-            "btn btn-sm flex items-center gap-1.5",
-            showConnections ? "btn-primary" : "btn-secondary"
-          )}
-          onClick={() => {
-            setConnectionDropdownOpen(!connectionDropdownOpen)
-            setAddDropdownOpen(false)
-          }}
-          title="Show relationship connections"
-        >
-          <Link2 className="w-4 h-4" />
-          <span className="hidden sm:inline">Connections</span>
-          <ChevronDown className={cn("w-3 h-3 transition-transform", connectionDropdownOpen && "rotate-180")} />
-        </button>
-        {connectionDropdownOpen && (
-          <div className="absolute top-full right-0 mt-1 w-48 bg-[#12121a] border border-[--border] rounded-lg shadow-2xl z-50 py-1">
-            <button
-              className={cn(
-                "w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-white/[0.05]",
-                showConnections ? "text-purple-400" : "text-[--text-secondary]"
-              )}
-              onClick={() => {
-                setShowConnections(!showConnections)
-                if (showConnections) setConnectionDropdownOpen(false)
-              }}
-            >
-              <Link2 className="w-4 h-4" />
-              {showConnections ? "Hide Connections" : "Show Connections"}
-            </button>
-            {showConnections && (
-              <>
-                <div className="border-t border-[--border] my-1" />
-                <div className="px-3 py-1.5 text-xs text-[--text-muted] uppercase tracking-wider">Filter</div>
-                {CONNECTION_FILTER_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    className={cn(
-                      "w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-white/[0.05]",
-                      (option.value === 'all' ? connectionFilter === null : connectionFilter === option.value) ? "text-white" : "text-[--text-secondary]"
-                    )}
-                    onClick={() => {
-                      setConnectionFilter(option.value === 'all' ? null : option.value as RelationshipCategory)
-                      setConnectionDropdownOpen(false)
-                    }}
-                  >
-                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: option.color }} />
-                    {option.label}
-                  </button>
-                ))}
-              </>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Add Dropdown - Group, Character (only show if user can edit) */}
-      {can.editCanvasLayout && (
-        <div className="relative">
-          <button
-            className="btn btn-primary btn-sm flex items-center gap-1.5"
-            onClick={() => {
-              setAddDropdownOpen(!addDropdownOpen)
-              setConnectionDropdownOpen(false)
-            }}
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Add</span>
-            <ChevronDown className={cn("w-3 h-3 transition-transform", addDropdownOpen && "rotate-180")} />
-          </button>
-          {addDropdownOpen && (
-            <div className="absolute top-full right-0 mt-1 w-44 bg-[#12121a] border border-[--border] rounded-lg shadow-2xl z-50 py-1">
-              <button
-                className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
-                onClick={() => { setIsCreateCharacterModalOpen(true); setAddDropdownOpen(false) }}
-              >
-                <Plus className="w-4 h-4" />
-                Add Character
-              </button>
-              <button
-                className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-[--text-secondary] hover:bg-white/[0.05] hover:text-white"
-                onClick={() => { setIsCreateGroupOpen(true); setAddDropdownOpen(false) }}
-              >
-                <FolderPlus className="w-4 h-4" />
-                Add Group
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Menu Button */}
-      <button
-        className="btn btn-secondary btn-sm"
-        onClick={() => setIsMenuDrawerOpen(true)}
-        title="Campaign Menu"
-      >
-        <Menu className="w-4 h-4" />
-      </button>
     </>
   )
 
@@ -796,7 +673,23 @@ export default function CampaignCanvasPage() {
 
   // ============ DESKTOP LAYOUT ============
   return (
-    <AppLayout campaignId={campaignId} fullBleed transparentTopBar topBarActions={canvasActions}>
+    <AppLayout campaignId={campaignId} fullBleed transparentTopBar topBarActions={topBarActions}>
+      {/* Floating Canvas Toolbar */}
+      <FloatingCanvasToolbar
+        zoomLevel={1}
+        onZoomIn={() => {}}
+        onZoomOut={() => {}}
+        onFitToScreen={() => {}}
+        showConnections={showConnections}
+        connectionFilter={connectionFilter}
+        onToggleConnections={() => setShowConnections(!showConnections)}
+        onFilterChange={setConnectionFilter}
+        onAddCharacter={() => setIsCreateCharacterModalOpen(true)}
+        onAddGroup={() => setIsCreateGroupOpen(true)}
+        onOpenCardSizing={() => setIsResizeToolbarOpen(true)}
+        canEdit={can.editCanvasLayout}
+      />
+
       {/* Canvas Area */}
       <div className="h-screen">
         <CampaignCanvas
@@ -1095,77 +988,15 @@ export default function CampaignCanvasPage() {
         </div>
       </Modal>
 
-      {/* Unified Share Modal */}
-      {campaign && (
-        <UnifiedShareModal
-          isOpen={isShareModalOpen}
-          onClose={() => setIsShareModalOpen(false)}
-          contentType="campaign"
-          contentId={campaignId}
-          contentName={campaign.name}
-          contentMode={campaign.content_mode || 'active'}
-          onTemplateCreated={handlePublished}
-        />
-      )}
-
-      {/* Tag Manager Modal */}
-      <TagManager
-        campaignId={campaignId}
-        isOpen={isTagManagerOpen}
-        onClose={() => setIsTagManagerOpen(false)}
-        onTagsChange={loadCampaignData}
-      />
-
-      {/* Faction Manager Modal */}
-      <FactionManager
-        campaignId={campaignId}
-        characters={characters}
-        isOpen={isFactionManagerOpen}
-        onClose={() => setIsFactionManagerOpen(false)}
-        onFactionsChange={loadCampaignData}
-      />
-
-      {/* Relationship Manager Modal */}
-      <RelationshipManager
-        campaignId={campaignId}
-        isOpen={isRelationshipManagerOpen}
-        onClose={() => setIsRelationshipManagerOpen(false)}
-      />
-
-      {/* Party Modal */}
-      <PartyModal
-        campaignId={campaignId}
-        characters={characters}
-        isOpen={isMemberManagerOpen}
-        onClose={() => setIsMemberManagerOpen(false)}
-      />
-
       {/* Template Onboarding Modal */}
       {campaign && (
         <TemplateOnboardingModal
           isOpen={showTemplateOnboarding}
           onClose={() => setShowTemplateOnboarding(false)}
-          onOpenShareModal={() => setIsShareModalOpen(true)}
+          onOpenShareModal={() => {}}
           contentName={campaign.name}
         />
       )}
-
-      {/* Campaign Menu Drawer */}
-      <CampaignMenuDrawer
-        isOpen={isMenuDrawerOpen}
-        onClose={() => setIsMenuDrawerOpen(false)}
-        campaign={campaign}
-        campaignId={campaignId}
-        isOwner={campaign?.user_id === user?.id}
-        isDm={isDm}
-        currentPage="canvas"
-        onOpenMembers={() => setIsMemberManagerOpen(true)}
-        onOpenLabels={() => setIsTagManagerOpen(true)}
-        onOpenFactions={() => setIsFactionManagerOpen(true)}
-        onOpenRelationships={() => setIsRelationshipManagerOpen(true)}
-        onOpenResize={() => setIsResizeToolbarOpen(true)}
-        onOpenShare={() => setIsShareModalOpen(true)}
-      />
 
     </AppLayout>
   )

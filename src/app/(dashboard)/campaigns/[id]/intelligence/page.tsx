@@ -47,15 +47,7 @@ import {
 import { Modal, AccessDeniedPage } from '@/components/ui'
 import { GuidanceTip } from '@/components/guidance/GuidanceTip'
 import { TimelineEventEditor, type TimelineEventFormData } from '@/components/timeline'
-import { AppLayout, CampaignPageHeader } from '@/components/layout'
-import {
-  PartyModal,
-  TagManager,
-  FactionManager,
-  RelationshipManager,
-} from '@/components/campaign'
-import { ResizeToolbar } from '@/components/canvas'
-import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
+import { AppLayout } from '@/components/layout'
 import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { CampaignIntelligencePageMobile } from './page.mobile'
 import { useAppStore, useCanUseAI } from '@/store'
@@ -289,14 +281,6 @@ export default function IntelligencePage() {
 
   // Bulk approval state
   const [isBulkApproving, setIsBulkApproving] = useState(false)
-
-  // Modal state for burger menu
-  const [showMembersModal, setShowMembersModal] = useState(false)
-  const [showLabelsModal, setShowLabelsModal] = useState(false)
-  const [showFactionsModal, setShowFactionsModal] = useState(false)
-  const [showRelationshipsModal, setShowRelationshipsModal] = useState(false)
-  const [showResizeModal, setShowResizeModal] = useState(false)
-  const [showShareModal, setShowShareModal] = useState(false)
 
   const loadData = useCallback(async () => {
     if (!user || !campaignId) return
@@ -911,10 +895,31 @@ export default function IntelligencePage() {
     )
   }
 
+  // Page actions for top bar
+  const pageActions = (
+    <button
+      className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium disabled:opacity-50"
+      onClick={handleAnalyzeClick}
+      disabled={isAnalyzing || cooldownStatus?.isOnCooldown}
+      title={cooldownStatus?.isOnCooldown ? `Available in ${cooldownStatus.remainingFormatted}` : undefined}
+    >
+      {isAnalyzing ? (
+        <Loader2 className="w-4 h-4 animate-spin" />
+      ) : cooldownStatus?.isOnCooldown ? (
+        <Clock className="w-4 h-4" />
+      ) : (
+        <Sparkles className="w-4 h-4" />
+      )}
+      <span className="hidden sm:inline">
+        {isAnalyzing ? 'Analyzing...' : cooldownStatus?.isOnCooldown ? cooldownStatus.remainingFormatted : 'Analyze'}
+      </span>
+    </button>
+  )
+
   // ============ DESKTOP LAYOUT ============
   if (loading || permissionsLoading) {
     return (
-      <AppLayout campaignId={campaignId} hideHeader>
+      <AppLayout campaignId={campaignId}>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-[--arcane-purple]" />
         </div>
@@ -925,7 +930,7 @@ export default function IntelligencePage() {
   // Permission check - only DMs can access Campaign Intelligence
   if (!isMember || !isDm) {
     return (
-      <AppLayout campaignId={campaignId} hideHeader>
+      <AppLayout campaignId={campaignId}>
         <AccessDeniedPage
           campaignId={campaignId}
           message="Campaign Intelligence is only available to DMs and Co-DMs."
@@ -939,42 +944,9 @@ export default function IntelligencePage() {
   }
 
   return (
-    <AppLayout campaignId={campaignId} hideHeader>
-      {/* Page Header with Burger Menu */}
-      <CampaignPageHeader
-        campaign={campaign}
-        campaignId={campaignId}
-        title="Intelligence"
-        isOwner={isOwner}
-        isDm={isDm}
-        onOpenMembers={() => setShowMembersModal(true)}
-        onOpenLabels={() => setShowLabelsModal(true)}
-        onOpenFactions={() => setShowFactionsModal(true)}
-        onOpenRelationships={() => setShowRelationshipsModal(true)}
-        onOpenResize={() => setShowResizeModal(true)}
-        onOpenShare={() => setShowShareModal(true)}
-        actions={
-          <button
-            className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium disabled:opacity-50"
-            onClick={handleAnalyzeClick}
-            disabled={isAnalyzing || cooldownStatus?.isOnCooldown}
-            title={cooldownStatus?.isOnCooldown ? `Available in ${cooldownStatus.remainingFormatted}` : undefined}
-          >
-            {isAnalyzing ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : cooldownStatus?.isOnCooldown ? (
-              <Clock className="w-4 h-4" />
-            ) : (
-              <Sparkles className="w-4 h-4" />
-            )}
-            <span className="hidden sm:inline">
-              {isAnalyzing ? 'Analyzing...' : cooldownStatus?.isOnCooldown ? cooldownStatus.remainingFormatted : 'Analyze'}
-            </span>
-          </button>
-        }
-      />
-
+    <AppLayout campaignId={campaignId} topBarActions={pageActions}>
       <div className="max-w-6xl mx-auto px-4 py-6">
+              {isAnalyzing ? 'Analyzing...' : cooldownStatus?.isOnCooldown ? cooldownStatus.remainingFormatted : 'Analyze'}
         {/* First-time guidance */}
         <GuidanceTip
           tipId="campaign_intelligence_intro"
@@ -2062,58 +2034,6 @@ export default function IntelligencePage() {
           </div>
         </div>
       </Modal>
-
-      {/* Modals */}
-      <PartyModal
-        campaignId={campaignId}
-        characters={characters}
-        isOpen={showMembersModal}
-        onClose={() => setShowMembersModal(false)}
-      />
-
-      {showLabelsModal && (
-        <TagManager
-          campaignId={campaignId}
-          isOpen={showLabelsModal}
-          onClose={() => setShowLabelsModal(false)}
-        />
-      )}
-
-      {showFactionsModal && (
-        <FactionManager
-          campaignId={campaignId}
-          characters={characters}
-          isOpen={showFactionsModal}
-          onClose={() => setShowFactionsModal(false)}
-        />
-      )}
-
-      {showRelationshipsModal && (
-        <RelationshipManager
-          campaignId={campaignId}
-          isOpen={showRelationshipsModal}
-          onClose={() => setShowRelationshipsModal(false)}
-        />
-      )}
-
-      {showResizeModal && (
-        <ResizeToolbar
-          onClose={() => setShowResizeModal(false)}
-          characters={characters}
-          onResize={async () => {}}
-        />
-      )}
-
-      {campaign && (
-        <UnifiedShareModal
-          isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
-          contentType="campaign"
-          contentId={campaignId}
-          contentName={campaign.name}
-          contentMode="active"
-        />
-      )}
     </AppLayout>
   )
 }

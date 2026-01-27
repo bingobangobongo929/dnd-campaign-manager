@@ -3,7 +3,7 @@
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronDown, Sparkles, LogOut, ChevronRight, Swords, BookOpen, Settings, LayoutGrid, ScrollText, Clock, Brain, Network, Map, Image as ImageIcon, Edit3, Eye, Users, Scroll } from 'lucide-react'
+import { ChevronDown, Sparkles, LogOut, ChevronRight, Swords, BookOpen, Settings, LayoutGrid, ScrollText, Clock, Brain, Network, Map, Image as ImageIcon, Edit3, Eye, Users, Scroll, LayoutDashboard, MapPin, Target, Compass, PanelTop } from 'lucide-react'
 import { useSupabase, useUser } from '@/hooks'
 import { useAppStore, useCanUseAI } from '@/store'
 import type { UserSettings } from '@/types/database'
@@ -20,7 +20,7 @@ const PAGE_ICONS: Record<string, any> = {
   campaigns: Swords,
   vault: BookOpen,
   settings: Settings,
-  canvas: LayoutGrid,
+  canvas: PanelTop,
   sessions: ScrollText,
   timeline: Clock,
   intelligence: Brain,
@@ -31,6 +31,13 @@ const PAGE_ICONS: Record<string, any> = {
   view: Eye,
   relationships: Users,
   oneshots: Scroll,
+  // Added for completeness
+  dashboard: LayoutDashboard,
+  locations: MapPin,
+  quests: Target,
+  encounters: Swords,
+  adventures: Compass,
+  presentation: BookOpen,
 }
 
 interface TopBarProps {
@@ -123,13 +130,19 @@ export function TopBar({
 
         if (parts[2]) {
           const pageLabels: Record<string, string> = {
+            dashboard: 'Dashboard',
             canvas: 'Canvas',
+            view: 'View',
             sessions: 'Session Notes',
             timeline: 'Timeline',
             intelligence: 'Intelligence',
             lore: 'Lore',
             map: 'World Map',
             gallery: 'Gallery',
+            locations: 'Locations',
+            quests: 'Quests',
+            encounters: 'Encounters',
+            settings: 'Settings',
           }
           // Check if there's a session ID (parts[3])
           if (parts[2] === 'sessions' && parts[3]) {
@@ -154,13 +167,14 @@ export function TopBar({
         breadcrumbs.push({ label: 'New Campaign' })
       }
     } else if (parts[0] === 'vault') {
-      breadcrumbs.push({ label: 'Character Vault', href: '/vault', icon: 'vault' })
+      breadcrumbs.push({ label: 'Characters', href: '/vault', icon: 'vault' })
 
       if (parts[1] && parts[1] !== 'new' && parts[1] !== 'import') {
         // Character detail page
         if (parts[2]) {
           const pageLabels: Record<string, string> = {
             view: 'View',
+            presentation: 'View 2',
             intelligence: 'Intelligence',
             relationships: 'Relationships',
             sessions: 'Session Notes',
@@ -194,9 +208,14 @@ export function TopBar({
         breadcrumbs.push({ label: settingsLabels[parts[1]] || parts[1] })
       }
     } else if (parts[0] === 'oneshots') {
-      breadcrumbs.push({ label: 'One-Shots', href: '/campaigns', icon: 'oneshots' })
+      breadcrumbs.push({ label: 'One-Shots', href: '/oneshots', icon: 'oneshots' })
       if (parts[1] && parts[1] !== 'new') {
         breadcrumbs.push({ label: 'Edit One-Shot', icon: 'edit' })
+      }
+    } else if (parts[0] === 'adventures') {
+      breadcrumbs.push({ label: 'Adventures', href: '/adventures', icon: 'adventures' })
+      if (parts[1] && parts[1] !== 'new') {
+        breadcrumbs.push({ label: 'Edit Adventure', icon: 'edit' })
       }
     }
 

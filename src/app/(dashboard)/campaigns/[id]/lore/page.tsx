@@ -16,18 +16,10 @@ import {
   List,
   Share2,
 } from 'lucide-react'
-import { AppLayout, CampaignPageHeader } from '@/components/layout'
+import { AppLayout } from '@/components/layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { MarkdownContent, AccessDeniedPage } from '@/components/ui'
-import {
-  PartyModal,
-  TagManager,
-  FactionManager,
-  RelationshipManager,
-  RelationshipDiagram,
-} from '@/components/campaign'
-import { ResizeToolbar } from '@/components/canvas'
-import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
+import { RelationshipDiagram } from '@/components/campaign'
 import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { CampaignLorePageMobile } from './page.mobile'
 import { useCanUseAI } from '@/store'
@@ -85,14 +77,6 @@ export default function LorePage() {
 
   // Relationship view mode: 'list' or 'diagram'
   const [relationshipViewMode, setRelationshipViewMode] = useState<'list' | 'diagram'>('list')
-
-  // Modal state for burger menu
-  const [showMembersModal, setShowMembersModal] = useState(false)
-  const [showLabelsModal, setShowLabelsModal] = useState(false)
-  const [showFactionsModal, setShowFactionsModal] = useState(false)
-  const [showRelationshipsModal, setShowRelationshipsModal] = useState(false)
-  const [showResizeModal, setShowResizeModal] = useState(false)
-  const [showShareModal, setShowShareModal] = useState(false)
 
   useEffect(() => {
     if (user && campaignId) {
@@ -309,10 +293,26 @@ export default function LorePage() {
     )
   }
 
+  // Page actions for top bar
+  const pageActions = canUseAI && can.addLore && (
+    <button
+      className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium disabled:opacity-50"
+      onClick={handleGenerateLore}
+      disabled={generatingLore}
+    >
+      {generatingLore ? (
+        <Loader2 className="w-4 h-4 animate-spin" />
+      ) : (
+        <Sparkles className="w-4 h-4" />
+      )}
+      <span className="hidden sm:inline">{generatingLore ? 'Analyzing...' : 'Analyze'}</span>
+    </button>
+  )
+
   // ============ DESKTOP LAYOUT ============
   if (loading || permissionsLoading) {
     return (
-      <AppLayout campaignId={campaignId} hideHeader>
+      <AppLayout campaignId={campaignId}>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
         </div>
@@ -323,7 +323,7 @@ export default function LorePage() {
   // Permission check - must be a member with view permission
   if (!isMember || !can.viewLore) {
     return (
-      <AppLayout campaignId={campaignId} hideHeader>
+      <AppLayout campaignId={campaignId}>
         <AccessDeniedPage
           campaignId={campaignId}
           message="You don't have permission to view lore for this campaign."
@@ -333,36 +333,7 @@ export default function LorePage() {
   }
 
   return (
-    <AppLayout campaignId={campaignId} hideHeader>
-      {/* Page Header with Burger Menu */}
-      <CampaignPageHeader
-        campaign={campaign}
-        campaignId={campaignId}
-        title="Lore"
-        isOwner={isOwner}
-        isDm={isDm}
-        onOpenMembers={() => setShowMembersModal(true)}
-        onOpenLabels={() => setShowLabelsModal(true)}
-        onOpenFactions={() => setShowFactionsModal(true)}
-        onOpenRelationships={() => setShowRelationshipsModal(true)}
-        onOpenResize={() => setShowResizeModal(true)}
-        onOpenShare={() => setShowShareModal(true)}
-        actions={canUseAI && can.addLore && (
-          <button
-            className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium disabled:opacity-50"
-            onClick={handleGenerateLore}
-            disabled={generatingLore}
-          >
-            {generatingLore ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4" />
-            )}
-            <span className="hidden sm:inline">{generatingLore ? 'Analyzing...' : 'Analyze'}</span>
-          </button>
-        )}
-      />
-
+    <AppLayout campaignId={campaignId} topBarActions={pageActions}>
       <div className="max-w-5xl mx-auto px-4 py-6">
 
         {error && (
@@ -746,58 +717,6 @@ export default function LorePage() {
         </section>
       </div>
       <BackToTopButton />
-
-      {/* Modals */}
-      <PartyModal
-        campaignId={campaignId}
-        characters={characters}
-        isOpen={showMembersModal}
-        onClose={() => setShowMembersModal(false)}
-      />
-
-      {showLabelsModal && (
-        <TagManager
-          campaignId={campaignId}
-          isOpen={showLabelsModal}
-          onClose={() => setShowLabelsModal(false)}
-        />
-      )}
-
-      {showFactionsModal && (
-        <FactionManager
-          campaignId={campaignId}
-          characters={characters}
-          isOpen={showFactionsModal}
-          onClose={() => setShowFactionsModal(false)}
-        />
-      )}
-
-      {showRelationshipsModal && (
-        <RelationshipManager
-          campaignId={campaignId}
-          isOpen={showRelationshipsModal}
-          onClose={() => setShowRelationshipsModal(false)}
-        />
-      )}
-
-      {showResizeModal && (
-        <ResizeToolbar
-          onClose={() => setShowResizeModal(false)}
-          characters={characters}
-          onResize={async () => {}}
-        />
-      )}
-
-      {campaign && (
-        <UnifiedShareModal
-          isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
-          contentType="campaign"
-          contentId={campaignId}
-          contentName={campaign.name}
-          contentMode="active"
-        />
-      )}
     </AppLayout>
   )
 }

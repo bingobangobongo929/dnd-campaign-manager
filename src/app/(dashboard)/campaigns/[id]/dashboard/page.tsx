@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation'
 import { Loader2, Settings2, Check, LayoutDashboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AppLayout } from '@/components/layout/app-layout'
-import { CampaignPageHeader } from '@/components/layout'
 import { useSupabase, useUser, usePermissions, useDashboardPreferences } from '@/hooks'
 import { useAppStore, useCanUseAI } from '@/store'
 import {
@@ -23,13 +22,7 @@ import {
   getDefaultScheduleSettings,
 } from '@/lib/schedule-utils'
 import { getUserTimezone } from '@/lib/timezone-utils'
-import {
-  PartyModal,
-  TagManager,
-  FactionManager,
-  RelationshipManager,
-} from '@/components/campaign'
-import { ResizeToolbar } from '@/components/canvas'
+import { PartyModal } from '@/components/campaign'
 import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 import { AccessDeniedPage } from '@/components/ui'
 import { toast } from 'sonner'
@@ -77,10 +70,6 @@ export default function CampaignDashboardPage() {
 
   // Modal state
   const [showMembersModal, setShowMembersModal] = useState(false)
-  const [showLabelsModal, setShowLabelsModal] = useState(false)
-  const [showFactionsModal, setShowFactionsModal] = useState(false)
-  const [showRelationshipsModal, setShowRelationshipsModal] = useState(false)
-  const [showResizeModal, setShowResizeModal] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [showScheduleSettings, setShowScheduleSettings] = useState(false)
@@ -443,10 +432,26 @@ export default function CampaignDashboardPage() {
     toast.success('Character added to your vault!')
   }
 
+  // Page actions for top bar
+  const pageActions = (
+    <button
+      onClick={() => setIsEditMode(!isEditMode)}
+      className={cn(
+        "p-2 rounded-lg transition-colors",
+        isEditMode
+          ? "bg-purple-600 text-white"
+          : "text-gray-400 hover:text-white hover:bg-white/[0.05]"
+      )}
+      title={isEditMode ? "Exit edit mode" : "Customize dashboard"}
+    >
+      {isEditMode ? <Check className="w-5 h-5" /> : <Settings2 className="w-5 h-5" />}
+    </button>
+  )
+
   // Loading state
   if (loading || permissionsLoading) {
     return (
-      <AppLayout campaignId={campaignId} hideHeader>
+      <AppLayout campaignId={campaignId}>
         <div className="flex items-center justify-center h-[60vh]">
           <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
         </div>
@@ -457,7 +462,7 @@ export default function CampaignDashboardPage() {
   // Permission check
   if (!isMember) {
     return (
-      <AppLayout campaignId={campaignId} hideHeader>
+      <AppLayout campaignId={campaignId}>
         <AccessDeniedPage
           campaignId={campaignId}
           message="You don't have permission to view this campaign."
@@ -467,39 +472,7 @@ export default function CampaignDashboardPage() {
   }
 
   return (
-    <AppLayout campaignId={campaignId} hideHeader>
-      {/* Page Header with Burger Menu */}
-      <CampaignPageHeader
-        campaign={campaign}
-        campaignId={campaignId}
-        title="Dashboard"
-        icon={LayoutDashboard}
-        iconColor="#8B5CF6"
-        isOwner={isOwner}
-        isDm={isDm}
-        currentPage="dashboard"
-        onOpenMembers={() => setShowMembersModal(true)}
-        onOpenLabels={() => setShowLabelsModal(true)}
-        onOpenFactions={() => setShowFactionsModal(true)}
-        onOpenRelationships={() => setShowRelationshipsModal(true)}
-        onOpenResize={() => setShowResizeModal(true)}
-        onOpenShare={() => setShowShareModal(true)}
-        actions={
-          <button
-            onClick={() => setIsEditMode(!isEditMode)}
-            className={cn(
-              "p-2 rounded-lg transition-colors",
-              isEditMode
-                ? "bg-purple-600 text-white"
-                : "text-gray-400 hover:text-white hover:bg-white/[0.05]"
-            )}
-            title={isEditMode ? "Exit edit mode" : "Customize dashboard"}
-          >
-            {isEditMode ? <Check className="w-5 h-5" /> : <Settings2 className="w-5 h-5" />}
-          </button>
-        }
-      />
-
+    <AppLayout campaignId={campaignId} topBarActions={pageActions}>
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Player Dashboard Layout */}
         {isPlayerLayout ? (
@@ -588,39 +561,6 @@ export default function CampaignDashboardPage() {
         isOpen={showMembersModal}
         onClose={() => setShowMembersModal(false)}
       />
-
-      {showLabelsModal && (
-        <TagManager
-          campaignId={campaignId}
-          isOpen={showLabelsModal}
-          onClose={() => setShowLabelsModal(false)}
-        />
-      )}
-
-      {showFactionsModal && (
-        <FactionManager
-          campaignId={campaignId}
-          characters={characters}
-          isOpen={showFactionsModal}
-          onClose={() => setShowFactionsModal(false)}
-        />
-      )}
-
-      {showRelationshipsModal && (
-        <RelationshipManager
-          campaignId={campaignId}
-          isOpen={showRelationshipsModal}
-          onClose={() => setShowRelationshipsModal(false)}
-        />
-      )}
-
-      {showResizeModal && (
-        <ResizeToolbar
-          onClose={() => setShowResizeModal(false)}
-          characters={characters}
-          onResize={async () => {}}
-        />
-      )}
 
       {campaign && (
         <UnifiedShareModal

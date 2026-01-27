@@ -22,15 +22,7 @@ import {
 } from 'lucide-react'
 import { Input, Textarea, Modal, Dropdown, AccessDeniedPage } from '@/components/ui'
 import { GuidanceTip } from '@/components/guidance/GuidanceTip'
-import { AppLayout, CampaignPageHeader } from '@/components/layout'
-import {
-  PartyModal,
-  TagManager,
-  FactionManager,
-  RelationshipManager,
-} from '@/components/campaign'
-import { ResizeToolbar } from '@/components/canvas'
-import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
+import { AppLayout } from '@/components/layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { CharacterViewModal } from '@/components/character'
 import {
@@ -117,14 +109,6 @@ export default function TimelinePage() {
     description: '',
     color: '#8B5CF6',
   })
-
-  // Modal state for burger menu
-  const [showMembersModal, setShowMembersModal] = useState(false)
-  const [showLabelsModal, setShowLabelsModal] = useState(false)
-  const [showFactionsModal, setShowFactionsModal] = useState(false)
-  const [showRelationshipsModal, setShowRelationshipsModal] = useState(false)
-  const [showResizeModal, setShowResizeModal] = useState(false)
-  const [showShareModal, setShowShareModal] = useState(false)
 
   // Load view preference from localStorage
   useEffect(() => {
@@ -490,10 +474,21 @@ export default function TimelinePage() {
     )
   }
 
+  // Page actions for top bar
+  const pageActions = can.addTimeline && (
+    <button
+      className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium"
+      onClick={() => setIsCreateModalOpen(true)}
+    >
+      <Plus className="w-4 h-4" />
+      <span className="hidden sm:inline">Add</span>
+    </button>
+  )
+
   // ============ DESKTOP LAYOUT ============
   if (loading || permissionsLoading) {
     return (
-      <AppLayout campaignId={campaignId} hideHeader>
+      <AppLayout campaignId={campaignId}>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
         </div>
@@ -504,7 +499,7 @@ export default function TimelinePage() {
   // Permission check - must be a member with view permission
   if (!isMember || !can.viewTimeline) {
     return (
-      <AppLayout campaignId={campaignId} hideHeader>
+      <AppLayout campaignId={campaignId}>
         <AccessDeniedPage
           campaignId={campaignId}
           message="You don't have permission to view the timeline for this campaign."
@@ -514,31 +509,7 @@ export default function TimelinePage() {
   }
 
   return (
-    <AppLayout campaignId={campaignId} hideHeader>
-      {/* Page Header with Burger Menu */}
-      <CampaignPageHeader
-        campaign={campaign}
-        campaignId={campaignId}
-        title="Timeline"
-        isOwner={isOwner}
-        isDm={isDm}
-        onOpenMembers={() => setShowMembersModal(true)}
-        onOpenLabels={() => setShowLabelsModal(true)}
-        onOpenFactions={() => setShowFactionsModal(true)}
-        onOpenRelationships={() => setShowRelationshipsModal(true)}
-        onOpenResize={() => setShowResizeModal(true)}
-        onOpenShare={() => setShowShareModal(true)}
-        actions={can.addTimeline && (
-          <button
-            className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium"
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Add</span>
-          </button>
-        )}
-      />
-
+    <AppLayout campaignId={campaignId} topBarActions={pageActions}>
       <div className="max-w-6xl mx-auto px-4 py-6">
         {/* First-time guidance */}
         <GuidanceTip
@@ -1086,58 +1057,6 @@ export default function TimelinePage() {
         </Modal>
       </div>
       <BackToTopButton />
-
-      {/* Modals */}
-      <PartyModal
-        campaignId={campaignId}
-        characters={characters}
-        isOpen={showMembersModal}
-        onClose={() => setShowMembersModal(false)}
-      />
-
-      {showLabelsModal && (
-        <TagManager
-          campaignId={campaignId}
-          isOpen={showLabelsModal}
-          onClose={() => setShowLabelsModal(false)}
-        />
-      )}
-
-      {showFactionsModal && (
-        <FactionManager
-          campaignId={campaignId}
-          characters={characters}
-          isOpen={showFactionsModal}
-          onClose={() => setShowFactionsModal(false)}
-        />
-      )}
-
-      {showRelationshipsModal && (
-        <RelationshipManager
-          campaignId={campaignId}
-          isOpen={showRelationshipsModal}
-          onClose={() => setShowRelationshipsModal(false)}
-        />
-      )}
-
-      {showResizeModal && (
-        <ResizeToolbar
-          onClose={() => setShowResizeModal(false)}
-          characters={characters}
-          onResize={async () => {}}
-        />
-      )}
-
-      {campaign && (
-        <UnifiedShareModal
-          isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
-          contentType="campaign"
-          contentId={campaignId}
-          contentName={campaign.name}
-          contentMode="active"
-        />
-      )}
     </AppLayout>
   )
 }

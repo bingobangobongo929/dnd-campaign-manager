@@ -13,15 +13,7 @@ import {
   Pencil,
 } from 'lucide-react'
 import { Modal, AccessDeniedPage } from '@/components/ui'
-import { AppLayout, CampaignPageHeader } from '@/components/layout'
-import {
-  PartyModal,
-  TagManager,
-  FactionManager,
-  RelationshipManager,
-} from '@/components/campaign'
-import { ResizeToolbar } from '@/components/canvas'
-import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
+import { AppLayout } from '@/components/layout'
 import { MapViewer, CreateMapModal } from '@/components/maps'
 import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { CampaignMapPageMobile } from './page.mobile'
@@ -72,14 +64,6 @@ export default function WorldMapPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [filterType, setFilterType] = useState<MapType | 'all'>('all')
   const [error, setError] = useState<string | null>(null)
-
-  // Modal state for burger menu
-  const [showMembersModal, setShowMembersModal] = useState(false)
-  const [showLabelsModal, setShowLabelsModal] = useState(false)
-  const [showFactionsModal, setShowFactionsModal] = useState(false)
-  const [showRelationshipsModal, setShowRelationshipsModal] = useState(false)
-  const [showResizeModal, setShowResizeModal] = useState(false)
-  const [showShareModal, setShowShareModal] = useState(false)
 
   useEffect(() => {
     if (user && campaignId) {
@@ -217,7 +201,7 @@ export default function WorldMapPage() {
   // ============ DESKTOP LAYOUT ============
   if (loading || permissionsLoading) {
     return (
-      <AppLayout campaignId={campaignId} hideHeader>
+      <AppLayout campaignId={campaignId}>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
         </div>
@@ -228,7 +212,7 @@ export default function WorldMapPage() {
   // Permission check
   if (!isMember || !can.viewMaps) {
     return (
-      <AppLayout campaignId={campaignId} hideHeader>
+      <AppLayout campaignId={campaignId}>
         <AccessDeniedPage
           campaignId={campaignId}
           message="You don't have permission to view maps for this campaign."
@@ -240,7 +224,7 @@ export default function WorldMapPage() {
   // ============ LIGHTBOX VIEW (when a map is selected) ============
   if (selectedMap) {
     return (
-      <AppLayout campaignId={campaignId} hideHeader fullBleed>
+      <AppLayout campaignId={campaignId} fullBleed>
         <MapViewer
           campaignId={campaignId}
           map={selectedMap}
@@ -262,23 +246,7 @@ export default function WorldMapPage() {
 
   // ============ GALLERY VIEW (default) ============
   return (
-    <AppLayout campaignId={campaignId} hideHeader>
-      {/* Page Header with Burger Menu */}
-      <CampaignPageHeader
-        campaign={campaign}
-        campaignId={campaignId}
-        title="Maps"
-        icon={Map}
-        isOwner={isOwner}
-        isDm={isDm}
-        onOpenMembers={() => setShowMembersModal(true)}
-        onOpenLabels={() => setShowLabelsModal(true)}
-        onOpenFactions={() => setShowFactionsModal(true)}
-        onOpenRelationships={() => setShowRelationshipsModal(true)}
-        onOpenResize={() => setShowResizeModal(true)}
-        onOpenShare={() => setShowShareModal(true)}
-      />
-
+    <AppLayout campaignId={campaignId}>
       {maps.length === 0 ? (
         /* Empty State */
         <div className="flex items-center justify-center h-[70vh]">
@@ -469,58 +437,6 @@ export default function WorldMapPage() {
         onMapCreated={handleMapCreated}
         supabase={supabase}
       />
-
-      {/* Burger Menu Modals */}
-      <PartyModal
-        campaignId={campaignId}
-        characters={[]}
-        isOpen={showMembersModal}
-        onClose={() => setShowMembersModal(false)}
-      />
-
-      {showLabelsModal && (
-        <TagManager
-          campaignId={campaignId}
-          isOpen={showLabelsModal}
-          onClose={() => setShowLabelsModal(false)}
-        />
-      )}
-
-      {showFactionsModal && (
-        <FactionManager
-          campaignId={campaignId}
-          characters={[]}
-          isOpen={showFactionsModal}
-          onClose={() => setShowFactionsModal(false)}
-        />
-      )}
-
-      {showRelationshipsModal && (
-        <RelationshipManager
-          campaignId={campaignId}
-          isOpen={showRelationshipsModal}
-          onClose={() => setShowRelationshipsModal(false)}
-        />
-      )}
-
-      {showResizeModal && (
-        <ResizeToolbar
-          onClose={() => setShowResizeModal(false)}
-          characters={[]}
-          onResize={async () => {}}
-        />
-      )}
-
-      {campaign && (
-        <UnifiedShareModal
-          isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
-          contentType="campaign"
-          contentId={campaignId}
-          contentName={campaign.name}
-          contentMode="active"
-        />
-      )}
     </AppLayout>
   )
 }

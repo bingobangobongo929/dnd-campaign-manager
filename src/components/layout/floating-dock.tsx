@@ -3,27 +3,31 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  PanelTop,
+  Home,
+  Swords,
+  Compass,
+  Scroll,
+  BookOpen,
+  Settings,
   LayoutDashboard,
+  PanelTop,
   ScrollText,
   Clock,
+  Network,
   Map,
   Image,
-  Settings,
-  BookOpen,
-  Swords,
-  Network,
   Brain,
+  MapPin,
+  Target,
   Edit3,
   Eye,
   Users,
-  Scroll,
-  Home,
+  Lock,
+  Tags,
   Shield,
-  Compass,
-  MapPin,
-  Target,
+  Link2,
 } from 'lucide-react'
+import { DockFlyout } from './dock-flyout'
 import { useCanUseAI } from '@/store'
 import { useUserSettings, usePermissions } from '@/hooks'
 import { isAdmin } from '@/lib/admin'
@@ -39,97 +43,99 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
   const canUseAI = useCanUseAI()
   const { settings } = useUserSettings()
   const showAdmin = settings?.role && isAdmin(settings.role)
-  const { can, isOwner, isDm, loading: permissionsLoading } = usePermissions(campaignId || null)
+  const { can, isOwner, isDm } = usePermissions(campaignId || null)
 
-  // Character-specific links (when viewing a vault character)
-  // Order matches campaign dock: Edit/View are like Canvas, then Sessions, then other features
-  const characterLinks = characterId
-    ? [
-        { href: `/vault/${characterId}`, label: 'Edit', icon: Edit3 },
-        { href: `/vault/${characterId}/view`, label: 'View 1', icon: Eye },
-        { href: `/vault/${characterId}/presentation`, label: 'View 2', icon: BookOpen },
-        { href: `/vault/${characterId}/sessions`, label: 'Session Notes', icon: ScrollText },
-        ...(canUseAI ? [{ href: `/vault/${characterId}/intelligence`, label: 'Intelligence', icon: Brain }] : []),
-        { href: `/vault/${characterId}/relationships`, label: 'Relationships', icon: Users },
-        { href: `/vault/${characterId}/gallery`, label: 'Gallery', icon: Image },
-      ]
-    : []
+  // Determine page context
+  const isMainPage = isMainListingPage(pathname)
+  const isInCampaign = !!campaignId && pathname.startsWith('/campaigns/')
+  const isInCharacter = !!characterId && pathname.startsWith('/vault/')
+  const isInOneshot = !!oneshotId && pathname.startsWith('/oneshots/')
 
-  // Build campaign links based on permissions
-  // Owners and DMs see everything, others see based on their permissions
-  // Order: Dashboard → Canvas → View → Sessions → Timeline → Intelligence → Lore → Map → Gallery → Settings
-  const campaignLinks = campaignId
-    ? [
-        // Dashboard - visible to DMs and those with canvas access (primary entry point)
-        ...(isDm || can.viewCanvas ? [{ href: `/campaigns/${campaignId}/dashboard`, label: 'Dashboard', icon: LayoutDashboard }] : []),
-        // Canvas - only for DMs or those with canvas permission
-        ...(isDm || can.viewCanvas ? [{ href: `/campaigns/${campaignId}/canvas`, label: 'Canvas', icon: PanelTop }] : []),
-        // View page - always visible to members (read-only preview)
-        { href: `/campaigns/${campaignId}/view`, label: 'View', icon: Eye },
-        // Sessions - based on session view permission
-        ...(isDm || can.viewSessions ? [{ href: `/campaigns/${campaignId}/sessions`, label: 'Session Notes', icon: ScrollText }] : []),
-        // Timeline - based on timeline view permission
-        ...(isDm || can.viewTimeline ? [{ href: `/campaigns/${campaignId}/timeline`, label: 'Timeline', icon: Clock }] : []),
-        // Intelligence - only for DMs with AI access
-        ...(isDm && canUseAI ? [{ href: `/campaigns/${campaignId}/intelligence`, label: 'Intelligence', icon: Brain }] : []),
-        // Locations - visible to DMs (new unified system)
-        ...(isDm ? [{ href: `/campaigns/${campaignId}/locations`, label: 'Locations', icon: MapPin }] : []),
-        // Quests - visible to DMs (new unified system)
-        ...(isDm ? [{ href: `/campaigns/${campaignId}/quests`, label: 'Quests', icon: Target }] : []),
-        // Encounters - visible to DMs (new unified system)
-        ...(isDm ? [{ href: `/campaigns/${campaignId}/encounters`, label: 'Encounters', icon: Swords }] : []),
-        // Lore - based on lore view permission
-        ...(isDm || can.viewLore ? [{ href: `/campaigns/${campaignId}/lore`, label: 'Lore', icon: Network }] : []),
-        // Map - based on maps view permission
-        ...(isDm || can.viewMaps ? [{ href: `/campaigns/${campaignId}/map`, label: 'World Map', icon: Map }] : []),
-        // Gallery - based on gallery view permission
-        ...(isDm || can.viewGallery ? [{ href: `/campaigns/${campaignId}/gallery`, label: 'Gallery', icon: Image }] : []),
-        // Settings - only for campaign owners
-        ...(isOwner ? [{ href: `/campaigns/${campaignId}/settings`, label: 'Settings', icon: Settings }] : []),
-      ]
-    : []
-
-  // Oneshot-specific links
-  const oneshotLinks = oneshotId
-    ? [
-        { href: `/oneshots/${oneshotId}`, label: 'Edit', icon: Edit3 },
-        { href: `/oneshots/${oneshotId}/view`, label: 'View', icon: Eye },
-        { href: `/oneshots/${oneshotId}/present`, label: 'Present', icon: Scroll },
-      ]
-    : []
-
-  const globalLinks = [
-    { href: '/home', label: 'Home', icon: Home },
-    { href: '/campaigns', label: 'Campaigns', icon: Swords },
-    { href: '/adventures', label: 'Adventures', icon: Compass },
-    { href: '/oneshots', label: 'One-Shots', icon: Scroll },
-    { href: '/vault', label: 'Character Vault', icon: BookOpen },
-    { href: '/settings', label: 'Settings', icon: Settings },
-    ...(showAdmin ? [{ href: '/admin', label: 'Admin', icon: Shield }] : []),
-  ]
-
+  // Helper to check active state
   const isActive = (href: string) => {
-    // Handle oneshots - match /oneshots or /oneshots/*
     if (href === '/oneshots') {
       return pathname === '/oneshots' || pathname.startsWith('/oneshots/')
     }
-    // Handle adventures - match /adventures or /adventures/*
     if (href === '/adventures') {
       return pathname === '/adventures' || pathname.startsWith('/adventures/')
     }
-    // Handle campaigns - match /campaigns or /campaigns/*
     if (href === '/campaigns') {
-      return pathname === '/campaigns' || (pathname.startsWith('/campaigns/') && !pathname.startsWith('/oneshots'))
+      return pathname === '/campaigns' || (pathname.startsWith('/campaigns/') && !isInCampaign)
+    }
+    if (href === '/vault') {
+      return pathname === '/vault' || (pathname.startsWith('/vault/') && !isInCharacter)
     }
     return pathname === href || pathname.startsWith(href + '/')
   }
 
-  // Calculate animation delay offset
-  let animationOffset = 0
+  // Global navigation items
+  const globalNavItems = [
+    { href: '/home', label: 'Home', icon: Home },
+    { href: '/campaigns', label: 'Campaigns', icon: Swords },
+    { href: '/adventures', label: 'Adventures', icon: Compass },
+    { href: '/oneshots', label: 'One-Shots', icon: Scroll },
+    { href: '/vault', label: 'Characters', icon: BookOpen },
+    { href: '/settings', label: 'Settings', icon: Settings },
+  ]
+
+  // Campaign navigation items
+  const campaignNavItems = campaignId ? [
+    ...(isDm || can.viewCanvas ? [{ href: `/campaigns/${campaignId}/dashboard`, label: 'Dashboard', icon: LayoutDashboard }] : []),
+    ...(isDm || can.viewCanvas ? [{ href: `/campaigns/${campaignId}/canvas`, label: 'Canvas', icon: PanelTop }] : []),
+    { href: `/campaigns/${campaignId}/view`, label: 'View', icon: Eye },
+    ...(isDm || can.viewSessions ? [{ href: `/campaigns/${campaignId}/sessions`, label: 'Sessions', icon: ScrollText }] : []),
+    ...(isDm || can.viewTimeline ? [{ href: `/campaigns/${campaignId}/timeline`, label: 'Timeline', icon: Clock }] : []),
+    ...(isDm || can.viewLore ? [{ href: `/campaigns/${campaignId}/lore`, label: 'Lore', icon: Network }] : []),
+    ...(isDm || can.viewMaps ? [{ href: `/campaigns/${campaignId}/map`, label: 'World Map', icon: Map }] : []),
+    ...(isDm || can.viewGallery ? [{ href: `/campaigns/${campaignId}/gallery`, label: 'Gallery', icon: Image }] : []),
+  ] : []
+
+  // DM Tools flyout items (campaign context only)
+  const dmToolsItems = campaignId && isDm ? [
+    ...(canUseAI ? [{ href: `/campaigns/${campaignId}/intelligence`, label: 'Intelligence', icon: Brain, isActive: isActive(`/campaigns/${campaignId}/intelligence`) }] : []),
+    { href: `/campaigns/${campaignId}/locations`, label: 'Locations', icon: MapPin, isActive: isActive(`/campaigns/${campaignId}/locations`) },
+    { href: `/campaigns/${campaignId}/quests`, label: 'Quests', icon: Target, isActive: isActive(`/campaigns/${campaignId}/quests`) },
+    { href: `/campaigns/${campaignId}/encounters`, label: 'Encounters', icon: Swords, isActive: isActive(`/campaigns/${campaignId}/encounters`) },
+  ] : []
+
+  // Management flyout items (campaign context only, for DMs/owners)
+  const managementItems = campaignId && (isDm || isOwner) ? [
+    { href: `/campaigns/${campaignId}/settings`, label: 'Party & Members', icon: Users, isActive: isActive(`/campaigns/${campaignId}/settings`) },
+    { href: `/campaigns/${campaignId}/settings`, label: 'Labels', icon: Tags, isActive: false },
+    { href: `/campaigns/${campaignId}/settings`, label: 'Factions', icon: Shield, isActive: false },
+    { href: `/campaigns/${campaignId}/settings`, label: 'Relationships', icon: Link2, isActive: false },
+  ] : []
+
+  // Navigate flyout items (for detail pages)
+  const navigateItems = [
+    { href: '/home', label: 'Home', icon: Home, isActive: isActive('/home') },
+    { href: '/campaigns', label: 'Campaigns', icon: Swords, isActive: pathname === '/campaigns' },
+    { href: '/adventures', label: 'Adventures', icon: Compass, isActive: isActive('/adventures') },
+    { href: '/oneshots', label: 'One-Shots', icon: Scroll, isActive: pathname === '/oneshots' },
+    { href: '/vault', label: 'Characters', icon: BookOpen, isActive: pathname === '/vault' },
+  ]
+
+  // Character navigation items
+  const characterNavItems = characterId ? [
+    { href: `/vault/${characterId}`, label: 'Edit', icon: Edit3 },
+    { href: `/vault/${characterId}/view`, label: 'View 1', icon: Eye },
+    { href: `/vault/${characterId}/presentation`, label: 'View 2', icon: BookOpen },
+    { href: `/vault/${characterId}/sessions`, label: 'Sessions', icon: ScrollText },
+    ...(canUseAI ? [{ href: `/vault/${characterId}/intelligence`, label: 'Intelligence', icon: Brain }] : []),
+    { href: `/vault/${characterId}/relationships`, label: 'Relationships', icon: Users },
+    { href: `/vault/${characterId}/gallery`, label: 'Gallery', icon: Image },
+  ] : []
+
+  // Oneshot navigation items
+  const oneshotNavItems = oneshotId ? [
+    { href: `/oneshots/${oneshotId}`, label: 'Edit', icon: Edit3 },
+    { href: `/oneshots/${oneshotId}/view`, label: 'View', icon: Eye },
+    { href: `/oneshots/${oneshotId}/run`, label: 'Present', icon: Scroll },
+  ] : []
 
   return (
     <nav className="floating-dock">
-      {/* App Logo */}
+      {/* Logo - always links to home */}
       <Link
         href="/home"
         className="dock-item dock-logo"
@@ -143,92 +149,198 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
         />
         <span className="dock-item-label">
           Multiloop
-          <span style={{ fontSize: '9px', color: '#fbbf24', marginLeft: '4px', fontWeight: 500 }}>BETA</span>
+          <span className="dock-logo-beta">BETA</span>
         </span>
       </Link>
       <div className="dock-divider" />
 
-      {/* Character-specific links (vault character context) */}
-      {characterLinks.length > 0 && (
+      {/* MAIN PAGES: Show all global nav directly */}
+      {isMainPage && (
         <>
-          {characterLinks.map((link, index) => {
-            const Icon = link.icon
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`dock-item ${isActive(link.href) ? 'active' : ''}`}
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <Icon className="dock-item-icon" />
-                <span className="dock-item-label">{link.label}</span>
-              </Link>
-            )
-          })}
-          <div className="dock-divider" />
+          {globalNavItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`dock-item ${isActive(item.href) ? 'active' : ''}`}
+            >
+              <item.icon className="dock-item-icon" />
+              <span className="dock-item-label">{item.label}</span>
+            </Link>
+          ))}
+          {showAdmin && (
+            <Link
+              href="/admin"
+              className={`dock-item ${isActive('/admin') ? 'active' : ''}`}
+            >
+              <Shield className="dock-item-icon" />
+              <span className="dock-item-label">Admin</span>
+            </Link>
+          )}
         </>
       )}
 
-      {/* Campaign-specific links */}
-      {campaignLinks.length > 0 && (
+      {/* CAMPAIGN DETAIL PAGES */}
+      {isInCampaign && (
         <>
-          {campaignLinks.map((link, index) => {
-            const Icon = link.icon
-            const offset = characterLinks.length + (characterLinks.length > 0 ? 1 : 0)
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`dock-item ${isActive(link.href) ? 'active' : ''}`}
-                style={{ animationDelay: `${(offset + index) * 50}ms` }}
-              >
-                <Icon className="dock-item-icon" />
-                <span className="dock-item-label">{link.label}</span>
-              </Link>
-            )
-          })}
-          <div className="dock-divider" />
-        </>
-      )}
+          {/* Campaign nav items */}
+          {campaignNavItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`dock-item ${isActive(item.href) ? 'active' : ''}`}
+            >
+              <item.icon className="dock-item-icon" />
+              <span className="dock-item-label">{item.label}</span>
+            </Link>
+          ))}
 
-      {/* Oneshot-specific links */}
-      {oneshotLinks.length > 0 && (
-        <>
-          {oneshotLinks.map((link, index) => {
-            const Icon = link.icon
-            const offset = characterLinks.length + (characterLinks.length > 0 ? 1 : 0) + campaignLinks.length + (campaignLinks.length > 0 ? 1 : 0)
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`dock-item ${isActive(link.href) ? 'active' : ''}`}
-                style={{ animationDelay: `${(offset + index) * 50}ms` }}
-              >
-                <Icon className="dock-item-icon" />
-                <span className="dock-item-label">{link.label}</span>
-              </Link>
-            )
-          })}
           <div className="dock-divider" />
-        </>
-      )}
 
-      {/* Global links */}
-      {globalLinks.map((link, index) => {
-        const Icon = link.icon
-        const offset = characterLinks.length + (characterLinks.length > 0 ? 1 : 0) + campaignLinks.length + (campaignLinks.length > 0 ? 1 : 0) + oneshotLinks.length + (oneshotLinks.length > 0 ? 1 : 0)
-        return (
+          {/* DM Tools Flyout */}
+          {dmToolsItems.length > 0 && (
+            <DockFlyout
+              icon={Lock}
+              label="DM Tools"
+              items={dmToolsItems}
+            />
+          )}
+
+          {/* Management Flyout */}
+          {managementItems.length > 0 && (
+            <DockFlyout
+              icon={Settings}
+              label="Management"
+              items={managementItems}
+            />
+          )}
+
+          <div className="dock-divider" />
+
+          {/* Navigate Flyout */}
+          <DockFlyout
+            icon={Compass}
+            label="Navigate"
+            items={navigateItems}
+          />
+
+          {/* Settings always visible */}
           <Link
-            key={link.href}
-            href={link.href}
-            className={`dock-item ${isActive(link.href) ? 'active' : ''}`}
-            style={{ animationDelay: `${(offset + index) * 50}ms` }}
+            href="/settings"
+            className={`dock-item ${isActive('/settings') ? 'active' : ''}`}
           >
-            <Icon className="dock-item-icon" />
-            <span className="dock-item-label">{link.label}</span>
+            <Settings className="dock-item-icon" />
+            <span className="dock-item-label">Settings</span>
           </Link>
-        )
-      })}
+        </>
+      )}
+
+      {/* CHARACTER DETAIL PAGES */}
+      {isInCharacter && (
+        <>
+          {/* Character nav items */}
+          {characterNavItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`dock-item ${isActive(item.href) ? 'active' : ''}`}
+            >
+              <item.icon className="dock-item-icon" />
+              <span className="dock-item-label">{item.label}</span>
+            </Link>
+          ))}
+
+          <div className="dock-divider" />
+
+          {/* Navigate Flyout */}
+          <DockFlyout
+            icon={Compass}
+            label="Navigate"
+            items={navigateItems}
+          />
+
+          {/* Settings always visible */}
+          <Link
+            href="/settings"
+            className={`dock-item ${isActive('/settings') ? 'active' : ''}`}
+          >
+            <Settings className="dock-item-icon" />
+            <span className="dock-item-label">Settings</span>
+          </Link>
+        </>
+      )}
+
+      {/* ONESHOT DETAIL PAGES */}
+      {isInOneshot && (
+        <>
+          {/* Oneshot nav items */}
+          {oneshotNavItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`dock-item ${isActive(item.href) ? 'active' : ''}`}
+            >
+              <item.icon className="dock-item-icon" />
+              <span className="dock-item-label">{item.label}</span>
+            </Link>
+          ))}
+
+          <div className="dock-divider" />
+
+          {/* Navigate Flyout */}
+          <DockFlyout
+            icon={Compass}
+            label="Navigate"
+            items={navigateItems}
+          />
+
+          {/* Settings always visible */}
+          <Link
+            href="/settings"
+            className={`dock-item ${isActive('/settings') ? 'active' : ''}`}
+          >
+            <Settings className="dock-item-icon" />
+            <span className="dock-item-label">Settings</span>
+          </Link>
+        </>
+      )}
     </nav>
   )
+}
+
+/**
+ * Determines if the current pathname is a "main" listing page
+ * where all global nav items should be visible directly (not in flyout)
+ */
+function isMainListingPage(pathname: string): boolean {
+  const mainPages = [
+    '/home',
+    '/campaigns',
+    '/adventures',
+    '/oneshots',
+    '/vault',
+    '/settings',
+    '/admin',
+  ]
+
+  // Exact match for main pages
+  if (mainPages.includes(pathname)) {
+    return true
+  }
+
+  // Settings sub-pages are also considered "main"
+  if (pathname.startsWith('/settings/')) {
+    return true
+  }
+
+  // /campaigns/new, /vault/new, /vault/import are main pages
+  if (pathname === '/campaigns/new' || pathname === '/vault/new' || pathname === '/vault/import') {
+    return true
+  }
+
+  // /adventures/new, /oneshots/new are main pages
+  if (pathname === '/adventures/new' || pathname === '/oneshots/new') {
+    return true
+  }
+
+  return false
 }
