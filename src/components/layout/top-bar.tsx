@@ -3,14 +3,17 @@
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronDown, Sparkles, LogOut, ChevronRight, Swords, BookOpen, Settings, LayoutGrid, ScrollText, Clock, Brain, Network, Map, Image as ImageIcon, Edit3, Eye, Users, Scroll, LayoutDashboard, MapPin, Target, Compass, PanelTop, Share2, Home, User } from 'lucide-react'
-import { useSupabase, useUser } from '@/hooks'
+import { ChevronDown, Sparkles, LogOut, ChevronRight, Swords, BookOpen, Settings, LayoutGrid, ScrollText, Clock, Brain, Network, Map, Image as ImageIcon, Edit3, Eye, Users, Scroll, LayoutDashboard, MapPin, Target, Compass, PanelTop, Share2, Home, User, Upload, Copy, Loader2, Shield } from 'lucide-react'
+import { useSupabase, useUser, useMembership } from '@/hooks'
 import { useAppStore, useCanUseAI } from '@/store'
 import type { UserSettings } from '@/types/database'
 import { useState, useRef, useEffect } from 'react'
 import type { Campaign } from '@/types/database'
 import { RecentItems } from './recent-items'
 import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
+import { Modal } from '@/components/ui'
+import { getTierDisplayName, getTierBadgeColor, getRoleDisplayName, getRoleBadgeColor, isAdmin } from '@/lib/admin'
+import { toast } from 'sonner'
 
 // Page icons for "You are here" indicator
 const PAGE_ICONS: Record<string, any> = {
@@ -63,10 +66,13 @@ export function TopBar({
   const { user } = useUser()
   const { currentCampaign, setIsAIAssistantOpen } = useAppStore()
   const canUseAI = useCanUseAI()
+  const { tier, isFounder } = useMembership()
   const [showCampaignDropdown, setShowCampaignDropdown] = useState(false)
   const [showCharacterDropdown, setShowCharacterDropdown] = useState(false)
   const [showUserDropdown, setShowUserDropdown] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false)
+  const [isDuplicating, setIsDuplicating] = useState(false)
   const campaignDropdownRef = useRef<HTMLDivElement>(null)
   const characterDropdownRef = useRef<HTMLDivElement>(null)
   const userDropdownRef = useRef<HTMLDivElement>(null)
@@ -115,6 +121,76 @@ export function TopBar({
 
   // Get current character info for switcher
   const currentCharacter = characters.find(c => c.id === currentCharacterId)
+
+  // Handle duplicate action
+  const handleDuplicate = async () => {
+    const parts = pathname.split('/').filter(Boolean)
+    let contentType: 'campaign' | 'character' | 'oneshot' | null = null
+    let contentId: string | null = null
+
+    if (parts[0] === 'campaigns' && parts[1] && parts[1] !== 'new') {
+      contentType = 'campaign'
+      contentId = parts[1]
+    } else if (parts[0] === 'vault' && parts[1] && parts[1] !== 'new' && parts[1] !== 'import') {
+      contentType = 'character'
+      contentId = parts[1]
+    } else if (parts[0] === 'oneshots' && parts[1] && parts[1] !== 'new') {
+      contentType = 'oneshot'
+      contentId = parts[1]
+    }
+
+    if (!contentType || !contentId) return
+
+    setIsDuplicating(true)
+    try {
+      const res = await fetch('/api/content/duplicate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contentType, contentId }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to duplicate')
+      }
+
+      const data = await res.json()
+      setShowDuplicateModal(false)
+      toast.success('Duplicated successfully')
+
+      // Navigate to the new item
+      if (data.newId) {
+        const newPath = contentType === 'campaign'
+          ? `/campaigns/${data.newId}/canvas`
+          : contentType === 'character'
+            ? `/vault/${data.newId}`
+            : `/oneshots/${data.newId}`
+        router.push(newPath)
+      }
+    } catch (error) {
+      console.error('Duplicate error:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to duplicate')
+    }
+    setIsDuplicating(false)
+  }
+
+  // Get duplicate context (same logic as share context)
+  const getDuplicateContext = () => {
+    const parts = pathname.split('/').filter(Boolean)
+
+    if (parts[0] === 'campaigns' && parts[1] && parts[1] !== 'new') {
+      return { type: 'Campaign', name: currentCampaign?.name || 'Campaign' }
+    }
+    if (parts[0] === 'vault' && parts[1] && parts[1] !== 'new' && parts[1] !== 'import') {
+      return { type: 'Character', name: currentCharacter?.name || 'Character' }
+    }
+    if (parts[0] === 'oneshots' && parts[1] && parts[1] !== 'new') {
+      return { type: 'One-Shot', name: 'One-Shot' }
+    }
+    return null
+  }
+
+  const duplicateContext = getDuplicateContext()
 
   // Determine share context from pathname
   const getShareContext = (): { type: 'campaign' | 'character' | 'oneshot' | null; id: string | null; name: string } => {
@@ -433,6 +509,29 @@ export function TopBar({
           </button>
         )}
 
+        {/* Publish Button - placeholder for now */}
+        {shareContext.type && shareContext.id && (
+          <button
+            className="topbar-action-btn"
+            onClick={() => toast.info('Publish feature coming soon')}
+            title="Publish"
+          >
+            <Upload className="w-4 h-4" />
+            <span className="topbar-action-label">Publish</span>
+          </button>
+        )}
+
+        {/* Duplicate Button */}
+        {duplicateContext && (
+          <button
+            className="topbar-action-btn"
+            onClick={() => setShowDuplicateModal(true)}
+            title="Duplicate"
+          >
+            <Copy className="w-4 h-4" />
+          </button>
+        )}
+
         {/* Recent Items (icon-only) */}
         <RecentItems />
 
@@ -471,6 +570,25 @@ export function TopBar({
             <div className="user-dropdown">
               <div className="user-dropdown-header">
                 <span className="user-dropdown-email">{user?.email}</span>
+                {/* User badges: tier, role, founder */}
+                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                  {/* Tier badge - always shown */}
+                  <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${getTierBadgeColor(tier)}`}>
+                    {getTierDisplayName(tier)}
+                  </span>
+                  {/* Role badge - only if admin/mod */}
+                  {userSettings?.role && isAdmin(userSettings.role) && (
+                    <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${getRoleBadgeColor(userSettings.role)}`}>
+                      {getRoleDisplayName(userSettings.role)}
+                    </span>
+                  )}
+                  {/* Founder badge */}
+                  {isFounder && (
+                    <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-amber-500/20 text-amber-400">
+                      Founder
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="user-dropdown-divider" />
               <Link
@@ -489,6 +607,17 @@ export function TopBar({
                 <Settings className="w-4 h-4" />
                 Settings
               </Link>
+              {/* Admin link - only for admin/mod */}
+              {userSettings?.role && isAdmin(userSettings.role) && (
+                <Link
+                  href="/admin"
+                  className="user-dropdown-item"
+                  onClick={() => setShowUserDropdown(false)}
+                >
+                  <Shield className="w-4 h-4" />
+                  Admin
+                </Link>
+              )}
               <div className="user-dropdown-divider" />
               <button
                 className="user-dropdown-item text-red-400 hover:text-red-300"
@@ -514,7 +643,42 @@ export function TopBar({
           contentId={shareContext.id}
           contentName={shareContext.name}
           contentMode="active"
+          initialView="share"
         />
+      )}
+
+      {/* Duplicate Confirmation Modal */}
+      {duplicateContext && (
+        <Modal
+          isOpen={showDuplicateModal}
+          onClose={() => setShowDuplicateModal(false)}
+          title={`Duplicate ${duplicateContext.type}`}
+          description={`This will create an exact copy of "${duplicateContext.name}" including all content. The duplicate will be named "${duplicateContext.name} (Copy)".`}
+        >
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowDuplicateModal(false)}
+              disabled={isDuplicating}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary flex items-center gap-2"
+              onClick={handleDuplicate}
+              disabled={isDuplicating}
+            >
+              {isDuplicating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Duplicating...
+                </>
+              ) : (
+                'Duplicate'
+              )}
+            </button>
+          </div>
+        </Modal>
       )}
     </header>
   )

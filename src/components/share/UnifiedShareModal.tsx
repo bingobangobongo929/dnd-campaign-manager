@@ -57,6 +57,7 @@ interface UnifiedShareModalProps {
   contentMode: 'active' | 'template' | 'inactive'
   onTemplateCreated?: () => void
   onShareCreated?: () => void
+  initialView?: ModalView  // Skip initial choice screen when specified
 }
 
 // Section definitions per content type
@@ -132,6 +133,7 @@ export function UnifiedShareModal({
   contentMode,
   onTemplateCreated,
   onShareCreated,
+  initialView,
 }: UnifiedShareModalProps) {
   const supabase = useSupabase()
   const { canCreateShareLink, limits, usage } = useMembership()
@@ -186,9 +188,14 @@ export function UnifiedShareModal({
         defaults[s.key] = s.default
       })
       setSelectedSections(defaults)
-      setView(isTemplate && hasPublishedVersions ? 'template-manage' : 'initial')
+      // Use initialView prop if provided, otherwise use default logic
+      if (initialView) {
+        setView(initialView)
+      } else {
+        setView(isTemplate && hasPublishedVersions ? 'template-manage' : 'initial')
+      }
     }
-  }, [isOpen, contentType, isTemplate, hasPublishedVersions])
+  }, [isOpen, contentType, isTemplate, hasPublishedVersions, initialView])
 
   // Load existing data when modal opens
   useEffect(() => {

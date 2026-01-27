@@ -2026,43 +2026,7 @@ export function CharacterEditor({ character, mode, standalone = true, fromTempla
                     Published
                   </span>
                 )}
-
-                {/* Share & Manage Button */}
-                <button
-                  onClick={() => setShareModalOpen(true)}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-lg hover:bg-white/[0.05] transition-all duration-200 text-gray-500 hover:text-gray-300",
-                    isMobile ? "p-2" : "px-3 py-1.5"
-                  )}
-                  title="Share"
-                >
-                  <Share2 className="w-3.5 h-3.5" />
-                  {!isMobile && <span className="text-[13px]">Share</span>}
-                </button>
-                <button
-                  onClick={() => setDuplicateModalOpen(true)}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-lg hover:bg-white/[0.05] transition-all duration-200 text-gray-500 hover:text-gray-300",
-                    isMobile ? "p-2" : "px-3 py-1.5"
-                  )}
-                  title="Duplicate"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                  {!isMobile && <span className="text-[13px]">Duplicate</span>}
-                </button>
-                {!fromTemplate && (
-                  <button
-                    onClick={() => setIsDeleteConfirmOpen(true)}
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-lg hover:bg-red-500/10 transition-all duration-200 text-gray-500 hover:text-red-400",
-                      isMobile ? "p-2" : "px-3 py-1.5"
-                    )}
-                    title="Delete"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    {!isMobile && <span className="text-[13px]">Delete</span>}
-                  </button>
-                )}
+                {/* Share/Duplicate/Delete buttons moved to TopBar */}
               </>
             )}
           </div>
