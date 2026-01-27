@@ -29,6 +29,8 @@ import { Modal, Input, ColorPicker, IconPicker, getGroupIcon, Button } from '@/c
 import { EmptyWorldState } from './EmptyWorldState'
 import { useSupabase } from '@/hooks'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
+import { Sparkles } from 'lucide-react'
 import type { CampaignFaction, FactionMembership, Character, FactionType, FactionStatus, TimelineEvent } from '@/types/database'
 
 interface FactionWithMembers extends CampaignFaction {
@@ -751,6 +753,27 @@ export function FactionsTab({ campaignId, characters, isDm }: FactionsTabProps) 
           </Button>
         )}
       </div>
+
+      {/* Intelligence callout for sparse factions */}
+      {isDm && factions.length > 0 && factions.length < 3 && (
+        <div className="mb-6 p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+          <div className="flex items-start gap-3">
+            <Sparkles className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm text-emerald-300/90">
+                <strong className="text-emerald-300">Tip:</strong> Campaign Intelligence can detect factions and organizations mentioned in your session notes.
+              </p>
+              <Link
+                href={`/campaigns/${campaignId}/intelligence`}
+                className="inline-flex items-center gap-1 mt-2 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+              >
+                Check Intelligence for suggestions
+                <span className="text-xs">→</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Factions List */}
       {rootFactions.length === 0 ? (

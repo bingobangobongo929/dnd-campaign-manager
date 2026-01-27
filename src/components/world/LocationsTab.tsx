@@ -34,6 +34,8 @@ import { Button, Modal, Badge, Tooltip } from '@/components/ui'
 import { EmptyWorldState } from './EmptyWorldState'
 import { useSupabase } from '@/hooks'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
+import { Sparkles } from 'lucide-react'
 
 // Location type icons mapping
 export const LOCATION_TYPE_ICONS: Record<string, any> = {
@@ -1172,6 +1174,27 @@ export function LocationsTab({ campaignId, isDm, isOwner }: LocationsTabProps) {
           )}
         </div>
       </div>
+
+      {/* Intelligence callout for sparse locations */}
+      {isDm && locations.length > 0 && locations.length < 5 && (
+        <div className="mb-6 p-4 rounded-lg bg-blue-500/5 border border-blue-500/10">
+          <div className="flex items-start gap-3">
+            <Sparkles className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm text-blue-300/90">
+                <strong className="text-blue-300">Tip:</strong> Campaign Intelligence can detect locations mentioned in your session notes and suggest adding them.
+              </p>
+              <Link
+                href={`/campaigns/${campaignId}/intelligence`}
+                className="inline-flex items-center gap-1 mt-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
+              >
+                Check Intelligence for suggestions
+                <span className="text-xs">→</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Location list/tree */}
       {filteredLocations.length === 0 ? (

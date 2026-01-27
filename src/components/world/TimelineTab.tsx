@@ -444,7 +444,7 @@ export function TimelineTab({ campaignId, characters, isDm }: TimelineTabProps) 
           onAddEvent={isDm && can.addTimeline ? () => setIsCreateModalOpen(true) : undefined}
         />
 
-        {/* AI Generate button for empty state */}
+        {/* Generate from sessions button */}
         {isDm && sessions.length > 0 && (
           <div className="flex flex-col items-center gap-4 mt-4">
             <button
@@ -456,13 +456,13 @@ export function TimelineTab({ campaignId, characters, isDm }: TimelineTabProps) 
               }}
             >
               <Sparkles className="w-4 h-4" style={{ color: '#a78bfa' }} />
-              <span style={{ color: '#a78bfa' }}>AI Generate from Sessions</span>
+              <span style={{ color: '#a78bfa' }}>Generate from Sessions</span>
             </button>
 
             {/* Intelligence link */}
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Intelligence may also suggest timeline events.</span>
+              <span>Campaign Intelligence can also suggest timeline events.</span>
               <Link
                 href={`/campaigns/${campaignId}/intelligence`}
                 className="text-purple-400 hover:text-purple-300 underline underline-offset-2"
@@ -673,7 +673,7 @@ export function TimelineTab({ campaignId, characters, isDm }: TimelineTabProps) 
             </div>
           )}
 
-          {/* AI Generate */}
+          {/* Generate from sessions */}
           {isDm && sessions.length > 0 && (
             <button
               className="btn btn-secondary flex items-center gap-2"
@@ -684,7 +684,7 @@ export function TimelineTab({ campaignId, characters, isDm }: TimelineTabProps) 
               }}
             >
               <Sparkles className="w-4 h-4" style={{ color: '#a78bfa' }} />
-              <span style={{ color: '#a78bfa' }}>AI Generate</span>
+              <span style={{ color: '#a78bfa' }}>Generate</span>
             </button>
           )}
 
@@ -724,7 +724,7 @@ export function TimelineTab({ campaignId, characters, isDm }: TimelineTabProps) 
                 <Sparkles className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm text-purple-300/90">
-                    <strong className="text-purple-300">Tip:</strong> Intelligence can analyze your session notes and suggest timeline events you might have missed.
+                    <strong className="text-purple-300">Tip:</strong> Campaign Intelligence can analyze your session notes and suggest timeline events you might have missed.
                   </p>
                   <Link
                     href={`/campaigns/${campaignId}/intelligence`}
