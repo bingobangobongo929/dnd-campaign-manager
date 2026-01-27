@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Loader2, Settings2, Check } from 'lucide-react'
+import { Loader2, Settings2, Check, LayoutDashboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AppLayout } from '@/components/layout/app-layout'
 import { CampaignPageHeader } from '@/components/layout'
@@ -473,6 +473,8 @@ export default function CampaignDashboardPage() {
         campaign={campaign}
         campaignId={campaignId}
         title="Dashboard"
+        icon={LayoutDashboard}
+        iconColor="#8B5CF6"
         isOwner={isOwner}
         isDm={isDm}
         currentPage="dashboard"

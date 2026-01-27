@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, RotateCcw, Plus, ChevronDown, Eye } from 'lucide-react'
+import { Check, Sparkles, Plus, ChevronDown, Eye } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface HiddenWidget {
@@ -88,13 +88,14 @@ export function EditModeToolbar({
           </div>
         )}
 
-        {/* Reset Button */}
+        {/* Default Layout Button */}
         <button
           onClick={onReset}
           className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors bg-white/[0.05] hover:bg-white/[0.08] text-gray-300"
+          title="Apply recommended layout"
         >
-          <RotateCcw className="w-4 h-4" />
-          <span className="hidden sm:inline">Reset</span>
+          <Sparkles className="w-4 h-4" />
+          <span className="hidden sm:inline">Default</span>
         </button>
 
         {/* Done Button */}
