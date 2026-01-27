@@ -328,8 +328,8 @@ export default function WorldMapPage() {
             </div>
           )}
 
-          {/* Map Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {/* Map Cards - Flex for centering with few items */}
+          <div className="flex flex-wrap justify-center gap-4">
             {filteredMaps.map((map) => {
               const typeInfo = getMapTypeInfo(map)
               const count = pinCounts[map.id] || 0
@@ -338,7 +338,7 @@ export default function WorldMapPage() {
                 <button
                   key={map.id}
                   onClick={() => setSelectedMap(map)}
-                  className="group relative rounded-xl overflow-hidden text-left hover:ring-2 hover:ring-[--arcane-purple]/50 transition-all"
+                  className="group relative rounded-xl overflow-hidden text-left hover:ring-2 hover:ring-[--arcane-purple]/50 transition-all w-full sm:w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.75rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.8rem)] max-w-[280px]"
                 >
                   {/* Thumbnail */}
                   <div className="aspect-[4/3] relative bg-[--bg-elevated]">
@@ -400,7 +400,7 @@ export default function WorldMapPage() {
             {can.addMap && (
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="aspect-[4/3] flex flex-col items-center justify-center rounded-xl border border-dashed border-[--border-subtle] hover:border-[--arcane-purple]/40 hover:bg-[--arcane-purple]/5 transition-colors group"
+                className="aspect-[4/3] flex flex-col items-center justify-center rounded-xl border border-dashed border-[--border-subtle] hover:border-[--arcane-purple]/40 hover:bg-[--arcane-purple]/5 transition-colors group w-full sm:w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.75rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.8rem)] max-w-[280px]"
               >
                 <div className="w-10 h-10 rounded-full bg-[--bg-elevated] group-hover:bg-[--arcane-purple]/10 flex items-center justify-center mb-2 transition-colors">
                   <Plus className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />

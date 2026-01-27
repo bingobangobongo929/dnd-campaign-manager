@@ -40,9 +40,37 @@ The AI detection code is written but awaiting validation with real/fake data.
 2. ~~**Quick Reference - Quests Roll**~~ ✅ DONE - Roll button added to quest picker
 3. ~~**Location Detail - Encounters**~~ ✅ DONE - "Encounters Here" section
 4. ~~**Quest Detail - Encounters**~~ ✅ DONE - "Encounters" section
-5. **Test Campaign Intelligence** - Create fake session notes to validate detection
-6. **Oneshots Migration** - Recreate oneshot UI using unified system
-7. **Sessions Link to Quests** - Link sessions to quests progressed (from TODO list)
+5. ~~**Sessions Link to Quests**~~ ✅ DONE - Three-way linking implemented (see below)
+6. **Test Campaign Intelligence** - Create fake session notes to validate detection
+7. **Oneshots Migration** - Recreate oneshot UI using unified system
+
+### Session Content Linking (COMPLETE)
+**Combined Quests + Encounters in one collapsible card**
+
+**Component:** `src/components/sessions/SessionContent.tsx`
+- Single "Session Content" card with both quests and encounters
+- Collapsible - auto-expands if there's content, starts collapsed if empty
+- Hidden for players if no content (DM always sees it to add links)
+- Quests: progress types (mentioned, started, progressed, completed, failed)
+- Encounters: status types (planned, used, skipped)
+
+**Three-way implementation for quests:**
+1. **Manual** - UI in session detail page
+2. **Intelligence** - AI detects quest mentions, creates `quest_session_link` suggestions
+3. **Automatic** - DB trigger on quest status change during active session
+
+**Database:**
+- Migration `088_session_quests.sql`:
+  - `session_quests` table (session_id, quest_id, progress_type)
+  - `session_encounters` table (session_id, encounter_id, status_in_session)
+  - Updated suggestion type constraint to include all types
+- Migration `089_auto_session_quest_links.sql`:
+  - Quest status change trigger (auto-links quests)
+  - Encounter status change trigger (auto-links encounters)
+
+**Detail Modals - Session History:**
+- Quest detail modal: Shows all sessions that touched this quest
+- Encounter detail modal: Shows all sessions that used this encounter
 
 ### DEFERRED - Do NOT Start Yet
 - **Share Pages Update** - WAIT until 100% happy with every single field in every campaign page. No point updating share pages if campaign fields might still change.
@@ -182,7 +210,7 @@ CONSTRAINT: exactly one must be set
 | **Canvas** | NPC cards show "Quest Giver for: X" | ✅ DONE |
 | **Characters Detail** | "Quests involving this character" section | ✅ DONE |
 | **Locations Detail** | "Quests at this location" section | ✅ DONE |
-| **Sessions** | Link sessions to quests progressed | TODO |
+| **Sessions** | Link sessions to quests progressed | ✅ DONE |
 | **Roll Random** | Button to pick random Available quest | ✅ DONE |
 | **Share Page** | `/share/[code]/quests` for player visibility | DEFERRED (do after encounters) |
 
@@ -470,8 +498,22 @@ planned_session, played_session, status, outcome, player_notes, lessons_learned,
 boxed_text, visibility, dm_notes, secrets, created_at, updated_at
 ```
 
+### session_quests table (migration 088)
+```
+id, session_id, quest_id, progress_type, created_at
+```
+Progress types: mentioned, started, progressed, completed, failed
+
+### session_encounters table (migration 088)
+```
+id, session_id, encounter_id, status_in_session, created_at
+```
+Status types: planned, used, skipped
+
 Note: dm_notes and secrets require migration 084.
 Note: encounter_detected suggestion type requires migration 085.
+Note: session_quests table requires migration 088.
+Note: auto session-quest linking trigger requires migration 089.
 
 ## Key Files Reference
 

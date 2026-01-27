@@ -244,10 +244,10 @@ export function CreateMapModal({
                 key={type.value}
                 onClick={() => setMapType(type.value)}
                 className={cn(
-                  "flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all",
+                  "flex flex-col items-center gap-1 p-2.5 rounded-lg transition-all",
                   mapType === type.value
-                    ? "border-[--arcane-purple] bg-[--arcane-purple]/10"
-                    : "border-[--border] hover:border-[--text-tertiary]"
+                    ? "bg-[--arcane-purple]/20 ring-2 ring-[--arcane-purple]"
+                    : "bg-[--bg-elevated] hover:bg-[--bg-surface]"
                 )}
               >
                 <span className="text-xl">{type.icon}</span>
@@ -258,10 +258,10 @@ export function CreateMapModal({
             <button
               onClick={() => setMapType('custom')}
               className={cn(
-                "flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all",
+                "flex flex-col items-center gap-1 p-2.5 rounded-lg transition-all",
                 mapType === 'custom'
-                  ? "border-[--arcane-purple] bg-[--arcane-purple]/10"
-                  : "border-[--border] hover:border-[--text-tertiary]"
+                  ? "bg-[--arcane-purple]/20 ring-2 ring-[--arcane-purple]"
+                  : "bg-[--bg-elevated] hover:bg-[--bg-surface]"
               )}
             >
               <span className="text-xl">✏️</span>
@@ -272,7 +272,7 @@ export function CreateMapModal({
 
         {/* Custom Type Fields */}
         {mapType === 'custom' && (
-          <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-[--bg-elevated] border border-[--border]">
+          <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-[--bg-elevated]">
             <div className="form-group">
               <label className="form-label text-sm">Custom Label</label>
               <Input
