@@ -660,8 +660,14 @@ export default function CampaignDashboardPage() {
         isOpen={showCustomizeModal}
         onClose={() => setShowCustomizeModal(false)}
         isDm={isDm}
-        visibleWidgets={isPlayerLayout ? preferences.playerWidgets : preferences.dmWidgets}
-        widgetOrder={isPlayerLayout ? preferences.playerWidgets : preferences.dmWidgets}
+        visibleWidgets={isPlayerLayout
+          ? preferences.playerWidgets.map(w => w.id) as Parameters<typeof reorderPlayerWidgets>[0]
+          : preferences.dmWidgets.map(w => w.id) as Parameters<typeof reorderDmWidgets>[0]
+        }
+        widgetOrder={isPlayerLayout
+          ? preferences.playerWidgets.map(w => w.id) as Parameters<typeof reorderPlayerWidgets>[0]
+          : preferences.dmWidgets.map(w => w.id) as Parameters<typeof reorderDmWidgets>[0]
+        }
         onToggleWidget={isPlayerLayout ? togglePlayerWidget : toggleDmWidget}
         onReorderWidgets={isPlayerLayout
           ? (order) => reorderPlayerWidgets(order as Parameters<typeof reorderPlayerWidgets>[0])
