@@ -69,6 +69,8 @@
   /* ─── Base Reset ─── */
   *, *::before, *::after {
     box-sizing: border-box;
+    /* Fix white focus rings - use transparent offset for dark theme */
+    --tw-ring-offset-color: transparent;
   }
 
   html {

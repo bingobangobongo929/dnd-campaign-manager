@@ -432,20 +432,19 @@ export function PartyModal({
                 {members.map(member => {
                   const RoleIcon = getRoleIcon(member.role)
                   const displayName = getDisplayName(member)
-                  const isCurrentUserOwner = member.role === 'owner'
                   const hasCharacter = !!member.character
 
                   return (
                     <div
                       key={member.id}
                       className={cn(
-                        "flex items-center gap-4 p-3 rounded-lg border transition-all",
+                        "flex items-center gap-4 p-3 rounded-lg border transition-all cursor-pointer",
                         member.status === 'pending'
                           ? "bg-amber-500/5 border-amber-500/20"
                           : "bg-white/[0.02] border-[--border]",
-                        !isCurrentUserOwner && "hover:border-purple-500/30 hover:bg-white/[0.03] cursor-pointer"
+                        "hover:border-purple-500/30 hover:bg-white/[0.03]"
                       )}
-                      onClick={() => !isCurrentUserOwner && handleSelectMember(member)}
+                      onClick={() => handleSelectMember(member)}
                     >
                       {/* Character Avatar (prominent) or User Avatar */}
                       <div className="relative flex-shrink-0">
@@ -511,9 +510,7 @@ export function PartyModal({
                       </div>
 
                       {/* Edit Arrow */}
-                      {!isCurrentUserOwner && (
-                        <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                      )}
+                      <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" />
                     </div>
                   )
                 })}
@@ -1367,7 +1364,7 @@ function PermissionRow({
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50"
+        className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-0"
       />
       <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
         {label}
@@ -1389,7 +1386,7 @@ function PermissionGrid({
             type="checkbox"
             checked={perm.checked}
             onChange={(e) => perm.onChange(e.target.checked)}
-            className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500/50"
+            className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-0"
           />
           <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
             {perm.label}
