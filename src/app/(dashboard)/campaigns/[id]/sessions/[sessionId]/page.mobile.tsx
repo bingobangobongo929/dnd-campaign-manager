@@ -452,13 +452,13 @@ export function SessionDetailMobile({
                 )}
               </div>
 
-              {/* AI Expansion Preview - DM only */}
+              {/* Expansion Preview - DM only */}
               {canEditSession && showExpandedPreview && (
                 <div className="mb-4 p-4 bg-[--arcane-purple]/5 rounded-xl border border-[--arcane-purple]/30">
                   <div className="flex items-center gap-2 mb-3">
                     <Sparkles className="w-4 h-4 text-[--arcane-purple]" />
                     <span className="text-sm font-medium text-[--arcane-purple]">
-                      {expanding ? 'Processing...' : 'AI Preview'}
+                      {expanding ? 'Processing...' : 'Preview'}
                     </span>
                     {expanding && <Loader2 className="w-3 h-3 animate-spin text-[--arcane-purple]" />}
                   </div>

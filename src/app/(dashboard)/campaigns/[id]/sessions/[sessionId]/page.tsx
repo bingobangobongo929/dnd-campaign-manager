@@ -708,7 +708,7 @@ export default function SessionDetailPage() {
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="text-2xl font-display font-semibold border-none bg-transparent px-0 h-auto focus:ring-0 placeholder:text-[--text-tertiary]"
-                  placeholder="Session title (AI will suggest one)..."
+                  placeholder="Session title (auto-suggested from notes)..."
                 />
               ) : (
                 <h1 className="text-2xl font-display font-semibold text-[--text-primary]">
@@ -973,7 +973,7 @@ export default function SessionDetailPage() {
                   </label>
                   {can.editSession && (
                     <span className="text-sm text-[--text-tertiary]">
-                      Write bullet points of what happened, then expand with AI
+                      Write bullet points of what happened, then auto-expand into prose
                     </span>
                   )}
                 </div>
@@ -1017,13 +1017,13 @@ export default function SessionDetailPage() {
               )}
             </div>
 
-            {/* AI Expansion Preview - DM only */}
+            {/* Expansion Preview - DM only */}
             {can.editSession && showExpandedPreview && (
               <div className="card p-6 mb-8 border-[--arcane-purple]/30 bg-[--arcane-purple]/5">
                 <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="w-5 h-5 text-[--arcane-purple]" />
                   <span className="text-lg font-semibold text-[--arcane-purple]">
-                    {expanding ? 'Processing...' : 'AI Expansion Preview'}
+                    {expanding ? 'Processing...' : 'Expansion Preview'}
                   </span>
                   {expanding && (
                     <Loader2 className="w-4 h-4 animate-spin text-[--arcane-purple]" />
@@ -1043,7 +1043,7 @@ export default function SessionDetailPage() {
                   </div>
                 )}
 
-                {/* AI-Generated Title Preview */}
+                {/* Generated Title Preview */}
                 {pendingTitle && !formData.title.trim() && (
                   <div className="mb-6">
                     <h4 className="text-sm font-medium text-[--text-secondary] mb-2">Suggested Title:</h4>
@@ -1066,10 +1066,10 @@ export default function SessionDetailPage() {
                   </div>
                 )}
 
-                {/* AI Reasoning */}
+                {/* Context Used */}
                 {aiReasoning && (
                   <div className="mb-6 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-                    <p className="text-xs text-[--text-tertiary] mb-1">AI Context Used:</p>
+                    <p className="text-xs text-[--text-tertiary] mb-1">Context Used:</p>
                     <p className="text-sm text-[--text-secondary] whitespace-pre-wrap">{aiReasoning}</p>
                   </div>
                 )}

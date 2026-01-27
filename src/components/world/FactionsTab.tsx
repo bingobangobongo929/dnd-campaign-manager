@@ -761,13 +761,13 @@ export function FactionsTab({ campaignId, characters, isDm }: FactionsTabProps) 
             <Sparkles className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="text-sm text-emerald-300/90">
-                Add factions manually, or let <strong className="text-emerald-300">Campaign Intelligence</strong> detect them from your session notes. The more detailed your DM and player notes, the better the suggestions.
+                Create factions anytime using the button above. <strong className="text-emerald-300">Campaign Intelligence</strong> can also suggest factions mentioned in your session notes if you prefer.
               </p>
               <Link
                 href={`/campaigns/${campaignId}/intelligence`}
                 className="inline-flex items-center gap-1 mt-2 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
               >
-                View Intelligence suggestions
+                View suggestions
                 <span className="text-xs">→</span>
               </Link>
             </div>

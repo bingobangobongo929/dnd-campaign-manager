@@ -462,13 +462,13 @@ export function TimelineTab({ campaignId, characters, isDm }: TimelineTabProps) 
             {/* Intelligence link */}
             <div className="text-center text-sm text-gray-500 max-w-md">
               <p>
-                Add events manually, or let <span className="text-purple-400">Campaign Intelligence</span> detect them from your session notes.
+                Add events anytime. <span className="text-purple-400">Campaign Intelligence</span> can also suggest events from your session notes if you prefer.
               </p>
               <Link
                 href={`/campaigns/${campaignId}/intelligence`}
                 className="inline-flex items-center gap-1 mt-1 text-purple-400 hover:text-purple-300 transition-colors"
               >
-                View Intelligence suggestions
+                View suggestions
                 <span className="text-xs">→</span>
               </Link>
             </div>
@@ -726,13 +726,13 @@ export function TimelineTab({ campaignId, characters, isDm }: TimelineTabProps) 
                 <Sparkles className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm text-purple-300/90">
-                    Add events manually, or let <strong className="text-purple-300">Campaign Intelligence</strong> detect them from your session notes. The more detailed your DM and player notes, the better the suggestions.
+                    Add events anytime using the button above. <strong className="text-purple-300">Campaign Intelligence</strong> can also suggest events from your session notes if you prefer.
                   </p>
                   <Link
                     href={`/campaigns/${campaignId}/intelligence`}
                     className="inline-flex items-center gap-1 mt-2 text-sm text-purple-400 hover:text-purple-300 transition-colors"
                   >
-                    View Intelligence suggestions
+                    View suggestions
                     <span className="text-xs">→</span>
                   </Link>
                 </div>

@@ -325,7 +325,7 @@ export function CampaignLorePageMobile({
             )}
           </section>
 
-          {/* AI Insights Section */}
+          {/* Campaign Intelligence Insights Section */}
           {canUseAI && (
             <section className="mb-4">
               <button
@@ -337,7 +337,7 @@ export function CampaignLorePageMobile({
                     <Sparkles className="w-5 h-5 text-amber-400" />
                   </div>
                   <div className="text-left">
-                    <h2 className="text-[15px] font-semibold text-white">AI Insights</h2>
+                    <h2 className="text-[15px] font-semibold text-white">Campaign Insights</h2>
                     <p className="text-xs text-gray-500">
                       {loreEntries.length} insight{loreEntries.length !== 1 ? 's' : ''}
                     </p>

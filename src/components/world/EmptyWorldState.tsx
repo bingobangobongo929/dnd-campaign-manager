@@ -57,7 +57,7 @@ export function EmptyWorldState({
             <div className="flex items-start gap-3 text-left">
               <Lightbulb className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-purple-300/80">
-                <strong className="text-purple-300">Tip:</strong> Start with your main city or the party's home base. You can build the hierarchy outward from there.
+                <strong className="text-purple-300">Tip:</strong> Start with your main city or the party's home base. As you add session notes, Campaign Intelligence can suggest new locations and factions to add.
               </p>
             </div>
           </div>
@@ -88,8 +88,11 @@ export function EmptyWorldState({
           <MapPin className="w-8 h-8 text-blue-400" />
         </div>
         <h3 className="text-lg font-semibold text-white mb-2">No locations yet</h3>
-        <p className="text-gray-400 max-w-md mb-6">
+        <p className="text-gray-400 max-w-md mb-2">
           Add the places that matter to your story. Link them to your maps for easy navigation.
+        </p>
+        <p className="text-gray-500 text-sm max-w-md mb-6">
+          Campaign Intelligence can also suggest locations from your session notes if you prefer.
         </p>
         {onAddLocation && (
           <Button onClick={onAddLocation}>
@@ -113,7 +116,7 @@ export function EmptyWorldState({
           Factions are groups with shared goals: guilds, governments, cults, mercenary bands...
         </p>
         <p className="text-gray-500 text-sm max-w-md mb-6">
-          Create factions, then add characters as members to organize your world's power structures.
+          Create factions anytime, then add characters as members. Campaign Intelligence can also suggest factions from your session notes if you prefer.
         </p>
         {onAddFaction && (
           <Button onClick={onAddFaction}>
@@ -137,7 +140,7 @@ export function EmptyWorldState({
           Character relationships bring your world to life: allies, rivals, family, lovers...
         </p>
         <p className="text-gray-500 text-sm max-w-md mb-6">
-          Create relationships between characters on the Canvas to see them visualized here.
+          Create relationships on the Canvas, or let Campaign Intelligence suggest them from character interactions in your session notes.
         </p>
         {campaignId && (
           <Link
@@ -178,7 +181,7 @@ export function EmptyWorldState({
           Track your campaign's key moments: battles, discoveries, character introductions, and story beats.
         </p>
         <p className="text-gray-500 text-sm max-w-md mb-6">
-          Add events manually or use AI to extract them from your session notes.
+          Add events anytime. Campaign Intelligence can also suggest them from your session notes if you prefer.
         </p>
         {onAddEvent && (
           <Button onClick={onAddEvent}>

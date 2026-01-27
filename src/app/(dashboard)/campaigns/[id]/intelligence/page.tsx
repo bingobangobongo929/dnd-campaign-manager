@@ -1099,7 +1099,7 @@ export default function IntelligencePage() {
         <GuidanceTip
           tipId="campaign_intelligence_intro"
           title="Welcome to Campaign Intelligence"
-          description="AI analyzes your session notes to suggest timeline events, detect new NPCs, track relationships, and identify plot threads. For best results, make sure your session notes are up to date before running analysis."
+          description="Campaign Intelligence analyzes your session notes to suggest timeline events, detect new NPCs, track relationships, and identify plot threads. For best results, make sure your session notes are up to date before running analysis."
           variant="banner"
           showOnce
           action={{

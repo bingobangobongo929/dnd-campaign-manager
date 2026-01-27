@@ -11,7 +11,9 @@
       "Bash(git commit -m \"$\\(cat <<''EOF''\nRemove Navigation Guide button from TopBar\n\nNavigate flyout in floating dock makes it redundant.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git commit:*)",
       "Bash(Intelligence detect them from your session notes. The more detailed your)",
-      "Bash(DM and player notes, the better the suggestions.\"\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(DM and player notes, the better the suggestions.\"\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(suggest X from your session notes if you prefer.\"\n\nEmpty states:\n- Add Intelligence mentions as optional alternative\n- Relationships: \"Create on Canvas, or let Intelligence suggest from)",
+      "Bash(character interactions in session notes\"\n\nSession pages:\n- \"auto-suggested from notes\" instead of \"AI will suggest\"\n- \"auto-expand into prose\" instead of \"expand with AI\"\n- \"Expansion Preview\" instead of \"AI Expansion Preview\"\n- \"Context Used\" instead of \"AI Context Used\"\n\nIntelligence page:\n- \"Campaign Intelligence analyzes\" instead of \"AI analyzes\"\n\nMobile:\n- \"Campaign Insights\" instead of \"AI Insights\"\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }

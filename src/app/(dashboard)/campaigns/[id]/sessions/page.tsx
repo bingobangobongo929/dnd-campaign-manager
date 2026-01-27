@@ -375,7 +375,7 @@ export default function SessionsPage() {
             {!searchQuery && (
               <>
                 <p className="text-xs text-purple-400/80 mt-3 max-w-md italic">
-                  Session notes power Campaign Intelligence - add detailed notes to get AI-powered timeline events, NPC suggestions, and relationship tracking.
+                  Session notes power Campaign Intelligence - add detailed notes to get timeline events, NPC suggestions, and relationship tracking.
                 </p>
                 {can.addSession && (
                   <div className="flex items-center justify-center gap-4 mt-6">
