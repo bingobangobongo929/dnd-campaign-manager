@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { List, Share2, Search, Filter } from 'lucide-react'
+import { List, Share2, Search, Filter, ArrowRight } from 'lucide-react'
 import { RelationshipDiagram } from '@/components/campaign'
 import { EmptyWorldState } from './EmptyWorldState'
 import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
+import Link from 'next/link'
 import type { Character, CharacterRelationship } from '@/types/database'
 
 interface CharacterWithTags extends Character {
@@ -13,11 +14,12 @@ interface CharacterWithTags extends Character {
 }
 
 interface RelationshipsTabProps {
+  campaignId: string
   characters: CharacterWithTags[]
   relationships: CharacterRelationship[]
 }
 
-export function RelationshipsTab({ characters, relationships }: RelationshipsTabProps) {
+export function RelationshipsTab({ campaignId, characters, relationships }: RelationshipsTabProps) {
   const [viewMode, setViewMode] = useState<'list' | 'diagram'>('list')
   const [searchQuery, setSearchQuery] = useState('')
   const [characterFilter, setCharacterFilter] = useState<string>('all')
@@ -81,7 +83,7 @@ export function RelationshipsTab({ characters, relationships }: RelationshipsTab
   }, [characters, relationships])
 
   if (familyTree.nodes.length === 0) {
-    return <EmptyWorldState type="relationships" />
+    return <EmptyWorldState type="relationships" campaignId={campaignId} />
   }
 
   return (
@@ -145,6 +147,16 @@ export function RelationshipsTab({ characters, relationships }: RelationshipsTab
             <span className="hidden sm:inline">Diagram</span>
           </button>
         </div>
+
+        {/* Go to Canvas button */}
+        <Link
+          href={`/campaigns/${campaignId}`}
+          className="flex items-center gap-2 px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg font-medium text-sm transition-colors"
+        >
+          <span className="hidden sm:inline">Edit on Canvas</span>
+          <span className="sm:hidden">Canvas</span>
+          <ArrowRight className="w-4 h-4" />
+        </Link>
       </div>
 
       {/* Diagram View */}

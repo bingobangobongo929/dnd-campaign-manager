@@ -21,6 +21,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { Input, Textarea, Modal, Dropdown } from '@/components/ui'
+import Link from 'next/link'
 import { CharacterViewModal } from '@/components/character'
 import {
   FeedView,
@@ -111,6 +112,26 @@ export function TimelineTab({ campaignId, characters, isDm }: TimelineTabProps) 
       setCurrentView(saved as TimelineViewType)
     }
   }, [])
+
+  // Listen for add event trigger from parent
+  useEffect(() => {
+    const handleAddEventTrigger = () => {
+      const trigger = localStorage.getItem('world-add-event-trigger')
+      if (trigger === 'true') {
+        localStorage.removeItem('world-add-event-trigger')
+        if (can.addTimeline) {
+          setIsCreateModalOpen(true)
+        }
+      }
+    }
+
+    // Check on mount
+    handleAddEventTrigger()
+
+    // Listen for event
+    window.addEventListener('world-add-event', handleAddEventTrigger)
+    return () => window.removeEventListener('world-add-event', handleAddEventTrigger)
+  }, [can.addTimeline])
 
   // Save view preference
   const handleViewChange = (view: TimelineViewType) => {
@@ -425,7 +446,7 @@ export function TimelineTab({ campaignId, characters, isDm }: TimelineTabProps) 
 
         {/* AI Generate button for empty state */}
         {isDm && sessions.length > 0 && (
-          <div className="flex justify-center mt-4">
+          <div className="flex flex-col items-center gap-4 mt-4">
             <button
               className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
               onClick={() => setIsAIGenerateModalOpen(true)}
@@ -437,6 +458,18 @@ export function TimelineTab({ campaignId, characters, isDm }: TimelineTabProps) 
               <Sparkles className="w-4 h-4" style={{ color: '#a78bfa' }} />
               <span style={{ color: '#a78bfa' }}>AI Generate from Sessions</span>
             </button>
+
+            {/* Intelligence link */}
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Intelligence may also suggest timeline events.</span>
+              <Link
+                href={`/campaigns/${campaignId}/intelligence`}
+                className="text-purple-400 hover:text-purple-300 underline underline-offset-2"
+              >
+                View suggestions
+              </Link>
+            </div>
           </div>
         )}
 
@@ -681,7 +714,30 @@ export function TimelineTab({ campaignId, characters, isDm }: TimelineTabProps) 
           </button>
         </div>
       ) : (
-        renderView()
+        <>
+          {renderView()}
+
+          {/* Intelligence callout for sparse timelines */}
+          {isDm && events.length < 10 && sessions.length > 0 && (
+            <div className="mt-6 p-4 rounded-lg bg-purple-500/5 border border-purple-500/10">
+              <div className="flex items-start gap-3">
+                <Sparkles className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm text-purple-300/90">
+                    <strong className="text-purple-300">Tip:</strong> Intelligence can analyze your session notes and suggest timeline events you might have missed.
+                  </p>
+                  <Link
+                    href={`/campaigns/${campaignId}/intelligence`}
+                    className="inline-flex items-center gap-1 mt-2 text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                  >
+                    Check Intelligence for suggestions
+                    <span className="text-xs">→</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Modals */}

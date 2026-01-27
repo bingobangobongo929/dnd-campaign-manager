@@ -1,7 +1,8 @@
 'use client'
 
-import { MapPin, Shield, Users, Plus, Map, Lightbulb, Clock, Sparkles } from 'lucide-react'
+import { MapPin, Shield, Users, Plus, Map, Lightbulb, Clock, Sparkles, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui'
+import Link from 'next/link'
 
 interface EmptyWorldStateProps {
   type: 'all' | 'locations' | 'factions' | 'relationships' | 'timeline'
@@ -9,6 +10,7 @@ interface EmptyWorldStateProps {
   onAddFaction?: () => void
   onAddEvent?: () => void
   isPlayer?: boolean
+  campaignId?: string
 }
 
 export function EmptyWorldState({
@@ -17,6 +19,7 @@ export function EmptyWorldState({
   onAddFaction,
   onAddEvent,
   isPlayer = false,
+  campaignId,
 }: EmptyWorldStateProps) {
   // Completely empty world state
   if (type === 'all') {
@@ -133,9 +136,18 @@ export function EmptyWorldState({
         <p className="text-gray-400 max-w-md mb-2">
           Character relationships bring your world to life: allies, rivals, family, lovers...
         </p>
-        <p className="text-gray-500 text-sm max-w-md">
-          Add relationships between characters from the Canvas page to visualize your campaign's connections.
+        <p className="text-gray-500 text-sm max-w-md mb-6">
+          Create relationships between characters on the Canvas to see them visualized here.
         </p>
+        {campaignId && (
+          <Link
+            href={`/campaigns/${campaignId}`}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg font-medium text-sm transition-colors"
+          >
+            Go to Canvas
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        )}
       </div>
     )
   }

@@ -38,6 +38,8 @@ export default function WorldPage() {
   // Modal states for adding content
   const [showAddLocationModal, setShowAddLocationModal] = useState(false)
   const [showAddFactionModal, setShowAddFactionModal] = useState(false)
+  const [showAddEventModal, setShowAddEventModal] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   // Track if we need to trigger add actions in child components
   const addLocationTriggerRef = useRef(false)
@@ -159,6 +161,18 @@ export default function WorldPage() {
     setShowAddFactionModal(true)
   }, [])
 
+  // Handle add event
+  const handleAddEvent = useCallback(() => {
+    localStorage.setItem('world-active-tab', 'timeline')
+    setShowAddEventModal(true)
+  }, [])
+
+  // Handle search
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query)
+    // Search is passed to tabs via props - they handle filtering internally
+  }, [])
+
   // Loading state
   if (loading || permissionsLoading) {
     return (
@@ -212,6 +226,8 @@ export default function WorldPage() {
           canViewTimeline={can.viewTimeline || isDm}
           onAddLocation={handleAddLocation}
           onAddFaction={handleAddFaction}
+          onAddEvent={handleAddEvent}
+          onSearch={handleSearch}
         />
       </div>
 
@@ -228,6 +244,13 @@ export default function WorldPage() {
       {showAddFactionModal && (
         <AddFactionRedirect
           onClose={() => setShowAddFactionModal(false)}
+          campaignId={campaignId}
+        />
+      )}
+
+      {showAddEventModal && (
+        <AddEventRedirect
+          onClose={() => setShowAddEventModal(false)}
           campaignId={campaignId}
         />
       )}
@@ -255,6 +278,18 @@ function AddFactionRedirect({ onClose, campaignId }: { onClose: () => void; camp
     localStorage.setItem('world-add-faction-trigger', 'true')
     // Force re-render of the tab
     window.dispatchEvent(new Event('world-add-faction'))
+    onClose()
+  }, [onClose])
+
+  return null
+}
+
+function AddEventRedirect({ onClose, campaignId }: { onClose: () => void; campaignId: string }) {
+  useEffect(() => {
+    // Set the flag that TimelineTab checks
+    localStorage.setItem('world-add-event-trigger', 'true')
+    // Force re-render of the tab
+    window.dispatchEvent(new Event('world-add-event'))
     onClose()
   }, [onClose])
 

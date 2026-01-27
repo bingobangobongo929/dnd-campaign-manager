@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { MapPin, Shield, Users, Plus, ChevronDown, Clock } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { MapPin, Shield, Users, Plus, ChevronDown, Clock, Search, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LocationsTab } from './LocationsTab'
 import { FactionsTab } from './FactionsTab'
@@ -29,6 +29,8 @@ interface WorldTabsProps {
   canViewTimeline: boolean
   onAddLocation: () => void
   onAddFaction: () => void
+  onAddEvent?: () => void
+  onSearch?: (query: string) => void
 }
 
 const STORAGE_KEY = 'world-active-tab'
@@ -46,9 +48,13 @@ export function WorldTabs({
   canViewTimeline,
   onAddLocation,
   onAddFaction,
+  onAddEvent,
+  onSearch,
 }: WorldTabsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('locations')
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
 
   // Restore last active tab from localStorage
   useEffect(() => {
@@ -70,6 +76,49 @@ export function WorldTabs({
   }
 
   const totalContent = locationCount + factionCount + relationshipCount + eventCount
+
+  // Build context-aware add menu items (current tab's option first)
+  const addMenuItems = useMemo(() => {
+    const items = [
+      {
+        id: 'location',
+        label: 'Add Location',
+        icon: MapPin,
+        color: 'text-blue-400',
+        onClick: onAddLocation,
+        tab: 'locations' as TabType,
+      },
+      {
+        id: 'faction',
+        label: 'Add Faction',
+        icon: Shield,
+        color: 'text-emerald-400',
+        onClick: onAddFaction,
+        tab: 'factions' as TabType,
+      },
+      ...(canViewTimeline && onAddEvent ? [{
+        id: 'event',
+        label: 'Add Event',
+        icon: Clock,
+        color: 'text-amber-400',
+        onClick: onAddEvent,
+        tab: 'timeline' as TabType,
+      }] : []),
+    ]
+
+    // Sort so current tab's item is first
+    return items.sort((a, b) => {
+      if (a.tab === activeTab) return -1
+      if (b.tab === activeTab) return 1
+      return 0
+    })
+  }, [activeTab, canViewTimeline, onAddLocation, onAddFaction, onAddEvent])
+
+  // Handle search
+  const handleSearch = (query: string) => {
+    setSearchQuery(query)
+    onSearch?.(query)
+  }
 
   // Show unified empty state if completely empty
   if (totalContent === 0) {
@@ -120,6 +169,68 @@ export function WorldTabs({
 
   return (
     <div className="space-y-6">
+      {/* Quick Stats Bar */}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 bg-white/[0.02] rounded-lg border border-white/[0.05]">
+        <div className="flex items-center gap-2 text-sm">
+          <MapPin className="w-4 h-4 text-blue-400" />
+          <span className="text-gray-400">{locationCount}</span>
+          <span className="text-gray-600">Locations</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <Shield className="w-4 h-4 text-emerald-400" />
+          <span className="text-gray-400">{factionCount}</span>
+          <span className="text-gray-600">Factions</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <Users className="w-4 h-4 text-purple-400" />
+          <span className="text-gray-400">{relationshipCount}</span>
+          <span className="text-gray-600">Relationships</span>
+        </div>
+        {canViewTimeline && (
+          <div className="flex items-center gap-2 text-sm">
+            <Clock className="w-4 h-4 text-amber-400" />
+            <span className="text-gray-400">{eventCount}</span>
+            <span className="text-gray-600">Events</span>
+          </div>
+        )}
+
+        {/* Search toggle */}
+        <div className="flex-1 flex justify-end">
+          {isSearchOpen ? (
+            <div className="flex items-center gap-2 w-full max-w-xs">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Search world..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  autoFocus
+                  className="w-full pl-9 pr-3 py-1.5 bg-[--bg-surface] border border-[--border] rounded-lg text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-[--arcane-purple]/50"
+                />
+              </div>
+              <button
+                onClick={() => {
+                  setIsSearchOpen(false)
+                  handleSearch('')
+                }}
+                className="p-1.5 text-gray-500 hover:text-gray-300 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="p-1.5 text-gray-500 hover:text-gray-300 transition-colors"
+              title="Search world content"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Tab header with Add button */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         {/* Tabs */}
@@ -142,16 +253,16 @@ export function WorldTabs({
                 >
                   <Icon className="w-4 h-4" />
                   <span>{tab.label}</span>
-                  {tab.count > 0 && (
-                    <span className={cn(
-                      'px-1.5 py-0.5 rounded text-xs font-semibold',
-                      isActive
-                        ? 'bg-white/20'
+                  <span className={cn(
+                    'px-1.5 py-0.5 rounded text-xs font-semibold',
+                    isActive
+                      ? 'bg-white/20'
+                      : tab.count === 0
+                        ? 'bg-white/5 text-gray-600'
                         : 'bg-white/10 text-gray-500'
-                    )}>
-                      {tab.count}
-                    </span>
-                  )}
+                  )}>
+                    {tab.count}
+                  </span>
                 </button>
               )
             })}
@@ -159,7 +270,7 @@ export function WorldTabs({
         </div>
 
         {/* Context-aware Add button */}
-        {isDm && (
+        {isDm && addMenuItems.length > 0 && (
           <div className="relative">
             <button
               onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
@@ -174,29 +285,34 @@ export function WorldTabs({
               )} />
             </button>
 
-            {/* Dropdown menu */}
+            {/* Dropdown menu - context-aware ordering */}
             {isAddMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-48 py-1 bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl z-20">
-                <button
-                  onClick={() => {
-                    onAddLocation()
-                    setIsAddMenuOpen(false)
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-white/[0.05] hover:text-white transition-colors"
-                >
-                  <MapPin className="w-4 h-4 text-blue-400" />
-                  Add Location
-                </button>
-                <button
-                  onClick={() => {
-                    onAddFaction()
-                    setIsAddMenuOpen(false)
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-white/[0.05] hover:text-white transition-colors"
-                >
-                  <Shield className="w-4 h-4 text-emerald-400" />
-                  Add Faction
-                </button>
+              <div className="absolute right-0 top-full mt-2 w-48 py-1 bg-[--bg-elevated] border border-white/10 rounded-lg shadow-xl z-20">
+                {addMenuItems.map((item, index) => {
+                  const Icon = item.icon
+                  const isCurrentTab = item.tab === activeTab
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        item.onClick()
+                        setIsAddMenuOpen(false)
+                      }}
+                      className={cn(
+                        'w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors',
+                        isCurrentTab
+                          ? 'bg-white/[0.05] text-white'
+                          : 'text-gray-300 hover:bg-white/[0.05] hover:text-white'
+                      )}
+                    >
+                      <Icon className={cn('w-4 h-4', item.color)} />
+                      {item.label}
+                      {isCurrentTab && (
+                        <span className="ml-auto text-xs text-gray-500">current</span>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -223,6 +339,7 @@ export function WorldTabs({
 
         {activeTab === 'relationships' && (
           <RelationshipsTab
+            campaignId={campaignId}
             characters={characters}
             relationships={relationships}
           />
