@@ -201,6 +201,18 @@ export async function POST(req: Request) {
       return `**Session ${s.session_number}: ${s.title || 'Untitled'}**\n${content}`
     }).join('\n\n---\n\n')
 
+    // Load existing quests for quest_session_link detection
+    const { data: existingQuests } = await supabase
+      .from('quests')
+      .select('id, name, type, status, summary')
+      .eq('campaign_id', campaignId)
+      .order('name')
+
+    // Build quests context
+    const questsContext = (existingQuests || []).map(q => {
+      return `- ${q.name} (${q.type.replace('_', ' ')}, ${q.status})${q.summary ? `: ${q.summary}` : ''}`
+    }).join('\n')
+
     // Construct the full prompt
     const fullContext = `# Campaign: ${campaign.name}
 
@@ -209,6 +221,9 @@ ${characterContext || 'No characters recorded yet.'}
 
 ## KNOWN RELATIONSHIPS
 ${relationshipContext || 'No relationships recorded.'}
+
+## EXISTING QUESTS (for quest_session_link detection)
+${questsContext || 'No quests recorded yet.'}
 
 ## RECENT SESSION HISTORY (for context)
 ${sessionHistoryContext || 'No previous sessions.'}

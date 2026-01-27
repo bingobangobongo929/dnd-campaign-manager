@@ -68,6 +68,7 @@ const SUGGESTION_ICONS: Record<SuggestionType, typeof User> = {
   location_detected: MapPin,
   quest_detected: Target,
   encounter_detected: Swords,
+  quest_session_link: Link2,
   plot_hook: Lightbulb,
   enrichment: Wand2,
   timeline_issue: Clock,
@@ -98,6 +99,7 @@ const SUGGESTION_COLORS: Record<SuggestionType, { bg: string; text: string; bord
   location_detected: { bg: 'rgba(74, 222, 128, 0.12)', text: '#4ade80', border: 'rgba(74, 222, 128, 0.3)' },
   quest_detected: { bg: 'rgba(139, 92, 246, 0.12)', text: '#a78bfa', border: 'rgba(139, 92, 246, 0.3)' },
   encounter_detected: { bg: 'rgba(239, 68, 68, 0.12)', text: '#f87171', border: 'rgba(239, 68, 68, 0.3)' },
+  quest_session_link: { bg: 'rgba(99, 102, 241, 0.12)', text: '#818cf8', border: 'rgba(99, 102, 241, 0.3)' },
   plot_hook: { bg: 'rgba(192, 132, 252, 0.12)', text: '#c084fc', border: 'rgba(192, 132, 252, 0.3)' },
   enrichment: { bg: 'rgba(56, 189, 248, 0.12)', text: '#38bdf8', border: 'rgba(56, 189, 248, 0.3)' },
   timeline_issue: { bg: 'rgba(251, 146, 60, 0.12)', text: '#fb923c', border: 'rgba(251, 146, 60, 0.3)' },
@@ -141,13 +143,18 @@ export function SuggestionCard({
         return (value as { status: string }).status
       }
       // Handle important_person format
-      if ('name' in (value as object)) {
+      if ('name' in (value as object) && 'relationship' in (value as object)) {
         const p = value as { name: string; relationship: string; notes?: string }
         return `${p.name} (${p.relationship})`
       }
       // Handle story_hook format
       if ('hook' in (value as object)) {
         return (value as { hook: string }).hook
+      }
+      // Handle quest_session_link format
+      if ('quest_name' in (value as object) && 'progress_type' in (value as object)) {
+        const link = value as { quest_name: string; progress_type: string }
+        return `"${link.quest_name}" → ${link.progress_type}`
       }
       return JSON.stringify(value)
     }

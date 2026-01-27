@@ -551,6 +551,139 @@ export async function PATCH(req: Request) {
       })
     }
 
+    // Handle quest_session_link suggestions
+    if (suggestion.suggestion_type === 'quest_session_link') {
+      const linkData = (finalValue ?? suggestion.suggested_value) as {
+        quest_name: string
+        progress_type: string
+      }
+
+      // Look up quest by name
+      const { data: quest } = await supabase
+        .from('quests')
+        .select('id')
+        .eq('campaign_id', suggestion.campaign_id)
+        .ilike('name', linkData.quest_name)
+        .maybeSingle()
+
+      if (!quest) {
+        // Quest not found - mark as rejected with note
+        const { error } = await supabase
+          .from('intelligence_suggestions')
+          .update({
+            status: 'rejected',
+            final_value: { ...linkData, note: `Quest "${linkData.quest_name}" not found` }
+          })
+          .eq('id', suggestionId)
+
+        if (error) throw error
+
+        return new Response(JSON.stringify({
+          success: false,
+          action: 'rejected',
+          message: `Quest "${linkData.quest_name}" not found`
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Get the session_id from the suggestion (should be stored when suggestion was created)
+      const sessionId = suggestion.session_id
+
+      if (!sessionId) {
+        const { error } = await supabase
+          .from('intelligence_suggestions')
+          .update({
+            status: 'rejected',
+            final_value: { ...linkData, note: 'No session ID associated with this suggestion' }
+          })
+          .eq('id', suggestionId)
+
+        if (error) throw error
+
+        return new Response(JSON.stringify({
+          success: false,
+          action: 'rejected',
+          message: 'No session ID associated with this suggestion'
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Check if link already exists
+      const { data: existingLink } = await supabase
+        .from('session_quests')
+        .select('id')
+        .eq('session_id', sessionId)
+        .eq('quest_id', quest.id)
+        .maybeSingle()
+
+      if (existingLink) {
+        // Link already exists - update progress type if different
+        const { error } = await supabase
+          .from('session_quests')
+          .update({ progress_type: linkData.progress_type })
+          .eq('id', existingLink.id)
+
+        if (error) throw error
+
+        // Mark suggestion as applied
+        await supabase
+          .from('intelligence_suggestions')
+          .update({
+            status: 'applied',
+            final_value: { ...linkData, session_quest_id: existingLink.id, note: 'Updated existing link' }
+          })
+          .eq('id', suggestionId)
+
+        return new Response(JSON.stringify({
+          success: true,
+          action: 'applied',
+          message: 'Session-quest link updated',
+          sessionQuestId: existingLink.id
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Create new session_quest link
+      const { data: newLink, error: linkError } = await supabase
+        .from('session_quests')
+        .insert({
+          session_id: sessionId,
+          quest_id: quest.id,
+          progress_type: linkData.progress_type,
+        })
+        .select('id')
+        .single()
+
+      if (linkError) throw linkError
+
+      // Mark suggestion as applied
+      const { error } = await supabase
+        .from('intelligence_suggestions')
+        .update({
+          status: 'applied',
+          final_value: { ...linkData, session_quest_id: newLink.id }
+        })
+        .eq('id', suggestionId)
+
+      if (error) throw error
+
+      return new Response(JSON.stringify({
+        success: true,
+        action: 'applied',
+        message: 'Session-quest link created',
+        sessionQuestId: newLink.id
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
     if (!suggestion.character_id) {
       // New character suggestion - just mark as applied for now
       // TODO: Could auto-create the character
