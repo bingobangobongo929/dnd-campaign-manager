@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-import Image from 'next/image'
+import { useState, useEffect, useRef } from 'react'
 import {
   ArrowLeft,
   ZoomIn,
@@ -12,7 +11,6 @@ import {
   Edit2,
   Trash2,
   Eye,
-  EyeOff,
   Lock,
   Users,
   Loader2,
@@ -22,26 +20,23 @@ import {
   Link2,
   ExternalLink,
   Settings,
-  GripVertical,
+  Move,
 } from 'lucide-react'
 import { Modal, Input } from '@/components/ui'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import type { MapPin as MapPinType, WorldMap as WorldMapBase } from '@/types/database'
 
-// Extended WorldMap type with custom type fields (added in migration 090)
 interface WorldMap extends WorldMapBase {
   custom_type?: string | null
   custom_emoji?: string | null
 }
 
-// Simple location interface for pin linking
 interface Location {
   id: string
   name: string
 }
 
-// Pin icons configuration
 const PIN_ICONS = [
   { value: 'location', label: 'Location', icon: '📍' },
   { value: 'city', label: 'City', icon: '🏰' },
@@ -86,27 +81,24 @@ export function MapViewer({
   maps,
   isDm,
   canEditPins,
-  canDelete,
   onBack,
   onNavigateToMap,
   onDelete,
   onUpdate,
+  canDelete,
 }: MapViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
 
-  // Map state
   const [pins, setPins] = useState<MapPinType[]>([])
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
   const [imageLoaded, setImageLoaded] = useState(false)
-  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 })
   const [zoom, setZoom] = useState(1)
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
 
-  // Pin editing state
   const [isPlacingPin, setIsPlacingPin] = useState(false)
   const [selectedPin, setSelectedPin] = useState<MapPinType | null>(null)
   const [popupPin, setPopupPin] = useState<MapPinType | null>(null)
@@ -124,14 +116,16 @@ export function MapViewer({
     linked_map_id: '' as string,
   })
 
-  // Pin dragging state
-  const [draggingPin, setDraggingPin] = useState<MapPinType | null>(null)
-  const [dragPinStart, setDragPinStart] = useState({ x: 0, y: 0 })
+  // Pin dragging - requires hold + movement threshold
+  const [pinDragState, setPinDragState] = useState<{
+    pin: MapPinType | null
+    startX: number
+    startY: number
+    isDragging: boolean
+  }>({ pin: null, startX: 0, startY: 0, isDragging: false })
 
-  // Settings modal
   const [settingsOpen, setSettingsOpen] = useState(false)
 
-  // Load pins and locations
   useEffect(() => {
     loadData()
   }, [map.id])
@@ -139,14 +133,12 @@ export function MapViewer({
   const loadData = async () => {
     setLoading(true)
     try {
-      // Load pins
       const pinsResponse = await fetch(`/api/campaigns/${campaignId}/maps/${map.id}/pins`)
       const pinsData = await pinsResponse.json()
       if (pinsResponse.ok) {
         setPins(pinsData.pins || [])
       }
 
-      // Load locations for linking
       const locationsResponse = await fetch(`/api/campaigns/${campaignId}/locations`)
       const locationsData = await locationsResponse.json()
       if (locationsResponse.ok) {
@@ -159,40 +151,40 @@ export function MapViewer({
     }
   }
 
-  // Center the map when image loads
-  useEffect(() => {
-    if (imageLoaded && imageDimensions.width > 0 && containerRef.current) {
-      const container = containerRef.current.getBoundingClientRect()
-      const x = (container.width - imageDimensions.width) / 2
-      const y = (container.height - imageDimensions.height) / 2
-      setPosition({ x: Math.max(0, x), y: Math.max(0, y) })
-    }
-  }, [imageLoaded, imageDimensions])
-
-  // Mouse handlers for panning
+  // Mouse handlers for panning the map
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (isPlacingPin || draggingPin) return
-    // Only start drag on left mouse button and not on pins
+    if (isPlacingPin || pinDragState.pin) return
     if (e.button !== 0) return
     setIsDragging(true)
     setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y })
   }
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (draggingPin && imageRef.current) {
-      // Dragging a pin
+    // Handle pin dragging with movement threshold
+    if (pinDragState.pin && !pinDragState.isDragging) {
+      const dx = Math.abs(e.clientX - pinDragState.startX)
+      const dy = Math.abs(e.clientY - pinDragState.startY)
+      // Only start dragging after 8px of movement
+      if (dx > 8 || dy > 8) {
+        setPinDragState(prev => ({ ...prev, isDragging: true }))
+        setPopupPin(null)
+      }
+    }
+
+    // Actually move the pin if dragging
+    if (pinDragState.isDragging && pinDragState.pin && imageRef.current) {
       const rect = imageRef.current.getBoundingClientRect()
       const x = ((e.clientX - rect.left) / rect.width) * 100
       const y = ((e.clientY - rect.top) / rect.height) * 100
-      // Clamp to 0-100
       const clampedX = Math.max(0, Math.min(100, x))
       const clampedY = Math.max(0, Math.min(100, y))
       setPins(prev => prev.map(p =>
-        p.id === draggingPin.id ? { ...p, x: clampedX, y: clampedY } : p
+        p.id === pinDragState.pin!.id ? { ...p, x: clampedX, y: clampedY } : p
       ))
       return
     }
 
+    // Handle map panning
     if (!isDragging || isPlacingPin) return
     setPosition({
       x: e.clientX - dragStart.x,
@@ -200,42 +192,38 @@ export function MapViewer({
     })
   }
 
-  const handleMouseUp = async () => {
-    if (draggingPin) {
-      // Save the new pin position
-      const updatedPin = pins.find(p => p.id === draggingPin.id)
+  const handleMouseUp = async (e: React.MouseEvent) => {
+    // If we were dragging a pin, save its position
+    if (pinDragState.isDragging && pinDragState.pin) {
+      const updatedPin = pins.find(p => p.id === pinDragState.pin!.id)
       if (updatedPin) {
         try {
           await fetch(`/api/campaigns/${campaignId}/maps/${map.id}/pins`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              pinId: draggingPin.id,
+              pinId: pinDragState.pin.id,
               x: updatedPin.x,
               y: updatedPin.y,
             }),
           })
+          toast.success('Pin moved')
         } catch (error) {
           console.error('Failed to save pin position:', error)
-          loadData() // Reload to restore original position
+          loadData()
         }
       }
-      setDraggingPin(null)
     }
+
+    setPinDragState({ pin: null, startX: 0, startY: 0, isDragging: false })
     setIsDragging(false)
   }
 
-  // Zoom handlers
   const handleZoomIn = () => setZoom(z => Math.min(z + 0.25, 4))
   const handleZoomOut = () => setZoom(z => Math.max(z - 0.25, 0.25))
   const handleResetZoom = () => {
     setZoom(1)
-    if (containerRef.current && imageDimensions.width > 0) {
-      const container = containerRef.current.getBoundingClientRect()
-      const x = (container.width - imageDimensions.width) / 2
-      const y = (container.height - imageDimensions.height) / 2
-      setPosition({ x: Math.max(0, x), y: Math.max(0, y) })
-    }
+    setPosition({ x: 0, y: 0 })
   }
 
   const handleWheel = (e: React.WheelEvent) => {
@@ -244,7 +232,6 @@ export function MapViewer({
     setZoom(z => Math.min(Math.max(z + delta, 0.25), 4))
   }
 
-  // Place pin - calculate position relative to the IMAGE, not container
   const handleMapClick = (e: React.MouseEvent) => {
     // Close popup if clicking elsewhere
     if (popupPin && !(e.target as HTMLElement).closest('.pin-popup')) {
@@ -256,8 +243,6 @@ export function MapViewer({
     const rect = imageRef.current.getBoundingClientRect()
     const x = ((e.clientX - rect.left) / rect.width) * 100
     const y = ((e.clientY - rect.top) / rect.height) * 100
-
-    // Clamp to 0-100
     const clampedX = Math.max(0, Math.min(100, x))
     const clampedY = Math.max(0, Math.min(100, y))
 
@@ -266,17 +251,18 @@ export function MapViewer({
     setIsPlacingPin(false)
   }
 
-  // Handle pin click - show popup
+  // Pin click - show popup (only if we didn't drag)
   const handlePinClick = (pin: MapPinType, e: React.MouseEvent) => {
     e.stopPropagation()
 
-    // If already showing this pin's popup, close it
+    // If we just finished dragging, don't show popup
+    if (pinDragState.isDragging) return
+
     if (popupPin?.id === pin.id) {
       setPopupPin(null)
       return
     }
 
-    // Position popup near the click
     const rect = (e.target as HTMLElement).getBoundingClientRect()
     setPopupPosition({
       x: rect.left + rect.width / 2,
@@ -285,16 +271,18 @@ export function MapViewer({
     setPopupPin(pin)
   }
 
-  // Start dragging a pin
-  const handlePinDragStart = (pin: MapPinType, e: React.MouseEvent) => {
-    if (!isDm || !canEditPins) return
+  // Start potential pin drag (but don't actually drag until threshold)
+  const handlePinMouseDown = (pin: MapPinType, e: React.MouseEvent) => {
+    if (!isDm || !canEditPins || e.button !== 0) return
     e.stopPropagation()
-    e.preventDefault()
-    setDraggingPin(pin)
-    setPopupPin(null)
+    setPinDragState({
+      pin,
+      startX: e.clientX,
+      startY: e.clientY,
+      isDragging: false
+    })
   }
 
-  // Save pin
   const handleSavePin = async () => {
     if (!pinForm.label.trim()) {
       toast.error('Pin name is required')
@@ -333,7 +321,6 @@ export function MapViewer({
       })
 
       const data = await response.json()
-
       if (!response.ok) {
         toast.error(data.error || 'Failed to save pin')
         return
@@ -350,7 +337,6 @@ export function MapViewer({
     }
   }
 
-  // Delete pin
   const handleDeletePin = async (pinId: string) => {
     if (!confirm('Delete this pin?')) return
 
@@ -359,13 +345,11 @@ export function MapViewer({
         `/api/campaigns/${campaignId}/maps/${map.id}/pins?pinId=${pinId}`,
         { method: 'DELETE' }
       )
-
       if (!response.ok) {
         const data = await response.json()
         toast.error(data.error || 'Failed to delete pin')
         return
       }
-
       toast.success('Pin deleted')
       setPopupPin(null)
       loadData()
@@ -419,18 +403,15 @@ export function MapViewer({
     return found?.icon || '📍'
   }
 
-  // Filter pins based on visibility for players
   const visiblePins = isDm
     ? pins
     : pins.filter(p => p.visibility === 'public' || p.visibility === 'party')
 
-  // Get linked map name
   const getLinkedMapName = (mapId: string) => {
     const linkedMap = maps.find(m => m.id === mapId)
     return linkedMap?.name || 'Untitled Map'
   }
 
-  // Get linked location name
   const getLinkedLocationName = (locationId: string) => {
     const loc = locations.find(l => l.id === locationId)
     return loc?.name || 'Unknown Location'
@@ -456,23 +437,18 @@ export function MapViewer({
             <ArrowLeft className="w-5 h-5" />
             <span className="text-sm">Back to Maps</span>
           </button>
-
           <div className="w-px h-6 bg-[--border]" />
-
           <h1 className="text-lg font-semibold text-[--text-primary]">
             {map.name || 'Untitled Map'}
           </h1>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* DM View indicator */}
           {isDm && (
             <span className="px-2 py-1 text-xs rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
               DM View
             </span>
           )}
-
-          {/* Add Pin button (DM only) */}
           {isDm && canEditPins && (
             <button
               onClick={() => setIsPlacingPin(!isPlacingPin)}
@@ -483,21 +459,9 @@ export function MapViewer({
                   : "bg-[--bg-elevated] text-[--text-secondary] hover:text-[--text-primary]"
               )}
             >
-              {isPlacingPin ? (
-                <>
-                  <X className="w-4 h-4" />
-                  Cancel
-                </>
-              ) : (
-                <>
-                  <Plus className="w-4 h-4" />
-                  Add Pin
-                </>
-              )}
+              {isPlacingPin ? <><X className="w-4 h-4" />Cancel</> : <><Plus className="w-4 h-4" />Add Pin</>}
             </button>
           )}
-
-          {/* Settings button (DM only) */}
           {isDm && canEditPins && (
             <button
               onClick={() => setSettingsOpen(true)}
@@ -507,8 +471,6 @@ export function MapViewer({
               <Settings className="w-4 h-4" />
             </button>
           )}
-
-          {/* Delete button */}
           {canDelete && (
             <button
               onClick={onDelete}
@@ -522,52 +484,39 @@ export function MapViewer({
       </div>
 
       {/* Map Container */}
-      <div className="flex-1 relative overflow-hidden bg-black/20">
+      <div className="flex-1 relative overflow-hidden bg-black/40">
         {/* Zoom Controls */}
         <div className="absolute top-4 left-4 z-20 flex items-center gap-1 bg-[--bg-surface]/95 rounded-lg p-1 backdrop-blur-sm shadow-lg">
-          <button
-            onClick={handleZoomOut}
-            className="p-2 hover:bg-[--bg-elevated] rounded text-[--text-secondary] hover:text-[--text-primary]"
-            title="Zoom out"
-          >
+          <button onClick={handleZoomOut} className="p-2 hover:bg-[--bg-elevated] rounded text-[--text-secondary] hover:text-[--text-primary]" title="Zoom out">
             <ZoomOut className="w-4 h-4" />
           </button>
           <span className="text-xs text-[--text-tertiary] px-2 min-w-[50px] text-center">
             {Math.round(zoom * 100)}%
           </span>
-          <button
-            onClick={handleZoomIn}
-            className="p-2 hover:bg-[--bg-elevated] rounded text-[--text-secondary] hover:text-[--text-primary]"
-            title="Zoom in"
-          >
+          <button onClick={handleZoomIn} className="p-2 hover:bg-[--bg-elevated] rounded text-[--text-secondary] hover:text-[--text-primary]" title="Zoom in">
             <ZoomIn className="w-4 h-4" />
           </button>
           <div className="w-px h-6 bg-[--border]" />
-          <button
-            onClick={handleResetZoom}
-            className="p-2 hover:bg-[--bg-elevated] rounded text-[--text-secondary] hover:text-[--text-primary]"
-            title="Reset view"
-          >
+          <button onClick={handleResetZoom} className="p-2 hover:bg-[--bg-elevated] rounded text-[--text-secondary] hover:text-[--text-primary]" title="Reset view">
             <Maximize2 className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Placing pin indicator */}
         {isPlacingPin && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 bg-[--arcane-purple] text-white rounded-lg shadow-lg text-sm">
             Click on the map to place a pin
           </div>
         )}
 
-        {/* Map */}
+        {/* Map - use CSS centering, no position offset for initial state */}
         <div
           ref={containerRef}
           className={cn(
-            "w-full h-full flex items-center justify-center",
+            "w-full h-full flex items-center justify-center overflow-hidden",
             isPlacingPin && "cursor-crosshair",
-            draggingPin && "cursor-grabbing",
-            isDragging && !isPlacingPin && !draggingPin && "cursor-grabbing",
-            !isDragging && !isPlacingPin && !draggingPin && "cursor-grab"
+            pinDragState.isDragging && "cursor-grabbing",
+            isDragging && "cursor-grabbing",
+            !isDragging && !isPlacingPin && !pinDragState.isDragging && "cursor-grab"
           )}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -580,7 +529,7 @@ export function MapViewer({
             style={{
               transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
               transformOrigin: 'center center',
-              transition: isDragging || draggingPin ? 'none' : 'transform 0.1s ease-out',
+              transition: isDragging || pinDragState.isDragging ? 'none' : 'transform 0.1s ease-out',
             }}
             className="relative"
           >
@@ -591,12 +540,8 @@ export function MapViewer({
                 alt={map.name || 'Map'}
                 className="max-w-none pointer-events-none select-none"
                 draggable={false}
-                onLoad={(e) => {
-                  const img = e.target as HTMLImageElement
-                  setImageDimensions({ width: img.naturalWidth, height: img.naturalHeight })
-                  setImageLoaded(true)
-                }}
-                style={{ maxHeight: '80vh', width: 'auto' }}
+                onLoad={() => setImageLoaded(true)}
+                style={{ maxHeight: '85vh', maxWidth: '90vw', width: 'auto', height: 'auto' }}
               />
             )}
 
@@ -607,14 +552,13 @@ export function MapViewer({
               const hasLinkedMap = !!pin.linked_map_id
               const hasLinkedLocation = pin.linked_entity_type === 'location' && !!pin.linked_entity_id
               const isHidden = pin.visibility === 'dm_only' || pin.visibility === 'party'
-              const isBeingDragged = draggingPin?.id === pin.id
+              const isBeingDragged = pinDragState.isDragging && pinDragState.pin?.id === pin.id
 
               return (
                 <div
                   key={pin.id}
                   className={cn(
-                    "absolute group",
-                    isDm && isHidden && "opacity-60",
+                    "absolute",
                     isBeingDragged && "z-50"
                   )}
                   style={{
@@ -623,70 +567,64 @@ export function MapViewer({
                     transform: 'translate(-50%, -100%)',
                   }}
                 >
-                  {/* Pin marker */}
-                  <div className="relative">
-                    <button
-                      onClick={(e) => handlePinClick(pin, e)}
-                      onMouseDown={(e) => isDm && canEditPins && e.button === 0 && handlePinDragStart(pin, e)}
+                  <button
+                    onClick={(e) => handlePinClick(pin, e)}
+                    onMouseDown={(e) => handlePinMouseDown(pin, e)}
+                    className={cn(
+                      "relative transition-transform hover:scale-110 pointer-events-auto",
+                      isDm && canEditPins && !isPlacingPin && "cursor-grab",
+                      isBeingDragged && "cursor-grabbing scale-125"
+                    )}
+                  >
+                    <div
                       className={cn(
-                        "relative transition-transform hover:scale-110 pointer-events-auto",
-                        (hasLinkedMap || hasLinkedLocation) && "cursor-pointer",
-                        isDm && canEditPins && "cursor-grab",
-                        isBeingDragged && "cursor-grabbing scale-125"
+                        "text-3xl drop-shadow-lg transition-opacity",
+                        isDm && isHidden && "opacity-50"
                       )}
+                      style={{ filter: `drop-shadow(0 2px 4px ${pin.color || '#9333ea'}40)` }}
                     >
-                      <div
-                        className="text-3xl drop-shadow-lg"
-                        style={{ filter: `drop-shadow(0 2px 4px ${pin.color || '#9333ea'}40)` }}
-                      >
-                        {getPinIcon(pin.icon || 'location')}
+                      {getPinIcon(pin.icon || 'location')}
+                    </div>
+
+                    {hasLinkedMap && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center ring-2 ring-black/50">
+                        <Layers className="w-2.5 h-2.5 text-white" />
                       </div>
-
-                      {/* Linked map indicator */}
-                      {hasLinkedMap && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center ring-2 ring-[--bg-base]">
-                          <Layers className="w-2.5 h-2.5 text-white" />
-                        </div>
-                      )}
-
-                      {/* Linked location indicator */}
-                      {hasLinkedLocation && !hasLinkedMap && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-500 flex items-center justify-center ring-2 ring-[--bg-base]">
-                          <Link2 className="w-2.5 h-2.5 text-white" />
-                        </div>
-                      )}
-
-                      {/* Visibility indicator (DM only) */}
-                      {isDm && isHidden && (
-                        <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-black/80 flex items-center justify-center">
-                          <VisIcon className="w-2.5 h-2.5 text-white" />
-                        </div>
-                      )}
-                    </button>
-                  </div>
+                    )}
+                    {hasLinkedLocation && !hasLinkedMap && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-500 flex items-center justify-center ring-2 ring-black/50">
+                        <Link2 className="w-2.5 h-2.5 text-white" />
+                      </div>
+                    )}
+                    {isDm && isHidden && (
+                      <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-black/80 flex items-center justify-center">
+                        <VisIcon className="w-2.5 h-2.5 text-white" />
+                      </div>
+                    )}
+                  </button>
                 </div>
               )
             })}
           </div>
         </div>
 
-        {/* Pin Popup */}
-        {popupPin && (
+        {/* Pin Popup - Redesigned, no opacity, better styling */}
+        {popupPin && !pinDragState.isDragging && (
           <div
-            className="pin-popup fixed z-50 w-72"
+            className="pin-popup fixed z-50"
             style={{
-              left: `${Math.min(popupPosition.x, window.innerWidth - 300)}px`,
-              top: `${Math.max(popupPosition.y - 10, 10)}px`,
+              left: `${Math.min(Math.max(popupPosition.x, 160), window.innerWidth - 160)}px`,
+              top: `${Math.max(popupPosition.y - 16, 80)}px`,
               transform: 'translate(-50%, -100%)',
             }}
           >
-            <div className="bg-[--bg-surface] rounded-xl shadow-2xl border border-[--border] overflow-hidden">
-              {/* Header */}
-              <div className="p-4 border-b border-[--border]">
+            <div className="w-72 bg-[--bg-base] rounded-xl shadow-2xl overflow-hidden">
+              {/* Header with gradient */}
+              <div className="bg-gradient-to-r from-[--arcane-purple]/20 to-transparent p-4">
                 <div className="flex items-start gap-3">
-                  <span className="text-2xl">{getPinIcon(popupPin.icon || 'location')}</span>
+                  <div className="text-3xl">{getPinIcon(popupPin.icon || 'location')}</div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-[--text-primary] truncate">{popupPin.label}</h3>
+                    <h3 className="font-semibold text-[--text-primary] text-lg">{popupPin.label}</h3>
                     {popupPin.description && (
                       <p className="text-sm text-[--text-secondary] mt-1 line-clamp-2">
                         {popupPin.description}
@@ -695,7 +633,7 @@ export function MapViewer({
                   </div>
                   <button
                     onClick={() => setPopupPin(null)}
-                    className="p-1 hover:bg-[--bg-elevated] rounded text-[--text-tertiary]"
+                    className="p-1.5 hover:bg-white/10 rounded-lg text-[--text-tertiary] hover:text-[--text-primary] transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -703,53 +641,47 @@ export function MapViewer({
               </div>
 
               {/* Actions */}
-              <div className="p-2 space-y-1">
-                {/* View Location link */}
-                {popupPin.linked_entity_type === 'location' && popupPin.linked_entity_id && (
-                  <button
-                    onClick={() => {
-                      toast.info(`Navigate to: ${getLinkedLocationName(popupPin.linked_entity_id!)}`)
-                      setPopupPin(null)
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[--bg-elevated] text-left transition-colors"
-                  >
-                    <Link2 className="w-4 h-4 text-green-400" />
-                    <span className="flex-1 text-sm text-[--text-primary]">View Location</span>
-                    <ExternalLink className="w-3.5 h-3.5 text-[--text-tertiary]" />
-                  </button>
-                )}
-
-                {/* Open linked map */}
-                {popupPin.linked_map_id && (
-                  <button
-                    onClick={() => {
-                      onNavigateToMap(popupPin.linked_map_id!)
-                      setPopupPin(null)
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[--bg-elevated] text-left transition-colors"
-                  >
-                    <Layers className="w-4 h-4 text-blue-400" />
-                    <span className="flex-1 text-sm text-[--text-primary]">
-                      Open {getLinkedMapName(popupPin.linked_map_id)}
-                    </span>
-                    <ExternalLink className="w-3.5 h-3.5 text-[--text-tertiary]" />
-                  </button>
-                )}
-              </div>
+              {(popupPin.linked_map_id || (popupPin.linked_entity_type === 'location' && popupPin.linked_entity_id)) && (
+                <div className="px-3 py-2 space-y-1">
+                  {popupPin.linked_entity_type === 'location' && popupPin.linked_entity_id && (
+                    <button
+                      onClick={() => {
+                        toast.info(`Navigate to: ${getLinkedLocationName(popupPin.linked_entity_id!)}`)
+                        setPopupPin(null)
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[--bg-elevated] hover:bg-[--bg-surface] text-left transition-colors"
+                    >
+                      <Link2 className="w-4 h-4 text-green-400" />
+                      <span className="flex-1 text-sm font-medium text-[--text-primary]">View Location</span>
+                      <ExternalLink className="w-4 h-4 text-[--text-tertiary]" />
+                    </button>
+                  )}
+                  {popupPin.linked_map_id && (
+                    <button
+                      onClick={() => {
+                        onNavigateToMap(popupPin.linked_map_id!)
+                        setPopupPin(null)
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[--bg-elevated] hover:bg-[--bg-surface] text-left transition-colors"
+                    >
+                      <Layers className="w-4 h-4 text-blue-400" />
+                      <span className="flex-1 text-sm font-medium text-[--text-primary]">
+                        Open {getLinkedMapName(popupPin.linked_map_id)}
+                      </span>
+                      <ExternalLink className="w-4 h-4 text-[--text-tertiary]" />
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* Footer - DM controls */}
               {isDm && (
-                <div className="px-4 py-3 border-t border-[--border] flex items-center justify-between bg-[--bg-elevated]/50">
-                  <div className={cn("flex items-center gap-1.5 text-xs", getVisibilityInfo(popupPin.visibility || 'public').color)}>
+                <div className="px-4 py-3 bg-[--bg-elevated] flex items-center justify-between">
+                  <div className={cn("flex items-center gap-1.5 text-xs font-medium", getVisibilityInfo(popupPin.visibility || 'public').color)}>
                     {(() => {
                       const info = getVisibilityInfo(popupPin.visibility || 'public')
                       const Icon = info.icon
-                      return (
-                        <>
-                          <Icon className="w-3.5 h-3.5" />
-                          <span>{info.label}</span>
-                        </>
-                      )
+                      return <><Icon className="w-3.5 h-3.5" /><span>{info.label}</span></>
                     })()}
                   </div>
                   <div className="flex items-center gap-1">
@@ -757,14 +689,14 @@ export function MapViewer({
                       <>
                         <button
                           onClick={() => openEditModal(popupPin)}
-                          className="p-1.5 hover:bg-[--bg-surface] rounded text-[--text-secondary] hover:text-[--text-primary]"
+                          className="p-2 hover:bg-[--bg-base] rounded-lg text-[--text-secondary] hover:text-[--text-primary] transition-colors"
                           title="Edit pin"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDeletePin(popupPin.id)}
-                          className="p-1.5 hover:bg-[--bg-surface] rounded text-[--arcane-ember]"
+                          className="p-2 hover:bg-[--bg-base] rounded-lg text-[--arcane-ember] transition-colors"
                           title="Delete pin"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -775,21 +707,16 @@ export function MapViewer({
                 </div>
               )}
             </div>
-            {/* Arrow pointing to pin */}
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-full">
-              <div className="w-3 h-3 bg-[--bg-surface] border-r border-b border-[--border] transform rotate-45 -translate-y-1.5" />
+            {/* Arrow */}
+            <div className="absolute left-1/2 -translate-x-1/2 -bottom-2">
+              <div className="w-4 h-4 bg-[--bg-base] transform rotate-45 shadow-lg" />
             </div>
           </div>
         )}
       </div>
 
       {/* Edit/Create Pin Modal */}
-      <Modal
-        isOpen={editModalOpen}
-        onClose={closeEditModal}
-        title={selectedPin ? 'Edit Pin' : 'Add Pin'}
-        size="md"
-      >
+      <Modal isOpen={editModalOpen} onClose={closeEditModal} title={selectedPin ? 'Edit Pin' : 'Add Pin'} size="md">
         <div className="space-y-4">
           <div className="form-group">
             <label className="form-label">Name *</label>
@@ -811,7 +738,6 @@ export function MapViewer({
             />
           </div>
 
-          {/* Icon Selection */}
           <div className="form-group">
             <label className="form-label">Icon</label>
             <div className="flex flex-wrap gap-2">
@@ -833,7 +759,6 @@ export function MapViewer({
             </div>
           </div>
 
-          {/* Color Selection */}
           <div className="form-group">
             <label className="form-label">Color</label>
             <div className="flex flex-wrap gap-2">
@@ -855,11 +780,9 @@ export function MapViewer({
           </div>
 
           <div className="border-t border-[--border] pt-4 space-y-4">
-            {/* Link to Location */}
             <div className="form-group">
               <label className="form-label flex items-center gap-2">
-                <Link2 className="w-4 h-4" />
-                Link to Location
+                <Link2 className="w-4 h-4" />Link to Location
               </label>
               <select
                 value={pinForm.linked_entity_id}
@@ -871,16 +794,11 @@ export function MapViewer({
                   <option key={loc.id} value={loc.id}>{loc.name}</option>
                 ))}
               </select>
-              <p className="text-xs text-[--text-tertiary] mt-1">
-                Link this pin to a location in your campaign
-              </p>
             </div>
 
-            {/* Link to Map (drill-down) */}
             <div className="form-group">
               <label className="form-label flex items-center gap-2">
-                <Layers className="w-4 h-4" />
-                Link to Map (drill-down)
+                <Layers className="w-4 h-4" />Link to Map (drill-down)
               </label>
               <select
                 value={pinForm.linked_map_id}
@@ -892,13 +810,9 @@ export function MapViewer({
                   <option key={m.id} value={m.id}>{m.name || 'Untitled'}</option>
                 ))}
               </select>
-              <p className="text-xs text-[--text-tertiary] mt-1">
-                Clicking this pin will open the linked map
-              </p>
             </div>
           </div>
 
-          {/* Visibility */}
           <div className="form-group">
             <label className="form-label">Visibility</label>
             <select
@@ -913,48 +827,21 @@ export function MapViewer({
           </div>
 
           <div className="flex gap-3 pt-2">
-            <button
-              onClick={closeEditModal}
-              disabled={saving}
-              className="btn btn-secondary flex-1"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSavePin}
-              disabled={saving || !pinForm.label.trim()}
-              className="btn btn-primary flex-1"
-            >
-              {saving ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <Check className="w-4 h-4" />
-                  {selectedPin ? 'Update' : 'Add Pin'}
-                </>
-              )}
+            <button onClick={closeEditModal} disabled={saving} className="btn btn-secondary flex-1">Cancel</button>
+            <button onClick={handleSavePin} disabled={saving || !pinForm.label.trim()} className="btn btn-primary flex-1">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" />{selectedPin ? 'Update' : 'Add Pin'}</>}
             </button>
           </div>
         </div>
       </Modal>
 
       {/* Map Settings Modal */}
-      <Modal
-        isOpen={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        title="Map Settings"
-        size="md"
-      >
+      <Modal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} title="Map Settings" size="md">
         <div className="space-y-4">
           <div className="form-group">
             <label className="form-label">Map Name</label>
-            <Input
-              value={map.name || ''}
-              onChange={(e) => onUpdate({ name: e.target.value })}
-              placeholder="Enter map name"
-            />
+            <Input value={map.name || ''} onChange={(e) => onUpdate({ name: e.target.value })} placeholder="Enter map name" />
           </div>
-
           <div className="form-group">
             <label className="form-label">Description</label>
             <textarea
@@ -965,14 +852,8 @@ export function MapViewer({
               className="form-input"
             />
           </div>
-
           <div className="flex justify-end pt-2">
-            <button
-              onClick={() => setSettingsOpen(false)}
-              className="btn btn-secondary"
-            >
-              Close
-            </button>
+            <button onClick={() => setSettingsOpen(false)} className="btn btn-secondary">Close</button>
           </div>
         </div>
       </Modal>
