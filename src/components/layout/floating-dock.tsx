@@ -13,11 +13,10 @@ import {
   PanelTop,
   ScrollText,
   Clock,
-  Network,
+  Globe,
   Map,
   Image,
   Brain,
-  MapPin,
   Target,
   Edit3,
   Eye,
@@ -83,15 +82,15 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
     { href: `/campaigns/${campaignId}/view`, label: 'View', icon: Eye },
     ...(isDm || can.viewSessions ? [{ href: `/campaigns/${campaignId}/sessions`, label: 'Sessions', icon: ScrollText }] : []),
     ...(isDm || can.viewTimeline ? [{ href: `/campaigns/${campaignId}/timeline`, label: 'Timeline', icon: Clock }] : []),
-    ...(isDm || can.viewLore ? [{ href: `/campaigns/${campaignId}/lore`, label: 'Lore', icon: Network }] : []),
+    ...(isDm || can.viewLore ? [{ href: `/campaigns/${campaignId}/lore`, label: 'World', icon: Globe }] : []),
     ...(isDm || can.viewMaps ? [{ href: `/campaigns/${campaignId}/map`, label: 'Maps', icon: Map }] : []),
     ...(isDm || can.viewGallery ? [{ href: `/campaigns/${campaignId}/gallery`, label: 'Gallery', icon: Image }] : []),
   ] : []
 
   // DM Tools flyout items (campaign context only)
+  // Note: Locations removed from here - now integrated into the World page
   const dmToolsItems = campaignId && isDm ? [
     ...(canUseAI ? [{ href: `/campaigns/${campaignId}/intelligence`, label: 'Intelligence', icon: Brain, isActive: isActive(`/campaigns/${campaignId}/intelligence`) }] : []),
-    { href: `/campaigns/${campaignId}/locations`, label: 'Locations', icon: MapPin, isActive: isActive(`/campaigns/${campaignId}/locations`) },
     { href: `/campaigns/${campaignId}/quests`, label: 'Quests', icon: Target, isActive: isActive(`/campaigns/${campaignId}/quests`) },
     { href: `/campaigns/${campaignId}/encounters`, label: 'Encounters', icon: Swords, isActive: isActive(`/campaigns/${campaignId}/encounters`) },
     { href: `/campaigns/${campaignId}/settings`, label: 'Party & Members', icon: Users, isActive: isActive(`/campaigns/${campaignId}/settings`) },

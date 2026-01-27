@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   ArrowLeft,
   ZoomIn,
@@ -87,6 +88,7 @@ export function MapViewer({
   onUpdate,
   canDelete,
 }: MapViewerProps) {
+  const router = useRouter()
   const containerRef = useRef<HTMLDivElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
 
@@ -652,7 +654,10 @@ export function MapViewer({
                   {popupPin.linked_entity_type === 'location' && popupPin.linked_entity_id && (
                     <button
                       onClick={() => {
-                        toast.info(`Navigate to: ${getLinkedLocationName(popupPin.linked_entity_id!)}`)
+                        // Navigate to World page with location selected
+                        localStorage.setItem('world-active-tab', 'locations')
+                        localStorage.setItem('world-selected-location', popupPin.linked_entity_id!)
+                        router.push(`/campaigns/${campaignId}/lore?locationId=${popupPin.linked_entity_id}`)
                         setPopupPin(null)
                       }}
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors"

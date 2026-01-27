@@ -1,61 +1,27 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import {
-  Network,
-  Users,
-  Shield,
-  Sparkles,
-  Loader2,
-  RefreshCw,
-  ChevronDown,
-  ChevronUp,
-  GitBranch,
-  Info,
-  List,
-  Share2,
-} from 'lucide-react'
+import { Globe, Loader2 } from 'lucide-react'
 import { AppLayout } from '@/components/layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
-import { MarkdownContent, AccessDeniedPage } from '@/components/ui'
-import { RelationshipDiagram } from '@/components/campaign'
+import { AccessDeniedPage, Modal, Button } from '@/components/ui'
+import { WorldTabs } from '@/components/world'
 import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
-import { CampaignLorePageMobile } from './page.mobile'
-import { useCanUseAI } from '@/store'
-import { cn, getInitials } from '@/lib/utils'
-import Image from 'next/image'
-import type { Campaign, Character, Tag, CharacterTag, CharacterRelationship, CampaignLore } from '@/types/database'
+import type { Campaign, Character, Tag, CharacterTag, CharacterRelationship, CampaignFaction } from '@/types/database'
 
 export interface CharacterWithTags extends Character {
   tags: (CharacterTag & { tag: Tag })[]
 }
 
-interface FamilyTreeData {
-  nodes: {
-    id: string
-    name: string
-    type: string
-    image_url: string | null
-    status: string | null
-  }[]
-  edges: {
-    source: string
-    target: string
-    relationship: string
-    label?: string
-  }[]
-}
-
-export default function LorePage() {
+export default function WorldPage() {
   const params = useParams()
   const router = useRouter()
   const supabase = useSupabase()
   const { user } = useUser()
-  const canUseAI = useCanUseAI()
+  const isMobile = useIsMobile()
 
   const campaignId = params.id as string
-  const isMobile = useIsMobile()
 
   // Permissions
   const { can, loading: permissionsLoading, isMember, isOwner, isDm } = usePermissions(campaignId)
@@ -63,20 +29,18 @@ export default function LorePage() {
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [characters, setCharacters] = useState<CharacterWithTags[]>([])
   const [relationships, setRelationships] = useState<CharacterRelationship[]>([])
-  const [loreEntries, setLoreEntries] = useState<CampaignLore[]>([])
-  const [factionTags, setFactionTags] = useState<Tag[]>([])
+  const [locationCount, setLocationCount] = useState(0)
+  const [factionCount, setFactionCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
-  const [generatingLore, setGeneratingLore] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
-  // Section expand states
-  const [familyTreeExpanded, setFamilyTreeExpanded] = useState(true)
-  const [factionsExpanded, setFactionsExpanded] = useState(true)
-  const [insightsExpanded, setInsightsExpanded] = useState(true)
+  // Modal states for adding content
+  const [showAddLocationModal, setShowAddLocationModal] = useState(false)
+  const [showAddFactionModal, setShowAddFactionModal] = useState(false)
 
-  // Relationship view mode: 'list' or 'diagram'
-  const [relationshipViewMode, setRelationshipViewMode] = useState<'list' | 'diagram'>('list')
+  // Track if we need to trigger add actions in child components
+  const addLocationTriggerRef = useRef(false)
+  const addFactionTriggerRef = useRef(false)
 
   useEffect(() => {
     if (user && campaignId) {
@@ -85,7 +49,6 @@ export default function LorePage() {
   }, [user, campaignId])
 
   const loadData = async () => {
-    // Only show loading spinner on initial load, not refetches
     if (!hasLoadedOnce) {
       setLoading(true)
     }
@@ -111,7 +74,6 @@ export default function LorePage() {
       .order('name')
 
     if (charactersData) {
-      // Load tags for all characters
       const characterIds = charactersData.map(c => c.id)
       const { data: tagsData } = characterIds.length > 0
         ? await supabase
@@ -120,7 +82,6 @@ export default function LorePage() {
             .in('character_id', characterIds)
         : { data: null }
 
-      // Group tags by character
       const tagMap = new Map<string, (CharacterTag & { tag: Tag })[]>()
       for (const tag of (tagsData || [])) {
         const existing = tagMap.get(tag.character_id) || []
@@ -143,173 +104,51 @@ export default function LorePage() {
 
     setRelationships(relationshipsData || [])
 
-    // Load faction tags
-    const { data: factionTagsData } = await supabase
-      .from('tags')
-      .select('*')
+    // Get location count (filter by visibility for non-DMs)
+    let locationsQuery = supabase
+      .from('locations')
+      .select('id', { count: 'exact', head: true })
       .eq('campaign_id', campaignId)
-      .eq('category', 'faction')
 
-    setFactionTags(factionTagsData || [])
+    if (!isDm) {
+      locationsQuery = locationsQuery.in('visibility', ['party', 'public'])
+    }
 
-    // Load lore entries
-    const { data: loreData } = await supabase
-      .from('campaign_lore')
-      .select('*')
+    const { count: locCount } = await locationsQuery
+    setLocationCount(locCount || 0)
+
+    // Get faction count (filter by visibility for non-DMs)
+    let factionsQuery = supabase
+      .from('campaign_factions')
+      .select('id', { count: 'exact', head: true })
       .eq('campaign_id', campaignId)
-      .order('created_at', { ascending: false })
 
-    setLoreEntries(loreData || [])
+    if (!isDm) {
+      factionsQuery = factionsQuery.eq('is_known_to_party', true)
+    }
+
+    const { count: facCount } = await factionsQuery
+    setFactionCount(facCount || 0)
 
     setLoading(false)
     setHasLoadedOnce(true)
   }
 
-  // Build family tree data from relationships
-  const buildFamilyTree = useCallback((): FamilyTreeData => {
-    const characterIds = new Set(relationships.flatMap(r => [r.character_id, r.related_character_id]))
-    const nodes = characters
-      .filter(c => characterIds.has(c.id))
-      .map(c => ({
-        id: c.id,
-        name: c.name,
-        type: c.type,
-        image_url: c.image_url,
-        status: c.status,
-      }))
+  // Handle add location - this will be passed to WorldTabs
+  // and will trigger the LocationsTab to open its add modal
+  const handleAddLocation = useCallback(() => {
+    // Set the active tab to locations and trigger add
+    localStorage.setItem('world-active-tab', 'locations')
+    setShowAddLocationModal(true)
+  }, [])
 
-    const edges = relationships.map(r => ({
-      source: r.character_id,
-      target: r.related_character_id,
-      relationship: r.relationship_type,
-      label: r.relationship_label || undefined,
-    }))
+  // Handle add faction
+  const handleAddFaction = useCallback(() => {
+    localStorage.setItem('world-active-tab', 'factions')
+    setShowAddFactionModal(true)
+  }, [])
 
-    return { nodes, edges }
-  }, [characters, relationships])
-
-  // Generate AI lore analysis
-  const handleGenerateLore = async () => {
-    if (!canUseAI) return
-    if (!can.addLore) {
-      setError('You do not have permission to generate lore')
-      return
-    }
-
-    setGeneratingLore(true)
-    setError(null)
-
-    try {
-      const response = await fetch('/api/ai/analyze-lore', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          campaignId,
-          characters: characters.map(c => ({
-            name: c.name,
-            type: c.type,
-            description: c.description,
-            summary: c.summary,
-            secrets: c.secrets,
-            tags: c.tags.map(t => t.tag.name),
-          })),
-          relationships: relationships.map(r => ({
-            character: characters.find(c => c.id === r.character_id)?.name,
-            related: characters.find(c => c.id === r.related_character_id)?.name,
-            type: r.relationship_type,
-            label: r.relationship_label,
-          })),
-        }),
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to analyze lore')
-      }
-
-      // Reload lore entries
-      await loadData()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate lore')
-    } finally {
-      setGeneratingLore(false)
-    }
-  }
-
-  // Group characters by faction
-  const charactersByFaction = useCallback(() => {
-    const grouped = new Map<string, CharacterWithTags[]>()
-
-    // Add "No Faction" group
-    grouped.set('__none__', [])
-
-    // Initialize faction groups
-    for (const faction of factionTags) {
-      grouped.set(faction.id, [])
-    }
-
-    // Group characters
-    for (const char of characters) {
-      const factionTag = char.tags.find(t => t.tag.category === 'faction')
-      if (factionTag) {
-        const existing = grouped.get(factionTag.tag.id) || []
-        existing.push(char)
-        grouped.set(factionTag.tag.id, existing)
-      } else {
-        const noFaction = grouped.get('__none__') || []
-        noFaction.push(char)
-        grouped.set('__none__', noFaction)
-      }
-    }
-
-    return grouped
-  }, [characters, factionTags])
-
-  const familyTree = buildFamilyTree()
-  const factionGroups = charactersByFaction()
-
-  // ============ MOBILE LAYOUT ============
-  if (isMobile) {
-    return (
-      <CampaignLorePageMobile
-        campaignId={campaignId}
-        characters={characters}
-        factionTags={factionTags}
-        loreEntries={loreEntries}
-        loading={loading}
-        canUseAI={canUseAI}
-        generatingLore={generatingLore}
-        error={error}
-        familyTree={familyTree}
-        factionGroups={factionGroups}
-        familyTreeExpanded={familyTreeExpanded}
-        setFamilyTreeExpanded={setFamilyTreeExpanded}
-        factionsExpanded={factionsExpanded}
-        setFactionsExpanded={setFactionsExpanded}
-        insightsExpanded={insightsExpanded}
-        setInsightsExpanded={setInsightsExpanded}
-        handleGenerateLore={handleGenerateLore}
-      />
-    )
-  }
-
-  // Page actions for top bar
-  const pageActions = canUseAI && can.addLore && (
-    <button
-      className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium disabled:opacity-50"
-      onClick={handleGenerateLore}
-      disabled={generatingLore}
-    >
-      {generatingLore ? (
-        <Loader2 className="w-4 h-4 animate-spin" />
-      ) : (
-        <Sparkles className="w-4 h-4" />
-      )}
-      <span className="hidden sm:inline">{generatingLore ? 'Analyzing...' : 'Analyze'}</span>
-    </button>
-  )
-
-  // ============ DESKTOP LAYOUT ============
+  // Loading state
   if (loading || permissionsLoading) {
     return (
       <AppLayout campaignId={campaignId}>
@@ -320,403 +159,91 @@ export default function LorePage() {
     )
   }
 
-  // Permission check - must be a member with view permission
+  // Permission check
   if (!isMember || !can.viewLore) {
     return (
       <AppLayout campaignId={campaignId}>
         <AccessDeniedPage
           campaignId={campaignId}
-          message="You don't have permission to view lore for this campaign."
+          message="You don't have permission to view this campaign's world."
         />
       </AppLayout>
     )
   }
 
   return (
-    <AppLayout campaignId={campaignId} topBarActions={pageActions}>
-      <div className="max-w-5xl mx-auto px-4 py-6">
-
-        {error && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
-            {error}
+    <AppLayout campaignId={campaignId}>
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        {/* Page header */}
+        <div className="flex items-center gap-3 mb-8">
+          <div className="p-2.5 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl border border-purple-500/20">
+            <Globe className="w-6 h-6 text-purple-400" />
           </div>
-        )}
-
-        {/* Family Tree Section */}
-        <section className="mb-8">
-          <button
-            onClick={() => setFamilyTreeExpanded(!familyTreeExpanded)}
-            className="w-full flex items-center justify-between py-4 px-1 group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                <GitBranch className="w-5 h-5 text-purple-400" />
-              </div>
-              <div className="text-left">
-                <h2 className="text-lg font-semibold text-white/90">Family Tree & Relationships</h2>
-                <p className="text-sm text-gray-500">
-                  {familyTree.nodes.length} characters with {familyTree.edges.length} connections
-                </p>
-              </div>
-            </div>
-            {familyTreeExpanded ? (
-              <ChevronUp className="w-5 h-5 text-gray-500" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-gray-500" />
-            )}
-          </button>
-
-          {familyTreeExpanded && (
-            <div className="mt-4 p-6 bg-white/[0.02] border border-white/[0.06] rounded-xl">
-              {familyTree.nodes.length === 0 ? (
-                <div className="text-center py-12">
-                  <Network className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-                  <p className="text-gray-500 mb-2">No relationships defined yet</p>
-                  <p className="text-sm text-gray-600">
-                    Add relationships between characters from the Canvas editor to visualize your campaign's connections.
-                  </p>
-                  <p className="text-xs text-purple-400/80 mt-3 max-w-md mx-auto italic">
-                    Campaign Intelligence can also detect relationships from your session notes automatically.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {/* View Mode Toggle */}
-                  <div className="flex items-center justify-end gap-2">
-                    <span className="text-xs text-gray-500 mr-2">View:</span>
-                    <button
-                      onClick={() => setRelationshipViewMode('list')}
-                      className={cn(
-                        "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors",
-                        relationshipViewMode === 'list'
-                          ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
-                          : "bg-white/[0.02] text-gray-400 border border-white/[0.06] hover:bg-white/[0.05]"
-                      )}
-                    >
-                      <List className="w-4 h-4" />
-                      List
-                    </button>
-                    <button
-                      onClick={() => setRelationshipViewMode('diagram')}
-                      className={cn(
-                        "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors",
-                        relationshipViewMode === 'diagram'
-                          ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
-                          : "bg-white/[0.02] text-gray-400 border border-white/[0.06] hover:bg-white/[0.05]"
-                      )}
-                    >
-                      <Share2 className="w-4 h-4" />
-                      Diagram
-                    </button>
-                  </div>
-
-                  {/* Diagram View */}
-                  {relationshipViewMode === 'diagram' && (
-                    <RelationshipDiagram
-                      characters={characters}
-                      relationships={relationships}
-                      className="min-h-[500px]"
-                    />
-                  )}
-
-                  {/* Relationship List View */}
-                  {relationshipViewMode === 'list' && (
-                  <div className="grid gap-4">
-                    {familyTree.edges.map((edge, idx) => {
-                      const source = familyTree.nodes.find(n => n.id === edge.source)
-                      const target = familyTree.nodes.find(n => n.id === edge.target)
-                      if (!source || !target) return null
-
-                      return (
-                        <div
-                          key={idx}
-                          className="flex items-center gap-4 p-4 bg-white/[0.03] rounded-lg"
-                        >
-                          {/* Source character */}
-                          <div className="flex items-center gap-3 flex-1">
-                            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-[--bg-surface] flex-shrink-0">
-                              {source.image_url ? (
-                                <Image
-                                  src={source.image_url}
-                                  alt={source.name}
-                                  fill
-                                  className="object-cover"
-                                  sizes="40px"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
-                                  {getInitials(source.name)}
-                                </div>
-                              )}
-                            </div>
-                            <div>
-                              <p className="font-medium text-white">{source.name}</p>
-                              <p className="text-xs text-gray-500 capitalize">{source.type}</p>
-                            </div>
-                          </div>
-
-                          {/* Relationship */}
-                          <div className="flex flex-col items-center px-4">
-                            <div className="px-3 py-1 bg-purple-500/20 rounded-full text-xs font-medium text-purple-400">
-                              {edge.label || edge.relationship}
-                            </div>
-                            <div className="w-px h-4 bg-purple-500/30 my-1" />
-                          </div>
-
-                          {/* Target character */}
-                          <div className="flex items-center gap-3 flex-1 justify-end">
-                            <div className="text-right">
-                              <p className="font-medium text-white">{target.name}</p>
-                              <p className="text-xs text-gray-500 capitalize">{target.type}</p>
-                            </div>
-                            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-[--bg-surface] flex-shrink-0">
-                              {target.image_url ? (
-                                <Image
-                                  src={target.image_url}
-                                  alt={target.name}
-                                  fill
-                                  className="object-cover"
-                                  sizes="40px"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
-                                  {getInitials(target.name)}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </section>
-
-        {/* Factions Section */}
-        <section className="mb-8">
-          <button
-            onClick={() => setFactionsExpanded(!factionsExpanded)}
-            className="w-full flex items-center justify-between py-4 px-1 group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-                <Shield className="w-5 h-5 text-emerald-400" />
-              </div>
-              <div className="text-left">
-                <h2 className="text-lg font-semibold text-white/90">Factions</h2>
-                <p className="text-sm text-gray-500">
-                  {factionTags.length} factions across {characters.length} characters
-                </p>
-              </div>
-            </div>
-            {factionsExpanded ? (
-              <ChevronUp className="w-5 h-5 text-gray-500" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-gray-500" />
-            )}
-          </button>
-
-          {factionsExpanded && (
-            <div className="mt-4 space-y-4">
-              {factionTags.length === 0 ? (
-                <div className="p-6 bg-white/[0.02] border border-white/[0.06] rounded-xl text-center">
-                  <Shield className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-                  <p className="text-gray-500 mb-2">No factions defined yet</p>
-                  <p className="text-sm text-gray-600">
-                    Create faction tags from the Canvas character editor to organize your world's power structures.
-                  </p>
-                  <p className="text-xs text-purple-400/80 mt-3 max-w-md mx-auto italic">
-                    Use tags like "The Thieves Guild" or "Royal Court" to group characters by allegiance.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {factionTags.map(faction => {
-                    const members = factionGroups.get(faction.id) || []
-                    return (
-                      <div
-                        key={faction.id}
-                        className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl"
-                      >
-                        <div className="flex items-center gap-3 mb-4">
-                          <Shield
-                            className="w-5 h-5"
-                            style={{ color: faction.color }}
-                          />
-                          <h3
-                            className="font-semibold"
-                            style={{ color: faction.color }}
-                          >
-                            {faction.name}
-                          </h3>
-                          <span className="text-xs text-gray-500">
-                            {members.length} member{members.length !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-
-                        {members.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {members.map(char => (
-                              <div
-                                key={char.id}
-                                className="flex items-center gap-2 px-3 py-2 bg-white/[0.03] rounded-lg"
-                              >
-                                <div className="relative w-6 h-6 rounded-full overflow-hidden bg-[--bg-surface]">
-                                  {char.image_url ? (
-                                    <Image
-                                      src={char.image_url}
-                                      alt={char.name}
-                                      fill
-                                      className="object-cover"
-                                      sizes="24px"
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-gray-500">
-                                      {getInitials(char.name)}
-                                    </div>
-                                  )}
-                                </div>
-                                <span className="text-sm text-gray-300">{char.name}</span>
-                                <span className="text-xs text-gray-600 capitalize">({char.type})</span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-gray-600 italic">No members yet</p>
-                        )}
-                      </div>
-                    )
-                  })}
-                </>
-              )}
-            </div>
-          )}
-        </section>
-
-        {/* AI Insights Section */}
-        {canUseAI && (
-          <section className="mb-8">
-            <button
-              onClick={() => setInsightsExpanded(!insightsExpanded)}
-              className="w-full flex items-center justify-between py-4 px-1 group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/20">
-                  <Sparkles className="w-5 h-5 text-amber-400" />
-                </div>
-                <div className="text-left">
-                  <h2 className="text-lg font-semibold text-white/90">AI Insights</h2>
-                  <p className="text-sm text-gray-500">
-                    {loreEntries.length} insight{loreEntries.length !== 1 ? 's' : ''} generated
-                  </p>
-                </div>
-              </div>
-              {insightsExpanded ? (
-                <ChevronUp className="w-5 h-5 text-gray-500" />
-              ) : (
-                <ChevronDown className="w-5 h-5 text-gray-500" />
-              )}
-            </button>
-
-            {insightsExpanded && (
-              <div className="mt-4">
-                {loreEntries.length === 0 ? (
-                  <div className="p-6 bg-white/[0.02] border border-white/[0.06] rounded-xl text-center">
-                    <Sparkles className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-                    <p className="text-gray-500 mb-2">No AI insights yet</p>
-                    <p className="text-sm text-gray-600 mb-2">
-                      Analyze your campaign's lore to uncover hidden connections, potential plot hooks, and story opportunities.
-                    </p>
-                    <p className="text-xs text-purple-400/80 mb-4 max-w-md mx-auto italic">
-                      Add characters with detailed descriptions and relationships for richer insights.
-                    </p>
-                    {can.addLore && (
-                      <button
-                        className="btn btn-secondary"
-                        onClick={handleGenerateLore}
-                        disabled={generatingLore}
-                      >
-                        {generatingLore ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Analyzing...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-4 h-4" />
-                            Analyze Lore
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {loreEntries.map(entry => (
-                      <div
-                        key={entry.id}
-                        className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 bg-amber-500/10 rounded-lg">
-                            <Info className="w-4 h-4 text-amber-400" />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-medium text-white mb-2">{entry.title}</h4>
-                            <div className="text-sm">
-                              {typeof entry.content === 'string'
-                                ? <MarkdownContent content={entry.content} className="[&_p]:text-gray-400" />
-                                : <pre className="text-gray-400 whitespace-pre-wrap">{JSON.stringify(entry.content, null, 2)}</pre>}
-                            </div>
-                            <p className="text-xs text-gray-600 mt-3">
-                              {entry.lore_type} • Generated {new Date(entry.created_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* Character Overview Stats */}
-        <section className="mb-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl text-center">
-              <p className="text-3xl font-bold text-purple-400">
-                {characters.filter(c => c.type === 'pc').length}
-              </p>
-              <p className="text-sm text-gray-500">Player Characters</p>
-            </div>
-            <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl text-center">
-              <p className="text-3xl font-bold text-emerald-400">
-                {characters.filter(c => c.type === 'npc').length}
-              </p>
-              <p className="text-sm text-gray-500">NPCs</p>
-            </div>
-            <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl text-center">
-              <p className="text-3xl font-bold text-amber-400">
-                {factionTags.length}
-              </p>
-              <p className="text-sm text-gray-500">Factions</p>
-            </div>
-            <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl text-center">
-              <p className="text-3xl font-bold text-blue-400">
-                {relationships.length}
-              </p>
-              <p className="text-sm text-gray-500">Relationships</p>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">World</h1>
+            <p className="text-sm text-gray-500">
+              Locations, factions, and relationships in {campaign?.name}
+            </p>
           </div>
-        </section>
+        </div>
+
+        {/* World tabs content */}
+        <WorldTabs
+          campaignId={campaignId}
+          characters={characters}
+          relationships={relationships}
+          locationCount={locationCount}
+          factionCount={factionCount}
+          relationshipCount={relationships.length}
+          isDm={isDm}
+          isOwner={isOwner}
+          onAddLocation={handleAddLocation}
+          onAddFaction={handleAddFaction}
+        />
       </div>
+
       <BackToTopButton />
+
+      {/* Trigger modals - these are minimal wrappers that redirect to the tabs */}
+      {showAddLocationModal && (
+        <AddLocationRedirect
+          onClose={() => setShowAddLocationModal(false)}
+          campaignId={campaignId}
+        />
+      )}
+
+      {showAddFactionModal && (
+        <AddFactionRedirect
+          onClose={() => setShowAddFactionModal(false)}
+          campaignId={campaignId}
+        />
+      )}
     </AppLayout>
   )
+}
+
+// These components handle the redirect to tabs with add modal open
+// They're needed because the WorldTabs manages its own state
+function AddLocationRedirect({ onClose, campaignId }: { onClose: () => void; campaignId: string }) {
+  useEffect(() => {
+    // Set the flag that LocationsTab checks
+    localStorage.setItem('world-add-location-trigger', 'true')
+    // Force re-render of the tab
+    window.dispatchEvent(new Event('world-add-location'))
+    onClose()
+  }, [onClose])
+
+  return null
+}
+
+function AddFactionRedirect({ onClose, campaignId }: { onClose: () => void; campaignId: string }) {
+  useEffect(() => {
+    // Set the flag that FactionsTab checks
+    localStorage.setItem('world-add-faction-trigger', 'true')
+    // Force re-render of the tab
+    window.dispatchEvent(new Event('world-add-faction'))
+    onClose()
+  }, [onClose])
+
+  return null
 }
