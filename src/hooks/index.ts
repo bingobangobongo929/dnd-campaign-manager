@@ -29,3 +29,4 @@ export type {
 } from './useContent'
 
 export { useContentPermissions } from './useContentPermissions'
+export { useIntelligenceBadge } from './useIntelligenceBadge'

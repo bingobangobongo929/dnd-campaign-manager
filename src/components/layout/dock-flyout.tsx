@@ -10,6 +10,7 @@ interface FlyoutItem {
   href: string
   isActive?: boolean
   onClick?: () => void
+  badge?: number
 }
 
 interface DockFlyoutProps {
@@ -40,6 +41,9 @@ export function DockFlyout({ icon: Icon, label, items, className = '' }: DockFly
               >
                 <ItemIcon className="dock-flyout-item-icon" />
                 <span>{item.label}</span>
+                {item.badge && item.badge > 0 && (
+                  <span className="dock-flyout-item-badge">{item.badge > 99 ? '99+' : item.badge}</span>
+                )}
               </button>
             )
           }
@@ -52,6 +56,9 @@ export function DockFlyout({ icon: Icon, label, items, className = '' }: DockFly
             >
               <ItemIcon className="dock-flyout-item-icon" />
               <span>{item.label}</span>
+              {item.badge && item.badge > 0 && (
+                <span className="dock-flyout-item-badge">{item.badge > 99 ? '99+' : item.badge}</span>
+              )}
             </Link>
           )
         })}

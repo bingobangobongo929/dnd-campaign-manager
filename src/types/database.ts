@@ -3997,6 +3997,7 @@ export type SuggestionType =
   | 'relationship' | 'timeline_event' | 'completeness' | 'consistency'
   | 'npc_detected' | 'location_detected' | 'quest_detected' | 'encounter_detected' | 'faction_detected'
   | 'quest_session_link' | 'plot_hook' | 'enrichment' | 'timeline_issue' | 'summary'
+  | 'item_detected' | 'combat_outcome'
   // Character Intelligence types
   | 'grammar' | 'formatting' | 'lore_conflict' | 'redundancy'
   | 'voice_inconsistency' | 'relationship_gap' | 'secret_opportunity' | 'cross_reference'

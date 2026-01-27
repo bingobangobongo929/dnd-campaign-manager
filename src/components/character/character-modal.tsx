@@ -11,6 +11,7 @@ import { RichTextEditor } from '@/components/editor/rich-text-editor'
 import { DmNotesSection, type VisibilityLevel } from '@/components/dm-notes'
 import { EntitySecretsManager } from '@/components/secrets'
 import { CharacterClaiming } from '@/components/campaign'
+import { CharacterSuggestionsIndicator } from '@/components/intelligence/CharacterSuggestionsIndicator'
 import { useSupabase, useUser } from '@/hooks'
 import { useAutoSave } from '@/hooks'
 import { cn } from '@/lib/utils'
@@ -967,6 +968,15 @@ export function CharacterModal({
                     />
                   )}
 
+                  {/* Pending Intelligence Suggestions */}
+                  {currentCharacterId && (
+                    <CharacterSuggestionsIndicator
+                      characterId={currentCharacterId}
+                      characterName={formData.name}
+                      campaignId={campaignId}
+                    />
+                  )}
+
                   <div className="form-group">
                     <label className="form-label">Summary</label>
                     <textarea
@@ -1132,6 +1142,15 @@ export function CharacterModal({
                       setCharacterClaimed(true)
                       onUpdate({ ...character, vault_character_id: vaultCharacterId })
                     }}
+                  />
+                )}
+
+                {/* Pending Intelligence Suggestions - Non-fullscreen */}
+                {currentCharacterId && (
+                  <CharacterSuggestionsIndicator
+                    characterId={currentCharacterId}
+                    characterName={formData.name}
+                    campaignId={campaignId}
                   />
                 )}
 

@@ -25,7 +25,7 @@ import {
 } from 'lucide-react'
 import { DockFlyout } from './dock-flyout'
 import { useCanUseAI, useAppStore } from '@/store'
-import { useUserSettings, usePermissions } from '@/hooks'
+import { useUserSettings, usePermissions, useIntelligenceBadge } from '@/hooks'
 import { isAdmin } from '@/lib/admin'
 
 interface FloatingDockProps {
@@ -41,6 +41,7 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
   const showAdmin = settings?.role && isAdmin(settings.role)
   const { can, isOwner, isDm } = usePermissions(campaignId || null)
   const setIsPartyModalOpen = useAppStore((state) => state.setIsPartyModalOpen)
+  const { pendingCount: intelligencePendingCount } = useIntelligenceBadge(campaignId || null)
 
   // Determine page context
   const isMainPage = isMainListingPage(pathname)
@@ -90,7 +91,7 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
   // DM Tools flyout items (campaign context only)
   // Note: Locations removed from here - now integrated into the World page
   const dmToolsItems = campaignId && isDm ? [
-    ...(canUseAI ? [{ href: `/campaigns/${campaignId}/intelligence`, label: 'Intelligence', icon: Brain, isActive: isActive(`/campaigns/${campaignId}/intelligence`) }] : []),
+    ...(canUseAI ? [{ href: `/campaigns/${campaignId}/intelligence`, label: 'Intelligence', icon: Brain, isActive: isActive(`/campaigns/${campaignId}/intelligence`), badge: intelligencePendingCount }] : []),
     { href: `/campaigns/${campaignId}/quests`, label: 'Quests', icon: Target, isActive: isActive(`/campaigns/${campaignId}/quests`) },
     { href: `/campaigns/${campaignId}/encounters`, label: 'Encounters', icon: Swords, isActive: isActive(`/campaigns/${campaignId}/encounters`) },
     { href: '#', label: 'Party & Members', icon: Users, onClick: () => setIsPartyModalOpen(true) },

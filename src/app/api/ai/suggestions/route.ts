@@ -1,12 +1,64 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest } from 'next/server'
 
-// GET /api/ai/suggestions?campaignId=X&status=pending
+/**
+ * Helper to detect if user edited the suggestion before applying.
+ * Compares keys in both objects to find meaningful changes.
+ * Returns enriched final_value with correction metadata if edited.
+ */
+function trackCorrection(
+  suggestedValue: Record<string, unknown>,
+  finalValue: Record<string, unknown>,
+  suggestionType: string
+): Record<string, unknown> {
+  // Skip tracking for certain fields that are expected to change (like IDs)
+  const skipFields = ['timeline_event_id', 'location_id', 'quest_id', 'encounter_id', 'faction_id', 'character_id', 'relationship_id', 'session_quest_id']
+
+  const corrections: Array<{ field: string; original: unknown; corrected: unknown }> = []
+
+  for (const key of Object.keys(finalValue)) {
+    if (skipFields.includes(key)) continue
+
+    const originalVal = suggestedValue[key]
+    const newVal = finalValue[key]
+
+    // Check for meaningful difference
+    if (originalVal !== undefined && newVal !== undefined) {
+      const originalStr = typeof originalVal === 'string' ? originalVal.trim().toLowerCase() : JSON.stringify(originalVal)
+      const newStr = typeof newVal === 'string' ? newVal.trim().toLowerCase() : JSON.stringify(newVal)
+
+      if (originalStr !== newStr && originalStr !== '' && newStr !== '') {
+        corrections.push({
+          field: key,
+          original: originalVal,
+          corrected: newVal
+        })
+      }
+    }
+  }
+
+  if (corrections.length > 0) {
+    return {
+      ...finalValue,
+      _correction_metadata: {
+        was_edited: true,
+        suggestion_type: suggestionType,
+        corrections,
+        original_suggested: suggestedValue
+      }
+    }
+  }
+
+  return finalValue
+}
+
+// GET /api/ai/suggestions?campaignId=X&status=pending&characterId=Y
 export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams
     const campaignId = searchParams.get('campaignId')
     const status = searchParams.get('status') // 'pending', 'applied', 'rejected', or null for all
+    const characterId = searchParams.get('characterId') // Optional: filter by character
 
     if (!campaignId) {
       return new Response(JSON.stringify({ error: 'Campaign ID required' }), {
@@ -44,6 +96,11 @@ export async function GET(req: NextRequest) {
 
     if (status) {
       query = query.eq('status', status)
+    }
+
+    // Filter by character if provided
+    if (characterId) {
+      query = query.eq('character_id', characterId)
     }
 
     const { data: suggestions, error } = await query
@@ -90,10 +147,11 @@ export async function GET(req: NextRequest) {
 // PATCH /api/ai/suggestions - Update suggestion status (approve/reject)
 export async function PATCH(req: Request) {
   try {
-    const { suggestionId, action, finalValue } = await req.json() as {
+    const { suggestionId, action, finalValue, rejectReason } = await req.json() as {
       suggestionId: string
       action: 'approve' | 'reject'
       finalValue?: unknown
+      rejectReason?: string
     }
 
     if (!suggestionId || !action) {
@@ -146,15 +204,34 @@ export async function PATCH(req: Request) {
     }
 
     if (action === 'reject') {
-      // Just update status
+      // Update status and store rejection reason if provided
+      const updateData: { status: 'rejected'; final_value?: { reject_reason: string } } = {
+        status: 'rejected',
+      }
+
+      // Validate rejection reason - must be string, max 200 chars, only allowed values
+      if (rejectReason) {
+        const ALLOWED_REASONS = ['incorrect', 'already_handled', 'not_relevant', 'will_add_manually', 'duplicate']
+        if (typeof rejectReason !== 'string' || rejectReason.length > 200) {
+          return new Response(JSON.stringify({ error: 'Invalid rejection reason' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          })
+        }
+        // Only store if it's an allowed value (prevents arbitrary string injection)
+        if (ALLOWED_REASONS.includes(rejectReason)) {
+          updateData.final_value = { reject_reason: rejectReason }
+        }
+      }
+
       const { error } = await supabase
         .from('intelligence_suggestions')
-        .update({ status: 'rejected' })
+        .update(updateData)
         .eq('id', suggestionId)
 
       if (error) throw error
 
-      return new Response(JSON.stringify({ success: true, action: 'rejected' }), {
+      return new Response(JSON.stringify({ success: true, action: 'rejected', rejectReason }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
       })
@@ -219,12 +296,17 @@ export async function PATCH(req: Request) {
 
       if (eventError) throw eventError
 
-      // Mark suggestion as applied
+      // Mark suggestion as applied with correction tracking
+      const suggestedData = suggestion.suggested_value as Record<string, unknown>
+      const trackedFinalValue = finalValue
+        ? trackCorrection(suggestedData, { ...timelineData, timeline_event_id: newEvent.id }, 'timeline_event')
+        : { ...timelineData, timeline_event_id: newEvent.id }
+
       const { error } = await supabase
         .from('intelligence_suggestions')
         .update({
           status: 'applied',
-          final_value: { ...timelineData, timeline_event_id: newEvent.id }
+          final_value: trackedFinalValue
         })
         .eq('id', suggestionId)
 
@@ -311,12 +393,17 @@ export async function PATCH(req: Request) {
 
       if (locationError) throw locationError
 
-      // Mark suggestion as applied
+      // Mark suggestion as applied with correction tracking
+      const suggestedLocData = suggestion.suggested_value as Record<string, unknown>
+      const trackedLocFinalValue = finalValue
+        ? trackCorrection(suggestedLocData, { ...locationData, location_id: newLocation.id }, 'location_detected')
+        : { ...locationData, location_id: newLocation.id }
+
       const { error } = await supabase
         .from('intelligence_suggestions')
         .update({
           status: 'applied',
-          final_value: { ...locationData, location_id: newLocation.id }
+          final_value: trackedLocFinalValue
         })
         .eq('id', suggestionId)
 
@@ -419,12 +506,17 @@ export async function PATCH(req: Request) {
 
       if (questError) throw questError
 
-      // Mark suggestion as applied
+      // Mark suggestion as applied with correction tracking
+      const suggestedQuestData = suggestion.suggested_value as Record<string, unknown>
+      const trackedQuestFinalValue = finalValue
+        ? trackCorrection(suggestedQuestData, { ...questData, quest_id: newQuest.id }, 'quest_detected')
+        : { ...questData, quest_id: newQuest.id }
+
       const { error } = await supabase
         .from('intelligence_suggestions')
         .update({
           status: 'applied',
-          final_value: { ...questData, quest_id: newQuest.id }
+          final_value: trackedQuestFinalValue
         })
         .eq('id', suggestionId)
 
@@ -529,12 +621,17 @@ export async function PATCH(req: Request) {
 
       if (encounterError) throw encounterError
 
-      // Mark suggestion as applied
+      // Mark suggestion as applied with correction tracking
+      const suggestedEncData = suggestion.suggested_value as Record<string, unknown>
+      const trackedEncFinalValue = finalValue
+        ? trackCorrection(suggestedEncData, { ...encounterData, encounter_id: newEncounter.id }, 'encounter_detected')
+        : { ...encounterData, encounter_id: newEncounter.id }
+
       const { error } = await supabase
         .from('intelligence_suggestions')
         .update({
           status: 'applied',
-          final_value: { ...encounterData, encounter_id: newEncounter.id }
+          final_value: trackedEncFinalValue
         })
         .eq('id', suggestionId)
 
@@ -728,12 +825,17 @@ export async function PATCH(req: Request) {
         }
       }
 
-      // Mark suggestion as applied
+      // Mark suggestion as applied with correction tracking
+      const suggestedNpcData = suggestion.suggested_value as Record<string, unknown>
+      const trackedNpcFinalValue = finalValue
+        ? trackCorrection(suggestedNpcData, { ...npcData, character_id: newCharacter.id }, 'npc_detected')
+        : { ...npcData, character_id: newCharacter.id }
+
       const { error } = await supabase
         .from('intelligence_suggestions')
         .update({
           status: 'applied',
-          final_value: { ...npcData, character_id: newCharacter.id }
+          final_value: trackedNpcFinalValue
         })
         .eq('id', suggestionId)
 
@@ -996,6 +1098,161 @@ export async function PATCH(req: Request) {
         action: 'applied',
         message: 'Session-quest link created',
         sessionQuestId: newLink.id
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Handle item_detected suggestions - store as timeline event with item details
+    // Items don't have their own table yet, so we record them as informational suggestions
+    if (suggestion.suggestion_type === 'item_detected') {
+      const itemData = (finalValue ?? suggestion.suggested_value) as {
+        name: string
+        item_type?: string
+        rarity?: string
+        description?: string
+        owner_name?: string
+        location_name?: string
+      }
+
+      // Look up owner character if specified
+      let ownerId: string | null = null
+      if (itemData.owner_name) {
+        const { data: owner } = await supabase
+          .from('characters')
+          .select('id')
+          .eq('campaign_id', suggestion.campaign_id)
+          .ilike('name', itemData.owner_name)
+          .maybeSingle()
+
+        ownerId = owner?.id || null
+      }
+
+      // Look up location if specified
+      let locationId: string | null = null
+      if (itemData.location_name) {
+        const { data: location } = await supabase
+          .from('locations')
+          .select('id')
+          .eq('campaign_id', suggestion.campaign_id)
+          .ilike('name', itemData.location_name)
+          .maybeSingle()
+
+        locationId = location?.id || null
+      }
+
+      // Create a timeline event for the item acquisition/discovery
+      const { data: newEvent, error: eventError } = await supabase
+        .from('timeline_events')
+        .insert({
+          campaign_id: suggestion.campaign_id,
+          title: `Item: ${itemData.name}`,
+          description: [
+            itemData.description,
+            itemData.item_type ? `Type: ${itemData.item_type}` : null,
+            itemData.rarity ? `Rarity: ${itemData.rarity}` : null,
+            itemData.owner_name ? `Owner: ${itemData.owner_name}` : null,
+            itemData.location_name ? `Location: ${itemData.location_name}` : null,
+          ].filter(Boolean).join('\n'),
+          event_type: 'discovery',
+          event_date: new Date().toISOString().split('T')[0],
+          character_id: ownerId,
+          location: itemData.location_name || null,
+          is_major: itemData.rarity === 'legendary' || itemData.rarity === 'artifact',
+        })
+        .select('id')
+        .single()
+
+      if (eventError) throw eventError
+
+      // Mark suggestion as applied
+      const { error } = await supabase
+        .from('intelligence_suggestions')
+        .update({
+          status: 'applied',
+          final_value: { ...itemData, timeline_event_id: newEvent.id, owner_id: ownerId, location_id: locationId }
+        })
+        .eq('id', suggestionId)
+
+      if (error) throw error
+
+      return new Response(JSON.stringify({
+        success: true,
+        action: 'applied',
+        message: 'Item recorded as timeline event',
+        timelineEventId: newEvent.id
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Handle combat_outcome suggestions - update character status and create timeline event
+    if (suggestion.suggestion_type === 'combat_outcome') {
+      const combatData = (finalValue ?? suggestion.suggested_value) as {
+        outcome_type: string
+        character_name?: string
+        description?: string
+        is_pc?: boolean
+      }
+
+      // Look up the affected character
+      let characterId: string | null = null
+      if (combatData.character_name) {
+        const { data: character } = await supabase
+          .from('characters')
+          .select('id')
+          .eq('campaign_id', suggestion.campaign_id)
+          .ilike('name', combatData.character_name)
+          .maybeSingle()
+
+        characterId = character?.id || null
+
+        // If death or injury, update character status
+        if (character && (combatData.outcome_type === 'death' || combatData.outcome_type === 'injury')) {
+          const newStatus = combatData.outcome_type === 'death' ? 'dead' : 'injured'
+          await supabase
+            .from('characters')
+            .update({ status: newStatus })
+            .eq('id', character.id)
+        }
+      }
+
+      // Create a timeline event for the combat outcome
+      const eventType = combatData.outcome_type === 'death' ? 'death' : 'combat'
+      const { data: newEvent, error: eventError } = await supabase
+        .from('timeline_events')
+        .insert({
+          campaign_id: suggestion.campaign_id,
+          title: `${combatData.outcome_type.charAt(0).toUpperCase() + combatData.outcome_type.slice(1)}${combatData.character_name ? `: ${combatData.character_name}` : ''}`,
+          description: combatData.description || `Combat outcome: ${combatData.outcome_type}`,
+          event_type: eventType,
+          event_date: new Date().toISOString().split('T')[0],
+          character_id: characterId,
+          is_major: combatData.outcome_type === 'death' || combatData.is_pc,
+        })
+        .select('id')
+        .single()
+
+      if (eventError) throw eventError
+
+      // Mark suggestion as applied
+      const { error } = await supabase
+        .from('intelligence_suggestions')
+        .update({
+          status: 'applied',
+          final_value: { ...combatData, timeline_event_id: newEvent.id, character_id: characterId }
+        })
+        .eq('id', suggestionId)
+
+      if (error) throw error
+
+      return new Response(JSON.stringify({
+        success: true,
+        action: 'applied',
+        message: `Combat outcome recorded${characterId ? ' and character status updated' : ''}`,
+        timelineEventId: newEvent.id
       }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }

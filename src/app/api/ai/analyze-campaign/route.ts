@@ -197,6 +197,16 @@ export async function POST(req: Request) {
       .eq('campaign_id', campaignId)
       .order('name')
 
+    // Load recent corrections (suggestions that were edited before applying) to learn from user preferences
+    const { data: recentCorrections } = await supabase
+      .from('intelligence_suggestions')
+      .select('suggestion_type, suggested_value, final_value')
+      .eq('campaign_id', campaignId)
+      .eq('status', 'applied')
+      .not('final_value->_correction_metadata', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(20)
+
     // Check if there's anything new to analyze
     const hasNewContent = (updatedSessions?.length ?? 0) > 0 ||
                          (updatedCharacters?.length ?? 0) > 0
@@ -341,6 +351,24 @@ export async function POST(req: Request) {
       return `- ${encounter.name} [${encounter.type}, ${encounter.status}]${difficultyInfo}${locationInfo}`
     }).join('\n')
 
+    // Build corrections context (to learn from user preferences)
+    type CorrectionMetadata = {
+      was_edited: boolean
+      suggestion_type: string
+      corrections: Array<{ field: string; original: unknown; corrected: unknown }>
+    }
+    const correctionsContext = (recentCorrections || [])
+      .filter(c => c.final_value && (c.final_value as { _correction_metadata?: CorrectionMetadata })._correction_metadata?.was_edited)
+      .map(c => {
+        const meta = (c.final_value as { _correction_metadata: CorrectionMetadata })._correction_metadata
+        const corrections = meta.corrections.map(corr => {
+          const origStr = typeof corr.original === 'string' ? corr.original : JSON.stringify(corr.original)
+          const newStr = typeof corr.corrected === 'string' ? corr.corrected : JSON.stringify(corr.corrected)
+          return `  - "${corr.field}": "${origStr}" → "${newStr}"`
+        }).join('\n')
+        return `- Type: ${meta.suggestion_type}\n${corrections}`
+      }).join('\n\n')
+
     // Build NEW content to analyze
     const newSessionContent = (updatedSessions || []).map(s => {
       return `## Session ${s.session_number}: ${s.title || 'Untitled'}
@@ -385,6 +413,14 @@ ${!existingQuests?.length ? '\n⚠️ NO QUESTS RECORDED - Please extract all qu
 
 ## EXISTING ENCOUNTERS (${existingEncounters?.length || 0} encounters)
 ${encountersContext || 'No encounters recorded yet.'}
+${correctionsContext ? `
+
+## LEARNED CORRECTIONS (User Preferences)
+The following corrections were made by the user to previous suggestions. Learn from these patterns and apply similar naming conventions, formatting, or preferences in your new suggestions:
+
+${correctionsContext}
+
+⚠️ IMPORTANT: When making similar suggestions, follow the user's preferred patterns shown above. For example, if they consistently change "The Thieves Guild" to "Shadow Thieves", use "Shadow Thieves" in your suggestions.` : ''}
 
 ---
 
@@ -413,6 +449,8 @@ IMPORTANT INSTRUCTIONS:
 12. LOCATIONS: Extract ALL places mentioned in session notes - cities, towns, villages, taverns, dungeons, temples, regions, landmarks, camps, buildings, etc. ${!existingLocations?.length ? 'NO LOCATIONS EXIST YET - please extract all locations from the session history.' : 'Check existing locations above to avoid duplicates.'} Include location_type and parent_location_name if nested (e.g., a tavern inside a city).
 13. QUESTS: Extract ALL quests, missions, tasks, and objectives from session notes - explicit requests from NPCs, promises the party made, rumors heard, character-driven goals, plot threads. ${!existingQuests?.length ? 'NO QUESTS EXIST YET - please extract all quests from the session history.' : 'Check existing quests above to avoid duplicates.'} Include quest_type (main_quest, side_quest, personal, faction, plot_thread, rumor), status (available or active), quest_giver_name if known, and location_name if a destination is mentioned.
 14. ENCOUNTERS: Extract combat encounters, social encounters, exploration encounters, traps, puzzles, and skill challenges from session notes. ${!existingEncounters?.length ? 'NO ENCOUNTERS EXIST YET - please extract all encounters from the session history.' : 'Check existing encounters above to avoid duplicates.'} Include encounter_type (combat, social, exploration, trap, skill_challenge, puzzle, mixed), status (used if it happened, prepared if mentioned for future), difficulty if discernible (trivial, easy, medium, hard, deadly), location_name if known, and quest_name if tied to a quest.
+15. ITEMS/LOOT: Extract significant items mentioned in session notes - magic items, artifacts, special equipment, quest items, treasure, keys, maps, and notable mundane items. Use suggestion_type "item_detected" with suggested_value containing: name, item_type (weapon, armor, potion, scroll, wondrous_item, artifact, treasure, quest_item, key, map, tool, other), rarity (common, uncommon, rare, very_rare, legendary, artifact) if discernible, description, owner_name if someone possesses it, location_name if found somewhere. Only suggest items that are noteworthy to the story - not every copper piece.
+16. COMBAT OUTCOMES: Extract significant combat results - deaths, injuries, near-death experiences, victories, defeats, surrenders, escapes. Use suggestion_type "combat_outcome" with suggested_value containing: outcome_type (death, injury, near_death, victory, defeat, surrender, escape, capture), character_name (who was affected), description (what happened), is_pc (boolean, true if a player character). Track PC deaths and significant NPC deaths especially.
 
 SESSION CHRONOLOGY NOTE: Sessions are numbered chronologically. Higher session numbers = more recent events. If there are conflicts between sessions, the higher-numbered session represents the current truth. For example, if a location is called "The Old Mill" in session 2 but "The Abandoned Mill" in session 8, use the session 8 name.`
 

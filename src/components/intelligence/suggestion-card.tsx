@@ -30,6 +30,8 @@ import {
   Target,
   Swords,
   Shield,
+  Package,
+  Trophy,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { SuggestionType, ConfidenceLevel, Character } from '@/types/database'
@@ -75,6 +77,8 @@ const SUGGESTION_ICONS: Record<SuggestionType, typeof User> = {
   enrichment: Wand2,
   timeline_issue: Clock,
   summary: FileQuestion,
+  item_detected: Package,
+  combat_outcome: Trophy,
   // Character Intelligence types
   grammar: Type,
   formatting: ListChecks,
@@ -107,6 +111,8 @@ const SUGGESTION_COLORS: Record<SuggestionType, { bg: string; text: string; bord
   enrichment: { bg: 'rgba(56, 189, 248, 0.12)', text: '#38bdf8', border: 'rgba(56, 189, 248, 0.3)' },
   timeline_issue: { bg: 'rgba(251, 146, 60, 0.12)', text: '#fb923c', border: 'rgba(251, 146, 60, 0.3)' },
   summary: { bg: 'rgba(156, 163, 175, 0.12)', text: '#9ca3af', border: 'rgba(156, 163, 175, 0.3)' },
+  item_detected: { bg: 'rgba(212, 168, 67, 0.12)', text: '#d4a843', border: 'rgba(212, 168, 67, 0.3)' },
+  combat_outcome: { bg: 'rgba(220, 38, 38, 0.12)', text: '#dc2626', border: 'rgba(220, 38, 38, 0.3)' },
   // Character Intelligence types
   grammar: { bg: 'rgba(239, 68, 68, 0.12)', text: '#f87171', border: 'rgba(239, 68, 68, 0.3)' },
   formatting: { bg: 'rgba(251, 191, 36, 0.12)', text: '#fbbf24', border: 'rgba(251, 191, 36, 0.3)' },
