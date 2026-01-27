@@ -1,3 +1,3 @@
 export { InteractiveMap, MapPreview } from './InteractiveMap'
-export { MapEditor } from './MapEditor'
+export { MapViewer } from './MapViewer'
 export { CreateMapModal } from './CreateMapModal'

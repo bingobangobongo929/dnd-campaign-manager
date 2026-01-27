@@ -1186,7 +1186,7 @@ export default function SessionDetailPage() {
             </div>
 
             {/* Session Content - Quests & Encounters */}
-            {!isNew && (
+            {!isNew && session && (
               <div className="mb-8">
                 <SessionContent
                   sessionId={session.id}

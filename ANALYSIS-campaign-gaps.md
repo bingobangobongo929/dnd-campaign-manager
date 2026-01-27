@@ -2,6 +2,12 @@
 
 > Comparing current implementation against TTRPG industry standards and professional module requirements.
 
+## Status Key
+- ✅ DONE - Implemented
+- 🚧 TODO - On the roadmap
+- ⏭️ SKIPPED - Deprioritized (not how DMs actually play, publishing feature, or scope creep)
+- ❌ NOT STARTED - Identified but not yet evaluated
+
 ## Current State Summary
 
 The app has three content types:
@@ -11,7 +17,7 @@ The app has three content types:
 
 ## Major Gaps Identified
 
-### 1. Story Architecture (CRITICAL)
+### 1. Story Architecture ⏭️ SKIPPED
 
 **Current**: Campaigns have no internal structure. Content is organized by feature (sessions, lore, timeline) not by narrative.
 
@@ -23,16 +29,19 @@ The app has three content types:
 
 **Why it matters**: Official modules are organized by story flow, not by content type. A DM needs to see "Chapter 3: The Amber Temple" not "all my lore entries."
 
+**Why skipped**: This is how *published modules* are organized, not how homebrew DMs run games. DMs think in sessions, quests, and "what's next" - not formal chapter structure. The current sessions + quests + timeline system covers real use.
+
 ---
 
-### 2. Location Hierarchy (CRITICAL)
+### 2. Location Hierarchy ✅ DONE (schema) / 🚧 TODO (UI polish)
 
 **Current**:
-- Vault has `vault_locations` table (basic)
-- Campaigns have no structured location system
-- Maps exist but aren't linked to location data
+- `locations` table with `parent_location_id` for hierarchy
+- Location types, descriptions, map integration
+- Character-location associations
+- Map pin linking
 
-**Needed**:
+**Implemented**:
 ```
 World/Setting
   └── Regions (e.g., Sword Coast)
@@ -42,65 +51,61 @@ World/Setting
                       └── Rooms/Areas (e.g., Common Room)
 ```
 
-Each level should support:
-- Description and history
-- Associated NPCs
-- Events that occurred there
-- Connected locations
-- Map markers
+Each level supports:
+- ✅ Description and history
+- ✅ Associated NPCs (character_location_associations)
+- ✅ Connected locations (parent_location_id)
+- ✅ Map markers (map_id, map_pin_x/y)
+- 🚧 Events that occurred there (needs UI)
 
-**Why it matters**: "Where is this NPC?" and "What's in this town?" are the most common DM questions.
+**Remaining**: UI for viewing location hierarchy (tree view), better NPC associations display.
 
 ---
 
-### 3. Quest/Plot Thread System (HIGH)
+### 3. Quest/Plot Thread System ✅ DONE
 
-**Current**: No quest tracking. Plot threads are scattered in session notes and lore.
-
-**Needed**:
+**Implemented** (migration 082):
 - Quest/mission entities with:
-  - Title, description, objectives
-  - Quest giver NPC
-  - Rewards
-  - Status (available, active, completed, failed)
-  - Prerequisites/dependencies
-  - Related locations
-  - Related NPCs
-- Plot thread tracking (ongoing mysteries, unresolved hooks)
-
-**Why it matters**: DMs need to track "what's happening" not just "what exists."
-
----
-
-### 4. Encounter System for Campaigns (HIGH)
-
-**Current**: Oneshots have structured encounters. Campaigns do not.
-
-**Needed**: Campaign encounters with:
-- Combat encounters (monsters, difficulty, terrain)
-- Social encounters (NPCs, stakes, outcomes)
-- Exploration encounters (challenges, discoveries)
-- Trap/hazard encounters
-- Link to location and chapter/scene
-
-**Why it matters**: Encounters are the atomic unit of play. They need structure.
+  - ✅ Title, description, objectives (`quest_objectives` table)
+  - ✅ Quest giver NPC (`quest_giver_id`)
+  - ✅ Rewards (description, xp, gold)
+  - ✅ Status (available, active, completed, failed, abandoned)
+  - ⏭️ Prerequisites/dependencies (skipped - video game concept, not TTRPG)
+  - ✅ Related locations (`quest_giver_location_id`, `objective_location_id`)
+  - ✅ Related NPCs (`quest_characters` table with roles)
+- ✅ Plot thread tracking (type includes `plot_thread`, `rumor`)
+- ✅ Sub-quest hierarchy (`parent_quest_id`)
+- ✅ Session linking (`session_quests` table)
+- ✅ Full UI with Kanban board, list, and detail views
 
 ---
 
-### 5. Read-Aloud/Boxed Text (MEDIUM)
+### 4. Encounter System for Campaigns ✅ DONE
 
-**Current**: Rich text in lore and session notes, but no "boxed text" concept.
-
-**Needed**:
-- Distinct "read-aloud" text blocks
-- DM-only notes adjacent to read-aloud
-- Easy toggle between player-visible and DM-only
-
-**Why it matters**: Core feature of published modules. DMs read boxed text aloud, then consult notes.
+**Implemented** (migration 082):
+- ✅ Combat encounters (enemies JSONB, difficulty, tactics, terrain)
+- ✅ Social encounters (stakes, npc_goals)
+- ✅ Exploration encounters (type: 'exploration')
+- ✅ Trap/hazard encounters (type: 'trap')
+- ✅ Skill challenges and puzzles (type: 'skill_challenge', 'puzzle')
+- ✅ Link to location (`location_id`)
+- ✅ Link to quest (`quest_id`)
+- ✅ Session tracking (`planned_session`, `played_session`)
+- ✅ Session linking (`session_encounters` table)
+- ✅ Read-aloud text (`boxed_text` field)
+- ✅ Full UI with filtering, status management
 
 ---
 
-### 6. Session Zero Framework (MEDIUM)
+### 5. Read-Aloud/Boxed Text ⏭️ SKIPPED
+
+**Current**: Rich text in lore and session notes. Encounters have `boxed_text` field.
+
+**Why skipped**: This is a publishing feature. Homebrew DMs improvise descriptions, they don't write scripts. The description fields and encounters `boxed_text` cover the rare cases where someone wants this.
+
+---
+
+### 6. Session Zero Framework 🚧 TODO
 
 **Current**:
 - `is_session0_ready` flag
@@ -115,63 +120,49 @@ Each level should support:
 - Character creation guidelines
 - Session logistics (frequency, duration, cancellation policy)
 
-**Why it matters**: Session 0 is standard practice. The app should guide users through it.
+**Why it matters**: Session 0 is standard practice. Actually matters for real games, especially online with strangers. Keep it simple - form/checklist approach, not a complex system.
+
+**Approach**: Simple guided form that captures the essentials. Can be shared with players as a "campaign pitch" page.
 
 ---
 
-### 7. Items/Treasure System (MEDIUM)
+### 7. Items/Treasure System 🚧 TODO (simplified)
 
 **Current**: No structured item/treasure tracking.
 
-**Needed**:
-- Magic items database (campaign-specific)
-- Treasure parcels (what's found where)
-- Item distribution tracking (who has what)
-- Loot tables
+**Simplified scope**:
+- Party loot/treasury tracking (simple list)
+- Notable magic items (name, description, who has it)
+- ~~Treasure parcels~~ (overkill)
+- ~~Loot tables~~ (scope creep - use external tools)
 
-**Why it matters**: Published modules have extensive magic item appendices.
+**Approach**: Simple "Party Inventory" section - a list of notable items with optional assignment to characters. Not a full inventory management system.
 
 ---
 
-### 8. Calendar/In-Game Time (MEDIUM)
+### 8. Calendar/In-Game Time ⏭️ SKIPPED
 
 **Current**:
 - Timeline exists with events
 - Session dates tracked
-- No in-game calendar
 
-**Needed**:
-- In-game date tracking (different calendar systems)
-- Festival/holiday definitions
-- Event scheduling on in-game dates
-- Travel time calculations
-- Day/night cycle awareness
-
-**Why it matters**: "It's been 3 tendays since..." is common in play.
+**Why skipped**: Niche hobby. Most tables say "a few days pass" and move on. Forgotten Realms calendar enthusiasts exist but are a minority. Festival tracking, travel calculations, custom calendar systems - all scope creep for a small audience. DMs who want this have dedicated tools.
 
 ---
 
-### 9. Handouts System (LOWER)
+### 9. Handouts System ⏭️ SKIPPED
 
-**Current**: Gallery for images. No handout concept.
+**Current**: Gallery for images.
 
-**Needed**:
-- Player-facing handouts (letters, maps, documents)
-- Handout reveal status (shown/hidden)
-- Handout categories
-- Print-friendly export
+**Why skipped**: Gallery already covers images. Formal "handout reveal status" is a VTT feature, not a campaign manager feature. DMs who need handouts just upload to Gallery or share via Discord/etc.
 
 ---
 
-### 10. Random Tables (LOWER)
+### 10. Random Tables ⏭️ SKIPPED
 
-**Current**: None visible.
+**Current**: None.
 
-**Needed**:
-- Custom random tables
-- Table rolling interface
-- Pre-built tables (names, encounters, weather)
-- Table results history
+**Why skipped**: Dedicated sites exist (donjon, Chartopia, etc.). Building this is scope creep into a different product category. DMs who want random tables already have tools they love.
 
 ---
 
@@ -183,52 +174,51 @@ Each level should support:
 - Character claiming workflow
 - Export to vault with source tracking
 
-### Missing Integration
-1. **Quest associations**: Characters aren't linked to quests they're involved in
-2. **Location history**: No tracking of where characters have been
-3. **Relationship to NPCs**: Campaign characters have relationships, but vault sync doesn't preserve campaign-specific relationships
-4. **Item ownership**: No structured way to track what items a character has
-5. **Character arc tracking**: No way to track character development across sessions
+### Integration Status
+1. **Quest associations**: ✅ DONE - `quest_giver_id`, `quest_characters` table
+2. **Location history**: ⏭️ SKIPPED - Rarely tracked in practice
+3. **Relationship to NPCs**: ✅ DONE - `canvas_relationships` system
+4. **Item ownership**: 🚧 TODO - Part of simplified Items/Treasure system
+5. **Character arc tracking**: ⏭️ SKIPPED - DMs don't formally track this
 
 ---
 
-## Terminology Alignment Issues
+## Terminology Alignment Issues ⏭️ SKIPPED
 
 ### Current
 - `duration_type: 'adventure'` on campaigns table
 - Separate `oneshots` table
 
-### Problem
-- "Adventure" in TTRPG means a 1-9 session storyline, which could be:
-  - Standalone
-  - Part of a larger campaign
-  - A published module
-- Current implementation treats "adventure" as "short campaign" rather than "story arc within campaign"
+### Original Recommendation
+Add Adventure/Arc as middle layer between Campaign and content.
 
-### Recommendation
-Consider restructuring:
-- **Campaign**: The container (ongoing game with players)
-- **Adventure/Arc**: Story units within a campaign (could have multiple)
-- **Oneshot**: Remains separate (single-session, self-contained)
+### Why Skipped
+Adds complexity without clear user benefit. Most DMs either:
+- Run a single continuous campaign
+- Run distinct oneshots
 
-This would allow:
-- Running published modules as adventures within a homebrew campaign
-- Tracking multiple story arcs
-- Better matching industry terminology
+The "adventure within campaign" concept can be handled with quest grouping or simple notes. Not worth restructuring the data model.
 
 ---
 
-## Priority Ranking
+## Priority Ranking (Updated)
 
-| Gap | Priority | Effort | Impact |
-|-----|----------|--------|--------|
-| Story Architecture (chapters/acts) | CRITICAL | High | Transforms organization |
-| Location Hierarchy | CRITICAL | High | Core DM need |
-| Quest/Plot Thread System | HIGH | Medium | Gameplay tracking |
-| Encounter System | HIGH | Medium | Core content type |
-| Session Zero Framework | MEDIUM | Low | Onboarding improvement |
-| Read-Aloud Text | MEDIUM | Low | Module parity |
-| Items/Treasure | MEDIUM | Medium | Module parity |
-| Calendar/Time | MEDIUM | Medium | Immersion feature |
-| Handouts | LOWER | Low | Nice to have |
-| Random Tables | LOWER | Low | Nice to have |
+| Gap | Status | Notes |
+|-----|--------|-------|
+| Story Architecture (chapters/acts) | ⏭️ SKIPPED | Publishing feature, not how DMs run games |
+| Location Hierarchy | ✅ DONE | Schema complete, UI needs polish |
+| Quest/Plot Thread System | ✅ DONE | Full implementation with UI |
+| Encounter System | ✅ DONE | Full implementation with UI |
+| Session Zero Framework | 🚧 TODO | Keep simple - guided form |
+| Read-Aloud Text | ⏭️ SKIPPED | Encounters have boxed_text, enough |
+| Items/Treasure | 🚧 TODO | Simplified: party loot list only |
+| Calendar/Time | ⏭️ SKIPPED | Niche, external tools exist |
+| Handouts | ⏭️ SKIPPED | Gallery covers it |
+| Random Tables | ⏭️ SKIPPED | Out of scope, external tools |
+
+## Active TODO List
+
+1. **Session Zero Framework** - Simple guided form for campaign setup
+2. **Items/Treasure** - Simple party loot tracking
+3. **Location UI polish** - Tree view, better hierarchy display
+4. **Maps review** - Evaluate current state, remove bloat

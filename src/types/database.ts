@@ -4373,7 +4373,13 @@ export type MapAssetUpdate = Database['public']['Tables']['map_assets']['Update'
 export type AssetCategory = 'terrain' | 'building' | 'nature' | 'icon' | 'decoration' | 'people' | 'creature' | 'effect'
 
 // World map type enums
-export type WorldMapType = 'world' | 'region' | 'city' | 'dungeon' | 'building' | 'encounter' | 'sketch'
+export type WorldMapType = 'world' | 'region' | 'city' | 'settlement' | 'fortress' | 'dungeon' | 'interior' | 'wilderness' | 'vehicle' | 'plane' | 'building' | 'encounter' | 'sketch' | 'custom'
+
+// Extended WorldMap type with custom type fields
+export interface WorldMapExtended extends WorldMap {
+  custom_type?: string | null
+  custom_emoji?: string | null
+}
 export type ScaleUnit = 'miles' | 'km' | 'feet' | 'meters'
 
 // Dashboard layouts

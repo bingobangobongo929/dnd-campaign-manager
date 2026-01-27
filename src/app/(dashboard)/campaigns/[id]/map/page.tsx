@@ -1,8 +1,17 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Map, Trash2, Loader2, Pencil, Eye, ChevronLeft, Plus, Settings, Layers } from 'lucide-react'
+import {
+  Map,
+  Plus,
+  Trash2,
+  ArrowLeft,
+  MapPin,
+  Filter,
+  Eye,
+  Pencil,
+} from 'lucide-react'
 import { Modal, AccessDeniedPage } from '@/components/ui'
 import { AppLayout, CampaignPageHeader } from '@/components/layout'
 import {
@@ -13,14 +22,34 @@ import {
 } from '@/components/campaign'
 import { ResizeToolbar } from '@/components/canvas'
 import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
-import { InteractiveMap, MapEditor, CreateMapModal } from '@/components/maps'
+import { MapViewer, CreateMapModal } from '@/components/maps'
 import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { CampaignMapPageMobile } from './page.mobile'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
-import type { Campaign, WorldMap, MapPin } from '@/types/database'
+import type { Campaign, WorldMap as WorldMapBase } from '@/types/database'
 
-type ViewMode = 'view' | 'edit'
+// Extended WorldMap type with custom type fields (added in migration 090)
+interface WorldMap extends WorldMapBase {
+  custom_type?: string | null
+  custom_emoji?: string | null
+}
+
+// Map type configuration with icons
+const MAP_TYPES = {
+  world: { icon: '🌍', label: 'World' },
+  region: { icon: '🗺️', label: 'Region' },
+  settlement: { icon: '🏰', label: 'Settlement' },
+  fortress: { icon: '🏯', label: 'Fortress' },
+  dungeon: { icon: '⚔️', label: 'Dungeon' },
+  interior: { icon: '🏠', label: 'Interior' },
+  wilderness: { icon: '⛺', label: 'Wilderness' },
+  vehicle: { icon: '⛵', label: 'Vehicle' },
+  plane: { icon: '✨', label: 'Plane' },
+  custom: { icon: '✏️', label: 'Custom' },
+} as const
+
+type MapType = keyof typeof MAP_TYPES
 
 export default function WorldMapPage() {
   const params = useParams()
@@ -36,12 +65,11 @@ export default function WorldMapPage() {
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [maps, setMaps] = useState<WorldMap[]>([])
+  const [pinCounts, setPinCounts] = useState<Record<string, number>>({})
   const [selectedMap, setSelectedMap] = useState<WorldMap | null>(null)
-  const [pins, setPins] = useState<MapPin[]>([])
   const [loading, setLoading] = useState(true)
-  const [viewMode, setViewMode] = useState<ViewMode>('view')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [filterType, setFilterType] = useState<MapType | 'all'>('all')
   const [error, setError] = useState<string | null>(null)
 
   // Modal state for burger menu
@@ -58,13 +86,6 @@ export default function WorldMapPage() {
     }
   }, [user, campaignId])
 
-  // Load pins and drawings when selected map changes
-  useEffect(() => {
-    if (selectedMap) {
-      loadMapData(selectedMap.id)
-    }
-  }, [selectedMap?.id])
-
   const loadData = async () => {
     setLoading(true)
 
@@ -80,6 +101,7 @@ export default function WorldMapPage() {
     }
     setCampaign(campaignData)
 
+    // Load maps
     const { data: mapsData } = await supabase
       .from('world_maps')
       .select('*')
@@ -87,25 +109,26 @@ export default function WorldMapPage() {
       .order('created_at', { ascending: false })
 
     setMaps(mapsData || [])
+
+    // Load pin counts for each map
     if (mapsData && mapsData.length > 0) {
-      setSelectedMap(mapsData[0])
+      const mapIds = mapsData.map(m => m.id)
+      const { data: pinsData } = await supabase
+        .from('map_pins')
+        .select('map_id')
+        .in('map_id', mapIds)
+
+      const counts: Record<string, number> = {}
+      pinsData?.forEach(pin => {
+        counts[pin.map_id] = (counts[pin.map_id] || 0) + 1
+      })
+      setPinCounts(counts)
     }
+
     setLoading(false)
   }
 
-  const loadMapData = async (mapId: string) => {
-    // Load pins
-    const { data: pinsData } = await supabase
-      .from('map_pins')
-      .select('*')
-      .eq('map_id', mapId)
-      .order('created_at', { ascending: true })
-
-    setPins(pinsData || [])
-  }
-
   const handleMapCreated = async (mapId: string) => {
-    // Fetch the newly created map
     const { data: newMap } = await supabase
       .from('world_maps')
       .select('*')
@@ -114,19 +137,15 @@ export default function WorldMapPage() {
 
     if (newMap) {
       setMaps([newMap, ...maps])
-      setSelectedMap(newMap)
+      setSelectedMap(newMap) // Open the new map in viewer
     }
     setIsCreateModalOpen(false)
-    // Start in edit mode for new maps
-    if (isDm) {
-      setViewMode('edit')
-    }
   }
 
-  const handleDelete = async (map: WorldMap) => {
+  const handleDelete = async (map: WorldMap, e?: React.MouseEvent) => {
+    e?.stopPropagation()
     if (!confirm(`Delete "${map.name || 'this map'}"? This cannot be undone.`)) return
 
-    // Extract path from URL for deletion
     if (map.image_url) {
       const urlParts = map.image_url.split('/world-maps/')
       if (urlParts.length > 1) {
@@ -136,27 +155,9 @@ export default function WorldMapPage() {
 
     await supabase.from('world_maps').delete().eq('id', map.id)
 
-    const newMaps = maps.filter(m => m.id !== map.id)
-    setMaps(newMaps)
+    setMaps(maps.filter(m => m.id !== map.id))
     if (selectedMap?.id === map.id) {
-      setSelectedMap(newMaps[0] || null)
-      setViewMode('view')
-    }
-  }
-
-  const handleMapSettingsUpdate = async (settings: Partial<WorldMap>) => {
-    if (!selectedMap) return
-
-    const { data, error } = await supabase
-      .from('world_maps')
-      .update(settings)
-      .eq('id', selectedMap.id)
-      .select()
-      .single()
-
-    if (!error && data) {
-      setSelectedMap(data)
-      setMaps(maps.map(m => m.id === data.id ? data : m))
+      setSelectedMap(null)
     }
   }
 
@@ -164,8 +165,23 @@ export default function WorldMapPage() {
     const targetMap = maps.find(m => m.id === mapId)
     if (targetMap) {
       setSelectedMap(targetMap)
-      setViewMode('view')
     }
+  }
+
+  // Filter maps
+  const filteredMaps = filterType === 'all'
+    ? maps
+    : maps.filter(m => m.map_type === filterType || (filterType === 'custom' && m.custom_type))
+
+  // Get unique types that exist in the campaign
+  const existingTypes = [...new Set(maps.map(m => m.map_type || 'world'))]
+
+  const getMapTypeInfo = (map: WorldMap) => {
+    if (map.custom_type && map.custom_emoji) {
+      return { icon: map.custom_emoji, label: map.custom_type }
+    }
+    const mapType = (map.map_type || 'world') as MapType
+    return MAP_TYPES[mapType] || MAP_TYPES.world
   }
 
   // ============ MOBILE LAYOUT ============
@@ -204,7 +220,7 @@ export default function WorldMapPage() {
     )
   }
 
-  // Permission check - must be a member with view permission
+  // Permission check
   if (!isMember || !can.viewMaps) {
     return (
       <AppLayout campaignId={campaignId} hideHeader>
@@ -216,8 +232,32 @@ export default function WorldMapPage() {
     )
   }
 
+  // ============ LIGHTBOX VIEW (when a map is selected) ============
+  if (selectedMap) {
+    return (
+      <AppLayout campaignId={campaignId} hideHeader fullBleed>
+        <MapViewer
+          campaignId={campaignId}
+          map={selectedMap}
+          maps={maps}
+          isDm={isDm}
+          canEditPins={can.editPin}
+          canDelete={can.deleteMap}
+          onBack={() => setSelectedMap(null)}
+          onNavigateToMap={handleNavigateToMap}
+          onDelete={() => handleDelete(selectedMap)}
+          onUpdate={(updates) => {
+            setMaps(maps.map(m => m.id === selectedMap.id ? { ...m, ...updates } : m))
+            setSelectedMap({ ...selectedMap, ...updates })
+          }}
+        />
+      </AppLayout>
+    )
+  }
+
+  // ============ GALLERY VIEW (default) ============
   return (
-    <AppLayout campaignId={campaignId} hideHeader fullBleed>
+    <AppLayout campaignId={campaignId} hideHeader>
       {/* Page Header with Burger Menu */}
       <CampaignPageHeader
         campaign={campaign}
@@ -250,11 +290,14 @@ export default function WorldMapPage() {
               <Map className="w-10 h-10 text-[--arcane-purple]" />
             </div>
             <h2 className="text-2xl font-display font-semibold text-[--text-primary] mb-3">
-              No World Maps Yet
+              No Maps Yet
             </h2>
-            <p className="text-[--text-secondary] mb-8 leading-relaxed">
-              Create interactive maps for your campaign world, dungeons, cities, or regions.
-              Upload existing maps, conjure new ones with AI, or build from scratch.
+            <p className="text-[--text-secondary] mb-4 leading-relaxed">
+              Upload world maps, city maps, dungeons, or any other maps for your campaign.
+              Add pins to mark important locations and link them to your campaign content.
+            </p>
+            <p className="text-xs text-purple-400/80 mb-6 max-w-sm mx-auto italic">
+              Create maps with Inkarnate, Dungeondraft, or hand-draw and scan them.
             </p>
             {can.addMap && (
               <button
@@ -262,199 +305,141 @@ export default function WorldMapPage() {
                 className="btn btn-primary btn-lg"
               >
                 <Plus className="w-5 h-5" />
-                Create Your First Map
+                Add Your First Map
               </button>
-            )}
-            {error && (
-              <p className="mt-4 text-sm text-[--arcane-ember]">{error}</p>
             )}
           </div>
         </div>
       ) : (
-        /* Map Viewer/Editor */
-        <div className="h-[calc(100vh-120px)] flex flex-col">
-          {/* Map Toolbar */}
-          <div className="flex items-center justify-between px-6 py-3 border-b border-[--border] bg-[--bg-surface]">
-            <div className="flex items-center gap-3">
-              {/* Back button when in nested map */}
-              {selectedMap?.parent_map_id && (
-                <button
-                  onClick={() => handleNavigateToMap(selectedMap.parent_map_id!)}
-                  className="btn-ghost btn-icon w-8 h-8"
-                  title="Back to parent map"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-              )}
-
-              <h1 className="text-lg font-semibold text-[--text-primary]">
-                {selectedMap?.name || 'World Map'}
-              </h1>
-
-              {selectedMap?.map_type && selectedMap.map_type !== 'world' && (
-                <span className="px-2 py-0.5 text-xs rounded-full bg-[--arcane-purple]/10 text-[--arcane-purple] capitalize">
-                  {selectedMap.map_type}
-                </span>
-              )}
-
-              {maps.length > 1 && (
-                <select
-                  value={selectedMap?.id || ''}
-                  onChange={(e) => {
-                    setSelectedMap(maps.find(m => m.id === e.target.value) || null)
-                    setViewMode('view')
-                  }}
-                  className="form-input py-1.5 text-sm"
-                >
-                  {maps.map(m => (
-                    <option key={m.id} value={m.id}>{m.name || 'Untitled Map'}</option>
-                  ))}
-                </select>
-              )}
+        /* Gallery Grid */
+        <div className="p-6">
+          {/* Header with filter */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="page-title">Maps</h1>
+              <p className="text-sm text-[--text-tertiary]">{maps.length} map{maps.length !== 1 ? 's' : ''}</p>
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* View/Edit Toggle - Only for DMs */}
-              {isDm && selectedMap && (
-                <div className="flex items-center rounded-lg border border-[--border] overflow-hidden">
-                  <button
-                    onClick={() => setViewMode('view')}
-                    className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors',
-                      viewMode === 'view'
-                        ? 'bg-[--arcane-purple] text-white'
-                        : 'text-[--text-secondary] hover:text-[--text-primary] hover:bg-[--bg-elevated]'
-                    )}
+            <div className="flex items-center gap-3">
+              {/* Filter dropdown */}
+              {existingTypes.length > 1 && (
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-[--text-tertiary]" />
+                  <select
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value as MapType | 'all')}
+                    className="form-input py-1.5 text-sm min-w-[140px]"
                   >
-                    <Eye className="w-4 h-4" />
-                    View
-                  </button>
-                  <button
-                    onClick={() => setViewMode('edit')}
-                    className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors',
-                      viewMode === 'edit'
-                        ? 'bg-[--arcane-purple] text-white'
-                        : 'text-[--text-secondary] hover:text-[--text-primary] hover:bg-[--bg-elevated]'
-                    )}
-                  >
-                    <Pencil className="w-4 h-4" />
-                    Edit
-                  </button>
+                    <option value="all">All Types</option>
+                    {existingTypes.map(type => {
+                      const info = MAP_TYPES[type as MapType] || MAP_TYPES.world
+                      return (
+                        <option key={type} value={type}>
+                          {info.icon} {info.label}
+                        </option>
+                      )
+                    })}
+                  </select>
                 </div>
-              )}
-
-              {/* Map Settings */}
-              {isDm && selectedMap && (
-                <button
-                  onClick={() => setIsSettingsOpen(true)}
-                  className="btn-ghost btn-icon w-8 h-8"
-                  title="Map settings"
-                >
-                  <Settings className="w-4 h-4" />
-                </button>
               )}
 
               {can.addMap && (
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
-                  className="btn btn-secondary btn-sm"
+                  className="btn btn-primary"
                 >
                   <Plus className="w-4 h-4" />
-                  New Map
-                </button>
-              )}
-
-              {can.deleteMap && selectedMap && (
-                <button
-                  onClick={() => handleDelete(selectedMap)}
-                  className="btn-ghost btn-icon w-8 h-8 text-[--arcane-ember]"
-                  title="Delete map"
-                >
-                  <Trash2 className="w-4 h-4" />
+                  Add Map
                 </button>
               )}
             </div>
           </div>
 
-          {/* Map Display */}
-          <div className="flex-1 overflow-hidden bg-[--bg-base]">
-            {selectedMap && viewMode === 'view' && (
-              <InteractiveMap
-                campaignId={campaignId}
-                mapId={selectedMap.id}
-                imageUrl={selectedMap.image_url}
-                isDm={isDm}
-                className="h-full"
-                onPinClick={(pin) => {
-                  if (pin.linked_map_id) {
-                    handleNavigateToMap(pin.linked_map_id)
-                  }
-                }}
-              />
-            )}
+          {/* Map Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {filteredMaps.map((map) => {
+              const typeInfo = getMapTypeInfo(map)
+              const count = pinCounts[map.id] || 0
 
-            {selectedMap && viewMode === 'edit' && (
-              <MapEditor
-                campaignId={campaignId}
-                map={selectedMap}
-                isDm={isDm}
-                onPinClick={(pin) => {
-                  if (pin.linked_map_id) {
-                    handleNavigateToMap(pin.linked_map_id)
-                  }
-                }}
-                onMapLinkClick={handleNavigateToMap}
-                onSave={(updates) => {
-                  handleMapSettingsUpdate(updates)
-                  loadMapData(selectedMap.id)
-                }}
-                className="h-full"
-              />
-            )}
-          </div>
-
-          {/* Map Thumbnails */}
-          {maps.length > 1 && viewMode === 'view' && (
-            <div className="px-6 py-3 border-t border-[--border] bg-[--bg-surface]">
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {maps.map(map => (
-                  <button
-                    key={map.id}
-                    onClick={() => {
-                      setSelectedMap(map)
-                      setViewMode('view')
-                    }}
-                    className={cn(
-                      'relative w-20 h-14 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all',
-                      selectedMap?.id === map.id
-                        ? 'border-[--arcane-purple] ring-2 ring-[--arcane-purple]/30'
-                        : 'border-[--border] hover:border-[--text-tertiary]'
-                    )}
-                  >
+              return (
+                <button
+                  key={map.id}
+                  onClick={() => setSelectedMap(map)}
+                  className="group relative bg-[--bg-elevated] rounded-xl border border-[--border] overflow-hidden text-left hover:border-[--arcane-purple]/50 hover:shadow-lg hover:shadow-purple-500/5 transition-all"
+                >
+                  {/* Thumbnail */}
+                  <div className="aspect-[4/3] relative bg-[--bg-surface]">
                     {map.image_url ? (
                       <Image
                         src={map.image_url}
-                        alt={map.name || 'Map thumbnail'}
+                        alt={map.name || 'Map'}
                         fill
-                        className="object-cover"
-                        sizes="80px"
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-[--bg-elevated]">
-                        <Map className="w-6 h-6 text-[--text-tertiary]" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Map className="w-12 h-12 text-[--text-tertiary]" />
                       </div>
                     )}
-                    {map.map_type && map.map_type !== 'world' && (
-                      <span className="absolute bottom-0.5 right-0.5 px-1 py-0.5 text-[9px] rounded bg-black/50 text-white capitalize">
-                        {map.map_type}
+
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                      <span className="text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+                        <Eye className="w-4 h-4" />
+                        View Map
                       </span>
+                    </div>
+
+                    {/* Delete button (DM only) */}
+                    {can.deleteMap && (
+                      <button
+                        onClick={(e) => handleDelete(map, e)}
+                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 hover:bg-[--arcane-ember] transition-all"
+                        title="Delete map"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+                  </div>
+
+                  {/* Card info */}
+                  <div className="p-3">
+                    <h3 className="font-medium text-[--text-primary] truncate">
+                      {map.name || 'Untitled Map'}
+                    </h3>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-xs text-[--text-tertiary] flex items-center gap-1">
+                        <span>{typeInfo.icon}</span>
+                        <span>{typeInfo.label}</span>
+                      </span>
+                      {count > 0 && (
+                        <span className="text-xs text-[--text-tertiary] flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {count}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+
+            {/* Add Map Card */}
+            {can.addMap && (
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="aspect-[4/3] flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-[--border] hover:border-[--arcane-purple]/50 hover:bg-[--bg-elevated] transition-colors group"
+              >
+                <div className="w-12 h-12 rounded-full bg-[--bg-elevated] group-hover:bg-[--arcane-purple]/10 flex items-center justify-center mb-3 transition-colors">
+                  <Plus className="w-6 h-6 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
+                </div>
+                <span className="text-sm text-[--text-secondary] group-hover:text-[--text-primary]">
+                  Add Map
+                </span>
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -467,141 +452,7 @@ export default function WorldMapPage() {
         supabase={supabase}
       />
 
-      {/* Map Settings Modal */}
-      <Modal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        title="Map Settings"
-        description="Configure map display options"
-      >
-        {selectedMap && (
-          <div className="space-y-4">
-            {/* Map Name */}
-            <div className="form-group">
-              <label className="form-label">Map Name</label>
-              <input
-                type="text"
-                value={selectedMap.name || ''}
-                onChange={(e) => handleMapSettingsUpdate({ name: e.target.value })}
-                className="form-input"
-                placeholder="Enter map name"
-              />
-            </div>
-
-            {/* Map Type */}
-            <div className="form-group">
-              <label className="form-label">Map Type</label>
-              <select
-                value={selectedMap.map_type || 'world'}
-                onChange={(e) => handleMapSettingsUpdate({ map_type: e.target.value as WorldMap['map_type'] })}
-                className="form-input"
-              >
-                <option value="world">World</option>
-                <option value="region">Region</option>
-                <option value="city">City</option>
-                <option value="dungeon">Dungeon</option>
-                <option value="building">Building</option>
-                <option value="encounter">Encounter</option>
-                <option value="sketch">Sketch</option>
-              </select>
-            </div>
-
-            {/* Description */}
-            <div className="form-group">
-              <label className="form-label">Description</label>
-              <textarea
-                value={selectedMap.description || ''}
-                onChange={(e) => handleMapSettingsUpdate({ description: e.target.value })}
-                className="form-input min-h-[80px]"
-                placeholder="Optional description..."
-              />
-            </div>
-
-            {/* Grid Settings */}
-            <div className="space-y-3">
-              <label className="form-label flex items-center gap-2">
-                <Layers className="w-4 h-4" />
-                Grid Settings
-              </label>
-
-              <label className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={selectedMap.grid_enabled || false}
-                  onChange={(e) => handleMapSettingsUpdate({ grid_enabled: e.target.checked })}
-                  className="rounded border-[--border]"
-                />
-                <span className="text-sm text-[--text-primary]">Show grid overlay</span>
-              </label>
-
-              {selectedMap.grid_enabled && (
-                <div className="pl-6 space-y-3">
-                  <div className="form-group">
-                    <label className="form-label text-sm">Grid Size (px)</label>
-                    <input
-                      type="number"
-                      value={selectedMap.grid_size || 50}
-                      onChange={(e) => handleMapSettingsUpdate({ grid_size: parseInt(e.target.value) || 50 })}
-                      className="form-input"
-                      min={10}
-                      max={200}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label text-sm">Grid Color</label>
-                    <input
-                      type="text"
-                      value={selectedMap.grid_color || 'rgba(255,255,255,0.1)'}
-                      onChange={(e) => handleMapSettingsUpdate({ grid_color: e.target.value })}
-                      className="form-input"
-                      placeholder="rgba(255,255,255,0.1)"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Scale Settings */}
-            <div className="space-y-3">
-              <label className="form-label">Scale (for distance measurement)</label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={selectedMap.scale_value || ''}
-                  onChange={(e) => handleMapSettingsUpdate({ scale_value: parseFloat(e.target.value) || null })}
-                  className="form-input flex-1"
-                  placeholder="e.g., 10"
-                />
-                <select
-                  value={selectedMap.scale_unit || 'miles'}
-                  onChange={(e) => handleMapSettingsUpdate({ scale_unit: e.target.value as 'miles' | 'km' | 'feet' | 'meters' })}
-                  className="form-input w-28"
-                >
-                  <option value="miles">miles</option>
-                  <option value="km">km</option>
-                  <option value="feet">feet</option>
-                  <option value="meters">meters</option>
-                </select>
-              </div>
-              <p className="text-xs text-[--text-tertiary]">
-                1 inch on the map = {selectedMap.scale_value || '?'} {selectedMap.scale_unit || 'miles'}
-              </p>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4 border-t border-[--border]">
-              <button
-                className="btn btn-secondary"
-                onClick={() => setIsSettingsOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      {/* Modals */}
+      {/* Burger Menu Modals */}
       <PartyModal
         campaignId={campaignId}
         characters={[]}
