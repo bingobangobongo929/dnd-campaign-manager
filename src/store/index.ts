@@ -85,6 +85,8 @@ interface AppState extends PersistedSettings {
   setIsCharacterPanelOpen: (open: boolean) => void
   isAIAssistantOpen: boolean
   setIsAIAssistantOpen: (open: boolean) => void
+  isPartyModalOpen: boolean
+  setIsPartyModalOpen: (open: boolean) => void
 
   // Canvas state
   canvasViewport: { x: number; y: number; zoom: number }
@@ -179,6 +181,8 @@ export const useAppStore = create<AppState>()(
       setIsCharacterPanelOpen: (open) => set({ isCharacterPanelOpen: open }),
       isAIAssistantOpen: false,
       setIsAIAssistantOpen: (open) => set({ isAIAssistantOpen: open }),
+      isPartyModalOpen: false,
+      setIsPartyModalOpen: (open) => set({ isPartyModalOpen: open }),
 
       // Canvas state
       canvasViewport: { x: 0, y: 0, zoom: 1 },

@@ -12,7 +12,6 @@ import {
   LayoutDashboard,
   PanelTop,
   ScrollText,
-  Clock,
   Globe,
   Map,
   Image,
@@ -25,7 +24,7 @@ import {
   Shield,
 } from 'lucide-react'
 import { DockFlyout } from './dock-flyout'
-import { useCanUseAI } from '@/store'
+import { useCanUseAI, useAppStore } from '@/store'
 import { useUserSettings, usePermissions } from '@/hooks'
 import { isAdmin } from '@/lib/admin'
 
@@ -41,6 +40,7 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
   const { settings } = useUserSettings()
   const showAdmin = settings?.role && isAdmin(settings.role)
   const { can, isOwner, isDm } = usePermissions(campaignId || null)
+  const setIsPartyModalOpen = useAppStore((state) => state.setIsPartyModalOpen)
 
   // Determine page context
   const isMainPage = isMainListingPage(pathname)
@@ -76,12 +76,12 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
   ]
 
   // Campaign navigation items
+  // Note: Timeline is now integrated into the World page as a tab
   const campaignNavItems = campaignId ? [
     ...(isDm || can.viewCanvas ? [{ href: `/campaigns/${campaignId}/dashboard`, label: 'Dashboard', icon: LayoutDashboard }] : []),
     ...(isDm || can.viewCanvas ? [{ href: `/campaigns/${campaignId}/canvas`, label: 'Canvas', icon: PanelTop }] : []),
     { href: `/campaigns/${campaignId}/view`, label: 'View', icon: Eye },
     ...(isDm || can.viewSessions ? [{ href: `/campaigns/${campaignId}/sessions`, label: 'Sessions', icon: ScrollText }] : []),
-    ...(isDm || can.viewTimeline ? [{ href: `/campaigns/${campaignId}/timeline`, label: 'Timeline', icon: Clock }] : []),
     ...(isDm || can.viewLore ? [{ href: `/campaigns/${campaignId}/lore`, label: 'World', icon: Globe }] : []),
     ...(isDm || can.viewMaps ? [{ href: `/campaigns/${campaignId}/map`, label: 'Maps', icon: Map }] : []),
     ...(isDm || can.viewGallery ? [{ href: `/campaigns/${campaignId}/gallery`, label: 'Gallery', icon: Image }] : []),
@@ -93,7 +93,7 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
     ...(canUseAI ? [{ href: `/campaigns/${campaignId}/intelligence`, label: 'Intelligence', icon: Brain, isActive: isActive(`/campaigns/${campaignId}/intelligence`) }] : []),
     { href: `/campaigns/${campaignId}/quests`, label: 'Quests', icon: Target, isActive: isActive(`/campaigns/${campaignId}/quests`) },
     { href: `/campaigns/${campaignId}/encounters`, label: 'Encounters', icon: Swords, isActive: isActive(`/campaigns/${campaignId}/encounters`) },
-    { href: `/campaigns/${campaignId}/settings`, label: 'Party & Members', icon: Users, isActive: isActive(`/campaigns/${campaignId}/settings`) },
+    { href: '#', label: 'Party & Members', icon: Users, onClick: () => setIsPartyModalOpen(true) },
   ] : []
 
   // Navigate flyout items (for detail pages)

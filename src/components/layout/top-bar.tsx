@@ -3,14 +3,15 @@
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronDown, Sparkles, LogOut, ChevronRight, Swords, BookOpen, Settings, LayoutGrid, ScrollText, Clock, Brain, Network, Map, Image as ImageIcon, Edit3, Eye, Users, Scroll, LayoutDashboard, MapPin, Target, Compass, PanelTop, Share2, Home, User, Upload, Copy, Loader2, Shield } from 'lucide-react'
-import { useSupabase, useUser, useMembership } from '@/hooks'
+import { ChevronDown, Sparkles, LogOut, ChevronRight, Swords, BookOpen, Settings, LayoutGrid, ScrollText, Clock, Brain, Network, Map, Image as ImageIcon, Edit3, Eye, Users, Scroll, LayoutDashboard, MapPin, Target, Compass, PanelTop, Share2, Home, User, Upload, Copy, Loader2, Shield, Link2, UserPlus } from 'lucide-react'
+import { useSupabase, useUser, useMembership, usePermissions } from '@/hooks'
 import { useAppStore, useCanUseAI } from '@/store'
 import type { UserSettings } from '@/types/database'
 import { useState, useRef, useEffect } from 'react'
 import type { Campaign } from '@/types/database'
 import { RecentItems } from './recent-items'
 import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
+import { PartyModal } from '@/components/campaign'
 import { Modal } from '@/components/ui'
 import { getTierDisplayName, getTierBadgeColor, getRoleDisplayName, getRoleBadgeColor, isAdmin } from '@/lib/admin'
 import { toast } from 'sonner'
@@ -64,13 +65,20 @@ export function TopBar({
   const pathname = usePathname()
   const supabase = useSupabase()
   const { user } = useUser()
-  const { currentCampaign, setIsAIAssistantOpen } = useAppStore()
+  const { currentCampaign, setIsAIAssistantOpen, isPartyModalOpen, setIsPartyModalOpen } = useAppStore()
   const canUseAI = useCanUseAI()
   const { tier, isFounder } = useMembership()
+
+  // Get campaign ID from pathname for permissions check
+  const pathParts = pathname.split('/').filter(Boolean)
+  const campaignIdFromPath = pathParts[0] === 'campaigns' && pathParts[1] && pathParts[1] !== 'new' ? pathParts[1] : null
+  const { isDm, isOwner: isCampaignOwnerFromPermissions } = usePermissions(campaignIdFromPath)
+
   const [showCampaignDropdown, setShowCampaignDropdown] = useState(false)
   const [showCharacterDropdown, setShowCharacterDropdown] = useState(false)
   const [showUserDropdown, setShowUserDropdown] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [showShareChoiceModal, setShowShareChoiceModal] = useState(false)
   const [showDuplicateModal, setShowDuplicateModal] = useState(false)
   const [isDuplicating, setIsDuplicating] = useState(false)
   const campaignDropdownRef = useRef<HTMLDivElement>(null)
@@ -228,6 +236,24 @@ export function TopBar({
   }
 
   const shareContext = getShareContext()
+
+  // Check if user can share this content
+  // For campaigns: must be DM or owner
+  // For characters/oneshots: must be the owner (determined by being on the page - API will verify)
+  const canShareCampaign = shareContext.type === 'campaign' && (isDm || isCampaignOwnerFromPermissions)
+  const canShareContent = shareContext.type === 'campaign' ? canShareCampaign : shareContext.type !== null
+
+  // Check if user is campaign owner/DM (for showing share choice modal with invite option)
+  const isCampaignDmOrOwner = shareContext.type === 'campaign' && (isDm || isCampaignOwnerFromPermissions)
+
+  // Handle share button click - show choice modal for campaign DMs/owners, direct share for others
+  const handleShareClick = () => {
+    if (isCampaignDmOrOwner) {
+      setShowShareChoiceModal(true)
+    } else {
+      setShowShareModal(true)
+    }
+  }
 
   // Build breadcrumb from pathname
   const getBreadcrumbs = () => {
@@ -497,11 +523,11 @@ export function TopBar({
           </div>
         )}
 
-        {/* Share Button - context aware */}
-        {shareContext.type && shareContext.id && (
+        {/* Share Button - context aware, only for owners/DMs */}
+        {canShareContent && shareContext.id && (
           <button
             className="topbar-action-btn"
-            onClick={() => setShowShareModal(true)}
+            onClick={handleShareClick}
             title="Share"
           >
             <Share2 className="w-4 h-4" />
@@ -509,8 +535,8 @@ export function TopBar({
           </button>
         )}
 
-        {/* Publish Button - placeholder for now */}
-        {shareContext.type && shareContext.id && (
+        {/* Publish Button - placeholder for now, only for owners/DMs */}
+        {canShareContent && shareContext.id && (
           <button
             className="topbar-action-btn"
             onClick={() => toast.info('Publish feature coming soon')}
@@ -679,6 +705,70 @@ export function TopBar({
             </button>
           </div>
         </Modal>
+      )}
+
+      {/* Share Choice Modal - for campaign owners */}
+      <Modal
+        isOpen={showShareChoiceModal}
+        onClose={() => setShowShareChoiceModal(false)}
+        title="Share Campaign"
+        description="Choose how you'd like to share your campaign."
+      >
+        <div className="space-y-3 pt-2">
+          <button
+            onClick={() => {
+              setShowShareChoiceModal(false)
+              setShowShareModal(true)
+            }}
+            className="w-full p-4 rounded-lg border border-[--border] bg-white/[0.02] hover:border-purple-500/30 hover:bg-purple-500/5 transition-all text-left group"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                <Link2 className="w-5 h-5 text-purple-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-white group-hover:text-purple-300 transition-colors">
+                  Share with Link
+                </h4>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Create a public link to share your campaign with anyone. Viewers can see selected content without logging in.
+                </p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => {
+              setShowShareChoiceModal(false)
+              setIsPartyModalOpen(true)
+            }}
+            className="w-full p-4 rounded-lg border border-[--border] bg-white/[0.02] hover:border-purple-500/30 hover:bg-purple-500/5 transition-all text-left group"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                <UserPlus className="w-5 h-5 text-blue-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-white group-hover:text-blue-300 transition-colors">
+                  Invite Party Members
+                </h4>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Invite players to join your campaign. They can add session notes, see party info, and claim their characters.
+                </p>
+              </div>
+            </div>
+          </button>
+        </div>
+      </Modal>
+
+      {/* Party Modal - for inviting members (uses global store state) */}
+      {shareContext.type === 'campaign' && shareContext.id && (
+        <PartyModal
+          campaignId={shareContext.id}
+          characters={[]}
+          isOpen={isPartyModalOpen}
+          onClose={() => setIsPartyModalOpen(false)}
+        />
       )}
     </header>
   )
