@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     const isModOrAbove = userRole === 'moderator' || userRole === 'super_admin'
 
     if (userTier === 'free' && !isModOrAbove) {
-      return new Response(JSON.stringify({ error: 'AI features require a paid plan' }), { status: 403, headers: { 'Content-Type': 'application/json' } })
+      return new Response(JSON.stringify({ error: 'Intelligence features require a paid plan' }), { status: 403, headers: { 'Content-Type': 'application/json' } })
     }
 
     // Check cooldown before proceeding with expensive operations
@@ -558,8 +558,8 @@ Remember: Session notes are the SOURCE OF TRUTH. Your job is to find everything 
         user_id: user.id,
       })
       return new Response(JSON.stringify({
-        error: 'AI model failed to generate response',
-        details: aiError instanceof Error ? aiError.message : 'Unknown AI error'
+        error: 'Analysis failed to generate response',
+        details: aiError instanceof Error ? aiError.message : 'Unknown error'
       }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
@@ -575,8 +575,8 @@ Remember: Session notes are the SOURCE OF TRUTH. Your job is to find everything 
       if (jsonText.toLowerCase().startsWith('an error') || jsonText.toLowerCase().startsWith('i ') || !jsonText.includes('{')) {
         console.error('AI returned non-JSON response:', jsonText.slice(0, 200))
         return new Response(JSON.stringify({
-          error: 'AI returned an invalid response',
-          details: 'The AI model did not return valid JSON. This may be a temporary issue.',
+          error: 'Analysis returned an invalid response',
+          details: 'The analysis did not return valid data. This may be a temporary issue.',
           raw: jsonText.slice(0, 500)
         }), {
           status: 500,
@@ -603,7 +603,7 @@ Remember: Session notes are the SOURCE OF TRUTH. Your job is to find everything 
       console.error('Failed to parse AI response:', parseError)
       console.error('Raw response:', result.text?.slice(0, 500))
       return new Response(JSON.stringify({
-        error: 'Failed to parse AI response',
+        error: 'Failed to parse analysis response',
         details: parseError instanceof Error ? parseError.message : 'JSON parse error',
         raw: result.text?.slice(0, 500)
       }), {
