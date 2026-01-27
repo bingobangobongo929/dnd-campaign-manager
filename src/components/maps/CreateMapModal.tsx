@@ -243,29 +243,27 @@ export function CreateMapModal({
               <button
                 key={type.value}
                 onClick={() => setMapType(type.value)}
-                className={cn(
-                  "flex flex-col items-center gap-1 p-2.5 rounded-lg transition-all",
-                  mapType === type.value
-                    ? "bg-[--arcane-purple]/20 ring-2 ring-[--arcane-purple]"
-                    : "bg-[--bg-elevated] hover:bg-[--bg-surface]"
-                )}
+                className="flex flex-col items-center gap-1 p-2.5 rounded-lg transition-all"
+                style={{
+                  backgroundColor: mapType === type.value ? 'rgba(147, 51, 234, 0.3)' : '#1a1a24',
+                  boxShadow: mapType === type.value ? '0 0 0 2px #9333ea, inset 0 0 0 1px rgba(147, 51, 234, 0.5)' : 'none',
+                }}
               >
                 <span className="text-xl">{type.icon}</span>
-                <span className="text-xs text-[--text-secondary]">{type.label}</span>
+                <span className={cn("text-xs", mapType === type.value ? "text-white" : "text-gray-400")}>{type.label}</span>
               </button>
             ))}
             {/* Custom option */}
             <button
               onClick={() => setMapType('custom')}
-              className={cn(
-                "flex flex-col items-center gap-1 p-2.5 rounded-lg transition-all",
-                mapType === 'custom'
-                  ? "bg-[--arcane-purple]/20 ring-2 ring-[--arcane-purple]"
-                  : "bg-[--bg-elevated] hover:bg-[--bg-surface]"
-              )}
+              className="flex flex-col items-center gap-1 p-2.5 rounded-lg transition-all"
+              style={{
+                backgroundColor: mapType === 'custom' ? 'rgba(147, 51, 234, 0.3)' : '#1a1a24',
+                boxShadow: mapType === 'custom' ? '0 0 0 2px #9333ea, inset 0 0 0 1px rgba(147, 51, 234, 0.5)' : 'none',
+              }}
             >
               <span className="text-xl">✏️</span>
-              <span className="text-xs text-[--text-secondary]">Custom</span>
+              <span className={cn("text-xs", mapType === 'custom' ? "text-white" : "text-gray-400")}>Custom</span>
             </button>
           </div>
         </div>

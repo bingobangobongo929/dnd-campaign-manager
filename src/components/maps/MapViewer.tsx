@@ -608,7 +608,7 @@ export function MapViewer({
           </div>
         </div>
 
-        {/* Pin Popup - Redesigned, no opacity, better styling */}
+        {/* Pin Popup */}
         {popupPin && !pinDragState.isDragging && (
           <div
             className="pin-popup fixed z-50"
@@ -618,22 +618,28 @@ export function MapViewer({
               transform: 'translate(-50%, -100%)',
             }}
           >
-            <div className="w-72 bg-[--bg-base] rounded-xl shadow-2xl overflow-hidden">
-              {/* Header with gradient */}
-              <div className="bg-gradient-to-r from-[--arcane-purple]/20 to-transparent p-4">
+            <div
+              className="w-72 rounded-xl shadow-2xl overflow-hidden border border-gray-700"
+              style={{ backgroundColor: '#0d0d14' }}
+            >
+              {/* Header */}
+              <div
+                className="p-4"
+                style={{ background: 'linear-gradient(to right, rgba(147, 51, 234, 0.25), transparent)' }}
+              >
                 <div className="flex items-start gap-3">
                   <div className="text-3xl">{getPinIcon(popupPin.icon || 'location')}</div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-[--text-primary] text-lg">{popupPin.label}</h3>
+                    <h3 className="font-semibold text-white text-lg">{popupPin.label}</h3>
                     {popupPin.description && (
-                      <p className="text-sm text-[--text-secondary] mt-1 line-clamp-2">
+                      <p className="text-sm text-gray-400 mt-1 line-clamp-2">
                         {popupPin.description}
                       </p>
                     )}
                   </div>
                   <button
                     onClick={() => setPopupPin(null)}
-                    className="p-1.5 hover:bg-white/10 rounded-lg text-[--text-tertiary] hover:text-[--text-primary] transition-colors"
+                    className="p-1.5 hover:bg-white/10 rounded-lg text-gray-500 hover:text-white transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -649,11 +655,14 @@ export function MapViewer({
                         toast.info(`Navigate to: ${getLinkedLocationName(popupPin.linked_entity_id!)}`)
                         setPopupPin(null)
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[--bg-elevated] hover:bg-[--bg-surface] text-left transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors"
+                      style={{ backgroundColor: '#1a1a24' }}
+                      onMouseEnter={e => e.currentTarget.style.backgroundColor = '#22222e'}
+                      onMouseLeave={e => e.currentTarget.style.backgroundColor = '#1a1a24'}
                     >
                       <Link2 className="w-4 h-4 text-green-400" />
-                      <span className="flex-1 text-sm font-medium text-[--text-primary]">View Location</span>
-                      <ExternalLink className="w-4 h-4 text-[--text-tertiary]" />
+                      <span className="flex-1 text-sm font-medium text-white">View Location</span>
+                      <ExternalLink className="w-4 h-4 text-gray-500" />
                     </button>
                   )}
                   {popupPin.linked_map_id && (
@@ -662,13 +671,16 @@ export function MapViewer({
                         onNavigateToMap(popupPin.linked_map_id!)
                         setPopupPin(null)
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[--bg-elevated] hover:bg-[--bg-surface] text-left transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors"
+                      style={{ backgroundColor: '#1a1a24' }}
+                      onMouseEnter={e => e.currentTarget.style.backgroundColor = '#22222e'}
+                      onMouseLeave={e => e.currentTarget.style.backgroundColor = '#1a1a24'}
                     >
                       <Layers className="w-4 h-4 text-blue-400" />
-                      <span className="flex-1 text-sm font-medium text-[--text-primary]">
+                      <span className="flex-1 text-sm font-medium text-white">
                         Open {getLinkedMapName(popupPin.linked_map_id)}
                       </span>
-                      <ExternalLink className="w-4 h-4 text-[--text-tertiary]" />
+                      <ExternalLink className="w-4 h-4 text-gray-500" />
                     </button>
                   )}
                 </div>
@@ -676,7 +688,10 @@ export function MapViewer({
 
               {/* Footer - DM controls */}
               {isDm && (
-                <div className="px-4 py-3 bg-[--bg-elevated] flex items-center justify-between">
+                <div
+                  className="px-4 py-3 flex items-center justify-between"
+                  style={{ backgroundColor: '#1a1a24' }}
+                >
                   <div className={cn("flex items-center gap-1.5 text-xs font-medium", getVisibilityInfo(popupPin.visibility || 'public').color)}>
                     {(() => {
                       const info = getVisibilityInfo(popupPin.visibility || 'public')
@@ -689,14 +704,14 @@ export function MapViewer({
                       <>
                         <button
                           onClick={() => openEditModal(popupPin)}
-                          className="p-2 hover:bg-[--bg-base] rounded-lg text-[--text-secondary] hover:text-[--text-primary] transition-colors"
+                          className="p-2 hover:bg-black/30 rounded-lg text-gray-400 hover:text-white transition-colors"
                           title="Edit pin"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDeletePin(popupPin.id)}
-                          className="p-2 hover:bg-[--bg-base] rounded-lg text-[--arcane-ember] transition-colors"
+                          className="p-2 hover:bg-black/30 rounded-lg text-red-400 transition-colors"
                           title="Delete pin"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -709,7 +724,10 @@ export function MapViewer({
             </div>
             {/* Arrow */}
             <div className="absolute left-1/2 -translate-x-1/2 -bottom-2">
-              <div className="w-4 h-4 bg-[--bg-base] transform rotate-45 shadow-lg" />
+              <div
+                className="w-4 h-4 transform rotate-45 border-r border-b border-gray-700"
+                style={{ backgroundColor: '#0d0d14' }}
+              />
             </div>
           </div>
         )}
@@ -745,12 +763,11 @@ export function MapViewer({
                 <button
                   key={opt.value}
                   onClick={() => setPinForm({ ...pinForm, icon: opt.value })}
-                  className={cn(
-                    "w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all",
-                    pinForm.icon === opt.value
-                      ? "bg-[--arcane-purple]/20 ring-2 ring-[--arcane-purple]"
-                      : "bg-[--bg-elevated] hover:bg-[--bg-surface]"
-                  )}
+                  className="w-11 h-11 rounded-lg flex items-center justify-center text-xl transition-all"
+                  style={{
+                    backgroundColor: pinForm.icon === opt.value ? 'rgba(147, 51, 234, 0.3)' : '#1a1a24',
+                    boxShadow: pinForm.icon === opt.value ? '0 0 0 2px #9333ea, inset 0 0 0 1px rgba(147, 51, 234, 0.5)' : 'none',
+                  }}
                   title={opt.label}
                 >
                   {opt.icon}
@@ -761,18 +778,19 @@ export function MapViewer({
 
           <div className="form-group">
             <label className="form-label">Color</label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3">
               {PIN_COLORS.map(opt => (
                 <button
                   key={opt.value}
                   onClick={() => setPinForm({ ...pinForm, color: opt.value })}
-                  className={cn(
-                    "w-8 h-8 rounded-full transition-transform",
-                    pinForm.color === opt.value
-                      ? "scale-110 ring-2 ring-[--arcane-purple] ring-offset-2 ring-offset-[--bg-surface]"
-                      : "hover:scale-105"
-                  )}
-                  style={{ backgroundColor: opt.value }}
+                  className="w-9 h-9 rounded-full transition-all"
+                  style={{
+                    backgroundColor: opt.value,
+                    transform: pinForm.color === opt.value ? 'scale(1.2)' : 'scale(1)',
+                    boxShadow: pinForm.color === opt.value
+                      ? `0 0 0 3px #0d0d14, 0 0 0 5px #9333ea`
+                      : 'none',
+                  }}
                   title={opt.label}
                 />
               ))}
