@@ -10,7 +10,6 @@ import type { UserSettings } from '@/types/database'
 import { useState, useRef, useEffect } from 'react'
 import type { Campaign } from '@/types/database'
 import { RecentItems } from './recent-items'
-import { NavigationMapButton } from './navigation-map'
 import { UnifiedShareModal } from '@/components/share/UnifiedShareModal'
 
 // Page icons for "You are here" indicator
@@ -458,8 +457,7 @@ export function TopBar({
           </button>
         )}
 
-        {/* Navigation & Recent Items (icon-only) */}
-        <NavigationMapButton />
+        {/* Recent Items (icon-only) */}
         <RecentItems />
 
         {/* AI Assistant (icon-only) */}
