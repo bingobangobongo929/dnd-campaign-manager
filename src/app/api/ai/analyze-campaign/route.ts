@@ -216,19 +216,41 @@ export async function POST(req: Request) {
       .order('created_at', { ascending: false })
       .limit(20)
 
-    // Check if there's anything new to analyze
-    const hasNewContent = (updatedSessions?.length ?? 0) > 0 ||
-                         (updatedCharacters?.length ?? 0) > 0
+    // Check if there's anything to analyze
+    // In fullAudit mode, we always proceed even if the queries somehow return empty
+    const hasSessionsToAnalyze = (updatedSessions?.length ?? 0) > 0
+    const hasCharactersToAnalyze = (updatedCharacters?.length ?? 0) > 0
+    const hasNewContent = hasSessionsToAnalyze || hasCharactersToAnalyze
 
-    if (!hasNewContent) {
+    if (!hasNewContent && !fullAudit) {
       return new Response(JSON.stringify({
         success: true,
-        suggestions: [],
-        message: 'No new content since last analysis',
+        suggestionsCreated: 0,
+        message: 'No new content since last analysis. Enable Full Campaign Audit to re-analyze everything.',
         lastRunTime,
         stats: {
           sessionsAnalyzed: 0,
           charactersUpdated: 0,
+        }
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Full audit mode but no sessions - can't analyze without session notes
+    if (!hasSessionsToAnalyze) {
+      return new Response(JSON.stringify({
+        success: true,
+        suggestionsCreated: 0,
+        message: fullAudit
+          ? 'No sessions found in this campaign. Add session notes to use Campaign Intelligence.'
+          : 'No new sessions since last analysis.',
+        lastRunTime,
+        fullAudit: fullAudit || false,
+        stats: {
+          sessionsAnalyzed: 0,
+          charactersUpdated: updatedCharacters?.length || 0,
         }
       }), {
         status: 200,

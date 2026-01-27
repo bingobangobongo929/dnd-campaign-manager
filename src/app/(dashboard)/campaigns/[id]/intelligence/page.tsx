@@ -715,8 +715,11 @@ export default function IntelligencePage() {
       if (data.suggestionsCreated > 0) {
         toast.success(`Analysis complete: ${data.suggestionsCreated} suggestion${data.suggestionsCreated === 1 ? '' : 's'} found`)
       } else {
-        toast.info('Analysis complete: No new suggestions')
+        // Show server message if present for better debugging
+        toast.info(data.message || 'Analysis complete: No suggestions found')
       }
+      // Reset full audit mode after analysis completes
+      setFullAuditMode(false)
     } catch (err) {
       setAnalysisError(err instanceof Error ? err.message : 'Analysis failed')
       toast.error('Analysis failed')
