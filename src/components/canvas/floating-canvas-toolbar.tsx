@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react'
 import {
   Link2,
   ChevronDown,
-  Users,
   Scaling,
   Plus,
   Tags,
@@ -82,7 +81,7 @@ export function FloatingCanvasToolbar({
             onClick={onAddGroup}
             className="toolbar-btn"
           >
-            <Users className="w-4 h-4" />
+            <Plus className="w-4 h-4" />
             <span className="toolbar-btn-label">Group</span>
           </button>
 

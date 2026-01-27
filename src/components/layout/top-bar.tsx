@@ -295,66 +295,63 @@ export function TopBar({
         </nav>
       </div>
 
-      {/* Center: Campaign or Character Switcher */}
-      <div className="topbar-center">
-        {/* Campaign Switcher (only when in a campaign with multiple campaigns) */}
+      {/* Center: Empty - switcher moved to right */}
+      <div className="topbar-center" />
+
+      {/* Right: Page Actions + Switcher + Share + AI + User */}
+      <div className="topbar-right">
+        {/* Page-specific actions */}
+        {actions && (
+          <div className="flex items-center gap-2 mr-2">
+            {actions}
+          </div>
+        )}
+
+        {/* Campaign Switcher (when in a campaign with multiple campaigns) */}
         {currentCampaignId && campaigns.length > 1 && (
           <div className="relative" ref={campaignDropdownRef}>
             <button
-              className="campaign-switcher"
+              className="topbar-switcher"
               onClick={() => setShowCampaignDropdown(!showCampaignDropdown)}
+              title="Switch Campaign"
             >
-              <span className="campaign-switcher-name">
-                {currentCampaign?.name || 'Select Campaign'}
-              </span>
-              <ChevronDown className={`campaign-switcher-icon transition-transform ${showCampaignDropdown ? 'rotate-180' : ''}`} />
+              <div className="topbar-switcher-avatar">
+                {currentCampaign?.image_url ? (
+                  <Image
+                    src={currentCampaign.image_url}
+                    alt={currentCampaign.name}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <Swords className="w-3.5 h-3.5" />
+                )}
+              </div>
+              <span className="topbar-switcher-name">{currentCampaign?.name || 'Campaign'}</span>
+              <ChevronDown className={`topbar-switcher-chevron transition-transform ${showCampaignDropdown ? 'rotate-180' : ''}`} />
             </button>
 
             {showCampaignDropdown && (
-              <div
-                className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-72 bg-[#12121a] border border-[--border] rounded-xl shadow-2xl overflow-hidden animate-scale-in z-50"
-              >
-                <div className="p-2 border-b border-[--border]">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[--text-tertiary] px-2">Switch Campaign</span>
-                </div>
-                <div className="max-h-80 overflow-y-auto p-1">
+              <div className="switcher-dropdown">
+                <div className="switcher-dropdown-header">Switch Campaign</div>
+                <div className="switcher-dropdown-list">
                   {campaigns.map((campaign) => (
                     <button
                       key={campaign.id}
                       onClick={() => handleCampaignChange(campaign.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors hover:bg-[--bg-hover] ${
-                        campaign.id === currentCampaignId
-                          ? 'bg-[--arcane-purple]/10 ring-1 ring-[--arcane-purple]/30'
-                          : ''
-                      }`}
+                      className={`switcher-dropdown-item ${campaign.id === currentCampaignId ? 'active' : ''}`}
                     >
-                      {/* Campaign Image */}
-                      <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-[--bg-secondary] flex-shrink-0">
+                      <div className="switcher-dropdown-avatar">
                         {campaign.image_url ? (
-                          <Image
-                            src={campaign.image_url}
-                            alt={campaign.name}
-                            fill
-                            className="object-cover"
-                          />
+                          <Image src={campaign.image_url} alt={campaign.name} fill className="object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Swords className="w-5 h-5 text-[--text-tertiary]" />
-                          </div>
+                          <Swords className="w-4 h-4 text-[--text-tertiary]" />
                         )}
                       </div>
-                      {/* Campaign Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className={`font-medium text-sm truncate ${
-                          campaign.id === currentCampaignId ? 'text-[--arcane-purple]' : 'text-[--text-primary]'
-                        }`}>
-                          {campaign.name}
-                        </div>
-                        <div className="text-xs text-[--text-tertiary] truncate">
-                          {campaign.game_system}
-                        </div>
+                      <div className="switcher-dropdown-info">
+                        <div className="switcher-dropdown-name">{campaign.name}</div>
+                        <div className="switcher-dropdown-meta">{campaign.game_system}</div>
                       </div>
-                      {/* Current indicator */}
                       {campaign.id === currentCampaignId && (
                         <div className="w-2 h-2 rounded-full bg-[--arcane-purple]" />
                       )}
@@ -366,64 +363,53 @@ export function TopBar({
           </div>
         )}
 
-        {/* Character Switcher (only when in vault with multiple characters) */}
+        {/* Character Switcher (when in vault with multiple characters) */}
         {currentCharacterId && characters.length > 1 && (
           <div className="relative" ref={characterDropdownRef}>
             <button
-              className="campaign-switcher"
+              className="topbar-switcher"
               onClick={() => setShowCharacterDropdown(!showCharacterDropdown)}
+              title="Switch Character"
             >
-              <span className="campaign-switcher-name">
-                {currentCharacter?.name || 'Select Character'}
-              </span>
-              <ChevronDown className={`campaign-switcher-icon transition-transform ${showCharacterDropdown ? 'rotate-180' : ''}`} />
+              <div className="topbar-switcher-avatar rounded-full">
+                {currentCharacter?.image_url ? (
+                  <Image
+                    src={currentCharacter.image_url}
+                    alt={currentCharacter.name}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <Users className="w-3.5 h-3.5" />
+                )}
+              </div>
+              <span className="topbar-switcher-name">{currentCharacter?.name || 'Character'}</span>
+              <ChevronDown className={`topbar-switcher-chevron transition-transform ${showCharacterDropdown ? 'rotate-180' : ''}`} />
             </button>
 
             {showCharacterDropdown && (
-              <div
-                className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-72 bg-[#12121a] border border-[--border] rounded-xl shadow-2xl overflow-hidden animate-scale-in z-50"
-              >
-                <div className="p-2 border-b border-[--border]">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[--text-tertiary] px-2">Switch Character</span>
-                </div>
-                <div className="max-h-80 overflow-y-auto p-1">
+              <div className="switcher-dropdown">
+                <div className="switcher-dropdown-header">Switch Character</div>
+                <div className="switcher-dropdown-list">
                   {characters.map((character) => (
                     <button
                       key={character.id}
                       onClick={() => handleCharacterChange(character.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors hover:bg-[--bg-hover] ${
-                        character.id === currentCharacterId
-                          ? 'bg-[--arcane-purple]/10 ring-1 ring-[--arcane-purple]/30'
-                          : ''
-                      }`}
+                      className={`switcher-dropdown-item ${character.id === currentCharacterId ? 'active' : ''}`}
                     >
-                      {/* Character Image */}
-                      <div className="relative w-10 h-10 rounded-full overflow-hidden bg-[--bg-secondary] flex-shrink-0">
+                      <div className="switcher-dropdown-avatar rounded-full">
                         {character.image_url ? (
-                          <Image
-                            src={character.image_url}
-                            alt={character.name}
-                            fill
-                            className="object-cover"
-                          />
+                          <Image src={character.image_url} alt={character.name} fill className="object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Users className="w-5 h-5 text-[--text-tertiary]" />
-                          </div>
+                          <Users className="w-4 h-4 text-[--text-tertiary]" />
                         )}
                       </div>
-                      {/* Character Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className={`font-medium text-sm truncate ${
-                          character.id === currentCharacterId ? 'text-[--arcane-purple]' : 'text-[--text-primary]'
-                        }`}>
-                          {character.name}
-                        </div>
-                        <div className="text-xs text-[--text-tertiary] truncate">
+                      <div className="switcher-dropdown-info">
+                        <div className="switcher-dropdown-name">{character.name}</div>
+                        <div className="switcher-dropdown-meta">
                           {[character.race, character.class].filter(Boolean).join(' • ') || 'Character'}
                         </div>
                       </div>
-                      {/* Current indicator */}
                       {character.id === currentCharacterId && (
                         <div className="w-2 h-2 rounded-full bg-[--arcane-purple]" />
                       )}
@@ -432,16 +418,6 @@ export function TopBar({
                 </div>
               </div>
             )}
-          </div>
-        )}
-      </div>
-
-      {/* Right: Page Actions + Recent + AI Assistant + User */}
-      <div className="topbar-right">
-        {/* Page-specific actions */}
-        {actions && (
-          <div className="flex items-center gap-2 mr-2">
-            {actions}
           </div>
         )}
 

@@ -1,0 +1,3326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Navigation Design Mockups - D&D Campaign Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #050508;
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #12121a;
+      --bg-tertiary: #1a1a24;
+      --bg-elevated: #1e1e2a;
+      --border-subtle: rgba(139, 92, 246, 0.12);
+      --border-medium: rgba(139, 92, 246, 0.25);
+      --border-bright: rgba(139, 92, 246, 0.5);
+      --purple-primary: #8B5CF6;
+      --purple-light: #A78BFA;
+      --purple-bright: #C4B5FD;
+      --purple-glow: rgba(139, 92, 246, 0.4);
+      --purple-dim: rgba(139, 92, 246, 0.15);
+      --text-primary: #F5F5F7;
+      --text-secondary: #9CA3AF;
+      --text-tertiary: #6B7280;
+      --gold-accent: #F59E0B;
+      --success: #10B981;
+      --glass-bg: rgba(18, 18, 26, 0.85);
+      --glass-border: rgba(139, 92, 246, 0.15);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Crimson Pro', Georgia, serif;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Background texture */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      opacity: 0.03;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Option Selector */
+    .option-selector {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: linear-gradient(180deg, var(--bg-deep) 0%, rgba(5, 5, 8, 0.95) 100%);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .selector-label {
+      font-family: 'Cinzel', serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      margin-right: 8px;
+    }
+
+    .option-btn {
+      font-family: 'Cinzel', serif;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      padding: 10px 20px;
+      border: 1px solid var(--border-medium);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .option-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--purple-primary) 0%, #6D28D9 100%);
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+
+    .option-btn span {
+      position: relative;
+      z-index: 1;
+    }
+
+    .option-btn:hover {
+      border-color: var(--purple-primary);
+      color: var(--text-primary);
+      transform: translateY(-1px);
+    }
+
+    .option-btn.active {
+      border-color: var(--purple-primary);
+      color: white;
+      box-shadow: 0 0 20px var(--purple-glow), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+
+    .option-btn.active::before {
+      opacity: 1;
+    }
+
+    /* Mockup Container */
+    .mockup-container {
+      position: relative;
+      margin-top: 72px;
+      min-height: calc(100vh - 72px);
+    }
+
+    .mockup {
+      display: none;
+      position: absolute;
+      inset: 0;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .mockup.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ============================================
+       SHARED STYLES
+       ============================================ */
+
+    /* Floating Dock Base */
+    .floating-dock {
+      position: fixed;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 12px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      box-shadow:
+        0 4px 24px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+        0 0 60px -20px var(--purple-glow);
+      z-index: 100;
+      width: 56px;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+    }
+
+    .floating-dock:hover {
+      width: 200px;
+    }
+
+    .dock-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      margin-bottom: 4px;
+      border-radius: 10px;
+      text-decoration: none;
+      color: var(--text-primary);
+      white-space: nowrap;
+    }
+
+    .dock-logo-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--purple-primary) 0%, #6D28D9 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .dock-logo-text {
+      font-family: 'Cinzel', serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      opacity: 0;
+      transition: opacity 0.2s ease 0.1s;
+    }
+
+    .floating-dock:hover .dock-logo-text {
+      opacity: 1;
+    }
+
+    .dock-logo-beta {
+      font-size: 8px;
+      color: var(--gold-accent);
+      font-weight: 500;
+      margin-left: 4px;
+    }
+
+    .dock-divider {
+      height: 1px;
+      background: var(--border-subtle);
+      margin: 8px 4px;
+    }
+
+    .dock-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      text-decoration: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .dock-item:hover {
+      background: var(--purple-dim);
+      color: var(--text-primary);
+    }
+
+    .dock-item.active {
+      background: linear-gradient(90deg, var(--purple-primary) 0%, rgba(139, 92, 246, 0.6) 100%);
+      color: white;
+    }
+
+    .dock-item.active::before {
+      content: '';
+      position: absolute;
+      left: -8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 20px;
+      background: var(--purple-bright);
+      border-radius: 0 2px 2px 0;
+      box-shadow: 0 0 12px var(--purple-primary);
+    }
+
+    .dock-item-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .dock-item-label {
+      font-family: 'Crimson Pro', serif;
+      font-size: 14px;
+      font-weight: 400;
+      opacity: 0;
+      transition: opacity 0.2s ease 0.1s;
+    }
+
+    .floating-dock:hover .dock-item-label {
+      opacity: 1;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      position: fixed;
+      top: 72px;
+      left: 0;
+      right: 0;
+      height: 56px;
+      background: linear-gradient(180deg, rgba(10, 10, 15, 0.98) 0%, rgba(10, 10, 15, 0.9) 100%);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px 0 88px;
+      z-index: 90;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Crimson Pro', serif;
+      font-size: 14px;
+    }
+
+    .breadcrumb-item {
+      color: var(--text-tertiary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .breadcrumb-item:hover {
+      color: var(--text-secondary);
+    }
+
+    .breadcrumb-item.current {
+      color: var(--purple-light);
+      font-weight: 500;
+    }
+
+    .breadcrumb-sep {
+      color: var(--text-tertiary);
+      font-size: 10px;
+    }
+
+    .top-bar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .top-bar-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .top-bar-btn:hover {
+      border-color: var(--purple-primary);
+      color: var(--text-primary);
+      background: var(--purple-dim);
+    }
+
+    .share-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border-medium);
+      background: linear-gradient(135deg, var(--purple-dim) 0%, rgba(109, 40, 217, 0.15) 100%);
+      color: var(--purple-light);
+      font-family: 'Crimson Pro', serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .share-btn:hover {
+      border-color: var(--purple-primary);
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.25) 0%, rgba(109, 40, 217, 0.25) 100%);
+      color: var(--purple-bright);
+      box-shadow: 0 0 20px var(--purple-glow);
+    }
+
+    .share-btn-icon {
+      font-size: 14px;
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--purple-primary) 0%, #6D28D9 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cinzel', serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+    }
+
+    /* Main Content Area */
+    .main-content {
+      padding: 148px 32px 32px 104px;
+      min-height: 100vh;
+    }
+
+    .page-header {
+      margin-bottom: 32px;
+    }
+
+    .page-title {
+      font-family: 'Cinzel', serif;
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .page-title-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--purple-dim);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .page-subtitle {
+      color: var(--text-tertiary);
+      font-size: 15px;
+    }
+
+    /* Session Cards */
+    .sessions-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .session-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .session-card:hover {
+      border-color: var(--border-medium);
+      transform: translateX(4px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .session-number {
+      width: 48px;
+      height: 48px;
+      background: var(--purple-dim);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cinzel', serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--purple-light);
+      flex-shrink: 0;
+    }
+
+    .session-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .session-title {
+      font-family: 'Cinzel', serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .session-meta {
+      font-size: 13px;
+      color: var(--text-tertiary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .session-date {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ============================================
+       OPTION A - GROUPED COLLAPSIBLE DOCK
+       ============================================ */
+
+    .dock-a {
+      width: 56px;
+      max-height: calc(100vh - 160px);
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--purple-dim) transparent;
+    }
+
+    .dock-a::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .dock-a::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .dock-a::-webkit-scrollbar-thumb {
+      background: var(--purple-dim);
+      border-radius: 2px;
+    }
+
+    .dock-a:hover {
+      width: 220px;
+    }
+
+    .dock-a:hover::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    /* Accordion dock - with scroll fallback */
+    .dock-accordion {
+      width: 56px;
+      max-height: calc(100vh - 160px);
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--purple-dim) transparent;
+    }
+
+    .dock-accordion::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .dock-accordion::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .dock-accordion::-webkit-scrollbar-thumb {
+      background: var(--purple-dim);
+      border-radius: 2px;
+    }
+
+    .dock-accordion:hover {
+      width: 220px;
+    }
+
+    .dock-accordion:hover::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .dock-section {
+      margin-bottom: 4px;
+    }
+
+    .dock-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--text-tertiary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: all 0.2s;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .dock-section-header:hover {
+      background: rgba(139, 92, 246, 0.08);
+      color: var(--text-secondary);
+    }
+
+    .dock-section-title {
+      opacity: 0;
+      transition: opacity 0.2s ease 0.1s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dock-a:hover .dock-section-title {
+      opacity: 1;
+    }
+
+    .dock-section-count {
+      font-size: 9px;
+      color: var(--purple-light);
+      background: var(--purple-dim);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .dock-section-chevron {
+      font-size: 10px;
+      transition: transform 0.2s;
+      opacity: 0;
+    }
+
+    .dock-a:hover .dock-section-chevron {
+      opacity: 1;
+    }
+
+    .dock-section.collapsed .dock-section-chevron {
+      transform: rotate(-90deg);
+    }
+
+    .dock-section-items {
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+      max-height: 500px;
+    }
+
+    .dock-section.collapsed .dock-section-items {
+      max-height: 0;
+    }
+
+    /* Collapsed state indicator */
+    .dock-section-collapsed-icon {
+      display: none;
+      width: 20px;
+      height: 20px;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: var(--text-tertiary);
+    }
+
+    .dock-section.collapsed .dock-section-collapsed-icon {
+      display: flex;
+    }
+
+    .dock-section.collapsed .dock-section-title {
+      display: none;
+    }
+
+    .dock-a:hover .dock-section.collapsed .dock-section-collapsed-icon {
+      display: none;
+    }
+
+    .dock-a:hover .dock-section.collapsed .dock-section-title {
+      display: flex;
+    }
+
+    /* ============================================
+       OPTION B - SPLIT NAVIGATION
+       ============================================ */
+
+    .dock-b {
+      width: 56px;
+    }
+
+    .dock-b:hover {
+      width: 180px;
+    }
+
+    .top-bar-b {
+      padding-left: 88px;
+    }
+
+    .campaign-tabs {
+      position: fixed;
+      top: 128px;
+      left: 0;
+      right: 0;
+      height: 48px;
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      padding: 0 24px 0 88px;
+      gap: 4px;
+      z-index: 85;
+    }
+
+    .campaign-tab {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-family: 'Crimson Pro', serif;
+      font-size: 14px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .campaign-tab:hover {
+      background: var(--purple-dim);
+      color: var(--text-primary);
+    }
+
+    .campaign-tab.active {
+      background: var(--purple-primary);
+      color: white;
+    }
+
+    .campaign-tab-icon {
+      font-size: 12px;
+    }
+
+    .more-dropdown {
+      position: relative;
+    }
+
+    .more-dropdown-content {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 8px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-medium);
+      border-radius: 12px;
+      padding: 8px;
+      min-width: 200px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      z-index: 100;
+    }
+
+    .more-dropdown:hover .more-dropdown-content {
+      display: block;
+    }
+
+    .dropdown-section-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      padding: 8px 12px 4px;
+    }
+
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 13px;
+    }
+
+    .dropdown-item:hover {
+      background: var(--purple-dim);
+      color: var(--text-primary);
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      background: var(--border-subtle);
+      margin: 8px 0;
+    }
+
+    .main-content-b {
+      padding-top: 196px;
+    }
+
+    /* ============================================
+       OPTION C - CONTEXT-ADAPTIVE DOCK
+       ============================================ */
+
+    .dock-c {
+      width: 56px;
+    }
+
+    .dock-c:hover {
+      width: 200px;
+    }
+
+    .dock-back {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      margin-bottom: 4px;
+    }
+
+    .dock-back:hover {
+      background: rgba(139, 92, 246, 0.1);
+      color: var(--text-secondary);
+    }
+
+    .dock-back-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .dock-back-label {
+      font-family: 'Crimson Pro', serif;
+      font-size: 13px;
+      opacity: 0;
+      transition: opacity 0.2s ease 0.1s;
+    }
+
+    .dock-c:hover .dock-back-label {
+      opacity: 1;
+    }
+
+    .quick-actions-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--purple-dim) 0%, rgba(109, 40, 217, 0.15) 100%);
+      border: 1px solid var(--border-medium);
+      color: var(--purple-light);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      width: 100%;
+    }
+
+    .quick-actions-btn:hover {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.25) 0%, rgba(109, 40, 217, 0.25) 100%);
+      border-color: var(--purple-primary);
+      color: var(--purple-bright);
+    }
+
+    .quick-actions-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .quick-actions-label {
+      font-family: 'Crimson Pro', serif;
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.2s ease 0.1s;
+    }
+
+    .dock-c:hover .quick-actions-label {
+      opacity: 1;
+    }
+
+    /* Quick Actions Popover */
+    .quick-actions-popover {
+      display: none;
+      position: absolute;
+      left: 100%;
+      bottom: 0;
+      margin-left: 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-medium);
+      border-radius: 16px;
+      padding: 12px;
+      width: 240px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 0 60px -20px var(--purple-glow);
+      z-index: 200;
+    }
+
+    .quick-actions-btn:hover + .quick-actions-popover,
+    .quick-actions-popover:hover {
+      display: block;
+    }
+
+    .popover-section {
+      margin-bottom: 12px;
+    }
+
+    .popover-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .popover-section-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      padding: 4px 8px 8px;
+    }
+
+    .popover-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Crimson Pro', serif;
+      font-size: 14px;
+    }
+
+    .popover-item:hover {
+      background: var(--purple-dim);
+      color: var(--text-primary);
+    }
+
+    .popover-item-icon {
+      font-size: 14px;
+      width: 18px;
+      text-align: center;
+    }
+
+    .popover-divider {
+      height: 1px;
+      background: var(--border-subtle);
+      margin: 8px 0;
+    }
+
+    /* ============================================
+       DESIGN NOTES PANEL
+       ============================================ */
+
+    .design-notes {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-medium);
+      border-radius: 16px;
+      padding: 20px 24px;
+      width: 320px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+      z-index: 500;
+    }
+
+    .design-notes-title {
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--purple-light);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .design-notes-content {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .design-notes-content strong {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .design-notes-list {
+      margin: 12px 0 0 0;
+      padding-left: 16px;
+    }
+
+    .design-notes-list li {
+      margin-bottom: 6px;
+    }
+
+    /* ============================================
+       CANVAS PAGE STYLES
+       ============================================ */
+
+    .canvas-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Floating Canvas Toolbar */
+    .floating-canvas-toolbar {
+      position: fixed;
+      top: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow:
+        0 4px 24px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+      z-index: 95;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 4px;
+    }
+
+    .toolbar-divider {
+      width: 1px;
+      height: 28px;
+      background: var(--border-subtle);
+      margin: 0 4px;
+    }
+
+    .toolbar-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: 'Crimson Pro', serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .toolbar-btn:hover {
+      background: var(--purple-dim);
+      color: var(--text-primary);
+    }
+
+    .toolbar-btn.active {
+      background: var(--purple-primary);
+      color: white;
+    }
+
+    .toolbar-btn-icon {
+      font-size: 16px;
+    }
+
+    .toolbar-btn-label {
+      font-weight: 500;
+    }
+
+    .toolbar-btn.icon-only {
+      padding: 8px;
+      width: 36px;
+      height: 36px;
+    }
+
+    .toolbar-dropdown {
+      position: relative;
+    }
+
+    .toolbar-dropdown-content {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-top: 8px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-medium);
+      border-radius: 12px;
+      padding: 6px;
+      min-width: 180px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      z-index: 100;
+    }
+
+    .toolbar-dropdown:hover .toolbar-dropdown-content {
+      display: block;
+    }
+
+    .toolbar-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 13px;
+    }
+
+    .toolbar-dropdown-item:hover {
+      background: var(--purple-dim);
+      color: var(--text-primary);
+    }
+
+    .toolbar-dropdown-divider {
+      height: 1px;
+      background: var(--border-subtle);
+      margin: 4px 0;
+    }
+
+    .toolbar-dropdown-header {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      padding: 8px 12px 4px;
+    }
+
+    /* Connection line indicator */
+    .connection-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      margin-left: 4px;
+    }
+
+    .canvas-tool-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      font-family: 'Crimson Pro', serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .canvas-tool-btn:hover {
+      border-color: var(--border-medium);
+      color: var(--text-primary);
+    }
+
+    .canvas-tool-btn.active {
+      border-color: var(--purple-primary);
+      color: var(--purple-light);
+      background: var(--purple-dim);
+    }
+
+    .canvas-tool-btn.primary {
+      background: var(--purple-primary);
+      border-color: var(--purple-primary);
+      color: white;
+    }
+
+    .canvas-tool-btn.primary:hover {
+      background: var(--purple-light);
+    }
+
+    .canvas-group {
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px dashed rgba(139, 92, 246, 0.3);
+      border-radius: 16px;
+      padding: 16px;
+      min-width: 280px;
+    }
+
+    .canvas-group-header {
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--purple-light);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .canvas-group-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .canvas-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .canvas-card:hover {
+      border-color: var(--border-medium);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .canvas-card.pc {
+      border-left: 3px solid var(--purple-primary);
+    }
+
+    .canvas-card.npc {
+      border-left: 3px solid #6B7280;
+    }
+
+    .canvas-card-avatar {
+      width: 36px;
+      height: 36px;
+      background: var(--bg-tertiary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .canvas-card-name {
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .canvas-card-class {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    /* ============================================
+       CAMPAIGN/CHARACTER SWITCHER
+       ============================================ */
+
+    .dock-switcher {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      margin: 0 4px 4px;
+      border-radius: 10px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .dock-switcher:hover {
+      border-color: var(--border-medium);
+      background: var(--purple-dim);
+    }
+
+    .dock-switcher-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--purple-primary) 0%, #6D28D9 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    .dock-switcher-info {
+      flex: 1;
+      min-width: 0;
+      opacity: 0;
+      transition: opacity 0.2s ease 0.1s;
+    }
+
+    .floating-dock:hover .dock-switcher-info {
+      opacity: 1;
+    }
+
+    .dock-switcher-name {
+      font-family: 'Cinzel', serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .dock-switcher-meta {
+      font-size: 10px;
+      color: var(--text-tertiary);
+    }
+
+    .dock-switcher-chevron {
+      font-size: 10px;
+      color: var(--text-tertiary);
+      opacity: 0;
+      transition: opacity 0.2s ease 0.1s;
+    }
+
+    .floating-dock:hover .dock-switcher-chevron {
+      opacity: 1;
+    }
+
+    /* TopBar Campaign Switcher */
+    .topbar-switcher {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 10px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .topbar-switcher:hover {
+      border-color: var(--border-medium);
+      background: var(--purple-dim);
+    }
+
+    .topbar-switcher-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--purple-primary) 0%, #6D28D9 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+    }
+
+    .topbar-switcher-name {
+      font-family: 'Cinzel', serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .topbar-switcher-chevron {
+      font-size: 10px;
+      color: var(--text-tertiary);
+      margin-left: 4px;
+    }
+
+    /* Flyout panel for dock items */
+    .dock-flyout {
+      position: relative;
+    }
+
+    .dock-flyout-trigger {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .dock-flyout-trigger:hover {
+      background: var(--purple-dim);
+      color: var(--text-primary);
+    }
+
+    .dock-flyout-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .dock-flyout-label {
+      font-family: 'Crimson Pro', serif;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.2s ease 0.1s;
+      flex: 1;
+    }
+
+    .floating-dock:hover .dock-flyout-label {
+      opacity: 1;
+    }
+
+    .dock-flyout-arrow {
+      font-size: 10px;
+      color: var(--text-tertiary);
+      opacity: 0;
+      transition: opacity 0.2s ease 0.1s;
+    }
+
+    .floating-dock:hover .dock-flyout-arrow {
+      opacity: 1;
+    }
+
+    .dock-flyout-panel {
+      display: none;
+      position: absolute;
+      left: 100%;
+      top: 0;
+      margin-left: 8px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 8px;
+      min-width: 180px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 40px -10px var(--purple-glow);
+      z-index: 150;
+    }
+
+    .dock-flyout:hover .dock-flyout-panel {
+      display: block;
+    }
+
+    .dock-flyout-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'Crimson Pro', serif;
+      font-size: 14px;
+    }
+
+    .dock-flyout-item:hover {
+      background: var(--purple-dim);
+      color: var(--text-primary);
+    }
+
+    .dock-flyout-item-icon {
+      font-size: 14px;
+      width: 18px;
+      text-align: center;
+    }
+
+    /* Strict accordion dock - no scroll, just strict one-at-a-time */
+    .dock-strict {
+      width: 56px;
+      overflow: visible;
+    }
+
+    .dock-strict:hover {
+      width: 220px;
+    }
+
+    /* More button for overflow items */
+    .dock-more-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .dock-more-btn:hover {
+      background: var(--purple-dim);
+      color: var(--text-secondary);
+    }
+
+    .dock-more-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .dock-more-label {
+      font-family: 'Crimson Pro', serif;
+      font-size: 13px;
+      opacity: 0;
+      transition: opacity 0.2s ease 0.1s;
+    }
+
+    .floating-dock:hover .dock-more-label {
+      opacity: 1;
+    }
+
+    .dock-more-popover {
+      display: none;
+      position: absolute;
+      left: 100%;
+      bottom: 0;
+      margin-left: 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-medium);
+      border-radius: 16px;
+      padding: 12px;
+      width: 220px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 0 60px -20px var(--purple-glow);
+      z-index: 200;
+    }
+
+    .dock-more-btn:hover .dock-more-popover {
+      display: block;
+    }
+
+    /* ============================================
+       RESPONSIVE ADJUSTMENTS
+       ============================================ */
+
+    @media (max-width: 1200px) {
+      .design-notes {
+        width: 280px;
+        padding: 16px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Option Selector -->
+  <div class="option-selector">
+    <span class="selector-label">View Design:</span>
+    <button class="option-btn active" onclick="showOption('a')">
+      <span>Option A: Grouped</span>
+    </button>
+    <button class="option-btn" onclick="showOption('a2')">
+      <span>Option A2: Compact</span>
+    </button>
+    <button class="option-btn" onclick="showOption('b')">
+      <span>Option B: Split</span>
+    </button>
+    <button class="option-btn" onclick="showOption('c')">
+      <span>Option C: Adaptive</span>
+    </button>
+    <button class="option-btn" onclick="showOption('canvas')">
+      <span>Canvas v1</span>
+    </button>
+    <button class="option-btn" onclick="showOption('canvas2')">
+      <span>Canvas v2: Float</span>
+    </button>
+    <button class="option-btn" onclick="showOption('dock-strict')">
+      <span>Dock: No Scroll</span>
+    </button>
+  </div>
+
+  <div class="mockup-container">
+    <!-- ============================================
+         OPTION A - GROUPED COLLAPSIBLE DOCK
+         ============================================ -->
+    <div class="mockup active" id="mockup-a">
+      <!-- Floating Dock -->
+      <nav class="floating-dock dock-a">
+        <a class="dock-logo">
+          <div class="dock-logo-icon">🎲</div>
+          <span class="dock-logo-text">Multiloop<span class="dock-logo-beta">BETA</span></span>
+        </a>
+        <div class="dock-divider"></div>
+
+        <!-- Campaign Section -->
+        <div class="dock-section" id="section-campaign">
+          <div class="dock-section-header" onclick="toggleSection('campaign')">
+            <span class="dock-section-collapsed-icon">⚔️</span>
+            <span class="dock-section-title">
+              Campaign
+              <span class="dock-section-count">7</span>
+            </span>
+            <span class="dock-section-chevron">▼</span>
+          </div>
+          <div class="dock-section-items">
+            <a class="dock-item">
+              <span class="dock-item-icon">📊</span>
+              <span class="dock-item-label">Dashboard</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🎨</span>
+              <span class="dock-item-label">Canvas</span>
+            </a>
+            <a class="dock-item active">
+              <span class="dock-item-icon">📜</span>
+              <span class="dock-item-label">Sessions</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">⏰</span>
+              <span class="dock-item-label">Timeline</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">📖</span>
+              <span class="dock-item-label">Lore</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🗺️</span>
+              <span class="dock-item-label">Map</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🖼️</span>
+              <span class="dock-item-label">Gallery</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- DM Tools Section -->
+        <div class="dock-section collapsed" id="section-dm">
+          <div class="dock-section-header" onclick="toggleSection('dm')">
+            <span class="dock-section-collapsed-icon">🧠</span>
+            <span class="dock-section-title">
+              DM Tools
+              <span class="dock-section-count">4</span>
+            </span>
+            <span class="dock-section-chevron">▼</span>
+          </div>
+          <div class="dock-section-items">
+            <a class="dock-item">
+              <span class="dock-item-icon">🧠</span>
+              <span class="dock-item-label">Intelligence</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">📍</span>
+              <span class="dock-item-label">Locations</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🎯</span>
+              <span class="dock-item-label">Quests</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">⚔️</span>
+              <span class="dock-item-label">Encounters</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Manage Section -->
+        <div class="dock-section collapsed" id="section-manage">
+          <div class="dock-section-header" onclick="toggleSection('manage')">
+            <span class="dock-section-collapsed-icon">⚙️</span>
+            <span class="dock-section-title">
+              Manage
+              <span class="dock-section-count">4</span>
+            </span>
+            <span class="dock-section-chevron">▼</span>
+          </div>
+          <div class="dock-section-items">
+            <a class="dock-item">
+              <span class="dock-item-icon">👥</span>
+              <span class="dock-item-label">Party & Members</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🏷️</span>
+              <span class="dock-item-label">Labels</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🛡️</span>
+              <span class="dock-item-label">Factions</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🔗</span>
+              <span class="dock-item-label">Relationships</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Share Section -->
+        <div class="dock-section collapsed" id="section-share">
+          <div class="dock-section-header" onclick="toggleSection('share')">
+            <span class="dock-section-collapsed-icon">📤</span>
+            <span class="dock-section-title">
+              Share
+              <span class="dock-section-count">2</span>
+            </span>
+            <span class="dock-section-chevron">▼</span>
+          </div>
+          <div class="dock-section-items">
+            <a class="dock-item">
+              <span class="dock-item-icon">📤</span>
+              <span class="dock-item-label">Share Campaign</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">📋</span>
+              <span class="dock-item-label">Copy Invite Link</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="dock-divider"></div>
+
+        <!-- Global Section -->
+        <div class="dock-section" id="section-global">
+          <div class="dock-section-header" onclick="toggleSection('global')">
+            <span class="dock-section-collapsed-icon">🏠</span>
+            <span class="dock-section-title">
+              Global
+              <span class="dock-section-count">6</span>
+            </span>
+            <span class="dock-section-chevron">▼</span>
+          </div>
+          <div class="dock-section-items">
+            <a class="dock-item">
+              <span class="dock-item-icon">🏠</span>
+              <span class="dock-item-label">Home</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">⚔️</span>
+              <span class="dock-item-label">Campaigns</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🧭</span>
+              <span class="dock-item-label">Adventures</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">📜</span>
+              <span class="dock-item-label">One-Shots</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">📚</span>
+              <span class="dock-item-label">Characters</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">⚙️</span>
+              <span class="dock-item-label">Settings</span>
+            </a>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <nav class="breadcrumb">
+          <a class="breadcrumb-item" href="#">Home</a>
+          <span class="breadcrumb-sep">›</span>
+          <a class="breadcrumb-item" href="#">Campaigns</a>
+          <span class="breadcrumb-sep">›</span>
+          <a class="breadcrumb-item" href="#">Dragon's Fury</a>
+          <span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-item current">📜 Sessions</span>
+        </nav>
+        <div class="top-bar-actions">
+          <button class="share-btn">
+            <span class="share-btn-icon">📤</span>
+            Share
+          </button>
+          <button class="top-bar-btn">🔔</button>
+          <button class="top-bar-btn">✨</button>
+          <div class="user-avatar">ED</div>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <div class="page-header">
+          <h1 class="page-title">
+            <span class="page-title-icon">📜</span>
+            Session Notes
+          </h1>
+          <p class="page-subtitle">Track your adventure's progress session by session</p>
+        </div>
+
+        <div class="sessions-grid">
+          <div class="session-card">
+            <div class="session-number">12</div>
+            <div class="session-info">
+              <div class="session-title">The Dragon's Lair</div>
+              <div class="session-meta">
+                <span class="session-date">📅 Jan 25, 2026</span>
+                <span>• 4 hours</span>
+              </div>
+            </div>
+          </div>
+          <div class="session-card">
+            <div class="session-number">11</div>
+            <div class="session-info">
+              <div class="session-title">Secrets of the Ancient Temple</div>
+              <div class="session-meta">
+                <span class="session-date">📅 Jan 18, 2026</span>
+                <span>• 3.5 hours</span>
+              </div>
+            </div>
+          </div>
+          <div class="session-card">
+            <div class="session-number">10</div>
+            <div class="session-info">
+              <div class="session-title">The Merchant's Request</div>
+              <div class="session-meta">
+                <span class="session-date">📅 Jan 11, 2026</span>
+                <span>• 4 hours</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Design Notes -->
+      <div class="design-notes">
+        <div class="design-notes-title">💡 Option A: Grouped Collapsible</div>
+        <div class="design-notes-content">
+          <strong>Concept:</strong> All navigation in one dock, organized into collapsible sections.
+          <ul class="design-notes-list">
+            <li>Sections expand/collapse on click</li>
+            <li>Collapsed sections show item count</li>
+            <li>Hover to expand dock width</li>
+            <li>Try clicking section headers!</li>
+          </ul>
+          <strong style="margin-top: 12px; display: block;">Share Access:</strong>
+          <ul class="design-notes-list">
+            <li><strong>TopBar:</strong> Share button (always visible)</li>
+            <li><strong>Dock:</strong> Share section (collapsible)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================
+         OPTION A2 - COMPACT GROUPED DOCK
+         ============================================ -->
+    <div class="mockup" id="mockup-a2">
+      <!-- Compact Floating Dock -->
+      <nav class="floating-dock dock-a" style="max-height: calc(100vh - 160px);">
+        <a class="dock-logo">
+          <div class="dock-logo-icon">🎲</div>
+          <span class="dock-logo-text">Multiloop<span class="dock-logo-beta">BETA</span></span>
+        </a>
+        <div class="dock-divider"></div>
+
+        <!-- Campaign Section - Always expanded, core items only -->
+        <div class="dock-section" id="section-campaign-a2">
+          <div class="dock-section-header" onclick="toggleSection('campaign-a2')">
+            <span class="dock-section-collapsed-icon">⚔️</span>
+            <span class="dock-section-title">
+              Campaign
+            </span>
+            <span class="dock-section-chevron">▼</span>
+          </div>
+          <div class="dock-section-items">
+            <a class="dock-item">
+              <span class="dock-item-icon">📊</span>
+              <span class="dock-item-label">Dashboard</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🎨</span>
+              <span class="dock-item-label">Canvas</span>
+            </a>
+            <a class="dock-item active">
+              <span class="dock-item-icon">📜</span>
+              <span class="dock-item-label">Sessions</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">⏰</span>
+              <span class="dock-item-label">Timeline</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">📖</span>
+              <span class="dock-item-label">Lore</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🗺️</span>
+              <span class="dock-item-label">Map</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🖼️</span>
+              <span class="dock-item-label">Gallery</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- DM Only Section - Combined DM Tools + Manage -->
+        <div class="dock-section collapsed" id="section-dm-a2">
+          <div class="dock-section-header" onclick="toggleSection('dm-a2')">
+            <span class="dock-section-collapsed-icon">🔒</span>
+            <span class="dock-section-title">
+              DM Only
+              <span class="dock-section-count">8</span>
+            </span>
+            <span class="dock-section-chevron">▼</span>
+          </div>
+          <div class="dock-section-items">
+            <a class="dock-item">
+              <span class="dock-item-icon">🧠</span>
+              <span class="dock-item-label">Intelligence</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">📍</span>
+              <span class="dock-item-label">Locations</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🎯</span>
+              <span class="dock-item-label">Quests</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">⚔️</span>
+              <span class="dock-item-label">Encounters</span>
+            </a>
+            <div class="dock-divider" style="margin: 4px 8px;"></div>
+            <a class="dock-item">
+              <span class="dock-item-icon">👥</span>
+              <span class="dock-item-label">Party & Members</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🏷️</span>
+              <span class="dock-item-label">Labels</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🛡️</span>
+              <span class="dock-item-label">Factions</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🔗</span>
+              <span class="dock-item-label">Relationships</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="dock-divider"></div>
+
+        <!-- Global - Collapsed by default -->
+        <div class="dock-section collapsed" id="section-global-a2">
+          <div class="dock-section-header" onclick="toggleSection('global-a2')">
+            <span class="dock-section-collapsed-icon">🏠</span>
+            <span class="dock-section-title">
+              Navigate
+              <span class="dock-section-count">6</span>
+            </span>
+            <span class="dock-section-chevron">▼</span>
+          </div>
+          <div class="dock-section-items">
+            <a class="dock-item">
+              <span class="dock-item-icon">🏠</span>
+              <span class="dock-item-label">Home</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">⚔️</span>
+              <span class="dock-item-label">Campaigns</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🧭</span>
+              <span class="dock-item-label">Adventures</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">📜</span>
+              <span class="dock-item-label">One-Shots</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">📚</span>
+              <span class="dock-item-label">Characters</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">⚙️</span>
+              <span class="dock-item-label">Settings</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="dock-divider"></div>
+
+        <!-- Campaign Settings - Always visible at bottom -->
+        <a class="dock-item">
+          <span class="dock-item-icon">⚙️</span>
+          <span class="dock-item-label">Campaign Settings</span>
+        </a>
+      </nav>
+
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <nav class="breadcrumb">
+          <a class="breadcrumb-item" href="#">Home</a>
+          <span class="breadcrumb-sep">›</span>
+          <a class="breadcrumb-item" href="#">Campaigns</a>
+          <span class="breadcrumb-sep">›</span>
+          <a class="breadcrumb-item" href="#">Dragon's Fury</a>
+          <span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-item current">📜 Sessions</span>
+        </nav>
+        <div class="top-bar-actions">
+          <button class="share-btn">
+            <span class="share-btn-icon">📤</span>
+            Share
+          </button>
+          <button class="top-bar-btn">🔔</button>
+          <button class="top-bar-btn">✨</button>
+          <div class="user-avatar">ED</div>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <div class="page-header">
+          <h1 class="page-title">
+            <span class="page-title-icon">📜</span>
+            Session Notes
+          </h1>
+          <p class="page-subtitle">Track your adventure's progress session by session</p>
+        </div>
+
+        <div class="sessions-grid">
+          <div class="session-card">
+            <div class="session-number">12</div>
+            <div class="session-info">
+              <div class="session-title">The Dragon's Lair</div>
+              <div class="session-meta">
+                <span class="session-date">📅 Jan 25, 2026</span>
+                <span>• 4 hours</span>
+              </div>
+            </div>
+          </div>
+          <div class="session-card">
+            <div class="session-number">11</div>
+            <div class="session-info">
+              <div class="session-title">Secrets of the Ancient Temple</div>
+              <div class="session-meta">
+                <span class="session-date">📅 Jan 18, 2026</span>
+                <span>• 3.5 hours</span>
+              </div>
+            </div>
+          </div>
+          <div class="session-card">
+            <div class="session-number">10</div>
+            <div class="session-info">
+              <div class="session-title">The Merchant's Request</div>
+              <div class="session-meta">
+                <span class="session-date">📅 Jan 11, 2026</span>
+                <span>• 4 hours</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Design Notes -->
+      <div class="design-notes">
+        <div class="design-notes-title">💡 Option A2: Compact Grouped</div>
+        <div class="design-notes-content">
+          <strong>Changes from Option A:</strong>
+          <ul class="design-notes-list">
+            <li>Combined "DM Tools" + "Manage" → "DM Only"</li>
+            <li>DM Only + Navigate collapsed by default</li>
+            <li>Campaign Settings pinned at bottom</li>
+            <li><strong>Only 3 sections</strong> vs 5 in Option A</li>
+          </ul>
+          <strong style="margin-top: 12px; display: block;">Overflow handling:</strong>
+          <ul class="design-notes-list">
+            <li>Max height set to viewport</li>
+            <li>Internal scroll if needed</li>
+            <li>See Canvas v2 for accordion mode</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================
+         CANVAS PAGE MOCKUP
+         ============================================ -->
+    <div class="mockup" id="mockup-canvas">
+      <!-- Compact Floating Dock (same as A2) -->
+      <nav class="floating-dock dock-a" style="max-height: calc(100vh - 160px);">
+        <a class="dock-logo">
+          <div class="dock-logo-icon">🎲</div>
+          <span class="dock-logo-text">Multiloop<span class="dock-logo-beta">BETA</span></span>
+        </a>
+        <div class="dock-divider"></div>
+
+        <!-- Campaign Section -->
+        <div class="dock-section" id="section-campaign-canvas">
+          <div class="dock-section-header" onclick="toggleSection('campaign-canvas')">
+            <span class="dock-section-collapsed-icon">⚔️</span>
+            <span class="dock-section-title">Campaign</span>
+            <span class="dock-section-chevron">▼</span>
+          </div>
+          <div class="dock-section-items">
+            <a class="dock-item">
+              <span class="dock-item-icon">📊</span>
+              <span class="dock-item-label">Dashboard</span>
+            </a>
+            <a class="dock-item active">
+              <span class="dock-item-icon">🎨</span>
+              <span class="dock-item-label">Canvas</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">📜</span>
+              <span class="dock-item-label">Sessions</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">⏰</span>
+              <span class="dock-item-label">Timeline</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">📖</span>
+              <span class="dock-item-label">Lore</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🗺️</span>
+              <span class="dock-item-label">Map</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🖼️</span>
+              <span class="dock-item-label">Gallery</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- DM Only Section -->
+        <div class="dock-section collapsed" id="section-dm-canvas">
+          <div class="dock-section-header" onclick="toggleSection('dm-canvas')">
+            <span class="dock-section-collapsed-icon">🔒</span>
+            <span class="dock-section-title">
+              DM Only
+              <span class="dock-section-count">8</span>
+            </span>
+            <span class="dock-section-chevron">▼</span>
+          </div>
+          <div class="dock-section-items">
+            <a class="dock-item">
+              <span class="dock-item-icon">🧠</span>
+              <span class="dock-item-label">Intelligence</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">📍</span>
+              <span class="dock-item-label">Locations</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🎯</span>
+              <span class="dock-item-label">Quests</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">⚔️</span>
+              <span class="dock-item-label">Encounters</span>
+            </a>
+            <div class="dock-divider" style="margin: 4px 8px;"></div>
+            <a class="dock-item">
+              <span class="dock-item-icon">👥</span>
+              <span class="dock-item-label">Party & Members</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🏷️</span>
+              <span class="dock-item-label">Labels</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🛡️</span>
+              <span class="dock-item-label">Factions</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🔗</span>
+              <span class="dock-item-label">Relationships</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="dock-divider"></div>
+
+        <!-- Global - Collapsed -->
+        <div class="dock-section collapsed" id="section-global-canvas">
+          <div class="dock-section-header" onclick="toggleSection('global-canvas')">
+            <span class="dock-section-collapsed-icon">🏠</span>
+            <span class="dock-section-title">
+              Navigate
+              <span class="dock-section-count">6</span>
+            </span>
+            <span class="dock-section-chevron">▼</span>
+          </div>
+          <div class="dock-section-items">
+            <a class="dock-item">
+              <span class="dock-item-icon">🏠</span>
+              <span class="dock-item-label">Home</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">⚔️</span>
+              <span class="dock-item-label">Campaigns</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🧭</span>
+              <span class="dock-item-label">Adventures</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">📜</span>
+              <span class="dock-item-label">One-Shots</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">📚</span>
+              <span class="dock-item-label">Characters</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">⚙️</span>
+              <span class="dock-item-label">Settings</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="dock-divider"></div>
+
+        <a class="dock-item">
+          <span class="dock-item-icon">⚙️</span>
+          <span class="dock-item-label">Campaign Settings</span>
+        </a>
+      </nav>
+
+      <!-- Top Bar with Canvas Actions -->
+      <header class="top-bar" style="background: transparent; border-bottom: none;">
+        <nav class="breadcrumb">
+          <a class="breadcrumb-item" href="#">Home</a>
+          <span class="breadcrumb-sep">›</span>
+          <a class="breadcrumb-item" href="#">Campaigns</a>
+          <span class="breadcrumb-sep">›</span>
+          <a class="breadcrumb-item" href="#">Dragon's Fury</a>
+          <span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-item current">🎨 Canvas</span>
+        </nav>
+        <div class="top-bar-actions">
+          <!-- Canvas-specific actions -->
+          <div class="canvas-toolbar">
+            <button class="canvas-tool-btn active">
+              <span>🔗</span>
+              Connections
+              <span style="font-size: 10px;">▼</span>
+            </button>
+            <button class="canvas-tool-btn primary">
+              <span>➕</span>
+              Add
+              <span style="font-size: 10px;">▼</span>
+            </button>
+          </div>
+          <div style="width: 1px; height: 24px; background: var(--border-subtle); margin: 0 8px;"></div>
+          <button class="share-btn">
+            <span class="share-btn-icon">📤</span>
+            Share
+          </button>
+          <button class="top-bar-btn">🔔</button>
+          <button class="top-bar-btn">✨</button>
+          <div class="user-avatar">ED</div>
+        </div>
+      </header>
+
+      <!-- Canvas Area (placeholder) -->
+      <main class="main-content" style="padding: 128px 32px 32px 104px; background: linear-gradient(135deg, #0a0a12 0%, #0f0f18 100%);">
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; padding: 40px;">
+          <!-- Group: The Party -->
+          <div class="canvas-group">
+            <div class="canvas-group-header">
+              <span>👥</span> The Party
+            </div>
+            <div class="canvas-group-cards">
+              <div class="canvas-card pc">
+                <div class="canvas-card-avatar">🧙</div>
+                <div class="canvas-card-name">Elara Moonwhisper</div>
+                <div class="canvas-card-class">Elf Wizard</div>
+              </div>
+              <div class="canvas-card pc">
+                <div class="canvas-card-avatar">⚔️</div>
+                <div class="canvas-card-name">Thorin Ironforge</div>
+                <div class="canvas-card-class">Dwarf Fighter</div>
+              </div>
+              <div class="canvas-card pc">
+                <div class="canvas-card-avatar">🏹</div>
+                <div class="canvas-card-name">Lyra Shadowstep</div>
+                <div class="canvas-card-class">Human Rogue</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Group: NPCs -->
+          <div class="canvas-group" style="border-color: rgba(107, 114, 128, 0.3);">
+            <div class="canvas-group-header" style="color: #9CA3AF;">
+              <span>🎭</span> Key NPCs
+            </div>
+            <div class="canvas-group-cards">
+              <div class="canvas-card npc">
+                <div class="canvas-card-avatar">👑</div>
+                <div class="canvas-card-name">King Aldric III</div>
+                <div class="canvas-card-class">Human Noble</div>
+              </div>
+              <div class="canvas-card npc">
+                <div class="canvas-card-avatar">🐉</div>
+                <div class="canvas-card-name">Vorath the Ancient</div>
+                <div class="canvas-card-class">Red Dragon</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Design Notes -->
+      <div class="design-notes">
+        <div class="design-notes-title">💡 Canvas Page Specifics</div>
+        <div class="design-notes-content">
+          <strong>Canvas-specific toolbar:</strong>
+          <ul class="design-notes-list">
+            <li><strong>Connections</strong> - Toggle relationship lines</li>
+            <li><strong>Add</strong> - Add Character or Group</li>
+            <li>Toolbar is in TopBar, not floating</li>
+          </ul>
+          <strong style="margin-top: 12px; display: block;">Same dock as other pages</strong>
+          <p style="margin-top: 4px; font-size: 12px;">Page-specific actions live in TopBar, not dock.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================
+         CANVAS V2 - FLOATING TOOLBAR
+         ============================================ -->
+    <div class="mockup" id="mockup-canvas2">
+      <!-- Clean Dock - no switcher (moved to TopBar) -->
+      <nav class="floating-dock dock-accordion">
+        <a class="dock-logo">
+          <div class="dock-logo-icon">🎲</div>
+          <span class="dock-logo-text">Multiloop<span class="dock-logo-beta">BETA</span></span>
+        </a>
+        <div class="dock-divider"></div>
+
+        <!-- Campaign Section - Accordion behavior -->
+        <div class="dock-section" id="section-campaign-acc">
+          <div class="dock-section-header" onclick="toggleSectionAccordion('campaign', 'acc')">
+            <span class="dock-section-collapsed-icon">⚔️</span>
+            <span class="dock-section-title">Campaign</span>
+            <span class="dock-section-chevron">▼</span>
+          </div>
+          <div class="dock-section-items">
+            <a class="dock-item">
+              <span class="dock-item-icon">📊</span>
+              <span class="dock-item-label">Dashboard</span>
+            </a>
+            <a class="dock-item active">
+              <span class="dock-item-icon">🎨</span>
+              <span class="dock-item-label">Canvas</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">📜</span>
+              <span class="dock-item-label">Sessions</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">⏰</span>
+              <span class="dock-item-label">Timeline</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">📖</span>
+              <span class="dock-item-label">Lore</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🗺️</span>
+              <span class="dock-item-label">Map</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🖼️</span>
+              <span class="dock-item-label">Gallery</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- DM Only - Collapsed, accordion -->
+        <div class="dock-section collapsed" id="section-dm-acc">
+          <div class="dock-section-header" onclick="toggleSectionAccordion('dm', 'acc')">
+            <span class="dock-section-collapsed-icon">🔒</span>
+            <span class="dock-section-title">
+              DM Only
+              <span class="dock-section-count">8</span>
+            </span>
+            <span class="dock-section-chevron">▼</span>
+          </div>
+          <div class="dock-section-items">
+            <a class="dock-item">
+              <span class="dock-item-icon">🧠</span>
+              <span class="dock-item-label">Intelligence</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">📍</span>
+              <span class="dock-item-label">Locations</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🎯</span>
+              <span class="dock-item-label">Quests</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">⚔️</span>
+              <span class="dock-item-label">Encounters</span>
+            </a>
+            <div class="dock-divider" style="margin: 4px 8px;"></div>
+            <a class="dock-item">
+              <span class="dock-item-icon">👥</span>
+              <span class="dock-item-label">Party & Members</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🏷️</span>
+              <span class="dock-item-label">Labels</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🛡️</span>
+              <span class="dock-item-label">Factions</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🔗</span>
+              <span class="dock-item-label">Relationships</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Navigate - Collapsed, accordion -->
+        <div class="dock-section collapsed" id="section-global-acc">
+          <div class="dock-section-header" onclick="toggleSectionAccordion('global', 'acc')">
+            <span class="dock-section-collapsed-icon">🏠</span>
+            <span class="dock-section-title">
+              Navigate
+              <span class="dock-section-count">6</span>
+            </span>
+            <span class="dock-section-chevron">▼</span>
+          </div>
+          <div class="dock-section-items">
+            <a class="dock-item">
+              <span class="dock-item-icon">🏠</span>
+              <span class="dock-item-label">Home</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">⚔️</span>
+              <span class="dock-item-label">Campaigns</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">🧭</span>
+              <span class="dock-item-label">Adventures</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">📜</span>
+              <span class="dock-item-label">One-Shots</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">📚</span>
+              <span class="dock-item-label">Characters</span>
+            </a>
+            <a class="dock-item">
+              <span class="dock-item-icon">⚙️</span>
+              <span class="dock-item-label">Settings</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="dock-divider"></div>
+
+        <a class="dock-item">
+          <span class="dock-item-icon">⚙️</span>
+          <span class="dock-item-label">Campaign Settings</span>
+        </a>
+      </nav>
+
+      <!-- Top Bar with Campaign Switcher -->
+      <header class="top-bar" style="background: transparent; border-bottom: none;">
+        <nav class="breadcrumb">
+          <a class="breadcrumb-item" href="#">Home</a>
+          <span class="breadcrumb-sep">›</span>
+          <a class="breadcrumb-item" href="#">Campaigns</a>
+          <span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-item current">🎨 Canvas</span>
+        </nav>
+        <div class="top-bar-actions">
+          <!-- Campaign Switcher in TopBar -->
+          <div class="topbar-switcher" title="Switch Campaign">
+            <div class="topbar-switcher-avatar">🐉</div>
+            <span class="topbar-switcher-name">Dragon's Fury</span>
+            <span class="topbar-switcher-chevron">▼</span>
+          </div>
+          <button class="share-btn">
+            <span class="share-btn-icon">📤</span>
+            Share
+          </button>
+          <button class="top-bar-btn">✨</button>
+          <div class="user-avatar">ED</div>
+        </div>
+      </header>
+
+      <!-- FLOATING CANVAS TOOLBAR -->
+      <div class="floating-canvas-toolbar">
+        <!-- View Controls -->
+        <div class="toolbar-group">
+          <button class="toolbar-btn icon-only" title="Zoom Out">
+            <span class="toolbar-btn-icon">➖</span>
+          </button>
+          <span style="font-size: 12px; color: var(--text-tertiary); min-width: 40px; text-align: center;">100%</span>
+          <button class="toolbar-btn icon-only" title="Zoom In">
+            <span class="toolbar-btn-icon">➕</span>
+          </button>
+          <button class="toolbar-btn icon-only" title="Fit to Screen">
+            <span class="toolbar-btn-icon">⛶</span>
+          </button>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <!-- Connections -->
+        <div class="toolbar-dropdown">
+          <button class="toolbar-btn active">
+            <span class="toolbar-btn-icon">🔗</span>
+            <span class="toolbar-btn-label">Connections</span>
+            <span class="connection-indicator"></span>
+          </button>
+          <div class="toolbar-dropdown-content">
+            <div class="toolbar-dropdown-item" style="color: var(--success);">
+              <span>✓</span> Show Connections
+            </div>
+            <div class="toolbar-dropdown-divider"></div>
+            <div class="toolbar-dropdown-header">Filter by Type</div>
+            <div class="toolbar-dropdown-item">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: #8B5CF6;"></span>
+              All Types
+            </div>
+            <div class="toolbar-dropdown-item">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: #EF4444;"></span>
+              Family
+            </div>
+            <div class="toolbar-dropdown-item">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: #3B82F6;"></span>
+              Professional
+            </div>
+            <div class="toolbar-dropdown-item">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: #10B981;"></span>
+              Social
+            </div>
+            <div class="toolbar-dropdown-item">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: #F59E0B;"></span>
+              Romantic
+            </div>
+          </div>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <!-- Add Character -->
+        <button class="toolbar-btn" style="background: var(--purple-primary); color: white;">
+          <span class="toolbar-btn-icon">+</span>
+          <span class="toolbar-btn-label">Character</span>
+        </button>
+
+        <!-- Add Group -->
+        <button class="toolbar-btn">
+          <span class="toolbar-btn-icon">+</span>
+          <span class="toolbar-btn-label">Group</span>
+        </button>
+
+        <div class="toolbar-divider"></div>
+
+        <!-- Canvas Settings -->
+        <div class="toolbar-dropdown">
+          <button class="toolbar-btn icon-only" title="Canvas Settings">
+            <span class="toolbar-btn-icon">⚙️</span>
+          </button>
+          <div class="toolbar-dropdown-content">
+            <div class="toolbar-dropdown-item">
+              <span>📏</span> Card Sizing
+            </div>
+            <div class="toolbar-dropdown-item">
+              <span>🎨</span> Canvas Background
+            </div>
+            <div class="toolbar-dropdown-item">
+              <span>📐</span> Snap to Grid
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Canvas Area -->
+      <main class="main-content" style="padding: 128px 32px 32px 104px; background: linear-gradient(135deg, #0a0a12 0%, #0f0f18 100%);">
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; padding: 40px;">
+          <!-- Group: The Party -->
+          <div class="canvas-group">
+            <div class="canvas-group-header">
+              <span>👥</span> The Party
+            </div>
+            <div class="canvas-group-cards">
+              <div class="canvas-card pc">
+                <div class="canvas-card-avatar">🧙</div>
+                <div class="canvas-card-name">Elara Moonwhisper</div>
+                <div class="canvas-card-class">Elf Wizard</div>
+              </div>
+              <div class="canvas-card pc">
+                <div class="canvas-card-avatar">⚔️</div>
+                <div class="canvas-card-name">Thorin Ironforge</div>
+                <div class="canvas-card-class">Dwarf Fighter</div>
+              </div>
+              <div class="canvas-card pc">
+                <div class="canvas-card-avatar">🏹</div>
+                <div class="canvas-card-name">Lyra Shadowstep</div>
+                <div class="canvas-card-class">Human Rogue</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Group: NPCs -->
+          <div class="canvas-group" style="border-color: rgba(107, 114, 128, 0.3);">
+            <div class="canvas-group-header" style="color: #9CA3AF;">
+              <span>🎭</span> Key NPCs
+            </div>
+            <div class="canvas-group-cards">
+              <div class="canvas-card npc">
+                <div class="canvas-card-avatar">👑</div>
+                <div class="canvas-card-name">King Aldric III</div>
+                <div class="canvas-card-class">Human Noble</div>
+              </div>
+              <div class="canvas-card npc">
+                <div class="canvas-card-avatar">🐉</div>
+                <div class="canvas-card-name">Vorath the Ancient</div>
+                <div class="canvas-card-class">Red Dragon</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Design Notes -->
+      <div class="design-notes">
+        <div class="design-notes-title">💡 Canvas v2: Floating Toolbar</div>
+        <div class="design-notes-content">
+          <strong>Key improvements:</strong>
+          <ul class="design-notes-list">
+            <li><strong>Floating toolbar</strong> centered on canvas</li>
+            <li><strong>+ Character</strong> and <strong>+ Group</strong> separate buttons</li>
+            <li><strong>Connections</strong> with filter dropdown</li>
+            <li><strong>Zoom controls</strong> and canvas settings</li>
+            <li><strong>Campaign switcher</strong> in TopBar (not dock)</li>
+          </ul>
+          <strong style="margin-top: 12px; display: block;">TopBar shows:</strong>
+          <p style="margin-top: 4px; font-size: 12px;">Breadcrumbs | [Switcher] [Share] [AI] [Avatar]</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================
+         DOCK: NO SCROLL (Flyout Panels)
+         ============================================ -->
+    <div class="mockup" id="mockup-dock-strict">
+      <!-- Dock with Flyout Panels - No scroll needed -->
+      <nav class="floating-dock dock-strict">
+        <a class="dock-logo">
+          <div class="dock-logo-icon">🎲</div>
+          <span class="dock-logo-text">Multiloop<span class="dock-logo-beta">BETA</span></span>
+        </a>
+        <div class="dock-divider"></div>
+
+        <!-- Campaign Pages - Always visible -->
+        <a class="dock-item">
+          <span class="dock-item-icon">📊</span>
+          <span class="dock-item-label">Dashboard</span>
+        </a>
+        <a class="dock-item">
+          <span class="dock-item-icon">🎨</span>
+          <span class="dock-item-label">Canvas</span>
+        </a>
+        <a class="dock-item active">
+          <span class="dock-item-icon">📜</span>
+          <span class="dock-item-label">Sessions</span>
+        </a>
+        <a class="dock-item">
+          <span class="dock-item-icon">⏰</span>
+          <span class="dock-item-label">Timeline</span>
+        </a>
+        <a class="dock-item">
+          <span class="dock-item-icon">📖</span>
+          <span class="dock-item-label">Lore</span>
+        </a>
+        <a class="dock-item">
+          <span class="dock-item-icon">🗺️</span>
+          <span class="dock-item-label">Map</span>
+        </a>
+        <a class="dock-item">
+          <span class="dock-item-icon">🖼️</span>
+          <span class="dock-item-label">Gallery</span>
+        </a>
+
+        <div class="dock-divider"></div>
+
+        <!-- DM Tools - Flyout Panel -->
+        <div class="dock-flyout">
+          <div class="dock-flyout-trigger">
+            <span class="dock-flyout-icon">🔒</span>
+            <span class="dock-flyout-label">DM Tools</span>
+            <span class="dock-flyout-arrow">→</span>
+          </div>
+          <div class="dock-flyout-panel">
+            <div class="dock-flyout-item">
+              <span class="dock-flyout-item-icon">🧠</span>
+              Intelligence
+            </div>
+            <div class="dock-flyout-item">
+              <span class="dock-flyout-item-icon">📍</span>
+              Locations
+            </div>
+            <div class="dock-flyout-item">
+              <span class="dock-flyout-item-icon">🎯</span>
+              Quests
+            </div>
+            <div class="dock-flyout-item">
+              <span class="dock-flyout-item-icon">⚔️</span>
+              Encounters
+            </div>
+          </div>
+        </div>
+
+        <!-- Management - Flyout Panel -->
+        <div class="dock-flyout">
+          <div class="dock-flyout-trigger">
+            <span class="dock-flyout-icon">⚙️</span>
+            <span class="dock-flyout-label">Management</span>
+            <span class="dock-flyout-arrow">→</span>
+          </div>
+          <div class="dock-flyout-panel">
+            <div class="dock-flyout-item">
+              <span class="dock-flyout-item-icon">👥</span>
+              Party & Members
+            </div>
+            <div class="dock-flyout-item">
+              <span class="dock-flyout-item-icon">🏷️</span>
+              Labels
+            </div>
+            <div class="dock-flyout-item">
+              <span class="dock-flyout-item-icon">🛡️</span>
+              Factions
+            </div>
+            <div class="dock-flyout-item">
+              <span class="dock-flyout-item-icon">🔗</span>
+              Relationships
+            </div>
+          </div>
+        </div>
+
+        <div class="dock-divider"></div>
+
+        <!-- Global Nav - Always visible -->
+        <a class="dock-item">
+          <span class="dock-item-icon">🏠</span>
+          <span class="dock-item-label">Home</span>
+        </a>
+        <a class="dock-item">
+          <span class="dock-item-icon">⚔️</span>
+          <span class="dock-item-label">Campaigns</span>
+        </a>
+        <a class="dock-item">
+          <span class="dock-item-icon">📚</span>
+          <span class="dock-item-label">Characters</span>
+        </a>
+        <a class="dock-item">
+          <span class="dock-item-icon">⚙️</span>
+          <span class="dock-item-label">Settings</span>
+        </a>
+      </nav>
+
+      <!-- Top Bar with Campaign Switcher -->
+      <header class="top-bar">
+        <nav class="breadcrumb">
+          <a class="breadcrumb-item" href="#">Home</a>
+          <span class="breadcrumb-sep">›</span>
+          <a class="breadcrumb-item" href="#">Campaigns</a>
+          <span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-item current">📜 Sessions</span>
+        </nav>
+        <div class="top-bar-actions">
+          <!-- Campaign Switcher -->
+          <div class="topbar-switcher" title="Switch Campaign">
+            <div class="topbar-switcher-avatar">🐉</div>
+            <span class="topbar-switcher-name">Dragon's Fury</span>
+            <span class="topbar-switcher-chevron">▼</span>
+          </div>
+          <button class="share-btn">
+            <span class="share-btn-icon">📤</span>
+            Share
+          </button>
+          <button class="top-bar-btn">✨</button>
+          <div class="user-avatar">ED</div>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <div class="page-header">
+          <h1 class="page-title">
+            <span class="page-title-icon">📜</span>
+            Session Notes
+          </h1>
+          <p class="page-subtitle">Track your adventure's progress session by session</p>
+        </div>
+
+        <div class="sessions-grid">
+          <div class="session-card">
+            <div class="session-number">12</div>
+            <div class="session-info">
+              <div class="session-title">The Dragon's Lair</div>
+              <div class="session-meta">
+                <span class="session-date">📅 Jan 25, 2026</span>
+                <span>• 4 hours</span>
+              </div>
+            </div>
+          </div>
+          <div class="session-card">
+            <div class="session-number">11</div>
+            <div class="session-info">
+              <div class="session-title">Secrets of the Ancient Temple</div>
+              <div class="session-meta">
+                <span class="session-date">📅 Jan 18, 2026</span>
+                <span>• 3.5 hours</span>
+              </div>
+            </div>
+          </div>
+          <div class="session-card">
+            <div class="session-number">10</div>
+            <div class="session-info">
+              <div class="session-title">The Merchant's Request</div>
+              <div class="session-meta">
+                <span class="session-date">📅 Jan 11, 2026</span>
+                <span>• 4 hours</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Design Notes -->
+      <div class="design-notes">
+        <div class="design-notes-title">💡 Dock: Flyout Panels</div>
+        <div class="design-notes-content">
+          <strong>Key design:</strong>
+          <ul class="design-notes-list">
+            <li><strong>Campaign nav</strong> - 7 items, always visible</li>
+            <li><strong>DM Tools</strong> → flyout panel (hover)</li>
+            <li><strong>Management</strong> → flyout panel (hover)</li>
+            <li><strong>Global nav</strong> - 4 items, always visible</li>
+            <li><strong>Campaign switcher</strong> in TopBar</li>
+          </ul>
+          <strong style="margin-top: 12px; display: block;">~15 items visible, no scroll</strong>
+          <p style="margin-top: 4px; font-size: 12px;">Hover DM Tools or Management to see flyout!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================
+         OPTION B - SPLIT NAVIGATION
+         ============================================ -->
+    <div class="mockup" id="mockup-b">
+      <!-- Slim Floating Dock (Global Only) -->
+      <nav class="floating-dock dock-b">
+        <a class="dock-logo">
+          <div class="dock-logo-icon">🎲</div>
+          <span class="dock-logo-text">Multiloop<span class="dock-logo-beta">BETA</span></span>
+        </a>
+        <div class="dock-divider"></div>
+        <a class="dock-item">
+          <span class="dock-item-icon">🏠</span>
+          <span class="dock-item-label">Home</span>
+        </a>
+        <a class="dock-item active">
+          <span class="dock-item-icon">⚔️</span>
+          <span class="dock-item-label">Campaigns</span>
+        </a>
+        <a class="dock-item">
+          <span class="dock-item-icon">🧭</span>
+          <span class="dock-item-label">Adventures</span>
+        </a>
+        <a class="dock-item">
+          <span class="dock-item-icon">📜</span>
+          <span class="dock-item-label">One-Shots</span>
+        </a>
+        <a class="dock-item">
+          <span class="dock-item-icon">📚</span>
+          <span class="dock-item-label">Characters</span>
+        </a>
+        <a class="dock-item">
+          <span class="dock-item-icon">⚙️</span>
+          <span class="dock-item-label">Settings</span>
+        </a>
+      </nav>
+
+      <!-- Top Bar -->
+      <header class="top-bar top-bar-b">
+        <nav class="breadcrumb">
+          <a class="breadcrumb-item" href="#">Home</a>
+          <span class="breadcrumb-sep">›</span>
+          <a class="breadcrumb-item" href="#">Campaigns</a>
+          <span class="breadcrumb-sep">›</span>
+          <a class="breadcrumb-item" href="#">Dragon's Fury</a>
+          <span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-item current">📜 Sessions</span>
+        </nav>
+        <div class="top-bar-actions">
+          <button class="share-btn">
+            <span class="share-btn-icon">📤</span>
+            Share
+          </button>
+          <button class="top-bar-btn">🔔</button>
+          <button class="top-bar-btn">✨</button>
+          <div class="user-avatar">ED</div>
+        </div>
+      </header>
+
+      <!-- Campaign Tab Bar -->
+      <div class="campaign-tabs">
+        <div class="campaign-tab">
+          <span class="campaign-tab-icon">📊</span>
+          Dashboard
+        </div>
+        <div class="campaign-tab">
+          <span class="campaign-tab-icon">🎨</span>
+          Canvas
+        </div>
+        <div class="campaign-tab active">
+          <span class="campaign-tab-icon">📜</span>
+          Sessions
+        </div>
+        <div class="campaign-tab">
+          <span class="campaign-tab-icon">⏰</span>
+          Timeline
+        </div>
+        <div class="campaign-tab">
+          <span class="campaign-tab-icon">📖</span>
+          Lore
+        </div>
+        <div class="campaign-tab">
+          <span class="campaign-tab-icon">🗺️</span>
+          Map
+        </div>
+        <div class="campaign-tab">
+          <span class="campaign-tab-icon">🖼️</span>
+          Gallery
+        </div>
+        <div class="more-dropdown">
+          <div class="campaign-tab">
+            <span class="campaign-tab-icon">•••</span>
+            More
+          </div>
+          <div class="more-dropdown-content">
+            <div class="dropdown-section-title">DM Tools</div>
+            <div class="dropdown-item">
+              <span>🧠</span> Intelligence
+            </div>
+            <div class="dropdown-item">
+              <span>📍</span> Locations
+            </div>
+            <div class="dropdown-item">
+              <span>🎯</span> Quests
+            </div>
+            <div class="dropdown-item">
+              <span>⚔️</span> Encounters
+            </div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-section-title">Management</div>
+            <div class="dropdown-item">
+              <span>👥</span> Party & Members
+            </div>
+            <div class="dropdown-item">
+              <span>🏷️</span> Labels
+            </div>
+            <div class="dropdown-item">
+              <span>🛡️</span> Factions
+            </div>
+            <div class="dropdown-item">
+              <span>🔗</span> Relationships
+            </div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-section-title">Share</div>
+            <div class="dropdown-item">
+              <span>📤</span> Share Campaign
+            </div>
+            <div class="dropdown-item">
+              <span>📋</span> Copy Invite Link
+            </div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-item">
+              <span>⚙️</span> Campaign Settings
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <main class="main-content main-content-b">
+        <div class="page-header">
+          <h1 class="page-title">
+            <span class="page-title-icon">📜</span>
+            Session Notes
+          </h1>
+          <p class="page-subtitle">Track your adventure's progress session by session</p>
+        </div>
+
+        <div class="sessions-grid">
+          <div class="session-card">
+            <div class="session-number">12</div>
+            <div class="session-info">
+              <div class="session-title">The Dragon's Lair</div>
+              <div class="session-meta">
+                <span class="session-date">📅 Jan 25, 2026</span>
+                <span>• 4 hours</span>
+              </div>
+            </div>
+          </div>
+          <div class="session-card">
+            <div class="session-number">11</div>
+            <div class="session-info">
+              <div class="session-title">Secrets of the Ancient Temple</div>
+              <div class="session-meta">
+                <span class="session-date">📅 Jan 18, 2026</span>
+                <span>• 3.5 hours</span>
+              </div>
+            </div>
+          </div>
+          <div class="session-card">
+            <div class="session-number">10</div>
+            <div class="session-info">
+              <div class="session-title">The Merchant's Request</div>
+              <div class="session-meta">
+                <span class="session-date">📅 Jan 11, 2026</span>
+                <span>• 4 hours</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Design Notes -->
+      <div class="design-notes">
+        <div class="design-notes-title">💡 Option B: Split Navigation</div>
+        <div class="design-notes-content">
+          <strong>Concept:</strong> Global nav in dock, campaign nav in horizontal tabs.
+          <ul class="design-notes-list">
+            <li>Dock stays short (6 items only)</li>
+            <li>Tab bar shows campaign pages</li>
+            <li>Hover "More" for extras</li>
+            <li>Clear separation of concerns</li>
+          </ul>
+          <strong style="margin-top: 12px; display: block;">Share Access:</strong>
+          <ul class="design-notes-list">
+            <li><strong>TopBar:</strong> Share button (always visible)</li>
+            <li><strong>Tab Bar:</strong> More → Share section</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================
+         OPTION C - CONTEXT-ADAPTIVE DOCK
+         ============================================ -->
+    <div class="mockup" id="mockup-c">
+      <!-- Context-Adaptive Floating Dock -->
+      <nav class="floating-dock dock-c">
+        <a class="dock-logo">
+          <div class="dock-logo-icon">🎲</div>
+          <span class="dock-logo-text">Multiloop<span class="dock-logo-beta">BETA</span></span>
+        </a>
+        <div class="dock-divider"></div>
+
+        <!-- Back Button -->
+        <div class="dock-back">
+          <span class="dock-back-icon">←</span>
+          <span class="dock-back-label">Back to Campaigns</span>
+        </div>
+
+        <div class="dock-divider"></div>
+
+        <!-- Campaign Items -->
+        <a class="dock-item">
+          <span class="dock-item-icon">📊</span>
+          <span class="dock-item-label">Dashboard</span>
+        </a>
+        <a class="dock-item">
+          <span class="dock-item-icon">🎨</span>
+          <span class="dock-item-label">Canvas</span>
+        </a>
+        <a class="dock-item active">
+          <span class="dock-item-icon">📜</span>
+          <span class="dock-item-label">Sessions</span>
+        </a>
+        <a class="dock-item">
+          <span class="dock-item-icon">⏰</span>
+          <span class="dock-item-label">Timeline</span>
+        </a>
+        <a class="dock-item">
+          <span class="dock-item-icon">📖</span>
+          <span class="dock-item-label">Lore</span>
+        </a>
+        <a class="dock-item">
+          <span class="dock-item-icon">🗺️</span>
+          <span class="dock-item-label">Map</span>
+        </a>
+        <a class="dock-item">
+          <span class="dock-item-icon">🖼️</span>
+          <span class="dock-item-label">Gallery</span>
+        </a>
+
+        <div class="dock-divider"></div>
+
+        <!-- Quick Actions -->
+        <div style="position: relative;">
+          <button class="quick-actions-btn">
+            <span class="quick-actions-icon">⚡</span>
+            <span class="quick-actions-label">Quick Actions</span>
+          </button>
+          <div class="quick-actions-popover">
+            <div class="popover-section">
+              <div class="popover-section-title">DM Tools</div>
+              <div class="popover-item">
+                <span class="popover-item-icon">🧠</span>
+                Intelligence
+              </div>
+              <div class="popover-item">
+                <span class="popover-item-icon">📍</span>
+                Locations
+              </div>
+              <div class="popover-item">
+                <span class="popover-item-icon">🎯</span>
+                Quests
+              </div>
+              <div class="popover-item">
+                <span class="popover-item-icon">⚔️</span>
+                Encounters
+              </div>
+            </div>
+            <div class="popover-divider"></div>
+            <div class="popover-section">
+              <div class="popover-section-title">Management</div>
+              <div class="popover-item">
+                <span class="popover-item-icon">👥</span>
+                Party & Members
+              </div>
+              <div class="popover-item">
+                <span class="popover-item-icon">🏷️</span>
+                Labels
+              </div>
+              <div class="popover-item">
+                <span class="popover-item-icon">🛡️</span>
+                Factions
+              </div>
+              <div class="popover-item">
+                <span class="popover-item-icon">🔗</span>
+                Relationships
+              </div>
+            </div>
+            <div class="popover-divider"></div>
+            <div class="popover-section">
+              <div class="popover-section-title">Share</div>
+              <div class="popover-item">
+                <span class="popover-item-icon">📤</span>
+                Share Campaign
+              </div>
+              <div class="popover-item">
+                <span class="popover-item-icon">📋</span>
+                Copy Invite Link
+              </div>
+            </div>
+            <div class="popover-divider"></div>
+            <div class="popover-section">
+              <div class="popover-section-title">Navigate</div>
+              <div class="popover-item">
+                <span class="popover-item-icon">🏠</span>
+                Home
+              </div>
+              <div class="popover-item">
+                <span class="popover-item-icon">⚔️</span>
+                All Campaigns
+              </div>
+              <div class="popover-item">
+                <span class="popover-item-icon">📚</span>
+                Characters
+              </div>
+              <div class="popover-item">
+                <span class="popover-item-icon">⚙️</span>
+                Settings
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <a class="dock-item" style="margin-top: 4px;">
+          <span class="dock-item-icon">⚙️</span>
+          <span class="dock-item-label">Campaign Settings</span>
+        </a>
+      </nav>
+
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <nav class="breadcrumb">
+          <a class="breadcrumb-item" href="#">Home</a>
+          <span class="breadcrumb-sep">›</span>
+          <a class="breadcrumb-item" href="#">Campaigns</a>
+          <span class="breadcrumb-sep">›</span>
+          <a class="breadcrumb-item" href="#">Dragon's Fury</a>
+          <span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-item current">📜 Sessions</span>
+        </nav>
+        <div class="top-bar-actions">
+          <button class="share-btn">
+            <span class="share-btn-icon">📤</span>
+            Share
+          </button>
+          <button class="top-bar-btn">🔔</button>
+          <button class="top-bar-btn">✨</button>
+          <div class="user-avatar">ED</div>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <div class="page-header">
+          <h1 class="page-title">
+            <span class="page-title-icon">📜</span>
+            Session Notes
+          </h1>
+          <p class="page-subtitle">Track your adventure's progress session by session</p>
+        </div>
+
+        <div class="sessions-grid">
+          <div class="session-card">
+            <div class="session-number">12</div>
+            <div class="session-info">
+              <div class="session-title">The Dragon's Lair</div>
+              <div class="session-meta">
+                <span class="session-date">📅 Jan 25, 2026</span>
+                <span>• 4 hours</span>
+              </div>
+            </div>
+          </div>
+          <div class="session-card">
+            <div class="session-number">11</div>
+            <div class="session-info">
+              <div class="session-title">Secrets of the Ancient Temple</div>
+              <div class="session-meta">
+                <span class="session-date">📅 Jan 18, 2026</span>
+                <span>• 3.5 hours</span>
+              </div>
+            </div>
+          </div>
+          <div class="session-card">
+            <div class="session-number">10</div>
+            <div class="session-info">
+              <div class="session-title">The Merchant's Request</div>
+              <div class="session-meta">
+                <span class="session-date">📅 Jan 11, 2026</span>
+                <span>• 4 hours</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Design Notes -->
+      <div class="design-notes">
+        <div class="design-notes-title">💡 Option C: Context-Adaptive</div>
+        <div class="design-notes-content">
+          <strong>Concept:</strong> Dock shows campaign items when in campaign, with Quick Actions popover.
+          <ul class="design-notes-list">
+            <li>Back button to exit campaign</li>
+            <li>Core campaign nav visible</li>
+            <li>Hover "Quick Actions" for extras</li>
+            <li>Global nav in popover</li>
+          </ul>
+          <strong style="margin-top: 12px; display: block;">Share Access:</strong>
+          <ul class="design-notes-list">
+            <li><strong>TopBar:</strong> Share button (always visible)</li>
+            <li><strong>Dock:</strong> Quick Actions → Share</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showOption(option) {
+      // Update buttons
+      document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('active'));
+      const btnIndex = { 'a': 2, 'a2': 3, 'b': 4, 'c': 5, 'canvas': 6, 'canvas2': 7, 'dock-strict': 8 }[option];
+      document.querySelector(`.option-btn:nth-child(${btnIndex})`).classList.add('active');
+
+      // Update mockups
+      document.querySelectorAll('.mockup').forEach(m => m.classList.remove('active'));
+      document.getElementById(`mockup-${option}`).classList.add('active');
+    }
+
+    function toggleSection(section) {
+      const el = document.getElementById(`section-${section}`);
+      el.classList.toggle('collapsed');
+    }
+
+    // Accordion mode - only one section expanded at a time
+    function toggleSectionAccordion(section, group) {
+      const allSections = document.querySelectorAll(`[id^="section-"][id$="-${group}"]`);
+      const clickedSection = document.getElementById(`section-${section}-${group}`);
+      const wasCollapsed = clickedSection.classList.contains('collapsed');
+
+      // Collapse all sections in this group
+      allSections.forEach(s => s.classList.add('collapsed'));
+
+      // If it was collapsed, expand it (toggle behavior)
+      if (wasCollapsed) {
+        clickedSection.classList.remove('collapsed');
+      }
+    }
+  </script>
+</body>
+</html>
