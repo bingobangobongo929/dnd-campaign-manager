@@ -328,89 +328,131 @@ export default function WorldMapPage() {
             </div>
           )}
 
-          {/* Map Cards - Flex for centering with few items */}
-          <div className="flex flex-wrap justify-center gap-4">
-            {filteredMaps.map((map) => {
-              const typeInfo = getMapTypeInfo(map)
-              const count = pinCounts[map.id] || 0
+          {/* Map Cards - Dynamic sizing based on count */}
+          {(() => {
+            // Total items including the "Add Map" card
+            const totalItems = filteredMaps.length + (can.addMap ? 1 : 0)
 
-              return (
-                <button
-                  key={map.id}
-                  onClick={() => setSelectedMap(map)}
-                  className="group relative rounded-xl overflow-hidden text-left hover:ring-2 hover:ring-[--arcane-purple]/50 transition-all w-full sm:w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.75rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.8rem)] max-w-[280px]"
-                >
-                  {/* Thumbnail */}
-                  <div className="aspect-[4/3] relative bg-[--bg-elevated]">
-                    {map.image_url ? (
-                      <Image
-                        src={map.image_url}
-                        alt={map.name || 'Map'}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[--bg-elevated] to-[--bg-surface]">
-                        <Map className="w-10 h-10 text-[--text-tertiary]/50" />
-                      </div>
-                    )}
+            // Dynamic card sizing based on count
+            // 1-2 items: Large cards (max 2 per row)
+            // 3-4 items: Medium cards (max 3 per row)
+            // 5+ items: Small cards (4-5 per row)
+            const getCardClass = () => {
+              if (totalItems <= 2) {
+                return "w-full sm:w-[calc(50%-1rem)] max-w-[420px]"
+              } else if (totalItems <= 4) {
+                return "w-full sm:w-[calc(50%-0.75rem)] md:w-[calc(33.333%-1rem)] max-w-[340px]"
+              } else {
+                return "w-full sm:w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.75rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.8rem)] max-w-[280px]"
+              }
+            }
 
-                    {/* Gradient overlay for text readability */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+            const cardClass = getCardClass()
+            const gapClass = totalItems <= 2 ? "gap-6" : totalItems <= 4 ? "gap-5" : "gap-4"
 
-                    {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-[--arcane-purple]/0 group-hover:bg-[--arcane-purple]/10 transition-colors" />
+            return (
+              <div className={cn("flex flex-wrap justify-center", gapClass)}>
+                {filteredMaps.map((map) => {
+                  const typeInfo = getMapTypeInfo(map)
+                  const count = pinCounts[map.id] || 0
 
-                    {/* Delete button (DM only) */}
-                    {can.deleteMap && (
-                      <button
-                        onClick={(e) => handleDelete(map, e)}
-                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 text-white/70 opacity-0 group-hover:opacity-100 hover:bg-[--arcane-ember] hover:text-white transition-all"
-                        title="Delete map"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-
-                    {/* Card info - overlaid on image */}
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <h3 className="font-medium text-white truncate text-shadow-sm">
-                        {map.name || 'Untitled Map'}
-                      </h3>
-                      <div className="flex items-center justify-between mt-0.5">
-                        <span className="text-xs text-white/70 flex items-center gap-1">
-                          <span>{typeInfo.icon}</span>
-                          <span>{typeInfo.label}</span>
-                        </span>
-                        {count > 0 && (
-                          <span className="text-xs text-white/70 flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {count}
-                          </span>
+                  return (
+                    <button
+                      key={map.id}
+                      onClick={() => setSelectedMap(map)}
+                      className={cn(
+                        "group relative rounded-xl overflow-hidden text-left hover:ring-2 hover:ring-[--arcane-purple]/50 transition-all",
+                        cardClass
+                      )}
+                    >
+                      {/* Thumbnail */}
+                      <div className="aspect-[4/3] relative bg-[--bg-elevated]">
+                        {map.image_url ? (
+                          <Image
+                            src={map.image_url}
+                            alt={map.name || 'Map'}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[--bg-elevated] to-[--bg-surface]">
+                            <Map className="w-12 h-12 text-[--text-tertiary]/50" />
+                          </div>
                         )}
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              )
-            })}
 
-            {/* Add Map Card */}
-            {can.addMap && (
-              <button
-                onClick={() => setIsCreateModalOpen(true)}
-                className="aspect-[4/3] flex flex-col items-center justify-center rounded-xl border border-dashed border-[--border-subtle] hover:border-[--arcane-purple]/40 hover:bg-[--arcane-purple]/5 transition-colors group w-full sm:w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.75rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.8rem)] max-w-[280px]"
-              >
-                <div className="w-10 h-10 rounded-full bg-[--bg-elevated] group-hover:bg-[--arcane-purple]/10 flex items-center justify-center mb-2 transition-colors">
-                  <Plus className="w-5 h-5 text-[--text-tertiary] group-hover:text-[--arcane-purple]" />
-                </div>
-                <span className="text-sm text-[--text-tertiary] group-hover:text-[--text-secondary]">
-                  Add Map
-                </span>
-              </button>
-            )}
-          </div>
+                        {/* Gradient overlay for text readability */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                        {/* Hover overlay */}
+                        <div className="absolute inset-0 bg-[--arcane-purple]/0 group-hover:bg-[--arcane-purple]/10 transition-colors" />
+
+                        {/* Delete button (DM only) */}
+                        {can.deleteMap && (
+                          <button
+                            onClick={(e) => handleDelete(map, e)}
+                            className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 text-white/70 opacity-0 group-hover:opacity-100 hover:bg-[--arcane-ember] hover:text-white transition-all"
+                            title="Delete map"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+
+                        {/* Card info - overlaid on image */}
+                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                          <h3 className={cn(
+                            "font-medium text-white truncate text-shadow-sm",
+                            totalItems <= 2 ? "text-lg" : "text-base"
+                          )}>
+                            {map.name || 'Untitled Map'}
+                          </h3>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-sm text-white/70 flex items-center gap-1.5">
+                              <span>{typeInfo.icon}</span>
+                              <span>{typeInfo.label}</span>
+                            </span>
+                            {count > 0 && (
+                              <span className="text-sm text-white/70 flex items-center gap-1">
+                                <MapPin className="w-3.5 h-3.5" />
+                                {count}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+
+                {/* Add Map Card */}
+                {can.addMap && (
+                  <button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className={cn(
+                      "aspect-[4/3] flex flex-col items-center justify-center rounded-xl border border-dashed border-[--border-subtle] hover:border-[--arcane-purple]/40 hover:bg-[--arcane-purple]/5 transition-colors group",
+                      cardClass
+                    )}
+                  >
+                    <div className={cn(
+                      "rounded-full bg-[--bg-elevated] group-hover:bg-[--arcane-purple]/10 flex items-center justify-center mb-3 transition-colors",
+                      totalItems <= 2 ? "w-14 h-14" : "w-10 h-10"
+                    )}>
+                      <Plus className={cn(
+                        "text-[--text-tertiary] group-hover:text-[--arcane-purple]",
+                        totalItems <= 2 ? "w-7 h-7" : "w-5 h-5"
+                      )} />
+                    </div>
+                    <span className={cn(
+                      "text-[--text-tertiary] group-hover:text-[--text-secondary]",
+                      totalItems <= 2 ? "text-base" : "text-sm"
+                    )}>
+                      Add Map
+                    </span>
+                  </button>
+                )}
+              </div>
+            )
+          })()}
         </div>
       )}
 
