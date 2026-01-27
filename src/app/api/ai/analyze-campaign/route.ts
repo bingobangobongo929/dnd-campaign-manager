@@ -22,11 +22,12 @@ interface GeneratedSuggestion {
 interface AnalyzeCampaignRequest {
   campaignId: string
   provider?: AIProvider
+  fullAudit?: boolean  // When true, analyze ALL sessions regardless of last run time
 }
 
 export async function POST(req: Request) {
   try {
-    const { campaignId, provider } = await req.json() as AnalyzeCampaignRequest
+    const { campaignId, provider, fullAudit } = await req.json() as AnalyzeCampaignRequest
 
     if (!campaignId) {
       return new Response(JSON.stringify({ error: 'Campaign ID is required' }), {
@@ -104,21 +105,29 @@ export async function POST(req: Request) {
       .order('type', { ascending: true })
       .order('name')
 
-    // Load characters updated since last run
-    const { data: updatedCharacters } = await supabase
+    // Load characters - ALL for full audit, or just updated since last run
+    let updatedCharactersQuery = supabase
       .from('characters')
       .select('*')
       .eq('campaign_id', campaignId)
-      .gt('updated_at', lastRunTime)
-      .order('updated_at', { ascending: false })
 
-    // Load sessions updated since last run
-    const { data: updatedSessions } = await supabase
+    if (!fullAudit) {
+      updatedCharactersQuery = updatedCharactersQuery.gt('updated_at', lastRunTime)
+    }
+
+    const { data: updatedCharacters } = await updatedCharactersQuery.order('updated_at', { ascending: false })
+
+    // Load sessions - ALL for full audit, or just updated since last run
+    let updatedSessionsQuery = supabase
       .from('sessions')
       .select('*')
       .eq('campaign_id', campaignId)
-      .gt('updated_at', lastRunTime)
-      .order('session_number', { ascending: true })
+
+    if (!fullAudit) {
+      updatedSessionsQuery = updatedSessionsQuery.gt('updated_at', lastRunTime)
+    }
+
+    const { data: updatedSessions } = await updatedSessionsQuery.order('session_number', { ascending: true })
 
     // Load ALL canvas relationships for context (new relationship system)
     const { data: canvasRelationships } = await supabase
@@ -387,8 +396,28 @@ Current state: ${c.summary || c.description || 'No summary'}`
 
     // Construct the full prompt
     const timelineIsEmpty = !timelineEvents || timelineEvents.length === 0
+
+    // Full Audit mode header and instructions
+    const auditModeHeader = fullAudit ? `
+# 🔍 FULL CAMPAIGN AUDIT MODE ACTIVE
+
+This is a RECONCILIATION analysis. You are auditing the ENTIRE campaign history to find:
+1. **MISSING DATA**: NPCs, locations, factions mentioned in sessions but not in the database
+2. **MISMATCHES**: Character details, statuses, or descriptions that differ from what session notes say
+3. **GAPS**: Events, relationships, quests that happened but aren't recorded
+4. **INCONSISTENCIES**: Data that contradicts what the session notes describe
+
+**Priority Order**: Missing core NPCs > Missing locations > Status mismatches > Relationship gaps > Minor inconsistencies
+
+For EACH finding, cite the specific session number and excerpt that proves the discrepancy.
+Compare session notes AGAINST the existing data below - session notes are the SOURCE OF TRUTH.
+
+---
+` : ''
+
     const fullContext = `# Campaign: ${campaign.name}
-# Analysis Since: ${new Date(lastRunTime).toLocaleDateString()}
+${fullAudit ? '# Full Campaign Audit' : `# Analysis Since: ${new Date(lastRunTime).toLocaleDateString()}`}
+${auditModeHeader}
 
 ## ALL EXISTING CHARACTERS (for context and cross-referencing)
 ${fullCharacterContext || 'No characters recorded yet.'}
@@ -424,12 +453,12 @@ ${correctionsContext}
 
 ---
 
-# NEW CONTENT TO ANALYZE
+# ${fullAudit ? 'ALL SESSIONS TO AUDIT' : 'NEW CONTENT TO ANALYZE'}
 
-## NEW/UPDATED SESSIONS (${updatedSessions?.length || 0})
-${newSessionContent || 'No new sessions.'}
+## ${fullAudit ? 'ALL SESSIONS' : 'NEW/UPDATED SESSIONS'} (${updatedSessions?.length || 0})
+${newSessionContent || 'No sessions to analyze.'}
 
-## RECENTLY UPDATED CHARACTERS (${updatedCharacters?.length || 0})
+## ${fullAudit ? 'ALL CHARACTERS' : 'RECENTLY UPDATED CHARACTERS'} (${updatedCharacters?.length || 0})
 ${newCharacterContent || 'No character updates.'}
 
 ---
@@ -452,7 +481,20 @@ IMPORTANT INSTRUCTIONS:
 15. ITEMS/LOOT: Extract significant items mentioned in session notes - magic items, artifacts, special equipment, quest items, treasure, keys, maps, and notable mundane items. Use suggestion_type "item_detected" with suggested_value containing: name, item_type (weapon, armor, potion, scroll, wondrous_item, artifact, treasure, quest_item, key, map, tool, other), rarity (common, uncommon, rare, very_rare, legendary, artifact) if discernible, description, owner_name if someone possesses it, location_name if found somewhere. Only suggest items that are noteworthy to the story - not every copper piece.
 16. COMBAT OUTCOMES: Extract significant combat results - deaths, injuries, near-death experiences, victories, defeats, surrenders, escapes. Use suggestion_type "combat_outcome" with suggested_value containing: outcome_type (death, injury, near_death, victory, defeat, surrender, escape, capture), character_name (who was affected), description (what happened), is_pc (boolean, true if a player character). Track PC deaths and significant NPC deaths especially.
 
-SESSION CHRONOLOGY NOTE: Sessions are numbered chronologically. Higher session numbers = more recent events. If there are conflicts between sessions, the higher-numbered session represents the current truth. For example, if a location is called "The Old Mill" in session 2 but "The Abandoned Mill" in session 8, use the session 8 name.`
+SESSION CHRONOLOGY NOTE: Sessions are numbered chronologically. Higher session numbers = more recent events. If there are conflicts between sessions, the higher-numbered session represents the current truth. For example, if a location is called "The Old Mill" in session 2 but "The Abandoned Mill" in session 8, use the session 8 name.
+${fullAudit ? `
+---
+
+FULL AUDIT SPECIFIC INSTRUCTIONS:
+17. **MISSING NPC CHECK**: For EVERY named NPC mentioned in sessions, verify they exist in the character list above. If not, suggest creating them with npc_detected.
+18. **MISSING LOCATION CHECK**: For EVERY named location mentioned in sessions, verify it exists in the locations list above. If not, suggest creating it with location_detected.
+19. **STATUS MISMATCH CHECK**: Compare character statuses against what session notes say happened. If notes say someone died but they're listed as "alive", suggest a status_change.
+20. **RELATIONSHIP AUDIT**: Look for relationships described in sessions that aren't in the relationships list. Suggest any missing connections.
+21. **TIMELINE COMPLETENESS**: Ensure major events from ALL sessions are in the timeline. Battles, deaths, discoveries, alliances should all be recorded.
+22. **FACTION CHECK**: Verify all organizations mentioned in sessions exist as factions. Check member affiliations against what sessions describe.
+23. **DATA ACCURACY**: If a character is described differently in sessions vs their profile (different role, different location, etc.), flag the discrepancy.
+
+Remember: Session notes are the SOURCE OF TRUTH. Your job is to find everything that's missing or wrong in the existing data.` : ''}`
 
     const selectedProvider = provider || 'anthropic'
     const model = getAIModel(selectedProvider)
@@ -596,11 +638,13 @@ SESSION CHRONOLOGY NOTE: Sessions are numbered chronologically. Higher session n
       }
     }
 
-    // Update last intelligence run timestamp
-    await supabase
-      .from('campaigns')
-      .update({ last_intelligence_run: new Date().toISOString() })
-      .eq('id', campaignId)
+    // Update last intelligence run timestamp (skip for full audit - it shouldn't affect incremental mode)
+    if (!fullAudit) {
+      await supabase
+        .from('campaigns')
+        .update({ last_intelligence_run: new Date().toISOString() })
+        .eq('id', campaignId)
+    }
 
     // Set cooldown after successful analysis (skip for mods+)
     if (!isModOrAbove) {
@@ -610,10 +654,11 @@ SESSION CHRONOLOGY NOTE: Sessions are numbered chronologically. Higher session n
     return new Response(JSON.stringify({
       success: true,
       suggestionsCreated: insertedCount,
-      analyzedSince: lastRunTime,
+      analyzedSince: fullAudit ? 'Full Audit' : lastRunTime,
+      fullAudit: fullAudit || false,
       stats: {
         sessionsAnalyzed: updatedSessions?.length || 0,
-        charactersUpdated: updatedCharacters?.length || 0,
+        charactersAnalyzed: updatedCharacters?.length || 0,
         totalCharacters: allCharacters?.length || 0,
         totalRelationships: canvasRelationships?.length || 0,
         totalFactions: campaignFactions?.length || 0,

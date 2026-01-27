@@ -4,14 +4,15 @@ import { NextRequest } from 'next/server'
 /**
  * GET /api/ai/analyze-campaign/preview
  * Returns a preview of what will be analyzed:
- * - Sessions updated since last run
- * - Characters updated since last run
+ * - Sessions updated since last run (or ALL sessions if fullAudit=true)
+ * - Characters updated since last run (or ALL characters if fullAudit=true)
  * - Last run time
  */
 export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams
     const campaignId = searchParams.get('campaignId')
+    const fullAudit = searchParams.get('fullAudit') === 'true'
 
     if (!campaignId) {
       return new Response(JSON.stringify({ error: 'Campaign ID required' }), {
@@ -65,30 +66,56 @@ export async function GET(req: NextRequest) {
     // Use last run time or campaign creation if never run
     const lastRunTime = campaign.last_intelligence_run || campaign.created_at
 
-    // Get sessions updated since last run
-    const { data: sessionsToAnalyze } = await supabase
+    // Get sessions - ALL for full audit, or just updated since last run
+    let sessionsQuery = supabase
       .from('sessions')
       .select('id, title, session_number, updated_at')
       .eq('campaign_id', campaignId)
-      .gt('updated_at', lastRunTime)
-      .order('session_number', { ascending: false })
-      .limit(10)
 
-    // Get characters updated since last run
-    const { data: charactersUpdated } = await supabase
+    if (!fullAudit) {
+      sessionsQuery = sessionsQuery.gt('updated_at', lastRunTime)
+    }
+
+    const { data: sessionsToAnalyze } = await sessionsQuery
+      .order('session_number', { ascending: false })
+      .limit(fullAudit ? 50 : 10)
+
+    // Get characters - ALL for full audit, or just updated since last run
+    let charactersQuery = supabase
       .from('characters')
       .select('id, name, type, updated_at')
       .eq('campaign_id', campaignId)
-      .gt('updated_at', lastRunTime)
+
+    if (!fullAudit) {
+      charactersQuery = charactersQuery.gt('updated_at', lastRunTime)
+    }
+
+    const { data: charactersUpdated } = await charactersQuery
       .order('updated_at', { ascending: false })
-      .limit(10)
+      .limit(fullAudit ? 50 : 10)
+
+    // For full audit, also get total counts
+    const { count: totalSessionsInCampaign } = fullAudit
+      ? await supabase
+          .from('sessions')
+          .select('*', { count: 'exact', head: true })
+          .eq('campaign_id', campaignId)
+      : { count: null }
+
+    const { count: totalCharactersInCampaign } = fullAudit
+      ? await supabase
+          .from('characters')
+          .select('*', { count: 'exact', head: true })
+          .eq('campaign_id', campaignId)
+      : { count: null }
 
     return new Response(JSON.stringify({
       sessionsToAnalyze: sessionsToAnalyze || [],
       charactersUpdated: charactersUpdated || [],
       lastRunTime: campaign.last_intelligence_run,
-      totalSessionsCount: sessionsToAnalyze?.length || 0,
-      totalCharactersCount: charactersUpdated?.length || 0,
+      totalSessionsCount: fullAudit ? (totalSessionsInCampaign || 0) : (sessionsToAnalyze?.length || 0),
+      totalCharactersCount: fullAudit ? (totalCharactersInCampaign || 0) : (charactersUpdated?.length || 0),
+      fullAudit,
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }

@@ -265,12 +265,17 @@ export default function IntelligencePage() {
     charactersUpdated: Array<{ id: string; name: string; type: string; updated_at: string }>
     lastRunTime: string | null
     isLoading: boolean
+    totalSessionsCount?: number
+    totalCharactersCount?: number
   }>({
     sessionsToAnalyze: [],
     charactersUpdated: [],
     lastRunTime: null,
     isLoading: false,
   })
+
+  // Full Audit mode - analyze ALL sessions regardless of last run
+  const [fullAuditMode, setFullAuditMode] = useState(false)
 
   // Filter state
   const [showHistory, setShowHistory] = useState(false)
@@ -662,8 +667,8 @@ export default function IntelligencePage() {
     setPreviewData(prev => ({ ...prev, isLoading: true }))
 
     try {
-      // Fetch preview data from API
-      const response = await fetch(`/api/ai/analyze-campaign/preview?campaignId=${campaignId}`)
+      // Fetch preview data from API - pass fullAuditMode to get ALL sessions if enabled
+      const response = await fetch(`/api/ai/analyze-campaign/preview?campaignId=${campaignId}&fullAudit=${fullAuditMode}`)
       if (response.ok) {
         const data = await response.json()
         setPreviewData({
@@ -694,6 +699,7 @@ export default function IntelligencePage() {
         body: JSON.stringify({
           campaignId,
           provider: selectedProvider,
+          fullAudit: fullAuditMode,
         }),
       })
 
@@ -3701,6 +3707,49 @@ export default function IntelligencePage() {
         size="md"
       >
         <div className="space-y-4">
+          {/* Full Audit Mode Toggle */}
+          <label className="flex items-start gap-3 p-3 rounded-lg bg-[--bg-surface] border border-[--border] cursor-pointer hover:border-purple-500/30 transition-colors">
+            <input
+              type="checkbox"
+              checked={fullAuditMode}
+              onChange={async (e) => {
+                const newValue = e.target.checked
+                setFullAuditMode(newValue)
+                // Re-fetch preview with new mode
+                setPreviewData(prev => ({ ...prev, isLoading: true }))
+                try {
+                  const response = await fetch(`/api/ai/analyze-campaign/preview?campaignId=${campaignId}&fullAudit=${newValue}`)
+                  if (response.ok) {
+                    const data = await response.json()
+                    setPreviewData({
+                      sessionsToAnalyze: data.sessionsToAnalyze || [],
+                      charactersUpdated: data.charactersUpdated || [],
+                      lastRunTime: data.lastRunTime || null,
+                      isLoading: false,
+                    })
+                  } else {
+                    setPreviewData(prev => ({ ...prev, isLoading: false }))
+                  }
+                } catch {
+                  setPreviewData(prev => ({ ...prev, isLoading: false }))
+                }
+              }}
+              className="mt-0.5 w-4 h-4 rounded border-gray-600 bg-[--bg-base] text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
+            />
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-white">Full Campaign Audit</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-medium">
+                  Recommended for imports
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Analyze ALL sessions from the beginning, comparing notes against existing data to find gaps and mismatches.
+                Use this for imported campaigns or when you want a complete reconciliation.
+              </p>
+            </div>
+          </label>
+
           {/* Preview Section */}
           {previewData.isLoading ? (
             <div className="flex items-center justify-center py-6">
@@ -3772,7 +3821,9 @@ export default function IntelligencePage() {
               ) : (
                 <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
                   <p className="text-sm text-amber-300">
-                    No new content since last analysis. Add session notes or update characters to get new suggestions.
+                    {fullAuditMode
+                      ? 'Full audit will analyze your entire campaign history. This may take longer than a regular analysis.'
+                      : 'No new content since last analysis. Add session notes or update characters, or enable Full Campaign Audit to re-analyze everything.'}
                   </p>
                 </div>
               )}
@@ -3823,10 +3874,10 @@ export default function IntelligencePage() {
             <button
               className="btn btn-primary flex items-center gap-2"
               onClick={handleAnalyzeConfirmed}
-              disabled={previewData.sessionsToAnalyze.length === 0 && previewData.charactersUpdated.length === 0}
+              disabled={!fullAuditMode && previewData.sessionsToAnalyze.length === 0 && previewData.charactersUpdated.length === 0}
             >
               <Sparkles className="w-4 h-4" />
-              Run Analysis
+              {fullAuditMode ? 'Run Full Audit' : 'Run Analysis'}
             </button>
           </div>
         </div>
