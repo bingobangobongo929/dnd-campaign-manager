@@ -754,20 +754,20 @@ export function FactionsTab({ campaignId, characters, isDm }: FactionsTabProps) 
         )}
       </div>
 
-      {/* Intelligence callout for sparse factions */}
+      {/* Campaign Intelligence callout */}
       {isDm && factions.length > 0 && factions.length < 3 && (
         <div className="mb-6 p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
           <div className="flex items-start gap-3">
             <Sparkles className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="text-sm text-emerald-300/90">
-                Create factions anytime using the button above. <strong className="text-emerald-300">Campaign Intelligence</strong> can also suggest factions mentioned in your session notes if you prefer.
+                <strong className="text-emerald-300">Campaign Intelligence</strong> detects factions and organizations in your session notes and suggests adding them here.
               </p>
               <Link
                 href={`/campaigns/${campaignId}/intelligence`}
                 className="inline-flex items-center gap-1 mt-2 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
               >
-                View suggestions
+                Open Campaign Intelligence
                 <span className="text-xs">→</span>
               </Link>
             </div>

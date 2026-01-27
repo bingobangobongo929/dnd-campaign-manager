@@ -459,16 +459,16 @@ export function TimelineTab({ campaignId, characters, isDm }: TimelineTabProps) 
               <span style={{ color: '#a78bfa' }}>Generate from Sessions</span>
             </button>
 
-            {/* Intelligence link */}
+            {/* Campaign Intelligence link */}
             <div className="text-center text-sm text-gray-500 max-w-md">
               <p>
-                Add events anytime. <span className="text-purple-400">Campaign Intelligence</span> can also suggest events from your session notes if you prefer.
+                <span className="text-purple-400">Campaign Intelligence</span> reads your session notes and suggests timeline events to add.
               </p>
               <Link
                 href={`/campaigns/${campaignId}/intelligence`}
                 className="inline-flex items-center gap-1 mt-1 text-purple-400 hover:text-purple-300 transition-colors"
               >
-                View suggestions
+                Open Campaign Intelligence
                 <span className="text-xs">→</span>
               </Link>
             </div>
@@ -719,20 +719,20 @@ export function TimelineTab({ campaignId, characters, isDm }: TimelineTabProps) 
         <>
           {renderView()}
 
-          {/* Intelligence callout for sparse timelines */}
+          {/* Campaign Intelligence callout */}
           {isDm && events.length < 10 && sessions.length > 0 && (
             <div className="mt-6 p-4 rounded-lg bg-purple-500/5 border border-purple-500/10">
               <div className="flex items-start gap-3">
                 <Sparkles className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm text-purple-300/90">
-                    Add events anytime using the button above. <strong className="text-purple-300">Campaign Intelligence</strong> can also suggest events from your session notes if you prefer.
+                    <strong className="text-purple-300">Campaign Intelligence</strong> analyzes your session notes and suggests timeline events you may have missed.
                   </p>
                   <Link
                     href={`/campaigns/${campaignId}/intelligence`}
                     className="inline-flex items-center gap-1 mt-2 text-sm text-purple-400 hover:text-purple-300 transition-colors"
                   >
-                    View suggestions
+                    Open Campaign Intelligence
                     <span className="text-xs">→</span>
                   </Link>
                 </div>

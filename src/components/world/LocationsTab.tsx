@@ -1175,20 +1175,20 @@ export function LocationsTab({ campaignId, isDm, isOwner }: LocationsTabProps) {
         </div>
       </div>
 
-      {/* Intelligence callout for sparse locations */}
+      {/* Campaign Intelligence callout */}
       {isDm && locations.length > 0 && locations.length < 5 && (
         <div className="mb-6 p-4 rounded-lg bg-blue-500/5 border border-blue-500/10">
           <div className="flex items-start gap-3">
             <Sparkles className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="text-sm text-blue-300/90">
-                Add locations anytime using the button above. <strong className="text-blue-300">Campaign Intelligence</strong> can also suggest locations mentioned in your session notes if you prefer.
+                <strong className="text-blue-300">Campaign Intelligence</strong> detects locations mentioned in your session notes and suggests adding them here.
               </p>
               <Link
                 href={`/campaigns/${campaignId}/intelligence`}
                 className="inline-flex items-center gap-1 mt-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
               >
-                View suggestions
+                Open Campaign Intelligence
                 <span className="text-xs">→</span>
               </Link>
             </div>
