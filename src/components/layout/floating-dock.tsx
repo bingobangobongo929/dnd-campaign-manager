@@ -213,6 +213,17 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
             <Settings className="dock-item-icon" />
             <span className="dock-item-label">Settings</span>
           </Link>
+
+          {/* Admin (if user has admin role) */}
+          {showAdmin && (
+            <Link
+              href="/admin"
+              className={`dock-item ${isActive('/admin') ? 'active' : ''}`}
+            >
+              <Shield className="dock-item-icon" />
+              <span className="dock-item-label">Admin</span>
+            </Link>
+          )}
         </>
       )}
 
@@ -248,6 +259,17 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
             <Settings className="dock-item-icon" />
             <span className="dock-item-label">Settings</span>
           </Link>
+
+          {/* Admin (if user has admin role) */}
+          {showAdmin && (
+            <Link
+              href="/admin"
+              className={`dock-item ${isActive('/admin') ? 'active' : ''}`}
+            >
+              <Shield className="dock-item-icon" />
+              <span className="dock-item-label">Admin</span>
+            </Link>
+          )}
         </>
       )}
 
@@ -283,6 +305,17 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
             <Settings className="dock-item-icon" />
             <span className="dock-item-label">Settings</span>
           </Link>
+
+          {/* Admin (if user has admin role) */}
+          {showAdmin && (
+            <Link
+              href="/admin"
+              className={`dock-item ${isActive('/admin') ? 'active' : ''}`}
+            >
+              <Shield className="dock-item-icon" />
+              <span className="dock-item-label">Admin</span>
+            </Link>
+          )}
         </>
       )}
     </nav>
