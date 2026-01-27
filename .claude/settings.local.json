@@ -9,7 +9,9 @@
       "Bash(git push:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd TopBar right side actions: Share button, icon-only buttons, user dropdown\n\n- Add Share button to TopBar \\(appears in campaign/character/oneshot/adventure context\\)\n- Make AI Assistant button icon-only with purple gradient styling\n- Convert user avatar to dropdown menu containing Profile, Settings, and Sign Out\n- Make Navigation Map and Recent Items buttons icon-only\n- Add CSS styles for new TopBar action buttons and user dropdown\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nRemove Navigation Guide button from TopBar\n\nNavigate flyout in floating dock makes it redundant.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(Intelligence detect them from your session notes. The more detailed your)",
+      "Bash(DM and player notes, the better the suggestions.\"\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }

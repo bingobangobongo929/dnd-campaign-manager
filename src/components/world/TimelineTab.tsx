@@ -460,14 +460,16 @@ export function TimelineTab({ campaignId, characters, isDm }: TimelineTabProps) 
             </button>
 
             {/* Intelligence link */}
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Campaign Intelligence can also suggest timeline events.</span>
+            <div className="text-center text-sm text-gray-500 max-w-md">
+              <p>
+                Add events manually, or let <span className="text-purple-400">Campaign Intelligence</span> detect them from your session notes.
+              </p>
               <Link
                 href={`/campaigns/${campaignId}/intelligence`}
-                className="text-purple-400 hover:text-purple-300 underline underline-offset-2"
+                className="inline-flex items-center gap-1 mt-1 text-purple-400 hover:text-purple-300 transition-colors"
               >
-                View suggestions
+                View Intelligence suggestions
+                <span className="text-xs">→</span>
               </Link>
             </div>
           </div>
@@ -724,13 +726,13 @@ export function TimelineTab({ campaignId, characters, isDm }: TimelineTabProps) 
                 <Sparkles className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm text-purple-300/90">
-                    <strong className="text-purple-300">Tip:</strong> Campaign Intelligence can analyze your session notes and suggest timeline events you might have missed.
+                    Add events manually, or let <strong className="text-purple-300">Campaign Intelligence</strong> detect them from your session notes. The more detailed your DM and player notes, the better the suggestions.
                   </p>
                   <Link
                     href={`/campaigns/${campaignId}/intelligence`}
                     className="inline-flex items-center gap-1 mt-2 text-sm text-purple-400 hover:text-purple-300 transition-colors"
                   >
-                    Check Intelligence for suggestions
+                    View Intelligence suggestions
                     <span className="text-xs">→</span>
                   </Link>
                 </div>

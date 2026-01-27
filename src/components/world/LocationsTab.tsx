@@ -1182,13 +1182,13 @@ export function LocationsTab({ campaignId, isDm, isOwner }: LocationsTabProps) {
             <Sparkles className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="text-sm text-blue-300/90">
-                <strong className="text-blue-300">Tip:</strong> Campaign Intelligence can detect locations mentioned in your session notes and suggest adding them.
+                Add locations manually, or let <strong className="text-blue-300">Campaign Intelligence</strong> detect them from your session notes. The more detailed your DM and player notes, the better the suggestions.
               </p>
               <Link
                 href={`/campaigns/${campaignId}/intelligence`}
                 className="inline-flex items-center gap-1 mt-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
               >
-                Check Intelligence for suggestions
+                View Intelligence suggestions
                 <span className="text-xs">→</span>
               </Link>
             </div>
