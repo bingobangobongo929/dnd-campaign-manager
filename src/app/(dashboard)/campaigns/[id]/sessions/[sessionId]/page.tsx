@@ -1297,35 +1297,21 @@ export default function SessionDetailPage() {
                   )}
                 </div>
 
-                {/* Detailed Notes - edits notes field - COLLAPSIBLE, collapsed by default per plan */}
-                <div className="card overflow-hidden mb-8">
-                  <button
-                    onClick={() => toggleSection('detailedNotes')}
-                    className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      {expandedSections.detailedNotes ? (
-                        <ChevronDown className="w-4 h-4 text-[--text-tertiary]" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4 text-[--text-tertiary]" />
-                      )}
-                      <ScrollText className="w-5 h-5 text-[--arcane-purple]" />
-                      <div className="text-left">
-                        <span className="font-medium text-[--text-primary] block">Detailed Notes</span>
-                        <span className="text-xs text-[--text-tertiary]">
-                          Full prose session narrative (expanded from Quick Recap)
-                        </span>
-                      </div>
-                    </div>
-                    {formData.notes && (
-                      <span className="text-xs text-[--text-tertiary] bg-white/[0.05] px-2 py-0.5 rounded">
-                        Has content
+                {/* Detailed Notes - edits notes field - always visible in enhanced mode */}
+                <div className="card p-6 mb-8">
+                  <div className="flex items-center gap-3 mb-4">
+                    <ScrollText className="w-5 h-5 text-[--arcane-purple]" />
+                    <div>
+                      <label className="text-lg font-semibold text-[--text-primary] block">
+                        Detailed Notes
+                      </label>
+                      <span className="text-sm text-[--text-tertiary]">
+                        Full prose session narrative (expanded from Quick Recap)
                       </span>
-                    )}
-                  </button>
+                    </div>
+                  </div>
 
-                  {expandedSections.detailedNotes && (
-                    <div className="px-6 pb-6 border-t border-[--border]">
+                  <div>
                       {can.editSession ? (
                         <RichTextEditor
                           content={formData.notes}
@@ -1371,8 +1357,7 @@ export default function SessionDetailPage() {
                           </label>
                         </div>
                       )}
-                    </div>
-                  )}
+                  </div>
                 </div>
               </>
             )}
