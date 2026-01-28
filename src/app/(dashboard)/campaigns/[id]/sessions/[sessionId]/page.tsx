@@ -1799,6 +1799,7 @@ export default function SessionDetailPage() {
                       characters={characters}
                       autoOpenAdd={openPlayerNotesModal}
                       onModalClose={() => setOpenPlayerNotesModal(false)}
+                      sessionState={sessionState}
                     />
                   </div>
                 )}

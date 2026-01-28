@@ -605,17 +605,31 @@ export function SessionWorkflow({
 
       case 'random_tables':
         return (
-          <div className="pt-3">
-            <textarea
-              value={randomTables}
-              onChange={(e) => setRandomTables(e.target.value)}
-              placeholder="Tavern Names: The Rusty Nail, The Gilded Goose, The Broken Barrel&#10;Random Encounters: 1-2 Thugs, 3-4 Beggars, 5-6 City Watch&#10;Loot: Copper coins, torn letter, mysterious key"
-              rows={4}
-              className="form-input w-full text-sm"
-            />
-            <p className="text-xs text-gray-500 mt-2">
-              Lists of things to roll for when players go off-script.
-            </p>
+          <div className="pt-3 space-y-3">
+            {/* Link to Campaign Library */}
+            <Link
+              href={`/campaigns/${campaignId}/random-tables`}
+              className="flex items-center gap-3 p-3 bg-pink-500/5 hover:bg-pink-500/10 border border-pink-500/20 hover:border-pink-500/30 rounded-lg transition-all group"
+            >
+              <Dice5 className="w-5 h-5 text-pink-400" />
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-medium text-white block">Campaign Random Tables</span>
+                <span className="text-xs text-gray-500">Roll from your campaign&apos;s table library</span>
+              </div>
+              <ExternalLink className="w-4 h-4 text-gray-500 group-hover:text-pink-400 transition-colors" />
+            </Link>
+
+            {/* Quick Notes */}
+            <div>
+              <label className="text-xs text-gray-500 block mb-1.5">Quick notes for this session:</label>
+              <textarea
+                value={randomTables}
+                onChange={(e) => setRandomTables(e.target.value)}
+                placeholder="Tables to remember: Waterdeep NPC Names, Sewer Encounters..."
+                rows={2}
+                className="form-input w-full text-sm"
+              />
+            </div>
           </div>
         )
 
@@ -675,14 +689,14 @@ export function SessionWorkflow({
       </div>
 
       {/* Optional Prep Tools Section */}
-      <div className="pt-4">
-        {/* Section Header with explanation */}
-        <div className="mb-6 p-4 bg-[--bg-surface]/50 rounded-xl border border-[--border]">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              <Settings className="w-5 h-5 text-purple-400" />
-              <h3 className="text-sm font-semibold text-white">Prep Tools</h3>
-            </div>
+      <div className="pt-6">
+        {/* Section Divider with Header */}
+        <div className="mb-6">
+          <div className="flex items-center gap-4 mb-3">
+            <div className="flex-1 h-px bg-[--border]" />
+            <span className="text-xs font-medium text-[--text-tertiary] uppercase tracking-wider">
+              Optional Prep Tools
+            </span>
             <button
               onClick={openReorderModal}
               className="text-xs text-gray-400 hover:text-purple-400 transition-colors flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-white/[0.05]"
@@ -691,9 +705,10 @@ export function SessionWorkflow({
               <GripVertical className="w-3.5 h-3.5" />
               Reorder
             </button>
+            <div className="flex-1 h-px bg-[--border]" />
           </div>
-          <p className="text-sm text-gray-400">
-            Every DM preps differently. Use what helps, ignore what doesn&apos;t.
+          <p className="text-sm text-gray-400 text-center mb-4">
+            Every DM preps differently - and that&apos;s the point. These tools are here if you want them, not because you need them.
           </p>
         </div>
 
