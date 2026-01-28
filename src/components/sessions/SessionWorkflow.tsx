@@ -332,6 +332,8 @@ export function SessionWorkflow({
 
   // Clear all content from a specific module
   const clearModuleContent = (moduleId: PrepModule) => {
+    const config = MODULE_CONFIG[moduleId]
+
     switch (moduleId) {
       case 'checklist':
         setPrepChecklist([])
@@ -355,6 +357,9 @@ export function SessionWorkflow({
         setMusicAmbiance('')
         break
     }
+    // Explicitly mark as changed to ensure auto-save triggers
+    setHasChanges(true)
+    toast.success(`${config.label} cleared`)
   }
 
   // Track changes
