@@ -562,14 +562,14 @@ export function SessionWorkflow({
 
   return (
     <div className="space-y-6">
-      {/* From Previous Session Banner */}
+      {/* Thoughts from last session Banner - only shows if previous session had content */}
       {previousThoughts && !previousThoughtsDismissed && (
         <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
               <Lightbulb className="w-5 h-5 text-purple-400 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium text-purple-300 mb-1">From Previous Session</p>
+                <p className="text-sm font-medium text-purple-300 mb-1">Thoughts from last session</p>
                 <p className="text-sm text-gray-300 whitespace-pre-wrap">{previousThoughts}</p>
               </div>
             </div>

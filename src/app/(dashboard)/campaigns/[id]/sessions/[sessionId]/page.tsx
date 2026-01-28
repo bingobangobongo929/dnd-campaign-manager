@@ -40,7 +40,15 @@ import { useAppStore } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
 import type { Session, Campaign, Character, SessionPhase, SessionState } from '@/types/database'
-import { SessionWorkflow, PlayerNotes, ThoughtsForNextCard, SessionContent } from '@/components/sessions'
+import {
+  SessionWorkflow,
+  PlayerNotes,
+  ThoughtsForNextCard,
+  SessionContent,
+  MODULE_CONFIG,
+  ALL_MODULES,
+  checkModuleHasContent,
+} from '@/components/sessions'
 import { DmNotesSection } from '@/components/dm-notes'
 import { showIntelligencePrompt } from '@/lib/intelligence-prompt'
 
@@ -123,11 +131,27 @@ export default function SessionDetailPage() {
     dmNotes: boolean
     sessionContent: boolean
     playerNotes: boolean
+    // Prep modules (for completed phase display)
+    checklist: boolean
+    references: boolean
+    session_goals: boolean
+    key_npcs: boolean
+    session_opener: boolean
+    random_tables: boolean
+    music_ambiance: boolean
   }>({
     detailedNotes: false,
     dmNotes: false,
     sessionContent: false,
     playerNotes: false,
+    // Prep modules start collapsed
+    checklist: false,
+    references: false,
+    session_goals: false,
+    key_npcs: false,
+    session_opener: false,
+    random_tables: false,
+    music_ambiance: false,
   })
 
   const toggleSection = (section: keyof typeof expandedSections) => {
@@ -1486,6 +1510,128 @@ export default function SessionDetailPage() {
                 )}
               </div>
             </div>
+
+            {/* Prep Notes from Planning - Only show if any modules have content */}
+            {!isNew && session && isDm && (() => {
+              const modulesWithContent = ALL_MODULES.filter(m => checkModuleHasContent(m, session))
+              if (modulesWithContent.length === 0) return null
+
+              return (
+                <div className="mb-8">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-px flex-1 bg-[--border]" />
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Prep Notes (from planning)
+                    </span>
+                    <div className="h-px flex-1 bg-[--border]" />
+                  </div>
+
+                  <div className="space-y-3">
+                    {modulesWithContent.map((moduleId) => {
+                      const config = MODULE_CONFIG[moduleId]
+                      const Icon = config.icon
+                      const isExpanded = expandedSections[moduleId as keyof typeof expandedSections]
+
+                      // Get the content for display
+                      let content: string | null = null
+                      let displayContent: React.ReactNode = null
+
+                      switch (moduleId) {
+                        case 'checklist':
+                          const checklist = (session.prep_checklist as unknown as Array<{id: string, text: string, checked: boolean}>) || []
+                          const completedCount = checklist.filter(i => i.checked).length
+                          displayContent = (
+                            <div className="space-y-1.5">
+                              {checklist.map(item => (
+                                <div key={item.id} className={cn("flex items-center gap-2 text-sm", item.checked && "opacity-60")}>
+                                  {item.checked ? (
+                                    <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
+                                  ) : (
+                                    <div className="w-4 h-4 border border-gray-600 rounded flex-shrink-0" />
+                                  )}
+                                  <span className={item.checked ? "line-through text-gray-500" : "text-gray-300"}>{item.text}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )
+                          content = `${completedCount}/${checklist.length} completed`
+                          break
+                        case 'references':
+                          const refs = session.pinned_references as unknown as Array<{label: string}> | null
+                          if (refs && refs.length > 0) {
+                            displayContent = (
+                              <div className="text-sm text-gray-300 whitespace-pre-wrap">
+                                {refs.map(r => r.label).join('\n')}
+                              </div>
+                            )
+                            content = `${refs.length} items`
+                          }
+                          break
+                        case 'session_goals':
+                          content = session.session_goals || null
+                          displayContent = <div className="text-sm text-gray-300 whitespace-pre-wrap">{content}</div>
+                          break
+                        case 'key_npcs':
+                          content = session.key_npcs || null
+                          displayContent = <div className="text-sm text-gray-300 whitespace-pre-wrap">{content}</div>
+                          break
+                        case 'session_opener':
+                          content = session.session_opener || null
+                          displayContent = <div className="text-sm text-gray-300 whitespace-pre-wrap">{content}</div>
+                          break
+                        case 'random_tables':
+                          content = session.random_tables || null
+                          displayContent = <div className="text-sm text-gray-300 whitespace-pre-wrap">{content}</div>
+                          break
+                        case 'music_ambiance':
+                          content = session.music_ambiance || null
+                          displayContent = <div className="text-sm text-gray-300 whitespace-pre-wrap">{content}</div>
+                          break
+                      }
+
+                      return (
+                        <div
+                          key={moduleId}
+                          className={cn(
+                            "rounded-xl border transition-all",
+                            config.bgColor,
+                            config.borderColor
+                          )}
+                        >
+                          <button
+                            onClick={() => toggleSection(moduleId as keyof typeof expandedSections)}
+                            className="w-full flex items-center gap-3 p-4 text-left"
+                          >
+                            {isExpanded ? (
+                              <ChevronDown className={cn("w-4 h-4 flex-shrink-0", config.iconColor)} />
+                            ) : (
+                              <ChevronRight className={cn("w-4 h-4 flex-shrink-0", config.iconColor)} />
+                            )}
+                            <Icon className={cn("w-5 h-5 flex-shrink-0", config.iconColor)} />
+                            <div className="flex-1 min-w-0">
+                              <span className="font-medium text-white">{config.label}</span>
+                              {!isExpanded && content && (
+                                <p className="text-xs text-gray-500 mt-0.5 truncate">{
+                                  moduleId === 'checklist' ? content : (content.length > 60 ? content.slice(0, 60) + '...' : content)
+                                }</p>
+                              )}
+                            </div>
+                          </button>
+
+                          {isExpanded && (
+                            <div className="px-4 pb-4 border-t border-white/[0.05]">
+                              <div className="pt-3">
+                                {displayContent}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* === OPTIONAL SECTIONS DIVIDER === */}
             {!isNew && session && isDm && (
