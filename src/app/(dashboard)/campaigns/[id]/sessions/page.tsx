@@ -540,113 +540,99 @@ export default function SessionsPage() {
                         </div>
                       )}
 
-                      {/* COMPLETED PHASE: DM Notes Section */}
-                      {!isPrep && (
-                        <>
-                          {canSeeDmContent ? (
-                            <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-                              {/* Section header with share indicator for DM */}
-                              <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                  <FileText className="w-4 h-4 text-blue-400" />
-                                  <span className="text-sm font-medium text-gray-300">
-                                    {isEnhancedMode ? 'Quick Recap' : 'Session Notes'}
-                                  </span>
-                                </div>
-                                {isDm && (
-                                  <span className={cn(
-                                    "flex items-center gap-1 text-xs px-2 py-0.5 rounded",
-                                    dmNotesShared ? "text-green-400 bg-green-500/10" : "text-gray-500 bg-gray-500/10"
-                                  )}>
-                                    {dmNotesShared ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                                    {dmNotesShared ? 'Shared' : 'Hidden'}
-                                  </span>
-                                )}
-                              </div>
+                      {/* COMPLETED PHASE: DM Notes Section - only show if visible and has content */}
+                      {!isPrep && canSeeDmContent && (hasSummary || hasNotes) && (
+                        <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                          {/* Section header with share indicator for DM */}
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <FileText className="w-4 h-4 text-blue-400" />
+                              <span className="text-sm font-medium text-gray-300">
+                                {isEnhancedMode ? 'Quick Recap' : 'Session Notes'}
+                              </span>
+                            </div>
+                            {isDm && (
+                              <span className={cn(
+                                "flex items-center gap-1 text-xs px-2 py-0.5 rounded",
+                                dmNotesShared ? "text-green-400 bg-green-500/10" : "text-gray-500 bg-gray-500/10"
+                              )}>
+                                {dmNotesShared ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                                {dmNotesShared ? 'Shared' : 'Hidden'}
+                              </span>
+                            )}
+                          </div>
 
-                              {/* Content - handle Standard vs Enhanced */}
-                              {isEnhancedMode ? (
-                                <>
-                                  {/* Enhanced: Show summary */}
+                          {/* Content - handle Standard vs Enhanced */}
+                          {isEnhancedMode ? (
+                            <>
+                              {/* Enhanced: Show summary */}
+                              <div
+                                className="prose prose-invert prose-sm max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&>ul]:mt-1 [&>ul]:mb-2 [&_li]:my-0.5 [&>p]:mb-2 text-[--text-secondary]"
+                                dangerouslySetInnerHTML={{ __html: markdownToHtml(session.summary!) }}
+                              />
+                              {/* Toggle for detailed notes */}
+                              <button
+                                onClick={(e) => toggleExpanded(session.id, e)}
+                                className="flex items-center gap-2 mt-3 text-sm text-[--arcane-purple] hover:text-[--arcane-purple]/80 transition-colors"
+                              >
+                                {expandedIds.has(session.id) ? (
+                                  <>
+                                    <ChevronUp className="w-4 h-4" />
+                                    Hide detailed notes
+                                  </>
+                                ) : (
+                                  <>
+                                    <ChevronDown className="w-4 h-4" />
+                                    Show detailed notes
+                                  </>
+                                )}
+                              </button>
+                              {expandedIds.has(session.id) && (
+                                <div className="mt-3 pt-3 border-t border-white/[0.06]">
                                   <div
-                                    className="prose prose-invert prose-sm max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&>ul]:mt-1 [&>ul]:mb-2 [&_li]:my-0.5 [&>p]:mb-2 text-[--text-secondary]"
-                                    dangerouslySetInnerHTML={{ __html: markdownToHtml(session.summary!) }}
-                                  />
-                                  {/* Toggle for detailed notes */}
-                                  <button
-                                    onClick={(e) => toggleExpanded(session.id, e)}
-                                    className="flex items-center gap-2 mt-3 text-sm text-[--arcane-purple] hover:text-[--arcane-purple]/80 transition-colors"
-                                  >
-                                    {expandedIds.has(session.id) ? (
-                                      <>
-                                        <ChevronUp className="w-4 h-4" />
-                                        Hide detailed notes
-                                      </>
-                                    ) : (
-                                      <>
-                                        <ChevronDown className="w-4 h-4" />
-                                        Show detailed notes
-                                      </>
-                                    )}
-                                  </button>
-                                  {expandedIds.has(session.id) && (
-                                    <div className="mt-3 pt-3 border-t border-white/[0.06]">
-                                      <div
-                                        className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4"
-                                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(session.notes!) }}
-                                      />
-                                    </div>
-                                  )}
-                                </>
-                              ) : hasNotes ? (
-                                <>
-                                  {/* Standard: Show notes directly */}
-                                  <div
-                                    className={cn(
-                                      "prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4",
-                                      !expandedIds.has(session.id) && "line-clamp-4"
-                                    )}
+                                    className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4"
                                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(session.notes!) }}
                                   />
-                                  {session.notes!.length > 300 && (
-                                    <button
-                                      onClick={(e) => toggleExpanded(session.id, e)}
-                                      className="flex items-center gap-2 mt-3 text-sm text-[--arcane-purple] hover:text-[--arcane-purple]/80 transition-colors"
-                                    >
-                                      {expandedIds.has(session.id) ? (
-                                        <>
-                                          <ChevronUp className="w-4 h-4" />
-                                          Show less
-                                        </>
-                                      ) : (
-                                        <>
-                                          <ChevronDown className="w-4 h-4" />
-                                          Show more
-                                        </>
-                                      )}
-                                    </button>
-                                  )}
-                                </>
-                              ) : hasSummary ? (
-                                /* Edge case: Only summary exists */
-                                <div
-                                  className="prose prose-invert prose-sm max-w-none text-[--text-secondary]"
-                                  dangerouslySetInnerHTML={{ __html: markdownToHtml(session.summary!) }}
-                                />
-                              ) : (
-                                <p className="text-sm text-gray-500 italic">No notes added yet</p>
+                                </div>
                               )}
-                            </div>
+                            </>
+                          ) : hasNotes ? (
+                            <>
+                              {/* Standard: Show notes directly */}
+                              <div
+                                className={cn(
+                                  "prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4",
+                                  !expandedIds.has(session.id) && "line-clamp-4"
+                                )}
+                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(session.notes!) }}
+                              />
+                              {session.notes!.length > 300 && (
+                                <button
+                                  onClick={(e) => toggleExpanded(session.id, e)}
+                                  className="flex items-center gap-2 mt-3 text-sm text-[--arcane-purple] hover:text-[--arcane-purple]/80 transition-colors"
+                                >
+                                  {expandedIds.has(session.id) ? (
+                                    <>
+                                      <ChevronUp className="w-4 h-4" />
+                                      Show less
+                                    </>
+                                  ) : (
+                                    <>
+                                      <ChevronDown className="w-4 h-4" />
+                                      Show more
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                            </>
                           ) : (
-                            /* Player can't see DM content */
-                            <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-                              <div className="flex items-center gap-3 text-gray-500">
-                                <EyeOff className="w-5 h-5" />
-                                <span className="text-sm">DM notes not shared for this session</span>
-                              </div>
-                            </div>
+                            /* Edge case: Only summary exists */
+                            <div
+                              className="prose prose-invert prose-sm max-w-none text-[--text-secondary]"
+                              dangerouslySetInnerHTML={{ __html: markdownToHtml(session.summary!) }}
+                            />
                           )}
-                        </>
+                        </div>
                       )}
 
                       {/* Player Perspectives Section */}
