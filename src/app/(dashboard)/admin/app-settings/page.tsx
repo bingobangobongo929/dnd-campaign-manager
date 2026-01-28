@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Settings, DollarSign, Sparkles, Shield, Loader2, AlertTriangle, TrendingUp } from 'lucide-react'
+import { Settings, DollarSign, Sparkles, Shield, Loader2, AlertTriangle, TrendingUp, ScrollText } from 'lucide-react'
 import { useSupabase, useUserSettings } from '@/hooks'
 import { isSuperAdmin } from '@/lib/admin'
 import { toast } from 'sonner'
@@ -12,6 +12,7 @@ interface AppSettings {
   founder_signups_enabled: boolean
   founder_signups_closed_at: string | null
   maintenance_mode: boolean
+  maintenance_message: string | null
   show_upgrade_prompts: boolean
 }
 
@@ -25,8 +26,11 @@ export default function AdminAppSettingsPage() {
     founder_signups_enabled: true,
     founder_signups_closed_at: null,
     maintenance_mode: false,
+    maintenance_message: null,
     show_upgrade_prompts: false,
   })
+  const [maintenanceMessage, setMaintenanceMessage] = useState('')
+  const [savingMessage, setSavingMessage] = useState(false)
 
   const isSuperAdminUser = isSuperAdmin(userSettings?.role || 'user')
 
@@ -50,8 +54,10 @@ export default function AdminAppSettingsPage() {
           founder_signups_enabled: data.founder_signups_enabled ?? true,
           founder_signups_closed_at: data.founder_signups_closed_at,
           maintenance_mode: data.maintenance_mode || false,
+          maintenance_message: data.maintenance_message || null,
           show_upgrade_prompts: data.show_upgrade_prompts || false,
         })
+        setMaintenanceMessage(data.maintenance_message || '')
       }
     } catch (error) {
       console.error('Failed to load app settings:', error)
@@ -103,6 +109,46 @@ export default function AdminAppSettingsPage() {
       toast.error('Failed to update setting')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const saveMaintenanceMessage = async () => {
+    if (!isSuperAdminUser) {
+      toast.error('Only super admins can change app settings')
+      return
+    }
+
+    setSavingMessage(true)
+
+    try {
+      const messageToSave = maintenanceMessage.trim() || null
+
+      const { error } = await supabase
+        .from('app_settings')
+        .upsert({
+          id: 'global',
+          maintenance_message: messageToSave,
+          updated_at: new Date().toISOString(),
+        })
+
+      if (error) throw error
+
+      setSettings(prev => ({ ...prev, maintenance_message: messageToSave }))
+
+      // Log admin activity
+      const { data: { user } } = await supabase.auth.getUser()
+      await supabase.from('admin_activity_log').insert({
+        admin_id: user?.id,
+        action: 'update_maintenance_message',
+        details: { message: messageToSave },
+      })
+
+      toast.success('Maintenance message saved')
+    } catch (error) {
+      console.error('Failed to save maintenance message:', error)
+      toast.error('Failed to save message')
+    } finally {
+      setSavingMessage(false)
     }
   }
 
@@ -203,7 +249,12 @@ export default function AdminAppSettingsPage() {
         </div>
 
         {/* Maintenance Mode Toggle */}
-        <div className="p-6 rounded-xl bg-[#1a1a24] border border-white/[0.06]">
+        <div className={cn(
+          "p-6 rounded-xl border",
+          settings.maintenance_mode
+            ? "bg-red-500/5 border-red-500/20"
+            : "bg-[#1a1a24] border-white/[0.06]"
+        )}>
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
               <div className="p-2.5 rounded-xl bg-red-500/10">
@@ -215,7 +266,7 @@ export default function AdminAppSettingsPage() {
                   Block access for non-admin users
                 </p>
                 <p className="text-xs text-gray-500 mt-2">
-                  Users will see a maintenance message. Admins can still access the app.
+                  Users will see a beautiful &quot;Dragon Sleeps&quot; maintenance page. Admins can still access the app.
                 </p>
               </div>
             </div>
@@ -225,6 +276,50 @@ export default function AdminAppSettingsPage() {
               disabled={saving}
               variant="danger"
             />
+          </div>
+
+          {/* Maintenance Message - shown when maintenance mode is on or being configured */}
+          <div className="mt-6 pt-6 border-t border-white/[0.06]">
+            <div className="flex items-start gap-4">
+              <div className="p-2.5 rounded-xl bg-amber-500/10">
+                <ScrollText className="w-5 h-5 text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-white mb-1">Maintenance Message</h4>
+                <p className="text-xs text-gray-500 mb-3">
+                  Optional message explaining why the site is down. Displayed on the maintenance page.
+                </p>
+                <textarea
+                  value={maintenanceMessage}
+                  onChange={(e) => setMaintenanceMessage(e.target.value)}
+                  placeholder="We're upgrading our servers to bring you new features. We'll be back within the hour!"
+                  className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/50 resize-none text-sm"
+                  rows={3}
+                  maxLength={500}
+                />
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-xs text-gray-500">
+                    {maintenanceMessage.length}/500 characters
+                  </span>
+                  <button
+                    onClick={saveMaintenanceMessage}
+                    disabled={savingMessage || maintenanceMessage === (settings.maintenance_message || '')}
+                    className={cn(
+                      "px-4 py-2 text-sm font-medium rounded-lg transition-colors",
+                      maintenanceMessage !== (settings.maintenance_message || '')
+                        ? "bg-purple-600 hover:bg-purple-500 text-white"
+                        : "bg-white/[0.04] text-gray-500 cursor-not-allowed"
+                    )}
+                  >
+                    {savingMessage ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      'Save Message'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
