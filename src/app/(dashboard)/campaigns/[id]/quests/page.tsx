@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import {
   DragDropContext,
   Droppable,
@@ -842,6 +842,7 @@ function QuestFormModal({
   characters,
   locations,
   saving,
+  initialName,
 }: {
   isOpen: boolean
   onClose: () => void
@@ -851,6 +852,7 @@ function QuestFormModal({
   characters: Character[]
   locations: Location[]
   saving: boolean
+  initialName?: string | null
 }) {
   const [formData, setFormData] = useState({
     name: '',
@@ -922,7 +924,7 @@ function QuestFormModal({
       setOpenSections(sectionsWithContent)
     } else {
       setFormData({
-        name: '',
+        name: initialName || '',
         type: 'side_quest',
         status: 'available',
         priority: 'normal',
@@ -943,7 +945,7 @@ function QuestFormModal({
       setObjectives([])
       setOpenSections(new Set())
     }
-  }, [quest, existingObjectives, isOpen])
+  }, [quest, existingObjectives, isOpen, initialName])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -1420,6 +1422,21 @@ export default function QuestsPage() {
   const [showRollReveal, setShowRollReveal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+
+  // Handle create from URL params (e.g., from Random Tables)
+  const searchParams = useSearchParams()
+  const [initialQuestName, setInitialQuestName] = useState<string | null>(null)
+
+  useEffect(() => {
+    const shouldCreate = searchParams.get('create') === 'true'
+    const name = searchParams.get('name')
+    if (shouldCreate) {
+      setInitialQuestName(name)
+      setShowAddModal(true)
+      // Clear the URL params without navigation
+      router.replace(`/campaigns/${campaignId}/quests`, { scroll: false })
+    }
+  }, [searchParams, campaignId, router])
 
   useEffect(() => {
     if (user && campaignId) {
@@ -2025,6 +2042,7 @@ export default function QuestsPage() {
         onClose={() => {
           setShowAddModal(false)
           setEditingQuest(null)
+          setInitialQuestName(null)
         }}
         onSave={handleSave}
         quest={editingQuest}
@@ -2032,6 +2050,7 @@ export default function QuestsPage() {
         characters={characters}
         locations={locations}
         saving={saving}
+        initialName={initialQuestName}
       />
 
       {/* Delete Confirmation Modal */}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import {
   Dice5,
   Plus,
@@ -142,8 +142,64 @@ const TEMPLATE_ICONS: Record<string, typeof Users> = {
   'complications': AlertTriangle,
 }
 
+// Get create action based on category
+type CreateAction = {
+  label: string
+  icon: typeof Swords
+  href: string
+  color: string
+}
+
+function getCategoryAction(
+  category: RandomTableCategory | undefined,
+  templateId: string | undefined,
+  campaignId: string,
+  resultText: string
+): CreateAction | null {
+  const encodedText = encodeURIComponent(resultText)
+
+  // Check template ID first for specific mappings
+  if (templateId === 'quest-hooks' || templateId === 'rumors' || templateId === 'complications') {
+    return {
+      label: 'Create Quest',
+      icon: Scroll,
+      href: `/campaigns/${campaignId}/quests?create=true&name=${encodedText}`,
+      color: 'text-amber-400 bg-amber-500/15 hover:bg-amber-500/25',
+    }
+  }
+
+  // Check by category
+  switch (category) {
+    case 'encounter':
+      return {
+        label: 'Create Encounter',
+        icon: Swords,
+        href: `/campaigns/${campaignId}/encounters?create=true&name=${encodedText}`,
+        color: 'text-red-400 bg-red-500/15 hover:bg-red-500/25',
+      }
+    case 'location':
+      return {
+        label: 'Create Location',
+        icon: MapPin,
+        href: `/campaigns/${campaignId}/locations?create=true&name=${encodedText}`,
+        color: 'text-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25',
+      }
+    case 'rumor':
+    case 'complication':
+      return {
+        label: 'Create Quest',
+        icon: Scroll,
+        href: `/campaigns/${campaignId}/quests?create=true&name=${encodedText}`,
+        color: 'text-amber-400 bg-amber-500/15 hover:bg-amber-500/25',
+      }
+    default:
+      return null
+  }
+}
+
 export default function RandomTablesPage() {
   const params = useParams()
+  const router = useRouter()
   const supabase = useSupabase()
   const { user } = useUser()
   const campaignId = params.id as string
@@ -1036,19 +1092,41 @@ export default function RandomTablesPage() {
           onAccept={handleAcceptRoll}
           duration="fast"
           title={`Rolling ${rollingTable?.name || rollingTemplate?.name}...`}
-          renderResult={(entry) => (
-            <div className="text-center">
-              <p className="text-sm text-gray-400 mb-2">
-                {rollingTable
-                  ? (rollingTable.roll_type === 'custom' ? `d${rollingTable.custom_die_size}` : rollingTable.roll_type)
-                  : (rollingTemplate?.roll_type === 'custom' ? `d${rollingTemplate.custom_die_size}` : rollingTemplate?.roll_type)
-                }
-              </p>
-              <p className="text-xl text-white leading-relaxed">
-                {typeof entry === 'string' ? entry : entry.text}
-              </p>
-            </div>
-          )}
+          renderResult={(entry) => {
+            const resultText = typeof entry === 'string' ? entry : entry.text
+            const category = rollingTable?.category || rollingTemplate?.category
+            const templateId = rollingTemplate?.id
+            const action = getCategoryAction(category, templateId, campaignId, resultText)
+
+            return (
+              <div className="text-center">
+                <p className="text-sm text-gray-400 mb-2">
+                  {rollingTable
+                    ? (rollingTable.roll_type === 'custom' ? `d${rollingTable.custom_die_size}` : rollingTable.roll_type)
+                    : (rollingTemplate?.roll_type === 'custom' ? `d${rollingTemplate.custom_die_size}` : rollingTemplate?.roll_type)
+                  }
+                </p>
+                <p className="text-xl text-white leading-relaxed mb-4">
+                  {resultText}
+                </p>
+                {action && isDm && (
+                  <button
+                    onClick={() => {
+                      closeRollResult()
+                      router.push(action.href)
+                    }}
+                    className={cn(
+                      "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                      action.color
+                    )}
+                  >
+                    <action.icon className="w-4 h-4" />
+                    {action.label}
+                  </button>
+                )}
+              </div>
+            )
+          }}
         />
       )}
     </AppLayout>

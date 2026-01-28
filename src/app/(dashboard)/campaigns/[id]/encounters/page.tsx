@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import {
   DragDropContext,
   Droppable,
@@ -754,6 +754,7 @@ function EncounterFormModal({
   locations,
   quests,
   saving,
+  initialName,
 }: {
   isOpen: boolean
   onClose: () => void
@@ -762,6 +763,7 @@ function EncounterFormModal({
   locations: Location[]
   quests: Quest[]
   saving: boolean
+  initialName?: string | null
 }) {
   const [formData, setFormData] = useState({
     name: '',
@@ -839,7 +841,7 @@ function EncounterFormModal({
       setOpenSections(sectionsWithContent)
     } else {
       setFormData({
-        name: '',
+        name: initialName || '',
         type: 'combat',
         status: 'prepared',
         summary: '',
@@ -865,7 +867,7 @@ function EncounterFormModal({
       })
       setOpenSections(new Set())
     }
-  }, [encounter, isOpen])
+  }, [encounter, isOpen, initialName])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -1327,10 +1329,24 @@ function EncounterFormModal({
 export default function EncountersPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = useSupabase()
   const { user } = useUser()
   const campaignId = params.id as string
   const { loading: permissionsLoading, isMember, isOwner, isDm } = usePermissions(campaignId)
+
+  // Handle create from URL params (e.g., from Random Tables)
+  const [initialEncounterName, setInitialEncounterName] = useState<string | null>(null)
+  useEffect(() => {
+    const shouldCreate = searchParams.get('create') === 'true'
+    const name = searchParams.get('name')
+    if (shouldCreate) {
+      setInitialEncounterName(name)
+      setShowAddModal(true)
+      // Clear the URL params
+      router.replace(`/campaigns/${campaignId}/encounters`, { scroll: false })
+    }
+  }, [searchParams, campaignId, router])
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [encounters, setEncounters] = useState<Encounter[]>([])
@@ -1832,12 +1848,13 @@ export default function EncountersPage() {
 
       <EncounterFormModal
         isOpen={showAddModal}
-        onClose={() => { setShowAddModal(false); setEditingEncounter(null) }}
+        onClose={() => { setShowAddModal(false); setEditingEncounter(null); setInitialEncounterName(null) }}
         onSave={handleSave}
         encounter={editingEncounter}
         locations={locations}
         quests={quests}
         saving={saving}
+        initialName={initialEncounterName}
       />
 
       <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Delete Encounter" size="sm">
