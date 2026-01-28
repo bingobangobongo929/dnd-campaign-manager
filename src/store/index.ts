@@ -88,6 +88,10 @@ interface AppState extends PersistedSettings {
   isPartyModalOpen: boolean
   setIsPartyModalOpen: (open: boolean) => void
 
+  // Auto-save status for global indicator
+  autoSaveStatus: 'idle' | 'saving' | 'saved' | 'error'
+  setAutoSaveStatus: (status: 'idle' | 'saving' | 'saved' | 'error') => void
+
   // Canvas state
   canvasViewport: { x: number; y: number; zoom: number }
   setCanvasViewport: (viewport: { x: number; y: number; zoom: number }) => void
@@ -183,6 +187,10 @@ export const useAppStore = create<AppState>()(
       setIsAIAssistantOpen: (open) => set({ isAIAssistantOpen: open }),
       isPartyModalOpen: false,
       setIsPartyModalOpen: (open) => set({ isPartyModalOpen: open }),
+
+      // Auto-save status
+      autoSaveStatus: 'idle' as const,
+      setAutoSaveStatus: (status) => set({ autoSaveStatus: status }),
 
       // Canvas state
       canvasViewport: { x: 0, y: 0, zoom: 1 },

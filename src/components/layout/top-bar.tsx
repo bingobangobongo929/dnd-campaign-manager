@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ChevronDown, Sparkles, LogOut, ChevronRight, Swords, BookOpen, Settings, LayoutGrid, ScrollText, Clock, Brain, Network, Map, Image as ImageIcon, Edit3, Eye, Users, Scroll, LayoutDashboard, MapPin, Target, Compass, PanelTop, Share2, Home, User, Upload, Copy, Loader2, Shield, Link2, UserPlus, Star, Crown } from 'lucide-react'
 import { useSupabase, useUser, useMembership, usePermissions, useAppSettings } from '@/hooks'
+import { Cloud, CloudOff, Check } from 'lucide-react'
 import { FounderIndicator } from '@/components/membership/FounderBadge'
 import { useAppStore, useCanUseAI } from '@/store'
 import type { UserSettings } from '@/types/database'
@@ -66,7 +67,7 @@ export function TopBar({
   const pathname = usePathname()
   const supabase = useSupabase()
   const { user } = useUser()
-  const { currentCampaign, setIsAIAssistantOpen, isPartyModalOpen, setIsPartyModalOpen } = useAppStore()
+  const { currentCampaign, setIsAIAssistantOpen, isPartyModalOpen, setIsPartyModalOpen, autoSaveStatus } = useAppStore()
   const canUseAI = useCanUseAI()
   const { tier, isFounder } = useMembership()
   const { settings: appSettings } = useAppSettings()
@@ -404,6 +405,25 @@ export function TopBar({
 
       {/* Right: Page Actions + Switcher + Share + AI + User */}
       <div className="topbar-right">
+        {/* Auto-save indicator */}
+        {autoSaveStatus !== 'idle' && (
+          <div className="flex items-center gap-1.5 mr-3" title={
+            autoSaveStatus === 'saving' ? 'Saving changes...' :
+            autoSaveStatus === 'saved' ? 'All changes saved' :
+            autoSaveStatus === 'error' ? 'Failed to save' : ''
+          }>
+            {autoSaveStatus === 'saving' && (
+              <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
+            )}
+            {autoSaveStatus === 'saved' && (
+              <Cloud className="w-4 h-4 text-green-400" />
+            )}
+            {autoSaveStatus === 'error' && (
+              <CloudOff className="w-4 h-4 text-red-400" />
+            )}
+          </div>
+        )}
+
         {/* Page-specific actions */}
         {actions && (
           <div className="flex items-center gap-2 mr-2">

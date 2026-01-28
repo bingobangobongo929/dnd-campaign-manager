@@ -15,7 +15,6 @@ import {
   X,
   ChevronDown,
   ChevronRight,
-  ChevronUp,
   Target,
   Users,
   MessageCircle,
@@ -27,7 +26,6 @@ import {
   ArrowUp,
   ArrowDown,
   FileText,
-  Check,
 } from 'lucide-react'
 import { Modal } from '@/components/ui'
 import { toast } from 'sonner'
@@ -42,6 +40,7 @@ import type {
   PrepModule,
 } from '@/types/database'
 import { v4 as uuidv4 } from 'uuid'
+import { useAppStore } from '@/store'
 
 interface Character {
   id: string
@@ -295,9 +294,11 @@ export function SessionWorkflow({
   const [tempModuleOrder, setTempModuleOrder] = useState<PrepModule[]>([])
 
   const [newPrepItem, setNewPrepItem] = useState('')
-  const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [previousThoughtsDismissed, setPreviousThoughtsDismissed] = useState(false)
+
+  // Global auto-save status
+  const setAutoSaveStatus = useAppStore((state) => state.setAutoSaveStatus)
 
   // Helper to check if a module has content
   const moduleHasContent = (moduleId: PrepModule): boolean => {
@@ -355,7 +356,7 @@ export function SessionWorkflow({
   }, [prepNotes, prepChecklist, references, sessionGoals, keyNpcs, sessionOpener, randomTables, musicAmbiance, session])
 
   const handleSave = useCallback(async () => {
-    setSaving(true)
+    setAutoSaveStatus('saving')
     try {
       // Convert references text to pinned_references format for backward compatibility
       const pinnedRefs = references
@@ -392,20 +393,23 @@ export function SessionWorkflow({
       const data = await response.json()
 
       if (!response.ok) {
+        setAutoSaveStatus('error')
         toast.error(data.error || 'Failed to save')
         return
       }
 
-      toast.success('Saved')
+      setAutoSaveStatus('saved')
       onUpdate?.(data.session)
       setHasChanges(false)
+
+      // Reset to idle after showing saved status briefly
+      setTimeout(() => setAutoSaveStatus('idle'), 2000)
     } catch (error) {
       console.error('Failed to save:', error)
+      setAutoSaveStatus('error')
       toast.error('Failed to save')
-    } finally {
-      setSaving(false)
     }
-  }, [prepNotes, prepChecklist, references, sessionGoals, keyNpcs, sessionOpener, randomTables, musicAmbiance, moduleOrder, campaignId, session.id, onUpdate])
+  }, [prepNotes, prepChecklist, references, sessionGoals, keyNpcs, sessionOpener, randomTables, musicAmbiance, moduleOrder, campaignId, session.id, onUpdate, setAutoSaveStatus])
 
   // Auto-save with debounce
   useEffect(() => {
@@ -699,31 +703,6 @@ export function SessionWorkflow({
 
   return (
     <div className="space-y-6">
-      {/* Auto-save indicator */}
-      <div className="flex justify-end">
-        <div className={cn(
-          "flex items-center gap-1.5 text-xs transition-opacity duration-300",
-          saving ? "text-purple-400" : hasChanges ? "text-gray-500" : "text-gray-600"
-        )}>
-          {saving ? (
-            <>
-              <Loader2 className="w-3 h-3 animate-spin" />
-              <span>Saving...</span>
-            </>
-          ) : hasChanges ? (
-            <>
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-              <span>Unsaved changes</span>
-            </>
-          ) : (
-            <>
-              <Check className="w-3 h-3" />
-              <span>All changes saved</span>
-            </>
-          )}
-        </div>
-      </div>
-
       {/* Thoughts from last session Banner - only shows if previous session had content */}
       {previousThoughts && !previousThoughtsDismissed && (
         <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4">

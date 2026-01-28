@@ -134,7 +134,12 @@ export async function PATCH(
 
     if (error) {
       console.error('Failed to update session workflow:', error)
-      return NextResponse.json({ error: 'Failed to update session' }, { status: 500 })
+      console.error('Update data was:', JSON.stringify(updateData, null, 2))
+      return NextResponse.json({
+        error: 'Failed to update session',
+        details: error.message,
+        code: error.code
+      }, { status: 500 })
     }
 
     return NextResponse.json({ session })

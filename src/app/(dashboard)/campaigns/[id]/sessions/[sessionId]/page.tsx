@@ -1073,7 +1073,7 @@ export default function SessionDetailPage() {
           <>
             {/* Session Workflow - Full component for Prep mode */}
             {!isNew && session && campaign && campaign.user_id === user?.id && (
-              <div className="card p-6 mb-8">
+              <div className="mb-8">
                 <SessionWorkflow
                   session={session}
                   campaignId={campaignId}
