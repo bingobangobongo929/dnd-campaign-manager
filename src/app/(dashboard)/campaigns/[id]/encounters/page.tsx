@@ -35,6 +35,7 @@ import {
   SlidersHorizontal,
   Calendar,
   Shuffle,
+  Loader2,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout'
 import { Button, Modal, EmptyState, Badge, Tooltip, AccessDeniedPage } from '@/components/ui'
@@ -1627,7 +1628,7 @@ export default function EncountersPage() {
     return (
       <AppLayout campaignId={campaignId}>
         <div className="flex items-center justify-center h-[60vh]">
-          <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
+          <Loader2 className="w-10 h-10 animate-spin text-[--arcane-purple]" />
         </div>
       </AppLayout>
     )

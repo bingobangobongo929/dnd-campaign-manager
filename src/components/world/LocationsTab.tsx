@@ -29,6 +29,7 @@ import {
   Map as MapIcon,
   Clock,
   Users as UsersIcon,
+  Loader2,
 } from 'lucide-react'
 import { Button, Modal, Badge, Tooltip } from '@/components/ui'
 import { EmptyWorldState } from './EmptyWorldState'
@@ -1076,7 +1077,7 @@ export function LocationsTab({ campaignId, isDm, isOwner }: LocationsTabProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
+        <Loader2 className="w-8 h-8 animate-spin text-[--arcane-purple]" />
       </div>
     )
   }

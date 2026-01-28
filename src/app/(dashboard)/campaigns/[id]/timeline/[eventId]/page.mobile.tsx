@@ -1,5 +1,6 @@
 'use client'
 
+import { Loader2 } from 'lucide-react'
 import { TimelineEventEditor, type TimelineEventFormData } from '@/components/timeline'
 import { AppLayout } from '@/components/layout/app-layout'
 import { MobileLayout } from '@/components/mobile'
@@ -34,7 +35,7 @@ export function CampaignTimelineEventPageMobile({
       <AppLayout campaignId={campaignId}>
         <MobileLayout title="Event" showBackButton backHref={`/campaigns/${campaignId}/timeline`}>
           <div className="flex items-center justify-center h-[60vh]">
-            <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
+            <Loader2 className="w-10 h-10 animate-spin text-[--arcane-purple]" />
           </div>
         </MobileLayout>
       </AppLayout>

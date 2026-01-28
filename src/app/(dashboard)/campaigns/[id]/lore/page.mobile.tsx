@@ -80,7 +80,7 @@ export function CampaignLorePageMobile({
       <AppLayout campaignId={campaignId}>
         <MobileLayout title="Lore" showBackButton backHref={`/campaigns/${campaignId}/canvas`}>
           <div className="flex items-center justify-center h-[60vh]">
-            <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
+            <Loader2 className="w-10 h-10 animate-spin text-[--arcane-purple]" />
           </div>
         </MobileLayout>
       </AppLayout>

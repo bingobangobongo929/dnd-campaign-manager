@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, Trash2, Copy, X, CheckSquare, Square, CopyPlus, Check, LayoutGrid, Grid3X3, PenLine, Sparkles, Star, Play, ChevronRight, User, Eye, BookOpen, Filter, Bookmark, RotateCcw, Swords, Users, Settings } from 'lucide-react'
+import { Plus, Search, Trash2, Copy, X, CheckSquare, Square, CopyPlus, Check, LayoutGrid, Grid3X3, PenLine, Sparkles, Star, Play, ChevronRight, User, Eye, BookOpen, Filter, Bookmark, RotateCcw, Swords, Users, Settings, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import { Modal, Dropdown, PageCustomizeModal } from '@/components/ui'
@@ -548,7 +548,7 @@ export default function VaultPage() {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-[60vh]">
-          <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
+          <Loader2 className="w-10 h-10 animate-spin text-[--arcane-purple]" />
         </div>
       </AppLayout>
     )

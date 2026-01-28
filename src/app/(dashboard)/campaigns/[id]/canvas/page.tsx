@@ -620,7 +620,7 @@ export default function CampaignCanvasPage() {
     return (
       <AppLayout campaignId={campaignId} fullBleed transparentTopBar>
         <div className="flex items-center justify-center h-screen">
-          <div className="w-10 h-10 border-2 border-[--arcane-purple] border-t-transparent rounded-full spinner" />
+          <Loader2 className="w-10 h-10 animate-spin text-[--arcane-purple]" />
         </div>
       </AppLayout>
     )

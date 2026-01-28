@@ -14,7 +14,25 @@
       "Bash(DM and player notes, the better the suggestions.\"\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(suggest X from your session notes if you prefer.\"\n\nEmpty states:\n- Add Intelligence mentions as optional alternative\n- Relationships: \"Create on Canvas, or let Intelligence suggest from)",
       "Bash(character interactions in session notes\"\n\nSession pages:\n- \"auto-suggested from notes\" instead of \"AI will suggest\"\n- \"auto-expand into prose\" instead of \"expand with AI\"\n- \"Expansion Preview\" instead of \"AI Expansion Preview\"\n- \"Context Used\" instead of \"AI Context Used\"\n\nIntelligence page:\n- \"Campaign Intelligence analyzes\" instead of \"AI analyzes\"\n\nMobile:\n- \"Campaign Insights\" instead of \"AI Insights\"\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(and suggests [X] to add\"\n- Link text: \"Open Campaign Intelligence →\"\n\nUpdated:\n- LocationsTab: \"detects locations mentioned in your session notes\"\n- FactionsTab: \"detects factions and organizations in your session notes\"  \n- TimelineTab: \"analyzes your session notes and suggests timeline events\"\n- EmptyWorldState: All types now use active voice about what CI does\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(and suggests [X] to add\"\n- Link text: \"Open Campaign Intelligence →\"\n\nUpdated:\n- LocationsTab: \"detects locations mentioned in your session notes\"\n- FactionsTab: \"detects factions and organizations in your session notes\"  \n- TimelineTab: \"analyzes your session notes and suggests timeline events\"\n- EmptyWorldState: All types now use active voice about what CI does\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "WebSearch",
+      "Bash(find:*)",
+      "WebFetch(domain:slyflourish.com)",
+      "WebFetch(domain:phd20.com)",
+      "Bash(git diff:*)",
+      "Bash(git reset:*)",
+      "Bash(done)",
+      "Bash(wc:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx vercel logs:*)",
+      "Bash(vercel logs:*)",
+      "Bash(npx vercel ls)",
+      "Bash(git restore:*)",
+      "Bash(for:*)",
+      "Bash(do echo \"=== $file ===\" grep -o \"max-w-[a-z0-9]*\" \"$file\")",
+      "Bash(head:*)"
     ]
   }
 }
