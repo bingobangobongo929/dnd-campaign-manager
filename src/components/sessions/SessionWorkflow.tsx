@@ -730,31 +730,34 @@ export function SessionWorkflow({
       </div>
 
       {/* Optional Prep Tools Section */}
-      <div className="pt-6">
-        {/* Section Divider with Header */}
-        <div className="mb-6">
-          <div className="flex items-center gap-4 mb-3">
-            <div className="flex-1 h-px bg-[--border]" />
-            <span className="text-xs font-medium text-[--text-tertiary] uppercase tracking-wider">
-              Optional Prep Tools
-            </span>
+      <div className="bg-[--bg-surface] border border-[--border] rounded-xl overflow-hidden">
+        {/* Section Header */}
+        <div className="p-5 border-b border-[--border]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-500/10">
+                <Lightbulb className="w-5 h-5 text-purple-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Prep Tools</h3>
+                <p className="text-sm text-[--text-tertiary]">
+                  Optional tools to help you prepare - use what works for you
+                </p>
+              </div>
+            </div>
             <button
               onClick={openReorderModal}
-              className="text-xs text-gray-400 hover:text-purple-400 transition-colors flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-white/[0.05]"
+              className="text-sm text-gray-400 hover:text-purple-400 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white/[0.05] border border-transparent hover:border-purple-500/20"
               title="Customize order"
             >
-              <GripVertical className="w-3.5 h-3.5" />
+              <GripVertical className="w-4 h-4" />
               Reorder
             </button>
-            <div className="flex-1 h-px bg-[--border]" />
           </div>
-          <p className="text-sm text-gray-400 text-center mb-4">
-            Every DM preps differently - and that&apos;s the point. These tools are here if you want them, not because you need them.
-          </p>
         </div>
 
         {/* All Modules - Always visible, collapsible (in custom order, filtered by disabled) */}
-        <div className="space-y-3">
+        <div className="p-5 space-y-3">
           {visibleModuleOrder.map((moduleId) => {
             const config = MODULE_CONFIG[moduleId]
             const Icon = config.icon
@@ -813,14 +816,14 @@ export function SessionWorkflow({
           })}
         </div>
 
-        {/* Campaign Settings Link */}
-        <div className="mt-6 flex justify-center">
+        {/* Campaign Settings Link - Footer */}
+        <div className="px-5 py-4 border-t border-[--border] bg-white/[0.01]">
           <Link
             href={`/campaigns/${campaignId}/settings`}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-400 hover:text-purple-400 bg-white/[0.02] hover:bg-purple-500/10 border border-[--border] hover:border-purple-500/30 rounded-lg transition-all group"
+            className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-purple-400 transition-colors group"
           >
             <Settings className="w-4 h-4" />
-            <span>Set defaults in Campaign Settings</span>
+            <span>Configure defaults in Campaign Settings</span>
             <ExternalLink className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
           </Link>
         </div>

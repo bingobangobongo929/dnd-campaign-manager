@@ -28,6 +28,7 @@ import {
   EyeOff,
   MessageSquare,
   Layout,
+  Layers,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input, Button, sanitizeHtml } from '@/components/ui'
@@ -1666,35 +1667,42 @@ export default function SessionDetailPage() {
               )
             })()}
 
-            {/* === OPTIONAL SECTIONS DIVIDER === */}
+            {/* === OPTIONAL SECTIONS CARD === */}
             {!isNew && session && isDm && !sessionSettings?.all_optional_sections_hidden && (
-              <div className="mb-6">
-                <div className="flex items-center gap-4 mb-2">
-                  <div className="flex-1 h-px bg-[--border]" />
-                  <span className="text-xs font-medium text-[--text-tertiary] uppercase tracking-wider">
-                    Optional Sections
-                  </span>
-                  <button
-                    onClick={() => setShowCustomizeModal(true)}
-                    className="flex items-center gap-1.5 text-xs text-[--text-tertiary] hover:text-[--arcane-purple] transition-colors"
-                    title="Customize layout"
-                  >
-                    <Layout className="w-3.5 h-3.5" />
-                    Customize
-                  </button>
-                  <div className="flex-1 h-px bg-[--border]" />
+              <div className="bg-[--bg-surface] border border-[--border] rounded-xl overflow-hidden mb-8">
+                {/* Section Header */}
+                <div className="p-5 border-b border-[--border]">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-purple-500/10">
+                        <Layers className="w-5 h-5 text-purple-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-white">Additional Tools</h3>
+                        <p className="text-sm text-[--text-tertiary]">
+                          Optional sections to enhance your session records
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowCustomizeModal(true)}
+                      className="text-sm text-gray-400 hover:text-purple-400 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white/[0.05] border border-transparent hover:border-purple-500/20"
+                      title="Customize layout"
+                    >
+                      <Layout className="w-4 h-4" />
+                      Customize
+                    </button>
+                  </div>
                 </div>
-                <p className="text-sm text-[--text-tertiary] text-center">
-                  Every DM records sessions differently. These tools are here if you want them, not because you need them.
-                </p>
-              </div>
-            )}
+
+                {/* Optional Sections Content */}
+                <div className="p-5 space-y-4">
 
             {/* Optional: DM Notes Section (Collapsible) */}
-            {!isNew && campaign?.user_id === user?.id &&
+            {campaign?.user_id === user?.id &&
              !layoutPrefs.isSectionHidden('dm_notes') &&
              !layoutPrefs.isSectionDisabledByCampaign('dm_notes') && (
-              <div className="card overflow-hidden mb-4 transition-all">
+              <div className="bg-[--bg-elevated] border border-[--border] rounded-lg overflow-hidden transition-all">
                 <button
                   onClick={() => toggleSection('dmNotes')}
                   className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
@@ -1735,10 +1743,9 @@ export default function SessionDetailPage() {
             )}
 
             {/* Optional: Session Content - Quests & Encounters (Collapsible) */}
-            {!isNew && session && isDm &&
-             !layoutPrefs.isSectionHidden('session_content') &&
+            {!layoutPrefs.isSectionHidden('session_content') &&
              !layoutPrefs.isSectionDisabledByCampaign('session_content') && (
-              <div className="card overflow-hidden mb-4 transition-all">
+              <div className="bg-[--bg-elevated] border border-[--border] rounded-lg overflow-hidden transition-all">
                 <button
                   onClick={() => toggleSection('sessionContent')}
                   className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
@@ -1771,10 +1778,9 @@ export default function SessionDetailPage() {
             )}
 
             {/* Optional: Player Notes Section (Collapsible) */}
-            {!isNew && session &&
-             !layoutPrefs.isSectionHidden('player_notes') &&
+            {!layoutPrefs.isSectionHidden('player_notes') &&
              !layoutPrefs.isSectionDisabledByCampaign('player_notes') && (
-              <div className="card overflow-hidden mb-8 transition-all">
+              <div className="bg-[--bg-elevated] border border-[--border] rounded-lg overflow-hidden transition-all">
                 <button
                   onClick={() => toggleSection('playerNotes')}
                   className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
@@ -1806,6 +1812,10 @@ export default function SessionDetailPage() {
                     />
                   </div>
                 )}
+              </div>
+            )}
+
+                </div>
               </div>
             )}
 
