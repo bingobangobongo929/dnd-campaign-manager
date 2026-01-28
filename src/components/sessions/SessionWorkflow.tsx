@@ -31,6 +31,7 @@ import { Modal } from '@/components/ui'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { RichTextEditor } from '@/components/editor'
+import { KeyNpcsModule, parseKeyNpcsValue, type KeyNpcsData } from './KeyNpcsModule'
 import type {
   Session,
   SessionPhase,
@@ -204,8 +205,8 @@ export function SessionWorkflow({
   const [sessionGoals, setSessionGoals] = useState<string>(
     session.session_goals || ''
   )
-  const [keyNpcs, setKeyNpcs] = useState<string>(
-    session.key_npcs || ''
+  const [keyNpcs, setKeyNpcs] = useState<KeyNpcsData>(() =>
+    parseKeyNpcsValue(session.key_npcs as string | KeyNpcsData | null)
   )
   const [sessionOpener, setSessionOpener] = useState<string>(
     session.session_opener || ''
@@ -274,7 +275,7 @@ export function SessionWorkflow({
       case 'session_goals':
         return sessionGoals.trim().length > 0
       case 'key_npcs':
-        return keyNpcs.trim().length > 0
+        return keyNpcs.linkedCharacterIds.length > 0 || keyNpcs.notes.trim().length > 0
       case 'session_opener':
         return sessionOpener.trim().length > 0
       case 'random_tables':
@@ -303,12 +304,15 @@ export function SessionWorkflow({
       return ''
     })()
 
+    // Parse original keyNpcs for comparison
+    const originalKeyNpcs = parseKeyNpcsValue(session.key_npcs as string | KeyNpcsData | null)
+
     const changed =
       prepNotes !== originalPrepNotes ||
       JSON.stringify(prepChecklist) !== JSON.stringify(originalChecklist) ||
       references !== originalReferences ||
       sessionGoals !== (session.session_goals || '') ||
-      keyNpcs !== (session.key_npcs || '') ||
+      JSON.stringify(keyNpcs) !== JSON.stringify(originalKeyNpcs) ||
       sessionOpener !== (session.session_opener || '') ||
       randomTables !== (session.random_tables || '') ||
       musicAmbiance !== (session.music_ambiance || '')
@@ -575,16 +579,11 @@ export function SessionWorkflow({
       case 'key_npcs':
         return (
           <div className="pt-3">
-            <textarea
+            <KeyNpcsModule
               value={keyNpcs}
-              onChange={(e) => setKeyNpcs(e.target.value)}
-              placeholder="Durnan - Gruff but fair, knows more than he lets on&#10;Xanathar Agent - Nervous, watching the party&#10;Street Urchin - Potential informant, wants coin"
-              rows={4}
-              className="form-input w-full text-sm"
+              onChange={setKeyNpcs}
+              characters={characters}
             />
-            <p className="text-xs text-gray-500 mt-2">
-              NPCs likely to appear. Include their motivations and key traits.
-            </p>
           </div>
         )
 
@@ -676,24 +675,25 @@ export function SessionWorkflow({
       </div>
 
       {/* Optional Prep Tools Section */}
-      <div className="pt-2">
+      <div className="pt-4">
         {/* Section Header with explanation */}
-        <div className="mb-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="h-px flex-1 bg-[--border]" />
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Optional Prep Tools</span>
+        <div className="mb-6 p-4 bg-[--bg-surface]/50 rounded-xl border border-[--border]">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <Settings className="w-5 h-5 text-purple-400" />
+              <h3 className="text-sm font-semibold text-white">Prep Tools</h3>
+            </div>
             <button
               onClick={openReorderModal}
-              className="text-xs text-gray-500 hover:text-purple-400 transition-colors flex items-center gap-1"
+              className="text-xs text-gray-400 hover:text-purple-400 transition-colors flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-white/[0.05]"
               title="Customize order"
             >
-              <GripVertical className="w-3 h-3" />
+              <GripVertical className="w-3.5 h-3.5" />
               Reorder
             </button>
-            <div className="h-px flex-1 bg-[--border]" />
           </div>
-          <p className="text-sm text-gray-500 text-center">
-            Every DM preps differently. These tools are here if you want them - use what helps, ignore what doesn&apos;t.
+          <p className="text-sm text-gray-400">
+            Every DM preps differently. Use what helps, ignore what doesn&apos;t.
           </p>
         </div>
 
@@ -758,14 +758,14 @@ export function SessionWorkflow({
         </div>
 
         {/* Campaign Settings Link */}
-        <div className="mt-4 pt-4 border-t border-[--border]">
+        <div className="mt-6 flex justify-center">
           <Link
             href={`/campaigns/${campaignId}/settings`}
-            className="flex items-center gap-2 text-xs text-gray-500 hover:text-purple-400 transition-colors group"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-400 hover:text-purple-400 bg-white/[0.02] hover:bg-purple-500/10 border border-[--border] hover:border-purple-500/30 rounded-lg transition-all group"
           >
-            <Settings className="w-3.5 h-3.5" />
-            <span>Set your session defaults in Campaign Settings</span>
-            <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Settings className="w-4 h-4" />
+            <span>Set defaults in Campaign Settings</span>
+            <ExternalLink className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
           </Link>
         </div>
       </div>
@@ -890,7 +890,8 @@ export function checkModuleHasContent(
     case 'session_goals':
       return !!(session.session_goals?.trim())
     case 'key_npcs':
-      return !!(session.key_npcs?.trim())
+      const keyNpcsData = parseKeyNpcsValue(session.key_npcs as string | KeyNpcsData | null)
+      return keyNpcsData.linkedCharacterIds.length > 0 || keyNpcsData.notes.trim().length > 0
     case 'session_opener':
       return !!(session.session_opener?.trim())
     case 'random_tables':

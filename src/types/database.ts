@@ -4496,10 +4496,18 @@ export type SessionPhase = 'prep' | 'completed'
 // Session state for player access control
 export type SessionState = 'private' | 'open' | 'locked'
 
-// Session workflow section types (legacy - kept for backward compatibility)
-export type SessionSection = 'prep_checklist' | 'thoughts_for_next' | 'quick_reference' | 'session_timer'
+// Session workflow section types - maps to prep modules for campaign defaults
+export type SessionSection =
+  | 'prep_checklist'    // Maps to 'checklist' module
+  | 'quick_reference'   // Maps to 'references' module
+  | 'session_goals'     // Maps to 'session_goals' module
+  | 'key_npcs'          // Maps to 'key_npcs' module
+  | 'session_opener'    // Maps to 'session_opener' module
+  | 'random_tables'     // Maps to 'random_tables' module
+  | 'music_ambiance'    // Maps to 'music_ambiance' module
+  | 'thoughts_for_next' // Carry-over to next session
 
-// Prep phase optional modules (per plan: only 2 modules)
+// Prep phase optional modules
 export type PrepModule =
   | 'checklist'        // Yellow - Simple checkboxes for prep tasks
   | 'references'       // Cyan - Key NPCs, locations, or notes to keep handy
@@ -4509,10 +4517,30 @@ export type PrepModule =
   | 'random_tables'    // Pink - Names, encounters, or things to roll for
   | 'music_ambiance'   // Teal - Playlists, sound effects, atmosphere notes
 
+// Completed phase optional sections
+export type CompletedSection =
+  | 'dm_notes'          // Private DM notes (red)
+  | 'session_content'   // Quests/encounters linking (blue)
+  | 'player_notes'      // Player perspectives (green)
+  | 'thoughts_for_next' // Ideas for next session (gold)
+  | 'detailed_notes'    // Enhanced mode detailed notes (purple)
+
 // Campaign session settings
 export interface SessionSettings {
   players_can_view_session_notes: boolean
   players_can_add_session_notes: boolean
+  // Optional section configuration per campaign
+  disabled_prep_modules?: PrepModule[]
+  disabled_completed_sections?: CompletedSection[]
+  all_optional_sections_hidden?: boolean
+}
+
+// User session layout preferences (per-user-per-campaign)
+export interface SessionLayoutPreferences {
+  completedSectionOrder: CompletedSection[]
+  prepModuleOrder: PrepModule[]
+  collapsedSections: string[]
+  hiddenSections: string[]
 }
 
 // Prep checklist item

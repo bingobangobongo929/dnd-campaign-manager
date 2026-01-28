@@ -8,6 +8,7 @@ export { usePermissions, clearPermissionsCache } from './usePermissions'
 export type { UsePermissionsReturn } from './usePermissions'
 export { useDashboardPreferences, DM_WIDGETS, PLAYER_WIDGETS } from './useDashboardPreferences'
 export type { DmWidgetId, PlayerWidgetId } from './useDashboardPreferences'
+export { useSessionLayoutPreferences, LOCKED_SECTIONS, CUSTOMIZABLE_COMPLETED_SECTIONS, CUSTOMIZABLE_PREP_MODULES } from './useSessionLayoutPreferences'
 export { useEntitySecrets } from './useEntitySecrets'
 
 // Unified content system

@@ -11,3 +11,6 @@ export {
 } from './SessionWorkflow'
 export { MergedNotesView } from './MergedNotesView'
 export { SessionContent } from './SessionContent'
+export { KeyNpcsModule, parseKeyNpcsValue, serializeKeyNpcsValue } from './KeyNpcsModule'
+export type { KeyNpcsData } from './KeyNpcsModule'
+export { CustomizeLayoutModal } from './CustomizeLayoutModal'
