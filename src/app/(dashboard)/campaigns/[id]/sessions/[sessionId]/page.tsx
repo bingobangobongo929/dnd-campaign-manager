@@ -34,7 +34,7 @@ import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { SessionDetailMobile } from './page.mobile'
 import { useVersionedAutoSave } from '@/hooks/useAutoSave'
 import { logActivity, diffChanges } from '@/lib/activity-log'
-import { useAppStore, useCanUseAI } from '@/store'
+import { useAppStore } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
 import type { Session, Campaign, Character, SessionPhase, SessionState } from '@/types/database'
@@ -49,8 +49,26 @@ export default function SessionDetailPage() {
   const supabase = useSupabase()
   const { user } = useUser()
   const isMobile = useIsMobile()
-  const { aiProvider } = useAppStore()
-  const canUseAI = useCanUseAI()
+  const { aiProvider, settings } = useAppStore()
+  const isModOrAbove = settings?.role === 'moderator' || settings?.role === 'super_admin'
+
+  // Enhanced view toggle - only for mods+, persisted in localStorage
+  const [useEnhancedView, setUseEnhancedView] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('session-enhanced-view') === 'true'
+    }
+    return false
+  })
+
+  // Persist toggle to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('session-enhanced-view', useEnhancedView.toString())
+    }
+  }, [useEnhancedView])
+
+  // Show enhanced view only if mod+ AND toggle is on
+  const showEnhancedView = isModOrAbove && useEnhancedView
 
   const campaignId = params.id as string
   const { isDm, can, loading: permissionsLoading } = usePermissions(campaignId)
@@ -460,7 +478,7 @@ export default function SessionDetailPage() {
       previousStatusRef.current !== 'saved' &&
       status === 'saved' &&
       !intelligencePromptShownRef.current &&
-      canUseAI &&
+      isModOrAbove &&
       isDm &&
       !isNew
     ) {
@@ -471,7 +489,7 @@ export default function SessionDetailPage() {
       }, 1500)
     }
     previousStatusRef.current = status
-  }, [status, canUseAI, isDm, isNew, campaignId])
+  }, [status, isModOrAbove, isDm, isNew, campaignId])
 
   // Create new session
   const handleCreate = async () => {
@@ -513,8 +531,8 @@ export default function SessionDetailPage() {
 
     toast.success('Session created')
 
-    // Show Intelligence prompt after a short delay
-    if (canUseAI && isDm) {
+    // Show Intelligence prompt after a short delay (mods+ only)
+    if (isModOrAbove && isDm) {
       setTimeout(() => {
         showIntelligencePrompt(campaignId)
       }, 2000)
@@ -721,7 +739,7 @@ export default function SessionDetailPage() {
         editExpanded={editExpanded}
         declineExpanded={declineExpanded}
         formatSummaryAsHtml={formatSummaryAsHtml}
-        canUseAI={canUseAI}
+        showEnhancedView={showEnhancedView}
         session={session}
         campaign={campaign}
         userId={user?.id || ''}
@@ -863,16 +881,32 @@ export default function SessionDetailPage() {
                   {status === 'idle' && 'All changes saved'}
                 </span>
               )}
-              {/* Analyze This Session button - for existing sessions, DMs with AI access */}
-              {!isNew && isDm && canUseAI && (
-                <Button
-                  variant="secondary"
-                  onClick={() => router.push(`/campaigns/${campaignId}/intelligence?session=${sessionId}`)}
-                  className="flex items-center gap-2"
-                >
-                  <Brain className="w-4 h-4" />
-                  Analyze Session
-                </Button>
+              {/* View Mode Toggle - only for Mods+ */}
+              {isModOrAbove && (
+                <div className="flex items-center bg-white/[0.03] rounded-lg border border-white/[0.08] p-1">
+                  <button
+                    onClick={() => setUseEnhancedView(false)}
+                    className={cn(
+                      "px-3 py-1.5 text-sm font-medium rounded-md transition-all",
+                      !useEnhancedView
+                        ? "bg-[--arcane-purple] text-white"
+                        : "text-gray-400 hover:text-white"
+                    )}
+                  >
+                    Standard
+                  </button>
+                  <button
+                    onClick={() => setUseEnhancedView(true)}
+                    className={cn(
+                      "px-3 py-1.5 text-sm font-medium rounded-md transition-all",
+                      useEnhancedView
+                        ? "bg-[--arcane-purple] text-white"
+                        : "text-gray-400 hover:text-white"
+                    )}
+                  >
+                    Enhanced
+                  </button>
+                </div>
               )}
               {isNew && isDm && (
                 <Button onClick={handleCreate}>
@@ -965,19 +999,6 @@ export default function SessionDetailPage() {
               </div>
             )}
 
-            {/* Player Notes Section - Also in Prep mode */}
-            {!isNew && session && (
-              <div className="card p-6 mb-8">
-                <PlayerNotes
-                  sessionId={sessionId}
-                  campaignId={campaignId}
-                  characters={characters}
-                  autoOpenAdd={openPlayerNotesModal}
-                  onModalClose={() => setOpenPlayerNotesModal(false)}
-                />
-              </div>
-            )}
-
             {/* Basic info for new sessions in Prep mode */}
             {isNew && (
               <div className="card p-6 mb-8 border-yellow-500/30 bg-yellow-500/5">
@@ -1055,22 +1076,22 @@ export default function SessionDetailPage() {
               </div>
             )}
 
-            {/* Summary/Quick Recap Section - Premium sees "Quick Recap", Free sees "Session Notes" */}
+            {/* Summary/Quick Recap Section - Enhanced view shows "Quick Recap", Standard shows "Session Notes" */}
             <div className="card p-6 mb-8">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <label className="text-lg font-semibold text-[--text-primary] block">
-                    {canUseAI ? 'Quick Recap' : 'Session Notes'}
+                    {showEnhancedView ? 'Quick Recap' : 'Session Notes'}
                   </label>
                   {can.editSession && (
                     <span className="text-sm text-[--text-tertiary]">
-                      {canUseAI
+                      {showEnhancedView
                         ? 'Write quick bullets about what happened. You can expand them into detailed notes when ready.'
                         : 'What happened this session? Try mentioning NPCs, locations, key decisions...'}
                     </span>
                   )}
                 </div>
-                {can.editSession && canUseAI && !showExpandedPreview && (
+                {can.editSession && showEnhancedView && !showExpandedPreview && (
                   <button
                     onClick={handleExpandNotes}
                     disabled={!formData.summary.trim() || expanding}
@@ -1095,7 +1116,7 @@ export default function SessionDetailPage() {
                 <RichTextEditor
                   content={formData.summary}
                   onChange={(content) => setFormData({ ...formData, summary: content })}
-                  placeholder={canUseAI
+                  placeholder={showEnhancedView
                     ? "Write your session notes as bullet points..."
                     : "What happened this session? Try mentioning NPCs, locations, key decisions..."
                   }
@@ -1308,8 +1329,8 @@ export default function SessionDetailPage() {
               </div>
             )}
 
-            {/* Detailed Notes Section - Premium only, or if notes already exist */}
-            {(formData.notes || (!detailedNotesCollapsed && can.editSession && canUseAI)) && (
+            {/* Detailed Notes Section - Enhanced view only, or if notes already exist */}
+            {(formData.notes || (!detailedNotesCollapsed && can.editSession && showEnhancedView)) && (
               <div className="card p-6 mb-8">
                 {can.editSession ? (
                   /* DM can toggle and edit */

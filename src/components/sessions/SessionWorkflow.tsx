@@ -268,8 +268,8 @@ export function SessionWorkflow({
       )}
 
       {/* Prep Notes - Primary Workspace */}
-      <div>
-        <label className="text-sm font-medium text-white mb-2 block">Prep Notes</label>
+      <div className="bg-[--bg-surface] border border-[--border] rounded-xl p-5">
+        <label className="text-sm font-medium text-white mb-3 block">Prep Notes</label>
         <RichTextEditor
           content={prepNotes}
           onChange={setPrepNotes}
@@ -278,8 +278,63 @@ export function SessionWorkflow({
         />
       </div>
 
-      {/* Checklist Module */}
-      {enabledModules.includes('checklist') && (
+      {/* Optional Modules Section - Visually Separated */}
+      {(enabledModules.length > 0 || availableToAdd.length > 0) && (
+        <div className="pt-4">
+          {/* Section Header */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-px flex-1 bg-[--border]" />
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Optional Modules</span>
+            <div className="h-px flex-1 bg-[--border]" />
+          </div>
+
+          {/* Add Section Button - Prominent, at top of optional section */}
+          {availableToAdd.length > 0 && (
+            <div className="relative mb-4">
+              <button
+                onClick={() => setShowModuleMenu(!showModuleMenu)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all w-full justify-center",
+                  "bg-[--bg-surface] border-2 border-dashed border-[--border] hover:border-[--arcane-purple]/50 hover:bg-[--arcane-purple]/5",
+                  "text-gray-400 hover:text-[--arcane-purple]"
+                )}
+              >
+                <Plus className="w-4 h-4" />
+                Add Section
+                {showModuleMenu ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </button>
+
+              {showModuleMenu && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-[--bg-elevated] border border-[--border] rounded-lg shadow-xl z-10">
+                  {availableToAdd.map((module) => {
+                    const Icon = module.icon
+                    return (
+                      <button
+                        key={module.id}
+                        onClick={() => addModule(module.id)}
+                        className="w-full flex items-start gap-3 p-3 hover:bg-white/[0.05] transition-colors text-left first:rounded-t-lg last:rounded-b-lg"
+                      >
+                        <Icon className="w-5 h-5 text-gray-400 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-white">{module.label}</p>
+                          <p className="text-xs text-gray-500">{module.description}</p>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Enabled Modules - render inside the optional section */}
+          <div className="space-y-4">
+            {/* Checklist Module */}
+            {enabledModules.includes('checklist') && (
         <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -411,43 +466,7 @@ export function SessionWorkflow({
           </p>
         </div>
       )}
-
-      {/* Add Section Button */}
-      {availableToAdd.length > 0 && (
-        <div className="relative">
-          <button
-            onClick={() => setShowModuleMenu(!showModuleMenu)}
-            className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-300 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Section
-            {showModuleMenu ? (
-              <ChevronUp className="w-3 h-3" />
-            ) : (
-              <ChevronDown className="w-3 h-3" />
-            )}
-          </button>
-
-          {showModuleMenu && (
-            <div className="absolute top-full left-0 mt-2 w-64 bg-[--bg-elevated] border border-[--border] rounded-lg shadow-xl z-10">
-              {availableToAdd.map((module) => {
-                const Icon = module.icon
-                return (
-                  <button
-                    key={module.id}
-                    onClick={() => addModule(module.id)}
-                    className="w-full flex items-start gap-3 p-3 hover:bg-white/[0.05] transition-colors text-left first:rounded-t-lg last:rounded-b-lg"
-                  >
-                    <Icon className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-white">{module.label}</p>
-                      <p className="text-xs text-gray-500">{module.description}</p>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          )}
+          </div>
         </div>
       )}
 

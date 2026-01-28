@@ -63,7 +63,7 @@ export interface SessionDetailMobileProps {
   editExpanded: () => void
   declineExpanded: () => void
   formatSummaryAsHtml: (summary: string) => string
-  canUseAI: boolean
+  showEnhancedView: boolean
   // Props for SessionWorkflow and PlayerNotes
   session: Session | null
   campaign: Campaign | null
@@ -113,7 +113,7 @@ export function SessionDetailMobile({
   editExpanded,
   declineExpanded,
   formatSummaryAsHtml,
-  canUseAI,
+  showEnhancedView,
   session,
   campaign,
   userId,
@@ -307,19 +307,6 @@ export function SessionDetailMobile({
                 </div>
               )}
 
-              {/* Player Notes Section - Also in Prep mode */}
-              {!isNew && session && (
-                <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
-                  <PlayerNotes
-                    sessionId={sessionId}
-                    campaignId={campaignId}
-                    characters={characters}
-                    autoOpenAdd={openPlayerNotesModal}
-                    onModalClose={() => setOpenPlayerNotesModal(false)}
-                  />
-                </div>
-              )}
-
               {/* Create button for new sessions in Prep mode */}
               {isNew && (
                 <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
@@ -396,7 +383,7 @@ export function SessionDetailMobile({
               <div className="mb-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.06]">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-medium text-white">Summary</span>
-                  {canEditSession && canUseAI && !showExpandedPreview && (
+                  {canEditSession && showEnhancedView && !showExpandedPreview && (
                     <button
                       onClick={handleExpandNotes}
                       disabled={!formData.summary.trim() || expanding}
