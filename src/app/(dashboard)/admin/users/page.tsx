@@ -235,15 +235,21 @@ export default function AdminUsersPage() {
   const handleChangeUsername = async () => {
     if (!selectedUser || !isSuperAdminUser) return
 
-    const trimmedUsername = newUsername.trim().toLowerCase()
+    const trimmedUsername = newUsername.trim()
 
-    // Validate username format
-    if (trimmedUsername && !/^[a-z0-9_]{3,20}$/.test(trimmedUsername)) {
-      setUsernameError('Username must be 3-20 characters, lowercase letters, numbers, and underscores only')
+    // Validate username format (case-sensitive allowed)
+    if (trimmedUsername && !/^[a-zA-Z0-9_]{3,20}$/.test(trimmedUsername)) {
+      setUsernameError('Username must be 3-20 characters, letters, numbers, and underscores only')
       return
     }
 
-    // Check reserved usernames
+    // Cannot start with a number
+    if (trimmedUsername && /^[0-9]/.test(trimmedUsername)) {
+      setUsernameError('Username cannot start with a number')
+      return
+    }
+
+    // Check reserved usernames (case-insensitive)
     const reservedUsernames = [
       'admin', 'administrator', 'mod', 'moderator', 'support', 'help',
       'staff', 'team', 'multiloop', 'system', 'root', 'official',
@@ -251,7 +257,7 @@ export default function AdminUsersPage() {
       'api', 'www', 'mail', 'ftp', 'test', 'dev', 'null', 'undefined',
     ]
 
-    if (trimmedUsername && reservedUsernames.includes(trimmedUsername)) {
+    if (trimmedUsername && reservedUsernames.includes(trimmedUsername.toLowerCase())) {
       setUsernameError('This username is reserved and cannot be used')
       return
     }
@@ -260,14 +266,14 @@ export default function AdminUsersPage() {
     setUsernameError('')
 
     try {
-      // Check if username is taken (if not clearing it) - this read is OK via RLS
+      // Check if username is taken (case-insensitive) - this read is OK via RLS
       if (trimmedUsername) {
         const { data: existing } = await supabase
           .from('user_settings')
           .select('user_id')
-          .eq('username', trimmedUsername)
+          .ilike('username', trimmedUsername)
           .neq('user_id', selectedUser.id)
-          .single()
+          .maybeSingle()
 
         if (existing) {
           setUsernameError('This username is already taken')
@@ -1482,16 +1488,16 @@ export default function AdminUsersPage() {
                 type="text"
                 value={newUsername}
                 onChange={(e) => {
-                  setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
+                  setNewUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))
                   setUsernameError('')
                 }}
-                placeholder="username"
+                placeholder="Username"
                 className="w-full pl-8 pr-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500/50"
                 maxLength={20}
               />
             </div>
             <p className="text-xs text-gray-500">
-              3-20 characters, lowercase letters, numbers, and underscores only. Leave empty to clear.
+              3-20 characters, letters, numbers, and underscores only. Leave empty to clear.
             </p>
             {usernameError && (
               <p className="text-xs text-red-400">{usernameError}</p>
