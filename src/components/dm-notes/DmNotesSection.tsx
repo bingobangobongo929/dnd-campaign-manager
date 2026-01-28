@@ -25,6 +25,7 @@ interface DmNotesSectionProps {
   placeholder?: string
   className?: string
   collapsed?: boolean
+  hideHeader?: boolean // When true, renders only the content without the collapsible header
 }
 
 const visibilityOptions: { value: VisibilityLevel; label: string; icon: typeof Globe; description: string }[] = [
@@ -42,12 +43,94 @@ export function DmNotesSection({
   placeholder = 'Private notes, plot hooks, secret motivations... Players will never see this.',
   className,
   collapsed: initialCollapsed = true,
+  hideHeader = false,
 }: DmNotesSectionProps) {
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed)
   const [showVisibilityMenu, setShowVisibilityMenu] = useState(false)
 
   const currentVisibility = visibilityOptions.find(v => v.value === visibility) || visibilityOptions[2]
   const VisibilityIcon = currentVisibility.icon
+
+  // When hideHeader is true, render just the content area without wrapper
+  if (hideHeader) {
+    return (
+      <div className={cn("space-y-4 pt-4", className)}>
+        {/* Visibility Toggle */}
+        {showVisibilityToggle && onVisibilityChange && (
+          <div className="relative">
+            <label className="text-xs font-medium text-gray-400 mb-2 block">
+              Entity Visibility
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowVisibilityMenu(!showVisibilityMenu)}
+              className="flex items-center gap-2 px-3 py-2 bg-white/[0.02] border border-[--border] rounded-lg text-sm text-gray-300 hover:border-purple-500/30 transition-colors w-full"
+            >
+              <VisibilityIcon className={cn(
+                "w-4 h-4",
+                visibility === 'public' && "text-green-400",
+                visibility === 'party' && "text-blue-400",
+                visibility === 'dm_only' && "text-purple-400"
+              )} />
+              <span className="flex-1 text-left">{currentVisibility.label}</span>
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            </button>
+
+            {showVisibilityMenu && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[#1a1a24] border border-[--border] rounded-lg shadow-xl z-50 overflow-hidden">
+                {visibilityOptions.map(option => {
+                  const Icon = option.icon
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => {
+                        onVisibilityChange(option.value)
+                        setShowVisibilityMenu(false)
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/[0.05] transition-colors",
+                        visibility === option.value && "bg-purple-500/10"
+                      )}
+                    >
+                      <Icon className={cn(
+                        "w-4 h-4",
+                        option.value === 'public' && "text-green-400",
+                        option.value === 'party' && "text-blue-400",
+                        option.value === 'dm_only' && "text-purple-400"
+                      )} />
+                      <div>
+                        <p className="text-sm font-medium text-white">{option.label}</p>
+                        <p className="text-xs text-gray-500">{option.description}</p>
+                      </div>
+                      {visibility === option.value && (
+                        <Eye className="w-4 h-4 text-purple-400 ml-auto" />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* DM Notes Textarea */}
+        <div>
+          <Textarea
+            value={dmNotes}
+            onChange={(e) => onDmNotesChange(e.target.value)}
+            placeholder={placeholder}
+            rows={4}
+            className="form-textarea text-sm bg-white/[0.02] border-purple-500/20 focus:border-purple-500/40"
+          />
+          <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+            <Lock className="w-3 h-3" />
+            These notes are never shared with players, even on shared links.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={cn("border border-purple-500/20 rounded-lg overflow-hidden", className)}>

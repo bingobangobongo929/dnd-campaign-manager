@@ -74,5 +74,29 @@ export function useUserSettings() {
     await fetchSettings()
   }, [fetchSettings])
 
-  return { settings, loading: userLoading || loading, refreshSettings }
+  // Update user settings in database
+  const updateSettings = useCallback(async (updates: Partial<UserSettings>): Promise<boolean> => {
+    if (!user) return false
+
+    try {
+      const { error } = await supabase
+        .from('user_settings')
+        .update(updates)
+        .eq('user_id', user.id)
+
+      if (error) {
+        console.error('Failed to update user settings:', error)
+        return false
+      }
+
+      // Optimistically update local state
+      setSettings(prev => prev ? { ...prev, ...updates } : null)
+      return true
+    } catch (error) {
+      console.error('Failed to update user settings:', error)
+      return false
+    }
+  }, [user, supabase])
+
+  return { settings, loading: userLoading || loading, refreshSettings, updateSettings }
 }

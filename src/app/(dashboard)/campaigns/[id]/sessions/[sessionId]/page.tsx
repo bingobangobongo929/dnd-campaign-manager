@@ -14,6 +14,7 @@ import {
   Wand2,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   CheckCircle2,
   ScrollText,
   AlertTriangle,
@@ -25,12 +26,13 @@ import {
   Unlock,
   Eye,
   EyeOff,
+  MessageSquare,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input, Button, sanitizeHtml } from '@/components/ui'
 import { RichTextEditor } from '@/components/editor'
 import { AppLayout } from '@/components/layout/app-layout'
-import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
+import { useSupabase, useUser, useIsMobile, usePermissions, useUserSettings } from '@/hooks'
 import { SessionDetailMobile } from './page.mobile'
 import { useVersionedAutoSave } from '@/hooks/useAutoSave'
 import { logActivity, diffChanges } from '@/lib/activity-log'
@@ -50,22 +52,17 @@ export default function SessionDetailPage() {
   const { user } = useUser()
   const isMobile = useIsMobile()
   const { aiProvider, settings } = useAppStore()
+  const { settings: userSettings, updateSettings } = useUserSettings()
   const isModOrAbove = settings?.role === 'moderator' || settings?.role === 'super_admin'
 
-  // Enhanced view toggle - only for mods+, persisted in localStorage
-  const [useEnhancedView, setUseEnhancedView] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('session-enhanced-view') === 'true'
-    }
-    return false
-  })
+  // Enhanced view toggle - stored in database (user_settings.session_enhanced_view)
+  // Only available for mods+
+  const useEnhancedView = userSettings?.session_enhanced_view ?? false
 
-  // Persist toggle to localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('session-enhanced-view', useEnhancedView.toString())
-    }
-  }, [useEnhancedView])
+  // Toggle handler - saves to database
+  const handleToggleEnhancedView = async (enabled: boolean) => {
+    await updateSettings({ session_enhanced_view: enabled })
+  }
 
   // Show enhanced view only if mod+ AND toggle is on
   const showEnhancedView = isModOrAbove && useEnhancedView
@@ -115,9 +112,25 @@ export default function SessionDetailPage() {
   const [pendingTitle, setPendingTitle] = useState<string | null>(null)
   const [showExpandedPreview, setShowExpandedPreview] = useState(false)
   const [aiReasoning, setAiReasoning] = useState<string>('')
-  const [detailedNotesCollapsed, setDetailedNotesCollapsed] = useState(true)
+  // detailedNotesCollapsed removed - no longer needed after redesign
+  // Standard mode shows Session Notes directly, Enhanced mode shows both fields always visible
   const [previousThoughts, setPreviousThoughts] = useState<string>('')
   const [openPlayerNotesModal, setOpenPlayerNotesModal] = useState(false)
+
+  // Optional sections expansion state (collapsed by default)
+  const [expandedSections, setExpandedSections] = useState<{
+    dmNotes: boolean
+    sessionContent: boolean
+    playerNotes: boolean
+  }>({
+    dmNotes: false,
+    sessionContent: false,
+    playerNotes: false,
+  })
+
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
+  }
 
   // Phase management - for new sessions use URL param, for existing use session data (only prep/completed now)
   const [currentPhase, setCurrentPhase] = useState<SessionPhase>(initialPhase || 'prep')
@@ -261,11 +274,6 @@ export default function SessionDetailPage() {
         .limit(1)
 
       setPreviousSessionData(prevSessions && prevSessions.length > 0 ? prevSessions[0] : null)
-    }
-
-    // If there's existing notes, show them expanded
-    if (sessionData.notes && sessionData.notes.trim()) {
-      setDetailedNotesCollapsed(false)
     }
 
     setLoading(false)
@@ -674,7 +682,6 @@ export default function SessionDetailPage() {
     setPendingSummary(null)
     setPendingTitle(null)
     setAiReasoning('')
-    setDetailedNotesCollapsed(false)
   }
 
   const editExpanded = () => {
@@ -692,7 +699,6 @@ export default function SessionDetailPage() {
     setPendingSummary(null)
     setPendingTitle(null)
     setAiReasoning('')
-    setDetailedNotesCollapsed(false)
   }
 
   const declineExpanded = () => {
@@ -731,8 +737,6 @@ export default function SessionDetailPage() {
         pendingSummary={pendingSummary}
         pendingTitle={pendingTitle}
         pendingNotes={pendingNotes}
-        detailedNotesCollapsed={detailedNotesCollapsed}
-        setDetailedNotesCollapsed={setDetailedNotesCollapsed}
         handleCreate={handleCreate}
         handleExpandNotes={handleExpandNotes}
         acceptExpanded={acceptExpanded}
@@ -760,6 +764,9 @@ export default function SessionDetailPage() {
         handleStateChange={handleStateChange}
         shareNotesWithPlayers={shareNotesWithPlayers}
         handleShareNotesChange={handleShareNotesChange}
+        // DM Notes props
+        dmNotes={formData.dm_notes}
+        onDmNotesChange={(notes) => setFormData({ ...formData, dm_notes: notes })}
       />
     )
   }
@@ -877,15 +884,15 @@ export default function SessionDetailPage() {
                 )}>
                   {status === 'conflict' && 'Conflict detected'}
                   {status === 'saving' && 'Saving...'}
-                  {status === 'saved' && 'Saved'}
-                  {status === 'idle' && 'All changes saved'}
+                  {status === 'saved' && '(auto-saved)'}
+                  {status === 'idle' && '(auto-saved)'}
                 </span>
               )}
               {/* View Mode Toggle - only for Mods+ */}
               {isModOrAbove && (
                 <div className="flex items-center bg-white/[0.03] rounded-lg border border-white/[0.08] p-1">
                   <button
-                    onClick={() => setUseEnhancedView(false)}
+                    onClick={() => handleToggleEnhancedView(false)}
                     className={cn(
                       "px-3 py-1.5 text-sm font-medium rounded-md transition-all",
                       !useEnhancedView
@@ -896,7 +903,7 @@ export default function SessionDetailPage() {
                     Standard
                   </button>
                   <button
-                    onClick={() => setUseEnhancedView(true)}
+                    onClick={() => handleToggleEnhancedView(true)}
                     className={cn(
                       "px-3 py-1.5 text-sm font-medium rounded-md transition-all",
                       useEnhancedView
@@ -1076,79 +1083,163 @@ export default function SessionDetailPage() {
               </div>
             )}
 
-            {/* Summary/Quick Recap Section - Enhanced view shows "Quick Recap", Standard shows "Session Notes" */}
-            <div className="card p-6 mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <label className="text-lg font-semibold text-[--text-primary] block">
-                    {showEnhancedView ? 'Quick Recap' : 'Session Notes'}
-                  </label>
-                  {can.editSession && (
-                    <span className="text-sm text-[--text-tertiary]">
-                      {showEnhancedView
-                        ? 'Write quick bullets about what happened. You can expand them into detailed notes when ready.'
-                        : 'What happened this session? Try mentioning NPCs, locations, key decisions...'}
-                    </span>
-                  )}
+            {/* === STANDARD MODE: Single "Session Notes" field editing `notes` === */}
+            {!showEnhancedView && (
+              <div className="card p-6 mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <label className="text-lg font-semibold text-[--text-primary] block">
+                      Session Notes
+                    </label>
+                    {can.editSession && (
+                      <span className="text-sm text-[--text-tertiary]">
+                        What happened this session? Try mentioning NPCs, locations, key decisions...
+                      </span>
+                    )}
+                  </div>
                 </div>
-                {can.editSession && showEnhancedView && !showExpandedPreview && (
-                  <button
-                    onClick={handleExpandNotes}
-                    disabled={!formData.summary.trim() || expanding}
-                    className={cn(
-                      "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                      "bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple]",
-                      "hover:bg-[--arcane-purple]/20 hover:border-[--arcane-purple]/50",
-                      "disabled:opacity-50 disabled:cursor-not-allowed"
-                    )}
-                  >
-                    {expanding ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+
+                {can.editSession ? (
+                  <RichTextEditor
+                    content={formData.notes}
+                    onChange={(content) => setFormData({ ...formData, notes: content })}
+                    placeholder="What happened this session? Try mentioning NPCs, locations, key decisions..."
+                    className="min-h-[200px]"
+                  />
+                ) : (
+                  /* Read-only notes for players */
+                  <div className="prose prose-invert prose-sm max-w-none [&>ul]:mt-1 [&>ul]:mb-2 [&>li]:my-0.5">
+                    {formData.notes ? (
+                      <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.notes) }} />
                     ) : (
-                      <Wand2 className="w-4 h-4" />
+                      <p className="text-[--text-tertiary] italic">No session notes available yet.</p>
                     )}
-                    Expand Notes
-                  </button>
+                  </div>
+                )}
+
+                {/* Share with players checkbox - DM only */}
+                {can.editSession && !isNew && (
+                  <div className="mt-4 pt-4 border-t border-[--border]">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={shareNotesWithPlayers ?? false}
+                        onChange={(e) => handleShareNotesChange(e.target.checked)}
+                        className="w-4 h-4 rounded border-[--border] bg-[--bg-surface] text-[--arcane-purple] focus:ring-[--arcane-purple]/50"
+                      />
+                      <span className="text-sm text-gray-400">Share with players</span>
+                      <span className="text-xs text-gray-600">(when session is open or locked)</span>
+                    </label>
+                  </div>
                 )}
               </div>
+            )}
 
-              {can.editSession ? (
-                <RichTextEditor
-                  content={formData.summary}
-                  onChange={(content) => setFormData({ ...formData, summary: content })}
-                  placeholder={showEnhancedView
-                    ? "Write your session notes as bullet points..."
-                    : "What happened this session? Try mentioning NPCs, locations, key decisions..."
-                  }
-                  className="min-h-[200px]"
-                />
-              ) : (
-                /* Read-only summary for players */
-                <div className="prose prose-invert prose-sm max-w-none [&>ul]:mt-1 [&>ul]:mb-2 [&>li]:my-0.5">
-                  {formData.summary ? (
-                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.summary) }} />
+            {/* === ENHANCED MODE: "Quick Recap" (summary) + "Session Notes" (notes) - both always visible === */}
+            {showEnhancedView && (
+              <>
+                {/* Quick Recap - edits summary field */}
+                <div className="card p-6 mb-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <label className="text-lg font-semibold text-[--text-primary] block">
+                        Quick Recap
+                      </label>
+                      {can.editSession && (
+                        <span className="text-sm text-[--text-tertiary]">
+                          Write quick bullets about what happened. You can expand them into detailed notes when ready.
+                        </span>
+                      )}
+                    </div>
+                    {can.editSession && !showExpandedPreview && (
+                      <button
+                        onClick={handleExpandNotes}
+                        disabled={!formData.summary.trim() || expanding}
+                        className={cn(
+                          "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                          "bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple]",
+                          "hover:bg-[--arcane-purple]/20 hover:border-[--arcane-purple]/50",
+                          "disabled:opacity-50 disabled:cursor-not-allowed"
+                        )}
+                      >
+                        {expanding ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Wand2 className="w-4 h-4" />
+                        )}
+                        Expand Notes
+                      </button>
+                    )}
+                  </div>
+
+                  {can.editSession ? (
+                    <RichTextEditor
+                      content={formData.summary}
+                      onChange={(content) => setFormData({ ...formData, summary: content })}
+                      placeholder="Write your session notes as bullet points..."
+                      className="min-h-[150px]"
+                    />
                   ) : (
-                    <p className="text-[--text-tertiary] italic">No summary available yet.</p>
+                    /* Read-only summary for players (shouldn't normally see this) */
+                    <div className="prose prose-invert prose-sm max-w-none [&>ul]:mt-1 [&>ul]:mb-2 [&>li]:my-0.5">
+                      {formData.summary ? (
+                        <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.summary) }} />
+                      ) : (
+                        <p className="text-[--text-tertiary] italic">No quick recap available yet.</p>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
 
-              {/* Share with players checkbox - DM only */}
-              {can.editSession && !isNew && (
-                <div className="mt-4 pt-4 border-t border-[--border]">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={shareNotesWithPlayers ?? false}
-                      onChange={(e) => handleShareNotesChange(e.target.checked)}
-                      className="w-4 h-4 rounded border-[--border] bg-[--bg-surface] text-[--arcane-purple] focus:ring-[--arcane-purple]/50"
+                {/* Session Notes - edits notes field - always visible in Enhanced mode */}
+                <div className="card p-6 mb-8">
+                  <div className="flex items-center gap-3 mb-4">
+                    <ScrollText className="w-5 h-5 text-[--arcane-purple]" />
+                    <div>
+                      <label className="text-lg font-semibold text-[--text-primary] block">
+                        Session Notes
+                      </label>
+                      <span className="text-sm text-[--text-tertiary]">
+                        Detailed session narrative
+                      </span>
+                    </div>
+                  </div>
+
+                  {can.editSession ? (
+                    <RichTextEditor
+                      content={formData.notes}
+                      onChange={(content) => setFormData({ ...formData, notes: content })}
+                      placeholder="Detailed session notes..."
+                      className="min-h-[300px]"
                     />
-                    <span className="text-sm text-gray-400">Share with players</span>
-                    <span className="text-xs text-gray-600">(when session is open or locked)</span>
-                  </label>
+                  ) : (
+                    <div className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4">
+                      {formData.notes ? (
+                        <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.notes) }} />
+                      ) : (
+                        <p className="text-[--text-tertiary] italic">No detailed notes available yet.</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Share with players checkbox - DM only */}
+                  {can.editSession && !isNew && (
+                    <div className="mt-4 pt-4 border-t border-[--border]">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={shareNotesWithPlayers ?? false}
+                          onChange={(e) => handleShareNotesChange(e.target.checked)}
+                          className="w-4 h-4 rounded border-[--border] bg-[--bg-surface] text-[--arcane-purple] focus:ring-[--arcane-purple]/50"
+                        />
+                        <span className="text-sm text-gray-400">Share with players</span>
+                        <span className="text-xs text-gray-600">(when session is open or locked)</span>
+                      </label>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            )}
 
             {/* Expansion Preview - DM only */}
             {can.editSession && showExpandedPreview && (
@@ -1318,109 +1409,159 @@ export default function SessionDetailPage() {
               </div>
             </div>
 
-            {/* Session Content - Quests & Encounters */}
-            {!isNew && session && (
-              <div className="mb-8">
-                <SessionContent
-                  sessionId={session.id}
+            {/* Thoughts for Next - Encouraged section (DM only, not in optional area) */}
+            {!isNew && session && campaign?.user_id === user?.id && (
+              <div className="card p-6 mb-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <Lightbulb className="w-5 h-5 text-[--arcane-gold]" />
+                  <div>
+                    <label className="text-lg font-semibold text-[--text-primary] block">
+                      Thoughts for Next Session
+                    </label>
+                    <span className="text-sm text-[--text-tertiary]">
+                      Ideas for next session - loose threads, player interests to follow up on...
+                    </span>
+                  </div>
+                </div>
+                <ThoughtsForNextCard
                   campaignId={campaignId}
-                  canEdit={can.editSession}
+                  sessionId={session.id}
+                  initialValue={session.thoughts_for_next || ''}
+                  onSave={(value) => setSession({ ...session, thoughts_for_next: value })}
+                  inline
                 />
+                <p className="text-xs text-[--text-tertiary] mt-3 flex items-center gap-1.5">
+                  <Lightbulb className="w-3.5 h-3.5 text-[--arcane-gold]" />
+                  These notes will appear when you create your next session.
+                </p>
               </div>
             )}
 
-            {/* Detailed Notes Section - Enhanced view only, or if notes already exist */}
-            {(formData.notes || (!detailedNotesCollapsed && can.editSession && showEnhancedView)) && (
-              <div className="card p-6 mb-8">
-                {can.editSession ? (
-                  /* DM can toggle and edit */
-                  <>
-                    <button
-                      onClick={() => setDetailedNotesCollapsed(!detailedNotesCollapsed)}
-                      className="w-full flex items-center justify-between mb-4"
-                    >
-                      <div className="flex items-center gap-3">
-                        <ScrollText className="w-5 h-5 text-[--arcane-purple]" />
-                        <div className="text-left">
-                          <label className="text-lg font-semibold text-[--text-primary] block">
-                            Detailed Notes
-                          </label>
-                          <span className="text-sm text-[--text-tertiary]">
-                            Expanded session narrative
-                          </span>
-                        </div>
-                      </div>
-                      {detailedNotesCollapsed ? (
-                        <ChevronDown className="w-5 h-5 text-[--text-tertiary]" />
-                      ) : (
-                        <ChevronUp className="w-5 h-5 text-[--text-tertiary]" />
-                      )}
-                    </button>
+            {/* === OPTIONAL SECTIONS DIVIDER === */}
+            {!isNew && session && isDm && (
+              <div className="mb-6">
+                <div className="flex items-center gap-4 mb-2">
+                  <div className="flex-1 h-px bg-[--border]" />
+                  <span className="text-xs font-medium text-[--text-tertiary] uppercase tracking-wider">
+                    Optional Sections
+                  </span>
+                  <div className="flex-1 h-px bg-[--border]" />
+                </div>
+                <p className="text-sm text-[--text-tertiary] text-center">
+                  Every DM records sessions differently. These tools are here if you want them, not because you need them.
+                </p>
+              </div>
+            )}
 
-                    {!detailedNotesCollapsed && (
-                      <RichTextEditor
-                        content={formData.notes}
-                        onChange={(content) => setFormData({ ...formData, notes: content })}
-                        placeholder="Detailed session notes..."
-                        className="min-h-[300px]"
-                      />
+            {/* Optional: DM Notes Section (Collapsible) */}
+            {!isNew && campaign?.user_id === user?.id && (
+              <div className="card overflow-hidden mb-4 transition-all">
+                <button
+                  onClick={() => toggleSection('dmNotes')}
+                  className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    {expandedSections.dmNotes ? (
+                      <ChevronDown className="w-4 h-4 text-[--text-tertiary]" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-[--text-tertiary]" />
                     )}
-                  </>
-                ) : (
-                  /* Players see read-only view */
-                  <>
-                    <div className="flex items-center gap-3 mb-4">
-                      <ScrollText className="w-5 h-5 text-[--arcane-purple]" />
-                      <div>
-                        <label className="text-lg font-semibold text-[--text-primary] block">
-                          Detailed Notes
-                        </label>
-                        <span className="text-sm text-[--text-tertiary]">
-                          Expanded session narrative
-                        </span>
-                      </div>
+                    <EyeOff className="w-5 h-5 text-red-400/70" />
+                    <div className="text-left">
+                      <span className="font-medium text-[--text-primary] block">DM Notes</span>
+                      <span className="text-xs text-[--text-tertiary]">
+                        Private notes about this session - plot threads, player behaviors. Never visible to players.
+                      </span>
                     </div>
-                    <div className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4">
-                      <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.notes) }} />
-                    </div>
-                  </>
+                  </div>
+                  {formData.dm_notes && (
+                    <span className="text-xs text-[--text-tertiary] bg-white/[0.05] px-2 py-0.5 rounded">
+                      Has content
+                    </span>
+                  )}
+                </button>
+                {expandedSections.dmNotes && (
+                  <div className="px-4 pb-4 border-t border-[--border]">
+                    <DmNotesSection
+                      dmNotes={formData.dm_notes}
+                      onDmNotesChange={(notes) => setFormData({ ...formData, dm_notes: notes })}
+                      showVisibilityToggle={false}
+                      placeholder="Private notes about this session. Plot threads to follow up, player behaviors, etc."
+                      collapsed={false}
+                      hideHeader
+                    />
+                  </div>
                 )}
               </div>
             )}
 
-            {/* DM Notes Section */}
-            {!isNew && campaign?.user_id === user?.id && (
-              <div className="card p-6 mb-8">
-                <DmNotesSection
-                  dmNotes={formData.dm_notes}
-                  onDmNotesChange={(notes) => setFormData({ ...formData, dm_notes: notes })}
-                  showVisibilityToggle={false}
-                  placeholder="Private notes about this session. Plot threads to follow up, player behaviors, etc."
-                  collapsed={!formData.dm_notes}
-                />
+            {/* Optional: Session Content - Quests & Encounters (Collapsible) */}
+            {!isNew && session && isDm && (
+              <div className="card overflow-hidden mb-4 transition-all">
+                <button
+                  onClick={() => toggleSection('sessionContent')}
+                  className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    {expandedSections.sessionContent ? (
+                      <ChevronDown className="w-4 h-4 text-[--text-tertiary]" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-[--text-tertiary]" />
+                    )}
+                    <ScrollText className="w-5 h-5 text-blue-400/70" />
+                    <div className="text-left">
+                      <span className="font-medium text-[--text-primary] block">Session Content</span>
+                      <span className="text-xs text-[--text-tertiary]">
+                        Link quests and encounters featured in this session. Campaign Intelligence can detect these from your notes.
+                      </span>
+                    </div>
+                  </div>
+                </button>
+                {expandedSections.sessionContent && (
+                  <div className="px-4 pb-4 border-t border-[--border]">
+                    <SessionContent
+                      sessionId={session.id}
+                      campaignId={campaignId}
+                      canEdit={can.editSession}
+                    />
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Thoughts for Next - Standalone card in Completed mode */}
-            {!isNew && session && campaign?.user_id === user?.id && (
-              <ThoughtsForNextCard
-                campaignId={campaignId}
-                sessionId={session.id}
-                initialValue={session.thoughts_for_next || ''}
-                onSave={(value) => setSession({ ...session, thoughts_for_next: value })}
-              />
-            )}
-
-            {/* Player Notes Section */}
+            {/* Optional: Player Notes Section (Collapsible) */}
             {!isNew && session && (
-              <div className="card p-6 mb-8">
-                <PlayerNotes
-                  sessionId={sessionId}
-                  campaignId={campaignId}
-                  characters={characters}
-                  autoOpenAdd={openPlayerNotesModal}
-                  onModalClose={() => setOpenPlayerNotesModal(false)}
-                />
+              <div className="card overflow-hidden mb-8 transition-all">
+                <button
+                  onClick={() => toggleSection('playerNotes')}
+                  className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    {expandedSections.playerNotes ? (
+                      <ChevronDown className="w-4 h-4 text-[--text-tertiary]" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-[--text-tertiary]" />
+                    )}
+                    <MessageSquare className="w-5 h-5 text-green-400/70" />
+                    <div className="text-left">
+                      <span className="font-medium text-[--text-primary] block">Player Notes</span>
+                      <span className="text-xs text-[--text-tertiary]">
+                        Notes from players about this session from their character&apos;s perspective.
+                      </span>
+                    </div>
+                  </div>
+                </button>
+                {expandedSections.playerNotes && (
+                  <div className="px-4 pb-4 border-t border-[--border]">
+                    <PlayerNotes
+                      sessionId={sessionId}
+                      campaignId={campaignId}
+                      characters={characters}
+                      autoOpenAdd={openPlayerNotesModal}
+                      onModalClose={() => setOpenPlayerNotesModal(false)}
+                    />
+                  </div>
+                )}
               </div>
             )}
 

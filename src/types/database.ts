@@ -1829,6 +1829,8 @@ export interface Database {
             character_claims?: boolean
             community_updates?: boolean
           } | null
+          // Session preferences
+          session_enhanced_view: boolean
           created_at: string
           updated_at: string
         }
@@ -1870,6 +1872,7 @@ export interface Database {
             character_claims?: boolean
             community_updates?: boolean
           } | null
+          session_enhanced_view?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -1911,6 +1914,7 @@ export interface Database {
             character_claims?: boolean
             community_updates?: boolean
           } | null
+          session_enhanced_view?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -4477,8 +4481,15 @@ export type SessionState = 'private' | 'open' | 'locked'
 // Session workflow section types (legacy - kept for backward compatibility)
 export type SessionSection = 'prep_checklist' | 'thoughts_for_next' | 'quick_reference' | 'session_timer'
 
-// Prep phase optional modules
-export type PrepModule = 'checklist' | 'references'
+// Prep phase optional modules (7 modules)
+export type PrepModule =
+  | 'session_goals'    // Green - Key objectives, scenes, emotional beats
+  | 'key_npcs'         // Purple - NPCs likely to appear
+  | 'random_tables'    // Orange - Links to campaign random tables
+  | 'music_ambiance'   // Pink - Playlists, ambient sounds, mood
+  | 'session_opener'   // Amber - Opening narration, recap points
+  | 'checklist'        // Yellow - Prep tasks
+  | 'references'       // Cyan - Key NPCs/locations/quests
 
 // Campaign session settings
 export interface SessionSettings {
@@ -4508,6 +4519,65 @@ export interface PinnedReference {
   label: string
 }
 
+// Random table link for session prep
+export interface RandomTableLink {
+  tableId: string
+  note?: string
+}
+
+// Random table entry
+export interface RandomTableEntry {
+  id: string
+  text: string
+  weight?: number
+}
+
+// Random table type
+export interface RandomTable {
+  id: string
+  campaign_id: string
+  user_id: string
+  name: string
+  description: string | null
+  category: RandomTableCategory
+  entries: RandomTableEntry[]
+  roll_type: RandomTableDieType
+  custom_die_size: number | null
+  tags: string[]
+  is_archived: boolean
+  created_at: string
+  updated_at: string
+}
+
+// Random table category
+export type RandomTableCategory =
+  | 'general'
+  | 'npc'
+  | 'encounter'
+  | 'loot'
+  | 'location'
+  | 'weather'
+  | 'rumor'
+  | 'complication'
+  | 'name'
+  | 'custom'
+
+// Random table die type
+export type RandomTableDieType = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20' | 'd100' | 'custom'
+
+// Random table roll history
+export interface RandomTableRoll {
+  id: string
+  table_id: string
+  session_id: string | null
+  user_id: string
+  roll_value: number
+  entry_id: string
+  entry_text: string
+  note: string | null
+  rolled_at: string
+}
+
 // Session attendee tracking
 export interface SessionAttendee {
   character_id: string
@@ -4530,6 +4600,19 @@ export type CampaignMemberWithUser = CampaignMember & {
 
 export type SessionWithPlayerNotes = Session & {
   player_notes: PlayerSessionNote[]
+}
+
+// User campaign preferences for UI customization
+export interface UserCampaignPreferences {
+  id: string
+  user_id: string
+  campaign_id: string
+  completed_section_order: string[] | null
+  prep_module_order: string[] | null
+  collapsed_sections: Record<string, boolean>
+  preferences: Record<string, unknown>
+  created_at: string
+  updated_at: string
 }
 
 export type OneshotWithStructuredContent = Oneshot & {

@@ -79,6 +79,11 @@ export async function PATCH(
       attendees,
       state,
       shareNotesWithPlayers,
+      // New prep module fields
+      sessionGoals,
+      keyNpcs,
+      musicAmbiance,
+      sessionOpener,
     } = body as {
       phase?: SessionPhase
       prepNotes?: string
@@ -91,6 +96,11 @@ export async function PATCH(
       attendees?: SessionAttendee[]
       state?: SessionState
       shareNotesWithPlayers?: boolean | null
+      // New prep module fields
+      sessionGoals?: string
+      keyNpcs?: string
+      musicAmbiance?: string
+      sessionOpener?: string
     }
 
     const updateData: Record<string, unknown> = {}
@@ -106,6 +116,11 @@ export async function PATCH(
     if (attendees !== undefined) updateData.attendees = attendees
     if (state !== undefined) updateData.state = state
     if (shareNotesWithPlayers !== undefined) updateData.share_notes_with_players = shareNotesWithPlayers
+    // New prep module fields
+    if (sessionGoals !== undefined) updateData.session_goals = sessionGoals
+    if (keyNpcs !== undefined) updateData.key_npcs = keyNpcs
+    if (musicAmbiance !== undefined) updateData.music_ambiance = musicAmbiance
+    if (sessionOpener !== undefined) updateData.session_opener = sessionOpener
 
     const { data: session, error } = await supabase
       .from('sessions')

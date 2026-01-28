@@ -14,6 +14,11 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  Target,
+  Users,
+  Dice5,
+  Music,
+  MessageCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -65,10 +70,82 @@ interface SessionWorkflowProps {
   onUpdate?: (session: Session) => void
 }
 
-// Available prep modules for "+ Add Section" menu
-const AVAILABLE_MODULES: { id: PrepModule; label: string; icon: typeof ClipboardList; description: string }[] = [
-  { id: 'checklist', label: 'Checklist', icon: ClipboardList, description: 'Things to prepare before the session' },
-  { id: 'references', label: 'Quick References', icon: Pin, description: 'NPCs, locations, notes for quick access' },
+// Module configuration with colors and icons
+const MODULE_CONFIG: Record<PrepModule, {
+  label: string
+  icon: typeof Target
+  description: string
+  color: string
+  bgColor: string
+  borderColor: string
+}> = {
+  session_goals: {
+    label: 'Session Goals',
+    icon: Target,
+    description: 'Key objectives, scenes to hit, emotional beats',
+    color: 'text-green-400',
+    bgColor: 'bg-green-500/5',
+    borderColor: 'border-green-500/20',
+  },
+  key_npcs: {
+    label: 'Key NPCs',
+    icon: Users,
+    description: 'NPCs likely to appear with quick reference notes',
+    color: 'text-purple-400',
+    bgColor: 'bg-purple-500/5',
+    borderColor: 'border-purple-500/20',
+  },
+  random_tables: {
+    label: 'Random Tables',
+    icon: Dice5,
+    description: 'Links to campaign random tables for this session',
+    color: 'text-orange-400',
+    bgColor: 'bg-orange-500/5',
+    borderColor: 'border-orange-500/20',
+  },
+  music_ambiance: {
+    label: 'Music & Ambiance',
+    icon: Music,
+    description: 'Playlists, ambient sounds, mood notes',
+    color: 'text-pink-400',
+    bgColor: 'bg-pink-500/5',
+    borderColor: 'border-pink-500/20',
+  },
+  session_opener: {
+    label: 'Session Opener',
+    icon: MessageCircle,
+    description: 'Opening narration, recap points for players',
+    color: 'text-amber-400',
+    bgColor: 'bg-amber-500/5',
+    borderColor: 'border-amber-500/20',
+  },
+  checklist: {
+    label: 'Checklist',
+    icon: ClipboardList,
+    description: 'Things to prepare before the session',
+    color: 'text-yellow-400',
+    bgColor: 'bg-yellow-500/5',
+    borderColor: 'border-yellow-500/20',
+  },
+  references: {
+    label: 'Quick References',
+    icon: Pin,
+    description: 'NPCs, locations, notes for quick access',
+    color: 'text-cyan-400',
+    bgColor: 'bg-cyan-500/5',
+    borderColor: 'border-cyan-500/20',
+  },
+}
+
+// Available prep modules in order they appear in menu
+const AVAILABLE_MODULES: PrepModule[] = [
+  'session_goals',
+  'key_npcs',
+  'random_tables',
+  'music_ambiance',
+  'session_opener',
+  'checklist',
+  'references',
 ]
 
 export function SessionWorkflow({
@@ -86,6 +163,12 @@ export function SessionWorkflow({
   const [enabledModules, setEnabledModules] = useState<PrepModule[]>(
     (session.enabled_prep_modules as PrepModule[]) || []
   )
+
+  // Module content states
+  const [sessionGoals, setSessionGoals] = useState((session as any).session_goals || '')
+  const [keyNpcs, setKeyNpcs] = useState((session as any).key_npcs || '')
+  const [musicAmbiance, setMusicAmbiance] = useState((session as any).music_ambiance || '')
+  const [sessionOpener, setSessionOpener] = useState((session as any).session_opener || '')
   const [prepChecklist, setPrepChecklist] = useState<PrepChecklistItem[]>(
     (session.prep_checklist as unknown as PrepChecklistItem[]) || []
   )
@@ -111,14 +194,22 @@ export function SessionWorkflow({
     const originalPrepNotes = session.prep_notes || ''
     const originalChecklist = session.prep_checklist || []
     const originalModules = session.enabled_prep_modules || []
+    const originalGoals = (session as any).session_goals || ''
+    const originalNpcs = (session as any).key_npcs || ''
+    const originalMusic = (session as any).music_ambiance || ''
+    const originalOpener = (session as any).session_opener || ''
 
     const changed =
       prepNotes !== originalPrepNotes ||
       JSON.stringify(prepChecklist) !== JSON.stringify(originalChecklist) ||
-      JSON.stringify(enabledModules) !== JSON.stringify(originalModules)
+      JSON.stringify(enabledModules) !== JSON.stringify(originalModules) ||
+      sessionGoals !== originalGoals ||
+      keyNpcs !== originalNpcs ||
+      musicAmbiance !== originalMusic ||
+      sessionOpener !== originalOpener
 
     setHasChanges(changed)
-  }, [prepNotes, prepChecklist, enabledModules, session])
+  }, [prepNotes, prepChecklist, enabledModules, sessionGoals, keyNpcs, musicAmbiance, sessionOpener, session])
 
   const handleSave = useCallback(async () => {
     setSaving(true)
@@ -143,6 +234,10 @@ export function SessionWorkflow({
             prepChecklist,
             enabledPrepModules: enabledModules,
             pinnedReferences: pinnedRefs,
+            sessionGoals,
+            keyNpcs,
+            musicAmbiance,
+            sessionOpener,
           }),
         }
       )
@@ -163,9 +258,9 @@ export function SessionWorkflow({
     } finally {
       setSaving(false)
     }
-  }, [prepNotes, prepChecklist, enabledModules, references, campaignId, session.id, onUpdate])
+  }, [prepNotes, prepChecklist, enabledModules, references, sessionGoals, keyNpcs, musicAmbiance, sessionOpener, campaignId, session.id, onUpdate])
 
-  // Auto-save with debounce for prep notes
+  // Auto-save with debounce
   useEffect(() => {
     if (!hasChanges) return
 
@@ -174,7 +269,7 @@ export function SessionWorkflow({
     }, 1500) // 1.5 second debounce
 
     return () => clearTimeout(timeoutId)
-  }, [prepNotes, hasChanges, handleSave])
+  }, [prepNotes, sessionGoals, keyNpcs, musicAmbiance, sessionOpener, hasChanges, handleSave])
 
   // Checklist functions
   const addPrepItem = () => {
@@ -208,11 +303,26 @@ export function SessionWorkflow({
     // Check if module has data
     let hasData = false
     switch (moduleId) {
+      case 'session_goals':
+        hasData = sessionGoals.trim().length > 0
+        break
+      case 'key_npcs':
+        hasData = keyNpcs.trim().length > 0
+        break
+      case 'music_ambiance':
+        hasData = musicAmbiance.trim().length > 0
+        break
+      case 'session_opener':
+        hasData = sessionOpener.trim().length > 0
+        break
       case 'checklist':
         hasData = prepChecklist.length > 0
         break
       case 'references':
         hasData = references.trim().length > 0
+        break
+      case 'random_tables':
+        hasData = false // Will check random_table_links when implemented
         break
     }
 
@@ -224,6 +334,18 @@ export function SessionWorkflow({
 
       // Clear the data
       switch (moduleId) {
+        case 'session_goals':
+          setSessionGoals('')
+          break
+        case 'key_npcs':
+          setKeyNpcs('')
+          break
+        case 'music_ambiance':
+          setMusicAmbiance('')
+          break
+        case 'session_opener':
+          setSessionOpener('')
+          break
         case 'checklist':
           setPrepChecklist([])
           break
@@ -240,9 +362,39 @@ export function SessionWorkflow({
   const previousThoughts = previousSession?.thoughts_for_next || ''
 
   // Modules not yet enabled
-  const availableToAdd = AVAILABLE_MODULES.filter(m => !enabledModules.includes(m.id))
+  const availableToAdd = AVAILABLE_MODULES.filter(m => !enabledModules.includes(m))
 
   const completedCount = prepChecklist.filter(item => item.checked).length
+
+  // Render a text module (goals, npcs, music, opener)
+  const renderTextModule = (moduleId: PrepModule, value: string, setValue: (v: string) => void, placeholder: string) => {
+    const config = MODULE_CONFIG[moduleId]
+    const Icon = config.icon
+
+    return (
+      <div className={cn(config.bgColor, "border", config.borderColor, "rounded-xl p-4")}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Icon className={cn("w-5 h-5", config.color)} />
+            <span className="font-medium text-white">{config.label}</span>
+          </div>
+          <button
+            onClick={() => removeModule(moduleId)}
+            className="text-xs text-gray-500 hover:text-red-400 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <textarea
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder={placeholder}
+          rows={4}
+          className="form-input w-full text-sm"
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -288,7 +440,7 @@ export function SessionWorkflow({
             <div className="h-px flex-1 bg-[--border]" />
           </div>
 
-          {/* Add Section Button - Prominent, at top of optional section */}
+          {/* Add Section Button */}
           {availableToAdd.length > 0 && (
             <div className="relative mb-4">
               <button
@@ -309,19 +461,20 @@ export function SessionWorkflow({
               </button>
 
               {showModuleMenu && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-[--bg-elevated] border border-[--border] rounded-lg shadow-xl z-10">
-                  {availableToAdd.map((module) => {
-                    const Icon = module.icon
+                <div className="absolute top-full left-0 right-0 mt-2 bg-[--bg-elevated] border border-[--border] rounded-lg shadow-xl z-10 max-h-80 overflow-y-auto">
+                  {availableToAdd.map((moduleId) => {
+                    const config = MODULE_CONFIG[moduleId]
+                    const Icon = config.icon
                     return (
                       <button
-                        key={module.id}
-                        onClick={() => addModule(module.id)}
+                        key={moduleId}
+                        onClick={() => addModule(moduleId)}
                         className="w-full flex items-start gap-3 p-3 hover:bg-white/[0.05] transition-colors text-left first:rounded-t-lg last:rounded-b-lg"
                       >
-                        <Icon className="w-5 h-5 text-gray-400 mt-0.5" />
+                        <Icon className={cn("w-5 h-5 mt-0.5", config.color)} />
                         <div>
-                          <p className="text-sm font-medium text-white">{module.label}</p>
-                          <p className="text-xs text-gray-500">{module.description}</p>
+                          <p className="text-sm font-medium text-white">{config.label}</p>
+                          <p className="text-xs text-gray-500">{config.description}</p>
                         </div>
                       </button>
                     )
@@ -331,141 +484,194 @@ export function SessionWorkflow({
             </div>
           )}
 
-          {/* Enabled Modules - render inside the optional section */}
+          {/* Enabled Modules */}
           <div className="space-y-4">
+            {/* Session Goals Module */}
+            {enabledModules.includes('session_goals') && renderTextModule(
+              'session_goals',
+              sessionGoals,
+              setSessionGoals,
+              "- Emotional beat: Betrayal reveal at the end\n- Must-hit scene: Meeting with the queen\n- Player goal: Thorin's backstory callback"
+            )}
+
+            {/* Key NPCs Module */}
+            {enabledModules.includes('key_npcs') && renderTextModule(
+              'key_npcs',
+              keyNpcs,
+              setKeyNpcs,
+              "Durnan - Gruff but helpful, knows about sewers\nXanathar Agent - Paranoid, watching the party\nQueen Alara - Formal, testing loyalty"
+            )}
+
+            {/* Random Tables Module (placeholder for now) */}
+            {enabledModules.includes('random_tables') && (
+              <div className={cn(MODULE_CONFIG.random_tables.bgColor, "border", MODULE_CONFIG.random_tables.borderColor, "rounded-xl p-4")}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Dice5 className="w-5 h-5 text-orange-400" />
+                    <span className="font-medium text-white">Random Tables</span>
+                  </div>
+                  <button
+                    onClick={() => removeModule('random_tables')}
+                    className="text-xs text-gray-500 hover:text-red-400 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-sm text-gray-400 text-center py-4">
+                  Random Tables feature coming soon. Link tables from your campaign library.
+                </p>
+              </div>
+            )}
+
+            {/* Music & Ambiance Module */}
+            {enabledModules.includes('music_ambiance') && renderTextModule(
+              'music_ambiance',
+              musicAmbiance,
+              setMusicAmbiance,
+              "Combat: Epic Battle Mix on Spotify\nTavern: Medieval Inn Ambiance\nTense: Dark Dungeon Atmosphere\nBoss: Final Boss Theme"
+            )}
+
+            {/* Session Opener Module */}
+            {enabledModules.includes('session_opener') && renderTextModule(
+              'session_opener',
+              sessionOpener,
+              setSessionOpener,
+              '"When we last left our heroes..."\n\nRecap points:\n- Discovered the hidden passage\n- Made a deal with the merchant\n- Thorin received a mysterious letter"
+            )}
+
             {/* Checklist Module */}
             {enabledModules.includes('checklist') && (
-        <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-yellow-400" />
-              <span className="font-medium text-white">Checklist</span>
-              {prepChecklist.length > 0 && (
-                <span className="text-xs text-gray-500">
-                  ({completedCount}/{prepChecklist.length})
-                </span>
-              )}
-            </div>
-            <button
-              onClick={() => removeModule('checklist')}
-              className="text-xs text-gray-500 hover:text-red-400 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Checklist Items */}
-          <div className="space-y-2 mb-3">
-            {prepChecklist.map((item) => (
-              <div
-                key={item.id}
-                className={cn(
-                  "flex items-center gap-2 group",
-                  item.checked && "opacity-60"
-                )}
-              >
-                <button
-                  onClick={() => togglePrepItem(item.id)}
-                  className="flex-shrink-0"
-                >
-                  {item.checked ? (
-                    <CheckSquare className="w-5 h-5 text-green-400" />
-                  ) : (
-                    <Square className="w-5 h-5 text-gray-500" />
-                  )}
-                </button>
-                <span className={cn(
-                  "flex-1 text-sm",
-                  item.checked ? "text-gray-500 line-through" : "text-gray-300"
-                )}>
-                  {item.text}
-                </span>
-                <button
-                  onClick={() => removePrepItem(item.id)}
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/[0.05] rounded text-red-400"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {/* Add New Item */}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newPrepItem}
-              onChange={(e) => setNewPrepItem(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addPrepItem()}
-              placeholder="Add prep item..."
-              className="form-input flex-1 text-sm"
-            />
-            <button
-              onClick={addPrepItem}
-              disabled={!newPrepItem.trim()}
-              className="btn btn-sm btn-secondary"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Default suggestions for empty checklist */}
-          {prepChecklist.length === 0 && (
-            <div className="mt-3 pt-3 border-t border-yellow-500/10">
-              <p className="text-xs text-gray-500 mb-2">Quick add common items:</p>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  'Review last session notes',
-                  'Prepare NPC voices',
-                  'Check encounter balance',
-                  'Gather handouts/maps',
-                  'Set up music playlist',
-                ].map((suggestion) => (
+              <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <ClipboardList className="w-5 h-5 text-yellow-400" />
+                    <span className="font-medium text-white">Checklist</span>
+                    {prepChecklist.length > 0 && (
+                      <span className="text-xs text-gray-500">
+                        ({completedCount}/{prepChecklist.length})
+                      </span>
+                    )}
+                  </div>
                   <button
-                    key={suggestion}
-                    onClick={() => setPrepChecklist([
-                      ...prepChecklist,
-                      { id: uuidv4(), text: suggestion, checked: false }
-                    ])}
-                    className="text-xs px-2 py-1 bg-white/[0.05] hover:bg-white/[0.1] rounded text-gray-400"
+                    onClick={() => removeModule('checklist')}
+                    className="text-xs text-gray-500 hover:text-red-400 transition-colors"
                   >
-                    + {suggestion}
+                    <X className="w-4 h-4" />
                   </button>
-                ))}
+                </div>
+
+                {/* Checklist Items */}
+                <div className="space-y-2 mb-3">
+                  {prepChecklist.map((item) => (
+                    <div
+                      key={item.id}
+                      className={cn(
+                        "flex items-center gap-2 group",
+                        item.checked && "opacity-60"
+                      )}
+                    >
+                      <button
+                        onClick={() => togglePrepItem(item.id)}
+                        className="flex-shrink-0"
+                      >
+                        {item.checked ? (
+                          <CheckSquare className="w-5 h-5 text-green-400" />
+                        ) : (
+                          <Square className="w-5 h-5 text-gray-500" />
+                        )}
+                      </button>
+                      <span className={cn(
+                        "flex-1 text-sm",
+                        item.checked ? "text-gray-500 line-through" : "text-gray-300"
+                      )}>
+                        {item.text}
+                      </span>
+                      <button
+                        onClick={() => removePrepItem(item.id)}
+                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/[0.05] rounded text-red-400"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add New Item */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newPrepItem}
+                    onChange={(e) => setNewPrepItem(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addPrepItem()}
+                    placeholder="Add prep item..."
+                    className="form-input flex-1 text-sm"
+                  />
+                  <button
+                    onClick={addPrepItem}
+                    disabled={!newPrepItem.trim()}
+                    className="btn btn-sm btn-secondary"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Default suggestions for empty checklist */}
+                {prepChecklist.length === 0 && (
+                  <div className="mt-3 pt-3 border-t border-yellow-500/10">
+                    <p className="text-xs text-gray-500 mb-2">Quick add common items:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        'Review last session notes',
+                        'Prepare NPC voices',
+                        'Check encounter balance',
+                        'Gather handouts/maps',
+                        'Set up music playlist',
+                      ].map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          onClick={() => setPrepChecklist([
+                            ...prepChecklist,
+                            { id: uuidv4(), text: suggestion, checked: false }
+                          ])}
+                          className="text-xs px-2 py-1 bg-white/[0.05] hover:bg-white/[0.1] rounded text-gray-400"
+                        >
+                          + {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
 
-      {/* Quick References Module */}
-      {enabledModules.includes('references') && (
-        <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Pin className="w-5 h-5 text-blue-400" />
-              <span className="font-medium text-white">Quick References</span>
-            </div>
-            <button
-              onClick={() => removeModule('references')}
-              className="text-xs text-gray-500 hover:text-red-400 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+            {/* Quick References Module */}
+            {enabledModules.includes('references') && (
+              <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Pin className="w-5 h-5 text-cyan-400" />
+                    <span className="font-medium text-white">Quick References</span>
+                  </div>
+                  <button
+                    onClick={() => removeModule('references')}
+                    className="text-xs text-gray-500 hover:text-red-400 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
 
-          <textarea
-            value={references}
-            onChange={(e) => setReferences(e.target.value)}
-            placeholder="NPCs: Durnan, Xanathar agent&#10;Locations: Yawning Portal, Sewers&#10;Notes: Party owes 50gp to..."
-            rows={4}
-            className="form-input w-full text-sm"
-          />
-          <p className="text-xs text-gray-500 mt-2">
-            One item per line. Quick notes for easy reference during the session.
-          </p>
-        </div>
-      )}
+                <textarea
+                  value={references}
+                  onChange={(e) => setReferences(e.target.value)}
+                  placeholder="NPCs: Durnan, Xanathar agent&#10;Locations: Yawning Portal, Sewers&#10;Notes: Party owes 50gp to..."
+                  rows={4}
+                  className="form-input w-full text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  One item per line. Quick notes for easy reference during the session.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -525,9 +731,10 @@ interface ThoughtsForNextProps {
   sessionId: string
   initialValue: string
   onSave?: (value: string) => void
+  inline?: boolean // When true, renders without outer card wrapper (for embedding in another card)
 }
 
-export function ThoughtsForNextCard({ campaignId, sessionId, initialValue, onSave }: ThoughtsForNextProps) {
+export function ThoughtsForNextCard({ campaignId, sessionId, initialValue, onSave, inline }: ThoughtsForNextProps) {
   const [thoughts, setThoughts] = useState(initialValue)
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
@@ -562,6 +769,41 @@ export function ThoughtsForNextCard({ campaignId, sessionId, initialValue, onSav
     } finally {
       setSaving(false)
     }
+  }
+
+  const content = (
+    <>
+      <textarea
+        value={thoughts}
+        onChange={(e) => setThoughts(e.target.value)}
+        placeholder="Ideas for next session - loose threads, player interests to follow up on..."
+        rows={4}
+        className="form-input w-full text-sm"
+      />
+      {hasChanges && (
+        <div className="flex justify-end mt-3">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="btn btn-sm btn-primary"
+          >
+            {saving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-1" />
+                Save
+              </>
+            )}
+          </button>
+        </div>
+      )}
+    </>
+  )
+
+  // When inline, just render the content without card wrapper
+  if (inline) {
+    return content
   }
 
   return (
