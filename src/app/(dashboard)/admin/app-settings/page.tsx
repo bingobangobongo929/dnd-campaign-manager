@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Settings, DollarSign, Sparkles, Shield, Loader2, AlertTriangle } from 'lucide-react'
+import { Settings, DollarSign, Sparkles, Shield, Loader2, AlertTriangle, TrendingUp } from 'lucide-react'
 import { useSupabase, useUserSettings } from '@/hooks'
 import { isSuperAdmin } from '@/lib/admin'
 import { toast } from 'sonner'
@@ -12,6 +12,7 @@ interface AppSettings {
   founder_signups_enabled: boolean
   founder_signups_closed_at: string | null
   maintenance_mode: boolean
+  show_upgrade_prompts: boolean
 }
 
 export default function AdminAppSettingsPage() {
@@ -24,6 +25,7 @@ export default function AdminAppSettingsPage() {
     founder_signups_enabled: true,
     founder_signups_closed_at: null,
     maintenance_mode: false,
+    show_upgrade_prompts: false,
   })
 
   const isSuperAdminUser = isSuperAdmin(userSettings?.role || 'user')
@@ -48,6 +50,7 @@ export default function AdminAppSettingsPage() {
           founder_signups_enabled: data.founder_signups_enabled ?? true,
           founder_signups_closed_at: data.founder_signups_closed_at,
           maintenance_mode: data.maintenance_mode || false,
+          show_upgrade_prompts: data.show_upgrade_prompts || false,
         })
       }
     } catch (error) {
@@ -224,12 +227,37 @@ export default function AdminAppSettingsPage() {
             />
           </div>
         </div>
+
+        {/* Upgrade Prompts Toggle */}
+        <div className="p-6 rounded-xl bg-[#1a1a24] border border-white/[0.06]">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
+              <div className="p-2.5 rounded-xl bg-blue-500/10">
+                <TrendingUp className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-white">Upgrade Prompts</h3>
+                <p className="text-sm text-gray-400 mt-1">
+                  Show &quot;Upgrade to Hero/Legend&quot; nudges in user menu
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  When disabled, users won&apos;t see upgrade suggestions. Enable when ready to monetize.
+                </p>
+              </div>
+            </div>
+            <ToggleSwitch
+              enabled={settings.show_upgrade_prompts}
+              onChange={(v) => updateSetting('show_upgrade_prompts', v)}
+              disabled={saving}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Stats Summary */}
       <div className="p-6 rounded-xl bg-[#1a1a24] border border-white/[0.06]">
         <h3 className="font-semibold text-white mb-4">Current State</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <StatItem
             label="Billing"
             value={settings.billing_enabled ? 'Enabled' : 'Disabled'}
@@ -244,6 +272,11 @@ export default function AdminAppSettingsPage() {
             label="Maintenance"
             value={settings.maintenance_mode ? 'Active' : 'Off'}
             color={settings.maintenance_mode ? 'red' : 'gray'}
+          />
+          <StatItem
+            label="Upgrade Prompts"
+            value={settings.show_upgrade_prompts ? 'Shown' : 'Hidden'}
+            color={settings.show_upgrade_prompts ? 'blue' : 'gray'}
           />
           <StatItem
             label="User Experience"
@@ -301,7 +334,7 @@ function StatItem({
 }: {
   label: string
   value: string
-  color: 'green' | 'amber' | 'red' | 'gray' | 'purple'
+  color: 'green' | 'amber' | 'red' | 'gray' | 'purple' | 'blue'
 }) {
   const colors = {
     green: 'text-green-400',
@@ -309,6 +342,7 @@ function StatItem({
     red: 'text-red-400',
     gray: 'text-gray-400',
     purple: 'text-purple-400',
+    blue: 'text-blue-400',
   }
 
   return (

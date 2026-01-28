@@ -536,7 +536,7 @@ export function SessionWorkflow({
               'session_opener',
               sessionOpener,
               setSessionOpener,
-              '"When we last left our heroes..."\n\nRecap points:\n- Discovered the hidden passage\n- Made a deal with the merchant\n- Thorin received a mysterious letter"
+              `"When we last left our heroes..."\n\nRecap points:\n- Discovered the hidden passage\n- Made a deal with the merchant\n- Thorin received a mysterious letter`
             )}
 
             {/* Checklist Module */}

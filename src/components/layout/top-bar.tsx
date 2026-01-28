@@ -3,8 +3,9 @@
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronDown, Sparkles, LogOut, ChevronRight, Swords, BookOpen, Settings, LayoutGrid, ScrollText, Clock, Brain, Network, Map, Image as ImageIcon, Edit3, Eye, Users, Scroll, LayoutDashboard, MapPin, Target, Compass, PanelTop, Share2, Home, User, Upload, Copy, Loader2, Shield, Link2, UserPlus } from 'lucide-react'
-import { useSupabase, useUser, useMembership, usePermissions } from '@/hooks'
+import { ChevronDown, Sparkles, LogOut, ChevronRight, Swords, BookOpen, Settings, LayoutGrid, ScrollText, Clock, Brain, Network, Map, Image as ImageIcon, Edit3, Eye, Users, Scroll, LayoutDashboard, MapPin, Target, Compass, PanelTop, Share2, Home, User, Upload, Copy, Loader2, Shield, Link2, UserPlus, Star, Crown } from 'lucide-react'
+import { useSupabase, useUser, useMembership, usePermissions, useAppSettings } from '@/hooks'
+import { FounderIndicator } from '@/components/membership/FounderBadge'
 import { useAppStore, useCanUseAI } from '@/store'
 import type { UserSettings } from '@/types/database'
 import { useState, useRef, useEffect } from 'react'
@@ -68,6 +69,7 @@ export function TopBar({
   const { currentCampaign, setIsAIAssistantOpen, isPartyModalOpen, setIsPartyModalOpen } = useAppStore()
   const canUseAI = useCanUseAI()
   const { tier, isFounder } = useMembership()
+  const { settings: appSettings } = useAppSettings()
 
   // Get campaign ID from pathname for permissions check
   const pathParts = pathname.split('/').filter(Boolean)
@@ -593,68 +595,108 @@ export function TopBar({
           </button>
 
           {showUserDropdown && (
-            <div className="user-dropdown">
-              <div className="user-dropdown-header">
-                <span className="user-dropdown-email">{user?.email}</span>
-                {/* User badges: tier, role, founder */}
-                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                  {/* Tier badge - always shown */}
-                  <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${getTierBadgeColor(tier)}`}>
-                    {getTierDisplayName(tier)}
-                  </span>
-                  {/* Role badge - only if admin/mod */}
-                  {userSettings?.role && isAdmin(userSettings.role) && (
-                    <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${getRoleBadgeColor(userSettings.role)}`}>
-                      {getRoleDisplayName(userSettings.role)}
-                    </span>
-                  )}
-                  {/* Founder badge */}
-                  {isFounder && (
-                    <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-amber-500/20 text-amber-400">
-                      Founder
-                    </span>
-                  )}
+            <div className="user-dropdown-prestige">
+              {/* Tier Banner */}
+              <TierBanner tier={tier} />
+
+              {/* Profile Section */}
+              <div className="px-4 py-4">
+                <div className="flex items-center gap-3">
+                  {/* Avatar with tier ring */}
+                  <div className={`relative w-12 h-12 rounded-full overflow-hidden ring-2 ${getTierRingColor(tier)}`}>
+                    {userSettings?.avatar_url ? (
+                      <Image
+                        src={userSettings.avatar_url}
+                        alt="Profile"
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-[--bg-elevated] flex items-center justify-center">
+                        <span className="text-lg font-medium text-[--text-primary]">
+                          {userSettings?.username?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Name and Founder */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-white truncate">
+                        {userSettings?.username || user?.email?.split('@')[0] || 'User'}
+                      </span>
+                      {isFounder && <FounderIndicator />}
+                    </div>
+
+                    {/* Role badge (if mod/admin) */}
+                    {userSettings?.role && isAdmin(userSettings.role) && (
+                      <div className="mt-1">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded ${getRoleBadgeColor(userSettings.role)}`}>
+                          <Shield className="w-3 h-3" />
+                          {getRoleDisplayName(userSettings.role)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="user-dropdown-divider" />
-              <Link
-                href="/home"
-                className="user-dropdown-item"
-                onClick={() => setShowUserDropdown(false)}
-              >
-                <User className="w-4 h-4" />
-                Profile
-              </Link>
-              <Link
-                href="/settings"
-                className="user-dropdown-item"
-                onClick={() => setShowUserDropdown(false)}
-              >
-                <Settings className="w-4 h-4" />
-                Settings
-              </Link>
-              {/* Admin link - only for admin/mod */}
-              {userSettings?.role && isAdmin(userSettings.role) && (
+
+              {/* Nav Links */}
+              <div className="border-t border-white/[0.06] py-1">
                 <Link
-                  href="/admin"
+                  href="/home"
                   className="user-dropdown-item"
                   onClick={() => setShowUserDropdown(false)}
                 >
-                  <Shield className="w-4 h-4" />
-                  Admin
+                  <User className="w-4 h-4" />
+                  Profile
+                </Link>
+                <Link
+                  href="/settings"
+                  className="user-dropdown-item"
+                  onClick={() => setShowUserDropdown(false)}
+                >
+                  <Settings className="w-4 h-4" />
+                  Settings
+                </Link>
+                {userSettings?.role && isAdmin(userSettings.role) && (
+                  <Link
+                    href="/admin"
+                    className="user-dropdown-item"
+                    onClick={() => setShowUserDropdown(false)}
+                  >
+                    <Shield className="w-4 h-4" />
+                    Admin
+                  </Link>
+                )}
+              </div>
+
+              {/* Upgrade Nudge (if enabled and not Legend) */}
+              {appSettings.show_upgrade_prompts && tier !== 'legend' && (
+                <Link
+                  href="/settings"
+                  className="block border-t border-white/[0.06] px-4 py-2.5 text-center text-sm font-medium text-blue-400 hover:text-blue-300 hover:bg-blue-500/5 transition-colors"
+                  onClick={() => setShowUserDropdown(false)}
+                >
+                  <Sparkles className="w-4 h-4 inline mr-1.5" />
+                  Upgrade to {tier === 'adventurer' ? 'Hero' : 'Legend'}
                 </Link>
               )}
-              <div className="user-dropdown-divider" />
-              <button
-                className="user-dropdown-item text-red-400 hover:text-red-300"
-                onClick={() => {
-                  setShowUserDropdown(false)
-                  handleLogout()
-                }}
-              >
-                <LogOut className="w-4 h-4" />
-                Sign Out
-              </button>
+
+              {/* Sign Out */}
+              <div className="border-t border-white/[0.06] py-1">
+                <button
+                  className="user-dropdown-item text-red-400 hover:text-red-300 w-full"
+                  onClick={() => {
+                    setShowUserDropdown(false)
+                    handleLogout()
+                  }}
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -772,4 +814,104 @@ export function TopBar({
       )}
     </header>
   )
+}
+
+// Tier banner component with prestige styling
+function TierBanner({ tier }: { tier: string }) {
+  const config = {
+    adventurer: {
+      icon: Swords,
+      label: 'ADVENTURER',
+      bgClass: 'bg-gradient-to-r from-emerald-500/20 via-emerald-500/10 to-emerald-500/20',
+      borderClass: 'border-emerald-500/30',
+      textClass: 'text-emerald-400',
+      iconClass: 'text-emerald-400',
+      ornate: false,
+    },
+    hero: {
+      icon: Shield,
+      label: 'HERO',
+      bgClass: 'bg-gradient-to-r from-blue-500/20 via-blue-500/10 to-blue-500/20',
+      borderClass: 'border-blue-500/30',
+      textClass: 'text-blue-400',
+      iconClass: 'text-blue-400',
+      glow: true,
+      ornate: false,
+    },
+    legend: {
+      icon: Star,
+      label: 'LEGEND',
+      bgClass: 'bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-amber-500/20',
+      borderClass: 'border-amber-500/30',
+      textClass: 'text-amber-400',
+      iconClass: 'text-amber-400 animate-founder-glow',
+      glow: true,
+      ornate: true,
+    },
+    // Fallback for legacy tiers
+    free: {
+      icon: Swords,
+      label: 'ADVENTURER',
+      bgClass: 'bg-gradient-to-r from-emerald-500/20 via-emerald-500/10 to-emerald-500/20',
+      borderClass: 'border-emerald-500/30',
+      textClass: 'text-emerald-400',
+      iconClass: 'text-emerald-400',
+      ornate: false,
+    },
+    standard: {
+      icon: Shield,
+      label: 'HERO',
+      bgClass: 'bg-gradient-to-r from-blue-500/20 via-blue-500/10 to-blue-500/20',
+      borderClass: 'border-blue-500/30',
+      textClass: 'text-blue-400',
+      iconClass: 'text-blue-400',
+      ornate: false,
+    },
+    premium: {
+      icon: Star,
+      label: 'LEGEND',
+      bgClass: 'bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-amber-500/20',
+      borderClass: 'border-amber-500/30',
+      textClass: 'text-amber-400',
+      iconClass: 'text-amber-400 animate-founder-glow',
+      ornate: true,
+    },
+  }
+
+  const tierConfig = config[tier as keyof typeof config] || config.adventurer
+  const Icon = tierConfig.icon
+
+  return (
+    <div className={`relative px-4 py-3 ${tierConfig.bgClass} border-b ${tierConfig.borderClass}`}>
+      {/* Ornate corners for Legend */}
+      {tierConfig.ornate && (
+        <>
+          <span className="absolute top-1 left-2 text-amber-500/40 text-xs">✦</span>
+          <span className="absolute top-1 right-2 text-amber-500/40 text-xs">✦</span>
+        </>
+      )}
+
+      <div className="flex items-center justify-center gap-2">
+        <Icon className={`w-4 h-4 ${tierConfig.iconClass}`} />
+        <span className={`text-xs font-bold tracking-[0.2em] ${tierConfig.textClass}`}>
+          {tierConfig.label}
+        </span>
+        <Icon className={`w-4 h-4 ${tierConfig.iconClass}`} />
+      </div>
+    </div>
+  )
+}
+
+// Get tier ring color for avatar
+function getTierRingColor(tier: string): string {
+  const colors: Record<string, string> = {
+    adventurer: 'ring-emerald-500/50',
+    hero: 'ring-blue-500/50',
+    legend: 'ring-amber-500/50',
+    // Legacy
+    free: 'ring-emerald-500/50',
+    standard: 'ring-blue-500/50',
+    premium: 'ring-amber-500/50',
+  }
+  return colors[tier] || colors.adventurer
 }

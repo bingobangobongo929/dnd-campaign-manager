@@ -805,6 +805,42 @@
   color: var(--text-primary);
 }
 
+/* Prestige Profile Dropdown */
+.user-dropdown-prestige {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 260px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  z-index: 100;
+  animation: scaleIn 0.15s ease-out;
+}
+
+.user-dropdown-prestige .user-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  border: none;
+  background: none;
+  text-align: left;
+}
+
+.user-dropdown-prestige .user-dropdown-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    CAMPAIGN SWITCHER DROPDOWN
    ═══════════════════════════════════════════════════════════════════════════ */

@@ -318,7 +318,7 @@ export default function RandomTablesPage() {
     )
   }
 
-  if (!isDm && !can('world', 'view')) {
+  if (!isDm && !can.viewLore) {
     return (
       <AppLayout campaignId={campaignId}>
         <AccessDeniedPage
@@ -404,13 +404,14 @@ export default function RandomTablesPage() {
           </div>
         ) : filteredTables.length === 0 ? (
           <EmptyState
-            icon={Dice5}
+            icon={<Dice5 className="w-12 h-12" />}
             title="No random tables yet"
             description="Create your first random table to use during prep and gameplay."
-            action={isDm ? {
-              label: 'Create Table',
-              onClick: openCreateModal
-            } : undefined}
+            action={isDm ? (
+              <button onClick={openCreateModal} className="btn btn-primary">
+                Create Table
+              </button>
+            ) : undefined}
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
