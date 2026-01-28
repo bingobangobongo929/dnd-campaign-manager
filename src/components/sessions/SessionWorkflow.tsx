@@ -20,10 +20,12 @@ import {
   Dice5,
   Music,
   Settings,
+  Settings2,
   ExternalLink,
   GripVertical,
   FileText,
   Trash2,
+  Check,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -169,14 +171,14 @@ const MODULE_CONFIG: Record<PrepModule, {
   },
 }
 
-// All available prep modules in display order
+// All available prep modules in default order (random_tables first as most useful)
 const ALL_MODULES: PrepModule[] = [
+  'random_tables',
   'checklist',
   'references',
   'session_goals',
   'key_npcs',
   'session_opener',
-  'random_tables',
   'music_ambiance',
 ]
 
@@ -825,25 +827,27 @@ export function SessionWorkflow({
               <Lightbulb className="w-5 h-5 text-purple-400" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-white">Prep Tools</h3>
-              <p className="text-sm text-[--text-tertiary]">
-                Optional tools to help you prepare
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white">Prep Tools</h3>
+                {/* Reorder Toggle - positioned next to title */}
+                <button
+                  onClick={() => setIsReorderMode(!isReorderMode)}
+                  className={cn(
+                    "p-2 rounded-lg transition-colors",
+                    isReorderMode
+                      ? "bg-purple-600 text-white"
+                      : "text-gray-400 hover:text-white hover:bg-white/[0.05]"
+                  )}
+                  title={isReorderMode ? "Done reordering" : "Customize order"}
+                >
+                  {isReorderMode ? <Check className="w-5 h-5" /> : <Settings2 className="w-5 h-5" />}
+                </button>
+              </div>
+              <p className="text-sm text-[--text-tertiary] mt-1">
+                Every DM runs their games differently, and that&apos;s what makes tabletop gaming great! These tools are completely optional - use whichever ones fit your style. Whether you&apos;re a detailed planner or prefer to improvise, pick the modules that help you feel prepared.
               </p>
             </div>
           </div>
-          {/* Reorder Toggle */}
-          <button
-            onClick={() => setIsReorderMode(!isReorderMode)}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
-              isReorderMode
-                ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
-                : "text-gray-400 hover:text-white hover:bg-white/[0.05]"
-            )}
-          >
-            <GripVertical className="w-4 h-4" />
-            {isReorderMode ? 'Done' : 'Reorder'}
-          </button>
         </div>
 
         {/* All Modules - Draggable, collapsible (in custom order, filtered by disabled) */}

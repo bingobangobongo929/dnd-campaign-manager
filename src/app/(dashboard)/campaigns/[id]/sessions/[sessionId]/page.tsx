@@ -55,7 +55,6 @@ import {
   parseKeyNpcsValue,
 } from '@/components/sessions'
 import { DmNotesSection } from '@/components/dm-notes'
-import { showIntelligencePrompt } from '@/lib/intelligence-prompt'
 
 export default function SessionDetailPage() {
   const params = useParams()
@@ -533,30 +532,6 @@ export default function SessionDetailPage() {
     showToast: false,
   })
 
-  // Track if Intelligence prompt has been shown this editing session
-  const intelligencePromptShownRef = useRef(false)
-  const previousStatusRef = useRef(status)
-
-  // Show Intelligence prompt once after first successful auto-save
-  useEffect(() => {
-    // Only trigger on transition from non-saved to saved state
-    if (
-      previousStatusRef.current !== 'saved' &&
-      status === 'saved' &&
-      !intelligencePromptShownRef.current &&
-      isModOrAbove &&
-      isDm &&
-      !isNew
-    ) {
-      intelligencePromptShownRef.current = true
-      // Small delay to not interrupt the save confirmation
-      setTimeout(() => {
-        showIntelligencePrompt(campaignId)
-      }, 1500)
-    }
-    previousStatusRef.current = status
-  }, [status, isModOrAbove, isDm, isNew, campaignId])
-
   // Create new session
   const handleCreate = async () => {
     // Different validation based on phase
@@ -596,14 +571,6 @@ export default function SessionDetailPage() {
     }
 
     toast.success('Session created')
-
-    // Show Intelligence prompt after a short delay (mods+ only)
-    if (isModOrAbove && isDm) {
-      setTimeout(() => {
-        showIntelligencePrompt(campaignId)
-      }, 2000)
-    }
-
     router.replace(`/campaigns/${campaignId}/sessions/${newSession.id}`)
   }
 
