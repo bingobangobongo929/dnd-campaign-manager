@@ -416,7 +416,10 @@ export default function SessionsPage() {
                   key={session.id}
                   className={cn(
                     "rounded-xl cursor-pointer animate-slide-in-up transition-all duration-200 border-l-4",
-                    isPrep ? "border-l-yellow-500/50" : "border-l-purple-500/50"
+                    isPrep ? "border-l-yellow-500/50" :
+                    state === 'open' ? "border-l-green-500/50" :
+                    state === 'locked' ? "border-l-amber-500/50" :
+                    "border-l-gray-500/50"
                   )}
                   style={{
                     animationDelay: `${index * 50}ms`,
@@ -439,49 +442,39 @@ export default function SessionsPage() {
                     {/* Header Row */}
                     <div className="flex items-start justify-between gap-4 mb-4">
                       <div className="flex items-center gap-2 flex-wrap">
-                        {/* Phase Badge - Primary indicator */}
+                        {/* Session Number */}
+                        <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-white/5 text-gray-400">
+                          #{session.session_number}
+                        </span>
+
+                        {/* Phase/State Badge - show prep OR state for completed sessions */}
                         {isPrep ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">
                             <ClipboardList className="w-3.5 h-3.5" />
                             Prep
                           </span>
+                        ) : state === 'open' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg bg-green-500/15 text-green-400 border border-green-500/30">
+                            <Unlock className="w-3.5 h-3.5" />
+                            Open
+                          </span>
+                        ) : state === 'locked' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                            <Lock className="w-3.5 h-3.5" />
+                            Locked
+                          </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg bg-purple-500/15 text-purple-400 border border-purple-500/30">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            Done
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg bg-gray-500/15 text-gray-400 border border-gray-500/30">
+                            <EyeOff className="w-3.5 h-3.5" />
+                            Private
                           </span>
                         )}
-
-                        {/* Session Number */}
-                        <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-white/5 text-gray-400">
-                          #{session.session_number}
-                        </span>
 
                         {/* Date */}
                         <span className="text-sm text-[--text-tertiary] flex items-center gap-1.5">
                           <Calendar className="w-4 h-4" />
                           {formatDate(session.date)}
                         </span>
-
-                        {/* State Badge */}
-                        {state === 'private' && (
-                          <span className="flex items-center gap-1 text-xs text-gray-400 bg-gray-500/10 px-2 py-0.5 rounded">
-                            <EyeOff className="w-3 h-3" />
-                            Private
-                          </span>
-                        )}
-                        {state === 'open' && (
-                          <span className="flex items-center gap-1 text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded">
-                            <Unlock className="w-3 h-3" />
-                            {isDm ? 'Open' : 'Open for notes'}
-                          </span>
-                        )}
-                        {state === 'locked' && (
-                          <span className="flex items-center gap-1 text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
-                            <Lock className="w-3 h-3" />
-                            Locked
-                          </span>
-                        )}
                       </div>
 
                       {can.deleteSession && (
@@ -502,25 +495,15 @@ export default function SessionsPage() {
 
                     {/* Content Sections */}
                     <div className="space-y-4">
-                      {/* PREP PHASE: Simple indicator - the phase badge is the main indicator */}
-                      {isPrep && isDm && !hasSummary && !hasNotes && (
-                        <div className="p-4 rounded-lg bg-yellow-500/5 border border-yellow-500/20">
-                          <div className="flex items-center gap-2 text-yellow-400/70">
-                            <ClipboardList className="w-4 h-4" />
-                            <span className="text-sm">Click to continue planning this session</span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* COMPLETED PHASE: DM Notes Section - only show if visible and has content */}
-                      {!isPrep && canSeeDmContent && (hasSummary || hasNotes) && (
+                      {/* DM Notes Section - show if visible and has content */}
+                      {canSeeDmContent && (hasSummary || hasNotes) && (
                         <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
                           {/* Section header with share indicator for DM */}
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               <FileText className="w-4 h-4 text-blue-400" />
                               <span className="text-sm font-medium text-gray-300">
-                                {isEnhancedMode ? 'Quick Recap' : 'Session Notes'}
+                                {isEnhancedMode ? 'Session Recap' : 'Session Notes'}
                               </span>
                             </div>
                             {isDm && (
@@ -537,34 +520,42 @@ export default function SessionsPage() {
                           {/* Content - handle Standard vs Enhanced */}
                           {isEnhancedMode ? (
                             <>
-                              {/* Enhanced: Show summary */}
+                              {/* Enhanced: Show summary (Quick Recap) */}
                               <div
                                 className="prose prose-invert prose-sm max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&>ul]:mt-1 [&>ul]:mb-2 [&_li]:my-0.5 [&>p]:mb-2 text-[--text-secondary]"
                                 dangerouslySetInnerHTML={{ __html: markdownToHtml(session.summary!) }}
                               />
-                              {/* Toggle for detailed notes */}
-                              <button
-                                onClick={(e) => toggleExpanded(session.id, e)}
-                                className="flex items-center gap-2 mt-3 text-sm text-[--arcane-purple] hover:text-[--arcane-purple]/80 transition-colors"
-                              >
-                                {expandedIds.has(session.id) ? (
-                                  <>
-                                    <ChevronUp className="w-4 h-4" />
-                                    Hide detailed notes
-                                  </>
-                                ) : (
-                                  <>
-                                    <ChevronDown className="w-4 h-4" />
-                                    Show detailed notes
-                                  </>
-                                )}
-                              </button>
-                              {expandedIds.has(session.id) && (
-                                <div className="mt-3 pt-3 border-t border-white/[0.06]">
+                              {/* Enhanced: Show detailed notes section */}
+                              {hasNotes && (
+                                <div className="mt-4 pt-4 border-t border-white/[0.06]">
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Detailed Notes</span>
+                                  </div>
                                   <div
-                                    className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4"
+                                    className={cn(
+                                      "prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4",
+                                      !expandedIds.has(session.id) && "line-clamp-6"
+                                    )}
                                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(session.notes!) }}
                                   />
+                                  {session.notes!.length > 400 && (
+                                    <button
+                                      onClick={(e) => toggleExpanded(session.id, e)}
+                                      className="flex items-center gap-2 mt-3 text-sm text-[--arcane-purple] hover:text-[--arcane-purple]/80 transition-colors"
+                                    >
+                                      {expandedIds.has(session.id) ? (
+                                        <>
+                                          <ChevronUp className="w-4 h-4" />
+                                          Show less
+                                        </>
+                                      ) : (
+                                        <>
+                                          <ChevronDown className="w-4 h-4" />
+                                          Show more
+                                        </>
+                                      )}
+                                    </button>
+                                  )}
                                 </div>
                               )}
                             </>

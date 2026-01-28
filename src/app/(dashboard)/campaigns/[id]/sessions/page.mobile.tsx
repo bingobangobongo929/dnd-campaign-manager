@@ -187,53 +187,49 @@ export function SessionsPageMobile({
                     key={session.id}
                     className={cn(
                       "bg-white/[0.04] rounded-xl border border-white/[0.06] overflow-hidden active:bg-white/[0.06] transition-colors border-l-4",
-                      isPrep ? "border-l-yellow-500/50" : "border-l-purple-500/50"
+                      isPrep ? "border-l-yellow-500/50" :
+                      state === 'open' ? "border-l-green-500/50" :
+                      state === 'locked' ? "border-l-amber-500/50" :
+                      "border-l-gray-500/50"
                     )}
                     onClick={() => handleSessionClick(session)}
                   >
                     <div className="p-4">
                       {/* Header row */}
                       <div className="flex items-center gap-1.5 mb-2 flex-wrap">
-                        {/* Phase Badge */}
+                        {/* Session Number */}
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-white/5 text-gray-400">
+                          #{session.session_number}
+                        </span>
+
+                        {/* Phase/State Badge */}
                         {isPrep ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">
                             <ClipboardList className="w-3 h-3" />
                             Prep
                           </span>
+                        ) : state === 'open' ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded bg-green-500/15 text-green-400 border border-green-500/30">
+                            <Unlock className="w-3 h-3" />
+                            Open
+                          </span>
+                        ) : state === 'locked' ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                            <Lock className="w-3 h-3" />
+                            Locked
+                          </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded bg-purple-500/15 text-purple-400 border border-purple-500/30">
-                            <CheckCircle2 className="w-3 h-3" />
-                            Done
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded bg-gray-500/15 text-gray-400 border border-gray-500/30">
+                            <EyeOff className="w-3 h-3" />
+                            Private
                           </span>
                         )}
-
-                        {/* Session Number */}
-                        <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-white/5 text-gray-400">
-                          #{session.session_number}
-                        </span>
 
                         {/* Date */}
                         <span className="text-xs text-gray-500 flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
                           {formatDate(session.date)}
                         </span>
-
-                        {/* State Badge */}
-                        {state === 'private' && (
-                          <span className="flex items-center gap-1 text-[10px] text-gray-400 bg-gray-500/10 px-1.5 py-0.5 rounded">
-                            <EyeOff className="w-2.5 h-2.5" />
-                          </span>
-                        )}
-                        {state === 'open' && (
-                          <span className="flex items-center gap-1 text-[10px] text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded">
-                            <Unlock className="w-2.5 h-2.5" />
-                          </span>
-                        )}
-                        {state === 'locked' && (
-                          <span className="flex items-center gap-1 text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
-                            <Lock className="w-2.5 h-2.5" />
-                          </span>
-                        )}
                       </div>
 
                       {/* Title */}
@@ -243,25 +239,15 @@ export function SessionsPageMobile({
 
                       {/* Content Sections */}
                       <div className="space-y-3">
-                        {/* PREP PHASE: Simple indicator - the phase badge is the main indicator */}
-                        {isPrep && isDm && !hasSummary && !hasNotes && (
-                          <div className="p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/20">
-                            <div className="flex items-center gap-2 text-yellow-400/70">
-                              <ClipboardList className="w-3.5 h-3.5" />
-                              <span className="text-xs">Tap to continue planning</span>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* COMPLETED PHASE: DM Notes Section - only show if visible and has content */}
-                        {!isPrep && canSeeDmContent && (hasSummary || hasNotes) && (
+                        {/* DM Notes Section - show if visible and has content */}
+                        {canSeeDmContent && (hasSummary || hasNotes) && (
                           <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
                             {/* Section header */}
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-1.5">
                                 <FileText className="w-3.5 h-3.5 text-blue-400" />
                                 <span className="text-xs font-medium text-gray-400">
-                                  {isEnhancedMode ? 'Recap' : 'Notes'}
+                                  {isEnhancedMode ? 'Session Recap' : 'Notes'}
                                 </span>
                               </div>
                               {isDm && (
@@ -277,32 +263,40 @@ export function SessionsPageMobile({
                             {/* Content */}
                             {isEnhancedMode ? (
                               <>
+                                {/* Enhanced: Show summary */}
                                 <div
-                                  className="text-sm text-gray-400 line-clamp-3"
+                                  className="text-sm text-gray-400"
                                   dangerouslySetInnerHTML={{ __html: markdownToHtml(session.summary!) }}
                                 />
-                                <button
-                                  onClick={(e) => toggleExpanded(session.id, e)}
-                                  className="flex items-center gap-1 mt-2 text-xs text-[--arcane-purple] active:opacity-70"
-                                >
-                                  {expandedIds.has(session.id) ? (
-                                    <>
-                                      <ChevronUp className="w-3.5 h-3.5" />
-                                      Hide details
-                                    </>
-                                  ) : (
-                                    <>
-                                      <ChevronDown className="w-3.5 h-3.5" />
-                                      Show details
-                                    </>
-                                  )}
-                                </button>
-                                {expandedIds.has(session.id) && (
-                                  <div className="mt-2 pt-2 border-t border-white/[0.04]">
+                                {/* Enhanced: Show detailed notes */}
+                                {hasNotes && (
+                                  <div className="mt-3 pt-3 border-t border-white/[0.04]">
+                                    <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Details</span>
                                     <div
-                                      className="prose prose-invert prose-sm max-w-none text-gray-400"
+                                      className={cn(
+                                        "prose prose-invert prose-sm max-w-none text-gray-400 mt-2",
+                                        !expandedIds.has(session.id) && "line-clamp-4"
+                                      )}
                                       dangerouslySetInnerHTML={{ __html: sanitizeHtml(session.notes!) }}
                                     />
+                                    {session.notes!.length > 300 && (
+                                      <button
+                                        onClick={(e) => toggleExpanded(session.id, e)}
+                                        className="flex items-center gap-1 mt-2 text-xs text-[--arcane-purple] active:opacity-70"
+                                      >
+                                        {expandedIds.has(session.id) ? (
+                                          <>
+                                            <ChevronUp className="w-3.5 h-3.5" />
+                                            Less
+                                          </>
+                                        ) : (
+                                          <>
+                                            <ChevronDown className="w-3.5 h-3.5" />
+                                            More
+                                          </>
+                                        )}
+                                      </button>
+                                    )}
                                   </div>
                                 )}
                               </>
@@ -336,7 +330,7 @@ export function SessionsPageMobile({
                               </>
                             ) : (
                               <div
-                                className="text-sm text-gray-400 line-clamp-3"
+                                className="text-sm text-gray-400"
                                 dangerouslySetInnerHTML={{ __html: markdownToHtml(session.summary!) }}
                               />
                             )}
