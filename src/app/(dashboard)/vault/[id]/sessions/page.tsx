@@ -213,7 +213,7 @@ export default function CharacterSessionsPage() {
   if (isLinkedCharacter && linkedCampaign) {
     return (
       <AppLayout characterId={characterId}>
-        <div className="max-w-4xl mx-auto px-6 py-8">
+        <div className="max-w-6xl mx-auto px-6 py-8">
           {/* Linked Character Banner */}
           <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 mb-6">
             <div className="flex items-start gap-4">
@@ -334,7 +334,7 @@ export default function CharacterSessionsPage() {
 
   return (
     <AppLayout characterId={characterId}>
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold text-[--text-primary]">Sessions</h1>

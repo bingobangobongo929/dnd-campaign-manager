@@ -162,7 +162,7 @@ export default function StorageSettingsPage() {
     <div className="min-h-screen bg-[--bg-base]">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-[--bg-base]/95 backdrop-blur-sm border-b border-white/[0.06]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto px-6">
           <div className="flex items-center gap-4 h-14">
             <button
               onClick={() => router.push('/settings')}
@@ -175,7 +175,7 @@ export default function StorageSettingsPage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
         {/* Overall Usage */}
         <section className="p-6 rounded-xl bg-[--bg-elevated] border border-[--border]">
           <div className="flex items-center gap-3 mb-4">

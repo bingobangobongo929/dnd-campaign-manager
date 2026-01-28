@@ -207,7 +207,7 @@ export default async function CampaignViewPage({ params }: ViewPageProps) {
       <FloatingDock campaignId={campaignId} />
       {/* Attribution banner if created from a template */}
       {templateInfo && (
-        <div className="max-w-4xl mx-auto px-6 pt-6">
+        <div className="max-w-6xl mx-auto px-6 pt-6">
           <AttributionBanner
             templateName={templateInfo.name}
             creatorName={templateInfo.attribution_name}

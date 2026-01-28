@@ -1330,7 +1330,7 @@ export default function VaultImportPage() {
   return (
     <AppLayout>
       <div className="p-6">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-white">Import Character</h1>

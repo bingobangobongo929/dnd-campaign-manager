@@ -84,7 +84,7 @@ export default async function OneshotViewPage({ params }: ViewPageProps) {
             <div className="h-32 bg-gradient-to-b from-purple-900/20 to-transparent" />
           )}
 
-          <div className="max-w-4xl mx-auto px-6 -mt-20 relative z-10">
+          <div className="max-w-6xl mx-auto px-6 -mt-20 relative z-10">
             <div className="flex flex-col md:flex-row gap-6 items-start">
               {/* Poster thumbnail on desktop */}
               {oneshot.image_url && (
@@ -156,7 +156,7 @@ export default async function OneshotViewPage({ params }: ViewPageProps) {
         </div>
 
         {/* Content */}
-        <div className="max-w-4xl mx-auto px-6 py-12 space-y-10">
+        <div className="max-w-6xl mx-auto px-6 py-12 space-y-10">
           {/* Attribution banner if created from a template */}
           {templateInfo && (
             <AttributionBanner
@@ -285,7 +285,7 @@ export default async function OneshotViewPage({ params }: ViewPageProps) {
 
         {/* Footer */}
         <div className="border-t border-white/10 py-8">
-          <div className="max-w-4xl mx-auto px-6 text-center text-sm text-gray-500">
+          <div className="max-w-6xl mx-auto px-6 text-center text-sm text-gray-500">
             Viewing as owner
           </div>
         </div>

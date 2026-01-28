@@ -1061,7 +1061,7 @@ export default function OneshotEditorPage() {
       <div className="min-h-screen bg-[--bg-base]">
         {/* Header */}
         <header className="sticky top-0 z-50 bg-[--bg-base]/80 backdrop-blur-xl border-b border-white/[0.06]">
-          <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
             <button
               onClick={() => router.push('/oneshots')}
               className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
@@ -1121,7 +1121,7 @@ export default function OneshotEditorPage() {
         </header>
 
         {/* Main Content */}
-        <main className="max-w-5xl mx-auto px-6 py-8">
+        <main className="max-w-6xl mx-auto px-6 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8">
             {/* Left Sidebar - Poster Image & Meta */}
             <div className="space-y-6">

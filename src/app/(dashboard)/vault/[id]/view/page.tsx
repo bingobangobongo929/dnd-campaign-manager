@@ -105,7 +105,7 @@ export default function CharacterViewPage() {
     <AppLayout characterId={characterId}>
       {/* Attribution banner if created from a template */}
       {templateInfo && character && (
-        <div className="max-w-4xl mx-auto px-6 pt-6">
+        <div className="max-w-6xl mx-auto px-6 pt-6">
           <AttributionBanner
             templateName={templateInfo.name}
             creatorName={templateInfo.attribution_name}
