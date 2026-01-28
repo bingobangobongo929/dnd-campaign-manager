@@ -1,12 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Dice5, ChevronDown, Loader2 } from 'lucide-react'
+import { Dice5, ChevronDown, Loader2, Search, Star } from 'lucide-react'
 import { RollReveal } from '@/components/roll-reveal/RollReveal'
 import { useSupabase } from '@/hooks'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import type { RandomTable, RandomTableEntry } from '@/types/database'
+import {
+  TEMPLATE_CATEGORIES,
+  type TableTemplate,
+} from '@/lib/random-table-templates'
 
 interface QuickRollDropdownProps {
   campaignId: string
@@ -18,7 +22,9 @@ export function QuickRollDropdown({ campaignId, className }: QuickRollDropdownPr
   const [tables, setTables] = useState<RandomTable[]>([])
   const [loading, setLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [selectedTable, setSelectedTable] = useState<RandomTable | null>(null)
+  const [selectedTemplate, setSelectedTemplate] = useState<TableTemplate | null>(null)
   const [showRollReveal, setShowRollReveal] = useState(false)
 
   // Load campaign's random tables
@@ -45,32 +51,63 @@ export function QuickRollDropdown({ campaignId, className }: QuickRollDropdownPr
     loadTables()
   }, [campaignId, supabase])
 
-  // Handle selecting a table and triggering a roll
+  // Get all templates flattened
+  const allTemplates = TEMPLATE_CATEGORIES.flatMap(cat =>
+    cat.templates.map(t => ({ ...t, categoryName: cat.name }))
+  )
+
+  // Filter items by search
+  const filteredTables = tables.filter(t =>
+    !searchQuery || t.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+  const filteredTemplates = allTemplates.filter(t =>
+    !searchQuery || t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.categoryName.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  // Handle selecting a user table
   const handleSelectTable = (table: RandomTable) => {
     setSelectedTable(table)
+    setSelectedTemplate(null)
     setIsOpen(false)
+    setSearchQuery('')
+    setShowRollReveal(true)
+  }
+
+  // Handle selecting a template
+  const handleSelectTemplate = (template: TableTemplate) => {
+    setSelectedTemplate(template)
+    setSelectedTable(null)
+    setIsOpen(false)
+    setSearchQuery('')
     setShowRollReveal(true)
   }
 
   // Handle accepting roll result (copy to clipboard)
-  const handleAcceptRoll = (entry: RandomTableEntry) => {
-    if (selectedTable) {
-      navigator.clipboard.writeText(`${selectedTable.name}: ${entry.text}`)
-      toast.success('Result copied to clipboard')
-    }
+  const handleAcceptRoll = (entry: RandomTableEntry | string) => {
+    const name = selectedTable?.name || selectedTemplate?.name || 'Random Table'
+    const text = typeof entry === 'string' ? entry : entry.text
+    navigator.clipboard.writeText(`${name}: ${text}`)
+    toast.success('Result copied to clipboard')
     setShowRollReveal(false)
     setSelectedTable(null)
+    setSelectedTemplate(null)
   }
 
   // Handle closing roll reveal
   const handleCloseRollReveal = () => {
     setShowRollReveal(false)
     setSelectedTable(null)
+    setSelectedTemplate(null)
   }
 
-  // If no tables exist, don't show the dropdown
-  if (!loading && tables.length === 0) {
-    return null
+  // Get roll items for RollReveal
+  const getRollItems = () => {
+    if (selectedTable) return selectedTable.entries
+    if (selectedTemplate) {
+      return selectedTemplate.entries.map((text, i) => ({ id: String(i), text, weight: 1 }))
+    }
+    return []
   }
 
   return (
@@ -78,10 +115,11 @@ export function QuickRollDropdown({ campaignId, className }: QuickRollDropdownPr
       <div className={cn("relative", className)}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          disabled={loading || tables.length === 0}
+          disabled={loading}
           className={cn(
-            "flex items-center gap-2 w-full px-3 py-2 rounded-lg border transition-all text-left",
-            "bg-pink-500/5 border-pink-500/20 hover:border-pink-500/40",
+            "flex items-center gap-2 w-full px-3 py-2.5 rounded-lg transition-all text-left",
+            "bg-pink-500/10 hover:bg-pink-500/15",
+            isOpen && "ring-2 ring-pink-500/40",
             "disabled:opacity-50 disabled:cursor-not-allowed"
           )}
         >
@@ -98,35 +136,95 @@ export function QuickRollDropdown({ campaignId, className }: QuickRollDropdownPr
         </button>
 
         {/* Dropdown menu */}
-        {isOpen && tables.length > 0 && (
+        {isOpen && (
           <>
             {/* Backdrop */}
             <div
               className="fixed inset-0 z-10"
-              onClick={() => setIsOpen(false)}
+              onClick={() => {
+                setIsOpen(false)
+                setSearchQuery('')
+              }}
             />
 
-            {/* Dropdown */}
-            <div className="absolute top-full left-0 right-0 mt-1 z-20 bg-[--bg-elevated] border border-[--border] rounded-lg shadow-xl overflow-hidden">
-              <div className="max-h-[200px] overflow-y-auto py-1">
-                {tables.map(table => (
-                  <button
-                    key={table.id}
-                    onClick={() => handleSelectTable(table)}
-                    className="w-full px-3 py-2 text-left hover:bg-white/[0.05] transition-colors flex items-center gap-2"
-                  >
-                    <Dice5 className="w-4 h-4 text-pink-400/50" />
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm text-white block truncate">{table.name}</span>
-                      <span className="text-xs text-gray-500">
-                        {table.entries.length} entries
-                      </span>
+            {/* Dropdown - solid background */}
+            <div className="absolute top-full left-0 right-0 mt-1 z-20 bg-[#1a1a24] rounded-xl shadow-2xl overflow-hidden">
+              {/* Search */}
+              <div className="p-3 border-b border-white/[0.06]">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search tables..."
+                    className="w-full pl-9 pr-3 py-2 bg-[#0d0d14] rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/40"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div className="max-h-[300px] overflow-y-auto">
+                {/* My Tables Section */}
+                {filteredTables.length > 0 && (
+                  <div>
+                    <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-white/[0.02]">
+                      My Tables
                     </div>
-                    <span className="text-xs text-gray-500">
-                      {table.roll_type === 'custom' ? `d${table.custom_die_size}` : table.roll_type}
-                    </span>
-                  </button>
-                ))}
+                    {filteredTables.map(table => (
+                      <button
+                        key={table.id}
+                        onClick={() => handleSelectTable(table)}
+                        className="w-full px-3 py-2.5 text-left hover:bg-white/[0.04] transition-colors flex items-center gap-3"
+                      >
+                        <Dice5 className="w-4 h-4 text-pink-400/70" />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm text-white block truncate">{table.name}</span>
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {table.entries.length}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Templates Section */}
+                {filteredTemplates.length > 0 && (
+                  <div>
+                    <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-white/[0.02]">
+                      Templates
+                    </div>
+                    {filteredTemplates.slice(0, 10).map(template => (
+                      <button
+                        key={template.id}
+                        onClick={() => handleSelectTemplate(template)}
+                        className="w-full px-3 py-2.5 text-left hover:bg-white/[0.04] transition-colors flex items-center gap-3"
+                      >
+                        <Dice5 className="w-4 h-4 text-orange-400/70" />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm text-white block truncate">{template.name}</span>
+                          <span className="text-xs text-gray-500">{template.categoryName}</span>
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {template.entries.length}
+                        </span>
+                      </button>
+                    ))}
+                    {filteredTemplates.length > 10 && (
+                      <div className="px-3 py-2 text-xs text-gray-500 text-center">
+                        +{filteredTemplates.length - 10} more
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Empty state */}
+                {filteredTables.length === 0 && filteredTemplates.length === 0 && (
+                  <div className="px-4 py-6 text-center text-gray-500 text-sm">
+                    No tables found
+                  </div>
+                )}
               </div>
             </div>
           </>
@@ -134,20 +232,25 @@ export function QuickRollDropdown({ campaignId, className }: QuickRollDropdownPr
       </div>
 
       {/* Roll Reveal Modal */}
-      {selectedTable && (
+      {(selectedTable || selectedTemplate) && (
         <RollReveal
-          items={selectedTable.entries}
+          items={getRollItems()}
           isOpen={showRollReveal}
           onClose={handleCloseRollReveal}
           onAccept={handleAcceptRoll}
           duration="fast"
-          title={`Rolling ${selectedTable.name}...`}
+          title={`Rolling ${selectedTable?.name || selectedTemplate?.name}...`}
           renderResult={(entry) => (
             <div className="text-center">
               <p className="text-sm text-gray-400 mb-2">
-                {selectedTable.roll_type === 'custom' ? `d${selectedTable.custom_die_size}` : selectedTable.roll_type}
+                {selectedTable
+                  ? (selectedTable.roll_type === 'custom' ? `d${selectedTable.custom_die_size}` : selectedTable.roll_type)
+                  : (selectedTemplate?.roll_type === 'custom' ? `d${selectedTemplate?.custom_die_size}` : selectedTemplate?.roll_type)
+                }
               </p>
-              <p className="text-xl text-white leading-relaxed">{entry.text}</p>
+              <p className="text-xl text-white leading-relaxed">
+                {typeof entry === 'string' ? entry : entry.text}
+              </p>
             </div>
           )}
         />

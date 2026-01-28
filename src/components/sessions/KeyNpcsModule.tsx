@@ -219,7 +219,7 @@ export function KeyNpcsModule({
 
         {/* Dropdown */}
         {searchOpen && (
-          <div className="absolute z-50 top-full left-0 right-0 mt-1 py-1 bg-[--bg-elevated] border border-[--border] rounded-lg shadow-xl max-h-60 overflow-auto">
+          <div className="absolute z-50 top-full left-0 right-0 mt-1 py-1 bg-[#1a1a24] rounded-lg shadow-2xl max-h-60 overflow-auto">
             {filteredCharacters.length === 0 ? (
               <div className="px-3 py-2 text-sm text-gray-500">
                 {searchQuery ? 'No matching characters' : showAllTypes ? 'No characters available' : 'No NPCs available'}
