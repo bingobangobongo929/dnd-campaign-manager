@@ -458,6 +458,8 @@ export interface RollRevealProps<T> {
   allowReroll?: boolean
   soundEnabled?: boolean
   title?: string
+  /** Animation duration: 'full' = 4s (default), 'fast' = 2s */
+  duration?: 'full' | 'fast'
 }
 
 export function RollReveal<T>({
@@ -469,6 +471,7 @@ export function RollReveal<T>({
   allowReroll = true,
   soundEnabled = true,
   title = 'The Fates Decide...',
+  duration = 'full',
 }: RollRevealProps<T>) {
   const [phase, setPhase] = useState(0) // 0: closed, 1: summon, 2: cards emerge, 3: chaos, 4: draw, 5: reveal, 6: result
   const [chosenIndex, setChosenIndex] = useState(0)
@@ -507,34 +510,41 @@ export function RollReveal<T>({
     setRotation(0)
     setChosenIndex(Math.floor(Math.random() * items.length))
 
-    // Phase 1: Summon (0.5s)
+    // Timing phases - scale by 0.5 for fast mode
+    // Full (4s): 100, 600, 1400, 2900, 3500, 4100
+    // Fast (2s): 50, 300, 700, 1450, 1750, 2050
+    const timings = duration === 'fast'
+      ? { summon: 50, emerge: 300, chaos: 700, draw: 1450, reveal: 1750, result: 2050 }
+      : { summon: 100, emerge: 600, chaos: 1400, draw: 2900, reveal: 3500, result: 4100 }
+
+    // Phase 1: Summon
     timeoutsRef.current.push(setTimeout(() => {
       setPhase(1)
       if (soundEnabledRef.current) soundsRef.current.playSummon()
-    }, 100))
+    }, timings.summon))
 
-    // Phase 2: Cards emerge (0.8s)
+    // Phase 2: Cards emerge
     timeoutsRef.current.push(setTimeout(() => {
       setPhase(2)
       if (soundEnabledRef.current) soundsRef.current.playWhoosh()
-    }, 600))
+    }, timings.emerge))
 
-    // Phase 3: Chaos (1.5s)
+    // Phase 3: Chaos
     timeoutsRef.current.push(setTimeout(() => {
       setPhase(3)
       if (soundEnabledRef.current) soundsRef.current.playChaos()
-    }, 1400))
+    }, timings.chaos))
 
-    // Phase 4: Draw (0.8s)
+    // Phase 4: Draw
     timeoutsRef.current.push(setTimeout(() => {
       setPhase(4)
       if (soundEnabledRef.current) soundsRef.current.playDraw()
-    }, 2900))
+    }, timings.draw))
 
-    // Phase 5: Reveal (0.6s)
+    // Phase 5: Reveal
     timeoutsRef.current.push(setTimeout(() => {
       setPhase(5)
-    }, 3500))
+    }, timings.reveal))
 
     // Phase 6: Result
     timeoutsRef.current.push(setTimeout(() => {
@@ -542,8 +552,8 @@ export function RollReveal<T>({
       setShowResult(true)
       isAnimatingRef.current = false
       if (soundEnabledRef.current) soundsRef.current.playReveal()
-    }, 4100))
-  }, [items.length, clearTimeouts])
+    }, timings.result))
+  }, [items.length, clearTimeouts, duration])
 
   // Rotation animation during chaos
   useEffect(() => {

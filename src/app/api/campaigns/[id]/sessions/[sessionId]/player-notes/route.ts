@@ -155,16 +155,24 @@ export async function POST(
       return NextResponse.json({ error: 'Notes content is required' }, { status: 400 })
     }
 
-    // Verify session exists
+    // Verify session exists and check state for non-DM users
     const { data: session } = await supabase
       .from('sessions')
-      .select('id')
+      .select('id, state')
       .eq('id', sessionId)
       .eq('campaign_id', campaignId)
       .single()
 
     if (!session) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 })
+    }
+
+    // Non-DM users can only add notes when session is 'open'
+    if (!isDm && session.state !== 'open') {
+      return NextResponse.json(
+        { error: 'Session is not open for player notes' },
+        { status: 403 }
+      )
     }
 
     // Use player's linked character if not specified
@@ -229,6 +237,13 @@ export async function PATCH(
       return NextResponse.json({ error: 'noteId is required' }, { status: 400 })
     }
 
+    // Verify session state for non-DM users first
+    const { data: sessionData } = await supabase
+      .from('sessions')
+      .select('state')
+      .eq('id', sessionId)
+      .single()
+
     // Get the note
     const { data: existingNote } = await supabase
       .from('player_session_notes')
@@ -265,6 +280,14 @@ export async function PATCH(
     // Author can always edit their own notes, or need edit permission
     if (!isDm && !isAuthor && !checkPermission(permissions, isOwner, 'sessionNotes', 'edit')) {
       return NextResponse.json({ error: 'You can only edit your own notes' }, { status: 403 })
+    }
+
+    // Non-DM users can only edit notes when session is 'open'
+    if (!isDm && sessionData?.state !== 'open') {
+      return NextResponse.json(
+        { error: 'Session is not open for editing player notes' },
+        { status: 403 }
+      )
     }
 
     const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() }

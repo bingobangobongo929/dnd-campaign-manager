@@ -32,6 +32,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { RichTextEditor } from '@/components/editor'
 import { KeyNpcsModule, parseKeyNpcsValue, type KeyNpcsData } from './KeyNpcsModule'
+import { QuickRollDropdown } from './QuickRollDropdown'
 import type {
   Session,
   SessionPhase,
@@ -79,6 +80,12 @@ interface SessionWorkflowProps {
   onUpdate?: (session: Session) => void
   /** Campaign default session sections - modules matching these will auto-expand */
   defaultSections?: string[]
+  /** Modules disabled by campaign settings - these will be hidden */
+  disabledModules?: PrepModule[]
+  /** User's collapsed sections from preferences (optional - if not provided, uses local state) */
+  collapsedSections?: Record<string, boolean>
+  /** Callback to toggle a section's collapsed state (optional - if not provided, uses local state) */
+  onToggleCollapsed?: (sectionId: string) => void
 }
 
 // Module configuration - all 7 optional prep tools
@@ -185,6 +192,9 @@ export function SessionWorkflow({
   previousSession,
   onUpdate,
   defaultSections = [],
+  disabledModules = [],
+  collapsedSections: externalCollapsedSections,
+  onToggleCollapsed,
 }: SessionWorkflowProps) {
   // Parse session data
   const [prepNotes, setPrepNotes] = useState(session.prep_notes || '')
@@ -218,32 +228,51 @@ export function SessionWorkflow({
     session.music_ambiance || ''
   )
 
-  // UI state - which sections are expanded
-  // Auto-expand modules that match campaign defaults or have content
-  const [expandedModules, setExpandedModules] = useState<Set<PrepModule>>(() => {
-    const initialExpanded = new Set<PrepModule>()
+  // Map campaign default section names to prep modules
+  const sectionToModule: Record<string, PrepModule> = {
+    'prep_checklist': 'checklist',
+    'quick_reference': 'references',
+    'session_goals': 'session_goals',
+    'key_npcs': 'key_npcs',
+    'session_opener': 'session_opener',
+    'random_tables': 'random_tables',
+    'music_ambiance': 'music_ambiance',
+  }
 
-    // Map campaign default section names to prep modules
-    const sectionToModule: Record<string, PrepModule> = {
-      'prep_checklist': 'checklist',
-      'quick_reference': 'references',
-      'session_goals': 'session_goals',
-      'key_npcs': 'key_npcs',
-      'session_opener': 'session_opener',
-      'random_tables': 'random_tables',
-      'music_ambiance': 'music_ambiance',
-    }
+  // UI state - which sections are expanded (local state as fallback)
+  const [localExpandedModules, setLocalExpandedModules] = useState<Set<PrepModule>>(() => {
+    const initialExpanded = new Set<PrepModule>()
 
     // Auto-expand modules that are in campaign defaults
     defaultSections.forEach(section => {
-      const module = sectionToModule[section]
-      if (module) {
-        initialExpanded.add(module)
+      const prepModule = sectionToModule[section]
+      if (prepModule) {
+        initialExpanded.add(prepModule)
       }
     })
 
     return initialExpanded
   })
+
+  // Helper to check if a module is expanded
+  // Priority: 1. User preference (from hook), 2. Campaign defaults, 3. Local state
+  const isModuleExpanded = (moduleId: PrepModule): boolean => {
+    // If we have external collapsed sections from hook, use those
+    if (externalCollapsedSections) {
+      const prefKey = `prep_${moduleId}`
+      // If user has explicitly set a preference, use it
+      if (prefKey in externalCollapsedSections) {
+        return !externalCollapsedSections[prefKey]
+      }
+      // Otherwise, check if this module should be auto-expanded from campaign defaults
+      const isDefaultExpanded = defaultSections.some(
+        section => sectionToModule[section] === moduleId
+      )
+      return isDefaultExpanded
+    }
+    // Fall back to local state
+    return localExpandedModules.has(moduleId)
+  }
 
   // Module order state - customizable order of prep modules
   const [moduleOrder, setModuleOrder] = useState<PrepModule[]>(() => {
@@ -255,6 +284,9 @@ export function SessionWorkflow({
     }
     return ALL_MODULES
   })
+
+  // Filter out disabled modules from display
+  const visibleModuleOrder = moduleOrder.filter(m => !disabledModules.includes(m))
 
   // Reorder modal state
   const [showReorderModal, setShowReorderModal] = useState(false)
@@ -386,7 +418,13 @@ export function SessionWorkflow({
 
   // Toggle module expansion
   const toggleModule = (moduleId: PrepModule) => {
-    setExpandedModules(prev => {
+    // If we have external toggle handler, use it
+    if (onToggleCollapsed) {
+      onToggleCollapsed(`prep_${moduleId}`)
+      return
+    }
+    // Otherwise use local state
+    setLocalExpandedModules(prev => {
       const next = new Set(prev)
       if (next.has(moduleId)) {
         next.delete(moduleId)
@@ -606,6 +644,9 @@ export function SessionWorkflow({
       case 'random_tables':
         return (
           <div className="pt-3 space-y-3">
+            {/* Quick Roll Dropdown */}
+            <QuickRollDropdown campaignId={campaignId} />
+
             {/* Link to Campaign Library */}
             <Link
               href={`/campaigns/${campaignId}/random-tables`}
@@ -613,8 +654,8 @@ export function SessionWorkflow({
             >
               <Dice5 className="w-5 h-5 text-pink-400" />
               <div className="flex-1 min-w-0">
-                <span className="text-sm font-medium text-white block">Campaign Random Tables</span>
-                <span className="text-xs text-gray-500">Roll from your campaign&apos;s table library</span>
+                <span className="text-sm font-medium text-white block">View All Tables</span>
+                <span className="text-xs text-gray-500">Create, edit, and manage your table library</span>
               </div>
               <ExternalLink className="w-4 h-4 text-gray-500 group-hover:text-pink-400 transition-colors" />
             </Link>
@@ -712,12 +753,12 @@ export function SessionWorkflow({
           </p>
         </div>
 
-        {/* All Modules - Always visible, collapsible (in custom order) */}
+        {/* All Modules - Always visible, collapsible (in custom order, filtered by disabled) */}
         <div className="space-y-3">
-          {moduleOrder.map((moduleId) => {
+          {visibleModuleOrder.map((moduleId) => {
             const config = MODULE_CONFIG[moduleId]
             const Icon = config.icon
-            const isExpanded = expandedModules.has(moduleId)
+            const isExpanded = isModuleExpanded(moduleId)
             const hasContent = moduleHasContent(moduleId)
 
             return (

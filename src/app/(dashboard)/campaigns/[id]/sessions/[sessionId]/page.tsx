@@ -1083,6 +1083,9 @@ export default function SessionDetailPage() {
                   previousSession={previousSessionData}
                   onUpdate={(updatedSession) => setSession(updatedSession)}
                   defaultSections={(campaign.default_session_sections as string[]) || []}
+                  disabledModules={sessionSettings?.disabled_prep_modules}
+                  collapsedSections={layoutPrefs.collapsedSections}
+                  onToggleCollapsed={layoutPrefs.toggleSectionCollapsed}
                 />
               </div>
             )}

@@ -26,7 +26,7 @@ import {
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout'
 import { Modal, EmptyState, Badge, AccessDeniedPage } from '@/components/ui'
-import { RollTableReveal } from '@/components/roll-reveal/RollTableReveal'
+import { RollReveal } from '@/components/roll-reveal/RollReveal'
 import { useSupabase, useUser, usePermissions } from '@/hooks'
 import { cn } from '@/lib/utils'
 import type {
@@ -105,7 +105,7 @@ export default function RandomTablesPage() {
 
   // Roll state
   const [rollingTable, setRollingTable] = useState<RandomTable | null>(null)
-  const [rollResult, setRollResult] = useState<{ value: number; entry: RandomTableEntry } | null>(null)
+  const [showRollReveal, setShowRollReveal] = useState(false)
 
   // Form state
   const [formName, setFormName] = useState('')
@@ -305,24 +305,23 @@ export default function RandomTablesPage() {
 
   // Roll on table
   const rollOnTable = (table: RandomTable) => {
-    const dieSize = table.roll_type === 'custom'
-      ? table.custom_die_size || 20
-      : parseInt(table.roll_type.slice(1))
-
-    const rollValue = Math.floor(Math.random() * dieSize) + 1
-
-    // Find entry for roll (simple index-based for now)
-    const entryIndex = (rollValue - 1) % table.entries.length
-    const entry = table.entries[entryIndex]
-
     setRollingTable(table)
-    setRollResult({ value: rollValue, entry })
+    setShowRollReveal(true)
   }
 
   // Close roll result
   const closeRollResult = () => {
+    setShowRollReveal(false)
     setRollingTable(null)
-    setRollResult(null)
+  }
+
+  // Handle accepting roll result (copy to clipboard)
+  const handleAcceptRoll = (entry: RandomTableEntry) => {
+    if (rollingTable) {
+      navigator.clipboard.writeText(`${rollingTable.name}: ${entry.text}`)
+      toast.success('Result copied to clipboard')
+    }
+    closeRollResult()
   }
 
   // Toggle template selection
@@ -729,14 +728,23 @@ export default function RandomTablesPage() {
         </div>
       </Modal>
 
-      {/* Roll Result Modal */}
-      {rollingTable && rollResult && (
-        <RollTableReveal
-          tableName={rollingTable.name}
-          rollValue={rollResult.value}
-          resultText={rollResult.entry.text}
-          dieType={rollingTable.roll_type === 'custom' ? `d${rollingTable.custom_die_size}` : rollingTable.roll_type}
+      {/* Roll Result Modal - using fancy RollReveal animation */}
+      {rollingTable && (
+        <RollReveal
+          items={rollingTable.entries}
+          isOpen={showRollReveal}
           onClose={closeRollResult}
+          onAccept={handleAcceptRoll}
+          duration="fast"
+          title={`Rolling ${rollingTable.name}...`}
+          renderResult={(entry) => (
+            <div className="text-center">
+              <p className="text-sm text-gray-400 mb-2">
+                {rollingTable.roll_type === 'custom' ? `d${rollingTable.custom_die_size}` : rollingTable.roll_type}
+              </p>
+              <p className="text-xl text-white leading-relaxed">{entry.text}</p>
+            </div>
+          )}
         />
       )}
 
