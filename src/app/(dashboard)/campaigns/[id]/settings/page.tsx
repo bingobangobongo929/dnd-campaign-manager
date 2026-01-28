@@ -30,6 +30,16 @@ import {
   Edit3,
   RotateCcw,
   MessageSquare,
+  Layout,
+  CheckSquare,
+  BookOpen,
+  Target,
+  UserCheck,
+  Play,
+  Dices,
+  Music,
+  ScrollText,
+  Lightbulb,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser, usePermissions } from '@/hooks'
@@ -39,14 +49,17 @@ import type {
   CampaignShare,
   SessionSection,
   DefaultPrepChecklistItem,
-  SessionSettings
+  SessionSettings,
+  PrepModule,
+  CompletedSection,
 } from '@/types/database'
+import { CUSTOMIZABLE_PREP_MODULES, CUSTOMIZABLE_COMPLETED_SECTIONS } from '@/hooks'
 import { PartyModal } from '@/components/campaign'
 import { Modal, AccessDeniedPage } from '@/components/ui'
 import { v4 as uuidv4 } from 'uuid'
 
 // Section collapse state type
-type SectionId = 'general' | 'party' | 'session-defaults' | 'session-notes' | 'sharing' | 'integrations' | 'data' | 'danger'
+type SectionId = 'general' | 'party' | 'session-defaults' | 'session-notes' | 'optional-sections' | 'sharing' | 'integrations' | 'data' | 'danger'
 
 // Settings Section wrapper
 function SettingsSection({
@@ -282,7 +295,10 @@ export default function CampaignSettingsPage() {
   // Session notes settings
   const [sessionSettings, setSessionSettings] = useState<SessionSettings>({
     players_can_view_session_notes: false,
-    players_can_add_session_notes: true
+    players_can_add_session_notes: true,
+    disabled_prep_modules: [],
+    disabled_completed_sections: [],
+    all_optional_sections_hidden: false,
   })
 
   // Party modal
@@ -340,9 +356,18 @@ export default function CampaignSettingsPage() {
     // Load session notes settings
     const settings = (campaignData.session_settings as SessionSettings) || {
       players_can_view_session_notes: false,
-      players_can_add_session_notes: true
+      players_can_add_session_notes: true,
+      disabled_prep_modules: [],
+      disabled_completed_sections: [],
+      all_optional_sections_hidden: false,
     }
-    setSessionSettings(settings)
+    setSessionSettings({
+      players_can_view_session_notes: settings.players_can_view_session_notes ?? false,
+      players_can_add_session_notes: settings.players_can_add_session_notes ?? true,
+      disabled_prep_modules: settings.disabled_prep_modules ?? [],
+      disabled_completed_sections: settings.disabled_completed_sections ?? [],
+      all_optional_sections_hidden: settings.all_optional_sections_hidden ?? false,
+    })
 
     // Load sessions count
     const { count } = await supabase
@@ -679,34 +704,50 @@ export default function CampaignSettingsPage() {
             description="Default settings for new sessions"
           >
             <div className="pt-6 space-y-6">
-              {/* Default Sections */}
+              {/* Prep Phase Modules */}
               <FormField
-                label="Default Sections"
-                description="Sections automatically enabled when creating new sessions"
+                label="Prep Phase Modules"
+                description="Modules that auto-expand when creating new sessions. All modules are always available but these will be open by default."
               >
                 <div className="space-y-2 mt-2">
                   {[
-                    { id: 'prep_checklist' as SessionSection, label: 'Prep Checklist', description: 'A checklist to prepare before the session' },
-                    { id: 'thoughts_for_next' as SessionSection, label: 'Thoughts for Next Session', description: 'Notes and ideas for the next session' },
-                    { id: 'quick_reference' as SessionSection, label: 'Quick Reference', description: 'Pin NPCs, locations, and lore for quick access' },
-                    { id: 'session_timer' as SessionSection, label: 'Session Timer', description: 'Track session duration and breaks' },
-                  ].map(section => (
-                    <label
-                      key={section.id}
-                      className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.08] cursor-pointer hover:bg-white/[0.04] transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={defaultSections.includes(section.id)}
-                        onChange={() => toggleSectionDefault(section.id)}
-                        className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-purple-600 focus:ring-purple-500"
-                      />
-                      <div className="flex-1">
-                        <span className="text-white text-sm font-medium">{section.label}</span>
-                        <p className="text-gray-500 text-xs">{section.description}</p>
-                      </div>
-                    </label>
-                  ))}
+                    { id: 'prep_checklist' as SessionSection, icon: CheckSquare, label: 'Checklist', description: 'A checklist to prepare before the session', color: 'yellow' },
+                    { id: 'quick_reference' as SessionSection, icon: BookOpen, label: 'Quick References', description: 'Pin NPCs, locations, and notes to keep handy', color: 'cyan' },
+                    { id: 'session_goals' as SessionSection, icon: Target, label: 'Session Goals', description: 'What you hope to accomplish this session', color: 'purple' },
+                    { id: 'key_npcs' as SessionSection, icon: UserCheck, label: 'Key NPCs', description: 'NPCs likely to appear and their motivations', color: 'green' },
+                    { id: 'session_opener' as SessionSection, icon: Play, label: 'Session Opener', description: "How you'll start the session", color: 'orange' },
+                    { id: 'random_tables' as SessionSection, icon: Dices, label: 'Random Tables', description: 'Names, encounters, or things to roll for', color: 'pink' },
+                    { id: 'music_ambiance' as SessionSection, icon: Music, label: 'Music & Ambiance', description: 'Playlists, sound effects, atmosphere notes', color: 'teal' },
+                  ].map(section => {
+                    const IconComponent = section.icon
+                    return (
+                      <label
+                        key={section.id}
+                        className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/[0.08] cursor-pointer hover:bg-white/[0.04] transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={defaultSections.includes(section.id)}
+                          onChange={() => toggleSectionDefault(section.id)}
+                          className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-purple-600 focus:ring-purple-500"
+                        />
+                        <IconComponent className={cn(
+                          "w-4 h-4",
+                          section.color === 'yellow' && 'text-yellow-400',
+                          section.color === 'cyan' && 'text-cyan-400',
+                          section.color === 'purple' && 'text-purple-400',
+                          section.color === 'green' && 'text-green-400',
+                          section.color === 'orange' && 'text-orange-400',
+                          section.color === 'pink' && 'text-pink-400',
+                          section.color === 'teal' && 'text-teal-400',
+                        )} />
+                        <div className="flex-1">
+                          <span className="text-white text-sm font-medium">{section.label}</span>
+                          <p className="text-gray-500 text-xs">{section.description}</p>
+                        </div>
+                      </label>
+                    )
+                  })}
                 </div>
               </FormField>
 
@@ -747,6 +788,176 @@ export default function CampaignSettingsPage() {
                     <Save className="w-4 h-4 mr-2" />
                   )}
                   Save Session Defaults
+                </button>
+              </div>
+            </div>
+          </SettingsSection>
+
+          {/* Optional Sections */}
+          <SettingsSection
+            id="optional-sections"
+            title="Optional Sections"
+            icon={Layout}
+            description="Enable or disable optional sections for this campaign"
+          >
+            <div className="pt-6 space-y-6">
+              {/* Master Toggle */}
+              <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={sessionSettings.all_optional_sections_hidden ?? false}
+                    onChange={(e) => setSessionSettings({
+                      ...sessionSettings,
+                      all_optional_sections_hidden: e.target.checked
+                    })}
+                    className="w-4 h-4 mt-0.5 rounded border-gray-600 bg-gray-800 text-purple-600 focus:ring-purple-500"
+                  />
+                  <div>
+                    <span className="text-white font-medium block">Minimal Mode</span>
+                    <p className="text-purple-300/70 text-xs mt-1">
+                      Hide all optional prep modules and completed sections. Only the core session notes
+                      will be shown. Great for DMs who prefer a simpler workflow.
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              {!sessionSettings.all_optional_sections_hidden && (
+                <>
+                  {/* Prep Modules to Disable */}
+                  <FormField
+                    label="Prep Modules"
+                    description="Disable prep modules you don't need. Disabled modules won't appear for any session in this campaign."
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                      {[
+                        { id: 'checklist' as PrepModule, icon: CheckSquare, label: 'Checklist', color: 'yellow' },
+                        { id: 'references' as PrepModule, icon: BookOpen, label: 'Quick References', color: 'cyan' },
+                        { id: 'session_goals' as PrepModule, icon: Target, label: 'Session Goals', color: 'purple' },
+                        { id: 'key_npcs' as PrepModule, icon: UserCheck, label: 'Key NPCs', color: 'green' },
+                        { id: 'session_opener' as PrepModule, icon: Play, label: 'Session Opener', color: 'orange' },
+                        { id: 'random_tables' as PrepModule, icon: Dices, label: 'Random Tables', color: 'pink' },
+                        { id: 'music_ambiance' as PrepModule, icon: Music, label: 'Music & Ambiance', color: 'teal' },
+                      ].map(module => {
+                        const IconComponent = module.icon
+                        const isDisabled = sessionSettings.disabled_prep_modules?.includes(module.id)
+                        return (
+                          <label
+                            key={module.id}
+                            className={cn(
+                              "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                              isDisabled
+                                ? "bg-gray-800/50 border-gray-700 opacity-60"
+                                : "bg-white/[0.02] border-white/[0.08] hover:bg-white/[0.04]"
+                            )}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={!isDisabled}
+                              onChange={() => {
+                                const current = sessionSettings.disabled_prep_modules ?? []
+                                const updated = isDisabled
+                                  ? current.filter(m => m !== module.id)
+                                  : [...current, module.id]
+                                setSessionSettings({
+                                  ...sessionSettings,
+                                  disabled_prep_modules: updated
+                                })
+                              }}
+                              className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-purple-600 focus:ring-purple-500"
+                            />
+                            <IconComponent className={cn(
+                              "w-4 h-4",
+                              module.color === 'yellow' && 'text-yellow-400',
+                              module.color === 'cyan' && 'text-cyan-400',
+                              module.color === 'purple' && 'text-purple-400',
+                              module.color === 'green' && 'text-green-400',
+                              module.color === 'orange' && 'text-orange-400',
+                              module.color === 'pink' && 'text-pink-400',
+                              module.color === 'teal' && 'text-teal-400',
+                            )} />
+                            <span className={cn(
+                              "text-sm font-medium",
+                              isDisabled ? "text-gray-500" : "text-white"
+                            )}>{module.label}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </FormField>
+
+                  {/* Completed Phase Sections to Disable */}
+                  <FormField
+                    label="Completed Phase Sections"
+                    description="Disable completed phase sections you don't use. Disabled sections won't appear after sessions are completed."
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                      {[
+                        { id: 'dm_notes' as CompletedSection, icon: EyeOff, label: 'DM Notes', color: 'red' },
+                        { id: 'session_content' as CompletedSection, icon: ScrollText, label: 'Session Content', color: 'blue' },
+                        { id: 'player_notes' as CompletedSection, icon: MessageSquare, label: 'Player Notes', color: 'green' },
+                        { id: 'thoughts_for_next' as CompletedSection, icon: Lightbulb, label: 'Thoughts for Next', color: 'gold' },
+                      ].map(section => {
+                        const IconComponent = section.icon
+                        const isDisabled = sessionSettings.disabled_completed_sections?.includes(section.id)
+                        return (
+                          <label
+                            key={section.id}
+                            className={cn(
+                              "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                              isDisabled
+                                ? "bg-gray-800/50 border-gray-700 opacity-60"
+                                : "bg-white/[0.02] border-white/[0.08] hover:bg-white/[0.04]"
+                            )}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={!isDisabled}
+                              onChange={() => {
+                                const current = sessionSettings.disabled_completed_sections ?? []
+                                const updated = isDisabled
+                                  ? current.filter(s => s !== section.id)
+                                  : [...current, section.id]
+                                setSessionSettings({
+                                  ...sessionSettings,
+                                  disabled_completed_sections: updated
+                                })
+                              }}
+                              className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-purple-600 focus:ring-purple-500"
+                            />
+                            <IconComponent className={cn(
+                              "w-4 h-4",
+                              section.color === 'red' && 'text-red-400',
+                              section.color === 'blue' && 'text-blue-400',
+                              section.color === 'green' && 'text-green-400',
+                              section.color === 'gold' && 'text-yellow-400',
+                            )} />
+                            <span className={cn(
+                              "text-sm font-medium",
+                              isDisabled ? "text-gray-500" : "text-white"
+                            )}>{section.label}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </FormField>
+                </>
+              )}
+
+              {/* Save Button */}
+              <div className="flex justify-end pt-4 border-t border-white/[0.08]">
+                <button
+                  onClick={saveSessionNotesSettings}
+                  disabled={saving}
+                  className="btn btn-primary"
+                >
+                  {saving ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Save className="w-4 h-4 mr-2" />
+                  )}
+                  Save Section Settings
                 </button>
               </div>
             </div>

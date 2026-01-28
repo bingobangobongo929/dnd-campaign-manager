@@ -27,19 +27,20 @@ import {
   Eye,
   EyeOff,
   MessageSquare,
+  Layout,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input, Button, sanitizeHtml } from '@/components/ui'
 import { RichTextEditor } from '@/components/editor'
 import { AppLayout } from '@/components/layout/app-layout'
-import { useSupabase, useUser, useIsMobile, usePermissions, useUserSettings } from '@/hooks'
+import { useSupabase, useUser, useIsMobile, usePermissions, useUserSettings, useSessionLayoutPreferences } from '@/hooks'
 import { SessionDetailMobile } from './page.mobile'
 import { useVersionedAutoSave } from '@/hooks/useAutoSave'
 import { logActivity, diffChanges } from '@/lib/activity-log'
 import { useAppStore } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
-import type { Session, Campaign, Character, SessionPhase, SessionState } from '@/types/database'
+import type { Session, Campaign, Character, SessionPhase, SessionState, SessionSettings, PrepModule, CompletedSection } from '@/types/database'
 import {
   SessionWorkflow,
   PlayerNotes,
@@ -48,6 +49,7 @@ import {
   MODULE_CONFIG,
   ALL_MODULES,
   checkModuleHasContent,
+  CustomizeLayoutModal,
 } from '@/components/sessions'
 import { DmNotesSection } from '@/components/dm-notes'
 import { showIntelligencePrompt } from '@/lib/intelligence-prompt'
@@ -157,6 +159,33 @@ export default function SessionDetailPage() {
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
   }
+
+  // Customize layout modal state
+  const [showCustomizeModal, setShowCustomizeModal] = useState(false)
+
+  // Session layout preferences hook - use campaign session settings
+  const rawSessionSettings = campaign?.session_settings as {
+    players_can_view_session_notes?: boolean
+    players_can_add_session_notes?: boolean
+    disabled_prep_modules?: string[]
+    disabled_completed_sections?: string[]
+    all_optional_sections_hidden?: boolean
+  } | null
+
+  // Normalize settings with defaults for required fields
+  const sessionSettings: SessionSettings | null = rawSessionSettings ? {
+    players_can_view_session_notes: rawSessionSettings.players_can_view_session_notes ?? true,
+    players_can_add_session_notes: rawSessionSettings.players_can_add_session_notes ?? true,
+    disabled_prep_modules: rawSessionSettings.disabled_prep_modules as PrepModule[] | undefined,
+    disabled_completed_sections: rawSessionSettings.disabled_completed_sections as CompletedSection[] | undefined,
+    all_optional_sections_hidden: rawSessionSettings.all_optional_sections_hidden,
+  } : null
+
+  const layoutPrefs = useSessionLayoutPreferences(
+    campaignId,
+    user?.id,
+    sessionSettings
+  )
 
   // Phase management - for new sessions use URL param, for existing use session data (only prep/completed now)
   const [currentPhase, setCurrentPhase] = useState<SessionPhase>(initialPhase || 'prep')
@@ -1635,13 +1664,21 @@ export default function SessionDetailPage() {
             })()}
 
             {/* === OPTIONAL SECTIONS DIVIDER === */}
-            {!isNew && session && isDm && (
+            {!isNew && session && isDm && !sessionSettings?.all_optional_sections_hidden && (
               <div className="mb-6">
                 <div className="flex items-center gap-4 mb-2">
                   <div className="flex-1 h-px bg-[--border]" />
                   <span className="text-xs font-medium text-[--text-tertiary] uppercase tracking-wider">
                     Optional Sections
                   </span>
+                  <button
+                    onClick={() => setShowCustomizeModal(true)}
+                    className="flex items-center gap-1.5 text-xs text-[--text-tertiary] hover:text-[--arcane-purple] transition-colors"
+                    title="Customize layout"
+                  >
+                    <Layout className="w-3.5 h-3.5" />
+                    Customize
+                  </button>
                   <div className="flex-1 h-px bg-[--border]" />
                 </div>
                 <p className="text-sm text-[--text-tertiary] text-center">
@@ -1651,7 +1688,9 @@ export default function SessionDetailPage() {
             )}
 
             {/* Optional: DM Notes Section (Collapsible) */}
-            {!isNew && campaign?.user_id === user?.id && (
+            {!isNew && campaign?.user_id === user?.id &&
+             !layoutPrefs.isSectionHidden('dm_notes') &&
+             !layoutPrefs.isSectionDisabledByCampaign('dm_notes') && (
               <div className="card overflow-hidden mb-4 transition-all">
                 <button
                   onClick={() => toggleSection('dmNotes')}
@@ -1693,7 +1732,9 @@ export default function SessionDetailPage() {
             )}
 
             {/* Optional: Session Content - Quests & Encounters (Collapsible) */}
-            {!isNew && session && isDm && (
+            {!isNew && session && isDm &&
+             !layoutPrefs.isSectionHidden('session_content') &&
+             !layoutPrefs.isSectionDisabledByCampaign('session_content') && (
               <div className="card overflow-hidden mb-4 transition-all">
                 <button
                   onClick={() => toggleSection('sessionContent')}
@@ -1727,7 +1768,9 @@ export default function SessionDetailPage() {
             )}
 
             {/* Optional: Player Notes Section (Collapsible) */}
-            {!isNew && session && (
+            {!isNew && session &&
+             !layoutPrefs.isSectionHidden('player_notes') &&
+             !layoutPrefs.isSectionDisabledByCampaign('player_notes') && (
               <div className="card overflow-hidden mb-8 transition-all">
                 <button
                   onClick={() => toggleSection('playerNotes')}
@@ -1763,7 +1806,9 @@ export default function SessionDetailPage() {
             )}
 
             {/* Thoughts for Next Session - at the bottom per plan */}
-            {!isNew && session && campaign?.user_id === user?.id && (
+            {!isNew && session && campaign?.user_id === user?.id &&
+             !layoutPrefs.isSectionHidden('thoughts_for_next') &&
+             !layoutPrefs.isSectionDisabledByCampaign('thoughts_for_next') && (
               <div className="card p-6 mb-8">
                 <div className="flex items-center gap-3 mb-4">
                   <Lightbulb className="w-5 h-5 text-[--arcane-gold]" />
@@ -1801,6 +1846,17 @@ export default function SessionDetailPage() {
           </>
         )}
       </div>
+
+      {/* Customize Layout Modal */}
+      <CustomizeLayoutModal
+        isOpen={showCustomizeModal}
+        onClose={() => setShowCustomizeModal(false)}
+        sectionOrder={layoutPrefs.completedSectionOrder}
+        hiddenSections={layoutPrefs.hiddenSections}
+        onUpdateOrder={layoutPrefs.setCompletedSectionOrder}
+        onToggleHidden={layoutPrefs.toggleSectionHidden}
+        onReset={layoutPrefs.resetToDefaults}
+      />
     </AppLayout>
   )
 }

@@ -4318,8 +4318,8 @@ html.ios-app .main-content {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   MAINTENANCE PAGE - "THE DRAGON SLEEPS"
-   A mystical, atmospheric maintenance page
+   MAINTENANCE PAGE - "THE ANCIENT WARDS"
+   A mystical, atmospheric maintenance page with floating runes
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .maintenance-page {
@@ -4377,6 +4377,43 @@ html.ios-app .main-content {
   50% { transform: translateX(20px) translateY(-10px); opacity: 1; }
 }
 
+/* Floating particles */
+.maintenance-particles {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  bottom: -10px;
+  width: 4px;
+  height: 4px;
+  background: var(--arcane-purple);
+  border-radius: 50%;
+  opacity: 0;
+  animation: particle-rise 5s ease-out infinite;
+  box-shadow: 0 0 6px var(--arcane-purple), 0 0 12px var(--arcane-purple);
+}
+
+@keyframes particle-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.5);
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-100vh) scale(1);
+  }
+}
+
 /* Main content container */
 .maintenance-content {
   position: relative;
@@ -4389,77 +4426,80 @@ html.ios-app .main-content {
   width: 100%;
 }
 
-/* Dragon container */
-.dragon-container {
+/* Floating Runes */
+.runes-container {
   position: relative;
-  width: 100%;
-  max-width: 400px;
+  width: 280px;
+  height: 160px;
   margin-bottom: 2rem;
 }
 
-.dragon-silhouette {
-  width: 100%;
-  height: auto;
-  color: #1a1a2e;
-  filter: drop-shadow(0 0 30px rgba(139,92,246,0.3));
-}
-
-.dragon-body,
-.dragon-head,
-.dragon-wing,
-.dragon-tail {
-  transition: transform 4s ease-in-out;
-}
-
-/* Breathing animation */
-.dragon-silhouette {
-  animation: dragon-breathe 4s ease-in-out infinite;
-}
-
-@keyframes dragon-breathe {
-  0%, 100% { transform: scaleY(1) translateY(0); }
-  50% { transform: scaleY(1.02) translateY(-2px); }
-}
-
-/* Smoke particles animation */
-.smoke {
-  animation: smoke-rise 3s ease-out infinite;
-}
-
-.smoke-1 { animation-delay: 0s; }
-.smoke-2 { animation-delay: 1s; }
-.smoke-3 { animation-delay: 2s; }
-
-@keyframes smoke-rise {
-  0% {
-    opacity: 0.3;
-    transform: translateY(0) translateX(0) scale(1);
-  }
-  50% {
-    opacity: 0.5;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-20px) translateX(-10px) scale(1.5);
-  }
-}
-
-/* Glow effect under dragon */
-.dragon-glow {
+.rune {
   position: absolute;
-  bottom: 10%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  height: 40px;
-  background: radial-gradient(ellipse, rgba(139,92,246,0.4) 0%, transparent 70%);
-  filter: blur(20px);
-  animation: glow-pulse 4s ease-in-out infinite;
+  color: var(--arcane-purple);
+  filter: drop-shadow(0 0 10px rgba(139,92,246,0.5));
+  opacity: 0.8;
 }
 
-@keyframes glow-pulse {
-  0%, 100% { opacity: 0.5; transform: translateX(-50%) scaleX(1); }
-  50% { opacity: 0.8; transform: translateX(-50%) scaleX(1.1); }
+.rune-1 {
+  width: 60px;
+  height: 60px;
+  top: 20%;
+  left: 5%;
+  animation: rune-float-1 6s ease-in-out infinite, rune-pulse 3s ease-in-out infinite;
+}
+
+.rune-2 {
+  width: 50px;
+  height: 50px;
+  top: 10%;
+  right: 10%;
+  animation: rune-float-2 7s ease-in-out infinite, rune-pulse 3.5s ease-in-out infinite 0.5s;
+  color: var(--arcane-gold);
+  filter: drop-shadow(0 0 10px rgba(212,168,67,0.5));
+}
+
+.rune-3 {
+  width: 55px;
+  height: 55px;
+  bottom: 10%;
+  left: 15%;
+  animation: rune-float-3 5.5s ease-in-out infinite, rune-pulse 4s ease-in-out infinite 1s;
+}
+
+.rune-4 {
+  width: 65px;
+  height: 65px;
+  bottom: 5%;
+  right: 5%;
+  animation: rune-float-4 6.5s ease-in-out infinite, rune-pulse 3s ease-in-out infinite 1.5s;
+  color: var(--arcane-gold);
+  filter: drop-shadow(0 0 10px rgba(212,168,67,0.5));
+}
+
+@keyframes rune-float-1 {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(5deg); }
+}
+
+@keyframes rune-float-2 {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(-8deg); }
+}
+
+@keyframes rune-float-3 {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(6deg); }
+}
+
+@keyframes rune-float-4 {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-18px) rotate(-5deg); }
+}
+
+@keyframes rune-pulse {
+  0%, 100% { opacity: 0.6; filter: drop-shadow(0 0 10px currentColor); }
+  50% { opacity: 1; filter: drop-shadow(0 0 20px currentColor) drop-shadow(0 0 30px currentColor); }
 }
 
 /* Typography */
@@ -4603,63 +4643,6 @@ html.ios-app .main-content {
   transform: rotate(180deg);
 }
 
-/* Social links */
-.maintenance-social {
-  margin-top: 3rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-.social-label {
-  font-size: 0.8rem;
-  color: var(--text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
-.social-links {
-  display: flex;
-  gap: 1rem;
-}
-
-.social-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-  color: var(--text-secondary);
-  transition: all 0.2s ease;
-}
-
-.social-link:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255,255,255,0.1);
-}
-
-.social-link.discord:hover {
-  background: rgba(88,101,242,0.15);
-  color: #5865F2;
-  border-color: rgba(88,101,242,0.3);
-}
-
-.social-link.twitter:hover {
-  background: rgba(29,161,242,0.15);
-  color: #1DA1F2;
-  border-color: rgba(29,161,242,0.3);
-}
-
-.social-link.email:hover {
-  background: rgba(139,92,246,0.15);
-  color: var(--arcane-purple);
-  border-color: rgba(139,92,246,0.3);
-}
-
 /* Logo at bottom */
 .maintenance-logo {
   position: absolute;
@@ -4697,9 +4680,19 @@ html.ios-app .main-content {
     padding-bottom: 5rem;
   }
 
-  .dragon-container {
-    max-width: 300px;
+  .runes-container {
+    width: 220px;
+    height: 120px;
     margin-bottom: 1.5rem;
+  }
+
+  .rune {
+    width: 50px;
+    height: 50px;
+  }
+
+  .maintenance-title {
+    font-size: 1.75rem;
   }
 
   .maintenance-subtitle {
@@ -4708,10 +4701,6 @@ html.ios-app .main-content {
 
   .scroll-content {
     padding: 1rem;
-  }
-
-  .maintenance-social {
-    margin-top: 2rem;
   }
 
   .maintenance-logo {
