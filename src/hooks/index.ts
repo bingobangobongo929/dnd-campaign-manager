@@ -32,3 +32,4 @@ export type {
 export { useContentPermissions } from './useContentPermissions'
 export { useIntelligenceBadge } from './useIntelligenceBadge'
 export { useAppSettings } from './useAppSettings'
+export { useFavoriteRandomTables } from './useFavoriteRandomTables'

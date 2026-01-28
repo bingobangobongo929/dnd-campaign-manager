@@ -13,7 +13,7 @@ import {
   Edit3,
   Archive,
   ArchiveRestore,
-  Play,
+  Shuffle,
   Loader2,
   Users,
   Swords,
@@ -36,11 +36,13 @@ import {
   Scroll,
   AlertTriangle,
   Navigation,
+  Star,
+  Play,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout'
-import { Modal, EmptyState, Badge, AccessDeniedPage } from '@/components/ui'
+import { Modal, EmptyState, Badge, AccessDeniedPage, Tooltip } from '@/components/ui'
 import { RollReveal } from '@/components/roll-reveal/RollReveal'
-import { useSupabase, useUser, usePermissions } from '@/hooks'
+import { useSupabase, useUser, usePermissions, useFavoriteRandomTables } from '@/hooks'
 import { cn } from '@/lib/utils'
 import type {
   RandomTable,
@@ -146,6 +148,14 @@ export default function RandomTablesPage() {
   const { user } = useUser()
   const campaignId = params.id as string
   const { can, loading: permissionsLoading, isDm } = usePermissions(campaignId)
+
+  // Favorites hook
+  const {
+    isTableFavorite,
+    isTemplateFavorite,
+    toggleTableFavorite,
+    toggleTemplateFavorite,
+  } = useFavoriteRandomTables(campaignId, user?.id)
 
   const [loading, setLoading] = useState(true)
   const [tables, setTables] = useState<RandomTable[]>([])
@@ -662,6 +672,7 @@ export default function RandomTablesPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                       {category.templates.map(template => {
                         const TemplateIcon = getTemplateIcon(template.id)
+                        const isFav = isTemplateFavorite(template.id)
                         return (
                           <div
                             key={template.id}
@@ -673,30 +684,48 @@ export default function RandomTablesPage() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className="text-white font-medium">{template.name}</span>
+                                {isFav && <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />}
                               </div>
                               <p className="text-xs text-gray-500 mt-0.5">{template.entries.length} entries</p>
                             </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <button
-                                onClick={() => rollOnTemplate(template)}
-                                className="flex items-center gap-2 px-4 py-2 bg-orange-500/15 hover:bg-orange-500/25 rounded-lg text-orange-400 text-sm font-medium transition-colors"
-                              >
-                                <Play className="w-3.5 h-3.5" />
-                                Roll
-                              </button>
-                              {isDm && (
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {/* Favorite button */}
+                              <Tooltip content={isFav ? "Remove from favorites" : "Add to favorites"}>
                                 <button
-                                  onClick={() => importTemplate(template)}
-                                  disabled={importingTemplates.has(template.id)}
-                                  className="p-2 text-gray-500 hover:text-white hover:bg-white/[0.06] rounded-lg transition-colors disabled:opacity-50"
-                                  title="Add to My Tables"
-                                >
-                                  {importingTemplates.has(template.id) ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <Download className="w-4 h-4" />
+                                  onClick={() => toggleTemplateFavorite(template.id)}
+                                  className={cn(
+                                    "p-2 rounded-lg transition-colors",
+                                    isFav
+                                      ? "text-yellow-400 hover:bg-yellow-500/20"
+                                      : "text-gray-500 hover:text-yellow-400 hover:bg-white/[0.06]"
                                   )}
+                                >
+                                  <Star className={cn("w-4 h-4", isFav && "fill-yellow-400")} />
                                 </button>
+                              </Tooltip>
+                              {/* Roll button */}
+                              <Tooltip content="Roll this table">
+                                <button
+                                  onClick={() => rollOnTemplate(template)}
+                                  className="p-2 bg-orange-500/15 hover:bg-orange-500/25 rounded-lg text-orange-400 transition-colors"
+                                >
+                                  <Shuffle className="w-4 h-4" />
+                                </button>
+                              </Tooltip>
+                              {isDm && (
+                                <Tooltip content="Add to My Tables">
+                                  <button
+                                    onClick={() => importTemplate(template)}
+                                    disabled={importingTemplates.has(template.id)}
+                                    className="p-2 text-gray-500 hover:text-white hover:bg-white/[0.06] rounded-lg transition-colors disabled:opacity-50"
+                                  >
+                                    {importingTemplates.has(template.id) ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <Download className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                </Tooltip>
                               )}
                             </div>
                           </div>
@@ -783,6 +812,7 @@ export default function RandomTablesPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                   {userTables.map(table => {
                     const categoryConfig = CATEGORY_CONFIG[table.category]
+                    const isFav = isTableFavorite(table.id)
                     return (
                       <div
                         key={table.id}
@@ -797,6 +827,7 @@ export default function RandomTablesPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-white font-medium truncate">{table.name}</span>
+                            {isFav && <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />}
                             <Badge className={cn(categoryConfig.color, categoryConfig.bgColor, "text-xs flex-shrink-0")}>
                               {categoryConfig.label}
                             </Badge>
@@ -804,40 +835,59 @@ export default function RandomTablesPage() {
                           <p className="text-xs text-gray-500 mt-0.5">{table.entries.length} entries</p>
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
-                          <button
-                            onClick={() => rollOnTable(table)}
-                            className="flex items-center gap-2 px-4 py-2 bg-orange-500/15 hover:bg-orange-500/25 rounded-lg text-orange-400 text-sm font-medium transition-colors"
-                          >
-                            <Play className="w-3.5 h-3.5" />
-                            Roll
-                          </button>
+                          {/* Favorite button */}
+                          <Tooltip content={isFav ? "Remove from favorites" : "Add to favorites"}>
+                            <button
+                              onClick={() => toggleTableFavorite(table.id)}
+                              className={cn(
+                                "p-2 rounded-lg transition-colors",
+                                isFav
+                                  ? "text-yellow-400 hover:bg-yellow-500/20"
+                                  : "text-gray-500 hover:text-yellow-400 hover:bg-white/[0.06]"
+                              )}
+                            >
+                              <Star className={cn("w-4 h-4", isFav && "fill-yellow-400")} />
+                            </button>
+                          </Tooltip>
+                          {/* Roll button */}
+                          <Tooltip content="Roll this table">
+                            <button
+                              onClick={() => rollOnTable(table)}
+                              className="p-2 bg-orange-500/15 hover:bg-orange-500/25 rounded-lg text-orange-400 transition-colors"
+                            >
+                              <Shuffle className="w-4 h-4" />
+                            </button>
+                          </Tooltip>
                           {isDm && (
                             <>
-                              <button
-                                onClick={() => openEditModal(table)}
-                                className="p-2 text-gray-500 hover:text-white hover:bg-white/[0.06] rounded-lg transition-colors"
-                                title="Edit"
-                              >
-                                <Edit3 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => toggleArchive(table)}
-                                className="p-2 text-gray-500 hover:text-white hover:bg-white/[0.06] rounded-lg transition-colors"
-                                title={table.is_archived ? 'Restore' : 'Archive'}
-                              >
-                                {table.is_archived ? (
-                                  <ArchiveRestore className="w-4 h-4" />
-                                ) : (
-                                  <Archive className="w-4 h-4" />
-                                )}
-                              </button>
-                              <button
-                                onClick={() => deleteTable(table)}
-                                className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                                title="Delete"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              <Tooltip content="Edit">
+                                <button
+                                  onClick={() => openEditModal(table)}
+                                  className="p-2 text-gray-500 hover:text-white hover:bg-white/[0.06] rounded-lg transition-colors"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                </button>
+                              </Tooltip>
+                              <Tooltip content={table.is_archived ? 'Restore' : 'Archive'}>
+                                <button
+                                  onClick={() => toggleArchive(table)}
+                                  className="p-2 text-gray-500 hover:text-white hover:bg-white/[0.06] rounded-lg transition-colors"
+                                >
+                                  {table.is_archived ? (
+                                    <ArchiveRestore className="w-4 h-4" />
+                                  ) : (
+                                    <Archive className="w-4 h-4" />
+                                  )}
+                                </button>
+                              </Tooltip>
+                              <Tooltip content="Delete">
+                                <button
+                                  onClick={() => deleteTable(table)}
+                                  className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </Tooltip>
                             </>
                           )}
                         </div>

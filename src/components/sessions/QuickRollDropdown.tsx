@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Dice5, ChevronDown, Loader2, Search, Star } from 'lucide-react'
+import { Dice5, ChevronDown, Loader2, Search, Star, Shuffle } from 'lucide-react'
 import { RollReveal } from '@/components/roll-reveal/RollReveal'
-import { useSupabase } from '@/hooks'
+import { useSupabase, useUser, useFavoriteRandomTables } from '@/hooks'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { Tooltip } from '@/components/ui'
 import type { RandomTable, RandomTableEntry } from '@/types/database'
 import {
   TEMPLATE_CATEGORIES,
@@ -19,6 +20,7 @@ interface QuickRollDropdownProps {
 
 export function QuickRollDropdown({ campaignId, className }: QuickRollDropdownProps) {
   const supabase = useSupabase()
+  const { user } = useUser()
   const [tables, setTables] = useState<RandomTable[]>([])
   const [loading, setLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
@@ -26,6 +28,16 @@ export function QuickRollDropdown({ campaignId, className }: QuickRollDropdownPr
   const [selectedTable, setSelectedTable] = useState<RandomTable | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<TableTemplate | null>(null)
   const [showRollReveal, setShowRollReveal] = useState(false)
+
+  // Favorites hook
+  const {
+    tableFavorites,
+    templateFavorites,
+    isTableFavorite,
+    isTemplateFavorite,
+    toggleTableFavorite,
+    toggleTemplateFavorite,
+  } = useFavoriteRandomTables(campaignId, user?.id)
 
   // Load campaign's random tables
   useEffect(() => {
@@ -55,6 +67,11 @@ export function QuickRollDropdown({ campaignId, className }: QuickRollDropdownPr
   const allTemplates = TEMPLATE_CATEGORIES.flatMap(cat =>
     cat.templates.map(t => ({ ...t, categoryName: cat.name }))
   )
+
+  // Get favorite items
+  const favoriteTables = tables.filter(t => isTableFavorite(t.id))
+  const favoriteTemplates = allTemplates.filter(t => isTemplateFavorite(t.id))
+  const hasFavorites = favoriteTables.length > 0 || favoriteTemplates.length > 0
 
   // Filter items by search
   const filteredTables = tables.filter(t =>
@@ -125,6 +142,9 @@ export function QuickRollDropdown({ campaignId, className }: QuickRollDropdownPr
         >
           <Dice5 className="w-4 h-4 text-pink-400" />
           <span className="flex-1 text-sm text-white">Quick Roll</span>
+          {hasFavorites && (
+            <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+          )}
           {loading ? (
             <Loader2 className="w-4 h-4 text-pink-400 animate-spin" />
           ) : (
@@ -165,6 +185,39 @@ export function QuickRollDropdown({ campaignId, className }: QuickRollDropdownPr
               </div>
 
               <div className="max-h-[300px] overflow-y-auto">
+                {/* Favorites Section - Only show if not searching */}
+                {!searchQuery && hasFavorites && (
+                  <div>
+                    <div className="px-3 py-2 text-xs font-medium text-yellow-400 uppercase tracking-wider bg-yellow-500/5 flex items-center gap-2">
+                      <Star className="w-3 h-3 fill-yellow-400" />
+                      Favorites
+                    </div>
+                    {favoriteTables.map(table => (
+                      <TableRow
+                        key={`fav-table-${table.id}`}
+                        name={table.name}
+                        count={table.entries.length}
+                        isFavorite={true}
+                        onRoll={() => handleSelectTable(table)}
+                        onToggleFavorite={() => toggleTableFavorite(table.id)}
+                        iconColor="text-pink-400/70"
+                      />
+                    ))}
+                    {favoriteTemplates.map(template => (
+                      <TableRow
+                        key={`fav-template-${template.id}`}
+                        name={template.name}
+                        subtitle={template.categoryName}
+                        count={template.entries.length}
+                        isFavorite={true}
+                        onRoll={() => handleSelectTemplate(template)}
+                        onToggleFavorite={() => toggleTemplateFavorite(template.id)}
+                        iconColor="text-orange-400/70"
+                      />
+                    ))}
+                  </div>
+                )}
+
                 {/* My Tables Section */}
                 {filteredTables.length > 0 && (
                   <div>
@@ -172,19 +225,15 @@ export function QuickRollDropdown({ campaignId, className }: QuickRollDropdownPr
                       My Tables
                     </div>
                     {filteredTables.map(table => (
-                      <button
+                      <TableRow
                         key={table.id}
-                        onClick={() => handleSelectTable(table)}
-                        className="w-full px-3 py-2.5 text-left hover:bg-white/[0.04] transition-colors flex items-center gap-3"
-                      >
-                        <Dice5 className="w-4 h-4 text-pink-400/70" />
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm text-white block truncate">{table.name}</span>
-                        </div>
-                        <span className="text-xs text-gray-500">
-                          {table.entries.length}
-                        </span>
-                      </button>
+                        name={table.name}
+                        count={table.entries.length}
+                        isFavorite={isTableFavorite(table.id)}
+                        onRoll={() => handleSelectTable(table)}
+                        onToggleFavorite={() => toggleTableFavorite(table.id)}
+                        iconColor="text-pink-400/70"
+                      />
                     ))}
                   </div>
                 )}
@@ -196,20 +245,16 @@ export function QuickRollDropdown({ campaignId, className }: QuickRollDropdownPr
                       Templates
                     </div>
                     {filteredTemplates.slice(0, 10).map(template => (
-                      <button
+                      <TableRow
                         key={template.id}
-                        onClick={() => handleSelectTemplate(template)}
-                        className="w-full px-3 py-2.5 text-left hover:bg-white/[0.04] transition-colors flex items-center gap-3"
-                      >
-                        <Dice5 className="w-4 h-4 text-orange-400/70" />
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm text-white block truncate">{template.name}</span>
-                          <span className="text-xs text-gray-500">{template.categoryName}</span>
-                        </div>
-                        <span className="text-xs text-gray-500">
-                          {template.entries.length}
-                        </span>
-                      </button>
+                        name={template.name}
+                        subtitle={template.categoryName}
+                        count={template.entries.length}
+                        isFavorite={isTemplateFavorite(template.id)}
+                        onRoll={() => handleSelectTemplate(template)}
+                        onToggleFavorite={() => toggleTemplateFavorite(template.id)}
+                        iconColor="text-orange-400/70"
+                      />
                     ))}
                     {filteredTemplates.length > 10 && (
                       <div className="px-3 py-2 text-xs text-gray-500 text-center">
@@ -256,5 +301,66 @@ export function QuickRollDropdown({ campaignId, className }: QuickRollDropdownPr
         />
       )}
     </>
+  )
+}
+
+// Reusable table row component
+function TableRow({
+  name,
+  subtitle,
+  count,
+  isFavorite,
+  onRoll,
+  onToggleFavorite,
+  iconColor,
+}: {
+  name: string
+  subtitle?: string
+  count: number
+  isFavorite: boolean
+  onRoll: () => void
+  onToggleFavorite: () => void
+  iconColor: string
+}) {
+  return (
+    <div className="flex items-center gap-2 px-3 py-2 hover:bg-white/[0.04] transition-colors">
+      <Dice5 className={cn("w-4 h-4 flex-shrink-0", iconColor)} />
+      <div className="flex-1 min-w-0">
+        <span className="text-sm text-white block truncate">{name}</span>
+        {subtitle && <span className="text-xs text-gray-500">{subtitle}</span>}
+      </div>
+      <span className="text-xs text-gray-500 flex-shrink-0">{count}</span>
+
+      {/* Favorite button */}
+      <Tooltip content={isFavorite ? "Remove from favorites" : "Add to favorites"}>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggleFavorite()
+          }}
+          className={cn(
+            "p-1.5 rounded-md transition-colors flex-shrink-0",
+            isFavorite
+              ? "text-yellow-400 hover:bg-yellow-500/20"
+              : "text-gray-500 hover:text-yellow-400 hover:bg-white/[0.05]"
+          )}
+        >
+          <Star className={cn("w-3.5 h-3.5", isFavorite && "fill-yellow-400")} />
+        </button>
+      </Tooltip>
+
+      {/* Roll button */}
+      <Tooltip content="Roll this table">
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onRoll()
+          }}
+          className="p-1.5 rounded-md text-pink-400 hover:bg-pink-500/20 transition-colors flex-shrink-0"
+        >
+          <Shuffle className="w-3.5 h-3.5" />
+        </button>
+      </Tooltip>
+    </div>
   )
 }
