@@ -33,7 +33,7 @@ import { Modal } from '@/components/ui'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { RichTextEditor } from '@/components/editor'
-import { KeyNpcsModule, parseKeyNpcsValue, type KeyNpcsData } from './KeyNpcsModule'
+import { KeyNpcsModule, parseKeyNpcsValue, serializeKeyNpcsValue, type KeyNpcsData } from './KeyNpcsModule'
 import { QuickRollDropdown } from './QuickRollDropdown'
 import type {
   Session,
@@ -381,7 +381,7 @@ export function SessionWorkflow({
             enabledPrepModules: moduleOrder, // Save custom order
             pinnedReferences: pinnedRefs,
             sessionGoals,
-            keyNpcs,
+            keyNpcs: serializeKeyNpcsValue(keyNpcs),
             sessionOpener,
             randomTables,
             musicAmbiance,
