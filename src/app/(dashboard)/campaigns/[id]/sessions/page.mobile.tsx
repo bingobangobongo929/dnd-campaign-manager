@@ -181,10 +181,6 @@ export function SessionsPageMobile({
                 const canSeeDmContent = isDm || dmNotesShared
                 const hasPlayerPerspectives = session.noteContributors && session.noteContributors.length > 0
 
-                // For prep sessions, check prep content
-                const prepChecklist = (session.prep_checklist as Array<{ checked: boolean }>) || []
-                const checklistDone = prepChecklist.filter(i => i.checked).length
-                const hasSessionGoals = !!session.session_goals?.trim()
 
                 return (
                   <div
@@ -247,29 +243,12 @@ export function SessionsPageMobile({
 
                       {/* Content Sections */}
                       <div className="space-y-3">
-                        {/* PREP PHASE: Show prep status */}
-                        {isPrep && isDm && (
+                        {/* PREP PHASE: Simple indicator - the phase badge is the main indicator */}
+                        {isPrep && isDm && !hasSummary && !hasNotes && (
                           <div className="p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/20">
-                            <div className="flex items-center gap-2 mb-2">
-                              <ClipboardList className="w-3.5 h-3.5 text-yellow-400" />
-                              <span className="text-xs font-medium text-yellow-400">Prep Status</span>
-                            </div>
-                            <div className="space-y-1 text-xs text-gray-400">
-                              {prepChecklist.length > 0 && (
-                                <div className="flex items-center gap-1.5">
-                                  <CheckCircle2 className={cn("w-3.5 h-3.5", checklistDone === prepChecklist.length ? "text-green-400" : "text-gray-500")} />
-                                  <span>Checklist: {checklistDone}/{prepChecklist.length}</span>
-                                </div>
-                              )}
-                              {hasSessionGoals && (
-                                <div className="flex items-center gap-1.5">
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
-                                  <span>Goals set</span>
-                                </div>
-                              )}
-                              {prepChecklist.length === 0 && !hasSessionGoals && (
-                                <span className="text-gray-500 italic">No prep yet</span>
-                              )}
+                            <div className="flex items-center gap-2 text-yellow-400/70">
+                              <ClipboardList className="w-3.5 h-3.5" />
+                              <span className="text-xs">Tap to continue planning</span>
                             </div>
                           </div>
                         )}

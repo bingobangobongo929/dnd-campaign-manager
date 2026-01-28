@@ -410,11 +410,6 @@ export default function SessionsPage() {
               const canSeeDmContent = isDm || dmNotesShared
               const hasPlayerPerspectives = session.noteContributors && session.noteContributors.length > 0
 
-              // For prep sessions, check prep content
-              const prepChecklist = (session.prep_checklist as Array<{ checked: boolean }>) || []
-              const checklistDone = prepChecklist.filter(i => i.checked).length
-              const hasSessionGoals = !!session.session_goals?.trim()
-              const hasSessionOpener = !!session.session_opener?.trim()
 
               return (
                 <div
@@ -507,35 +502,12 @@ export default function SessionsPage() {
 
                     {/* Content Sections */}
                     <div className="space-y-4">
-                      {/* PREP PHASE: Show prep status */}
-                      {isPrep && isDm && (
+                      {/* PREP PHASE: Simple indicator - the phase badge is the main indicator */}
+                      {isPrep && isDm && !hasSummary && !hasNotes && (
                         <div className="p-4 rounded-lg bg-yellow-500/5 border border-yellow-500/20">
-                          <div className="flex items-center gap-2 mb-3">
-                            <ClipboardList className="w-4 h-4 text-yellow-400" />
-                            <span className="text-sm font-medium text-yellow-400">Prep Status</span>
-                          </div>
-                          <div className="space-y-1.5 text-sm text-gray-400">
-                            {prepChecklist.length > 0 && (
-                              <div className="flex items-center gap-2">
-                                <CheckCircle2 className={cn("w-4 h-4", checklistDone === prepChecklist.length ? "text-green-400" : "text-gray-500")} />
-                                <span>Checklist: {checklistDone}/{prepChecklist.length} done</span>
-                              </div>
-                            )}
-                            {hasSessionGoals && (
-                              <div className="flex items-center gap-2">
-                                <CheckCircle2 className="w-4 h-4 text-green-400" />
-                                <span>Session goals set</span>
-                              </div>
-                            )}
-                            {hasSessionOpener && (
-                              <div className="flex items-center gap-2">
-                                <CheckCircle2 className="w-4 h-4 text-green-400" />
-                                <span>Session opener ready</span>
-                              </div>
-                            )}
-                            {prepChecklist.length === 0 && !hasSessionGoals && !hasSessionOpener && (
-                              <span className="text-gray-500 italic">No prep content yet</span>
-                            )}
+                          <div className="flex items-center gap-2 text-yellow-400/70">
+                            <ClipboardList className="w-4 h-4" />
+                            <span className="text-sm">Click to continue planning this session</span>
                           </div>
                         </div>
                       )}
