@@ -172,6 +172,25 @@ export function SessionDetailMobile({
     )
   }
 
+  // Player access check: players cannot view private sessions
+  if (!isDm && !isNew && sessionState === 'private') {
+    return (
+      <AppLayout campaignId={campaignId}>
+        <MobileLayout title="Session" showBackButton backHref={`/campaigns/${campaignId}/sessions`}>
+          <div className="px-6 py-16 text-center">
+            <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gray-500/10 flex items-center justify-center">
+              <EyeOff className="w-8 h-8 text-gray-500" />
+            </div>
+            <h1 className="text-xl font-semibold text-white mb-3">Session Not Available</h1>
+            <p className="text-sm text-gray-400 mb-6">
+              This session is still being prepared by the DM and is not yet available to players.
+            </p>
+          </div>
+        </MobileLayout>
+      </AppLayout>
+    )
+  }
+
   return (
     <AppLayout campaignId={campaignId}>
       <MobileLayout
@@ -415,14 +434,26 @@ export function SessionDetailMobile({
                       className="min-h-[150px]"
                     />
                   ) : (
-                    /* Read-only notes for players */
-                    <div className="prose prose-invert prose-sm max-w-none">
-                      {formData.notes ? (
-                        <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.notes) }} />
+                    /* Read-only notes for players - only show if shared */
+                    <>
+                      {shareNotesWithPlayers ? (
+                        <div className="prose prose-invert prose-sm max-w-none">
+                          {formData.notes ? (
+                            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.notes) }} />
+                          ) : (
+                            <p className="text-gray-500 italic">No session notes available yet.</p>
+                          )}
+                        </div>
                       ) : (
-                        <p className="text-gray-500 italic">No session notes available yet.</p>
+                        <div className="text-center py-6">
+                          <EyeOff className="w-6 h-6 text-gray-600 mx-auto mb-2" />
+                          <p className="text-gray-400 text-xs">The DM hasn&apos;t shared their session notes.</p>
+                          <p className="text-gray-600 text-[10px] mt-1">
+                            You can still add your own notes below.
+                          </p>
+                        </div>
                       )}
-                    </div>
+                    </>
                   )}
 
                   {/* Share with players checkbox - DM only */}
@@ -468,14 +499,23 @@ export function SessionDetailMobile({
                         className="min-h-[120px]"
                       />
                     ) : (
-                      /* Read-only summary for players (shouldn't normally see this) */
-                      <div className="prose prose-invert prose-sm max-w-none">
-                        {formData.summary ? (
-                          <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.summary) }} />
+                      /* Read-only summary for players - only show if shared */
+                      <>
+                        {shareNotesWithPlayers ? (
+                          <div className="prose prose-invert prose-sm max-w-none">
+                            {formData.summary ? (
+                              <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.summary) }} />
+                            ) : (
+                              <p className="text-gray-500 italic">No quick recap available yet.</p>
+                            )}
+                          </div>
                         ) : (
-                          <p className="text-gray-500 italic">No quick recap available yet.</p>
+                          <div className="text-center py-4">
+                            <EyeOff className="w-5 h-5 text-gray-600 mx-auto mb-1" />
+                            <p className="text-gray-500 text-xs">Not shared by DM</p>
+                          </div>
                         )}
-                      </div>
+                      </>
                     )}
                   </div>
 
@@ -493,13 +533,26 @@ export function SessionDetailMobile({
                         className="min-h-[200px]"
                       />
                     ) : (
-                      <div className="prose prose-invert prose-sm max-w-none">
-                        {formData.notes ? (
-                          <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.notes) }} />
+                      /* Read-only notes for players - only show if shared */
+                      <>
+                        {shareNotesWithPlayers ? (
+                          <div className="prose prose-invert prose-sm max-w-none">
+                            {formData.notes ? (
+                              <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.notes) }} />
+                            ) : (
+                              <p className="text-gray-500 italic">No detailed notes available yet.</p>
+                            )}
+                          </div>
                         ) : (
-                          <p className="text-gray-500 italic">No detailed notes available yet.</p>
+                          <div className="text-center py-6">
+                            <EyeOff className="w-6 h-6 text-gray-600 mx-auto mb-2" />
+                            <p className="text-gray-400 text-xs">The DM hasn&apos;t shared their session notes.</p>
+                            <p className="text-gray-600 text-[10px] mt-1">
+                              You can still add your own notes below.
+                            </p>
+                          </div>
                         )}
-                      </div>
+                      </>
                     )}
 
                     {/* Share with players checkbox - DM only */}

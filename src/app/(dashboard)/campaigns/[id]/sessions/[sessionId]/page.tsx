@@ -782,6 +782,31 @@ export default function SessionDetailPage() {
     )
   }
 
+  // Player access check: players cannot view private sessions
+  if (!isDm && !isNew && sessionState === 'private') {
+    return (
+      <AppLayout campaignId={campaignId}>
+        <div className="max-w-2xl mx-auto px-6 py-16 text-center">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gray-500/10 flex items-center justify-center">
+            <EyeOff className="w-10 h-10 text-gray-500" />
+          </div>
+          <h1 className="text-2xl font-semibold text-white mb-3">Session Not Available</h1>
+          <p className="text-gray-400 mb-6">
+            This session is still being prepared by the DM and is not yet available to players.
+            You&apos;ll be able to view it once the DM opens it for notes.
+          </p>
+          <button
+            onClick={() => router.push(`/campaigns/${campaignId}/sessions`)}
+            className="btn btn-primary"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Sessions
+          </button>
+        </div>
+      </AppLayout>
+    )
+  }
+
   return (
     <AppLayout campaignId={campaignId}>
       {/* Conflict Warning Banner */}
@@ -1107,14 +1132,26 @@ export default function SessionDetailPage() {
                     className="min-h-[200px]"
                   />
                 ) : (
-                  /* Read-only notes for players */
-                  <div className="prose prose-invert prose-sm max-w-none [&>ul]:mt-1 [&>ul]:mb-2 [&>li]:my-0.5">
-                    {formData.notes ? (
-                      <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.notes) }} />
+                  /* Read-only notes for players - only show if shared */
+                  <>
+                    {shareNotesWithPlayers ? (
+                      <div className="prose prose-invert prose-sm max-w-none [&>ul]:mt-1 [&>ul]:mb-2 [&>li]:my-0.5">
+                        {formData.notes ? (
+                          <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.notes) }} />
+                        ) : (
+                          <p className="text-[--text-tertiary] italic">No session notes available yet.</p>
+                        )}
+                      </div>
                     ) : (
-                      <p className="text-[--text-tertiary] italic">No session notes available yet.</p>
+                      <div className="text-center py-8 bg-white/[0.02] rounded-lg border border-[--border]">
+                        <EyeOff className="w-8 h-8 text-gray-600 mx-auto mb-3" />
+                        <p className="text-gray-400 text-sm">The DM hasn&apos;t shared their session notes.</p>
+                        <p className="text-gray-600 text-xs mt-1">
+                          You can still add your own notes and read notes from other party members below.
+                        </p>
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
 
                 {/* Share with players checkbox - DM only */}
@@ -1180,14 +1217,23 @@ export default function SessionDetailPage() {
                       className="min-h-[150px]"
                     />
                   ) : (
-                    /* Read-only summary for players (shouldn't normally see this) */
-                    <div className="prose prose-invert prose-sm max-w-none [&>ul]:mt-1 [&>ul]:mb-2 [&>li]:my-0.5">
-                      {formData.summary ? (
-                        <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.summary) }} />
+                    /* Read-only summary for players - only show if shared */
+                    <>
+                      {shareNotesWithPlayers ? (
+                        <div className="prose prose-invert prose-sm max-w-none [&>ul]:mt-1 [&>ul]:mb-2 [&>li]:my-0.5">
+                          {formData.summary ? (
+                            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.summary) }} />
+                          ) : (
+                            <p className="text-[--text-tertiary] italic">No quick recap available yet.</p>
+                          )}
+                        </div>
                       ) : (
-                        <p className="text-[--text-tertiary] italic">No quick recap available yet.</p>
+                        <div className="text-center py-6 bg-white/[0.02] rounded-lg border border-[--border]">
+                          <EyeOff className="w-6 h-6 text-gray-600 mx-auto mb-2" />
+                          <p className="text-gray-500 text-xs">Not shared by DM</p>
+                        </div>
                       )}
-                    </div>
+                    </>
                   )}
                 </div>
 
@@ -1213,13 +1259,26 @@ export default function SessionDetailPage() {
                       className="min-h-[300px]"
                     />
                   ) : (
-                    <div className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4">
-                      {formData.notes ? (
-                        <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.notes) }} />
+                    /* Read-only notes for players - only show if shared */
+                    <>
+                      {shareNotesWithPlayers ? (
+                        <div className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4">
+                          {formData.notes ? (
+                            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.notes) }} />
+                          ) : (
+                            <p className="text-[--text-tertiary] italic">No detailed notes available yet.</p>
+                          )}
+                        </div>
                       ) : (
-                        <p className="text-[--text-tertiary] italic">No detailed notes available yet.</p>
+                        <div className="text-center py-8 bg-white/[0.02] rounded-lg border border-[--border]">
+                          <EyeOff className="w-8 h-8 text-gray-600 mx-auto mb-3" />
+                          <p className="text-gray-400 text-sm">The DM hasn&apos;t shared their session notes.</p>
+                          <p className="text-gray-600 text-xs mt-1">
+                            You can still add your own notes and read notes from other party members below.
+                          </p>
+                        </div>
                       )}
-                    </div>
+                    </>
                   )}
 
                   {/* Share with players checkbox - DM only */}

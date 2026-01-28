@@ -13,6 +13,9 @@ import {
   ChevronUp,
   ClipboardList,
   CheckCircle2,
+  Lock,
+  Unlock,
+  EyeOff,
 } from 'lucide-react'
 import { Tooltip, sanitizeHtml, AccessDeniedPage, Modal } from '@/components/ui'
 import { GuidanceTip } from '@/components/guidance/GuidanceTip'
@@ -24,7 +27,7 @@ import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { formatDate, cn, getInitials } from '@/lib/utils'
 import { logActivity } from '@/lib/activity-log'
 import Image from 'next/image'
-import type { Campaign, Session, Character, Tag, CharacterTag } from '@/types/database'
+import type { Campaign, Session, Character, Tag, CharacterTag, SessionState } from '@/types/database'
 import { MessageSquare } from 'lucide-react'
 
 // Convert basic markdown to HTML for display (or pass through if already HTML)
@@ -195,7 +198,16 @@ export default function SessionsPage() {
     setHasLoadedOnce(true)
   }
 
-  const filteredSessions = sessions.filter((session) => {
+  // Filter sessions: players only see open/locked sessions, DMs see all
+  const visibleSessions = sessions.filter((session) => {
+    // DMs see all sessions
+    if (isDm) return true
+    // Players only see open or locked sessions (not private)
+    const state = (session.state as SessionState) || 'private'
+    return state === 'open' || state === 'locked'
+  })
+
+  const filteredSessions = visibleSessions.filter((session) => {
     if (!searchQuery) return true
     const query = searchQuery.toLowerCase()
     return (
@@ -286,6 +298,7 @@ export default function SessionsPage() {
         handleSessionClick={handleSessionClick}
         handleCharacterClick={handleCharacterClick}
         handleDelete={handleDelete}
+        isDm={isDm}
       />
     )
   }
@@ -442,6 +455,38 @@ export default function SessionsPage() {
                           <Calendar className="w-4 h-4" />
                           {formatDate(session.date)}
                         </span>
+                        {/* Session State Badge (for players) */}
+                        {!isDm && (session.state as SessionState) === 'open' && (
+                          <span className="flex items-center gap-1 text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded">
+                            <Unlock className="w-3 h-3" />
+                            Open for notes
+                          </span>
+                        )}
+                        {!isDm && (session.state as SessionState) === 'locked' && (
+                          <span className="flex items-center gap-1 text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
+                            <Lock className="w-3 h-3" />
+                            Locked
+                          </span>
+                        )}
+                        {/* DM sees state indicator */}
+                        {isDm && (session.state as SessionState) === 'private' && (
+                          <span className="flex items-center gap-1 text-xs text-gray-400 bg-gray-500/10 px-2 py-0.5 rounded">
+                            <EyeOff className="w-3 h-3" />
+                            Private
+                          </span>
+                        )}
+                        {isDm && (session.state as SessionState) === 'open' && (
+                          <span className="flex items-center gap-1 text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded">
+                            <Unlock className="w-3 h-3" />
+                            Open
+                          </span>
+                        )}
+                        {isDm && (session.state as SessionState) === 'locked' && (
+                          <span className="flex items-center gap-1 text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
+                            <Lock className="w-3 h-3" />
+                            Locked
+                          </span>
+                        )}
                       </div>
                       <h3 className="text-xl font-semibold text-[--text-primary] mb-3">
                         {session.title || 'Untitled Session'}

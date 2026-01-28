@@ -12,6 +12,9 @@ import {
   ChevronUp,
   ClipboardList,
   CheckCircle2,
+  Lock,
+  Unlock,
+  EyeOff,
 } from 'lucide-react'
 import { sanitizeHtml } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
@@ -19,7 +22,7 @@ import { MobileLayout, MobileBottomSheet } from '@/components/mobile'
 import { CharacterViewModal } from '@/components/character'
 import { formatDate, getInitials } from '@/lib/utils'
 import Image from 'next/image'
-import type { Campaign, Session, Character, Tag, CharacterTag } from '@/types/database'
+import type { Campaign, Session, Character, Tag, CharacterTag, SessionState } from '@/types/database'
 import { useRouter } from 'next/navigation'
 
 // Convert basic markdown to HTML for display
@@ -54,6 +57,7 @@ export interface SessionsPageMobileProps {
   handleSessionClick: (session: SessionWithAttendees) => void
   handleCharacterClick: (character: Character) => void
   handleDelete: (id: string, e: React.MouseEvent) => void
+  isDm?: boolean
 }
 
 export function SessionsPageMobile({
@@ -70,6 +74,7 @@ export function SessionsPageMobile({
   handleSessionClick,
   handleCharacterClick,
   handleDelete,
+  isDm = false,
 }: SessionsPageMobileProps) {
   const router = useRouter()
   const [showCreateSheet, setShowCreateSheet] = useState(false)
@@ -159,7 +164,7 @@ export function SessionsPageMobile({
                 >
                   <div className="p-4">
                     {/* Header row */}
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                       <span className="px-2 py-1 text-[10px] font-bold rounded bg-purple-500/20 text-purple-400 uppercase">
                         #{session.session_number}
                       </span>
@@ -167,6 +172,37 @@ export function SessionsPageMobile({
                         <Calendar className="w-3 h-3" />
                         {formatDate(session.date)}
                       </span>
+                      {/* Session State Badge */}
+                      {!isDm && (session.state as SessionState) === 'open' && (
+                        <span className="flex items-center gap-1 text-[10px] text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded">
+                          <Unlock className="w-2.5 h-2.5" />
+                          Open
+                        </span>
+                      )}
+                      {!isDm && (session.state as SessionState) === 'locked' && (
+                        <span className="flex items-center gap-1 text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                          <Lock className="w-2.5 h-2.5" />
+                          Locked
+                        </span>
+                      )}
+                      {isDm && (session.state as SessionState) === 'private' && (
+                        <span className="flex items-center gap-1 text-[10px] text-gray-400 bg-gray-500/10 px-1.5 py-0.5 rounded">
+                          <EyeOff className="w-2.5 h-2.5" />
+                          Private
+                        </span>
+                      )}
+                      {isDm && (session.state as SessionState) === 'open' && (
+                        <span className="flex items-center gap-1 text-[10px] text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded">
+                          <Unlock className="w-2.5 h-2.5" />
+                          Open
+                        </span>
+                      )}
+                      {isDm && (session.state as SessionState) === 'locked' && (
+                        <span className="flex items-center gap-1 text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                          <Lock className="w-2.5 h-2.5" />
+                          Locked
+                        </span>
+                      )}
                     </div>
 
                     {/* Title */}
