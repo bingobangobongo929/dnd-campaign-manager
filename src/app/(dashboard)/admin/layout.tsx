@@ -47,6 +47,7 @@ const adminNavGroups = [
     label: 'System',
     icon: Settings,
     items: [
+      { href: '/admin/app-settings', label: 'App Settings', icon: Settings },
       { href: '/admin/emails', label: 'Emails', icon: Mail },
       { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
       { href: '/admin/health', label: 'Health', icon: HeartPulse },

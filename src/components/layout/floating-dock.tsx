@@ -280,6 +280,11 @@ function isMainListingPage(pathname: string): boolean {
     return true
   }
 
+  // Admin sub-pages are also considered "main"
+  if (pathname.startsWith('/admin/')) {
+    return true
+  }
+
   // /campaigns/new, /vault/new, /vault/import are main pages
   if (pathname === '/campaigns/new' || pathname === '/vault/new' || pathname === '/vault/import') {
     return true
