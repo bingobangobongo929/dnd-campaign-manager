@@ -927,17 +927,6 @@ export default function SessionDetailPage() {
               )}
             </div>
             <div className="flex items-center gap-3">
-              {!isNew && can.editSession && (
-                <span className={cn(
-                  "text-sm transition-opacity",
-                  status === 'conflict' ? 'text-amber-400' : status === 'saving' ? 'text-[--text-tertiary]' : 'text-[--text-tertiary] opacity-60'
-                )}>
-                  {status === 'conflict' && 'Conflict detected'}
-                  {status === 'saving' && 'Saving...'}
-                  {status === 'saved' && '(auto-saved)'}
-                  {status === 'idle' && '(auto-saved)'}
-                </span>
-              )}
               {/* View Mode Toggle - only for Mods+ */}
               {isModOrAbove && (
                 <div className="flex items-center bg-white/[0.03] rounded-lg border border-white/[0.08] p-1">
