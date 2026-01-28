@@ -21,12 +21,10 @@ import {
   Eye,
   Users,
   Lock,
-  Shield,
 } from 'lucide-react'
 import { DockFlyout } from './dock-flyout'
 import { useCanUseAI, useAppStore } from '@/store'
-import { useUserSettings, usePermissions, useIntelligenceBadge } from '@/hooks'
-import { isAdmin } from '@/lib/admin'
+import { usePermissions, useIntelligenceBadge } from '@/hooks'
 
 interface FloatingDockProps {
   campaignId?: string
@@ -37,9 +35,7 @@ interface FloatingDockProps {
 export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDockProps) {
   const pathname = usePathname()
   const canUseAI = useCanUseAI()
-  const { settings } = useUserSettings()
-  const showAdmin = settings?.role && isAdmin(settings.role)
-  const { can, isOwner, isDm } = usePermissions(campaignId || null)
+  const { can, isDm } = usePermissions(campaignId || null)
   const setIsPartyModalOpen = useAppStore((state) => state.setIsPartyModalOpen)
   const { pendingCount: intelligencePendingCount } = useIntelligenceBadge(campaignId || null)
 
@@ -66,14 +62,13 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
     return pathname === href || pathname.startsWith(href + '/')
   }
 
-  // Global navigation items
+  // Global navigation items (always visible - no Settings/Admin, those are in top bar now)
   const globalNavItems = [
     { href: '/home', label: 'Home', icon: Home },
     { href: '/campaigns', label: 'Campaigns', icon: Swords },
     { href: '/adventures', label: 'Adventures', icon: Compass },
     { href: '/oneshots', label: 'One-Shots', icon: Scroll },
     { href: '/vault', label: 'Characters', icon: BookOpen },
-    { href: '/settings', label: 'Settings', icon: Settings },
   ]
 
   // Campaign navigation items
@@ -95,16 +90,8 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
     { href: `/campaigns/${campaignId}/quests`, label: 'Quests', icon: Target, isActive: isActive(`/campaigns/${campaignId}/quests`) },
     { href: `/campaigns/${campaignId}/encounters`, label: 'Encounters', icon: Swords, isActive: isActive(`/campaigns/${campaignId}/encounters`) },
     { href: '#', label: 'Party & Members', icon: Users, onClick: () => setIsPartyModalOpen(true) },
+    { href: `/campaigns/${campaignId}/settings`, label: 'Settings', icon: Settings, isActive: isActive(`/campaigns/${campaignId}/settings`) },
   ] : []
-
-  // Navigate flyout items (for detail pages)
-  const navigateItems = [
-    { href: '/home', label: 'Home', icon: Home, isActive: isActive('/home') },
-    { href: '/campaigns', label: 'Campaigns', icon: Swords, isActive: pathname === '/campaigns' },
-    { href: '/adventures', label: 'Adventures', icon: Compass, isActive: isActive('/adventures') },
-    { href: '/oneshots', label: 'One-Shots', icon: Scroll, isActive: pathname === '/oneshots' },
-    { href: '/vault', label: 'Characters', icon: BookOpen, isActive: pathname === '/vault' },
-  ]
 
   // Character navigation items
   const characterNavItems = characterId ? [
@@ -158,15 +145,6 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
               <span className="dock-item-label">{item.label}</span>
             </Link>
           ))}
-          {showAdmin && (
-            <Link
-              href="/admin"
-              className={`dock-item ${isActive('/admin') ? 'active' : ''}`}
-            >
-              <Shield className="dock-item-icon" />
-              <span className="dock-item-label">Admin</span>
-            </Link>
-          )}
         </>
       )}
 
@@ -198,32 +176,17 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
 
           <div className="dock-divider" />
 
-          {/* Navigate Flyout */}
-          <DockFlyout
-            icon={Compass}
-            label="Navigate"
-            items={navigateItems}
-          />
-
-          {/* Settings always visible */}
-          <Link
-            href="/settings"
-            className={`dock-item ${isActive('/settings') ? 'active' : ''}`}
-          >
-            <Settings className="dock-item-icon" />
-            <span className="dock-item-label">Settings</span>
-          </Link>
-
-          {/* Admin (if user has admin role) */}
-          {showAdmin && (
+          {/* Global navigation - always visible */}
+          {globalNavItems.map((item) => (
             <Link
-              href="/admin"
-              className={`dock-item ${isActive('/admin') ? 'active' : ''}`}
+              key={item.href}
+              href={item.href}
+              className={`dock-item ${isActive(item.href) ? 'active' : ''}`}
             >
-              <Shield className="dock-item-icon" />
-              <span className="dock-item-label">Admin</span>
+              <item.icon className="dock-item-icon" />
+              <span className="dock-item-label">{item.label}</span>
             </Link>
-          )}
+          ))}
         </>
       )}
 
@@ -244,32 +207,17 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
 
           <div className="dock-divider" />
 
-          {/* Navigate Flyout */}
-          <DockFlyout
-            icon={Compass}
-            label="Navigate"
-            items={navigateItems}
-          />
-
-          {/* Settings always visible */}
-          <Link
-            href="/settings"
-            className={`dock-item ${isActive('/settings') ? 'active' : ''}`}
-          >
-            <Settings className="dock-item-icon" />
-            <span className="dock-item-label">Settings</span>
-          </Link>
-
-          {/* Admin (if user has admin role) */}
-          {showAdmin && (
+          {/* Global navigation - always visible */}
+          {globalNavItems.map((item) => (
             <Link
-              href="/admin"
-              className={`dock-item ${isActive('/admin') ? 'active' : ''}`}
+              key={item.href}
+              href={item.href}
+              className={`dock-item ${isActive(item.href) ? 'active' : ''}`}
             >
-              <Shield className="dock-item-icon" />
-              <span className="dock-item-label">Admin</span>
+              <item.icon className="dock-item-icon" />
+              <span className="dock-item-label">{item.label}</span>
             </Link>
-          )}
+          ))}
         </>
       )}
 
@@ -290,32 +238,17 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
 
           <div className="dock-divider" />
 
-          {/* Navigate Flyout */}
-          <DockFlyout
-            icon={Compass}
-            label="Navigate"
-            items={navigateItems}
-          />
-
-          {/* Settings always visible */}
-          <Link
-            href="/settings"
-            className={`dock-item ${isActive('/settings') ? 'active' : ''}`}
-          >
-            <Settings className="dock-item-icon" />
-            <span className="dock-item-label">Settings</span>
-          </Link>
-
-          {/* Admin (if user has admin role) */}
-          {showAdmin && (
+          {/* Global navigation - always visible */}
+          {globalNavItems.map((item) => (
             <Link
-              href="/admin"
-              className={`dock-item ${isActive('/admin') ? 'active' : ''}`}
+              key={item.href}
+              href={item.href}
+              className={`dock-item ${isActive(item.href) ? 'active' : ''}`}
             >
-              <Shield className="dock-item-icon" />
-              <span className="dock-item-label">Admin</span>
+              <item.icon className="dock-item-icon" />
+              <span className="dock-item-label">{item.label}</span>
             </Link>
-          )}
+          ))}
         </>
       )}
     </nav>
