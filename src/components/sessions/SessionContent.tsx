@@ -364,7 +364,7 @@ export function SessionContent({ sessionId, campaignId, canEdit }: SessionConten
                       <select
                         value={sq.progress_type}
                         onChange={(e) => handleUpdateQuestProgress(sq.id, e.target.value)}
-                        className="text-xs px-2 py-1 rounded border-0 bg-transparent cursor-pointer"
+                        className="text-xs px-2 py-1 rounded bg-[--bg-elevated] border border-white/[0.08] cursor-pointer focus:outline-none focus:border-[--arcane-purple]"
                         style={{ color: QUEST_PROGRESS_OPTIONS.find(o => o.value === sq.progress_type)?.color }}
                       >
                         {QUEST_PROGRESS_OPTIONS.map(o => (
@@ -462,7 +462,7 @@ export function SessionContent({ sessionId, campaignId, canEdit }: SessionConten
                       <select
                         value={se.status_in_session}
                         onChange={(e) => handleUpdateEncounterStatus(se.id, e.target.value)}
-                        className="text-xs px-2 py-1 rounded border-0 bg-transparent cursor-pointer"
+                        className="text-xs px-2 py-1 rounded bg-[--bg-elevated] border border-white/[0.08] cursor-pointer focus:outline-none focus:border-[--arcane-purple]"
                         style={{ color: ENCOUNTER_STATUS_OPTIONS.find(o => o.value === se.status_in_session)?.color }}
                       >
                         {ENCOUNTER_STATUS_OPTIONS.map(o => (

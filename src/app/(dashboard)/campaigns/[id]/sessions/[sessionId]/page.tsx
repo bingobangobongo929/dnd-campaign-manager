@@ -51,6 +51,8 @@ import {
   ALL_MODULES,
   checkModuleHasContent,
   CustomizeLayoutModal,
+  KeyNpcsModule,
+  parseKeyNpcsValue,
 } from '@/components/sessions'
 import { DmNotesSection } from '@/components/dm-notes'
 import { showIntelligencePrompt } from '@/lib/intelligence-prompt'
@@ -1604,8 +1606,17 @@ export default function SessionDetailPage() {
                           displayContent = <div className="text-sm text-gray-300 whitespace-pre-wrap">{content}</div>
                           break
                         case 'key_npcs':
-                          content = session.key_npcs || null
-                          displayContent = <div className="text-sm text-gray-300 whitespace-pre-wrap">{content}</div>
+                          const keyNpcsData = parseKeyNpcsValue(session.key_npcs as string | null)
+                          const hasKeyNpcs = keyNpcsData.linkedCharacterIds.length > 0 || keyNpcsData.notes.trim().length > 0
+                          content = hasKeyNpcs ? 'Has content' : null
+                          displayContent = hasKeyNpcs ? (
+                            <KeyNpcsModule
+                              value={keyNpcsData}
+                              onChange={() => {}}
+                              characters={characters}
+                              readOnly
+                            />
+                          ) : null
                           break
                         case 'session_opener':
                           content = session.session_opener || null
