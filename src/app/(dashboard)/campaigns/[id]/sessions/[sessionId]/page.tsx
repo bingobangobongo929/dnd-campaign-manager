@@ -20,8 +20,11 @@ import {
   RefreshCw,
   Lightbulb,
   ClipboardList,
-  Play,
   Brain,
+  Lock,
+  Unlock,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input, Button, sanitizeHtml } from '@/components/ui'
@@ -34,10 +37,9 @@ import { logActivity, diffChanges } from '@/lib/activity-log'
 import { useAppStore, useCanUseAI } from '@/store'
 import { cn, getInitials } from '@/lib/utils'
 import Image from 'next/image'
-import type { Session, Campaign, Character, SessionPhase } from '@/types/database'
-import { SessionWorkflow, PlayerNotes, ThoughtsForNextCard, MergedNotesView, SessionContent } from '@/components/sessions'
+import type { Session, Campaign, Character, SessionPhase, SessionState } from '@/types/database'
+import { SessionWorkflow, PlayerNotes, ThoughtsForNextCard, SessionContent } from '@/components/sessions'
 import { DmNotesSection } from '@/components/dm-notes'
-import { EntitySecretsManager } from '@/components/secrets'
 import { showIntelligencePrompt } from '@/lib/intelligence-prompt'
 
 export default function SessionDetailPage() {
@@ -84,6 +86,10 @@ export default function SessionDetailPage() {
     dm_notes: '',
   })
 
+  // Session state (for player access control)
+  const [sessionState, setSessionState] = useState<SessionState>('private')
+  const [shareNotesWithPlayers, setShareNotesWithPlayers] = useState<boolean | null>(null)
+
   // AI Expand Notes state
   const [expanding, setExpanding] = useState(false)
   const [pendingNotes, setPendingNotes] = useState<string | null>(null)
@@ -95,7 +101,7 @@ export default function SessionDetailPage() {
   const [previousThoughts, setPreviousThoughts] = useState<string>('')
   const [openPlayerNotesModal, setOpenPlayerNotesModal] = useState(false)
 
-  // Phase management - for new sessions use URL param, for existing use session data
+  // Phase management - for new sessions use URL param, for existing use session data (only prep/completed now)
   const [currentPhase, setCurrentPhase] = useState<SessionPhase>(initialPhase || 'prep')
 
   useEffect(() => {
@@ -207,6 +213,8 @@ export default function SessionDetailPage() {
     setSessionVersion((sessionData as any).version || 1)
     setOriginalData(sessionData)
     setCurrentPhase((sessionData.phase as SessionPhase) || 'prep')
+    setSessionState((sessionData.state as SessionState) || 'private')
+    setShareNotesWithPlayers(sessionData.share_notes_with_players)
     setFormData({
       session_number: sessionData.session_number?.toString() || '',
       title: sessionData.title || '',
@@ -269,10 +277,75 @@ export default function SessionDetailPage() {
 
         const data = await response.json()
         setSession(data.session)
-        toast.success(`Phase changed to ${newPhase}`)
+        toast.success(`Switched to ${newPhase === 'prep' ? 'Prep' : 'Completed'}`)
       } catch (error) {
         console.error('Failed to update phase:', error)
         toast.error('Failed to update phase')
+      }
+    }
+  }
+
+  // Handle session state change (for player access)
+  const handleStateChange = async (newState: SessionState) => {
+    setSessionState(newState)
+
+    if (!isNew && session) {
+      try {
+        const response = await fetch(
+          `/api/campaigns/${campaignId}/sessions/${session.id}/workflow`,
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ state: newState }),
+          }
+        )
+
+        if (!response.ok) {
+          toast.error('Failed to update session state')
+          return
+        }
+
+        const data = await response.json()
+        setSession(data.session)
+
+        const stateLabels: Record<SessionState, string> = {
+          private: 'Private (DM only)',
+          open: 'Open for player notes',
+          locked: 'Locked (read-only)',
+        }
+        toast.success(`Session is now ${stateLabels[newState]}`)
+      } catch (error) {
+        console.error('Failed to update session state:', error)
+        toast.error('Failed to update session state')
+      }
+    }
+  }
+
+  // Handle share notes toggle
+  const handleShareNotesChange = async (share: boolean) => {
+    setShareNotesWithPlayers(share)
+
+    if (!isNew && session) {
+      try {
+        const response = await fetch(
+          `/api/campaigns/${campaignId}/sessions/${session.id}/workflow`,
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ shareNotesWithPlayers: share }),
+          }
+        )
+
+        if (!response.ok) {
+          toast.error('Failed to update sharing')
+          return
+        }
+
+        const data = await response.json()
+        setSession(data.session)
+      } catch (error) {
+        console.error('Failed to update sharing:', error)
+        toast.error('Failed to update sharing')
       }
     }
   }
@@ -418,6 +491,7 @@ export default function SessionDetailPage() {
         summary: formData.summary || null,
         notes: formData.notes || '',
         phase: currentPhase,
+        state: 'private',
       })
       .select()
       .single()
@@ -617,7 +691,6 @@ export default function SessionDetailPage() {
     c.type === 'pc' &&
     (!c.status || !INACTIVE_STATUSES.includes(c.status.toLowerCase()))
   )
-  const npcCharacters = characters.filter(c => c.type === 'npc')
 
   // Mobile Layout
   if (isMobile) {
@@ -664,6 +737,11 @@ export default function SessionDetailPage() {
         // Permission props
         isDm={isDm}
         canEditSession={can.editSession}
+        // Session state props
+        sessionState={sessionState}
+        handleStateChange={handleStateChange}
+        shareNotesWithPlayers={shareNotesWithPlayers}
+        handleShareNotesChange={handleShareNotesChange}
       />
     )
   }
@@ -708,7 +786,7 @@ export default function SessionDetailPage() {
             <Brain className="w-5 h-5 text-purple-400 flex-shrink-0" />
             <div className="min-w-0">
               <p className="text-sm font-medium text-purple-400">From Campaign Intelligence</p>
-              <p className="text-xs text-purple-400/70 truncate">"{highlightText}"</p>
+              <p className="text-xs text-purple-400/70 truncate">&quot;{highlightText}&quot;</p>
             </div>
           </div>
           <button
@@ -805,10 +883,10 @@ export default function SessionDetailPage() {
           </div>
         </div>
 
-        {/* Phase Toggle Bar - Only shown to DMs */}
+        {/* 2-Phase Toggle Bar - Only shown to DMs */}
         {isDm && (
           <div className="mb-8 p-1.5 bg-white/[0.03] rounded-xl border border-white/[0.08]">
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-2 gap-1.5">
               {/* Prep Phase */}
               <button
                 onClick={() => handlePhaseChange('prep')}
@@ -833,35 +911,7 @@ export default function SessionDetailPage() {
                   "text-xs",
                   currentPhase === 'prep' ? "text-yellow-400/70" : "text-gray-600"
                 )}>
-                  Planning ahead
-                </span>
-              </button>
-
-              {/* Live Phase */}
-              <button
-                onClick={() => handlePhaseChange('live')}
-                className={cn(
-                  "flex flex-col items-center gap-1.5 py-4 px-4 rounded-lg transition-all",
-                  currentPhase === 'live'
-                    ? "bg-green-500/20 border-2 border-green-500/50 shadow-lg shadow-green-500/10"
-                    : "border-2 border-transparent hover:bg-white/[0.04]"
-                )}
-              >
-                <Play className={cn(
-                  "w-6 h-6",
-                  currentPhase === 'live' ? "text-green-400" : "text-gray-500"
-                )} />
-                <span className={cn(
-                  "text-sm font-semibold",
-                  currentPhase === 'live' ? "text-green-400" : "text-gray-400"
-                )}>
-                  Live
-                </span>
-                <span className={cn(
-                  "text-xs",
-                  currentPhase === 'live' ? "text-green-400/70" : "text-gray-600"
-                )}>
-                  Session active
+                  Planning & Running
                 </span>
               </button>
 
@@ -889,7 +939,7 @@ export default function SessionDetailPage() {
                   "text-xs",
                   currentPhase === 'completed' ? "text-purple-400/70" : "text-gray-600"
                 )}>
-                  Session done
+                  Post-session
                 </span>
               </button>
             </div>
@@ -899,34 +949,20 @@ export default function SessionDetailPage() {
         {/* === PREP PHASE LAYOUT === (DM only) */}
         {isDm && currentPhase === 'prep' && (
           <>
-            {/* Thoughts from Previous Session (shown in Prep mode) */}
-            {previousThoughts && (
-              <div className="card p-6 mb-8 border-purple-500/30 bg-purple-500/5">
-                <div className="flex items-center gap-3 mb-4">
-                  <Lightbulb className="w-5 h-5 text-purple-400" />
-                  <label className="text-lg font-semibold text-purple-300">
-                    From Previous Session
-                  </label>
-                </div>
-                <p className="text-gray-300 text-sm whitespace-pre-wrap">{previousThoughts}</p>
-                <p className="text-xs text-gray-500 mt-3">
-                  These notes were left in the previous session for you to reference.
-                </p>
-              </div>
-            )}
-
             {/* Session Workflow - Full component for Prep mode */}
             {!isNew && session && campaign?.user_id === user?.id && (
-              <SessionWorkflow
-                session={session}
-                campaignId={campaignId}
-                characters={characters}
-                locations={locations}
-                quests={quests}
-                encounters={encounters}
-                previousSession={previousSessionData}
-                onUpdate={(updatedSession) => setSession(updatedSession)}
-              />
+              <div className="card p-6 mb-8">
+                <SessionWorkflow
+                  session={session}
+                  campaignId={campaignId}
+                  characters={characters}
+                  locations={locations}
+                  quests={quests}
+                  encounters={encounters}
+                  previousSession={previousSessionData}
+                  onUpdate={(updatedSession) => setSession(updatedSession)}
+                />
+              </div>
             )}
 
             {/* Player Notes Section - Also in Prep mode */}
@@ -950,58 +986,8 @@ export default function SessionDetailPage() {
                   <span className="font-medium text-white">Session Planning</span>
                 </div>
                 <p className="text-sm text-gray-400 mb-4">
-                  You&apos;re in prep mode. Use this to plan your upcoming session with a checklist and reference materials.
+                  You&apos;re in prep mode. Use this to plan your upcoming session with notes, a checklist, and reference materials.
                   Switch to &quot;Completed&quot; when you&apos;re ready to add your session recap.
-                </p>
-                <div className="flex justify-end">
-                  <Button onClick={handleCreate} size="lg" variant="primary">
-                    Create Session
-                  </Button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* === LIVE PHASE LAYOUT === (DM only) */}
-        {isDm && currentPhase === 'live' && (
-          <>
-            {/* Session Workflow for Live mode */}
-            {!isNew && session && campaign?.user_id === user?.id && (
-              <SessionWorkflow
-                session={session}
-                campaignId={campaignId}
-                characters={characters}
-                locations={locations}
-                quests={quests}
-                encounters={encounters}
-                previousSession={previousSessionData}
-                onUpdate={(updatedSession) => setSession(updatedSession)}
-              />
-            )}
-
-            {/* Player Notes Section - Also in Live mode */}
-            {!isNew && session && (
-              <div className="card p-6 mb-8">
-                <PlayerNotes
-                  sessionId={sessionId}
-                  campaignId={campaignId}
-                  characters={characters}
-                  autoOpenAdd={openPlayerNotesModal}
-                  onModalClose={() => setOpenPlayerNotesModal(false)}
-                />
-              </div>
-            )}
-
-            {/* For new sessions in live mode, show a prompt */}
-            {isNew && (
-              <div className="card p-6 mb-8 border-green-500/30 bg-green-500/5">
-                <div className="flex items-center gap-2 mb-4">
-                  <Play className="w-5 h-5 text-green-400" />
-                  <span className="font-medium text-white">Session in Progress</span>
-                </div>
-                <p className="text-sm text-gray-400 mb-4">
-                  You&apos;re tracking a live session. The timer and quick reference are available once you create the session.
                 </p>
                 <div className="flex justify-end">
                   <Button onClick={handleCreate} size="lg" variant="primary">
@@ -1016,7 +1002,44 @@ export default function SessionDetailPage() {
         {/* === COMPLETED PHASE LAYOUT === */}
         {(currentPhase === 'completed' || !isDm) && (
           <>
-            {/* 1. Thoughts from Previous Session (context for new sessions - DM only) */}
+            {/* Session State Dropdown - DM only, for existing sessions */}
+            {isDm && !isNew && session && (
+              <div className="card p-4 mb-8 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-white">Session Status</span>
+                  <div className="relative">
+                    <select
+                      value={sessionState}
+                      onChange={(e) => handleStateChange(e.target.value as SessionState)}
+                      className={cn(
+                        "appearance-none pl-8 pr-10 py-2 rounded-lg border text-sm font-medium cursor-pointer",
+                        "bg-[#0a0a0f] focus:outline-none",
+                        sessionState === 'private' && "text-gray-400 border-gray-600",
+                        sessionState === 'open' && "text-green-400 border-green-500/30",
+                        sessionState === 'locked' && "text-amber-400 border-amber-500/30"
+                      )}
+                    >
+                      <option value="private">Private (DM only)</option>
+                      <option value="open">Open for player notes</option>
+                      <option value="locked">Locked (read-only)</option>
+                    </select>
+                    <div className="absolute left-2.5 top-1/2 -translate-y-1/2">
+                      {sessionState === 'private' && <EyeOff className="w-4 h-4 text-gray-500" />}
+                      {sessionState === 'open' && <Unlock className="w-4 h-4 text-green-400" />}
+                      {sessionState === 'locked' && <Lock className="w-4 h-4 text-amber-400" />}
+                    </div>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500">
+                  {sessionState === 'private' && 'Players cannot see this session'}
+                  {sessionState === 'open' && 'Players can view and add their notes'}
+                  {sessionState === 'locked' && 'Session is finalized and read-only'}
+                </p>
+              </div>
+            )}
+
+            {/* Thoughts from Previous Session (context for new sessions - DM only) */}
             {isDm && isNew && previousThoughts && (
               <div className="card p-6 mb-8 border-purple-500/30 bg-purple-500/5">
                 <div className="flex items-center gap-3 mb-4">
@@ -1032,16 +1055,18 @@ export default function SessionDetailPage() {
               </div>
             )}
 
-            {/* 2. Summary Section - PRIMARY FOCUS for Completed mode */}
+            {/* Summary/Quick Recap Section - Premium sees "Quick Recap", Free sees "Session Notes" */}
             <div className="card p-6 mb-8">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <label className="text-lg font-semibold text-[--text-primary] block">
-                    Summary
+                    {canUseAI ? 'Quick Recap' : 'Session Notes'}
                   </label>
                   {can.editSession && (
                     <span className="text-sm text-[--text-tertiary]">
-                      Write bullet points of what happened, then auto-expand into prose
+                      {canUseAI
+                        ? 'Write quick bullets about what happened. You can expand them into detailed notes when ready.'
+                        : 'What happened this session? Try mentioning NPCs, locations, key decisions...'}
                     </span>
                   )}
                 </div>
@@ -1070,7 +1095,10 @@ export default function SessionDetailPage() {
                 <RichTextEditor
                   content={formData.summary}
                   onChange={(content) => setFormData({ ...formData, summary: content })}
-                  placeholder="Write your session notes as bullet points..."
+                  placeholder={canUseAI
+                    ? "Write your session notes as bullet points..."
+                    : "What happened this session? Try mentioning NPCs, locations, key decisions..."
+                  }
                   className="min-h-[200px]"
                 />
               ) : (
@@ -1081,6 +1109,22 @@ export default function SessionDetailPage() {
                   ) : (
                     <p className="text-[--text-tertiary] italic">No summary available yet.</p>
                   )}
+                </div>
+              )}
+
+              {/* Share with players checkbox - DM only */}
+              {can.editSession && !isNew && (
+                <div className="mt-4 pt-4 border-t border-[--border]">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={shareNotesWithPlayers ?? false}
+                      onChange={(e) => handleShareNotesChange(e.target.checked)}
+                      className="w-4 h-4 rounded border-[--border] bg-[--bg-surface] text-[--arcane-purple] focus:ring-[--arcane-purple]/50"
+                    />
+                    <span className="text-sm text-gray-400">Share with players</span>
+                    <span className="text-xs text-gray-600">(when session is open or locked)</span>
+                  </label>
                 </div>
               )}
             </div>
@@ -1264,8 +1308,8 @@ export default function SessionDetailPage() {
               </div>
             )}
 
-            {/* Detailed Notes Section */}
-            {(formData.notes || (!detailedNotesCollapsed && can.editSession)) && (
+            {/* Detailed Notes Section - Premium only, or if notes already exist */}
+            {(formData.notes || (!detailedNotesCollapsed && can.editSession && canUseAI)) && (
               <div className="card p-6 mb-8">
                 {can.editSession ? (
                   /* DM can toggle and edit */
@@ -1332,36 +1376,6 @@ export default function SessionDetailPage() {
                   showVisibilityToggle={false}
                   placeholder="Private notes about this session. Plot threads to follow up, player behaviors, etc."
                   collapsed={!formData.dm_notes}
-                />
-              </div>
-            )}
-
-            {/* Entity Secrets Manager for Sessions */}
-            {!isNew && session && campaign?.user_id === user?.id && (
-              <div className="card p-6 mb-8">
-                <EntitySecretsManager
-                  campaignId={campaignId}
-                  entityType="session"
-                  entityId={session.id}
-                  collapsed={true}
-                />
-              </div>
-            )}
-
-            {/* Merged Notes View - Combine DM + Player Notes */}
-            {!isNew && session && campaign?.user_id === user?.id && (
-              <div className="card p-6 mb-8">
-                <MergedNotesView
-                  campaignId={campaignId}
-                  sessionId={session.id}
-                  sessionNumber={session.session_number}
-                  sessionTitle={session.title || undefined}
-                  dmSummary={formData.summary}
-                  dmDetailedNotes={formData.notes}
-                  onMergedContent={(content) => {
-                    // Optionally update the summary with merged content
-                    setFormData(prev => ({ ...prev, summary: content }))
-                  }}
                 />
               </div>
             )}

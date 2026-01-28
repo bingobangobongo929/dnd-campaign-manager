@@ -4,10 +4,12 @@ import { checkPermission, isDmRole } from '@/lib/permissions'
 import type {
   SessionPhase,
   SessionSection,
+  SessionState,
   PrepChecklistItem,
   SessionTimerState,
   PinnedReference,
   SessionAttendee,
+  PrepModule,
   MemberPermissions,
   CampaignMemberRole,
 } from '@/types/database'
@@ -67,31 +69,43 @@ export async function PATCH(
     const body = await request.json()
     const {
       phase,
+      prepNotes,
       prepChecklist,
       thoughtsForNext,
       enabledSections,
+      enabledPrepModules,
       sessionTimer,
       pinnedReferences,
       attendees,
+      state,
+      shareNotesWithPlayers,
     } = body as {
       phase?: SessionPhase
+      prepNotes?: string
       prepChecklist?: PrepChecklistItem[]
       thoughtsForNext?: string
       enabledSections?: SessionSection[]
+      enabledPrepModules?: PrepModule[]
       sessionTimer?: SessionTimerState | null
       pinnedReferences?: PinnedReference[]
       attendees?: SessionAttendee[]
+      state?: SessionState
+      shareNotesWithPlayers?: boolean | null
     }
 
     const updateData: Record<string, unknown> = {}
 
     if (phase !== undefined) updateData.phase = phase
+    if (prepNotes !== undefined) updateData.prep_notes = prepNotes
     if (prepChecklist !== undefined) updateData.prep_checklist = prepChecklist
     if (thoughtsForNext !== undefined) updateData.thoughts_for_next = thoughtsForNext
     if (enabledSections !== undefined) updateData.enabled_sections = enabledSections
+    if (enabledPrepModules !== undefined) updateData.enabled_prep_modules = enabledPrepModules
     if (sessionTimer !== undefined) updateData.session_timer = sessionTimer
     if (pinnedReferences !== undefined) updateData.pinned_references = pinnedReferences
     if (attendees !== undefined) updateData.attendees = attendees
+    if (state !== undefined) updateData.state = state
+    if (shareNotesWithPlayers !== undefined) updateData.share_notes_with_players = shareNotesWithPlayers
 
     const { data: session, error } = await supabase
       .from('sessions')

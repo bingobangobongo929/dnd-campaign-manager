@@ -29,6 +29,7 @@ import {
   EyeOff,
   Edit3,
   RotateCcw,
+  MessageSquare,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useSupabase, useUser, usePermissions } from '@/hooks'
@@ -37,14 +38,15 @@ import type {
   Campaign,
   CampaignShare,
   SessionSection,
-  DefaultPrepChecklistItem
+  DefaultPrepChecklistItem,
+  SessionSettings
 } from '@/types/database'
 import { PartyModal } from '@/components/campaign'
 import { Modal, AccessDeniedPage } from '@/components/ui'
 import { v4 as uuidv4 } from 'uuid'
 
 // Section collapse state type
-type SectionId = 'general' | 'party' | 'session-defaults' | 'sharing' | 'integrations' | 'data' | 'danger'
+type SectionId = 'general' | 'party' | 'session-defaults' | 'session-notes' | 'sharing' | 'integrations' | 'data' | 'danger'
 
 // Settings Section wrapper
 function SettingsSection({
@@ -277,6 +279,12 @@ export default function CampaignSettingsPage() {
   const [defaultSections, setDefaultSections] = useState<SessionSection[]>(['prep_checklist'])
   const [defaultChecklist, setDefaultChecklist] = useState<DefaultPrepChecklistItem[]>([])
 
+  // Session notes settings
+  const [sessionSettings, setSessionSettings] = useState<SessionSettings>({
+    players_can_view_session_notes: false,
+    players_can_add_session_notes: true
+  })
+
   // Party modal
   const [showPartyModal, setShowPartyModal] = useState(false)
   const [characters, setCharacters] = useState<any[]>([])
@@ -328,6 +336,13 @@ export default function CampaignSettingsPage() {
     setDefaultSections(sections)
     const checklist = campaignData.default_prep_checklist as DefaultPrepChecklistItem[] || []
     setDefaultChecklist(checklist)
+
+    // Load session notes settings
+    const settings = (campaignData.session_settings as SessionSettings) || {
+      players_can_view_session_notes: false,
+      players_can_add_session_notes: true
+    }
+    setSessionSettings(settings)
 
     // Load sessions count
     const { count } = await supabase
@@ -439,6 +454,32 @@ export default function CampaignSettingsPage() {
       setDefaultSections(defaultSections.filter(s => s !== section))
     } else {
       setDefaultSections([...defaultSections, section])
+    }
+  }
+
+  // Save session notes settings
+  const saveSessionNotesSettings = async () => {
+    if (!campaign) return
+
+    setSaving(true)
+    try {
+      const { error } = await supabase
+        .from('campaigns')
+        .update({
+          session_settings: sessionSettings,
+        })
+        .eq('id', campaignId)
+
+      if (error) throw error
+
+      setCampaign({
+        ...campaign,
+        session_settings: sessionSettings as any
+      })
+    } catch (error) {
+      console.error('Failed to save session notes settings:', error)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -706,6 +747,100 @@ export default function CampaignSettingsPage() {
                     <Save className="w-4 h-4 mr-2" />
                   )}
                   Save Session Defaults
+                </button>
+              </div>
+            </div>
+          </SettingsSection>
+
+          {/* Session Notes Settings */}
+          <SettingsSection
+            id="session-notes"
+            title="Session Notes"
+            icon={MessageSquare}
+            description="Control player access to session notes"
+          >
+            <div className="pt-6 space-y-6">
+              <FormField
+                label="Player Access"
+                description="Configure whether players can view and add session notes"
+              >
+                <div className="space-y-3 mt-3">
+                  {/* View DM Notes */}
+                  <label
+                    className="flex items-start gap-3 p-4 bg-white/[0.02] rounded-lg border border-white/[0.08] cursor-pointer hover:bg-white/[0.04] transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={sessionSettings.players_can_view_session_notes}
+                      onChange={(e) => setSessionSettings({
+                        ...sessionSettings,
+                        players_can_view_session_notes: e.target.checked
+                      })}
+                      className="w-4 h-4 mt-0.5 rounded border-gray-600 bg-gray-800 text-purple-600 focus:ring-purple-500"
+                    />
+                    <div className="flex-1">
+                      <span className="text-white text-sm font-medium block">Players can view DM session notes</span>
+                      <p className="text-gray-500 text-xs mt-1">
+                        When enabled and you share a session, players can read your session recap notes.
+                        You can still override this per-session.
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Add Notes */}
+                  <label
+                    className="flex items-start gap-3 p-4 bg-white/[0.02] rounded-lg border border-white/[0.08] cursor-pointer hover:bg-white/[0.04] transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={sessionSettings.players_can_add_session_notes}
+                      onChange={(e) => setSessionSettings({
+                        ...sessionSettings,
+                        players_can_add_session_notes: e.target.checked
+                      })}
+                      className="w-4 h-4 mt-0.5 rounded border-gray-600 bg-gray-800 text-purple-600 focus:ring-purple-500"
+                    />
+                    <div className="flex-1">
+                      <span className="text-white text-sm font-medium block">Players can add their own session notes</span>
+                      <p className="text-gray-500 text-xs mt-1">
+                        When you open a session for player notes, players can contribute their character&apos;s
+                        perspective on what happened.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </FormField>
+
+              <div className="p-4 bg-white/[0.02] rounded-lg border border-white/[0.08]">
+                <div className="flex items-start gap-3">
+                  <Eye className="w-5 h-5 text-gray-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-gray-300">
+                      <strong className="text-white">How visibility works:</strong>
+                    </p>
+                    <ul className="text-xs text-gray-500 mt-2 space-y-1 list-disc list-inside">
+                      <li><strong className="text-gray-400">Private</strong> sessions are only visible to you</li>
+                      <li><strong className="text-gray-400">Open</strong> sessions allow players to add notes</li>
+                      <li><strong className="text-gray-400">Locked</strong> sessions are finalized and read-only</li>
+                      <li>Use the &quot;Share with players&quot; checkbox on each session to control note visibility</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Save Button */}
+              <div className="flex justify-end pt-4 border-t border-white/[0.08]">
+                <button
+                  onClick={saveSessionNotesSettings}
+                  disabled={saving}
+                  className="btn btn-primary"
+                >
+                  {saving ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Save className="w-4 h-4 mr-2" />
+                  )}
+                  Save Session Notes Settings
                 </button>
               </div>
             </div>

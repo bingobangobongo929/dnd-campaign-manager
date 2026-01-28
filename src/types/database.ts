@@ -39,6 +39,8 @@ export interface Database {
           // Session workflow defaults
           default_session_sections: Json
           default_prep_checklist: Json
+          // Session visibility settings
+          session_settings: Json
           // Session scheduling (simple mode)
           next_session_date: string | null
           next_session_time: string | null
@@ -86,6 +88,8 @@ export interface Database {
           // Session workflow defaults
           default_session_sections?: Json
           default_prep_checklist?: Json
+          // Session visibility settings
+          session_settings?: Json
           // Session scheduling (simple mode)
           next_session_date?: string | null
           next_session_time?: string | null
@@ -133,6 +137,8 @@ export interface Database {
           // Session workflow defaults
           default_session_sections?: Json
           default_prep_checklist?: Json
+          // Session visibility settings
+          session_settings?: Json
           // Session scheduling (simple mode)
           next_session_date?: string | null
           next_session_time?: string | null
@@ -439,14 +445,19 @@ export interface Database {
           notes: string | null
           summary: string | null
           dm_notes: string | null
-          // Session workflow
-          phase: 'prep' | 'live' | 'completed'
+          // Session workflow (2-phase system)
+          phase: 'prep' | 'completed'
+          prep_notes: string | null
           prep_checklist: Json
           thoughts_for_next: string | null
           enabled_sections: Json
-          session_timer: Json | null
+          enabled_prep_modules: string[]
+          session_timer: Json | null // DEPRECATED: preserved for data retention
           pinned_references: Json
           attendees: Json
+          // Session state for player access
+          state: 'private' | 'open' | 'locked'
+          share_notes_with_players: boolean | null
           // Session scheduling
           scheduled_date: string | null
           duration_minutes: number | null
@@ -462,14 +473,19 @@ export interface Database {
           notes?: string | null
           summary?: string | null
           dm_notes?: string | null
-          // Session workflow
-          phase?: 'prep' | 'live' | 'completed'
+          // Session workflow (2-phase system)
+          phase?: 'prep' | 'completed'
+          prep_notes?: string | null
           prep_checklist?: Json
           thoughts_for_next?: string | null
           enabled_sections?: Json
+          enabled_prep_modules?: string[]
           session_timer?: Json | null
           pinned_references?: Json
           attendees?: Json
+          // Session state for player access
+          state?: 'private' | 'open' | 'locked'
+          share_notes_with_players?: boolean | null
           // Session scheduling
           scheduled_date?: string | null
           duration_minutes?: number | null
@@ -485,14 +501,19 @@ export interface Database {
           notes?: string | null
           summary?: string | null
           dm_notes?: string | null
-          // Session workflow
-          phase?: 'prep' | 'live' | 'completed'
+          // Session workflow (2-phase system)
+          phase?: 'prep' | 'completed'
+          prep_notes?: string | null
           prep_checklist?: Json
           thoughts_for_next?: string | null
           enabled_sections?: Json
+          enabled_prep_modules?: string[]
           session_timer?: Json | null
           pinned_references?: Json
           attendees?: Json
+          // Session state for player access
+          state?: 'private' | 'open' | 'locked'
+          share_notes_with_players?: boolean | null
           // Session scheduling
           scheduled_date?: string | null
           duration_minutes?: number | null
@@ -4447,11 +4468,23 @@ export type UserGuidanceState = Database['public']['Tables']['user_guidance_stat
 export type UserGuidanceStateInsert = Database['public']['Tables']['user_guidance_state']['Insert']
 export type UserGuidanceStateUpdate = Database['public']['Tables']['user_guidance_state']['Update']
 
-// Session workflow types
-export type SessionPhase = 'prep' | 'live' | 'completed'
+// Session workflow types (2-phase system)
+export type SessionPhase = 'prep' | 'completed'
 
-// Session workflow section types
+// Session state for player access control
+export type SessionState = 'private' | 'open' | 'locked'
+
+// Session workflow section types (legacy - kept for backward compatibility)
 export type SessionSection = 'prep_checklist' | 'thoughts_for_next' | 'quick_reference' | 'session_timer'
+
+// Prep phase optional modules
+export type PrepModule = 'checklist' | 'references'
+
+// Campaign session settings
+export interface SessionSettings {
+  players_can_view_session_notes: boolean
+  players_can_add_session_notes: boolean
+}
 
 // Prep checklist item
 export interface PrepChecklistItem {

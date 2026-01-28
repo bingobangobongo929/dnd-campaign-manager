@@ -46,6 +46,8 @@ interface PlayerNotesProps {
   characters?: Character[]
   autoOpenAdd?: boolean
   onModalClose?: () => void
+  /** Session state for player access control - when passed, component respects it */
+  sessionState?: 'private' | 'open' | 'locked'
 }
 
 interface NoteWithRelations extends PlayerSessionNote {
@@ -61,7 +63,7 @@ interface NoteWithRelations extends PlayerSessionNote {
   } | null
 }
 
-export function PlayerNotes({ campaignId, sessionId, characters = [], autoOpenAdd, onModalClose }: PlayerNotesProps) {
+export function PlayerNotes({ campaignId, sessionId, characters = [], autoOpenAdd, onModalClose, sessionState }: PlayerNotesProps) {
   const [notes, setNotes] = useState<NoteWithRelations[]>([])
   const [loading, setLoading] = useState(true)
   const [isDm, setIsDm] = useState(false)
@@ -69,16 +71,6 @@ export function PlayerNotes({ campaignId, sessionId, characters = [], autoOpenAd
   const [userCharacterId, setUserCharacterId] = useState<string | null>(null)
 
   const [addModalOpen, setAddModalOpen] = useState(false)
-
-  // Auto-open add modal when prop changes
-  useEffect(() => {
-    if (autoOpenAdd && canAddNotes && !loading) {
-      setNoteContent('')
-      setSelectedCharacterId(userCharacterId || '')
-      setIsShared(true)
-      setAddModalOpen(true)
-    }
-  }, [autoOpenAdd, canAddNotes, loading, userCharacterId])
   const [addOnBehalfModalOpen, setAddOnBehalfModalOpen] = useState(false)
   const [editingNote, setEditingNote] = useState<NoteWithRelations | null>(null)
   const [noteContent, setNoteContent] = useState('')
@@ -235,6 +227,28 @@ export function PlayerNotes({ campaignId, sessionId, characters = [], autoOpenAd
     (!c.status || c.status === 'alive' || c.status === 'active')
   )
 
+  // Compute effective canAddNotes based on session state
+  // DMs can always add (when session state allows)
+  // Players can only add when session is 'open'
+  const effectiveCanAddNotes = (() => {
+    // If no session state prop passed, use the API response
+    if (sessionState === undefined) return canAddNotes
+    // DMs can always add in any state except locked (handled by canAddNotes from API)
+    if (isDm) return canAddNotes && sessionState !== 'locked'
+    // Players can only add when session is 'open'
+    return canAddNotes && sessionState === 'open'
+  })()
+
+  // Auto-open add modal when prop changes
+  useEffect(() => {
+    if (autoOpenAdd && effectiveCanAddNotes && !loading) {
+      setNoteContent('')
+      setSelectedCharacterId(userCharacterId || '')
+      setIsShared(true)
+      setAddModalOpen(true)
+    }
+  }, [autoOpenAdd, effectiveCanAddNotes, loading, userCharacterId])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -273,7 +287,7 @@ export function PlayerNotes({ campaignId, sessionId, characters = [], autoOpenAd
             </button>
           )}
           {/* Regular add notes button */}
-          {canAddNotes && (
+          {effectiveCanAddNotes && (
             <button
               onClick={() => {
                 setNoteContent('')
@@ -295,9 +309,19 @@ export function PlayerNotes({ campaignId, sessionId, characters = [], autoOpenAd
         <div className="text-center py-8 bg-white/[0.02] rounded-lg border border-[--border]">
           <MessageSquare className="w-8 h-8 text-gray-600 mx-auto mb-2" />
           <p className="text-gray-500 text-sm">No player notes yet</p>
-          {canAddNotes && (
+          {effectiveCanAddNotes && (
             <p className="text-gray-600 text-xs mt-1">
               Add notes from your character&apos;s perspective
+            </p>
+          )}
+          {sessionState === 'locked' && !isDm && (
+            <p className="text-gray-600 text-xs mt-1">
+              This session is locked and no longer accepting notes
+            </p>
+          )}
+          {sessionState === 'private' && !isDm && (
+            <p className="text-gray-600 text-xs mt-1">
+              This session is not open for player notes yet
             </p>
           )}
         </div>
