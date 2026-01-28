@@ -16,6 +16,13 @@ import {
   Clock,
   Filter,
   Loader2,
+  Sparkles,
+  Users,
+  Swords,
+  Cloud,
+  Gem,
+  Check,
+  Download,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout'
 import { Modal, EmptyState, Badge, AccessDeniedPage } from '@/components/ui'
@@ -31,6 +38,12 @@ import type {
 } from '@/types/database'
 import { v4 as uuidv4 } from 'uuid'
 import { toast } from 'sonner'
+import {
+  TEMPLATE_CATEGORIES,
+  getTotalEntryCount,
+  type TableTemplate,
+  type TemplateCategory,
+} from '@/lib/random-table-templates'
 
 // Category configuration
 const CATEGORY_CONFIG: Record<RandomTableCategory, { label: string; color: string; bgColor: string }> = {
@@ -101,6 +114,11 @@ export default function RandomTablesPage() {
   const [formRollType, setFormRollType] = useState<RandomTableDieType>('d20')
   const [formCustomDieSize, setFormCustomDieSize] = useState<number>(20)
   const [formEntries, setFormEntries] = useState<RandomTableEntry[]>([])
+
+  // Templates modal state
+  const [showTemplatesModal, setShowTemplatesModal] = useState(false)
+  const [selectedTemplates, setSelectedTemplates] = useState<Set<string>>(new Set())
+  const [importingTemplates, setImportingTemplates] = useState(false)
 
   // Load tables
   useEffect(() => {
@@ -307,6 +325,84 @@ export default function RandomTablesPage() {
     setRollResult(null)
   }
 
+  // Toggle template selection
+  const toggleTemplateSelection = (templateId: string) => {
+    setSelectedTemplates(prev => {
+      const next = new Set(prev)
+      if (next.has(templateId)) {
+        next.delete(templateId)
+      } else {
+        next.add(templateId)
+      }
+      return next
+    })
+  }
+
+  // Import selected templates
+  const importSelectedTemplates = async () => {
+    if (selectedTemplates.size === 0) {
+      toast.error('Please select at least one template')
+      return
+    }
+
+    setImportingTemplates(true)
+    try {
+      // Get all selected templates
+      const templatesToImport: TableTemplate[] = []
+      TEMPLATE_CATEGORIES.forEach(cat => {
+        cat.templates.forEach(template => {
+          if (selectedTemplates.has(template.id)) {
+            templatesToImport.push(template)
+          }
+        })
+      })
+
+      // Create tables in database
+      const tablesToInsert = templatesToImport.map(template => ({
+        campaign_id: campaignId,
+        user_id: user!.id,
+        name: template.name,
+        description: template.description,
+        category: template.category,
+        roll_type: template.roll_type,
+        custom_die_size: template.custom_die_size || null,
+        entries: template.entries.map((text, index) => ({
+          id: uuidv4(),
+          text,
+          weight: 1,
+        })),
+        tags: template.tags,
+      }))
+
+      const { error } = await supabase
+        .from('random_tables')
+        .insert(tablesToInsert)
+
+      if (error) throw error
+
+      toast.success(`Added ${templatesToImport.length} table${templatesToImport.length > 1 ? 's' : ''}`)
+      setShowTemplatesModal(false)
+      setSelectedTemplates(new Set())
+      loadTables()
+    } catch (error) {
+      console.error('Failed to import templates:', error)
+      toast.error('Failed to import templates')
+    } finally {
+      setImportingTemplates(false)
+    }
+  }
+
+  // Get icon for template category
+  const getCategoryIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'Users': return Users
+      case 'Swords': return Swords
+      case 'Cloud': return Cloud
+      case 'Gem': return Gem
+      default: return Dice5
+    }
+  }
+
   // Permission check
   if (permissionsLoading) {
     return (
@@ -344,10 +440,19 @@ export default function RandomTablesPage() {
             </p>
           </div>
           {isDm && (
-            <button onClick={openCreateModal} className="btn btn-primary">
-              <Plus className="w-4 h-4 mr-2" />
-              New Table
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowTemplatesModal(true)}
+                className="btn btn-secondary"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Browse Templates
+              </button>
+              <button onClick={openCreateModal} className="btn btn-primary">
+                <Plus className="w-4 h-4 mr-2" />
+                New Table
+              </button>
+            </div>
           )}
         </div>
 
@@ -634,6 +739,107 @@ export default function RandomTablesPage() {
           onClose={closeRollResult}
         />
       )}
+
+      {/* Starter Templates Modal */}
+      <Modal
+        isOpen={showTemplatesModal}
+        onClose={() => {
+          setShowTemplatesModal(false)
+          setSelectedTemplates(new Set())
+        }}
+        title="Starter Templates"
+        description={`${getTotalEntryCount()}+ pre-built entries for names, encounters, and more`}
+        size="lg"
+      >
+        <div className="space-y-6">
+          {TEMPLATE_CATEGORIES.map(category => {
+            const CategoryIcon = getCategoryIcon(category.icon)
+            return (
+              <div key={category.id} className="space-y-3">
+                {/* Category Header */}
+                <div className="flex items-center gap-2">
+                  <CategoryIcon className="w-5 h-5 text-purple-400" />
+                  <h3 className="font-medium text-white">{category.name}</h3>
+                  <span className="text-xs text-gray-500">- {category.description}</span>
+                </div>
+
+                {/* Templates Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {category.templates.map(template => {
+                    const isSelected = selectedTemplates.has(template.id)
+                    const categoryConfig = CATEGORY_CONFIG[template.category]
+
+                    return (
+                      <button
+                        key={template.id}
+                        onClick={() => toggleTemplateSelection(template.id)}
+                        className={cn(
+                          "flex items-center gap-3 p-3 rounded-lg border text-left transition-all",
+                          isSelected
+                            ? "bg-purple-500/20 border-purple-500/50"
+                            : "bg-white/[0.02] border-[--border] hover:bg-white/[0.04]"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors",
+                          isSelected
+                            ? "bg-purple-500 border-purple-500"
+                            : "border-gray-600"
+                        )}>
+                          {isSelected && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-white text-sm font-medium">{template.name}</span>
+                            <span className="text-xs text-gray-500">
+                              {template.entries.length} entries
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 truncate">{template.description}</p>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+
+          {/* Actions */}
+          <div className="flex items-center justify-between pt-4 border-t border-[--border]">
+            <div className="text-sm text-gray-400">
+              {selectedTemplates.size > 0 ? (
+                <span>{selectedTemplates.size} template{selectedTemplates.size > 1 ? 's' : ''} selected</span>
+              ) : (
+                <span>Select templates to add to your campaign</span>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setShowTemplatesModal(false)
+                  setSelectedTemplates(new Set())
+                }}
+                className="btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={importSelectedTemplates}
+                disabled={selectedTemplates.size === 0 || importingTemplates}
+                className="btn btn-primary"
+              >
+                {importingTemplates ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Download className="w-4 h-4 mr-2" />
+                )}
+                Add to Campaign
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </AppLayout>
   )
 }

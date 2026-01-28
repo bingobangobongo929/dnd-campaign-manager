@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import {
   CheckSquare,
   Square,
@@ -14,12 +15,19 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   Target,
   Users,
   MessageCircle,
   Dice5,
   Music,
+  Settings,
+  ExternalLink,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react'
+import { Modal } from '@/components/ui'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { RichTextEditor } from '@/components/editor'
@@ -68,6 +76,8 @@ interface SessionWorkflowProps {
   encounters?: Encounter[]
   previousSession?: Session | null
   onUpdate?: (session: Session) => void
+  /** Campaign default session sections - modules matching these will auto-expand */
+  defaultSections?: string[]
 }
 
 // Module configuration - all 7 optional prep tools
@@ -172,7 +182,8 @@ export function SessionWorkflow({
   quests = [],
   encounters = [],
   previousSession,
-  onUpdate
+  onUpdate,
+  defaultSections = [],
 }: SessionWorkflowProps) {
   // Parse session data
   const [prepNotes, setPrepNotes] = useState(session.prep_notes || '')
@@ -207,7 +218,46 @@ export function SessionWorkflow({
   )
 
   // UI state - which sections are expanded
-  const [expandedModules, setExpandedModules] = useState<Set<PrepModule>>(new Set())
+  // Auto-expand modules that match campaign defaults or have content
+  const [expandedModules, setExpandedModules] = useState<Set<PrepModule>>(() => {
+    const initialExpanded = new Set<PrepModule>()
+
+    // Map campaign default section names to prep modules
+    const sectionToModule: Record<string, PrepModule> = {
+      'prep_checklist': 'checklist',
+      'quick_reference': 'references',
+      'session_goals': 'session_goals',
+      'key_npcs': 'key_npcs',
+      'session_opener': 'session_opener',
+      'random_tables': 'random_tables',
+      'music_ambiance': 'music_ambiance',
+    }
+
+    // Auto-expand modules that are in campaign defaults
+    defaultSections.forEach(section => {
+      const module = sectionToModule[section]
+      if (module) {
+        initialExpanded.add(module)
+      }
+    })
+
+    return initialExpanded
+  })
+
+  // Module order state - customizable order of prep modules
+  const [moduleOrder, setModuleOrder] = useState<PrepModule[]>(() => {
+    // If session has custom order saved, use it; otherwise use default
+    const savedOrder = (session.enabled_prep_modules as PrepModule[]) || []
+    // If saved order has all modules, use it; otherwise use default with any saved order preferences
+    if (savedOrder.length === ALL_MODULES.length) {
+      return savedOrder
+    }
+    return ALL_MODULES
+  })
+
+  // Reorder modal state
+  const [showReorderModal, setShowReorderModal] = useState(false)
+  const [tempModuleOrder, setTempModuleOrder] = useState<PrepModule[]>([])
 
   const [newPrepItem, setNewPrepItem] = useState('')
   const [saving, setSaving] = useState(false)
@@ -290,7 +340,7 @@ export function SessionWorkflow({
           body: JSON.stringify({
             prepNotes,
             prepChecklist,
-            enabledPrepModules: modulesWithContent,
+            enabledPrepModules: moduleOrder, // Save custom order
             pinnedReferences: pinnedRefs,
             sessionGoals,
             keyNpcs,
@@ -317,7 +367,7 @@ export function SessionWorkflow({
     } finally {
       setSaving(false)
     }
-  }, [prepNotes, prepChecklist, references, sessionGoals, keyNpcs, sessionOpener, randomTables, musicAmbiance, campaignId, session.id, onUpdate])
+  }, [prepNotes, prepChecklist, references, sessionGoals, keyNpcs, sessionOpener, randomTables, musicAmbiance, moduleOrder, campaignId, session.id, onUpdate])
 
   // Auto-save with debounce
   useEffect(() => {
@@ -341,6 +391,37 @@ export function SessionWorkflow({
       }
       return next
     })
+  }
+
+  // Reorder modal functions
+  const openReorderModal = () => {
+    setTempModuleOrder([...moduleOrder])
+    setShowReorderModal(true)
+  }
+
+  const moveModuleUp = (index: number) => {
+    if (index === 0) return
+    const newOrder = [...tempModuleOrder]
+    const temp = newOrder[index - 1]
+    newOrder[index - 1] = newOrder[index]
+    newOrder[index] = temp
+    setTempModuleOrder(newOrder)
+  }
+
+  const moveModuleDown = (index: number) => {
+    if (index === tempModuleOrder.length - 1) return
+    const newOrder = [...tempModuleOrder]
+    const temp = newOrder[index + 1]
+    newOrder[index + 1] = newOrder[index]
+    newOrder[index] = temp
+    setTempModuleOrder(newOrder)
+  }
+
+  const saveModuleOrder = async () => {
+    setModuleOrder(tempModuleOrder)
+    setShowReorderModal(false)
+    // Trigger save
+    setHasChanges(true)
   }
 
   // Checklist functions
@@ -601,6 +682,14 @@ export function SessionWorkflow({
           <div className="flex items-center gap-3 mb-2">
             <div className="h-px flex-1 bg-[--border]" />
             <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Optional Prep Tools</span>
+            <button
+              onClick={openReorderModal}
+              className="text-xs text-gray-500 hover:text-purple-400 transition-colors flex items-center gap-1"
+              title="Customize order"
+            >
+              <GripVertical className="w-3 h-3" />
+              Reorder
+            </button>
             <div className="h-px flex-1 bg-[--border]" />
           </div>
           <p className="text-sm text-gray-500 text-center">
@@ -608,9 +697,9 @@ export function SessionWorkflow({
           </p>
         </div>
 
-        {/* All Modules - Always visible, collapsible */}
+        {/* All Modules - Always visible, collapsible (in custom order) */}
         <div className="space-y-3">
-          {ALL_MODULES.map((moduleId) => {
+          {moduleOrder.map((moduleId) => {
             const config = MODULE_CONFIG[moduleId]
             const Icon = config.icon
             const isExpanded = expandedModules.has(moduleId)
@@ -667,6 +756,18 @@ export function SessionWorkflow({
             )
           })}
         </div>
+
+        {/* Campaign Settings Link */}
+        <div className="mt-4 pt-4 border-t border-[--border]">
+          <Link
+            href={`/campaigns/${campaignId}/settings`}
+            className="flex items-center gap-2 text-xs text-gray-500 hover:text-purple-400 transition-colors group"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            <span>Set your session defaults in Campaign Settings</span>
+            <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </Link>
+        </div>
       </div>
 
       {/* Save Button */}
@@ -688,6 +789,84 @@ export function SessionWorkflow({
           </button>
         </div>
       )}
+
+      {/* Reorder Modules Modal */}
+      <Modal
+        isOpen={showReorderModal}
+        onClose={() => setShowReorderModal(false)}
+        title="Customize Section Order"
+        description="Drag sections up or down to reorder them"
+      >
+        <div className="space-y-2">
+          {tempModuleOrder.map((moduleId, index) => {
+            const config = MODULE_CONFIG[moduleId]
+            const Icon = config.icon
+            const isFirst = index === 0
+            const isLast = index === tempModuleOrder.length - 1
+
+            return (
+              <div
+                key={moduleId}
+                className={cn(
+                  "flex items-center gap-3 p-3 rounded-lg border",
+                  config.bgColor,
+                  config.borderColor
+                )}
+              >
+                <GripVertical className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                <Icon className={cn("w-5 h-5 flex-shrink-0", config.iconColor)} />
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium text-white text-sm">{config.label}</span>
+                  <p className="text-xs text-gray-500 truncate">{config.description}</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => moveModuleUp(index)}
+                    disabled={isFirst}
+                    className={cn(
+                      "p-1.5 rounded transition-colors",
+                      isFirst
+                        ? "text-gray-600 cursor-not-allowed"
+                        : "text-gray-400 hover:text-white hover:bg-white/10"
+                    )}
+                    title="Move up"
+                  >
+                    <ArrowUp className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => moveModuleDown(index)}
+                    disabled={isLast}
+                    className={cn(
+                      "p-1.5 rounded transition-colors",
+                      isLast
+                        ? "text-gray-600 cursor-not-allowed"
+                        : "text-gray-400 hover:text-white hover:bg-white/10"
+                    )}
+                    title="Move down"
+                  >
+                    <ArrowDown className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[--border]">
+          <button
+            onClick={() => setShowReorderModal(false)}
+            className="btn btn-secondary"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={saveModuleOrder}
+            className="btn btn-primary"
+          >
+            Save Order
+          </button>
+        </div>
+      </Modal>
     </div>
   )
 }

@@ -84,6 +84,11 @@ const NAVIGATION_TREE: NavigationNode[] = [
         description: 'Combat and social encounters',
       },
       {
+        label: 'Random Tables',
+        icon: Scroll,
+        description: 'Roll tables for NPCs, loot, and more',
+      },
+      {
         label: 'Lore',
         icon: Network,
         description: 'World-building knowledge base',

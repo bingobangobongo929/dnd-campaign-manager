@@ -21,6 +21,7 @@ import {
   Eye,
   Users,
   Lock,
+  Dice5,
 } from 'lucide-react'
 import { DockFlyout } from './dock-flyout'
 import { useCanUseAI, useAppStore } from '@/store'
@@ -89,6 +90,7 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
     ...(canUseAI ? [{ href: `/campaigns/${campaignId}/intelligence`, label: 'Intelligence', icon: Brain, isActive: isActive(`/campaigns/${campaignId}/intelligence`), badge: intelligencePendingCount }] : []),
     { href: `/campaigns/${campaignId}/quests`, label: 'Quests', icon: Target, isActive: isActive(`/campaigns/${campaignId}/quests`) },
     { href: `/campaigns/${campaignId}/encounters`, label: 'Encounters', icon: Swords, isActive: isActive(`/campaigns/${campaignId}/encounters`) },
+    { href: `/campaigns/${campaignId}/random-tables`, label: 'Random Tables', icon: Dice5, isActive: isActive(`/campaigns/${campaignId}/random-tables`) },
     { href: '#', label: 'Party & Members', icon: Users, onClick: () => setIsPartyModalOpen(true) },
     { href: `/campaigns/${campaignId}/settings`, label: 'Campaign Settings', icon: Settings, isActive: isActive(`/campaigns/${campaignId}/settings`) },
   ] : []

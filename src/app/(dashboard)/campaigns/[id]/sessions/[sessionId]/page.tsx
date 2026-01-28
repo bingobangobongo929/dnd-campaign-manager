@@ -1042,7 +1042,7 @@ export default function SessionDetailPage() {
         {isDm && currentPhase === 'prep' && (
           <>
             {/* Session Workflow - Full component for Prep mode */}
-            {!isNew && session && campaign?.user_id === user?.id && (
+            {!isNew && session && campaign && campaign.user_id === user?.id && (
               <div className="card p-6 mb-8">
                 <SessionWorkflow
                   session={session}
@@ -1053,6 +1053,7 @@ export default function SessionDetailPage() {
                   encounters={encounters}
                   previousSession={previousSessionData}
                   onUpdate={(updatedSession) => setSession(updatedSession)}
+                  defaultSections={(campaign.default_session_sections as string[]) || []}
                 />
               </div>
             )}
