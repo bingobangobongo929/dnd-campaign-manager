@@ -90,7 +90,7 @@ export function FloatingDock({ campaignId, characterId, oneshotId }: FloatingDoc
     { href: `/campaigns/${campaignId}/quests`, label: 'Quests', icon: Target, isActive: isActive(`/campaigns/${campaignId}/quests`) },
     { href: `/campaigns/${campaignId}/encounters`, label: 'Encounters', icon: Swords, isActive: isActive(`/campaigns/${campaignId}/encounters`) },
     { href: '#', label: 'Party & Members', icon: Users, onClick: () => setIsPartyModalOpen(true) },
-    { href: `/campaigns/${campaignId}/settings`, label: 'Settings', icon: Settings, isActive: isActive(`/campaigns/${campaignId}/settings`) },
+    { href: `/campaigns/${campaignId}/settings`, label: 'Campaign Settings', icon: Settings, isActive: isActive(`/campaigns/${campaignId}/settings`) },
   ] : []
 
   // Character navigation items
