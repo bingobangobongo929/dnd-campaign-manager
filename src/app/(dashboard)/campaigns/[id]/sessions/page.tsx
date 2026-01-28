@@ -11,8 +11,6 @@ import {
   Users,
   ChevronDown,
   ChevronUp,
-  ClipboardList,
-  CheckCircle2,
   Lock,
   Unlock,
   EyeOff,
@@ -217,11 +215,6 @@ export default function SessionsPage() {
     )
   })
 
-  // Navigate to create session with specified phase
-  const handleCreateSession = (phase: 'prep' | 'completed') => {
-    router.push(`/campaigns/${campaignId}/sessions/new?phase=${phase}`)
-  }
-
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
     const session = sessions.find(s => s.id === id)
@@ -303,25 +296,10 @@ export default function SessionsPage() {
     )
   }
 
-  // Page-specific actions for TopBar
-  const pageActions = can.addSession && (
-    <div className="flex items-center gap-2">
-      <button
-        className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 transition-colors font-medium"
-        onClick={() => handleCreateSession('prep')}
-      >
-        <ClipboardList className="w-4 h-4" />
-        <span className="hidden sm:inline">Plan</span>
-      </button>
-      <button
-        className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium"
-        onClick={() => handleCreateSession('completed')}
-      >
-        <CheckCircle2 className="w-4 h-4" />
-        <span className="hidden sm:inline">Recap</span>
-      </button>
-    </div>
-  )
+  // Navigate to create session
+  const handleAddSession = () => {
+    router.push(`/campaigns/${campaignId}/sessions/new`)
+  }
 
   // Desktop Layout
   if (loading || permissionsLoading) {
@@ -347,7 +325,7 @@ export default function SessionsPage() {
   }
 
   return (
-    <AppLayout campaignId={campaignId} topBarActions={pageActions}>
+    <AppLayout campaignId={campaignId}>
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* First-time guidance */}
         <GuidanceTip
@@ -358,17 +336,28 @@ export default function SessionsPage() {
           showOnce
         />
 
-        {/* Search */}
-        <div className="relative mb-6" style={{ marginBottom: '40px' }}>
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[--text-tertiary]" />
-          <input
-            type="text"
-            className="form-input pl-12"
-            style={{ paddingLeft: '48px' }}
-            placeholder="Search sessions..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        {/* Search and Add Session Button */}
+        <div className="flex items-center gap-3 mb-8">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[--text-tertiary]" />
+            <input
+              type="text"
+              className="form-input pl-12"
+              style={{ paddingLeft: '48px' }}
+              placeholder="Search sessions..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          {can.addSession && (
+            <button
+              onClick={handleAddSession}
+              className="btn btn-primary flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Session
+            </button>
+          )}
         </div>
 
         {/* Sessions List */}
@@ -391,21 +380,13 @@ export default function SessionsPage() {
                   Session notes power Campaign Intelligence - add detailed notes to get timeline events, NPC suggestions, and relationship tracking.
                 </p>
                 {can.addSession && (
-                  <div className="flex items-center justify-center gap-4 mt-6">
+                  <div className="mt-6">
                     <button
-                      className="flex items-center gap-2 px-5 py-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 transition-colors font-medium"
-                      onClick={() => handleCreateSession('prep')}
+                      onClick={handleAddSession}
+                      className="btn btn-primary flex items-center gap-2"
                     >
-                      <ClipboardList className="w-5 h-5" />
-                      Plan Session
-                    </button>
-                    <span className="text-gray-600">or</span>
-                    <button
-                      className="flex items-center gap-2 px-5 py-3 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium"
-                      onClick={() => handleCreateSession('completed')}
-                    >
-                      <CheckCircle2 className="w-5 h-5" />
-                      Add Recap
+                      <Plus className="w-5 h-5" />
+                      Add Session
                     </button>
                   </div>
                 )}

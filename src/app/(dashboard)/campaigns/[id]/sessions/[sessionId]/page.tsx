@@ -1125,11 +1125,11 @@ export default function SessionDetailPage() {
                       value={sessionState}
                       onChange={(e) => handleStateChange(e.target.value as SessionState)}
                       className={cn(
-                        "appearance-none pl-8 pr-10 py-2 rounded-lg border text-sm font-medium cursor-pointer",
-                        "bg-[#0a0a0f] focus:outline-none",
-                        sessionState === 'private' && "text-gray-400 border-gray-600",
-                        sessionState === 'open' && "text-green-400 border-green-500/30",
-                        sessionState === 'locked' && "text-amber-400 border-amber-500/30"
+                        "appearance-none pl-8 pr-10 py-2 rounded-lg text-sm font-medium cursor-pointer",
+                        "bg-[--bg-elevated] border border-white/[0.08] focus:outline-none focus:border-[--arcane-purple]",
+                        sessionState === 'private' && "text-gray-400",
+                        sessionState === 'open' && "text-green-400",
+                        sessionState === 'locked' && "text-amber-400"
                       )}
                     >
                       <option value="private">Private (DM only)</option>
