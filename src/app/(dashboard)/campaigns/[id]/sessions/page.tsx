@@ -15,6 +15,10 @@ import {
   Unlock,
   EyeOff,
   Loader2,
+  ClipboardList,
+  CheckCircle2,
+  MessageSquare,
+  Eye,
 } from 'lucide-react'
 import { Tooltip, sanitizeHtml, AccessDeniedPage, Modal } from '@/components/ui'
 import { GuidanceTip } from '@/components/guidance/GuidanceTip'
@@ -26,8 +30,7 @@ import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
 import { formatDate, cn, getInitials } from '@/lib/utils'
 import { logActivity } from '@/lib/activity-log'
 import Image from 'next/image'
-import type { Campaign, Session, Character, Tag, CharacterTag, SessionState } from '@/types/database'
-import { MessageSquare } from 'lucide-react'
+import type { Campaign, Session, Character, Tag, CharacterTag, SessionState, SessionPhase } from '@/types/database'
 
 // Convert basic markdown to HTML for display (or pass through if already HTML)
 function markdownToHtml(text: string): string {
@@ -395,256 +398,365 @@ export default function SessionsPage() {
             )}
           </div>
         ) : (
-          <div className="space-y-8">
-            {filteredSessions.map((session, index) => (
-              <div
-                key={session.id}
-                className="rounded-xl cursor-pointer animate-slide-in-up transition-all duration-200"
-                style={{
-                  animationDelay: `${index * 50}ms`,
-                  backgroundColor: 'rgba(255,255,255,0.04)',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                  marginBottom: '32px',
-                }}
-                onClick={() => handleSessionClick(session)}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.5)'
-                  e.currentTarget.style.transform = 'translateY(-2px)'
-                  e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.4)'
-                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'
-                  e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)'
-                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'
-                }}
-              >
-                <div className="p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-3">
-                        <span
-                          className="px-3 py-1.5 text-xs font-bold rounded-lg uppercase tracking-wide"
-                          style={{
-                            backgroundColor: 'rgba(139, 92, 246, 0.15)',
-                            color: '#a78bfa'
-                          }}
-                        >
-                          Session {session.session_number}
+          <div className="space-y-6">
+            {filteredSessions.map((session, index) => {
+              const phase = (session.phase as SessionPhase) || 'completed'
+              const state = (session.state as SessionState) || 'private'
+              const isPrep = phase === 'prep'
+              const hasSummary = !!session.summary?.trim()
+              const hasNotes = !!session.notes?.trim()
+              const isEnhancedMode = hasSummary && hasNotes
+              const dmNotesShared = session.share_notes_with_players !== false
+              const canSeeDmContent = isDm || dmNotesShared
+              const hasPlayerPerspectives = session.noteContributors && session.noteContributors.length > 0
+
+              // For prep sessions, check prep content
+              const prepChecklist = (session.prep_checklist as Array<{ checked: boolean }>) || []
+              const checklistDone = prepChecklist.filter(i => i.checked).length
+              const hasSessionGoals = !!session.session_goals?.trim()
+              const hasSessionOpener = !!session.session_opener?.trim()
+
+              return (
+                <div
+                  key={session.id}
+                  className={cn(
+                    "rounded-xl cursor-pointer animate-slide-in-up transition-all duration-200 border-l-4",
+                    isPrep ? "border-l-yellow-500/50" : "border-l-purple-500/50"
+                  )}
+                  style={{
+                    animationDelay: `${index * 50}ms`,
+                    backgroundColor: 'rgba(255,255,255,0.04)',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                  }}
+                  onClick={() => handleSessionClick(session)}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                    e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.4)'
+                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)'
+                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'
+                  }}
+                >
+                  <div className="p-6">
+                    {/* Header Row */}
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Phase Badge - Primary indicator */}
+                        {isPrep ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">
+                            <ClipboardList className="w-3.5 h-3.5" />
+                            Prep
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg bg-purple-500/15 text-purple-400 border border-purple-500/30">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Done
+                          </span>
+                        )}
+
+                        {/* Session Number */}
+                        <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-white/5 text-gray-400">
+                          #{session.session_number}
                         </span>
+
+                        {/* Date */}
                         <span className="text-sm text-[--text-tertiary] flex items-center gap-1.5">
                           <Calendar className="w-4 h-4" />
                           {formatDate(session.date)}
                         </span>
-                        {/* Session State Badge (for players) */}
-                        {!isDm && (session.state as SessionState) === 'open' && (
-                          <span className="flex items-center gap-1 text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded">
-                            <Unlock className="w-3 h-3" />
-                            Open for notes
-                          </span>
-                        )}
-                        {!isDm && (session.state as SessionState) === 'locked' && (
-                          <span className="flex items-center gap-1 text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
-                            <Lock className="w-3 h-3" />
-                            Locked
-                          </span>
-                        )}
-                        {/* DM sees state indicator */}
-                        {isDm && (session.state as SessionState) === 'private' && (
+
+                        {/* State Badge */}
+                        {state === 'private' && (
                           <span className="flex items-center gap-1 text-xs text-gray-400 bg-gray-500/10 px-2 py-0.5 rounded">
                             <EyeOff className="w-3 h-3" />
                             Private
                           </span>
                         )}
-                        {isDm && (session.state as SessionState) === 'open' && (
+                        {state === 'open' && (
                           <span className="flex items-center gap-1 text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded">
                             <Unlock className="w-3 h-3" />
-                            Open
+                            {isDm ? 'Open' : 'Open for notes'}
                           </span>
                         )}
-                        {isDm && (session.state as SessionState) === 'locked' && (
+                        {state === 'locked' && (
                           <span className="flex items-center gap-1 text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
                             <Lock className="w-3 h-3" />
                             Locked
                           </span>
                         )}
                       </div>
-                      <h3 className="text-xl font-semibold text-[--text-primary] mb-3">
-                        {session.title || 'Untitled Session'}
-                      </h3>
 
-                      {/* Full Summary - no line clamp */}
-                      {session.summary && (
-                        <div
-                          className="prose prose-invert prose-sm max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&>ul]:mt-1 [&>ul]:mb-2 [&_li]:my-0.5 [&>p]:mb-2 text-[--text-secondary] mb-4"
-                          dangerouslySetInnerHTML={{ __html: markdownToHtml(session.summary) }}
-                        />
-                      )}
-
-                      {/* Detailed Notes Toggle */}
-                      {session.notes && (
+                      {can.deleteSession && (
                         <button
-                          onClick={(e) => toggleExpanded(session.id, e)}
-                          className="flex items-center gap-2 mb-4 text-sm text-[--arcane-purple] hover:text-[--arcane-purple]/80 transition-colors"
-                        >
-                          {expandedIds.has(session.id) ? (
-                            <>
-                              <ChevronUp className="w-4 h-4" />
-                              Hide Detailed Notes
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown className="w-4 h-4" />
-                              Show Detailed Notes
-                            </>
-                          )}
-                        </button>
-                      )}
-
-                      {/* Expanded Detailed Notes */}
-                      {expandedIds.has(session.id) && session.notes && (
-                        <div className="mb-4 p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-                          <div
-                            className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4"
-                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(session.notes) }}
-                          />
-                        </div>
-                      )}
-
-                      {/* Attendees and Player Notes Section */}
-                      {(session.attendees.length > 0 || (session.noteContributors && session.noteContributors.length > 0)) && (
-                        <div className="pt-4 space-y-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                          {/* Attendees Avatars */}
-                          {session.attendees.length > 0 && (
-                            <div className="flex items-center gap-3">
-                              <Tooltip content="Session Attendees" side="top" delay={200}>
-                                <Users className="w-4 h-4 text-[--text-tertiary]" />
-                              </Tooltip>
-                              <div className="flex -space-x-2">
-                                {session.attendees.slice(0, 5).map((char) => (
-                                  <Tooltip key={char.id} content={char.name} side="top" delay={200}>
-                                    <div
-                                      className="relative w-8 h-8 rounded-full overflow-hidden hover:z-10 hover:scale-110 transition-transform cursor-pointer"
-                                      style={{
-                                        border: '2px solid #12121a',
-                                        backgroundColor: '#1a1a24',
-                                      }}
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleCharacterClick(char)
-                                      }}
-                                    >
-                                      {char.image_url ? (
-                                        <Image
-                                          src={char.image_url}
-                                          alt={char.name}
-                                          fill
-                                          className="object-cover"
-                                          sizes="32px"
-                                        />
-                                      ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-[--text-tertiary]">
-                                          {getInitials(char.name)}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </Tooltip>
-                                ))}
-                                {session.attendees.length > 5 && (
-                                  <Tooltip content={`${session.attendees.length - 5} more attendees`} side="top">
-                                    <div
-                                      className="relative w-8 h-8 rounded-full flex items-center justify-center"
-                                      style={{
-                                        border: '2px solid #12121a',
-                                        backgroundColor: '#1a1a24',
-                                      }}
-                                    >
-                                      <span className="text-[10px] font-bold text-[--text-tertiary]">
-                                        +{session.attendees.length - 5}
-                                      </span>
-                                    </div>
-                                  </Tooltip>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Player Perspectives Avatars */}
-                          {session.noteContributors && session.noteContributors.length > 0 && (
-                            <div className="flex items-center gap-3">
-                              <Tooltip content="Player Perspectives" side="top" delay={200}>
-                                <MessageSquare className="w-4 h-4 text-blue-400" />
-                              </Tooltip>
-                              <div className="flex -space-x-2">
-                                {session.noteContributors.slice(0, 5).map((contributor, idx) => {
-                                  const displayName = contributor.character_name || contributor.username || 'Player'
-                                  const avatarUrl = contributor.character_image || contributor.user_avatar
-                                  return (
-                                    <Tooltip key={contributor.character_id || contributor.user_id || idx} content={`${displayName}'s perspective`} side="top" delay={200}>
-                                      <div
-                                        className="relative w-8 h-8 rounded-full overflow-hidden hover:z-10 hover:scale-110 transition-transform"
-                                        style={{
-                                          border: '2px solid #12121a',
-                                          backgroundColor: '#1e3a5f',
-                                        }}
-                                      >
-                                        {avatarUrl ? (
-                                          <Image
-                                            src={avatarUrl}
-                                            alt={displayName}
-                                            fill
-                                            className="object-cover"
-                                            sizes="32px"
-                                          />
-                                        ) : (
-                                          <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-blue-300">
-                                            {getInitials(displayName)}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </Tooltip>
-                                  )
-                                })}
-                                {session.noteContributors.length > 5 && (
-                                  <Tooltip content={`${session.noteContributors.length - 5} more perspectives`} side="top">
-                                    <div
-                                      className="relative w-8 h-8 rounded-full flex items-center justify-center"
-                                      style={{
-                                        border: '2px solid #12121a',
-                                        backgroundColor: '#1e3a5f',
-                                      }}
-                                    >
-                                      <span className="text-[10px] font-bold text-blue-300">
-                                        +{session.noteContributors.length - 5}
-                                      </span>
-                                    </div>
-                                  </Tooltip>
-                                )}
-                              </div>
-                              <span className="text-xs text-blue-400/70">
-                                {session.noteContributors.length} {session.noteContributors.length === 1 ? 'perspective' : 'perspectives'}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    {can.deleteSession && (
-                      <div className="flex items-center gap-1">
-                        <button
-                          className="w-9 h-9 rounded-lg flex items-center justify-center text-[--arcane-ember] hover:bg-[--arcane-ember]/10 transition-colors"
+                          className="w-9 h-9 rounded-lg flex items-center justify-center text-[--arcane-ember] hover:bg-[--arcane-ember]/10 transition-colors flex-shrink-0"
                           onClick={(e) => handleDelete(session.id, e)}
                           title="Delete session"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
+                      )}
+                    </div>
+
+                    {/* Title */}
+                    <h3 className="text-xl font-semibold text-[--text-primary] mb-4">
+                      {session.title || 'Untitled Session'}
+                    </h3>
+
+                    {/* Content Sections */}
+                    <div className="space-y-4">
+                      {/* PREP PHASE: Show prep status */}
+                      {isPrep && isDm && (
+                        <div className="p-4 rounded-lg bg-yellow-500/5 border border-yellow-500/20">
+                          <div className="flex items-center gap-2 mb-3">
+                            <ClipboardList className="w-4 h-4 text-yellow-400" />
+                            <span className="text-sm font-medium text-yellow-400">Prep Status</span>
+                          </div>
+                          <div className="space-y-1.5 text-sm text-gray-400">
+                            {prepChecklist.length > 0 && (
+                              <div className="flex items-center gap-2">
+                                <CheckCircle2 className={cn("w-4 h-4", checklistDone === prepChecklist.length ? "text-green-400" : "text-gray-500")} />
+                                <span>Checklist: {checklistDone}/{prepChecklist.length} done</span>
+                              </div>
+                            )}
+                            {hasSessionGoals && (
+                              <div className="flex items-center gap-2">
+                                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                                <span>Session goals set</span>
+                              </div>
+                            )}
+                            {hasSessionOpener && (
+                              <div className="flex items-center gap-2">
+                                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                                <span>Session opener ready</span>
+                              </div>
+                            )}
+                            {prepChecklist.length === 0 && !hasSessionGoals && !hasSessionOpener && (
+                              <span className="text-gray-500 italic">No prep content yet</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* COMPLETED PHASE: DM Notes Section */}
+                      {!isPrep && (
+                        <>
+                          {canSeeDmContent ? (
+                            <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                              {/* Section header with share indicator for DM */}
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <FileText className="w-4 h-4 text-blue-400" />
+                                  <span className="text-sm font-medium text-gray-300">
+                                    {isEnhancedMode ? 'Quick Recap' : 'Session Notes'}
+                                  </span>
+                                </div>
+                                {isDm && (
+                                  <span className={cn(
+                                    "flex items-center gap-1 text-xs px-2 py-0.5 rounded",
+                                    dmNotesShared ? "text-green-400 bg-green-500/10" : "text-gray-500 bg-gray-500/10"
+                                  )}>
+                                    {dmNotesShared ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                                    {dmNotesShared ? 'Shared' : 'Hidden'}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Content - handle Standard vs Enhanced */}
+                              {isEnhancedMode ? (
+                                <>
+                                  {/* Enhanced: Show summary */}
+                                  <div
+                                    className="prose prose-invert prose-sm max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&>ul]:mt-1 [&>ul]:mb-2 [&_li]:my-0.5 [&>p]:mb-2 text-[--text-secondary]"
+                                    dangerouslySetInnerHTML={{ __html: markdownToHtml(session.summary!) }}
+                                  />
+                                  {/* Toggle for detailed notes */}
+                                  <button
+                                    onClick={(e) => toggleExpanded(session.id, e)}
+                                    className="flex items-center gap-2 mt-3 text-sm text-[--arcane-purple] hover:text-[--arcane-purple]/80 transition-colors"
+                                  >
+                                    {expandedIds.has(session.id) ? (
+                                      <>
+                                        <ChevronUp className="w-4 h-4" />
+                                        Hide detailed notes
+                                      </>
+                                    ) : (
+                                      <>
+                                        <ChevronDown className="w-4 h-4" />
+                                        Show detailed notes
+                                      </>
+                                    )}
+                                  </button>
+                                  {expandedIds.has(session.id) && (
+                                    <div className="mt-3 pt-3 border-t border-white/[0.06]">
+                                      <div
+                                        className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4"
+                                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(session.notes!) }}
+                                      />
+                                    </div>
+                                  )}
+                                </>
+                              ) : hasNotes ? (
+                                <>
+                                  {/* Standard: Show notes directly */}
+                                  <div
+                                    className={cn(
+                                      "prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4",
+                                      !expandedIds.has(session.id) && "line-clamp-4"
+                                    )}
+                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(session.notes!) }}
+                                  />
+                                  {session.notes!.length > 300 && (
+                                    <button
+                                      onClick={(e) => toggleExpanded(session.id, e)}
+                                      className="flex items-center gap-2 mt-3 text-sm text-[--arcane-purple] hover:text-[--arcane-purple]/80 transition-colors"
+                                    >
+                                      {expandedIds.has(session.id) ? (
+                                        <>
+                                          <ChevronUp className="w-4 h-4" />
+                                          Show less
+                                        </>
+                                      ) : (
+                                        <>
+                                          <ChevronDown className="w-4 h-4" />
+                                          Show more
+                                        </>
+                                      )}
+                                    </button>
+                                  )}
+                                </>
+                              ) : hasSummary ? (
+                                /* Edge case: Only summary exists */
+                                <div
+                                  className="prose prose-invert prose-sm max-w-none text-[--text-secondary]"
+                                  dangerouslySetInnerHTML={{ __html: markdownToHtml(session.summary!) }}
+                                />
+                              ) : (
+                                <p className="text-sm text-gray-500 italic">No notes added yet</p>
+                              )}
+                            </div>
+                          ) : (
+                            /* Player can't see DM content */
+                            <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                              <div className="flex items-center gap-3 text-gray-500">
+                                <EyeOff className="w-5 h-5" />
+                                <span className="text-sm">DM notes not shared for this session</span>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* Player Perspectives Section */}
+                      {hasPlayerPerspectives && (
+                        <div className="p-4 rounded-lg bg-blue-500/5 border border-blue-500/20">
+                          <div className="flex items-center gap-2 mb-3">
+                            <MessageSquare className="w-4 h-4 text-blue-400" />
+                            <span className="text-sm font-medium text-blue-400">
+                              Player Perspectives ({session.noteContributors!.length})
+                            </span>
+                          </div>
+                          <div className="space-y-2">
+                            {session.noteContributors!.slice(0, 2).map((contributor, idx) => {
+                              const displayName = contributor.character_name || contributor.username || 'Player'
+                              const avatarUrl = contributor.character_image || contributor.user_avatar
+                              return (
+                                <div key={contributor.character_id || contributor.user_id || idx} className="flex items-start gap-2">
+                                  {avatarUrl ? (
+                                    <Image
+                                      src={avatarUrl}
+                                      alt={displayName}
+                                      width={24}
+                                      height={24}
+                                      className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                                    />
+                                  ) : (
+                                    <div className="w-6 h-6 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400 font-medium text-[10px] flex-shrink-0">
+                                      {getInitials(displayName)}
+                                    </div>
+                                  )}
+                                  <span className="text-sm text-gray-400">
+                                    <span className="text-gray-300 font-medium">{displayName}:</span>{' '}
+                                    <span className="line-clamp-1">Added their perspective</span>
+                                  </span>
+                                </div>
+                              )
+                            })}
+                            {session.noteContributors!.length > 2 && (
+                              <span className="text-xs text-blue-400/70">
+                                +{session.noteContributors!.length - 2} more
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer: Attendees */}
+                    {session.attendees.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-white/[0.06]">
+                        <div className="flex items-center gap-3">
+                          <Tooltip content="Session Attendees" side="top" delay={200}>
+                            <Users className="w-4 h-4 text-[--text-tertiary]" />
+                          </Tooltip>
+                          <div className="flex -space-x-2">
+                            {session.attendees.slice(0, 6).map((char) => (
+                              <Tooltip key={char.id} content={char.name} side="top" delay={200}>
+                                <div
+                                  className="relative w-7 h-7 rounded-full overflow-hidden hover:z-10 hover:scale-110 transition-transform cursor-pointer"
+                                  style={{
+                                    border: '2px solid #12121a',
+                                    backgroundColor: '#1a1a24',
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleCharacterClick(char)
+                                  }}
+                                >
+                                  {char.image_url ? (
+                                    <Image
+                                      src={char.image_url}
+                                      alt={char.name}
+                                      fill
+                                      className="object-cover"
+                                      sizes="28px"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-[--text-tertiary]">
+                                      {getInitials(char.name)}
+                                    </div>
+                                  )}
+                                </div>
+                              </Tooltip>
+                            ))}
+                            {session.attendees.length > 6 && (
+                              <Tooltip content={`${session.attendees.length - 6} more attendees`} side="top">
+                                <div
+                                  className="relative w-7 h-7 rounded-full flex items-center justify-center"
+                                  style={{
+                                    border: '2px solid #12121a',
+                                    backgroundColor: '#1a1a24',
+                                  }}
+                                >
+                                  <span className="text-[9px] font-bold text-[--text-tertiary]">
+                                    +{session.attendees.length - 6}
+                                  </span>
+                                </div>
+                              </Tooltip>
+                            )}
+                          </div>
+                          <span className="text-xs text-gray-500">
+                            {session.attendees.length} {session.attendees.length === 1 ? 'attendee' : 'attendees'}
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
 

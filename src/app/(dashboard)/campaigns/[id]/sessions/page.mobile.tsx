@@ -16,6 +16,8 @@ import {
   Unlock,
   EyeOff,
   Loader2,
+  MessageSquare,
+  Eye,
 } from 'lucide-react'
 import { sanitizeHtml } from '@/components/ui'
 import { AppLayout } from '@/components/layout/app-layout'
@@ -23,7 +25,8 @@ import { MobileLayout, MobileBottomSheet } from '@/components/mobile'
 import { CharacterViewModal } from '@/components/character'
 import { formatDate, getInitials } from '@/lib/utils'
 import Image from 'next/image'
-import type { Campaign, Session, Character, Tag, CharacterTag, SessionState } from '@/types/database'
+import type { Campaign, Session, Character, Tag, CharacterTag, SessionState, SessionPhase } from '@/types/database'
+import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 
 // Convert basic markdown to HTML for display
@@ -39,8 +42,18 @@ function markdownToHtml(text: string): string {
   return sanitizeHtml(html)
 }
 
+interface NoteContributor {
+  character_id: string | null
+  character_name: string | null
+  character_image: string | null
+  user_id: string | null
+  username: string | null
+  user_avatar: string | null
+}
+
 interface SessionWithAttendees extends Session {
   attendees: Character[]
+  noteContributors?: NoteContributor[]
 }
 
 export interface SessionsPageMobileProps {
@@ -157,154 +170,282 @@ export function SessionsPageMobile({
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredSessions.map((session) => (
-                <div
-                  key={session.id}
-                  className="bg-white/[0.04] rounded-xl border border-white/[0.06] overflow-hidden active:bg-white/[0.06] transition-colors"
-                  onClick={() => handleSessionClick(session)}
-                >
-                  <div className="p-4">
-                    {/* Header row */}
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className="px-2 py-1 text-[10px] font-bold rounded bg-purple-500/20 text-purple-400 uppercase">
-                        #{session.session_number}
-                      </span>
-                      <span className="text-xs text-gray-500 flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {formatDate(session.date)}
-                      </span>
-                      {/* Session State Badge */}
-                      {!isDm && (session.state as SessionState) === 'open' && (
-                        <span className="flex items-center gap-1 text-[10px] text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded">
-                          <Unlock className="w-2.5 h-2.5" />
-                          Open
-                        </span>
-                      )}
-                      {!isDm && (session.state as SessionState) === 'locked' && (
-                        <span className="flex items-center gap-1 text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
-                          <Lock className="w-2.5 h-2.5" />
-                          Locked
-                        </span>
-                      )}
-                      {isDm && (session.state as SessionState) === 'private' && (
-                        <span className="flex items-center gap-1 text-[10px] text-gray-400 bg-gray-500/10 px-1.5 py-0.5 rounded">
-                          <EyeOff className="w-2.5 h-2.5" />
-                          Private
-                        </span>
-                      )}
-                      {isDm && (session.state as SessionState) === 'open' && (
-                        <span className="flex items-center gap-1 text-[10px] text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded">
-                          <Unlock className="w-2.5 h-2.5" />
-                          Open
-                        </span>
-                      )}
-                      {isDm && (session.state as SessionState) === 'locked' && (
-                        <span className="flex items-center gap-1 text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
-                          <Lock className="w-2.5 h-2.5" />
-                          Locked
-                        </span>
-                      )}
-                    </div>
+              {filteredSessions.map((session) => {
+                const phase = (session.phase as SessionPhase) || 'completed'
+                const state = (session.state as SessionState) || 'private'
+                const isPrep = phase === 'prep'
+                const hasSummary = !!session.summary?.trim()
+                const hasNotes = !!session.notes?.trim()
+                const isEnhancedMode = hasSummary && hasNotes
+                const dmNotesShared = session.share_notes_with_players !== false
+                const canSeeDmContent = isDm || dmNotesShared
+                const hasPlayerPerspectives = session.noteContributors && session.noteContributors.length > 0
 
-                    {/* Title */}
-                    <h3 className="text-base font-semibold text-white mb-2">
-                      {session.title || 'Untitled Session'}
-                    </h3>
+                // For prep sessions, check prep content
+                const prepChecklist = (session.prep_checklist as Array<{ checked: boolean }>) || []
+                const checklistDone = prepChecklist.filter(i => i.checked).length
+                const hasSessionGoals = !!session.session_goals?.trim()
 
-                    {/* Summary preview */}
-                    {session.summary && (
-                      <div
-                        className="text-sm text-gray-400 line-clamp-2 mb-3"
-                        dangerouslySetInnerHTML={{ __html: markdownToHtml(session.summary) }}
-                      />
+                return (
+                  <div
+                    key={session.id}
+                    className={cn(
+                      "bg-white/[0.04] rounded-xl border border-white/[0.06] overflow-hidden active:bg-white/[0.06] transition-colors border-l-4",
+                      isPrep ? "border-l-yellow-500/50" : "border-l-purple-500/50"
                     )}
+                    onClick={() => handleSessionClick(session)}
+                  >
+                    <div className="p-4">
+                      {/* Header row */}
+                      <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                        {/* Phase Badge */}
+                        {isPrep ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">
+                            <ClipboardList className="w-3 h-3" />
+                            Prep
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded bg-purple-500/15 text-purple-400 border border-purple-500/30">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Done
+                          </span>
+                        )}
 
-                    {/* Expandable notes */}
-                    {session.notes && (
-                      <>
-                        <button
-                          onClick={(e) => toggleExpanded(session.id, e)}
-                          className="flex items-center gap-1 text-xs text-[--arcane-purple] mb-3 active:opacity-70"
-                        >
-                          {expandedIds.has(session.id) ? (
-                            <>
-                              <ChevronUp className="w-4 h-4" />
-                              Hide notes
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown className="w-4 h-4" />
-                              Show notes
-                            </>
-                          )}
-                        </button>
+                        {/* Session Number */}
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-white/5 text-gray-400">
+                          #{session.session_number}
+                        </span>
 
-                        {expandedIds.has(session.id) && (
-                          <div className="mb-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-                            <div
-                              className="prose prose-invert prose-sm max-w-none text-gray-400"
-                              dangerouslySetInnerHTML={{ __html: sanitizeHtml(session.notes) }}
-                            />
+                        {/* Date */}
+                        <span className="text-xs text-gray-500 flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {formatDate(session.date)}
+                        </span>
+
+                        {/* State Badge */}
+                        {state === 'private' && (
+                          <span className="flex items-center gap-1 text-[10px] text-gray-400 bg-gray-500/10 px-1.5 py-0.5 rounded">
+                            <EyeOff className="w-2.5 h-2.5" />
+                          </span>
+                        )}
+                        {state === 'open' && (
+                          <span className="flex items-center gap-1 text-[10px] text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded">
+                            <Unlock className="w-2.5 h-2.5" />
+                          </span>
+                        )}
+                        {state === 'locked' && (
+                          <span className="flex items-center gap-1 text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                            <Lock className="w-2.5 h-2.5" />
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Title */}
+                      <h3 className="text-base font-semibold text-white mb-3">
+                        {session.title || 'Untitled Session'}
+                      </h3>
+
+                      {/* Content Sections */}
+                      <div className="space-y-3">
+                        {/* PREP PHASE: Show prep status */}
+                        {isPrep && isDm && (
+                          <div className="p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/20">
+                            <div className="flex items-center gap-2 mb-2">
+                              <ClipboardList className="w-3.5 h-3.5 text-yellow-400" />
+                              <span className="text-xs font-medium text-yellow-400">Prep Status</span>
+                            </div>
+                            <div className="space-y-1 text-xs text-gray-400">
+                              {prepChecklist.length > 0 && (
+                                <div className="flex items-center gap-1.5">
+                                  <CheckCircle2 className={cn("w-3.5 h-3.5", checklistDone === prepChecklist.length ? "text-green-400" : "text-gray-500")} />
+                                  <span>Checklist: {checklistDone}/{prepChecklist.length}</span>
+                                </div>
+                              )}
+                              {hasSessionGoals && (
+                                <div className="flex items-center gap-1.5">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
+                                  <span>Goals set</span>
+                                </div>
+                              )}
+                              {prepChecklist.length === 0 && !hasSessionGoals && (
+                                <span className="text-gray-500 italic">No prep yet</span>
+                              )}
+                            </div>
                           </div>
                         )}
-                      </>
-                    )}
 
-                    {/* Footer: Attendees + Delete */}
-                    <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
-                      {/* Attendees */}
-                      {session.attendees.length > 0 ? (
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4 text-gray-500" />
-                          <div className="flex -space-x-1.5">
-                            {session.attendees.slice(0, 4).map((char) => (
-                              <div
-                                key={char.id}
-                                className="w-6 h-6 rounded-full overflow-hidden border-2 border-[#12121a] bg-[#1a1a24]"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleCharacterClick(char)
-                                }}
-                              >
-                                {char.image_url ? (
-                                  <Image
-                                    src={char.image_url}
-                                    alt={char.name}
-                                    width={24}
-                                    height={24}
-                                    className="w-full h-full object-cover"
+                        {/* COMPLETED PHASE: DM Notes Section */}
+                        {!isPrep && (
+                          <>
+                            {canSeeDmContent ? (
+                              <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                                {/* Section header */}
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-1.5">
+                                    <FileText className="w-3.5 h-3.5 text-blue-400" />
+                                    <span className="text-xs font-medium text-gray-400">
+                                      {isEnhancedMode ? 'Recap' : 'Notes'}
+                                    </span>
+                                  </div>
+                                  {isDm && (
+                                    <span className={cn(
+                                      "flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded",
+                                      dmNotesShared ? "text-green-400 bg-green-500/10" : "text-gray-500 bg-gray-500/10"
+                                    )}>
+                                      {dmNotesShared ? <Eye className="w-2.5 h-2.5" /> : <EyeOff className="w-2.5 h-2.5" />}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Content */}
+                                {isEnhancedMode ? (
+                                  <>
+                                    <div
+                                      className="text-sm text-gray-400 line-clamp-3"
+                                      dangerouslySetInnerHTML={{ __html: markdownToHtml(session.summary!) }}
+                                    />
+                                    <button
+                                      onClick={(e) => toggleExpanded(session.id, e)}
+                                      className="flex items-center gap-1 mt-2 text-xs text-[--arcane-purple] active:opacity-70"
+                                    >
+                                      {expandedIds.has(session.id) ? (
+                                        <>
+                                          <ChevronUp className="w-3.5 h-3.5" />
+                                          Hide details
+                                        </>
+                                      ) : (
+                                        <>
+                                          <ChevronDown className="w-3.5 h-3.5" />
+                                          Show details
+                                        </>
+                                      )}
+                                    </button>
+                                    {expandedIds.has(session.id) && (
+                                      <div className="mt-2 pt-2 border-t border-white/[0.04]">
+                                        <div
+                                          className="prose prose-invert prose-sm max-w-none text-gray-400"
+                                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(session.notes!) }}
+                                        />
+                                      </div>
+                                    )}
+                                  </>
+                                ) : hasNotes ? (
+                                  <>
+                                    <div
+                                      className={cn(
+                                        "prose prose-invert prose-sm max-w-none text-gray-400",
+                                        !expandedIds.has(session.id) && "line-clamp-3"
+                                      )}
+                                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(session.notes!) }}
+                                    />
+                                    {session.notes!.length > 200 && (
+                                      <button
+                                        onClick={(e) => toggleExpanded(session.id, e)}
+                                        className="flex items-center gap-1 mt-2 text-xs text-[--arcane-purple] active:opacity-70"
+                                      >
+                                        {expandedIds.has(session.id) ? (
+                                          <>
+                                            <ChevronUp className="w-3.5 h-3.5" />
+                                            Less
+                                          </>
+                                        ) : (
+                                          <>
+                                            <ChevronDown className="w-3.5 h-3.5" />
+                                            More
+                                          </>
+                                        )}
+                                      </button>
+                                    )}
+                                  </>
+                                ) : hasSummary ? (
+                                  <div
+                                    className="text-sm text-gray-400 line-clamp-3"
+                                    dangerouslySetInnerHTML={{ __html: markdownToHtml(session.summary!) }}
                                   />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-gray-500">
-                                    {getInitials(char.name)}
-                                  </div>
+                                  <p className="text-xs text-gray-500 italic">No notes yet</p>
                                 )}
                               </div>
-                            ))}
-                            {session.attendees.length > 4 && (
-                              <div className="w-6 h-6 rounded-full border-2 border-[#12121a] bg-[#1a1a24] flex items-center justify-center">
-                                <span className="text-[8px] font-bold text-gray-500">
-                                  +{session.attendees.length - 4}
-                                </span>
+                            ) : (
+                              <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                                <div className="flex items-center gap-2 text-gray-500">
+                                  <EyeOff className="w-4 h-4" />
+                                  <span className="text-xs">DM notes not shared</span>
+                                </div>
                               </div>
                             )}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-xs text-gray-600">No attendees</div>
-                      )}
+                          </>
+                        )}
 
-                      {/* Delete button */}
-                      <button
-                        onClick={(e) => handleDelete(session.id, e)}
-                        className="p-2 rounded-lg text-red-400 active:bg-red-500/10"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        {/* Player Perspectives */}
+                        {hasPlayerPerspectives && (
+                          <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-500/5 border border-blue-500/20">
+                            <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
+                            <span className="text-xs text-blue-400">
+                              {session.noteContributors!.length} player {session.noteContributors!.length === 1 ? 'perspective' : 'perspectives'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Footer: Attendees + Delete */}
+                      <div className="flex items-center justify-between pt-3 mt-3 border-t border-white/[0.06]">
+                        {/* Attendees */}
+                        {session.attendees.length > 0 ? (
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-gray-500" />
+                            <div className="flex -space-x-1.5">
+                              {session.attendees.slice(0, 4).map((char) => (
+                                <div
+                                  key={char.id}
+                                  className="w-6 h-6 rounded-full overflow-hidden border-2 border-[#12121a] bg-[#1a1a24]"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleCharacterClick(char)
+                                  }}
+                                >
+                                  {char.image_url ? (
+                                    <Image
+                                      src={char.image_url}
+                                      alt={char.name}
+                                      width={24}
+                                      height={24}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-gray-500">
+                                      {getInitials(char.name)}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                              {session.attendees.length > 4 && (
+                                <div className="w-6 h-6 rounded-full border-2 border-[#12121a] bg-[#1a1a24] flex items-center justify-center">
+                                  <span className="text-[8px] font-bold text-gray-500">
+                                    +{session.attendees.length - 4}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-600">No attendees</div>
+                        )}
+
+                        {/* Delete button */}
+                        {isDm && (
+                          <button
+                            onClick={(e) => handleDelete(session.id, e)}
+                            className="p-2 rounded-lg text-red-400 active:bg-red-500/10"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
