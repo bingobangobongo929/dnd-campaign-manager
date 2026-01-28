@@ -963,11 +963,120 @@ export default function SessionDetailPage() {
           </div>
         </div>
 
-        {/* 2-Phase Toggle Bar - Only shown to DMs */}
-        {isDm && (
+        {/* DM Control Panel - All session controls in one place */}
+        {isDm && !isNew && (
+          <div className="mb-8 bg-[--bg-surface] rounded-xl border border-white/[0.08] overflow-hidden">
+            {/* Header */}
+            <div className="px-5 py-3 border-b border-white/[0.06] bg-white/[0.02]">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-gray-400" />
+                <span className="text-sm font-medium text-gray-300">Session Controls</span>
+              </div>
+            </div>
+
+            <div className="p-5 space-y-5">
+              {/* Phase Toggle */}
+              <div>
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 block">Phase</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => handlePhaseChange('prep')}
+                    className={cn(
+                      "flex items-center justify-center gap-2 py-3 px-4 rounded-lg transition-all text-sm font-medium",
+                      currentPhase === 'prep'
+                        ? "bg-yellow-500/20 border-2 border-yellow-500/50 text-yellow-400"
+                        : "border-2 border-white/[0.08] text-gray-400 hover:bg-white/[0.04]"
+                    )}
+                  >
+                    <ClipboardList className="w-4 h-4" />
+                    Prep
+                  </button>
+                  <button
+                    onClick={() => handlePhaseChange('completed')}
+                    className={cn(
+                      "flex items-center justify-center gap-2 py-3 px-4 rounded-lg transition-all text-sm font-medium",
+                      currentPhase === 'completed'
+                        ? "bg-purple-500/20 border-2 border-purple-500/50 text-purple-400"
+                        : "border-2 border-white/[0.08] text-gray-400 hover:bg-white/[0.04]"
+                    )}
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    Completed
+                  </button>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="border-t border-white/[0.06]" />
+
+              {/* Player Access Controls */}
+              <div>
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3 block">Player Access</label>
+                <div className="flex flex-wrap items-center gap-4">
+                  {/* State Dropdown */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-400">Status:</span>
+                    <div className="relative">
+                      <select
+                        value={sessionState}
+                        onChange={(e) => handleStateChange(e.target.value as SessionState)}
+                        className={cn(
+                          "appearance-none pl-8 pr-10 py-2 rounded-lg text-sm font-medium cursor-pointer",
+                          "bg-[--bg-elevated] border border-white/[0.08] focus:outline-none focus:border-[--arcane-purple]",
+                          sessionState === 'private' && "text-gray-400",
+                          sessionState === 'open' && "text-green-400",
+                          sessionState === 'locked' && "text-amber-400"
+                        )}
+                      >
+                        <option value="private">Private</option>
+                        <option value="open">Open</option>
+                        <option value="locked">Locked</option>
+                      </select>
+                      <div className="absolute left-2.5 top-1/2 -translate-y-1/2">
+                        {sessionState === 'private' && <EyeOff className="w-4 h-4 text-gray-500" />}
+                        {sessionState === 'open' && <Unlock className="w-4 h-4 text-green-400" />}
+                        {sessionState === 'locked' && <Lock className="w-4 h-4 text-amber-400" />}
+                      </div>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Share Notes Toggle */}
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={shareNotesWithPlayers ?? false}
+                      onChange={(e) => handleShareNotesChange(e.target.checked)}
+                      className="w-4 h-4 rounded border-[--border] bg-[--bg-surface] text-[--arcane-purple] focus:ring-[--arcane-purple]/50"
+                    />
+                    <span className="text-sm text-gray-400">Share my notes</span>
+                  </label>
+                </div>
+
+                {/* Status explanation */}
+                <p className="text-xs text-gray-600 mt-3">
+                  {sessionState === 'private' && '🔒 Players cannot see this session yet.'}
+                  {sessionState === 'open' && (
+                    <>
+                      🟢 Players can view this session{shareNotesWithPlayers ? ' and your notes' : ''}.
+                      {' '}They can add their own perspectives.
+                    </>
+                  )}
+                  {sessionState === 'locked' && (
+                    <>
+                      🟡 Session is finalized. Players can view{shareNotesWithPlayers ? ' your notes and' : ''} perspectives but cannot add new ones.
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Phase Toggle for NEW sessions only (simpler version) */}
+        {isDm && isNew && (
           <div className="mb-8 p-1.5 bg-white/[0.03] rounded-xl border border-white/[0.08]">
             <div className="grid grid-cols-2 gap-1.5">
-              {/* Prep Phase */}
               <button
                 onClick={() => handlePhaseChange('prep')}
                 className={cn(
@@ -977,25 +1086,10 @@ export default function SessionDetailPage() {
                     : "border-2 border-transparent hover:bg-white/[0.04]"
                 )}
               >
-                <ClipboardList className={cn(
-                  "w-6 h-6",
-                  currentPhase === 'prep' ? "text-yellow-400" : "text-gray-500"
-                )} />
-                <span className={cn(
-                  "text-sm font-semibold",
-                  currentPhase === 'prep' ? "text-yellow-400" : "text-gray-400"
-                )}>
-                  Prep
-                </span>
-                <span className={cn(
-                  "text-xs",
-                  currentPhase === 'prep' ? "text-yellow-400/70" : "text-gray-600"
-                )}>
-                  Planning & Running
-                </span>
+                <ClipboardList className={cn("w-6 h-6", currentPhase === 'prep' ? "text-yellow-400" : "text-gray-500")} />
+                <span className={cn("text-sm font-semibold", currentPhase === 'prep' ? "text-yellow-400" : "text-gray-400")}>Prep</span>
+                <span className={cn("text-xs", currentPhase === 'prep' ? "text-yellow-400/70" : "text-gray-600")}>Plan your session</span>
               </button>
-
-              {/* Completed Phase */}
               <button
                 onClick={() => handlePhaseChange('completed')}
                 className={cn(
@@ -1005,22 +1099,9 @@ export default function SessionDetailPage() {
                     : "border-2 border-transparent hover:bg-white/[0.04]"
                 )}
               >
-                <CheckCircle2 className={cn(
-                  "w-6 h-6",
-                  currentPhase === 'completed' ? "text-purple-400" : "text-gray-500"
-                )} />
-                <span className={cn(
-                  "text-sm font-semibold",
-                  currentPhase === 'completed' ? "text-purple-400" : "text-gray-400"
-                )}>
-                  Completed
-                </span>
-                <span className={cn(
-                  "text-xs",
-                  currentPhase === 'completed' ? "text-purple-400/70" : "text-gray-600"
-                )}>
-                  Post-session
-                </span>
+                <CheckCircle2 className={cn("w-6 h-6", currentPhase === 'completed' ? "text-purple-400" : "text-gray-500")} />
+                <span className={cn("text-sm font-semibold", currentPhase === 'completed' ? "text-purple-400" : "text-gray-400")}>Completed</span>
+                <span className={cn("text-xs", currentPhase === 'completed' ? "text-purple-400/70" : "text-gray-600")}>Add session recap</span>
               </button>
             </div>
           </div>
@@ -1073,43 +1154,6 @@ export default function SessionDetailPage() {
         {/* === COMPLETED PHASE LAYOUT === */}
         {(currentPhase === 'completed' || !isDm) && (
           <>
-            {/* Session State Dropdown - DM only, for existing sessions */}
-            {isDm && !isNew && session && (
-              <div className="card p-4 mb-8 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-white">Session Status</span>
-                  <div className="relative">
-                    <select
-                      value={sessionState}
-                      onChange={(e) => handleStateChange(e.target.value as SessionState)}
-                      className={cn(
-                        "appearance-none pl-8 pr-10 py-2 rounded-lg text-sm font-medium cursor-pointer",
-                        "bg-[--bg-elevated] border border-white/[0.08] focus:outline-none focus:border-[--arcane-purple]",
-                        sessionState === 'private' && "text-gray-400",
-                        sessionState === 'open' && "text-green-400",
-                        sessionState === 'locked' && "text-amber-400"
-                      )}
-                    >
-                      <option value="private">Private (DM only)</option>
-                      <option value="open">Open for player notes</option>
-                      <option value="locked">Locked (read-only)</option>
-                    </select>
-                    <div className="absolute left-2.5 top-1/2 -translate-y-1/2">
-                      {sessionState === 'private' && <EyeOff className="w-4 h-4 text-gray-500" />}
-                      {sessionState === 'open' && <Unlock className="w-4 h-4 text-green-400" />}
-                      {sessionState === 'locked' && <Lock className="w-4 h-4 text-amber-400" />}
-                    </div>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500">
-                  {sessionState === 'private' && 'Players cannot see this session'}
-                  {sessionState === 'open' && 'Players can view and add their notes'}
-                  {sessionState === 'locked' && 'Session is finalized and read-only'}
-                </p>
-              </div>
-            )}
-
             {/* Thoughts from Previous Session (context for new sessions - DM only) */}
             {isDm && isNew && previousThoughts && (
               <div className="card p-6 mb-8 border-purple-500/30 bg-purple-500/5">
@@ -1176,21 +1220,6 @@ export default function SessionDetailPage() {
                   </>
                 )}
 
-                {/* Share with players checkbox - DM only */}
-                {can.editSession && !isNew && (
-                  <div className="mt-4 pt-4 border-t border-white/[0.06]">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={shareNotesWithPlayers ?? false}
-                        onChange={(e) => handleShareNotesChange(e.target.checked)}
-                        className="w-4 h-4 rounded border-[--border] bg-[--bg-surface] text-[--arcane-purple] focus:ring-[--arcane-purple]/50"
-                      />
-                      <span className="text-sm text-gray-400">Share with players</span>
-                      <span className="text-xs text-gray-600">(when session is open or locked)</span>
-                    </label>
-                  </div>
-                )}
                 </div>
               </div>
             )}
@@ -1313,21 +1342,6 @@ export default function SessionDetailPage() {
                         </>
                       )}
 
-                      {/* Share with players checkbox - DM only */}
-                      {can.editSession && !isNew && (
-                        <div className="mt-4 pt-4 border-t border-white/[0.06]">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={shareNotesWithPlayers ?? false}
-                              onChange={(e) => handleShareNotesChange(e.target.checked)}
-                              className="w-4 h-4 rounded border-[--border] bg-[--bg-surface] text-[--arcane-purple] focus:ring-[--arcane-purple]/50"
-                            />
-                            <span className="text-sm text-gray-400">Share with players</span>
-                            <span className="text-xs text-gray-600">(when session is open or locked)</span>
-                          </label>
-                        </div>
-                      )}
                   </div>
                 </div>
               </>
