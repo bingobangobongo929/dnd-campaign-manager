@@ -67,8 +67,8 @@ export function UsernameSetupModal({ isOpen, onComplete }: UsernameSetupModalPro
 
   // Handle input change with debounced check
   const handleChange = (value: string) => {
-    // Sanitize input - only allow valid characters
-    const sanitized = value.toLowerCase().replace(/[^a-z0-9_]/g, '')
+    // Sanitize input - only allow valid characters (preserve case)
+    const sanitized = value.replace(/[^a-zA-Z0-9_]/g, '')
     setUsername(sanitized)
     setAvailable(null)
     setError(null)

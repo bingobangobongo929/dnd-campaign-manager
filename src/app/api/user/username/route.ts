@@ -33,19 +33,17 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { username } = body
 
-    // Validate format
-    const validationError = validateUsername(username?.toLowerCase())
+    // Validate format (preserves original casing)
+    const validationError = validateUsername(username)
     if (validationError) {
       return NextResponse.json({ error: validationError }, { status: 400 })
     }
-
-    const normalizedUsername = username.toLowerCase()
 
     // Check if username is taken (case-insensitive)
     const { data: existing } = await supabase
       .from('user_settings')
       .select('user_id, username')
-      .ilike('username', normalizedUsername)
+      .ilike('username', username)
       .neq('user_id', user.id)
       .maybeSingle()
 
@@ -53,11 +51,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'This username is already taken' }, { status: 409 })
     }
 
-    // Update user settings with new username
+    // Update user settings with original casing preserved
     const { error: updateError } = await supabase
       .from('user_settings')
       .update({
-        username: normalizedUsername,
+        username: username,
         username_set_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -70,7 +68,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      username: normalizedUsername,
+      username: username,
     })
   } catch (error) {
     console.error('Username API error:', error)
@@ -95,8 +93,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Username parameter required' }, { status: 400 })
     }
 
-    // Validate format
-    const validationError = validateUsername(username.toLowerCase())
+    // Validate format (preserves original casing)
+    const validationError = validateUsername(username)
     if (validationError) {
       return NextResponse.json({
         available: false,
@@ -104,17 +102,17 @@ export async function GET(request: Request) {
       })
     }
 
-    // Check if username is taken
+    // Check if username is taken (case-insensitive)
     const { data: existing } = await supabase
       .from('user_settings')
       .select('user_id')
-      .ilike('username', username.toLowerCase())
+      .ilike('username', username)
       .neq('user_id', user.id)
       .maybeSingle()
 
     return NextResponse.json({
       available: !existing,
-      username: username.toLowerCase(),
+      username: username,
     })
   } catch (error) {
     console.error('Username check error:', error)
