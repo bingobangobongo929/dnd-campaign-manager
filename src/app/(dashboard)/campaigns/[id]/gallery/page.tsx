@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Image as ImageIcon, Upload, Plus, Trash2, X, Loader2, Grid, LayoutGrid } from 'lucide-react'
-import { Modal, Input, AccessDeniedPage } from '@/components/ui'
+import { Modal, Input, AccessDeniedPage, EmptyState } from '@/components/ui'
 import { AppLayout } from '@/components/layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { useSupabase, useUser, useIsMobile, usePermissions } from '@/hooks'
@@ -240,34 +240,31 @@ export default function GalleryPage() {
       {items.length === 0 && !uploading ? (
         /* Empty State */
         <div className="flex items-center justify-center h-[70vh]">
-          <div className="text-center max-w-md">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-[--arcane-gold]/10 flex items-center justify-center">
-              <ImageIcon className="w-10 h-10 text-[--arcane-gold]" />
-            </div>
-            <h2 className="text-2xl font-display font-semibold text-[--text-primary] mb-3">
-              Your Gallery is Empty
-            </h2>
-            <p className="text-[--text-secondary] mb-4 leading-relaxed">
-              Upload reference images, character art, item illustrations, or any
-              visual inspiration for your campaign. You can upload multiple images at once.
-            </p>
-            <p className="text-xs text-purple-400/80 mb-6 max-w-sm mx-auto italic">
-              Organize your campaign's visual references in one place for easy access during sessions.
-            </p>
-            {can.addGalleryItem && (
-              <button
-                onClick={handleFileSelect}
-                disabled={uploading}
-                className="btn btn-primary btn-lg"
-              >
-                <Upload className="w-5 h-5" />
-                Upload Images
-              </button>
-            )}
-            {error && (
-              <p className="mt-4 text-sm text-[--arcane-ember]">{error}</p>
-            )}
-          </div>
+          <EmptyState
+            icon={
+              <div className="w-20 h-20 rounded-2xl bg-[--arcane-gold]/10 flex items-center justify-center">
+                <ImageIcon className="w-10 h-10 text-[--arcane-gold]" />
+              </div>
+            }
+            title="Your Gallery is Empty"
+            description="Upload reference images, character art, item illustrations, or any visual inspiration for your campaign. You can upload multiple images at once."
+            tip="Organize your campaign's visual references in one place for easy access during sessions."
+            action={
+              can.addGalleryItem ? (
+                <button
+                  onClick={handleFileSelect}
+                  disabled={uploading}
+                  className="btn btn-primary btn-lg"
+                >
+                  <Upload className="w-5 h-5" />
+                  Upload Images
+                </button>
+              ) : undefined
+            }
+          />
+          {error && (
+            <p className="mt-4 text-sm text-[--arcane-ember]">{error}</p>
+          )}
         </div>
       ) : (
         /* Gallery View */

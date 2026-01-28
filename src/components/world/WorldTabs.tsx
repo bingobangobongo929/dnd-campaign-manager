@@ -131,73 +131,63 @@ export function WorldTabs({
     )
   }
 
+  // Tab configuration with descriptions
   const tabs = [
     {
       id: 'locations' as TabType,
       label: 'Locations',
+      description: 'Places in your world',
       count: locationCount,
       icon: MapPin,
       color: 'text-blue-400',
-      bgColor: 'bg-blue-500/10',
+      bgColor: 'bg-blue-500/20',
+      borderColor: 'border-blue-500/50',
+      shadowColor: 'shadow-blue-500/10',
     },
     {
       id: 'factions' as TabType,
       label: 'Factions',
+      description: 'Organizations & groups',
       count: factionCount,
       icon: Shield,
       color: 'text-emerald-400',
-      bgColor: 'bg-emerald-500/10',
+      bgColor: 'bg-emerald-500/20',
+      borderColor: 'border-emerald-500/50',
+      shadowColor: 'shadow-emerald-500/10',
     },
     {
       id: 'relationships' as TabType,
       label: 'Relationships',
+      description: 'Character connections',
       count: relationshipCount,
       icon: Users,
       color: 'text-purple-400',
-      bgColor: 'bg-purple-500/10',
+      bgColor: 'bg-purple-500/20',
+      borderColor: 'border-purple-500/50',
+      shadowColor: 'shadow-purple-500/10',
     },
     // Only show Timeline tab if user has permission
     ...(canViewTimeline ? [{
       id: 'timeline' as TabType,
       label: 'Timeline',
+      description: 'Events & history',
       count: eventCount,
       icon: Clock,
       color: 'text-amber-400',
-      bgColor: 'bg-amber-500/10',
+      bgColor: 'bg-amber-500/20',
+      borderColor: 'border-amber-500/50',
+      shadowColor: 'shadow-amber-500/10',
     }] : []),
   ]
 
   return (
     <div className="space-y-6">
-      {/* Quick Stats Bar */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 bg-white/[0.02] rounded-lg border border-white/[0.05]">
-        <div className="flex items-center gap-2 text-sm">
-          <MapPin className="w-4 h-4 text-blue-400" />
-          <span className="text-gray-400">{locationCount}</span>
-          <span className="text-gray-600">Locations</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <Shield className="w-4 h-4 text-emerald-400" />
-          <span className="text-gray-400">{factionCount}</span>
-          <span className="text-gray-600">Factions</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <Users className="w-4 h-4 text-purple-400" />
-          <span className="text-gray-400">{relationshipCount}</span>
-          <span className="text-gray-600">Relationships</span>
-        </div>
-        {canViewTimeline && (
-          <div className="flex items-center gap-2 text-sm">
-            <Clock className="w-4 h-4 text-amber-400" />
-            <span className="text-gray-400">{eventCount}</span>
-            <span className="text-gray-600">Events</span>
-          </div>
-        )}
-
-        {/* Search toggle */}
-        <div className="flex-1 flex justify-end">
+      {/* Header row with search and add button */}
+      <div className="flex items-center justify-between gap-4">
+        {/* Search */}
+        <div className="flex-1 max-w-xs">
           {isSearchOpen ? (
-            <div className="flex items-center gap-2 w-full max-w-xs">
+            <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
@@ -206,7 +196,7 @@ export function WorldTabs({
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
                   autoFocus
-                  className="w-full pl-9 pr-3 py-1.5 bg-[--bg-surface] border border-[--border] rounded-lg text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-[--arcane-purple]/50"
+                  className="w-full pl-9 pr-3 py-2 bg-[--bg-surface] border border-[--border] rounded-lg text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-[--arcane-purple]/50"
                 />
               </div>
               <button
@@ -214,7 +204,7 @@ export function WorldTabs({
                   setIsSearchOpen(false)
                   handleSearch('')
                 }}
-                className="p-1.5 text-gray-500 hover:text-gray-300 transition-colors"
+                className="p-2 text-gray-500 hover:text-gray-300 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -222,51 +212,12 @@ export function WorldTabs({
           ) : (
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="p-1.5 text-gray-500 hover:text-gray-300 transition-colors"
-              title="Search world content"
+              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-gray-300 transition-colors rounded-lg hover:bg-white/[0.03]"
             >
               <Search className="w-4 h-4" />
+              <span>Search</span>
             </button>
           )}
-        </div>
-      </div>
-
-      {/* Tab header with Add button */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        {/* Tabs */}
-        <div className="flex-1">
-          <div className="flex flex-wrap gap-2">
-            {tabs.map(tab => {
-              const Icon = tab.icon
-              const isActive = activeTab === tab.id
-
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => handleTabChange(tab.id)}
-                  className={cn(
-                    'flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all',
-                    isActive
-                      ? `${tab.bgColor} ${tab.color} ring-1 ring-current/20`
-                      : 'bg-white/[0.02] text-gray-400 hover:bg-white/[0.05] hover:text-gray-300'
-                  )}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                  <span className={cn(
-                    'px-1.5 py-0.5 rounded text-xs font-semibold',
-                    isActive
-                      ? 'bg-white/20'
-                      : tab.count === 0
-                        ? 'bg-white/5 text-gray-600'
-                        : 'bg-white/10 text-gray-500'
-                  )}>
-                    {tab.count}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
         </div>
 
         {/* Context-aware Add button */}
@@ -288,7 +239,7 @@ export function WorldTabs({
             {/* Dropdown menu - context-aware ordering */}
             {isAddMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-48 py-1 bg-[--bg-elevated] border border-white/10 rounded-lg shadow-xl z-20">
-                {addMenuItems.map((item, index) => {
+                {addMenuItems.map((item) => {
                   const Icon = item.icon
                   const isCurrentTab = item.tab === activeTab
                   return (
@@ -317,6 +268,61 @@ export function WorldTabs({
             )}
           </div>
         )}
+      </div>
+
+      {/* Tab selector - 2x2 grid on mobile, row on desktop */}
+      <div className="p-1.5 bg-white/[0.03] rounded-xl border border-white/[0.08]">
+        <div className={cn(
+          "grid gap-1.5",
+          tabs.length === 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"
+        )}>
+          {tabs.map(tab => {
+            const Icon = tab.icon
+            const isActive = activeTab === tab.id
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                className={cn(
+                  "flex flex-col items-center gap-1.5 py-4 px-4 rounded-lg transition-all",
+                  isActive
+                    ? `${tab.bgColor} border-2 ${tab.borderColor} shadow-lg ${tab.shadowColor}`
+                    : "border-2 border-transparent hover:bg-white/[0.04]"
+                )}
+              >
+                <Icon className={cn(
+                  "w-6 h-6",
+                  isActive ? tab.color : "text-gray-500"
+                )} />
+                <div className="flex items-center gap-2">
+                  <span className={cn(
+                    "text-sm font-semibold",
+                    isActive ? tab.color : "text-gray-400"
+                  )}>
+                    {tab.label}
+                  </span>
+                  <span className={cn(
+                    "px-1.5 py-0.5 rounded text-xs font-semibold",
+                    isActive
+                      ? "bg-white/20"
+                      : tab.count === 0
+                        ? "bg-white/5 text-gray-600"
+                        : "bg-white/10 text-gray-500"
+                  )}>
+                    {tab.count}
+                  </span>
+                </div>
+                <span className={cn(
+                  "text-xs",
+                  isActive ? `${tab.color} opacity-70` : "text-gray-600"
+                )}>
+                  {tab.description}
+                </span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* Tab content */}

@@ -391,6 +391,12 @@ function BoardColumn({
               )
             })}
             {provided.placeholder}
+            {encounters.length === 0 && !snapshot.isDraggingOver && (
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <Swords className="w-5 h-5 text-gray-600 mb-2" />
+                <span className="text-xs text-gray-600">Drop encounters here</span>
+              </div>
+            )}
           </div>
         )}
       </Droppable>
@@ -1356,6 +1362,7 @@ export default function EncountersPage() {
   const [loading, setLoading] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [typeFilter, setTypeFilter] = useState<string>('all')
 
   // Board settings
@@ -1648,17 +1655,40 @@ export default function EncountersPage() {
           />
 
           <div className="flex flex-col sm:flex-row gap-3">
-            {/* Search */}
-            <div className="relative flex-[2] min-w-[200px]">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none z-10" />
-              <input
-                type="text"
-                placeholder="Search encounters..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="form-input w-full"
-                style={{ paddingLeft: '2.5rem' }}
-              />
+            {/* Search toggle */}
+            <div className="flex-1 min-w-[140px] max-w-xs">
+              {isSearchOpen ? (
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                    <input
+                      type="text"
+                      placeholder="Search encounters..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      autoFocus
+                      className="w-full pl-9 pr-3 py-2 bg-[--bg-surface] border border-[--border] rounded-lg text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-[--arcane-purple]/50"
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsSearchOpen(false)
+                      setSearchQuery('')
+                    }}
+                    className="p-2 text-gray-500 hover:text-gray-300 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsSearchOpen(true)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-gray-300 transition-colors rounded-lg hover:bg-white/[0.03]"
+                >
+                  <Search className="w-4 h-4" />
+                  <span>Search</span>
+                </button>
+              )}
             </div>
 
             {/* Type filter */}
