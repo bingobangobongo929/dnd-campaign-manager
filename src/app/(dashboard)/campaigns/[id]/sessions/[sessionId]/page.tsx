@@ -117,12 +117,14 @@ export default function SessionDetailPage() {
   const [previousThoughts, setPreviousThoughts] = useState<string>('')
   const [openPlayerNotesModal, setOpenPlayerNotesModal] = useState(false)
 
-  // Optional sections expansion state (collapsed by default)
+  // Optional sections expansion state (collapsed by default per plan)
   const [expandedSections, setExpandedSections] = useState<{
+    detailedNotes: boolean
     dmNotes: boolean
     sessionContent: boolean
     playerNotes: boolean
   }>({
+    detailedNotes: false,
     dmNotes: false,
     sessionContent: false,
     playerNotes: false,
@@ -1118,7 +1120,7 @@ export default function SessionDetailPage() {
                     </label>
                     {can.editSession && (
                       <span className="text-sm text-[--text-tertiary]">
-                        What happened this session? Try mentioning NPCs, locations, key decisions...
+                        What happened this session? Try mentioning NPCs talked to, locations visited, key decisions...
                       </span>
                     )}
                   </div>
@@ -1128,7 +1130,7 @@ export default function SessionDetailPage() {
                   <RichTextEditor
                     content={formData.notes}
                     onChange={(content) => setFormData({ ...formData, notes: content })}
-                    placeholder="What happened this session? Try mentioning NPCs, locations, key decisions..."
+                    placeholder="What happened this session? Try mentioning NPCs talked to, locations visited, key decisions..."
                     className="min-h-[200px]"
                   />
                 ) : (
@@ -1172,7 +1174,7 @@ export default function SessionDetailPage() {
               </div>
             )}
 
-            {/* === ENHANCED MODE: "Quick Recap" (summary) + "Session Notes" (notes) - both always visible === */}
+            {/* === ENHANCED MODE: "Quick Recap" (summary) + "Detailed Notes" (notes) === */}
             {showEnhancedView && (
               <>
                 {/* Quick Recap - edits summary field */}
@@ -1213,7 +1215,7 @@ export default function SessionDetailPage() {
                     <RichTextEditor
                       content={formData.summary}
                       onChange={(content) => setFormData({ ...formData, summary: content })}
-                      placeholder="Write your session notes as bullet points..."
+                      placeholder="Write quick bullets about what happened. You can expand them into detailed notes when ready."
                       className="min-h-[150px]"
                     />
                   ) : (
@@ -1237,63 +1239,80 @@ export default function SessionDetailPage() {
                   )}
                 </div>
 
-                {/* Session Notes - edits notes field - always visible in Enhanced mode */}
-                <div className="card p-6 mb-8">
-                  <div className="flex items-center gap-3 mb-4">
-                    <ScrollText className="w-5 h-5 text-[--arcane-purple]" />
-                    <div>
-                      <label className="text-lg font-semibold text-[--text-primary] block">
-                        Session Notes
-                      </label>
-                      <span className="text-sm text-[--text-tertiary]">
-                        Detailed session narrative
-                      </span>
-                    </div>
-                  </div>
-
-                  {can.editSession ? (
-                    <RichTextEditor
-                      content={formData.notes}
-                      onChange={(content) => setFormData({ ...formData, notes: content })}
-                      placeholder="Detailed session notes..."
-                      className="min-h-[300px]"
-                    />
-                  ) : (
-                    /* Read-only notes for players - only show if shared */
-                    <>
-                      {shareNotesWithPlayers ? (
-                        <div className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4">
-                          {formData.notes ? (
-                            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.notes) }} />
-                          ) : (
-                            <p className="text-[--text-tertiary] italic">No detailed notes available yet.</p>
-                          )}
-                        </div>
+                {/* Detailed Notes - edits notes field - COLLAPSIBLE, collapsed by default per plan */}
+                <div className="card overflow-hidden mb-8">
+                  <button
+                    onClick={() => toggleSection('detailedNotes')}
+                    className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      {expandedSections.detailedNotes ? (
+                        <ChevronDown className="w-4 h-4 text-[--text-tertiary]" />
                       ) : (
-                        <div className="text-center py-8 bg-white/[0.02] rounded-lg border border-[--border]">
-                          <EyeOff className="w-8 h-8 text-gray-600 mx-auto mb-3" />
-                          <p className="text-gray-400 text-sm">The DM hasn&apos;t shared their session notes.</p>
-                          <p className="text-gray-600 text-xs mt-1">
-                            You can still add your own notes and read notes from other party members below.
-                          </p>
+                        <ChevronRight className="w-4 h-4 text-[--text-tertiary]" />
+                      )}
+                      <ScrollText className="w-5 h-5 text-[--arcane-purple]" />
+                      <div className="text-left">
+                        <span className="font-medium text-[--text-primary] block">Detailed Notes</span>
+                        <span className="text-xs text-[--text-tertiary]">
+                          Full prose session narrative (expanded from Quick Recap)
+                        </span>
+                      </div>
+                    </div>
+                    {formData.notes && (
+                      <span className="text-xs text-[--text-tertiary] bg-white/[0.05] px-2 py-0.5 rounded">
+                        Has content
+                      </span>
+                    )}
+                  </button>
+
+                  {expandedSections.detailedNotes && (
+                    <div className="px-6 pb-6 border-t border-[--border]">
+                      {can.editSession ? (
+                        <RichTextEditor
+                          content={formData.notes}
+                          onChange={(content) => setFormData({ ...formData, notes: content })}
+                          placeholder="Detailed session notes..."
+                          className="min-h-[300px] mt-4"
+                        />
+                      ) : (
+                        /* Read-only notes for players - only show if shared */
+                        <>
+                          {shareNotesWithPlayers ? (
+                            <div className="prose prose-invert prose-sm max-w-none [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>ul]:mt-1 [&>ul]:mb-4 [&>p]:mb-4 mt-4">
+                              {formData.notes ? (
+                                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.notes) }} />
+                              ) : (
+                                <p className="text-[--text-tertiary] italic">No detailed notes available yet.</p>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8 bg-white/[0.02] rounded-lg border border-[--border] mt-4">
+                              <EyeOff className="w-8 h-8 text-gray-600 mx-auto mb-3" />
+                              <p className="text-gray-400 text-sm">The DM hasn&apos;t shared their session notes.</p>
+                              <p className="text-gray-600 text-xs mt-1">
+                                You can still add your own notes and read notes from other party members below.
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* Share with players checkbox - DM only */}
+                      {can.editSession && !isNew && (
+                        <div className="mt-4 pt-4 border-t border-[--border]">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={shareNotesWithPlayers ?? false}
+                              onChange={(e) => handleShareNotesChange(e.target.checked)}
+                              className="w-4 h-4 rounded border-[--border] bg-[--bg-surface] text-[--arcane-purple] focus:ring-[--arcane-purple]/50"
+                            />
+                            <span className="text-sm text-gray-400">Share with players</span>
+                            <span className="text-xs text-gray-600">(when session is open or locked)</span>
+                          </label>
                         </div>
                       )}
-                    </>
-                  )}
-
-                  {/* Share with players checkbox - DM only */}
-                  {can.editSession && !isNew && (
-                    <div className="mt-4 pt-4 border-t border-[--border]">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={shareNotesWithPlayers ?? false}
-                          onChange={(e) => handleShareNotesChange(e.target.checked)}
-                          className="w-4 h-4 rounded border-[--border] bg-[--bg-surface] text-[--arcane-purple] focus:ring-[--arcane-purple]/50"
-                        />
-                        <span className="text-sm text-gray-400">Share with players</span>
-                        <span className="text-xs text-gray-600">(when session is open or locked)</span>
-                      </label>
                     </div>
                   )}
                 </div>
@@ -1468,34 +1487,6 @@ export default function SessionDetailPage() {
               </div>
             </div>
 
-            {/* Thoughts for Next - Encouraged section (DM only, not in optional area) */}
-            {!isNew && session && campaign?.user_id === user?.id && (
-              <div className="card p-6 mb-8">
-                <div className="flex items-center gap-3 mb-4">
-                  <Lightbulb className="w-5 h-5 text-[--arcane-gold]" />
-                  <div>
-                    <label className="text-lg font-semibold text-[--text-primary] block">
-                      Thoughts for Next Session
-                    </label>
-                    <span className="text-sm text-[--text-tertiary]">
-                      Ideas for next session - loose threads, player interests to follow up on...
-                    </span>
-                  </div>
-                </div>
-                <ThoughtsForNextCard
-                  campaignId={campaignId}
-                  sessionId={session.id}
-                  initialValue={session.thoughts_for_next || ''}
-                  onSave={(value) => setSession({ ...session, thoughts_for_next: value })}
-                  inline
-                />
-                <p className="text-xs text-[--text-tertiary] mt-3 flex items-center gap-1.5">
-                  <Lightbulb className="w-3.5 h-3.5 text-[--arcane-gold]" />
-                  These notes will appear when you create your next session.
-                </p>
-              </div>
-            )}
-
             {/* === OPTIONAL SECTIONS DIVIDER === */}
             {!isNew && session && isDm && (
               <div className="mb-6">
@@ -1571,7 +1562,7 @@ export default function SessionDetailPage() {
                     <div className="text-left">
                       <span className="font-medium text-[--text-primary] block">Session Content</span>
                       <span className="text-xs text-[--text-tertiary]">
-                        Link quests and encounters featured in this session. Campaign Intelligence can detect these from your notes.
+                        Add quests and encounters featured in this session. Campaign Intelligence can also detect these from your session notes, so you can focus on writing detailed recaps.
                       </span>
                     </div>
                   </div>
@@ -1621,6 +1612,34 @@ export default function SessionDetailPage() {
                     />
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Thoughts for Next Session - at the bottom per plan */}
+            {!isNew && session && campaign?.user_id === user?.id && (
+              <div className="card p-6 mb-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <Lightbulb className="w-5 h-5 text-[--arcane-gold]" />
+                  <div>
+                    <label className="text-lg font-semibold text-[--text-primary] block">
+                      Thoughts for Next Session
+                    </label>
+                    <span className="text-sm text-[--text-tertiary]">
+                      Ideas for next session - loose threads, player interests to follow up on...
+                    </span>
+                  </div>
+                </div>
+                <ThoughtsForNextCard
+                  campaignId={campaignId}
+                  sessionId={session.id}
+                  initialValue={session.thoughts_for_next || ''}
+                  onSave={(value) => setSession({ ...session, thoughts_for_next: value })}
+                  inline
+                />
+                <p className="text-xs text-[--text-tertiary] mt-3 flex items-center gap-1.5">
+                  <Lightbulb className="w-3.5 h-3.5 text-[--arcane-gold]" />
+                  These notes will appear when you create your next session.
+                </p>
               </div>
             )}
 

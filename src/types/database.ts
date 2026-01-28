@@ -4481,15 +4481,10 @@ export type SessionState = 'private' | 'open' | 'locked'
 // Session workflow section types (legacy - kept for backward compatibility)
 export type SessionSection = 'prep_checklist' | 'thoughts_for_next' | 'quick_reference' | 'session_timer'
 
-// Prep phase optional modules (7 modules)
+// Prep phase optional modules (per plan: only 2 modules)
 export type PrepModule =
-  | 'session_goals'    // Green - Key objectives, scenes, emotional beats
-  | 'key_npcs'         // Purple - NPCs likely to appear
-  | 'random_tables'    // Orange - Links to campaign random tables
-  | 'music_ambiance'   // Pink - Playlists, ambient sounds, mood
-  | 'session_opener'   // Amber - Opening narration, recap points
-  | 'checklist'        // Yellow - Prep tasks
-  | 'references'       // Cyan - Key NPCs/locations/quests
+  | 'checklist'        // Yellow - Simple checkboxes for prep tasks
+  | 'references'       // Cyan - Text-based list of key NPCs/locations/notes
 
 // Campaign session settings
 export interface SessionSettings {
