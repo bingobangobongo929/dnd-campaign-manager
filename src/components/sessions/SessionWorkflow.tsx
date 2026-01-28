@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import {
   CheckSquare,
@@ -294,6 +294,9 @@ export function SessionWorkflow({
   const [hasChanges, setHasChanges] = useState(false)
   const [previousThoughtsDismissed, setPreviousThoughtsDismissed] = useState(false)
 
+  // Ref to track if we just saved - prevents feedback loop when session prop updates after save
+  const justSavedRef = useRef(false)
+
   // Global auto-save status
   const setAutoSaveStatus = useAppStore((state) => state.setAutoSaveStatus)
 
@@ -326,6 +329,13 @@ export function SessionWorkflow({
 
   // Track changes
   useEffect(() => {
+    // Skip change detection immediately after save to prevent feedback loop
+    // The session prop updates after save, which would trigger this effect again
+    if (justSavedRef.current) {
+      justSavedRef.current = false
+      return
+    }
+
     const originalPrepNotes = session.prep_notes || ''
     const originalChecklist = session.prep_checklist || []
     const originalReferences = (() => {
@@ -396,6 +406,8 @@ export function SessionWorkflow({
       }
 
       setAutoSaveStatus('saved')
+      // Mark that we just saved to prevent feedback loop when session prop updates
+      justSavedRef.current = true
       onUpdate?.(data.session)
       setHasChanges(false)
 
