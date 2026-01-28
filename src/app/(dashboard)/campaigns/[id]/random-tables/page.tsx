@@ -7,20 +7,19 @@ import {
   Plus,
   Search,
   ChevronDown,
+  ChevronRight,
   X,
   Trash2,
   Edit3,
   Archive,
   ArchiveRestore,
   Play,
-  Clock,
-  Filter,
   Loader2,
-  Sparkles,
   Users,
   Swords,
-  Cloud,
-  Gem,
+  MapPin,
+  User,
+  BookOpen,
   Check,
   Download,
 } from 'lucide-react'
@@ -34,7 +33,6 @@ import type {
   RandomTableEntry,
   RandomTableCategory,
   RandomTableDieType,
-  RandomTableRoll,
 } from '@/types/database'
 import { v4 as uuidv4 } from 'uuid'
 import { toast } from 'sonner'
@@ -85,6 +83,27 @@ const CATEGORIES: { value: RandomTableCategory; label: string }[] = [
   { value: 'custom', label: 'Custom' },
 ]
 
+// Get icon component for template category
+const getCategoryIcon = (iconName: string) => {
+  switch (iconName) {
+    case 'Users': return Users
+    case 'MapPin': return MapPin
+    case 'Swords': return Swords
+    case 'User': return User
+    case 'BookOpen': return BookOpen
+    default: return Dice5
+  }
+}
+
+// Template category colors
+const TEMPLATE_CATEGORY_COLORS: Record<string, { text: string; bg: string; border: string }> = {
+  names: { text: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
+  locations: { text: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/30' },
+  encounters: { text: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30' },
+  npcs: { text: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
+  plots: { text: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/30' },
+}
+
 export default function RandomTablesPage() {
   const params = useParams()
   const supabase = useSupabase()
@@ -94,9 +113,15 @@ export default function RandomTablesPage() {
 
   const [loading, setLoading] = useState(true)
   const [tables, setTables] = useState<RandomTable[]>([])
-  const [searchQuery, setSearchQuery] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState<RandomTableCategory | 'all'>('all')
   const [showArchived, setShowArchived] = useState(false)
+
+  // Quick roll state
+  const [quickRollOpen, setQuickRollOpen] = useState(false)
+  const [quickRollSearch, setQuickRollSearch] = useState('')
+
+  // Accordion state
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
+  const [customTablesExpanded, setCustomTablesExpanded] = useState(true)
 
   // Modal state
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -105,6 +130,7 @@ export default function RandomTablesPage() {
 
   // Roll state
   const [rollingTable, setRollingTable] = useState<RandomTable | null>(null)
+  const [rollingTemplate, setRollingTemplate] = useState<TableTemplate | null>(null)
   const [showRollReveal, setShowRollReveal] = useState(false)
 
   // Form state
@@ -115,10 +141,8 @@ export default function RandomTablesPage() {
   const [formCustomDieSize, setFormCustomDieSize] = useState<number>(20)
   const [formEntries, setFormEntries] = useState<RandomTableEntry[]>([])
 
-  // Templates modal state
-  const [showTemplatesModal, setShowTemplatesModal] = useState(false)
-  const [selectedTemplates, setSelectedTemplates] = useState<Set<string>>(new Set())
-  const [importingTemplates, setImportingTemplates] = useState(false)
+  // Import templates state
+  const [importingTemplates, setImportingTemplates] = useState<Set<string>>(new Set())
 
   // Load tables
   useEffect(() => {
@@ -146,20 +170,60 @@ export default function RandomTablesPage() {
     }
   }
 
-  // Filter tables
-  const filteredTables = tables.filter(table => {
+  // Filter user tables (not archived by default)
+  const userTables = tables.filter(table => {
     if (!showArchived && table.is_archived) return false
-    if (categoryFilter !== 'all' && table.category !== categoryFilter) return false
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      return (
-        table.name.toLowerCase().includes(query) ||
-        table.description?.toLowerCase().includes(query) ||
-        table.entries.some(e => e.text.toLowerCase().includes(query))
-      )
-    }
     return true
   })
+
+  // Get all rollable items for quick roll (templates + user tables)
+  const getAllRollableItems = () => {
+    const items: { type: 'template' | 'table'; name: string; category: string; data: TableTemplate | RandomTable }[] = []
+
+    // Add templates
+    TEMPLATE_CATEGORIES.forEach(cat => {
+      cat.templates.forEach(template => {
+        items.push({
+          type: 'template',
+          name: template.name,
+          category: cat.name,
+          data: template,
+        })
+      })
+    })
+
+    // Add user tables
+    userTables.forEach(table => {
+      items.push({
+        type: 'table',
+        name: table.name,
+        category: 'My Tables',
+        data: table,
+      })
+    })
+
+    return items
+  }
+
+  // Filter quick roll items by search
+  const filteredQuickRollItems = getAllRollableItems().filter(item => {
+    if (!quickRollSearch) return true
+    return item.name.toLowerCase().includes(quickRollSearch.toLowerCase()) ||
+           item.category.toLowerCase().includes(quickRollSearch.toLowerCase())
+  })
+
+  // Toggle accordion category
+  const toggleCategory = (categoryId: string) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev)
+      if (next.has(categoryId)) {
+        next.delete(categoryId)
+      } else {
+        next.add(categoryId)
+      }
+      return next
+    })
+  }
 
   // Reset form
   const resetForm = () => {
@@ -239,7 +303,6 @@ export default function RandomTablesPage() {
       }
 
       if (editingTable) {
-        // Update existing
         const { error } = await supabase
           .from('random_tables')
           .update(tableData)
@@ -248,7 +311,6 @@ export default function RandomTablesPage() {
         if (error) throw error
         toast.success('Table updated')
       } else {
-        // Create new
         const { error } = await supabase
           .from('random_tables')
           .insert(tableData)
@@ -303,61 +365,43 @@ export default function RandomTablesPage() {
     }
   }
 
-  // Roll on table
+  // Roll on user table
   const rollOnTable = (table: RandomTable) => {
     setRollingTable(table)
+    setRollingTemplate(null)
     setShowRollReveal(true)
+    setQuickRollOpen(false)
+  }
+
+  // Roll on template
+  const rollOnTemplate = (template: TableTemplate) => {
+    setRollingTemplate(template)
+    setRollingTable(null)
+    setShowRollReveal(true)
+    setQuickRollOpen(false)
   }
 
   // Close roll result
   const closeRollResult = () => {
     setShowRollReveal(false)
     setRollingTable(null)
+    setRollingTemplate(null)
   }
 
   // Handle accepting roll result (copy to clipboard)
-  const handleAcceptRoll = (entry: RandomTableEntry) => {
-    if (rollingTable) {
-      navigator.clipboard.writeText(`${rollingTable.name}: ${entry.text}`)
-      toast.success('Result copied to clipboard')
-    }
+  const handleAcceptRoll = (entry: RandomTableEntry | string) => {
+    const tableName = rollingTable?.name || rollingTemplate?.name || 'Random Table'
+    const resultText = typeof entry === 'string' ? entry : entry.text
+    navigator.clipboard.writeText(`${tableName}: ${resultText}`)
+    toast.success('Result copied to clipboard')
     closeRollResult()
   }
 
-  // Toggle template selection
-  const toggleTemplateSelection = (templateId: string) => {
-    setSelectedTemplates(prev => {
-      const next = new Set(prev)
-      if (next.has(templateId)) {
-        next.delete(templateId)
-      } else {
-        next.add(templateId)
-      }
-      return next
-    })
-  }
-
-  // Import selected templates
-  const importSelectedTemplates = async () => {
-    if (selectedTemplates.size === 0) {
-      toast.error('Please select at least one template')
-      return
-    }
-
-    setImportingTemplates(true)
+  // Import a single template to campaign
+  const importTemplate = async (template: TableTemplate) => {
+    setImportingTemplates(prev => new Set(prev).add(template.id))
     try {
-      // Get all selected templates
-      const templatesToImport: TableTemplate[] = []
-      TEMPLATE_CATEGORIES.forEach(cat => {
-        cat.templates.forEach(template => {
-          if (selectedTemplates.has(template.id)) {
-            templatesToImport.push(template)
-          }
-        })
-      })
-
-      // Create tables in database
-      const tablesToInsert = templatesToImport.map(template => ({
+      const tableData = {
         campaign_id: campaignId,
         user_id: user!.id,
         name: template.name,
@@ -365,41 +409,42 @@ export default function RandomTablesPage() {
         category: template.category,
         roll_type: template.roll_type,
         custom_die_size: template.custom_die_size || null,
-        entries: template.entries.map((text, index) => ({
+        entries: template.entries.map((text) => ({
           id: uuidv4(),
           text,
           weight: 1,
         })),
         tags: template.tags,
-      }))
+      }
 
       const { error } = await supabase
         .from('random_tables')
-        .insert(tablesToInsert)
+        .insert(tableData)
 
       if (error) throw error
-
-      toast.success(`Added ${templatesToImport.length} table${templatesToImport.length > 1 ? 's' : ''}`)
-      setShowTemplatesModal(false)
-      setSelectedTemplates(new Set())
+      toast.success(`Added "${template.name}" to your tables`)
       loadTables()
     } catch (error) {
-      console.error('Failed to import templates:', error)
-      toast.error('Failed to import templates')
+      console.error('Failed to import template:', error)
+      toast.error('Failed to import template')
     } finally {
-      setImportingTemplates(false)
+      setImportingTemplates(prev => {
+        const next = new Set(prev)
+        next.delete(template.id)
+        return next
+      })
     }
   }
 
-  // Get icon for template category
-  const getCategoryIcon = (iconName: string) => {
-    switch (iconName) {
-      case 'Users': return Users
-      case 'Swords': return Swords
-      case 'Cloud': return Cloud
-      case 'Gem': return Gem
-      default: return Dice5
+  // Get entries for roll reveal
+  const getRollItems = () => {
+    if (rollingTable) {
+      return rollingTable.entries
     }
+    if (rollingTemplate) {
+      return rollingTemplate.entries.map((text, i) => ({ id: String(i), text, weight: 1 }))
+    }
+    return []
   }
 
   // Permission check
@@ -424,180 +469,328 @@ export default function RandomTablesPage() {
     )
   }
 
+  const totalEntries = getTotalEntryCount()
+
   return (
     <AppLayout campaignId={campaignId}>
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-              <Dice5 className="w-7 h-7 text-orange-400" />
-              Random Tables
-            </h1>
-            <p className="text-gray-400 text-sm mt-1">
-              Create and roll on custom tables during prep and gameplay
-            </p>
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <Dice5 className="w-8 h-8 text-orange-400" />
+            <h1 className="text-2xl font-bold text-white">Random Tables</h1>
           </div>
-          {isDm && (
-            <div className="flex items-center gap-2">
+          <p className="text-gray-400">
+            <span className="text-orange-400 font-semibold">{totalEntries.toLocaleString()}+</span> pre-built entries for names,
+            locations, encounters, and more. Roll instantly or add tables to your campaign.
+          </p>
+        </div>
+
+        {/* Quick Roll Section */}
+        <div className="mb-8">
+          <div className="relative">
+            <div
+              onClick={() => setQuickRollOpen(!quickRollOpen)}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 bg-[--bg-surface] border rounded-xl cursor-pointer transition-colors",
+                quickRollOpen ? "border-orange-500/50" : "border-[--border] hover:border-orange-500/30"
+              )}
+            >
+              <Play className="w-5 h-5 text-orange-400" />
+              <span className="flex-1 text-gray-400">Quick roll any table...</span>
+              <ChevronDown className={cn(
+                "w-5 h-5 text-gray-500 transition-transform",
+                quickRollOpen && "rotate-180"
+              )} />
+            </div>
+
+            {/* Quick Roll Dropdown */}
+            {quickRollOpen && (
+              <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-[--bg-elevated] border border-[--border] rounded-xl shadow-xl overflow-hidden">
+                {/* Search */}
+                <div className="p-3 border-b border-[--border]">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                    <input
+                      type="text"
+                      value={quickRollSearch}
+                      onChange={(e) => setQuickRollSearch(e.target.value)}
+                      placeholder="Search tables..."
+                      className="w-full pl-10 pr-4 py-2 bg-[--bg-base] border border-[--border] rounded-lg text-white text-sm focus:outline-none focus:border-orange-500/50"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                {/* Results */}
+                <div className="max-h-72 overflow-y-auto">
+                  {filteredQuickRollItems.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-gray-500 text-sm">
+                      No tables found
+                    </div>
+                  ) : (
+                    filteredQuickRollItems.slice(0, 15).map((item, index) => (
+                      <button
+                        key={`${item.type}-${item.type === 'template' ? (item.data as TableTemplate).id : (item.data as RandomTable).id}`}
+                        onClick={() => {
+                          if (item.type === 'template') {
+                            rollOnTemplate(item.data as TableTemplate)
+                          } else {
+                            rollOnTable(item.data as RandomTable)
+                          }
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.05] transition-colors text-left"
+                      >
+                        <Play className="w-4 h-4 text-orange-400 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-white text-sm">{item.name}</span>
+                          <span className="ml-2 text-xs text-gray-500">{item.category}</span>
+                        </div>
+                        {item.type === 'table' && (
+                          <span className="text-xs text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded">Custom</span>
+                        )}
+                      </button>
+                    ))
+                  )}
+                  {filteredQuickRollItems.length > 15 && (
+                    <div className="px-4 py-2 text-xs text-gray-500 text-center border-t border-[--border]">
+                      +{filteredQuickRollItems.length - 15} more results
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Template Categories - Accordion */}
+        <div className="space-y-3 mb-8">
+          <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide">Browse Templates</h2>
+
+          {TEMPLATE_CATEGORIES.map(category => {
+            const CategoryIcon = getCategoryIcon(category.icon)
+            const isExpanded = expandedCategories.has(category.id)
+            const colors = TEMPLATE_CATEGORY_COLORS[category.id] || { text: 'text-gray-400', bg: 'bg-gray-500/10', border: 'border-gray-500/30' }
+            const totalCatEntries = category.templates.reduce((sum, t) => sum + t.entries.length, 0)
+
+            return (
+              <div key={category.id} className="bg-[--bg-surface] border border-[--border] rounded-xl overflow-hidden">
+                {/* Category Header */}
+                <button
+                  onClick={() => toggleCategory(category.id)}
+                  className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left"
+                >
+                  <div className={cn("p-2 rounded-lg", colors.bg)}>
+                    <CategoryIcon className={cn("w-5 h-5", colors.text)} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-white">{category.name}</span>
+                      <span className="text-xs text-gray-500">
+                        {category.templates.length} tables · {totalCatEntries.toLocaleString()} entries
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-0.5">{category.description}</p>
+                  </div>
+                  {isExpanded ? (
+                    <ChevronDown className="w-5 h-5 text-gray-500" />
+                  ) : (
+                    <ChevronRight className="w-5 h-5 text-gray-500" />
+                  )}
+                </button>
+
+                {/* Expanded Templates */}
+                {isExpanded && (
+                  <div className="px-4 pb-4 space-y-2">
+                    {category.templates.map(template => (
+                      <div
+                        key={template.id}
+                        className={cn(
+                          "flex items-center gap-3 p-3 rounded-lg border transition-colors",
+                          "bg-white/[0.02] border-[--border] hover:border-[--border]"
+                        )}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-white text-sm font-medium">{template.name}</span>
+                            <span className="text-xs text-gray-500">{template.entries.length} entries</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5 truncate">{template.description}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => rollOnTemplate(template)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 rounded-lg text-orange-400 text-sm font-medium transition-colors"
+                          >
+                            <Play className="w-3.5 h-3.5" />
+                            Roll
+                          </button>
+                          {isDm && (
+                            <button
+                              onClick={() => importTemplate(template)}
+                              disabled={importingTemplates.has(template.id)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.05] hover:bg-white/[0.08] border border-[--border] rounded-lg text-gray-400 text-sm font-medium transition-colors disabled:opacity-50"
+                              title="Add to My Tables for editing"
+                            >
+                              {importingTemplates.has(template.id) ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Download className="w-3.5 h-3.5" />
+                              )}
+                              Add
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* My Custom Tables Section */}
+        <div className="bg-[--bg-surface] border border-[--border] rounded-xl overflow-hidden">
+          {/* Header */}
+          <button
+            onClick={() => setCustomTablesExpanded(!customTablesExpanded)}
+            className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left"
+          >
+            <div className="p-2 rounded-lg bg-indigo-500/10">
+              <Dice5 className="w-5 h-5 text-indigo-400" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-white">My Custom Tables</span>
+                <span className="text-xs text-gray-500">{userTables.length} tables</span>
+              </div>
+              <p className="text-sm text-gray-500 mt-0.5">Tables you've created or imported</p>
+            </div>
+            {isDm && (
               <button
-                onClick={() => setShowTemplatesModal(true)}
-                className="btn btn-secondary"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  openCreateModal()
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 rounded-lg text-purple-400 text-sm font-medium transition-colors"
               >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Browse Templates
+                <Plus className="w-4 h-4" />
+                New
               </button>
-              <button onClick={openCreateModal} className="btn btn-primary">
-                <Plus className="w-4 h-4 mr-2" />
-                New Table
-              </button>
+            )}
+            {customTablesExpanded ? (
+              <ChevronDown className="w-5 h-5 text-gray-500" />
+            ) : (
+              <ChevronRight className="w-5 h-5 text-gray-500" />
+            )}
+          </button>
+
+          {/* Show Archived Toggle */}
+          {customTablesExpanded && userTables.length > 0 && (
+            <div className="px-4 pb-2 flex items-center gap-2">
+              <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showArchived}
+                  onChange={(e) => setShowArchived(e.target.checked)}
+                  className="w-3.5 h-3.5 rounded border-gray-600 bg-gray-800 text-purple-600 focus:ring-purple-500"
+                />
+                Show archived
+              </label>
+            </div>
+          )}
+
+          {/* Custom Tables List */}
+          {customTablesExpanded && (
+            <div className="px-4 pb-4">
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+                </div>
+              ) : userTables.length === 0 ? (
+                <div className="py-6 text-center">
+                  <p className="text-gray-500 text-sm mb-3">No custom tables yet</p>
+                  {isDm && (
+                    <button
+                      onClick={openCreateModal}
+                      className="text-purple-400 text-sm hover:text-purple-300 transition-colors"
+                    >
+                      Create your first table →
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {userTables.map(table => {
+                    const categoryConfig = CATEGORY_CONFIG[table.category]
+                    return (
+                      <div
+                        key={table.id}
+                        className={cn(
+                          "flex items-center gap-3 p-3 rounded-lg border transition-colors",
+                          "bg-white/[0.02] border-[--border]",
+                          table.is_archived && "opacity-60"
+                        )}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-white text-sm font-medium">{table.name}</span>
+                            <Badge className={cn(categoryConfig.color, categoryConfig.bgColor, "text-xs")}>
+                              {categoryConfig.label}
+                            </Badge>
+                            <span className="text-xs text-gray-500">{table.entries.length} entries</span>
+                          </div>
+                          {table.description && (
+                            <p className="text-xs text-gray-500 mt-0.5 truncate">{table.description}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => rollOnTable(table)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 rounded-lg text-orange-400 text-sm font-medium transition-colors"
+                          >
+                            <Play className="w-3.5 h-3.5" />
+                            Roll
+                          </button>
+                          {isDm && (
+                            <>
+                              <button
+                                onClick={() => openEditModal(table)}
+                                className="p-1.5 text-gray-500 hover:text-white hover:bg-white/[0.05] rounded transition-colors"
+                                title="Edit"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => toggleArchive(table)}
+                                className="p-1.5 text-gray-500 hover:text-white hover:bg-white/[0.05] rounded transition-colors"
+                                title={table.is_archived ? 'Restore' : 'Archive'}
+                              >
+                                {table.is_archived ? (
+                                  <ArchiveRestore className="w-4 h-4" />
+                                ) : (
+                                  <Archive className="w-4 h-4" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => deleteTable(table)}
+                                className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
-
-        {/* Filters */}
-        <div className="flex flex-wrap gap-3 mb-6">
-          {/* Search */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tables..."
-              className="w-full pl-10 pr-4 py-2 bg-[--bg-surface] border border-[--border] rounded-lg text-white text-sm focus:outline-none focus:border-purple-500"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-
-          {/* Category filter */}
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value as RandomTableCategory | 'all')}
-            className="px-4 py-2 bg-[--bg-surface] border border-[--border] rounded-lg text-white text-sm focus:outline-none focus:border-purple-500"
-          >
-            <option value="all">All Categories</option>
-            {CATEGORIES.map(cat => (
-              <option key={cat.value} value={cat.value}>{cat.label}</option>
-            ))}
-          </select>
-
-          {/* Show archived toggle */}
-          <label className="flex items-center gap-2 px-4 py-2 bg-[--bg-surface] border border-[--border] rounded-lg text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showArchived}
-              onChange={(e) => setShowArchived(e.target.checked)}
-              className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-purple-600 focus:ring-purple-500"
-            />
-            <span className="text-gray-400">Show Archived</span>
-          </label>
-        </div>
-
-        {/* Tables Grid */}
-        {loading ? (
-          <div className="flex items-center justify-center h-[40vh]">
-            <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
-          </div>
-        ) : filteredTables.length === 0 ? (
-          <EmptyState
-            icon={<Dice5 className="w-12 h-12" />}
-            title="No random tables yet"
-            description="Create your first random table to use during prep and gameplay."
-            action={isDm ? (
-              <button onClick={openCreateModal} className="btn btn-primary">
-                Create Table
-              </button>
-            ) : undefined}
-          />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredTables.map(table => {
-              const categoryConfig = CATEGORY_CONFIG[table.category]
-              return (
-                <div
-                  key={table.id}
-                  className={cn(
-                    "bg-[--bg-surface] border border-[--border] rounded-xl p-4 transition-colors hover:border-orange-500/30",
-                    table.is_archived && "opacity-60"
-                  )}
-                >
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="font-medium text-white">{table.name}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge className={cn(categoryConfig.color, categoryConfig.bgColor)}>
-                          {categoryConfig.label}
-                        </Badge>
-                        <span className="text-xs text-gray-500">
-                          {table.roll_type === 'custom' ? `d${table.custom_die_size}` : table.roll_type}
-                        </span>
-                      </div>
-                    </div>
-                    {isDm && (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => openEditModal(table)}
-                          className="p-1.5 text-gray-500 hover:text-white hover:bg-white/[0.05] rounded transition-colors"
-                          title="Edit"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => toggleArchive(table)}
-                          className="p-1.5 text-gray-500 hover:text-white hover:bg-white/[0.05] rounded transition-colors"
-                          title={table.is_archived ? 'Restore' : 'Archive'}
-                        >
-                          {table.is_archived ? (
-                            <ArchiveRestore className="w-4 h-4" />
-                          ) : (
-                            <Archive className="w-4 h-4" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => deleteTable(table)}
-                          className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Description */}
-                  {table.description && (
-                    <p className="text-sm text-gray-400 mb-3 line-clamp-2">
-                      {table.description}
-                    </p>
-                  )}
-
-                  {/* Entries preview */}
-                  <div className="text-xs text-gray-500 mb-4">
-                    {table.entries.length} entries
-                  </div>
-
-                  {/* Roll button */}
-                  <button
-                    onClick={() => rollOnTable(table)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 rounded-lg text-orange-400 text-sm font-medium transition-colors"
-                  >
-                    <Play className="w-4 h-4" />
-                    Roll
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-        )}
       </div>
 
       {/* Create/Edit Modal */}
@@ -728,126 +921,38 @@ export default function RandomTablesPage() {
         </div>
       </Modal>
 
-      {/* Roll Result Modal - using fancy RollReveal animation */}
-      {rollingTable && (
+      {/* Roll Result Modal */}
+      {(rollingTable || rollingTemplate) && (
         <RollReveal
-          items={rollingTable.entries}
+          items={getRollItems()}
           isOpen={showRollReveal}
           onClose={closeRollResult}
           onAccept={handleAcceptRoll}
           duration="fast"
-          title={`Rolling ${rollingTable.name}...`}
+          title={`Rolling ${rollingTable?.name || rollingTemplate?.name}...`}
           renderResult={(entry) => (
             <div className="text-center">
               <p className="text-sm text-gray-400 mb-2">
-                {rollingTable.roll_type === 'custom' ? `d${rollingTable.custom_die_size}` : rollingTable.roll_type}
+                {rollingTable
+                  ? (rollingTable.roll_type === 'custom' ? `d${rollingTable.custom_die_size}` : rollingTable.roll_type)
+                  : (rollingTemplate?.roll_type === 'custom' ? `d${rollingTemplate.custom_die_size}` : rollingTemplate?.roll_type)
+                }
               </p>
-              <p className="text-xl text-white leading-relaxed">{entry.text}</p>
+              <p className="text-xl text-white leading-relaxed">
+                {typeof entry === 'string' ? entry : entry.text}
+              </p>
             </div>
           )}
         />
       )}
 
-      {/* Starter Templates Modal */}
-      <Modal
-        isOpen={showTemplatesModal}
-        onClose={() => {
-          setShowTemplatesModal(false)
-          setSelectedTemplates(new Set())
-        }}
-        title="Starter Templates"
-        description={`${getTotalEntryCount()}+ pre-built entries for names, encounters, and more`}
-        size="lg"
-      >
-        <div className="space-y-6">
-          {TEMPLATE_CATEGORIES.map(category => {
-            const CategoryIcon = getCategoryIcon(category.icon)
-            return (
-              <div key={category.id} className="space-y-3">
-                {/* Category Header */}
-                <div className="flex items-center gap-2">
-                  <CategoryIcon className="w-5 h-5 text-purple-400" />
-                  <h3 className="font-medium text-white">{category.name}</h3>
-                  <span className="text-xs text-gray-500">- {category.description}</span>
-                </div>
-
-                {/* Templates Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {category.templates.map(template => {
-                    const isSelected = selectedTemplates.has(template.id)
-                    const categoryConfig = CATEGORY_CONFIG[template.category]
-
-                    return (
-                      <button
-                        key={template.id}
-                        onClick={() => toggleTemplateSelection(template.id)}
-                        className={cn(
-                          "flex items-center gap-3 p-3 rounded-lg border text-left transition-all",
-                          isSelected
-                            ? "bg-purple-500/20 border-purple-500/50"
-                            : "bg-white/[0.02] border-[--border] hover:bg-white/[0.04]"
-                        )}
-                      >
-                        <div className={cn(
-                          "w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors",
-                          isSelected
-                            ? "bg-purple-500 border-purple-500"
-                            : "border-gray-600"
-                        )}>
-                          {isSelected && <Check className="w-3 h-3 text-white" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-white text-sm font-medium">{template.name}</span>
-                            <span className="text-xs text-gray-500">
-                              {template.entries.length} entries
-                            </span>
-                          </div>
-                          <p className="text-xs text-gray-500 truncate">{template.description}</p>
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
-
-          {/* Actions */}
-          <div className="flex items-center justify-between pt-4 border-t border-[--border]">
-            <div className="text-sm text-gray-400">
-              {selectedTemplates.size > 0 ? (
-                <span>{selectedTemplates.size} template{selectedTemplates.size > 1 ? 's' : ''} selected</span>
-              ) : (
-                <span>Select templates to add to your campaign</span>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => {
-                  setShowTemplatesModal(false)
-                  setSelectedTemplates(new Set())
-                }}
-                className="btn btn-secondary"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={importSelectedTemplates}
-                disabled={selectedTemplates.size === 0 || importingTemplates}
-                className="btn btn-primary"
-              >
-                {importingTemplates ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <Download className="w-4 h-4 mr-2" />
-                )}
-                Add to Campaign
-              </button>
-            </div>
-          </div>
-        </div>
-      </Modal>
+      {/* Click outside to close quick roll */}
+      {quickRollOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setQuickRollOpen(false)}
+        />
+      )}
     </AppLayout>
   )
 }
