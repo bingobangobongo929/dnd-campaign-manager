@@ -947,6 +947,7 @@ export default function SettingsPage() {
           isOpen={showDeleteConfirm}
           onClose={() => { setShowDeleteConfirm(false); setDeleteConfirmText('') }}
           title="Delete All Data?"
+          size="sm"
         >
           <div className="space-y-4">
             <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30">
@@ -1835,6 +1836,7 @@ export default function SettingsPage() {
         }}
         title="Delete All Data?"
         description="This action cannot be undone"
+        size="sm"
       >
         <div className="space-y-4">
           <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30">

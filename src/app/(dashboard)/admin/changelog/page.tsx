@@ -301,6 +301,7 @@ export default function AdminChangelogPage() {
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
         title="Delete Changelog Entry"
+        size="sm"
       >
         <div className="space-y-4">
           <p className="text-gray-400">

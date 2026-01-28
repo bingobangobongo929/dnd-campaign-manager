@@ -625,7 +625,7 @@ export function FactionManager({ campaignId, characters, isOpen, onClose, onFact
           })
         }}
         title="Create Faction"
-        size="md"
+        size="lg"
       >
         {renderFactionForm(createForm, setCreateForm)}
         <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-white/[0.06]">
@@ -650,7 +650,7 @@ export function FactionManager({ campaignId, characters, isOpen, onClose, onFact
         isOpen={!!editingFaction}
         onClose={() => setEditingFaction(null)}
         title="Edit Faction"
-        size="md"
+        size="lg"
       >
         {renderFactionForm(editForm, setEditForm, editingFaction?.id)}
         <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-white/[0.06]">

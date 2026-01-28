@@ -3266,7 +3266,7 @@ export default function IntelligencePage() {
         onClose={() => setEditingLocationSuggestion(null)}
         title="Edit Location"
         description="Edit the details before adding to your locations"
-        size="md"
+        size="lg"
       >
         <div className="space-y-4">
           {/* Name */}
@@ -3360,7 +3360,7 @@ export default function IntelligencePage() {
         onClose={() => setEditingQuestSuggestion(null)}
         title="Edit Quest"
         description="Edit the details before adding to your quests"
-        size="md"
+        size="lg"
       >
         <div className="space-y-4">
           {/* Name */}
@@ -3481,7 +3481,7 @@ export default function IntelligencePage() {
         onClose={() => setEditingEncounterSuggestion(null)}
         title="Edit Encounter"
         description="Edit the details before adding to your encounters"
-        size="md"
+        size="lg"
       >
         <div className="space-y-4">
           {/* Name */}
@@ -3620,7 +3620,7 @@ export default function IntelligencePage() {
         onClose={() => setEditingGenericSuggestion(null)}
         title={getGenericEditTitle()}
         description="Edit the value before applying"
-        size="md"
+        size="lg"
       >
         <div className="space-y-4">
           {/* Primary Value */}
@@ -3707,7 +3707,7 @@ export default function IntelligencePage() {
         isOpen={showAnalyzeConfirmModal}
         onClose={() => setShowAnalyzeConfirmModal(false)}
         title="Ready to Analyze?"
-        size="md"
+        size="sm"
       >
         <div className="space-y-4">
           {/* Full Audit Mode Toggle */}

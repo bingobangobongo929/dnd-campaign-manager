@@ -855,6 +855,7 @@ export function VaultEditor({ character, mode }: VaultEditorProps) {
         onClose={() => setIsDeleteConfirmOpen(false)}
         title="Delete Character"
         description="This will move the character to your recycle bin. You can restore it within 30 days."
+        size="sm"
       >
         <div className="flex justify-end gap-3 pt-4">
           <button className="btn btn-secondary" onClick={() => setIsDeleteConfirmOpen(false)}>Cancel</button>

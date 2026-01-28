@@ -628,6 +628,7 @@ export default function SharesPage() {
           isOpen={!!deleteTarget}
           onClose={() => setDeleteTarget(null)}
           title="Revoke Link?"
+          size="sm"
         >
           <div className="space-y-4">
             <p className="text-sm text-gray-400">
@@ -1217,6 +1218,7 @@ export default function SharesPage() {
         onClose={() => setDeleteTarget(null)}
         title="Revoke Share Link?"
         description="This action cannot be undone"
+        size="sm"
       >
         <div className="space-y-4">
           <p className="text-gray-400">

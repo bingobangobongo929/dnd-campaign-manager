@@ -897,6 +897,7 @@ export default function OneshotEditorPage() {
           onClose={() => setDeleteModalOpen(false)}
           title="Delete One-Shot"
           description="This will move the one-shot to your recycle bin. You can restore it within 30 days."
+          size="sm"
         >
           <div className="flex justify-end gap-3 pt-4">
             <button className="btn btn-secondary" onClick={() => setDeleteModalOpen(false)}>Cancel</button>
@@ -1466,6 +1467,7 @@ export default function OneshotEditorPage() {
         onClose={() => setDeleteModalOpen(false)}
         title="Delete One-Shot"
         description="This will move the one-shot to your recycle bin. You can restore it within 30 days."
+        size="sm"
       >
         <div className="flex justify-end gap-3 pt-4">
           <button className="btn btn-secondary" onClick={() => setDeleteModalOpen(false)}>Cancel</button>

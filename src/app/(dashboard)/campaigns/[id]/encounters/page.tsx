@@ -921,7 +921,7 @@ function EncounterFormModal({
   const isSocial = formData.type === 'social'
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={encounter ? 'Edit Encounter' : 'Add Encounter'} size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title={encounter ? 'Edit Encounter' : 'Add Encounter'} size="lg">
       <form onSubmit={handleSubmit} className="flex flex-col h-full">
         <div className="flex-1 overflow-y-auto space-y-4 pb-4" style={{ maxHeight: 'calc(70vh - 120px)' }}>
           <div className="space-y-4">

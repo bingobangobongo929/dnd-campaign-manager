@@ -1017,7 +1017,7 @@ function QuestFormModal({
       isOpen={isOpen}
       onClose={onClose}
       title={quest ? 'Edit Quest' : 'Add Quest'}
-      size="md"
+      size="lg"
     >
       <form onSubmit={handleSubmit} className="flex flex-col h-full">
         {/* Scrollable content */}

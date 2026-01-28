@@ -731,6 +731,7 @@ export function CharacterEditorMobile({
         onClose={() => setIsDeleteConfirmOpen(false)}
         title="Delete Character"
         description="This will move the character to your recycle bin."
+        size="sm"
       >
         <div className="space-y-4 py-4">
           <p className="text-sm text-gray-400">

@@ -1211,6 +1211,7 @@ export function CharacterModal({
         onClose={() => setIsDeleteConfirmOpen(false)}
         title="Delete Character"
         description="Are you sure you want to delete this character? This action cannot be undone."
+        size="sm"
       >
         <div className="flex justify-end gap-3 pt-4">
           <button className="btn btn-secondary" onClick={() => setIsDeleteConfirmOpen(false)}>Cancel</button>
