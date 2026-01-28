@@ -6,7 +6,6 @@ import {
   CheckSquare,
   Square,
   Plus,
-  Trash2,
   Loader2,
   ClipboardList,
   Save,
@@ -24,6 +23,7 @@ import {
   ExternalLink,
   GripVertical,
   FileText,
+  Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -286,6 +286,9 @@ export function SessionWorkflow({
   // Filter out disabled modules from display
   const visibleModuleOrder = moduleOrder.filter(m => !disabledModules.includes(m))
 
+  // Reorder mode toggle - only show drag handles when enabled
+  const [isReorderMode, setIsReorderMode] = useState(false)
+
   // Inline drag state for reordering modules
   const [draggedModule, setDraggedModule] = useState<PrepModule | null>(null)
   const [dragOverModule, setDragOverModule] = useState<PrepModule | null>(null)
@@ -325,6 +328,33 @@ export function SessionWorkflow({
   // Get modules that have content (for completed phase display)
   const getModulesWithContent = (): PrepModule[] => {
     return ALL_MODULES.filter(m => moduleHasContent(m))
+  }
+
+  // Clear all content from a specific module
+  const clearModuleContent = (moduleId: PrepModule) => {
+    switch (moduleId) {
+      case 'checklist':
+        setPrepChecklist([])
+        break
+      case 'references':
+        setReferences('')
+        break
+      case 'session_goals':
+        setSessionGoals('')
+        break
+      case 'key_npcs':
+        setKeyNpcs({ linkedCharacterIds: [], notes: '' })
+        break
+      case 'session_opener':
+        setSessionOpener('')
+        break
+      case 'random_tables':
+        setRandomTables('')
+        break
+      case 'music_ambiance':
+        setMusicAmbiance('')
+        break
+    }
   }
 
   // Track changes
@@ -789,13 +819,26 @@ export function SessionWorkflow({
             <div className="p-2 rounded-lg bg-purple-500/10">
               <Lightbulb className="w-5 h-5 text-purple-400" />
             </div>
-            <div>
+            <div className="flex-1">
               <h3 className="text-lg font-semibold text-white">Prep Tools</h3>
               <p className="text-sm text-[--text-tertiary]">
-                Optional tools to help you prepare - drag to reorder
+                Optional tools to help you prepare
               </p>
             </div>
           </div>
+          {/* Reorder Toggle */}
+          <button
+            onClick={() => setIsReorderMode(!isReorderMode)}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
+              isReorderMode
+                ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
+                : "text-gray-400 hover:text-white hover:bg-white/[0.05]"
+            )}
+          >
+            <GripVertical className="w-4 h-4" />
+            {isReorderMode ? 'Done' : 'Reorder'}
+          </button>
         </div>
 
         {/* All Modules - Draggable, collapsible (in custom order, filtered by disabled) */}
@@ -811,37 +854,47 @@ export function SessionWorkflow({
             return (
               <div
                 key={moduleId}
-                draggable
-                onDragStart={(e) => handleDragStart(e, moduleId)}
-                onDragEnd={handleDragEnd}
-                onDragOver={(e) => handleDragOver(e, moduleId)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, moduleId)}
+                draggable={isReorderMode}
+                onDragStart={(e) => isReorderMode && handleDragStart(e, moduleId)}
+                onDragEnd={isReorderMode ? handleDragEnd : undefined}
+                onDragOver={(e) => isReorderMode && handleDragOver(e, moduleId)}
+                onDragLeave={isReorderMode ? handleDragLeave : undefined}
+                onDrop={(e) => isReorderMode && handleDrop(e, moduleId)}
                 className={cn(
                   "rounded-xl border transition-all",
                   config.bgColor,
                   config.borderColor,
-                  config.hoverBorder,
+                  !isReorderMode && config.hoverBorder,
                   isDragging && "opacity-50",
-                  isDragOver && "border-purple-500 ring-2 ring-purple-500/30"
+                  isDragOver && "border-purple-500 ring-2 ring-purple-500/30",
+                  isReorderMode && "cursor-grab active:cursor-grabbing"
                 )}
               >
-                {/* Collapsible Header with drag handle */}
+                {/* Collapsible Header */}
                 <div className="flex items-center">
-                  {/* Drag Handle */}
-                  <div className="p-4 cursor-grab active:cursor-grabbing hover:bg-white/[0.03] rounded-l-xl transition-colors">
-                    <GripVertical className="w-4 h-4 text-gray-500" />
-                  </div>
+                  {/* Drag Handle - only visible in reorder mode */}
+                  {isReorderMode && (
+                    <div className="p-4 hover:bg-white/[0.03] rounded-l-xl transition-colors">
+                      <GripVertical className="w-4 h-4 text-gray-500" />
+                    </div>
+                  )}
 
                   {/* Expand/Collapse Button */}
                   <button
-                    onClick={() => toggleModule(moduleId)}
-                    className="flex-1 flex items-center gap-3 p-4 pl-0 text-left"
+                    onClick={() => !isReorderMode && toggleModule(moduleId)}
+                    disabled={isReorderMode}
+                    className={cn(
+                      "flex-1 flex items-center gap-3 p-4 text-left",
+                      !isReorderMode && "pl-4",
+                      isReorderMode && "pl-0 cursor-grab"
+                    )}
                   >
-                    {isExpanded ? (
-                      <ChevronDown className={cn("w-4 h-4 flex-shrink-0", config.iconColor)} />
-                    ) : (
-                      <ChevronRight className={cn("w-4 h-4 flex-shrink-0", config.iconColor)} />
+                    {!isReorderMode && (
+                      isExpanded ? (
+                        <ChevronDown className={cn("w-4 h-4 flex-shrink-0", config.iconColor)} />
+                      ) : (
+                        <ChevronRight className={cn("w-4 h-4 flex-shrink-0", config.iconColor)} />
+                      )
                     )}
                     <Icon className={cn("w-5 h-5 flex-shrink-0", config.iconColor)} />
                     <div className="flex-1 min-w-0">
@@ -863,10 +916,24 @@ export function SessionWorkflow({
                       <p className="text-xs text-gray-500 mt-0.5">{config.description}</p>
                     </div>
                   </button>
+
+                  {/* Clear Button - only show when has content and not in reorder mode */}
+                  {hasContent && !isReorderMode && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        clearModuleContent(moduleId)
+                      }}
+                      className="p-3 mr-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                      title="Clear all content"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
 
-                {/* Expanded Content */}
-                {isExpanded && (
+                {/* Expanded Content - hide in reorder mode */}
+                {isExpanded && !isReorderMode && (
                   <div className="px-4 pb-4 border-t border-white/[0.05]">
                     {renderModuleContent(moduleId)}
                   </div>

@@ -1828,10 +1828,8 @@ export default function SessionDetailPage() {
               </div>
             )}
 
-            {/* Thoughts for Next Session - at the bottom per plan */}
-            {!isNew && session && isDm &&
-             !layoutPrefs.isSectionHidden('thoughts_for_next') &&
-             !layoutPrefs.isSectionDisabledByCampaign('thoughts_for_next') && (
+            {/* Thoughts for Next Session - always visible for DMs on existing sessions */}
+            {!isNew && session && isDm && (
               <div className="card p-6 mb-8">
                 <div className="flex items-center gap-3 mb-4">
                   <Lightbulb className="w-5 h-5 text-[--arcane-gold]" />
