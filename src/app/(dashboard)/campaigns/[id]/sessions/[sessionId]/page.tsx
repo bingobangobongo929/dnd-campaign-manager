@@ -1074,7 +1074,7 @@ export default function SessionDetailPage() {
         {isDm && currentPhase === 'prep' && (
           <>
             {/* Session Workflow - Full component for Prep mode */}
-            {!isNew && session && campaign && campaign.user_id === user?.id && (
+            {!isNew && session && campaign && isDm && (
               <div className="mb-8">
                 <SessionWorkflow
                   session={session}
@@ -1708,7 +1708,7 @@ export default function SessionDetailPage() {
                 <div className="p-5 space-y-4">
 
             {/* Optional: DM Notes Section (Collapsible) */}
-            {campaign?.user_id === user?.id &&
+            {isDm &&
              !layoutPrefs.isSectionHidden('dm_notes') &&
              !layoutPrefs.isSectionDisabledByCampaign('dm_notes') && (
               <div className="bg-white/[0.02] rounded-lg overflow-hidden transition-all">
@@ -1829,7 +1829,7 @@ export default function SessionDetailPage() {
             )}
 
             {/* Thoughts for Next Session - at the bottom per plan */}
-            {!isNew && session && campaign?.user_id === user?.id &&
+            {!isNew && session && isDm &&
              !layoutPrefs.isSectionHidden('thoughts_for_next') &&
              !layoutPrefs.isSectionDisabledByCampaign('thoughts_for_next') && (
               <div className="card p-6 mb-8">
