@@ -23,11 +23,8 @@ import {
   Settings,
   ExternalLink,
   GripVertical,
-  ArrowUp,
-  ArrowDown,
   FileText,
 } from 'lucide-react'
-import { Modal } from '@/components/ui'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { RichTextEditor } from '@/components/editor'
@@ -289,9 +286,9 @@ export function SessionWorkflow({
   // Filter out disabled modules from display
   const visibleModuleOrder = moduleOrder.filter(m => !disabledModules.includes(m))
 
-  // Reorder modal state
-  const [showReorderModal, setShowReorderModal] = useState(false)
-  const [tempModuleOrder, setTempModuleOrder] = useState<PrepModule[]>([])
+  // Inline drag state for reordering modules
+  const [draggedModule, setDraggedModule] = useState<PrepModule | null>(null)
+  const [dragOverModule, setDragOverModule] = useState<PrepModule | null>(null)
 
   const [newPrepItem, setNewPrepItem] = useState('')
   const [hasChanges, setHasChanges] = useState(false)
@@ -441,35 +438,56 @@ export function SessionWorkflow({
     })
   }
 
-  // Reorder modal functions
-  const openReorderModal = () => {
-    setTempModuleOrder([...moduleOrder])
-    setShowReorderModal(true)
+  // Inline drag handlers for reordering modules
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, moduleId: PrepModule) => {
+    setDraggedModule(moduleId)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', moduleId)
+    // Add visual feedback
+    const target = e.currentTarget
+    setTimeout(() => {
+      target.style.opacity = '0.5'
+    }, 0)
   }
 
-  const moveModuleUp = (index: number) => {
-    if (index === 0) return
-    const newOrder = [...tempModuleOrder]
-    const temp = newOrder[index - 1]
-    newOrder[index - 1] = newOrder[index]
-    newOrder[index] = temp
-    setTempModuleOrder(newOrder)
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    e.currentTarget.style.opacity = '1'
+    setDraggedModule(null)
+    setDragOverModule(null)
   }
 
-  const moveModuleDown = (index: number) => {
-    if (index === tempModuleOrder.length - 1) return
-    const newOrder = [...tempModuleOrder]
-    const temp = newOrder[index + 1]
-    newOrder[index + 1] = newOrder[index]
-    newOrder[index] = temp
-    setTempModuleOrder(newOrder)
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, moduleId: PrepModule) => {
+    e.preventDefault()
+    if (draggedModule && draggedModule !== moduleId) {
+      setDragOverModule(moduleId)
+    }
   }
 
-  const saveModuleOrder = async () => {
-    setModuleOrder(tempModuleOrder)
-    setShowReorderModal(false)
-    // Trigger save
-    setHasChanges(true)
+  const handleDragLeave = () => {
+    setDragOverModule(null)
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetModuleId: PrepModule) => {
+    e.preventDefault()
+    if (!draggedModule || draggedModule === targetModuleId) {
+      setDragOverModule(null)
+      return
+    }
+
+    const currentOrder = [...moduleOrder]
+    const draggedIndex = currentOrder.indexOf(draggedModule)
+    const targetIndex = currentOrder.indexOf(targetModuleId)
+
+    if (draggedIndex === -1 || targetIndex === -1) return
+
+    // Remove from old position and insert at new position
+    const newOrder = [...currentOrder]
+    newOrder.splice(draggedIndex, 1)
+    newOrder.splice(targetIndex, 0, draggedModule)
+
+    setModuleOrder(newOrder)
+    setDragOverModule(null)
+    setHasChanges(true) // Trigger auto-save
   }
 
   // Checklist functions
@@ -755,77 +773,85 @@ export function SessionWorkflow({
       <div className="bg-[--bg-surface] rounded-xl overflow-hidden">
         {/* Section Header */}
         <div className="p-5 border-b border-white/[0.06]">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-500/10">
-                <Lightbulb className="w-5 h-5 text-purple-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white">Prep Tools</h3>
-                <p className="text-sm text-[--text-tertiary]">
-                  Optional tools to help you prepare - use what works for you
-                </p>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-purple-500/10">
+              <Lightbulb className="w-5 h-5 text-purple-400" />
             </div>
-            <button
-              onClick={openReorderModal}
-              className="text-sm text-gray-400 hover:text-purple-400 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white/[0.05] border border-transparent hover:border-purple-500/20"
-              title="Customize order"
-            >
-              <GripVertical className="w-4 h-4" />
-              Reorder
-            </button>
+            <div>
+              <h3 className="text-lg font-semibold text-white">Prep Tools</h3>
+              <p className="text-sm text-[--text-tertiary]">
+                Optional tools to help you prepare - drag to reorder
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* All Modules - Always visible, collapsible (in custom order, filtered by disabled) */}
+        {/* All Modules - Draggable, collapsible (in custom order, filtered by disabled) */}
         <div className="p-5 space-y-3">
           {visibleModuleOrder.map((moduleId) => {
             const config = MODULE_CONFIG[moduleId]
             const Icon = config.icon
             const isExpanded = isModuleExpanded(moduleId)
             const hasContent = moduleHasContent(moduleId)
+            const isDragging = draggedModule === moduleId
+            const isDragOver = dragOverModule === moduleId
 
             return (
               <div
                 key={moduleId}
+                draggable
+                onDragStart={(e) => handleDragStart(e, moduleId)}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => handleDragOver(e, moduleId)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, moduleId)}
                 className={cn(
                   "rounded-xl border transition-all",
                   config.bgColor,
                   config.borderColor,
-                  config.hoverBorder
+                  config.hoverBorder,
+                  isDragging && "opacity-50",
+                  isDragOver && "border-purple-500 ring-2 ring-purple-500/30"
                 )}
               >
-                {/* Collapsible Header */}
-                <button
-                  onClick={() => toggleModule(moduleId)}
-                  className="w-full flex items-center gap-3 p-4 text-left"
-                >
-                  {isExpanded ? (
-                    <ChevronDown className={cn("w-4 h-4 flex-shrink-0", config.iconColor)} />
-                  ) : (
-                    <ChevronRight className={cn("w-4 h-4 flex-shrink-0", config.iconColor)} />
-                  )}
-                  <Icon className={cn("w-5 h-5 flex-shrink-0", config.iconColor)} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-white">{config.label}</span>
-                      {hasContent && (
-                        <span className={cn(
-                          "text-xs px-1.5 py-0.5 rounded",
-                          config.bgColor,
-                          config.color
-                        )}>
-                          {moduleId === 'checklist'
-                            ? `${completedCount}/${prepChecklist.length}`
-                            : 'Has content'
-                          }
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-0.5">{config.description}</p>
+                {/* Collapsible Header with drag handle */}
+                <div className="flex items-center">
+                  {/* Drag Handle */}
+                  <div className="p-4 cursor-grab active:cursor-grabbing hover:bg-white/[0.03] rounded-l-xl transition-colors">
+                    <GripVertical className="w-4 h-4 text-gray-500" />
                   </div>
-                </button>
+
+                  {/* Expand/Collapse Button */}
+                  <button
+                    onClick={() => toggleModule(moduleId)}
+                    className="flex-1 flex items-center gap-3 p-4 pl-0 text-left"
+                  >
+                    {isExpanded ? (
+                      <ChevronDown className={cn("w-4 h-4 flex-shrink-0", config.iconColor)} />
+                    ) : (
+                      <ChevronRight className={cn("w-4 h-4 flex-shrink-0", config.iconColor)} />
+                    )}
+                    <Icon className={cn("w-5 h-5 flex-shrink-0", config.iconColor)} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-white">{config.label}</span>
+                        {hasContent && (
+                          <span className={cn(
+                            "text-xs px-1.5 py-0.5 rounded",
+                            config.bgColor,
+                            config.color
+                          )}>
+                            {moduleId === 'checklist'
+                              ? `${completedCount}/${prepChecklist.length}`
+                              : 'Has content'
+                            }
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5">{config.description}</p>
+                    </div>
+                  </button>
+                </div>
 
                 {/* Expanded Content */}
                 {isExpanded && (
@@ -851,83 +877,6 @@ export function SessionWorkflow({
         </div>
       </div>
 
-      {/* Reorder Modules Modal */}
-      <Modal
-        isOpen={showReorderModal}
-        onClose={() => setShowReorderModal(false)}
-        title="Customize Section Order"
-        description="Drag sections up or down to reorder them"
-      >
-        <div className="space-y-2">
-          {tempModuleOrder.map((moduleId, index) => {
-            const config = MODULE_CONFIG[moduleId]
-            const Icon = config.icon
-            const isFirst = index === 0
-            const isLast = index === tempModuleOrder.length - 1
-
-            return (
-              <div
-                key={moduleId}
-                className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg border",
-                  config.bgColor,
-                  config.borderColor
-                )}
-              >
-                <GripVertical className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                <Icon className={cn("w-5 h-5 flex-shrink-0", config.iconColor)} />
-                <div className="flex-1 min-w-0">
-                  <span className="font-medium text-white text-sm">{config.label}</span>
-                  <p className="text-xs text-gray-500 truncate">{config.description}</p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => moveModuleUp(index)}
-                    disabled={isFirst}
-                    className={cn(
-                      "p-1.5 rounded transition-colors",
-                      isFirst
-                        ? "text-gray-600 cursor-not-allowed"
-                        : "text-gray-400 hover:text-white hover:bg-white/10"
-                    )}
-                    title="Move up"
-                  >
-                    <ArrowUp className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => moveModuleDown(index)}
-                    disabled={isLast}
-                    className={cn(
-                      "p-1.5 rounded transition-colors",
-                      isLast
-                        ? "text-gray-600 cursor-not-allowed"
-                        : "text-gray-400 hover:text-white hover:bg-white/10"
-                    )}
-                    title="Move down"
-                  >
-                    <ArrowDown className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
-        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[--border]">
-          <button
-            onClick={() => setShowReorderModal(false)}
-            className="btn btn-secondary"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={saveModuleOrder}
-            className="btn btn-primary"
-          >
-            Save Order
-          </button>
-        </div>
-      </Modal>
     </div>
   )
 }
