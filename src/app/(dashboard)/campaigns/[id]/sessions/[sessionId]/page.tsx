@@ -1170,19 +1170,23 @@ export default function SessionDetailPage() {
 
             {/* === STANDARD MODE: Single "Session Notes" field editing `notes` === */}
             {!showEnhancedView && (
-              <div className="card p-6 mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <label className="text-lg font-semibold text-[--text-primary] block">
-                      Session Notes
-                    </label>
-                    {can.editSession && (
-                      <span className="text-sm text-[--text-tertiary]">
-                        What happened this session? Try mentioning NPCs talked to, locations visited, key decisions...
-                      </span>
-                    )}
+              <div className="bg-[--bg-surface] rounded-xl overflow-hidden mb-8">
+                <div className="p-5 border-b border-white/[0.06]">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-blue-500/10">
+                      <ScrollText className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">Session Notes</h3>
+                      {can.editSession && (
+                        <p className="text-sm text-[--text-tertiary]">
+                          What happened this session? Try mentioning NPCs talked to, locations visited, key decisions...
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
+                <div className="p-5">
 
                 {can.editSession ? (
                   <RichTextEditor
@@ -1216,7 +1220,7 @@ export default function SessionDetailPage() {
 
                 {/* Share with players checkbox - DM only */}
                 {can.editSession && !isNew && (
-                  <div className="mt-4 pt-4 border-t border-[--border]">
+                  <div className="mt-4 pt-4 border-t border-white/[0.06]">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -1229,6 +1233,7 @@ export default function SessionDetailPage() {
                     </label>
                   </div>
                 )}
+                </div>
               </div>
             )}
 
@@ -1236,82 +1241,90 @@ export default function SessionDetailPage() {
             {showEnhancedView && (
               <>
                 {/* Quick Recap - edits summary field */}
-                <div className="card p-6 mb-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <label className="text-lg font-semibold text-[--text-primary] block">
-                        Quick Recap
-                      </label>
-                      {can.editSession && (
-                        <span className="text-sm text-[--text-tertiary]">
-                          Write quick bullets about what happened. You can expand them into detailed notes when ready.
-                        </span>
-                      )}
-                    </div>
-                    {can.editSession && !showExpandedPreview && (
-                      <button
-                        onClick={handleExpandNotes}
-                        disabled={!formData.summary.trim() || expanding}
-                        className={cn(
-                          "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                          "bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple]",
-                          "hover:bg-[--arcane-purple]/20 hover:border-[--arcane-purple]/50",
-                          "disabled:opacity-50 disabled:cursor-not-allowed"
-                        )}
-                      >
-                        {expanding ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Wand2 className="w-4 h-4" />
-                        )}
-                        Expand Notes
-                      </button>
-                    )}
-                  </div>
-
-                  {can.editSession ? (
-                    <RichTextEditor
-                      content={formData.summary}
-                      onChange={(content) => setFormData({ ...formData, summary: content })}
-                      placeholder="Write quick bullets about what happened. You can expand them into detailed notes when ready."
-                      className="min-h-[150px]"
-                    />
-                  ) : (
-                    /* Read-only summary for players - only show if shared */
-                    <>
-                      {shareNotesWithPlayers ? (
-                        <div className="prose prose-invert prose-sm max-w-none [&>ul]:mt-1 [&>ul]:mb-2 [&>li]:my-0.5">
-                          {formData.summary ? (
-                            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.summary) }} />
-                          ) : (
-                            <p className="text-[--text-tertiary] italic">No quick recap available yet.</p>
+                <div className="bg-[--bg-surface] rounded-xl overflow-hidden mb-8">
+                  <div className="p-5 border-b border-white/[0.06]">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-amber-500/10">
+                          <ClipboardList className="w-5 h-5 text-amber-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-white">Quick Recap</h3>
+                          {can.editSession && (
+                            <p className="text-sm text-[--text-tertiary]">
+                              Write quick bullets about what happened. You can expand them into detailed notes when ready.
+                            </p>
                           )}
                         </div>
-                      ) : (
-                        <div className="text-center py-6 bg-white/[0.02] rounded-lg border border-[--border]">
-                          <EyeOff className="w-6 h-6 text-gray-600 mx-auto mb-2" />
-                          <p className="text-gray-500 text-xs">Not shared by DM</p>
-                        </div>
+                      </div>
+                      {can.editSession && !showExpandedPreview && (
+                        <button
+                          onClick={handleExpandNotes}
+                          disabled={!formData.summary.trim() || expanding}
+                          className={cn(
+                            "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                            "bg-[--arcane-purple]/10 border border-[--arcane-purple]/30 text-[--arcane-purple]",
+                            "hover:bg-[--arcane-purple]/20 hover:border-[--arcane-purple]/50",
+                            "disabled:opacity-50 disabled:cursor-not-allowed"
+                          )}
+                        >
+                          {expanding ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Wand2 className="w-4 h-4" />
+                          )}
+                          Expand Notes
+                        </button>
                       )}
-                    </>
-                  )}
+                    </div>
+                  </div>
+                  <div className="p-5">
+                    {can.editSession ? (
+                      <RichTextEditor
+                        content={formData.summary}
+                        onChange={(content) => setFormData({ ...formData, summary: content })}
+                        placeholder="Write quick bullets about what happened. You can expand them into detailed notes when ready."
+                        className="min-h-[150px]"
+                      />
+                    ) : (
+                      /* Read-only summary for players - only show if shared */
+                      <>
+                        {shareNotesWithPlayers ? (
+                          <div className="prose prose-invert prose-sm max-w-none [&>ul]:mt-1 [&>ul]:mb-2 [&>li]:my-0.5">
+                            {formData.summary ? (
+                              <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formData.summary) }} />
+                            ) : (
+                              <p className="text-[--text-tertiary] italic">No quick recap available yet.</p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-center py-6 bg-white/[0.02] rounded-lg">
+                            <EyeOff className="w-6 h-6 text-gray-600 mx-auto mb-2" />
+                            <p className="text-gray-500 text-xs">Not shared by DM</p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Detailed Notes - edits notes field - always visible in enhanced mode */}
-                <div className="card p-6 mb-8">
-                  <div className="flex items-center gap-3 mb-4">
-                    <ScrollText className="w-5 h-5 text-[--arcane-purple]" />
-                    <div>
-                      <label className="text-lg font-semibold text-[--text-primary] block">
-                        Detailed Notes
-                      </label>
-                      <span className="text-sm text-[--text-tertiary]">
-                        Full prose session narrative (expanded from Quick Recap)
-                      </span>
+                <div className="bg-[--bg-surface] rounded-xl overflow-hidden mb-8">
+                  <div className="p-5 border-b border-white/[0.06]">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-blue-500/10">
+                        <ScrollText className="w-5 h-5 text-blue-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-white">Detailed Notes</h3>
+                        <p className="text-sm text-[--text-tertiary]">
+                          Full prose session narrative (expanded from Quick Recap)
+                        </p>
+                      </div>
                     </div>
                   </div>
 
-                  <div>
+                  <div className="p-5">
                       {can.editSession ? (
                         <RichTextEditor
                           content={formData.notes}
@@ -1344,7 +1357,7 @@ export default function SessionDetailPage() {
 
                       {/* Share with players checkbox - DM only */}
                       {can.editSession && !isNew && (
-                        <div className="mt-4 pt-4 border-t border-[--border]">
+                        <div className="mt-4 pt-4 border-t border-white/[0.06]">
                           <label className="flex items-center gap-2 cursor-pointer">
                             <input
                               type="checkbox"
@@ -1654,9 +1667,9 @@ export default function SessionDetailPage() {
 
             {/* === OPTIONAL SECTIONS CARD === */}
             {!isNew && session && isDm && !sessionSettings?.all_optional_sections_hidden && (
-              <div className="bg-[--bg-surface] border border-[--border] rounded-xl overflow-hidden mb-8">
+              <div className="bg-[--bg-surface] rounded-xl overflow-hidden mb-8">
                 {/* Section Header */}
-                <div className="p-5 border-b border-[--border]">
+                <div className="p-5 border-b border-white/[0.06]">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-purple-500/10">
@@ -1687,10 +1700,10 @@ export default function SessionDetailPage() {
             {campaign?.user_id === user?.id &&
              !layoutPrefs.isSectionHidden('dm_notes') &&
              !layoutPrefs.isSectionDisabledByCampaign('dm_notes') && (
-              <div className="bg-[--bg-elevated] border border-[--border] rounded-lg overflow-hidden transition-all">
+              <div className="bg-white/[0.02] rounded-lg overflow-hidden transition-all">
                 <button
                   onClick={() => toggleSection('dmNotes')}
-                  className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+                  className="w-full p-4 flex items-center justify-between hover:bg-white/[0.03] transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     {expandedSections.dmNotes ? (
@@ -1713,7 +1726,7 @@ export default function SessionDetailPage() {
                   )}
                 </button>
                 {expandedSections.dmNotes && (
-                  <div className="px-4 pb-4 border-t border-[--border]">
+                  <div className="px-4 pb-4 border-t border-white/[0.06]">
                     <DmNotesSection
                       dmNotes={formData.dm_notes}
                       onDmNotesChange={(notes) => setFormData({ ...formData, dm_notes: notes })}
@@ -1730,10 +1743,10 @@ export default function SessionDetailPage() {
             {/* Optional: Session Content - Quests & Encounters (Collapsible) */}
             {!layoutPrefs.isSectionHidden('session_content') &&
              !layoutPrefs.isSectionDisabledByCampaign('session_content') && (
-              <div className="bg-[--bg-elevated] border border-[--border] rounded-lg overflow-hidden transition-all">
+              <div className="bg-white/[0.02] rounded-lg overflow-hidden transition-all">
                 <button
                   onClick={() => toggleSection('sessionContent')}
-                  className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+                  className="w-full p-4 flex items-center justify-between hover:bg-white/[0.03] transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     {expandedSections.sessionContent ? (
@@ -1751,7 +1764,7 @@ export default function SessionDetailPage() {
                   </div>
                 </button>
                 {expandedSections.sessionContent && (
-                  <div className="px-4 pb-4 border-t border-[--border]">
+                  <div className="px-4 pb-4 border-t border-white/[0.06]">
                     <SessionContent
                       sessionId={session.id}
                       campaignId={campaignId}
@@ -1765,10 +1778,10 @@ export default function SessionDetailPage() {
             {/* Optional: Player Notes Section (Collapsible) */}
             {!layoutPrefs.isSectionHidden('player_notes') &&
              !layoutPrefs.isSectionDisabledByCampaign('player_notes') && (
-              <div className="bg-[--bg-elevated] border border-[--border] rounded-lg overflow-hidden transition-all">
+              <div className="bg-white/[0.02] rounded-lg overflow-hidden transition-all">
                 <button
                   onClick={() => toggleSection('playerNotes')}
-                  className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+                  className="w-full p-4 flex items-center justify-between hover:bg-white/[0.03] transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     {expandedSections.playerNotes ? (
@@ -1786,7 +1799,7 @@ export default function SessionDetailPage() {
                   </div>
                 </button>
                 {expandedSections.playerNotes && (
-                  <div className="px-4 pb-4 border-t border-[--border]">
+                  <div className="px-4 pb-4 border-t border-white/[0.06]">
                     <PlayerNotes
                       sessionId={sessionId}
                       campaignId={campaignId}

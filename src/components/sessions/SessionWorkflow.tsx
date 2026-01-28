@@ -26,6 +26,8 @@ import {
   GripVertical,
   ArrowUp,
   ArrowDown,
+  FileText,
+  Check,
 } from 'lucide-react'
 import { Modal } from '@/components/ui'
 import { toast } from 'sonner'
@@ -697,9 +699,34 @@ export function SessionWorkflow({
 
   return (
     <div className="space-y-6">
+      {/* Auto-save indicator */}
+      <div className="flex justify-end">
+        <div className={cn(
+          "flex items-center gap-1.5 text-xs transition-opacity duration-300",
+          saving ? "text-purple-400" : hasChanges ? "text-gray-500" : "text-gray-600"
+        )}>
+          {saving ? (
+            <>
+              <Loader2 className="w-3 h-3 animate-spin" />
+              <span>Saving...</span>
+            </>
+          ) : hasChanges ? (
+            <>
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              <span>Unsaved changes</span>
+            </>
+          ) : (
+            <>
+              <Check className="w-3 h-3" />
+              <span>All changes saved</span>
+            </>
+          )}
+        </div>
+      </div>
+
       {/* Thoughts from last session Banner - only shows if previous session had content */}
       {previousThoughts && !previousThoughtsDismissed && (
-        <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
+        <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
               <Lightbulb className="w-5 h-5 text-purple-400 mt-0.5 flex-shrink-0" />
@@ -719,20 +746,36 @@ export function SessionWorkflow({
       )}
 
       {/* Prep Notes - Primary Workspace */}
-      <div className="bg-[--bg-surface] border border-[--border] rounded-xl p-5">
-        <label className="text-sm font-medium text-white mb-3 block">Prep Notes</label>
-        <RichTextEditor
-          content={prepNotes}
-          onChange={setPrepNotes}
-          placeholder="Plan your session however you like - scene ideas, NPC notes, encounters, or just a quick bullet list..."
-          className="min-h-[200px]"
-        />
+      <div className="bg-[--bg-surface] rounded-xl overflow-hidden">
+        {/* Header */}
+        <div className="p-5 border-b border-white/[0.06]">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-500/10">
+              <FileText className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white">Prep Notes</h3>
+              <p className="text-sm text-[--text-tertiary]">
+                Your main workspace for planning this session
+              </p>
+            </div>
+          </div>
+        </div>
+        {/* Content */}
+        <div className="p-5">
+          <RichTextEditor
+            content={prepNotes}
+            onChange={setPrepNotes}
+            placeholder="Plan your session however you like - scene ideas, NPC notes, encounters, or just a quick bullet list..."
+            className="min-h-[200px]"
+          />
+        </div>
       </div>
 
       {/* Optional Prep Tools Section */}
-      <div className="bg-[--bg-surface] border border-[--border] rounded-xl overflow-hidden">
+      <div className="bg-[--bg-surface] rounded-xl overflow-hidden">
         {/* Section Header */}
-        <div className="p-5 border-b border-[--border]">
+        <div className="p-5 border-b border-white/[0.06]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-purple-500/10">
@@ -817,7 +860,7 @@ export function SessionWorkflow({
         </div>
 
         {/* Campaign Settings Link - Footer */}
-        <div className="px-5 py-4 border-t border-[--border] bg-white/[0.01]">
+        <div className="px-5 py-4 border-t border-white/[0.06]">
           <Link
             href={`/campaigns/${campaignId}/settings`}
             className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-purple-400 transition-colors group"
@@ -828,26 +871,6 @@ export function SessionWorkflow({
           </Link>
         </div>
       </div>
-
-      {/* Save Button */}
-      {hasChanges && (
-        <div className="flex justify-end pt-4 border-t border-[--border]">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="btn btn-primary"
-          >
-            {saving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                Save Changes
-              </>
-            )}
-          </button>
-        </div>
-      )}
 
       {/* Reorder Modules Modal */}
       <Modal
