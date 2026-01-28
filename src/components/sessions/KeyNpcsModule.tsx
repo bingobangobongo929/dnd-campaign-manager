@@ -24,13 +24,13 @@ interface KeyNpcsModuleProps {
   readOnly?: boolean
 }
 
-// Parse legacy string format or new JSONB format
+// Parse legacy string format or new JSON format
 export function parseKeyNpcsValue(value: string | KeyNpcsData | null | undefined): KeyNpcsData {
   if (!value) {
     return { linkedCharacterIds: [], notes: '' }
   }
 
-  // If it's already the new format
+  // If it's already the new format (object with linkedCharacterIds)
   if (typeof value === 'object' && 'linkedCharacterIds' in value) {
     return {
       linkedCharacterIds: value.linkedCharacterIds || [],
@@ -38,9 +38,25 @@ export function parseKeyNpcsValue(value: string | KeyNpcsData | null | undefined
     }
   }
 
-  // Legacy string format - treat as notes
+  // If it's a string, try to parse as JSON first
   if (typeof value === 'string') {
-    return { linkedCharacterIds: [], notes: value }
+    try {
+      const parsed = JSON.parse(value)
+      // Check if it's a valid KeyNpcsData structure
+      if (parsed && typeof parsed === 'object' && 'linkedCharacterIds' in parsed) {
+        return {
+          linkedCharacterIds: Array.isArray(parsed.linkedCharacterIds) ? parsed.linkedCharacterIds : [],
+          notes: typeof parsed.notes === 'string' ? parsed.notes : '',
+        }
+      }
+    } catch {
+      // Not valid JSON, treat as legacy notes-only format
+    }
+    // If we get here, it's either not JSON or not the right structure
+    // Treat as legacy plain text notes (but not if it looks like JSON garbage)
+    if (!value.startsWith('{')) {
+      return { linkedCharacterIds: [], notes: value }
+    }
   }
 
   return { linkedCharacterIds: [], notes: '' }
