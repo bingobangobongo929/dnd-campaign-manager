@@ -332,7 +332,7 @@ function TableRow({
       <span className="text-xs text-gray-500 flex-shrink-0">{count}</span>
 
       {/* Favorite button */}
-      <Tooltip content={isFavorite ? "Remove from favorites" : "Add to favorites"}>
+      <Tooltip content={isFavorite ? "Remove from Quick Roll favorites" : "Add to Quick Roll favorites"}>
         <button
           onClick={(e) => {
             e.stopPropagation()

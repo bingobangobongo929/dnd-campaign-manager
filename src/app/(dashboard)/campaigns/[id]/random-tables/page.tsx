@@ -690,7 +690,7 @@ export default function RandomTablesPage() {
                             </div>
                             <div className="flex items-center gap-1 flex-shrink-0">
                               {/* Favorite button */}
-                              <Tooltip content={isFav ? "Remove from favorites" : "Add to favorites"}>
+                              <Tooltip content={isFav ? "Remove from Quick Roll in session prep" : "Add to Quick Roll in session prep"}>
                                 <button
                                   onClick={() => toggleTemplateFavorite(template.id)}
                                   className={cn(
@@ -836,7 +836,7 @@ export default function RandomTablesPage() {
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
                           {/* Favorite button */}
-                          <Tooltip content={isFav ? "Remove from favorites" : "Add to favorites"}>
+                          <Tooltip content={isFav ? "Remove from Quick Roll in session prep" : "Add to Quick Roll in session prep"}>
                             <button
                               onClick={() => toggleTableFavorite(table.id)}
                               className={cn(
