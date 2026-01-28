@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import {
   Dice5,
@@ -20,8 +20,22 @@ import {
   MapPin,
   User,
   BookOpen,
-  Check,
   Download,
+  Sparkles,
+  Beer,
+  Store,
+  Building2,
+  Trees,
+  Compass,
+  Cloud,
+  Footprints,
+  Skull,
+  Gem,
+  Heart,
+  MessageCircle,
+  Scroll,
+  AlertTriangle,
+  Navigation,
 } from 'lucide-react'
 import { AppLayout } from '@/components/layout'
 import { Modal, EmptyState, Badge, AccessDeniedPage } from '@/components/ui'
@@ -40,10 +54,9 @@ import {
   TEMPLATE_CATEGORIES,
   getTotalEntryCount,
   type TableTemplate,
-  type TemplateCategory,
 } from '@/lib/random-table-templates'
 
-// Category configuration
+// Category configuration for user tables
 const CATEGORY_CONFIG: Record<RandomTableCategory, { label: string; color: string; bgColor: string }> = {
   general: { label: 'General', color: 'text-gray-400', bgColor: 'bg-gray-500/10' },
   npc: { label: 'NPCs', color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
@@ -83,25 +96,48 @@ const CATEGORIES: { value: RandomTableCategory; label: string }[] = [
   { value: 'custom', label: 'Custom' },
 ]
 
-// Get icon component for template category
-const getCategoryIcon = (iconName: string) => {
-  switch (iconName) {
-    case 'Users': return Users
-    case 'MapPin': return MapPin
-    case 'Swords': return Swords
-    case 'User': return User
-    case 'BookOpen': return BookOpen
-    default: return Dice5
-  }
+// Template category icons and colors
+const TEMPLATE_CATEGORY_CONFIG: Record<string, {
+  icon: typeof Users
+  color: string
+  bgColor: string
+}> = {
+  names: { icon: Users, color: 'text-blue-400', bgColor: 'bg-blue-500/15' },
+  locations: { icon: MapPin, color: 'text-emerald-400', bgColor: 'bg-emerald-500/15' },
+  encounters: { icon: Swords, color: 'text-red-400', bgColor: 'bg-red-500/15' },
+  npcs: { icon: User, color: 'text-purple-400', bgColor: 'bg-purple-500/15' },
+  plots: { icon: BookOpen, color: 'text-amber-400', bgColor: 'bg-amber-500/15' },
 }
 
-// Template category colors
-const TEMPLATE_CATEGORY_COLORS: Record<string, { text: string; bg: string; border: string }> = {
-  names: { text: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
-  locations: { text: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/30' },
-  encounters: { text: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30' },
-  npcs: { text: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
-  plots: { text: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/30' },
+// Individual template icons based on template ID
+const TEMPLATE_ICONS: Record<string, typeof Users> = {
+  // Names
+  'human-male-names': User,
+  'human-female-names': User,
+  'elf-names': Sparkles,
+  'dwarf-names': Gem,
+  'halfling-names': Heart,
+  'orc-goblin-names': Skull,
+  'tiefling-names': Sparkles,
+  // Locations
+  'tavern-names': Beer,
+  'shop-names': Store,
+  'city-names': Building2,
+  'village-names': Building2,
+  'wilderness-landmarks': Trees,
+  'street-names': Navigation,
+  // Encounters
+  'road-encounters': Footprints,
+  'dungeon-features': Skull,
+  'weather-conditions': Cloud,
+  'loot-descriptors': Gem,
+  // NPCs
+  'npc-traits': Heart,
+  'npc-motivations': Compass,
+  // Plots
+  'rumors': MessageCircle,
+  'quest-hooks': Scroll,
+  'complications': AlertTriangle,
 }
 
 export default function RandomTablesPage() {
@@ -447,6 +483,11 @@ export default function RandomTablesPage() {
     return []
   }
 
+  // Get icon for template
+  const getTemplateIcon = (templateId: string) => {
+    return TEMPLATE_ICONS[templateId] || Dice5
+  }
+
   // Permission check
   if (permissionsLoading) {
     return (
@@ -473,176 +514,195 @@ export default function RandomTablesPage() {
 
   return (
     <AppLayout campaignId={campaignId}>
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Dice5 className="w-8 h-8 text-orange-400" />
-            <h1 className="text-2xl font-bold text-white">Random Tables</h1>
+        <div className="mb-10">
+          <div className="flex items-center gap-4 mb-3">
+            <div className="p-3 rounded-xl bg-orange-500/15">
+              <Dice5 className="w-8 h-8 text-orange-400" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white">Random Tables</h1>
+              <p className="text-gray-400 mt-1">
+                <span className="text-orange-400 font-semibold">{totalEntries.toLocaleString()}+</span> pre-built entries ready to roll
+              </p>
+            </div>
           </div>
-          <p className="text-gray-400">
-            <span className="text-orange-400 font-semibold">{totalEntries.toLocaleString()}+</span> pre-built entries for names,
-            locations, encounters, and more. Roll instantly or add tables to your campaign.
-          </p>
         </div>
 
         {/* Quick Roll Section */}
-        <div className="mb-8">
-          <div className="relative">
-            <div
-              onClick={() => setQuickRollOpen(!quickRollOpen)}
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 bg-[--bg-surface] border rounded-xl cursor-pointer transition-colors",
-                quickRollOpen ? "border-orange-500/50" : "border-[--border] hover:border-orange-500/30"
-              )}
-            >
+        <div className="mb-10 relative">
+          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Quick Roll</label>
+          <div
+            onClick={() => setQuickRollOpen(!quickRollOpen)}
+            className={cn(
+              "flex items-center gap-4 px-5 py-4 bg-[#0d0d14] rounded-xl cursor-pointer transition-all",
+              quickRollOpen
+                ? "ring-2 ring-orange-500/40"
+                : "hover:bg-[#111118]"
+            )}
+          >
+            <div className="p-2.5 rounded-lg bg-orange-500/15">
               <Play className="w-5 h-5 text-orange-400" />
-              <span className="flex-1 text-gray-400">Quick roll any table...</span>
-              <ChevronDown className={cn(
-                "w-5 h-5 text-gray-500 transition-transform",
-                quickRollOpen && "rotate-180"
-              )} />
             </div>
+            <span className="flex-1 text-gray-400">Search and roll any table...</span>
+            <ChevronDown className={cn(
+              "w-5 h-5 text-gray-500 transition-transform",
+              quickRollOpen && "rotate-180"
+            )} />
+          </div>
 
-            {/* Quick Roll Dropdown */}
-            {quickRollOpen && (
-              <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-[--bg-elevated] border border-[--border] rounded-xl shadow-xl overflow-hidden">
+          {/* Quick Roll Dropdown */}
+          {quickRollOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setQuickRollOpen(false)}
+              />
+              <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-[#1a1a24] rounded-xl shadow-2xl overflow-hidden">
                 {/* Search */}
-                <div className="p-3 border-b border-[--border]">
+                <div className="p-4 border-b border-white/[0.06]">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                     <input
                       type="text"
                       value={quickRollSearch}
                       onChange={(e) => setQuickRollSearch(e.target.value)}
                       placeholder="Search tables..."
-                      className="w-full pl-10 pr-4 py-2 bg-[--bg-base] border border-[--border] rounded-lg text-white text-sm focus:outline-none focus:border-orange-500/50"
+                      className="w-full pl-11 pr-4 py-3 bg-[#0d0d14] rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/40"
                       autoFocus
                     />
                   </div>
                 </div>
 
                 {/* Results */}
-                <div className="max-h-72 overflow-y-auto">
+                <div className="max-h-80 overflow-y-auto">
                   {filteredQuickRollItems.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-gray-500 text-sm">
+                    <div className="px-5 py-8 text-center text-gray-500">
                       No tables found
                     </div>
                   ) : (
-                    filteredQuickRollItems.slice(0, 15).map((item, index) => (
-                      <button
-                        key={`${item.type}-${item.type === 'template' ? (item.data as TableTemplate).id : (item.data as RandomTable).id}`}
-                        onClick={() => {
-                          if (item.type === 'template') {
-                            rollOnTemplate(item.data as TableTemplate)
-                          } else {
-                            rollOnTable(item.data as RandomTable)
-                          }
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.05] transition-colors text-left"
-                      >
-                        <Play className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <span className="text-white text-sm">{item.name}</span>
-                          <span className="ml-2 text-xs text-gray-500">{item.category}</span>
-                        </div>
-                        {item.type === 'table' && (
-                          <span className="text-xs text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded">Custom</span>
-                        )}
-                      </button>
-                    ))
+                    filteredQuickRollItems.slice(0, 12).map((item) => {
+                      const TemplateIcon = item.type === 'template'
+                        ? getTemplateIcon((item.data as TableTemplate).id)
+                        : Dice5
+                      return (
+                        <button
+                          key={`${item.type}-${item.type === 'template' ? (item.data as TableTemplate).id : (item.data as RandomTable).id}`}
+                          onClick={() => {
+                            if (item.type === 'template') {
+                              rollOnTemplate(item.data as TableTemplate)
+                            } else {
+                              rollOnTable(item.data as RandomTable)
+                            }
+                          }}
+                          className="w-full flex items-center gap-4 px-5 py-3 hover:bg-white/[0.04] transition-colors text-left"
+                        >
+                          <TemplateIcon className="w-4 h-4 text-orange-400 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <span className="text-white">{item.name}</span>
+                          </div>
+                          <span className="text-xs text-gray-500">{item.category}</span>
+                          {item.type === 'table' && (
+                            <span className="text-xs text-indigo-400 bg-indigo-500/15 px-2 py-0.5 rounded-md">Custom</span>
+                          )}
+                        </button>
+                      )
+                    })
                   )}
-                  {filteredQuickRollItems.length > 15 && (
-                    <div className="px-4 py-2 text-xs text-gray-500 text-center border-t border-[--border]">
-                      +{filteredQuickRollItems.length - 15} more results
+                  {filteredQuickRollItems.length > 12 && (
+                    <div className="px-5 py-3 text-sm text-gray-500 text-center border-t border-white/[0.06]">
+                      +{filteredQuickRollItems.length - 12} more tables
                     </div>
                   )}
                 </div>
               </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
 
-        {/* Template Categories - Accordion */}
-        <div className="space-y-3 mb-8">
-          <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide">Browse Templates</h2>
+        {/* Template Categories */}
+        <div className="space-y-4 mb-10">
+          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">Browse Templates</label>
 
           {TEMPLATE_CATEGORIES.map(category => {
-            const CategoryIcon = getCategoryIcon(category.icon)
+            const config = TEMPLATE_CATEGORY_CONFIG[category.id] || { icon: Dice5, color: 'text-gray-400', bgColor: 'bg-gray-500/15' }
+            const CategoryIcon = config.icon
             const isExpanded = expandedCategories.has(category.id)
-            const colors = TEMPLATE_CATEGORY_COLORS[category.id] || { text: 'text-gray-400', bg: 'bg-gray-500/10', border: 'border-gray-500/30' }
             const totalCatEntries = category.templates.reduce((sum, t) => sum + t.entries.length, 0)
 
             return (
-              <div key={category.id} className="bg-[--bg-surface] border border-[--border] rounded-xl overflow-hidden">
+              <div key={category.id} className="bg-[#0d0d14] rounded-xl overflow-hidden">
                 {/* Category Header */}
                 <button
                   onClick={() => toggleCategory(category.id)}
-                  className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left"
+                  className="w-full flex items-center gap-4 p-5 hover:bg-white/[0.02] transition-colors text-left"
                 >
-                  <div className={cn("p-2 rounded-lg", colors.bg)}>
-                    <CategoryIcon className={cn("w-5 h-5", colors.text)} />
+                  <div className={cn("p-2.5 rounded-lg", config.bgColor)}>
+                    <CategoryIcon className={cn("w-5 h-5", config.color)} />
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-white">{category.name}</span>
-                      <span className="text-xs text-gray-500">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-white text-lg">{category.name}</span>
+                      <span className="text-sm text-gray-500">
                         {category.templates.length} tables · {totalCatEntries.toLocaleString()} entries
                       </span>
                     </div>
                     <p className="text-sm text-gray-500 mt-0.5">{category.description}</p>
                   </div>
-                  {isExpanded ? (
-                    <ChevronDown className="w-5 h-5 text-gray-500" />
-                  ) : (
-                    <ChevronRight className="w-5 h-5 text-gray-500" />
-                  )}
+                  <ChevronDown className={cn(
+                    "w-5 h-5 text-gray-500 transition-transform flex-shrink-0",
+                    isExpanded && "rotate-180"
+                  )} />
                 </button>
 
                 {/* Expanded Templates */}
                 {isExpanded && (
-                  <div className="px-4 pb-4 space-y-2">
-                    {category.templates.map(template => (
-                      <div
-                        key={template.id}
-                        className={cn(
-                          "flex items-center gap-3 p-3 rounded-lg border transition-colors",
-                          "bg-white/[0.02] border-[--border] hover:border-[--border]"
-                        )}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-white text-sm font-medium">{template.name}</span>
-                            <span className="text-xs text-gray-500">{template.entries.length} entries</span>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-0.5 truncate">{template.description}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => rollOnTemplate(template)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 rounded-lg text-orange-400 text-sm font-medium transition-colors"
+                  <div className="px-5 pb-5 pt-1">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                      {category.templates.map(template => {
+                        const TemplateIcon = getTemplateIcon(template.id)
+                        return (
+                          <div
+                            key={template.id}
+                            className="flex items-center gap-4 p-4 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
                           >
-                            <Play className="w-3.5 h-3.5" />
-                            Roll
-                          </button>
-                          {isDm && (
-                            <button
-                              onClick={() => importTemplate(template)}
-                              disabled={importingTemplates.has(template.id)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.05] hover:bg-white/[0.08] border border-[--border] rounded-lg text-gray-400 text-sm font-medium transition-colors disabled:opacity-50"
-                              title="Add to My Tables for editing"
-                            >
-                              {importingTemplates.has(template.id) ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              ) : (
-                                <Download className="w-3.5 h-3.5" />
+                            <div className={cn("p-2 rounded-lg", config.bgColor)}>
+                              <TemplateIcon className={cn("w-4 h-4", config.color)} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-white font-medium">{template.name}</span>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-0.5">{template.entries.length} entries</p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <button
+                                onClick={() => rollOnTemplate(template)}
+                                className="flex items-center gap-2 px-4 py-2 bg-orange-500/15 hover:bg-orange-500/25 rounded-lg text-orange-400 text-sm font-medium transition-colors"
+                              >
+                                <Play className="w-3.5 h-3.5" />
+                                Roll
+                              </button>
+                              {isDm && (
+                                <button
+                                  onClick={() => importTemplate(template)}
+                                  disabled={importingTemplates.has(template.id)}
+                                  className="p-2 text-gray-500 hover:text-white hover:bg-white/[0.06] rounded-lg transition-colors disabled:opacity-50"
+                                  title="Add to My Tables"
+                                >
+                                  {importingTemplates.has(template.id) ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Download className="w-4 h-4" />
+                                  )}
+                                </button>
                               )}
-                              Add
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
@@ -651,104 +711,102 @@ export default function RandomTablesPage() {
         </div>
 
         {/* My Custom Tables Section */}
-        <div className="bg-[--bg-surface] border border-[--border] rounded-xl overflow-hidden">
+        <div className="bg-[#0d0d14] rounded-xl overflow-hidden">
           {/* Header */}
-          <button
-            onClick={() => setCustomTablesExpanded(!customTablesExpanded)}
-            className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left"
-          >
-            <div className="p-2 rounded-lg bg-indigo-500/10">
+          <div className="flex items-center gap-4 p-5">
+            <div className="p-2.5 rounded-lg bg-indigo-500/15">
               <Dice5 className="w-5 h-5 text-indigo-400" />
             </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-white">My Custom Tables</span>
-                <span className="text-xs text-gray-500">{userTables.length} tables</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3">
+                <span className="font-semibold text-white text-lg">My Custom Tables</span>
+                <span className="text-sm text-gray-500">{userTables.length} tables</span>
               </div>
               <p className="text-sm text-gray-500 mt-0.5">Tables you've created or imported</p>
             </div>
             {isDm && (
               <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  openCreateModal()
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 rounded-lg text-purple-400 text-sm font-medium transition-colors"
+                onClick={openCreateModal}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-500/15 hover:bg-purple-500/25 rounded-lg text-purple-400 text-sm font-medium transition-colors"
               >
                 <Plus className="w-4 h-4" />
-                New
+                New Table
               </button>
             )}
-            {customTablesExpanded ? (
-              <ChevronDown className="w-5 h-5 text-gray-500" />
-            ) : (
-              <ChevronRight className="w-5 h-5 text-gray-500" />
-            )}
-          </button>
-
-          {/* Show Archived Toggle */}
-          {customTablesExpanded && userTables.length > 0 && (
-            <div className="px-4 pb-2 flex items-center gap-2">
-              <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showArchived}
-                  onChange={(e) => setShowArchived(e.target.checked)}
-                  className="w-3.5 h-3.5 rounded border-gray-600 bg-gray-800 text-purple-600 focus:ring-purple-500"
-                />
-                Show archived
-              </label>
-            </div>
-          )}
+            <button
+              onClick={() => setCustomTablesExpanded(!customTablesExpanded)}
+              className="p-2 text-gray-500 hover:text-white hover:bg-white/[0.06] rounded-lg transition-colors"
+            >
+              <ChevronDown className={cn(
+                "w-5 h-5 transition-transform",
+                customTablesExpanded && "rotate-180"
+              )} />
+            </button>
+          </div>
 
           {/* Custom Tables List */}
           {customTablesExpanded && (
-            <div className="px-4 pb-4">
+            <div className="px-5 pb-5">
+              {/* Show Archived Toggle */}
+              {tables.some(t => t.is_archived) && (
+                <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer mb-4">
+                  <input
+                    type="checkbox"
+                    checked={showArchived}
+                    onChange={(e) => setShowArchived(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-purple-600 focus:ring-purple-500"
+                  />
+                  Show archived tables
+                </label>
+              )}
+
               {loading ? (
-                <div className="flex items-center justify-center py-8">
+                <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
                 </div>
               ) : userTables.length === 0 ? (
-                <div className="py-6 text-center">
-                  <p className="text-gray-500 text-sm mb-3">No custom tables yet</p>
+                <div className="py-12 text-center">
+                  <Dice5 className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-400 font-medium mb-2">No custom tables yet</p>
+                  <p className="text-gray-500 text-sm mb-4">Create your own tables or import from templates above</p>
                   {isDm && (
                     <button
                       onClick={openCreateModal}
-                      className="text-purple-400 text-sm hover:text-purple-300 transition-colors"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/15 text-purple-400 rounded-lg hover:bg-purple-500/25 transition-colors text-sm font-medium"
                     >
-                      Create your first table →
+                      <Plus className="w-4 h-4" />
+                      Create Table
                     </button>
                   )}
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                   {userTables.map(table => {
                     const categoryConfig = CATEGORY_CONFIG[table.category]
                     return (
                       <div
                         key={table.id}
                         className={cn(
-                          "flex items-center gap-3 p-3 rounded-lg border transition-colors",
-                          "bg-white/[0.02] border-[--border]",
-                          table.is_archived && "opacity-60"
+                          "flex items-center gap-4 p-4 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors",
+                          table.is_archived && "opacity-50"
                         )}
                       >
+                        <div className={cn("p-2 rounded-lg", categoryConfig.bgColor)}>
+                          <Dice5 className={cn("w-4 h-4", categoryConfig.color)} />
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-white text-sm font-medium">{table.name}</span>
-                            <Badge className={cn(categoryConfig.color, categoryConfig.bgColor, "text-xs")}>
+                            <span className="text-white font-medium truncate">{table.name}</span>
+                            <Badge className={cn(categoryConfig.color, categoryConfig.bgColor, "text-xs flex-shrink-0")}>
                               {categoryConfig.label}
                             </Badge>
-                            <span className="text-xs text-gray-500">{table.entries.length} entries</span>
                           </div>
-                          {table.description && (
-                            <p className="text-xs text-gray-500 mt-0.5 truncate">{table.description}</p>
-                          )}
+                          <p className="text-xs text-gray-500 mt-0.5">{table.entries.length} entries</p>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           <button
                             onClick={() => rollOnTable(table)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 rounded-lg text-orange-400 text-sm font-medium transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 bg-orange-500/15 hover:bg-orange-500/25 rounded-lg text-orange-400 text-sm font-medium transition-colors"
                           >
                             <Play className="w-3.5 h-3.5" />
                             Roll
@@ -757,14 +815,14 @@ export default function RandomTablesPage() {
                             <>
                               <button
                                 onClick={() => openEditModal(table)}
-                                className="p-1.5 text-gray-500 hover:text-white hover:bg-white/[0.05] rounded transition-colors"
+                                className="p-2 text-gray-500 hover:text-white hover:bg-white/[0.06] rounded-lg transition-colors"
                                 title="Edit"
                               >
                                 <Edit3 className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => toggleArchive(table)}
-                                className="p-1.5 text-gray-500 hover:text-white hover:bg-white/[0.05] rounded transition-colors"
+                                className="p-2 text-gray-500 hover:text-white hover:bg-white/[0.06] rounded-lg transition-colors"
                                 title={table.is_archived ? 'Restore' : 'Archive'}
                               >
                                 {table.is_archived ? (
@@ -775,7 +833,7 @@ export default function RandomTablesPage() {
                               </button>
                               <button
                                 onClick={() => deleteTable(table)}
-                                className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                                className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                                 title="Delete"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -800,7 +858,7 @@ export default function RandomTablesPage() {
         title={editingTable ? 'Edit Table' : 'Create Random Table'}
         size="lg"
       >
-        <div className="space-y-4">
+        <div className="space-y-5">
           {/* Name */}
           <div>
             <label className="block text-sm font-medium text-white mb-2">Name *</label>
@@ -809,7 +867,7 @@ export default function RandomTablesPage() {
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
               placeholder="e.g., Random NPC Motivations"
-              className="w-full px-4 py-2 bg-[--bg-surface] border border-[--border] rounded-lg text-white focus:outline-none focus:border-purple-500"
+              className="w-full px-4 py-3 bg-[#0d0d14] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/40"
             />
           </div>
 
@@ -821,7 +879,7 @@ export default function RandomTablesPage() {
               onChange={(e) => setFormDescription(e.target.value)}
               placeholder="What is this table used for?"
               rows={2}
-              className="w-full px-4 py-2 bg-[--bg-surface] border border-[--border] rounded-lg text-white focus:outline-none focus:border-purple-500 resize-none"
+              className="w-full px-4 py-3 bg-[#0d0d14] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/40 resize-none"
             />
           </div>
 
@@ -832,7 +890,7 @@ export default function RandomTablesPage() {
               <select
                 value={formCategory}
                 onChange={(e) => setFormCategory(e.target.value as RandomTableCategory)}
-                className="w-full px-4 py-2 bg-[--bg-surface] border border-[--border] rounded-lg text-white focus:outline-none focus:border-purple-500"
+                className="w-full px-4 py-3 bg-[#0d0d14] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/40"
               >
                 {CATEGORIES.map(cat => (
                   <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -844,7 +902,7 @@ export default function RandomTablesPage() {
               <select
                 value={formRollType}
                 onChange={(e) => setFormRollType(e.target.value as RandomTableDieType)}
-                className="w-full px-4 py-2 bg-[--bg-surface] border border-[--border] rounded-lg text-white focus:outline-none focus:border-purple-500"
+                className="w-full px-4 py-3 bg-[#0d0d14] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/40"
               >
                 {DIE_TYPES.map(die => (
                   <option key={die.value} value={die.value}>{die.label}</option>
@@ -863,7 +921,7 @@ export default function RandomTablesPage() {
                 onChange={(e) => setFormCustomDieSize(parseInt(e.target.value) || 1)}
                 min={1}
                 max={1000}
-                className="w-full px-4 py-2 bg-[--bg-surface] border border-[--border] rounded-lg text-white focus:outline-none focus:border-purple-500"
+                className="w-full px-4 py-3 bg-[#0d0d14] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/40"
               />
             </div>
           )}
@@ -875,18 +933,18 @@ export default function RandomTablesPage() {
             </label>
             <div className="space-y-2 max-h-[200px] overflow-y-auto">
               {formEntries.map((entry, index) => (
-                <div key={entry.id} className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500 w-6">{index + 1}.</span>
+                <div key={entry.id} className="flex items-center gap-3">
+                  <span className="text-xs text-gray-500 w-6 text-right">{index + 1}.</span>
                   <input
                     type="text"
                     value={entry.text}
                     onChange={(e) => updateEntry(index, e.target.value)}
                     placeholder="Entry text..."
-                    className="flex-1 px-3 py-2 bg-[--bg-surface] border border-[--border] rounded-lg text-white text-sm focus:outline-none focus:border-purple-500"
+                    className="flex-1 px-4 py-2.5 bg-[#0d0d14] rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                   />
                   <button
                     onClick={() => removeEntry(index)}
-                    className="p-2 text-gray-500 hover:text-red-400 transition-colors"
+                    className="p-2 text-gray-500 hover:text-red-400 rounded-lg transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -895,7 +953,7 @@ export default function RandomTablesPage() {
             </div>
             <button
               onClick={addEntry}
-              className="mt-2 flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-white border border-dashed border-[--border] rounded-lg hover:bg-white/[0.02] transition-colors w-full justify-center"
+              className="mt-3 flex items-center gap-2 px-4 py-2.5 text-sm text-gray-400 hover:text-white border border-dashed border-white/[0.1] rounded-lg hover:bg-white/[0.02] transition-colors w-full justify-center"
             >
               <Plus className="w-4 h-4" />
               Add Entry
@@ -903,7 +961,7 @@ export default function RandomTablesPage() {
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-[--border]">
+          <div className="flex justify-end gap-3 pt-4 border-t border-white/[0.06]">
             <button onClick={closeModal} className="btn btn-secondary">
               Cancel
             </button>
@@ -912,9 +970,7 @@ export default function RandomTablesPage() {
               disabled={savingTable}
               className="btn btn-primary"
             >
-              {savingTable ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : null}
+              {savingTable && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               {editingTable ? 'Update Table' : 'Create Table'}
             </button>
           </div>
@@ -943,14 +999,6 @@ export default function RandomTablesPage() {
               </p>
             </div>
           )}
-        />
-      )}
-
-      {/* Click outside to close quick roll */}
-      {quickRollOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setQuickRollOpen(false)}
         />
       )}
     </AppLayout>
