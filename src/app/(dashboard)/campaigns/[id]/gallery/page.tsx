@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Image as ImageIcon, Upload, Plus, Trash2, X, Loader2, Grid, LayoutGrid } from 'lucide-react'
+import { Image as ImageIcon, Upload, Plus, Trash2, X, Loader2, Grid, LayoutGrid, AlertTriangle } from 'lucide-react'
 import { Modal, Input, AccessDeniedPage, EmptyState } from '@/components/ui'
 import { AppLayout } from '@/components/layout'
 import { BackToTopButton } from '@/components/ui/back-to-top'
@@ -34,6 +34,8 @@ export default function GalleryPage() {
   const [uploading, setUploading] = useState(false)
   const [gridSize, setGridSize] = useState<'sm' | 'md' | 'lg'>('md')
   const [error, setError] = useState<string | null>(null)
+  const [deletingImage, setDeletingImage] = useState<MediaItem | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (user && campaignId) {
@@ -145,8 +147,7 @@ export default function GalleryPage() {
   }, [campaignId, items, supabase])
 
   const handleDelete = async (item: MediaItem) => {
-    if (!confirm('Delete this image? This cannot be undone.')) return
-
+    setDeleting(true)
     // Extract path from URL for deletion
     const urlParts = item.image_url.split('/media-gallery/')
     if (urlParts.length > 1) {
@@ -158,6 +159,8 @@ export default function GalleryPage() {
     if (selectedItem?.id === item.id) {
       setSelectedItem(null)
     }
+    setDeletingImage(null)
+    setDeleting(false)
   }
 
   const gridClasses = {
@@ -172,6 +175,12 @@ export default function GalleryPage() {
     lg: 'aspect-[4/3]',
   }
 
+  // Mobile uses simpler confirm() dialog
+  const handleDeleteMobile = async (item: MediaItem) => {
+    if (!confirm('Delete this image? This cannot be undone.')) return
+    await handleDelete(item)
+  }
+
   // ============ MOBILE LAYOUT ============
   if (isMobile) {
     return (
@@ -184,7 +193,7 @@ export default function GalleryPage() {
         selectedItem={selectedItem}
         setSelectedItem={setSelectedItem}
         handleFileSelect={handleFileSelect}
-        handleDelete={handleDelete}
+        handleDelete={handleDeleteMobile}
         fileInputRef={fileInputRef}
         handleFileChange={handleFileChange}
       />
@@ -354,9 +363,10 @@ export default function GalleryPage() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleDelete(item)
+                        setDeletingImage(item)
                       }}
                       className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/50 text-white hover:bg-[--arcane-ember] transition-colors"
+                      title="Delete image"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -397,6 +407,45 @@ export default function GalleryPage() {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={!!deletingImage}
+        onClose={() => setDeletingImage(null)}
+        title="Delete Image"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-white font-medium">
+                Are you sure you want to delete {deletingImage?.title ? `"${deletingImage.title}"` : 'this image'}?
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                This action cannot be undone.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setDeletingImage(null)}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn bg-red-600 hover:bg-red-500 text-white"
+              onClick={() => deletingImage && handleDelete(deletingImage)}
+              disabled={deleting}
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
       <BackToTopButton />
     </AppLayout>
   )

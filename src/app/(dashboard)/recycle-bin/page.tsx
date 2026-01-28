@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout'
+import { Modal } from '@/components/ui'
 import { Trash2, RotateCcw, AlertTriangle, Loader2, Clock, Swords, Users, BookOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -15,6 +16,8 @@ export default function RecycleBinPage() {
   const [filter, setFilter] = useState<FilterType>('all')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [emptyingAll, setEmptyingAll] = useState(false)
+  const [deletingItem, setDeletingItem] = useState<RecycleBinItem | null>(null)
+  const [showEmptyAllConfirm, setShowEmptyAllConfirm] = useState(false)
 
   useEffect(() => {
     fetchItems()
@@ -55,8 +58,6 @@ export default function RecycleBinPage() {
   }
 
   const handlePermanentDelete = async (item: RecycleBinItem) => {
-    if (!confirm(`Permanently delete "${item.name}"? This cannot be undone.`)) return
-
     setActionLoading(item.id)
     try {
       const response = await fetch('/api/recycle-bin/purge', {
@@ -69,6 +70,7 @@ export default function RecycleBinPage() {
 
       setItems(items.filter(i => i.id !== item.id))
       toast.success(`"${item.name}" permanently deleted`)
+      setDeletingItem(null)
     } catch (error) {
       console.error('Delete error:', error)
       toast.error('Failed to delete item')
@@ -78,8 +80,6 @@ export default function RecycleBinPage() {
   }
 
   const handleEmptyAll = async () => {
-    if (!confirm('Permanently delete ALL items in the recycle bin? This cannot be undone.')) return
-
     setEmptyingAll(true)
     try {
       const response = await fetch('/api/recycle-bin/empty', {
@@ -90,6 +90,7 @@ export default function RecycleBinPage() {
 
       setItems([])
       toast.success('Recycle bin emptied')
+      setShowEmptyAllConfirm(false)
     } catch (error) {
       console.error('Empty error:', error)
       toast.error('Failed to empty recycle bin')
@@ -161,7 +162,7 @@ export default function RecycleBinPage() {
 
           {items.length > 0 && (
             <button
-              onClick={handleEmptyAll}
+              onClick={() => setShowEmptyAllConfirm(true)}
               disabled={emptyingAll}
               className="flex items-center gap-2 px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
             >
@@ -276,9 +277,10 @@ export default function RecycleBinPage() {
                       Restore
                     </button>
                     <button
-                      onClick={() => handlePermanentDelete(item)}
+                      onClick={() => setDeletingItem(item)}
                       disabled={isLoading}
                       className="flex items-center gap-2 px-3 py-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
+                      title="Permanently delete"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -306,6 +308,82 @@ export default function RecycleBinPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Single Item Confirmation Modal */}
+      <Modal
+        isOpen={!!deletingItem}
+        onClose={() => setDeletingItem(null)}
+        title="Permanently Delete"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-white font-medium">
+                Are you sure you want to permanently delete "{deletingItem?.name}"?
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                This action cannot be undone.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setDeletingItem(null)}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn bg-red-600 hover:bg-red-500 text-white"
+              onClick={() => deletingItem && handlePermanentDelete(deletingItem)}
+              disabled={actionLoading === deletingItem?.id}
+            >
+              {actionLoading === deletingItem?.id ? 'Deleting...' : 'Delete Forever'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Empty All Confirmation Modal */}
+      <Modal
+        isOpen={showEmptyAllConfirm}
+        onClose={() => setShowEmptyAllConfirm(false)}
+        title="Empty Recycle Bin"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-white font-medium">
+                Are you sure you want to permanently delete ALL {items.length} item{items.length !== 1 ? 's' : ''}?
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                This will permanently delete everything in the recycle bin. This action cannot be undone.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowEmptyAllConfirm(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn bg-red-600 hover:bg-red-500 text-white"
+              onClick={handleEmptyAll}
+              disabled={emptyingAll}
+            >
+              {emptyingAll ? 'Deleting...' : 'Empty Recycle Bin'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </AppLayout>
   )
 }

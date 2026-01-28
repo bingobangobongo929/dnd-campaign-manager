@@ -11,12 +11,13 @@ import {
   PawPrint,
   ExternalLink,
   Swords,
+  AlertTriangle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useIsMobile } from '@/hooks'
 import { CharacterRelationshipsPageMobile } from './page.mobile'
-import { Button } from '@/components/ui'
+import { Button, Modal } from '@/components/ui'
 import { BackToTopButton } from '@/components/ui/back-to-top'
 import { createClient } from '@/lib/supabase/client'
 import { RELATIONSHIP_COLORS, COMPANION_TYPE_COLORS, getInitials } from '@/lib/character-display'
@@ -31,6 +32,8 @@ export default function CharacterRelationshipsPage() {
   const [activeTab, setActiveTab] = useState<'party' | 'npcs' | 'companions'>('party')
   const [relationships, setRelationships] = useState<VaultCharacterRelationship[]>([])
   const [loading, setLoading] = useState(true)
+  const [deletingRelationship, setDeletingRelationship] = useState<VaultCharacterRelationship | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     loadRelationships()
@@ -62,19 +65,29 @@ export default function CharacterRelationshipsPage() {
     window.location.href = `/vault/${characterId}#people`
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this relationship?')) return
-
+  const handleDelete = async (relationship: VaultCharacterRelationship) => {
+    setDeleting(true)
     const { error } = await supabase
       .from('vault_character_relationships')
       .delete()
-      .eq('id', id)
+      .eq('id', relationship.id)
 
     if (error) {
       toast.error('Failed to delete')
     } else {
       toast.success('Deleted successfully')
       loadRelationships()
+      setDeletingRelationship(null)
+    }
+    setDeleting(false)
+  }
+
+  // Mobile uses simpler confirm() dialog
+  const handleDeleteMobile = async (id: string) => {
+    if (!confirm('Delete this relationship?')) return
+    const relationship = relationships.find(r => r.id === id)
+    if (relationship) {
+      await handleDelete(relationship)
     }
   }
 
@@ -90,7 +103,7 @@ export default function CharacterRelationshipsPage() {
         npcs={npcs}
         companions={companions}
         goToEditor={goToEditor}
-        handleDelete={handleDelete}
+        handleDelete={handleDeleteMobile}
       />
     )
   }
@@ -232,7 +245,7 @@ export default function CharacterRelationshipsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(member.id)}
+                        onClick={() => setDeletingRelationship(member)}
                         className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -319,7 +332,7 @@ export default function CharacterRelationshipsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(npc.id)}
+                        onClick={() => setDeletingRelationship(npc)}
                         className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -404,7 +417,7 @@ export default function CharacterRelationshipsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(companion.id)}
+                        onClick={() => setDeletingRelationship(companion)}
                         className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -419,6 +432,44 @@ export default function CharacterRelationshipsPage() {
 
       </div>
       <BackToTopButton />
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={!!deletingRelationship}
+        onClose={() => setDeletingRelationship(null)}
+        title="Delete Relationship"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-white font-medium">
+                Are you sure you want to delete "{deletingRelationship?.related_name}"?
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                This action cannot be undone.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setDeletingRelationship(null)}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn bg-red-600 hover:bg-red-500 text-white"
+              onClick={() => deletingRelationship && handleDelete(deletingRelationship)}
+              disabled={deleting}
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </AppLayout>
   )
 }

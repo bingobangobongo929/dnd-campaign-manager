@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Search, Trash2, Users, Heart, Swords, Briefcase, Crown,
-  ArrowRight, ArrowLeftRight, Link2, Filter
+  ArrowRight, ArrowLeftRight, Link2, Filter, AlertTriangle
 } from 'lucide-react'
 import { Modal, Input } from '@/components/ui'
 import { useSupabase } from '@/hooks'
@@ -49,6 +49,8 @@ export function RelationshipManager({ campaignId, isOpen, onClose }: Relationshi
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState<RelationshipCategory | 'all'>('all')
+  const [deletingRelationship, setDeletingRelationship] = useState<RelationshipWithDetails | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const loadRelationships = useCallback(async () => {
     setLoading(true)
@@ -75,10 +77,7 @@ export function RelationshipManager({ campaignId, isOpen, onClose }: Relationshi
   }, [isOpen, loadRelationships])
 
   const handleDelete = async (relationship: RelationshipWithDetails) => {
-    if (!confirm(`Delete the relationship between ${relationship.from_character.name} and ${relationship.to_character.name}?`)) {
-      return
-    }
-
+    setDeleting(true)
     // Delete both directions if pair_id exists
     if (relationship.pair_id) {
       await supabase
@@ -93,6 +92,8 @@ export function RelationshipManager({ campaignId, isOpen, onClose }: Relationshi
     }
 
     loadRelationships()
+    setDeletingRelationship(null)
+    setDeleting(false)
   }
 
   const getModeIcon = (relationship: RelationshipWithDetails) => {
@@ -125,6 +126,7 @@ export function RelationshipManager({ campaignId, isOpen, onClose }: Relationshi
   }, {} as Record<RelationshipCategory, RelationshipWithDetails[]>)
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
@@ -254,7 +256,7 @@ export function RelationshipManager({ campaignId, isOpen, onClose }: Relationshi
 
                         {/* Delete */}
                         <button
-                          onClick={() => handleDelete(rel)}
+                          onClick={() => setDeletingRelationship(rel)}
                           className="p-2 rounded-lg text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10 transition-all"
                           title="Delete relationship"
                         >
@@ -269,5 +271,44 @@ export function RelationshipManager({ campaignId, isOpen, onClose }: Relationshi
         )}
       </div>
     </Modal>
+
+    {/* Delete Confirmation Modal */}
+    <Modal
+        isOpen={!!deletingRelationship}
+        onClose={() => setDeletingRelationship(null)}
+        title="Delete Relationship"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-white font-medium">
+                Delete the relationship between {deletingRelationship?.from_character.name} and {deletingRelationship?.to_character.name}?
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                This action cannot be undone.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setDeletingRelationship(null)}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn bg-red-600 hover:bg-red-500 text-white"
+              onClick={() => deletingRelationship && handleDelete(deletingRelationship)}
+              disabled={deleting}
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+    </>
   )
 }
