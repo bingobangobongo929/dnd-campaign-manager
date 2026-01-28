@@ -1,5 +1,23 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
+
+// Admin client for maintenance check (bypasses RLS)
+function createAdminClientForMiddleware() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    return null
+  }
+
+  return createSupabaseClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
+}
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -55,6 +73,7 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith('/cookies') ||
     pathname.startsWith('/changelog') ||
     pathname.startsWith('/suspended') ||
+    pathname.startsWith('/maintenance') || // Maintenance page itself
     pathname.includes('opengraph-image') ||
     pathname.includes('twitter-image') ||
     pathname.endsWith('/icon') ||
@@ -72,6 +91,54 @@ export async function updateSession(request: NextRequest) {
 
   // Suspended page
   const isSuspendedPage = pathname === '/suspended'
+
+  // Maintenance page
+  const isMaintenancePage = pathname === '/maintenance'
+
+  // Check maintenance mode (for all users, including unauthenticated)
+  // Skip for API routes, public routes, and maintenance page itself
+  if (!pathname.startsWith('/api/') && !isMaintenancePage) {
+    try {
+      // Use admin client to bypass RLS for maintenance check
+      const adminClient = createAdminClientForMiddleware()
+
+      if (adminClient) {
+        const { data: appSettings } = await adminClient
+          .from('app_settings')
+          .select('maintenance_mode')
+          .eq('id', 'global')
+          .single()
+
+        if (appSettings?.maintenance_mode) {
+          // Check if user is admin - admins can bypass maintenance
+          let isAdmin = false
+
+          if (user) {
+            const { data: userSettings } = await adminClient
+              .from('user_settings')
+              .select('role')
+              .eq('user_id', user.id)
+              .single()
+
+            isAdmin = userSettings?.role === 'admin' ||
+                      userSettings?.role === 'super_admin' ||
+                      userSettings?.role === 'moderator'
+          }
+
+          // Non-admins get redirected to maintenance page
+          if (!isAdmin) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/maintenance'
+            return NextResponse.redirect(url)
+          }
+        }
+      }
+    } catch (error) {
+      // If we can't check maintenance mode, allow the request
+      // Better to let users in than block everyone on a DB error
+      console.error('Maintenance check error:', error)
+    }
+  }
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone()
