@@ -84,6 +84,7 @@ export async function PATCH(
       keyNpcs,
       musicAmbiance,
       sessionOpener,
+      randomTables,
     } = body as {
       phase?: SessionPhase
       prepNotes?: string
@@ -101,6 +102,7 @@ export async function PATCH(
       keyNpcs?: string
       musicAmbiance?: string
       sessionOpener?: string
+      randomTables?: string
     }
 
     const updateData: Record<string, unknown> = {}
@@ -121,6 +123,7 @@ export async function PATCH(
     if (keyNpcs !== undefined) updateData.key_npcs = keyNpcs
     if (musicAmbiance !== undefined) updateData.music_ambiance = musicAmbiance
     if (sessionOpener !== undefined) updateData.session_opener = sessionOpener
+    if (randomTables !== undefined) updateData.random_tables = randomTables
 
     const { data: session, error } = await supabase
       .from('sessions')

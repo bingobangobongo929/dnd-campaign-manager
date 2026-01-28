@@ -455,6 +455,12 @@ export interface Database {
           session_timer: Json | null // DEPRECATED: preserved for data retention
           pinned_references: Json
           attendees: Json
+          // Prep module fields
+          session_goals: string | null
+          key_npcs: string | null
+          session_opener: string | null
+          random_tables: string | null
+          music_ambiance: string | null
           // Session state for player access
           state: 'private' | 'open' | 'locked'
           share_notes_with_players: boolean | null
@@ -483,6 +489,12 @@ export interface Database {
           session_timer?: Json | null
           pinned_references?: Json
           attendees?: Json
+          // Prep module fields
+          session_goals?: string | null
+          key_npcs?: string | null
+          session_opener?: string | null
+          random_tables?: string | null
+          music_ambiance?: string | null
           // Session state for player access
           state?: 'private' | 'open' | 'locked'
           share_notes_with_players?: boolean | null
@@ -511,6 +523,12 @@ export interface Database {
           session_timer?: Json | null
           pinned_references?: Json
           attendees?: Json
+          // Prep module fields
+          session_goals?: string | null
+          key_npcs?: string | null
+          session_opener?: string | null
+          random_tables?: string | null
+          music_ambiance?: string | null
           // Session state for player access
           state?: 'private' | 'open' | 'locked'
           share_notes_with_players?: boolean | null
@@ -4484,7 +4502,12 @@ export type SessionSection = 'prep_checklist' | 'thoughts_for_next' | 'quick_ref
 // Prep phase optional modules (per plan: only 2 modules)
 export type PrepModule =
   | 'checklist'        // Yellow - Simple checkboxes for prep tasks
-  | 'references'       // Cyan - Text-based list of key NPCs/locations/notes
+  | 'references'       // Cyan - Key NPCs, locations, or notes to keep handy
+  | 'session_goals'    // Purple - What you hope to accomplish this session
+  | 'key_npcs'         // Green - NPCs likely to appear and their motivations
+  | 'session_opener'   // Orange - How you'll start the session
+  | 'random_tables'    // Pink - Names, encounters, or things to roll for
+  | 'music_ambiance'   // Teal - Playlists, sound effects, atmosphere notes
 
 // Campaign session settings
 export interface SessionSettings {
